@@ -74,6 +74,7 @@ int Iso_surface_specification_destroy(
  * Converts a 3-D element into an iso_surface as a GT_surface
  */
 int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
+	Cmiss_field_cache_id field_cache, Cmiss_mesh_id mesh,
 	FE_value time,	int *number_in_xi,
 	struct Iso_surface_specification *specification,
 	struct GT_object *graphics_object, enum Cmiss_graphics_render_type render_type);

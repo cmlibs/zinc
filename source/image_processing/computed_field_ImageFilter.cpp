@@ -53,32 +53,10 @@ extern "C" {
 }
 
 namespace CMISS {
-int Computed_field_ImageFilter::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_ImageFilter::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_ImageFilter::evaluate_cache_at_location);
-	if (functor && location)
-	{
-		return_code = functor->update_and_evaluate_filter(location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_ImageFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_ImageFilter::evaluate_cache_at_location */
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	return functor->update_and_evaluate_filter(cache, valueCache);
+}
 
 } // namespace CMISS

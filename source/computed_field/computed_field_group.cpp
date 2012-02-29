@@ -356,7 +356,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -430,75 +430,60 @@ int Computed_field_group::compare(Computed_field_core *other_core)
 } /* Computed_field_group::compare */
 
 /***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
+ * Evaluates to 1 if domain location is in group, otherwise 0.
  */
-int Computed_field_group::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_group::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 1;
-
-	ENTER(Computed_field_group::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	valueCache.values[0] = 0.0;
+	if (contains_all)
 	{
-		field->values[0] = 0.0;
-		if (contains_all)
-		{
-			field->values[0] = 1;
-		}
-#if defined (USE_OPENCASCADE)
-		else if (dynamic_cast<Field_cad_geometry_location*>(location))
-		{
-			printf("=== Cad geometry field location\n");
-		}
-#endif /* defined (USE_OPENCASCADE) */
-		else
-		{
-			if (dynamic_cast<Field_node_location*>(location))
-			{
-				if (local_node_group)
-				{
-					return_code = Computed_field_evaluate_cache_at_location(local_node_group, location);
-					if (return_code)
-					{
-						field->values[0] = local_node_group->values[0];
-					}
-				}
-				if (local_data_group && (0.0 == field->values[0]) && return_code)
-				{
-					return_code = Computed_field_evaluate_cache_at_location(local_data_group, location);
-					if (return_code)
-					{
-						field->values[0] = local_data_group->values[0];
-					}
-				}
-			}
-			else if (Field_element_xi_location *element_xi_location =
-				dynamic_cast<Field_element_xi_location*>(location))
-	 		{
-	 			Cmiss_element_id element = element_xi_location->get_element();
-	 			int dimension = Cmiss_element_get_dimension(element);
-	 			Cmiss_field_id subobject_group_field = get_element_group_field_private(dimension);
-				if (subobject_group_field)
-				{
-					return_code = Computed_field_evaluate_cache_at_location(subobject_group_field, location);
-					if (return_code)
-					{
-						field->values[0] = subobject_group_field->values[0];
-					}
-				}
-	 		}
- 		}
+		valueCache.values[0] = 1;
 	}
+#if defined (USE_OPENCASCADE)
+	else if (dynamic_cast<Field_cad_geometry_location*>(location))
+	{
+		printf("=== Cad geometry field location\n");
+	}
+#endif /* defined (USE_OPENCASCADE) */
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_group::evaluate_cache_at_location.  Invalid argument(s)");
-		return_code = 0;
+		Field_element_xi_location *element_xi_location;
+		if (dynamic_cast<Field_node_location*>(cache.getLocation()))
+		{
+			if (local_node_group)
+			{
+				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_node_group->evaluate(cache));
+				if (sourceCache)
+				{
+					valueCache.values[0] = sourceCache->values[0];
+				}
+			}
+			if (local_data_group && (0.0 == valueCache.values[0]))
+			{
+				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_data_group->evaluate(cache));
+				if (sourceCache)
+				{
+					valueCache.values[0] = sourceCache->values[0];
+				}
+			}
+		}
+		else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+		{
+			int dimension = element_xi_location->get_dimension();
+			Cmiss_field_id subobject_group_field = get_element_group_field_private(dimension);
+			if (subobject_group_field)
+			{
+				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(subobject_group_field->evaluate(cache));
+				if (sourceCache)
+				{
+					valueCache.values[0] = sourceCache->values[0];
+				}
+			}
+		}
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_group::evaluate_cache_at_location */
+	return 1;
+}
 
 int Computed_field_group::isEmptyLocal() const
 {

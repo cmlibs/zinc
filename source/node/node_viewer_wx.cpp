@@ -49,6 +49,7 @@ this dialog.
 
 extern "C" {
 #include "api/cmiss_field_subobject_group.h"
+#include "api/cmiss_status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
@@ -503,13 +504,18 @@ void Terminate(wxCloseEvent& event)
 										 number_of_components=Computed_field_get_number_of_components(field);
 										 if (ALLOCATE(values,FE_value,number_of_components))
 										 {
-												if (Computed_field_evaluate_at_node(field,node,time,values))
+												Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+												Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+												Cmiss_field_cache_set_time(field_cache, time);
+												Cmiss_field_cache_set_node(field_cache, node);
+												if (Cmiss_field_evaluate_real(field, field_cache, number_of_components, values))
 												{
 													 sscanf(value_string,FE_VALUE_INPUT_STRING,
 															&values[component_number]);
-													 Computed_field_set_values_at_node(field,node,time,values);
+													 Cmiss_field_assign_real(field, field_cache, number_of_components, values);
 												}
-												Computed_field_clear_cache(field);
+												Cmiss_field_cache_destroy(&field_cache);
+												Cmiss_field_module_destroy(&field_module);
 												DEALLOCATE(values);
 										 }
 									}
@@ -1126,23 +1132,25 @@ LAST MODIFIED : 24 April 2007
 DESCRIPTION :
 Give the textctrl a value.
 ==============================================================================*/
-	 char *cmiss_number_string, *new_value_string, temp_value_string[VALUE_STRING_SIZE];
-	 int element_dimension, j, number_of_components = 0, return_code;
-	 struct CM_element_information cm_identifier;
-	 FE_value *values, time;
-	 struct FE_field *fe_field;
-	 struct FE_node *node = NULL;
-	 struct Computed_field *temp_field  = NULL;
+	char *cmiss_number_string, *new_value_string, temp_value_string[VALUE_STRING_SIZE];
+	int element_dimension, j, number_of_components = 0, return_code;
+	struct CM_element_information cm_identifier;
+	struct FE_node *node = NULL;
+	struct Computed_field *temp_field  = NULL;
 
-	 ENTER(node_viewer_update_value);
-	 if (node_viewer&&(node = node_viewer->current_node) &&
-			(temp_field=node_viewer->current_field))
-	 number_of_components = Computed_field_get_number_of_components(temp_field);
-	 fe_field = (struct FE_field *)NULL;
-	 time = Time_object_get_current_time(node_viewer->time_object);
-	 values = (FE_value *)NULL;
-	 cmiss_number_string = (char *)NULL;
-	 return_code = 1;
+	ENTER(node_viewer_update_value);
+	if (node_viewer&&(node = node_viewer->current_node) &&
+		(temp_field=node_viewer->current_field))
+		number_of_components = Computed_field_get_number_of_components(temp_field);
+	FE_field *fe_field = 0;
+	FE_value time = Time_object_get_current_time(node_viewer->time_object);
+	FE_value *values = 0;
+	cmiss_number_string = (char *)NULL;
+	return_code = 1;
+	Cmiss_field_module_id field_module = Cmiss_field_get_field_module(temp_field);
+	Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+	Cmiss_field_cache_set_time(field_cache, time);
+	Cmiss_field_cache_set_node(field_cache, node);
 	 if (Computed_field_is_type_finite_element(temp_field))
 	 {
 			return_code = Computed_field_get_type_finite_element(temp_field, &fe_field);
@@ -1151,8 +1159,7 @@ Give the textctrl a value.
 	 {
 			if (Computed_field_is_type_cmiss_number(temp_field))
 			{
-				 if (!(cmiss_number_string = Computed_field_evaluate_as_string_at_node(temp_field,
-									/*component_number*/-1, node, time)))
+				 if (!(cmiss_number_string = Cmiss_field_evaluate_string(temp_field, field_cache)))
 				 {
 						return_code = 0;
 				 }
@@ -1161,12 +1168,11 @@ Give the textctrl a value.
 			{				
 				 if (ALLOCATE(values, FE_value, number_of_components))
 				 {
-						if (!Computed_field_evaluate_at_node(temp_field, node, time, values))
+						if (CMISS_OK != Cmiss_field_evaluate_real(temp_field, field_cache, number_of_components, values))
 						{
 							 DEALLOCATE(values);
 							 return_code = 0;
 						}
-						Computed_field_clear_cache(field);
 				 }
 			}
 	 }
@@ -1258,8 +1264,8 @@ Give the textctrl a value.
 			}
 			else if (!Computed_field_has_numerical_components(temp_field, NULL))
 			{
-				 new_value_string = Computed_field_evaluate_as_string_at_node(
-						temp_field, component_number, node, time);
+				// assume all non-numeric value types are scalar
+				new_value_string = Cmiss_field_evaluate_string(temp_field, field_cache);
 			}
 			else /* all other types of computed field */
 			{
@@ -1280,6 +1286,8 @@ Give the textctrl a value.
 	 {
 			DEALLOCATE(values);
 	 }
+	Cmiss_field_cache_destroy(&field_cache);
+	Cmiss_field_module_destroy(&field_module);
 	 return(new_value_string);
 	 LEAVE;
 }

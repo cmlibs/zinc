@@ -341,12 +341,6 @@ namespace {
 			return (return_code);
 		}
 
-		int evaluate_cache_at_location(Field_location* location)
-		{
-			USE_PARAMETER(location);
-			return 1;
-		};
-
 		int list()
 		{
 			return 1;
@@ -552,34 +546,24 @@ namespace {
 			return (return_code);
 		}
 
-		int evaluate_cache_at_location(Field_location* location)
+		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 		{
-			if (field && location)
+			Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+			if (element_xi_location)
 			{
-				if (dynamic_cast<Field_element_xi_location*>(location))
-				{
-		 			Field_element_xi_location *element_xi_location =
-		 				reinterpret_cast<Field_element_xi_location *>(location);
-		 			Cmiss_element_id element = element_xi_location->get_element();
-		 			if (dimension == Cmiss_element_get_dimension(element))
-		 			{
-		 				field->values[0] = containsObject(element);
-		 			}
-		 			else
-		 			{
-		 				field->values[0] = 0;
-		 			}
-				}
-				else
-				{
-					field->values[0] = 0;
-				}
+				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	 			Cmiss_element_id element = element_xi_location->get_element();
+	 			if (Cmiss_element_get_dimension(element) == dimension)
+	 			{
+	 				valueCache.values[0] = containsObject(element);
+	 			}
+	 			else
+	 			{
+	 				valueCache.values[0] = 0;
+	 			}
+	 			return 1;
 			}
-			else
-			{
-				return 0;
-			}
-			return 1;
+			return 0;
 		};
 
 		int list()
@@ -826,28 +810,18 @@ namespace {
 			return (return_code);
 		}
 
-		int evaluate_cache_at_location(Field_location* location)
+		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 		{
-			if (field && location)
+			Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+			if (node_location)
 			{
-				if (dynamic_cast<Field_node_location*> (location))
-				{
-					Field_node_location *node_location =
-						reinterpret_cast<Field_node_location *> (location);
-					Cmiss_node_id node = node_location->get_node();
-	 				field->values[0] = containsObject(node);
-				}
-				else
-				{
-					field->values[0] = 0;
-				}
+				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+				Cmiss_node_id node = node_location->get_node();
+	 			valueCache.values[0] = containsObject(node);
+	 			return 1;
 			}
-			else
-			{
-				return 0;
-			}
-			return 1;
-		}
+			return 0;
+		};
 
 		int list()
 		{

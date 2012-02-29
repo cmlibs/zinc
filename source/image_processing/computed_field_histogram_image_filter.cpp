@@ -91,13 +91,13 @@ public:
 	};
 
 	template <class ImageType, class HistogramGeneratorType >
-	int update_histogram(Field_location* location, 
+	int update_histogram(Cmiss_field_cache& cache,
 		typename HistogramGeneratorType::Pointer filter, 
 		const typename HistogramGeneratorType::HistogramType *&outputHistogram,
 		ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2);
 
 	template <class ImageType, class HistogramGeneratorType >
-	int evaluate_histogram(Field_location* location,
+	int evaluate_histogram(Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
 		const typename HistogramGeneratorType::HistogramType *outputHistogram,
 		ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2);
 
@@ -160,7 +160,7 @@ private:
 
 template <class ImageType, class HistogramGeneratorType >
 int Computed_field_histogram_image_filter::update_histogram(
-	Field_location* location, 
+	Cmiss_field_cache& cache,
 	typename HistogramGeneratorType::Pointer filter, 
 	const typename HistogramGeneratorType::HistogramType *&outputHistogram,
 	ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2)
@@ -171,134 +171,92 @@ DESCRIPTION :
 Evaluate the templated version of this filter
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_histogram_image_filter::update_histogram);
 	USE_PARAMETER(dummytemplarg2);
-	if (field && location)
+	typename ImageType::Pointer inputImage;
+
+	if (create_input_image(cache, inputImage, dummytemplarg1))
 	{
-		typename ImageType::Pointer inputImage;
-
-		if (create_input_image(location, inputImage, dummytemplarg1))
+		try
 		{
-			try
-			{
-				filter->SetInput( inputImage );
+			filter->SetInput( inputImage );
 
-				//Histogram generators are not pipeline objects so
-				//we have to explicitly update the input image
+			//Histogram generators are not pipeline objects so
+			//we have to explicitly update the input image
 
-				inputImage->Update();
+			inputImage->Update();
 
-				filter->Compute();
-				
-				outputHistogram = filter->GetOutput();
-				
-			} catch ( itk::ExceptionObject & err )
-			{
-				display_message(ERROR_MESSAGE,
-					"ExceptionObject caught!");
-				display_message(ERROR_MESSAGE,
-					(char *)err.GetDescription());
-			}
+			filter->Compute();
+
+			outputHistogram = filter->GetOutput();
 			
-			if (outputHistogram)
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
+		} catch ( itk::ExceptionObject & err )
 		{
-			return_code = 0;
+			display_message(ERROR_MESSAGE,
+				"ExceptionObject caught!");
+			display_message(ERROR_MESSAGE,
+				(char *)err.GetDescription());
+		}
+
+		if (outputHistogram)
+		{
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_histogram_image_filter::update_histogram.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_histogram_image_filter::update_histogram */
+	return 0;
+}
 	
 template <class ImageType, class HistogramGeneratorType >
 int Computed_field_histogram_image_filter::evaluate_histogram(
-	Field_location* location,
+	Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
 	const typename HistogramGeneratorType::HistogramType *outputHistogram,
 	ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_histogram_image_filter::evaluate_histogram);
 	USE_PARAMETER(dummytemplarg);
 	USE_PARAMETER(dummytemplarg2);
-	if (field && location)
+	Field_element_xi_location* element_xi_location;
+	Field_coordinate_location* coordinate_location = NULL;
+	const FE_value* xi = NULL;
+
+	if (NULL != (element_xi_location =
+		dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		Field_element_xi_location* element_xi_location;
-		Field_coordinate_location* coordinate_location = NULL;
-		const FE_value* xi = NULL;
+		xi = element_xi_location->get_xi();
+	}
+	else if (NULL != (coordinate_location =
+		dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
+	{
+		xi = coordinate_location->get_values();
+	}
 
-		if (NULL != (element_xi_location =
-			dynamic_cast<Field_element_xi_location*>(location)))
-		{
-			xi = element_xi_location->get_xi();
-		}
-		else if (NULL != (coordinate_location =
-			dynamic_cast<Field_coordinate_location*>(location)))
-		{
-			xi = coordinate_location->get_values();
-		}
+	if (xi && outputHistogram)
+	{
+		unsigned int bin = 0;
+		unsigned int offset = 1;
 
-		if (xi && outputHistogram)
+		for (int i = 0 ; i < sourceNumberOfComponents ; i++)
 		{
-			unsigned int bin = 0;
-			unsigned int offset = 1;
-
-			for (i = 0 ; i < sourceNumberOfComponents ; i++)
+			if (xi[i] >= 1.0)
 			{
-				if (xi[i] >= 1.0)
-				{
-					bin += offset * (numberOfBins[i] - 1);
-				}
-				else if (xi[i] <= 0.0)
-				{
-					/* nothing to add */
-				}
-				else
-				{
-					bin += offset * static_cast<unsigned int>(
-						floor((double)numberOfBins[i] * xi[i]));
-				}
-				offset *= numberOfBins[i];
+				bin += offset * (numberOfBins[i] - 1);
 			}
-
-			field->values[0] = outputHistogram->GetFrequency( bin ) /
-				(double)totalPixels;
-			return_code = 1;
+			else if (xi[i] <= 0.0)
+			{
+				/* nothing to add */
+			}
+			else
+			{
+				bin += offset * static_cast<unsigned int>(
+					floor((double)numberOfBins[i] * xi[i]));
+			}
+			offset *= numberOfBins[i];
 		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_histogram_image_filter::evaluate_histogram.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_histogram_image_filter::evaluate_histogram */
+		valueCache.values[0] = outputHistogram->GetFrequency( bin ) /
+			(double)totalPixels;
+		return 1;
+	}
+	return 0;
+}
 
 int Computed_field_histogram_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -526,7 +484,7 @@ public:
 	{
 	}
 
-	int update_and_evaluate_filter(Field_location* location)
+	int update_and_evaluate_filter(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -538,11 +496,11 @@ location.
 		int return_code;
 		if (!histogram)
 		{
-			return_code = set_filter(location);
+			return_code = set_filter(cache);
 			if (return_code )
 			{
 				return_code = histogram_image_filter->evaluate_histogram
-					(location, histogram,
+					(cache, valueCache, histogram,
 					 static_cast<ImageType*>(NULL),
 					 static_cast<HistogramGeneratorType*>(NULL));
 			}
@@ -550,14 +508,14 @@ location.
 		else
 		{
 			return_code = histogram_image_filter->evaluate_histogram
-				(location, histogram,
+				(cache, valueCache, histogram,
 					static_cast<ImageType*>(NULL),
 					static_cast<HistogramGeneratorType*>(NULL));
 		}
 		return(return_code);
 	}
 
-	int clear_cache()
+	int clear_cache() // GRC check what this does
 	{
 		histogram = NULL;
 		return (1);
@@ -586,7 +544,7 @@ public:
 	{
 	}
 
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -609,7 +567,7 @@ and generate the outputImage.
 			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum[0] );
 		
 		return_code = this->histogram_image_filter->update_histogram
-			(location, this->filter, this->histogram,
+			(cache, this->filter, this->histogram,
 			static_cast<ImageType*>(NULL),
 			static_cast<HistogramGeneratorType*>(NULL));
 		
@@ -666,7 +624,7 @@ public:
 	{
 	}
 
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -693,7 +651,7 @@ and generate the outputImage.
 			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum );
 
 		return_code = this->histogram_image_filter->update_histogram
-			(location, this->filter, this->histogram,
+			(cache, this->filter, this->histogram,
 			static_cast<ImageType*>(NULL),
 			static_cast<HistogramGeneratorType*>(NULL));		
 		

@@ -93,7 +93,7 @@ namespace {
 			return new Computed_field_image_resample(dimension, sizes);
 		}
 		
-		int evaluate_cache_at_location(Field_location* location);
+		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{
@@ -147,55 +147,17 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_image_resample::compare */
 
-int Computed_field_image_resample::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_image_resample::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *temp, *temp2;
-	int element_dimension, i, j, return_code;
-
-	ENTER(Computed_field_image_resample::evaluate_cache_at_location);
-	if (field)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		return_code = Computed_field_evaluate_cache_at_location(field->source_fields[0],
-			location);
-		for (i=0;i<field->number_of_components;i++)
-		{
-			field->values[i] = field->source_fields[0]->values[i];
-		}
-		if (field->source_fields[0]->derivatives_valid)
-		{
-			temp=field->derivatives;
-			temp2=field->source_fields[0]->derivatives;
-			field->derivatives_valid = 1;
-			element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
-			for (i=0;i<field->number_of_components;i++)
-			{
-				for (j=0;j<element_dimension;j++)
-				{
-					(*temp)=(*temp2);
-					temp++;
-					temp2++;
-				}
-			}
-		}
+		valueCache.copyValues(*sourceCache);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_image_resample::evaluate_cache_at_location */
+	return 0;
+}
 
 int Computed_field_image_resample::get_native_resolution(int *return_dimension,
 	int **return_sizes, Computed_field **return_texture_coordinate_field)

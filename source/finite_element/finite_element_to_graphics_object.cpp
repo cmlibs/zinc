@@ -327,11 +327,10 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 									}
 								}
 							}
-							/* clear the label_bounds_field cache to force recalculation at the offset coordinates */
-							Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->label_bounds_field);
 							/* Set the offset coordinates in the field cache field and evaluate the label field there */
-							if (!Cmiss_field_cache_assign_field_real(field_cache,
-								coordinate_field, /*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
+							Cmiss_field_cache_set_assign_in_cache(field_cache, 1);
+							if (!Cmiss_field_assign_real(coordinate_field, field_cache,
+								/*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
 							{
 								return_code = 0;
 							}
@@ -340,6 +339,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 							{
 								return_code = 0;
 							}
+							Cmiss_field_cache_set_assign_in_cache(field_cache, 0);
 							if (return_code)
 							{
 								CAST_TO_OTHER(glyph_set_data->label_bounds,
@@ -352,9 +352,6 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 							}
 							glyph_set_data->label_bounds += glyph_set_data->label_bounds_components;
 						}
-						/* Must clear caches to ensure invalid values not used again */
-						Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->label_bounds_field);
-						Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->coordinate_field);
 						DEALLOCATE(fieldValues);
 					}
 				}
@@ -1055,25 +1052,23 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	return (glyph_set);
 } /* create_GT_glyph_set_from_nodeset */
 
+#if defined OLD_CODE
+/***************************************************************************//**
+ * Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite
+ * <element> using <number_of_segments> spaced equally in xi.
+ * The optional <data_field> (currently only a scalar) is calculated as data
+ * over the polyline, for later colouration by a spectrum.
+ * The optional <top_level_element> may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * If the <line_width> is non zero then it will override the default line width.
+ * Notes:
+ * - the coordinate field is assumed to be rectangular cartesian.
+ */
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,int number_of_segments,
 	struct FE_element *top_level_element, FE_value time,
-	int line_width)
-/*******************************************************************************
-LAST MODIFIED : 22 April 2004
-
-DESCRIPTION :
-Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
-using <number_of_segments> spaced equally in xi.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the polyline, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-If the <line_width> is non zero then it will override the default line width.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-==============================================================================*/
+	int line_width);
 {
 	FE_value coordinates[3],distance,xi;
 	GTDATA *data;
@@ -1171,33 +1166,39 @@ Notes:
 
 	return (polyline);
 } /* create_GT_polyline_from_FE_element */
+#endif // defined OLD_CODE
 
-int FE_element_add_line_to_vertex_array(
-	FE_element *element, Graphics_vertex_array *array,
+int FE_element_add_line_to_vertex_array(struct FE_element *element,
+	Cmiss_field_cache_id field_cache, struct Graphics_vertex_array *array,
 	Computed_field *coordinate_field, Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	Computed_field *texture_coordinate_field,
 	unsigned int number_of_segments, FE_element *top_level_element, FE_value time)
 {
-	FE_value coordinates[3],distance,texture_coordinates[3],xi;
+	FE_value distance, xi;
 	int graphics_name, return_code;
 	struct CM_element_information cm;
 	unsigned int i, vertex_start, number_of_vertices;
 
 	ENTER(FE_element_add_line_to_vertex_buffer_set)
-	if (element && array && (1 == get_FE_element_dimension(element)) &&
-		coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
-		(!texture_coordinate_field ||
-	   (3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
+	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int texture_coordinate_dimension = texture_coordinate_field ?
+		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+	if (element && field_cache && array && (1 == get_FE_element_dimension(element)) &&
+		coordinate_field && (3 >= coordinate_dimension) &&
+		(!texture_coordinate_field || (3 >= texture_coordinate_dimension)))
 	{
 		return_code = 1;
 		
 		/* clear coordinates in case coordinate field is not 3 component */
+		FE_value coordinates[3];
 		coordinates[0]=0.0;
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 
+		float *floatData = data_field ? new float[number_of_data_values] : 0;
+
+		FE_value texture_coordinates[3];
 		if (texture_coordinate_field)
 		{
 			texture_coordinates[0] = 0.0;
@@ -1215,20 +1216,19 @@ int FE_element_add_line_to_vertex_array(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 
 		distance=(FE_value)number_of_segments;
-		i=0;
+		Cmiss_field_cache_set_time(field_cache, time);
 		for (i = 0; (i <= number_of_segments); i++)
 		{
 			xi=((FE_value)i)/distance;
 			/* evaluate the fields */
-			if (Computed_field_evaluate_in_element(
-					coordinate_field, element, &xi,
-					time, top_level_element, coordinates, (FE_value *)NULL) &&
-				((!data_field) || Computed_field_evaluate_in_element(
-					data_field,element, &xi, time, top_level_element, data_buffer,
-					(FE_value *)NULL)) &&
-				((!texture_coordinate_field) || Computed_field_evaluate_in_element(
-					texture_coordinate_field, element, &xi, time, top_level_element,
-					texture_coordinates, (FE_value *)NULL)))
+			return_code = Cmiss_field_cache_set_mesh_location_with_parent(
+				field_cache, element, /*dimension*/1, &xi, top_level_element);
+			if (return_code && Cmiss_field_evaluate_real(coordinate_field,
+					field_cache, coordinate_dimension, coordinates) &&
+				((!data_field) || Cmiss_field_evaluate_real(data_field,
+					field_cache, number_of_data_values, data_buffer)) &&
+				((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field,
+					field_cache, texture_coordinate_dimension, texture_coordinates)))
 			{
 				float floatField[3];
 				CAST_TO_OTHER(floatField,coordinates,float,3);
@@ -1236,11 +1236,9 @@ int FE_element_add_line_to_vertex_array(
 					3, 1, floatField);
 				if (data_field)
 				{
-					float *floatData = new float[number_of_data_values];
 					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 						number_of_data_values, 1, floatData);
-					delete[] floatData;
 				}
 				if (texture_coordinate_field)
 				{
@@ -1271,6 +1269,7 @@ int FE_element_add_line_to_vertex_array(
 		/* I don't think I need to clear the field cache's here, instead I have
 		 * done it in GT_element_settings_to_graphics_object.
 		 */
+		delete[] floatData;
 	}
 	else
 	{
@@ -1284,32 +1283,15 @@ int FE_element_add_line_to_vertex_array(
 	return (return_code);
 } /* FE_element_add_line_to_vertex_buffer_set */
 
-struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,struct Computed_field *data_field,
+struct GT_surface *create_cylinder_from_FE_element(
+	struct FE_element *element, Cmiss_field_cache_id field_cache,
+	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
 	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
-finite <element> using a grid of points.  The cylinder is built out of an array
-of rectangles <number_of_segments_along> by <number_of_segments_around> the
-cylinder.The actual radius is calculated as:
-radius = constant_radius + scale_factor*radius_field(a scalar field)
-The optional <data_field> (currently only a scalar) is calculated as data over
-the length of the cylinder, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-The first component of <texture_coordinate_field> is used to control the
-texture coordinates along the element. If not supplied it will match Xi. The
-texture coordinate around the cylinders is always from 0 to 1.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-==============================================================================*/
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
@@ -1324,15 +1306,17 @@ Notes:
 		*previous_normal, *texturepoints, *texture_coordinate;
 
 	ENTER(create_cylinder_from_FE_element);
-	if (element && (1 == get_FE_element_dimension(element)) &&
+	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int texture_coordinate_dimension = texture_coordinate_field ?
+		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+	if (element && field_cache && line_mesh && (1 == get_FE_element_dimension(element)) &&
 		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
-		coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		coordinate_field && (3 >= coordinate_dimension) &&
 		((!radius_field) ||
 			(1 == Computed_field_get_number_of_components(radius_field))) &&
-		((!texture_coordinate_field) ||
-			(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
+		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
+		Cmiss_differential_operator_id d_dxi = Cmiss_mesh_get_chart_differential_operator(line_mesh, /*order*/1, 1);
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
 		coordinates[1]=0.0;
@@ -1371,23 +1355,25 @@ Notes:
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
+			Cmiss_field_cache_set_time(field_cache, time);
+			FE_value *feData = new FE_value[n_data_components];
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
 				xi=(float)i/(float)number_of_segments_along;
 				/* evaluate the fields */
-				FE_value *feData = new FE_value[n_data_components];
-				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
-					time,top_level_element,coordinates,derivative_xi)&&
-					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,&xi,time,top_level_element,feData,
-					(FE_value *)NULL)) &&
-					((!radius_field) ||
-						Computed_field_evaluate_in_element(radius_field,element,&xi,
-							time,top_level_element,&radius_value,&radius_derivative)) &&
-					((!texture_coordinate_field) ||
-						Computed_field_evaluate_in_element(texture_coordinate_field,
-							element, &xi, time, top_level_element, tex_coordinates,
-							/*derivatives*/(FE_value *)NULL)))
+				if (Cmiss_field_cache_set_mesh_location_with_parent(
+						field_cache, element, /*dimension*/1, &xi, top_level_element) &&
+					Cmiss_field_evaluate_derivative(coordinate_field,
+						d_dxi, field_cache, coordinate_dimension, derivative_xi) &&
+					Cmiss_field_evaluate_real(coordinate_field, field_cache,
+						coordinate_dimension, coordinates) &&
+					((!data_field) || Cmiss_field_evaluate_real(data_field,
+						field_cache, n_data_components, feData)) &&
+					((!radius_field) || (
+						Cmiss_field_evaluate_derivative(radius_field, d_dxi, field_cache, 1, &radius_derivative) &&
+						Cmiss_field_evaluate_real(radius_field, field_cache, 1, &radius_value))) &&
+					((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
+						texture_coordinate_dimension, tex_coordinates)))
 				{
 					/* store the coordinates in the point */
 					(*point)[0]=coordinates[0];
@@ -1453,8 +1439,8 @@ Notes:
 				point += number_of_segments_around+1;
 				derivative += number_of_segments_around+1;
 				texture_coordinate += number_of_segments_around+1;
-				delete[] feData;
 			}
+			delete[] feData;
 
 			if (surface)
 			{
@@ -1766,16 +1752,6 @@ Notes:
 					}
 				}
 			}
-			/* clear Computed_field caches so elements not accessed */
-			Computed_field_clear_cache(coordinate_field);
-			if (data_field)
-			{
-				Computed_field_clear_cache(data_field);
-			}
-			if (radius_field)
-			{
-				Computed_field_clear_cache(radius_field);
-			}
 		}
 		else
 		{
@@ -1789,6 +1765,7 @@ Notes:
 			display_message(ERROR_MESSAGE,
 				"create_cylinder_from_FE_element.  Failed");
 		}
+		Cmiss_differential_operator_destroy(&d_dxi);
 	}
 	else
 	{
@@ -1801,6 +1778,7 @@ Notes:
 	return (surface);
 } /* create_cylinder_from_FE_element */
 
+#if defined OLD_CODE
 struct GT_nurbs *create_GT_nurb_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
@@ -2063,6 +2041,7 @@ to say which parent element they should be evaluated on as necessary.
 
 	return (nurbs);
 } /* create_GT_nurb_from_FE_element */
+#endif // defined OLD_CODE
 
 int get_surface_element_segmentation(struct FE_element *element,
 	int number_of_segments_in_xi1_requested,
@@ -2204,11 +2183,10 @@ int get_surface_element_segmentation(struct FE_element *element,
 } /* get_surface_element_segmentation */
 
 struct GT_surface *create_GT_surface_from_FE_element(
-	Cmiss_field_cache_id field_cache, struct FE_element *element,
-	struct Computed_field *coordinate_field,
+	struct FE_element *element, Cmiss_field_cache_id field_cache,
+	Cmiss_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
-	Cmiss_mesh_id surface_mesh,
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
@@ -2235,7 +2213,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
 		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
-	if (field_cache && element && (2 == get_FE_element_dimension(element)) &&
+	if (element && field_cache && surface_mesh && (2 == get_FE_element_dimension(element)) &&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&
 		(0 < coordinate_dimension) && (3 >= coordinate_dimension) &&
@@ -2855,6 +2833,7 @@ The <xi> are set to their local values within the returned <element>.
 	return(return_code);
 }
 
+#if defined OLD_CODE
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Cmiss_graphics_render_type render_type,
@@ -3594,8 +3573,10 @@ faces.
 
 	return (voltex);
 } /* create_GT_voltex_from_FE_element */
+#endif // defined OLD_CODE
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
+	Cmiss_field_cache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
@@ -3605,7 +3586,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field, 
 	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
-	struct Multi_range *selected_ranges, int *point_numbers, FE_value time)
+	struct Multi_range *selected_ranges, int *point_numbers)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -3654,7 +3635,7 @@ Note:
 	/* must set following to 0 in case fields not supplied */
 	number_of_orientation_scale_components = 0;
 	number_of_variable_scale_components = 0;
-	if (element && coordinate_field &&
+	if (field_cache && element && coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
 		(0 < number_of_xi_points) && xi_points && ((glyph &&
 		offset && base_size && scale_factors &&
@@ -3666,6 +3647,7 @@ Note:
 			Computed_field_get_number_of_components(variable_scale_field))))) ||
 			!glyph))
 	{
+		int element_dimension = Cmiss_element_get_dimension(element);
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0] = 0.0;
 		coordinates[1] = 0.0;
@@ -3724,6 +3706,7 @@ Note:
 				n_data_components = Computed_field_get_number_of_components(data_field);
 				ALLOCATE(data, GTDATA, points_to_draw*n_data_components);
 			}
+			FE_value *feData = new FE_value[n_data_components];
 			if (label_field)
 			{
 				if (ALLOCATE(labels, char *, points_to_draw))
@@ -3796,22 +3779,17 @@ Note:
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						FE_value *feData = new FE_value[n_data_components];
-						if (((!orientation_scale_field) ||
-							Computed_field_evaluate_in_element(orientation_scale_field,
-							element, xi, time, top_level_element, orientation_scale,
-							(FE_value *)NULL)) &&
+						if (Cmiss_field_cache_set_mesh_location_with_parent(
+							field_cache, element, element_dimension, xi, top_level_element) &&
+							((!orientation_scale_field) ||
+								Cmiss_field_evaluate_real(orientation_scale_field, field_cache, number_of_orientation_scale_components, orientation_scale)) &&
 							((!variable_scale_field) ||
-							Computed_field_evaluate_in_element(variable_scale_field,
-							element, xi, time,top_level_element, variable_scale,
-							(FE_value *)NULL)) &&
-							Computed_field_evaluate_in_element(coordinate_field,element,xi,
-							time,top_level_element,coordinates,(FE_value *)NULL)&&
-							((!data_field) || Computed_field_evaluate_in_element(
-							data_field, element, xi, time, top_level_element, feData,
-							(FE_value *)NULL)) && ((!label_field) || (*label =
-							Computed_field_evaluate_as_string_in_element(label_field,
-							/*component_number*/-1, element, xi, time, top_level_element))) &&
+								Cmiss_field_evaluate_real(variable_scale_field, field_cache, number_of_variable_scale_components, variable_scale)) &&
+							Cmiss_field_evaluate_real(coordinate_field, field_cache, /*number_of_components*/3, coordinates) &&
+							((!data_field) ||
+								Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, feData)) &&
+							((!label_field) ||
+								(0 != (*label = Cmiss_field_evaluate_string(label_field, field_cache)))) &&
 							make_glyph_orientation_scale_axes(
 								number_of_orientation_scale_components, orientation_scale,
 								a, b, c, size))
@@ -3860,26 +3838,7 @@ Note:
 							/* error evaluating fields */
 							DESTROY(GT_glyph_set)(&glyph_set);
 						}
-						delete[] feData;
 					}
-				}
-				/* clear Computed_field caches so elements not accessed */
-				Computed_field_clear_cache(coordinate_field);
-				if (orientation_scale_field)
-				{
-					Computed_field_clear_cache(orientation_scale_field);
-				}
-				if (variable_scale_field)
-				{
-					Computed_field_clear_cache(variable_scale_field);
-				}
-				if (data_field)
-				{
-					Computed_field_clear_cache(data_field);
-				}
-				if (label_field)
-				{
-					Computed_field_clear_cache(label_field);
 				}
 			}
 			else
@@ -3898,6 +3857,7 @@ Note:
 				display_message(ERROR_MESSAGE,
 					"create_GT_glyph_set_from_FE_element.  Failed");
 			}
+			delete[] feData;
 		}
 	}
 	else
@@ -3911,6 +3871,7 @@ Note:
 	return (glyph_set);
 } /* create_GT_glyph_set_from_FE_element */
 
+#if defined OLD_CODE
 struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct VT_vector_field *vector_field, FE_value time)
@@ -4142,7 +4103,9 @@ Interpolates xi points (triples in vector field) over the finite <element>
 
 	return (new_field);
 } /* interpolate_vector_field_on_FE_element */
+#endif // defined OLD_CODE
 
+#if defined OLD_CODE
 struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Clipping *clipping,struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
@@ -4343,7 +4306,9 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 
 	return (voltex);
 } /* generate_clipped_GT_voltex_from_FE_element */
+#endif // defined OLD_CODE
 
+#if defined OLD_CODE
 int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	double iso_value, FE_value time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
@@ -4724,3 +4689,4 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 
 	return (return_code);
 } /* create_iso_surfaces_from_FE_element */
+#endif // defined OLD_CODE

@@ -92,104 +92,82 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_if::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 27 July 2007
-
-DESCRIPTION :
-Evaluate the fields cache at the location.
-==============================================================================*/
+int Computed_field_if::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int source_field, calculate_field_two, calculate_field_three, i, j, number_of_xi,
-		return_code;
-
-	ENTER(Computed_field_if::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields > 0) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (source1Cache)
 	{
-		/* 1. Precalculate only the source fields */
-		return_code = 
-			Computed_field_evaluate_cache_at_location(field->source_fields[0],
-				location);
-		if (return_code)
+		/* 2. Work out whether we need to evaluate source_field_two
+			or source_field_three or both. */
+		int calculate_field_two = 0;
+		int calculate_field_three = 0;
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Work out whether we need to evaluate source_field_two
-			 or source_field_three or both. */
-			calculate_field_two = 0;
-			calculate_field_three = 0;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			if (source1Cache->values[i])
 			{
-				if (field->source_fields[0]->values[i])
-				{
-					calculate_field_two = 1;
-				}
-				else
-				{
-					calculate_field_three = 1;
-				}
+				calculate_field_two = 1;
 			}
-			if (calculate_field_two)
+			else
 			{
-				return_code = Computed_field_evaluate_cache_at_location(
-					field->source_fields[1], location);
-			}
-			if (calculate_field_three)
-			{
-				return_code = Computed_field_evaluate_cache_at_location(
-					field->source_fields[2], location);
-			}
-			number_of_xi = location->get_number_of_derivatives();
-			derivative = field->derivatives;
-			field->derivatives_valid = 1;
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				if (field->source_fields[0]->values[i])
-				{
-					source_field = 1;
-				}
-				else
-				{
-					source_field = 2;
-				}
-				field->values[i] = field->source_fields[source_field]->values[i];
-				if (field->source_fields[source_field]->derivatives_valid)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						*derivative = field->source_fields[source_field]
-							->derivatives[i * number_of_xi + j];
-						derivative++;
-					}
-				}
-				else
-				{
-					field->derivatives_valid = 0;
-				}
+				calculate_field_three = 1;
 			}
 		}
+		RealFieldValueCache *source2Cache = 0;
+		RealFieldValueCache *source3Cache = 0;
+		if (calculate_field_two)
+		{
+			source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+		}
+		if (calculate_field_three)
+		{
+			source3Cache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+		}
+		if (((!calculate_field_two) || source2Cache) && ((!calculate_field_three) || source3Cache))
+		{
+			int number_of_xi = cache.getRequestedDerivatives();
+			FE_value *derivative = valueCache.derivatives;
+			valueCache.derivatives_valid = (0 != number_of_xi);
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				RealFieldValueCache *useSourceCache;
+				if (source1Cache->values[i])
+				{
+					useSourceCache = source2Cache;
+				}
+				else
+				{
+					useSourceCache = source3Cache;
+				}
+				valueCache.values[i] = useSourceCache->values[i];
+				if (valueCache.derivatives_valid)
+				{
+					if (useSourceCache->derivatives_valid)
+					{
+						for (int j = 0 ; j < number_of_xi ; j++)
+						{
+							*derivative = useSourceCache->derivatives[i * number_of_xi + j];
+							derivative++;
+						}
+					}
+					else
+					{
+						valueCache.derivatives_valid = 0;
+					}
+				}
+			}
+			return 1;
+		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_if::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_if::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_if::list()
 /*******************************************************************************
@@ -290,7 +268,9 @@ although its cache may be lost.
 	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_if);
-	if (source_field_one&&source_field_two&&source_field_three&&
+	if (source_field_one && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
+		source_field_three && source_field_three->isNumerical() &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components)&&
 		(source_field_one->number_of_components ==

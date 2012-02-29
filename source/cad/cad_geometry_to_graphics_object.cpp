@@ -41,6 +41,7 @@ extern "C" {
 #include "graphics/graphics_object.h"
 }
 
+#include "computed_field/field_cache.hpp"
 #include "graphics/graphics_object.hpp"
 
 #include "cad/cad_geometry_to_graphics_object.h"
@@ -49,7 +50,8 @@ extern "C" {
 #include "cad/element_identifier.h"
 
 struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	struct Computed_field *coordinate_field, struct Computed_field *data_field, Cmiss_graphics_render_type render_type, Cmiss_cad_surface_identifier surface_index)
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field, Cmiss_graphics_render_type render_type, Cmiss_cad_surface_identifier surface_index)
 {
 	struct GT_surface *surface = 0;
 
@@ -106,13 +108,18 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 				return_code = Cmiss_field_cad_topology_get_surface_point_uv_coordinates(cad_topology, surface_index, point_identifier, u, v);
 				if (return_code)
 				{
-					Field_cad_geometry_surface_location loc(cad_topology, surface_index, u, v, 0.0, 2);
-					return_code = Computed_field_evaluate_at_location(coordinate_field, loc, values, derivatives);
+					// don't set number of derivatives in location, set it when evaluating otherwise all
+					// field derivatives are evaluated even when unnecessary
+					Field_cad_geometry_surface_location loc = new Field_cad_geometry_surface_location(
+						cad_topology, surface_index, u, v, 0.0, /*number_of_derivatives*/0);
+					field_cache->setLocation(loc);
+					return_code = Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+						number_of_components, values, number_of_derivatives, derivatives);
 					if (return_code)
 					{
 						if (data_field && num_data_field_components)
 						{
-							return_code = Computed_field_evaluate_at_location(data_field, loc, data_values);
+							return_code = Cmiss_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
 							data[num_data_field_components * points_index + 0] = static_cast<GTDATA>(data_values[0]);
 							data[num_data_field_components * points_index + 1] = static_cast<GTDATA>(data_values[1]);
 							data[num_data_field_components * points_index + 2] = static_cast<GTDATA>(data_values[2]);
@@ -167,7 +174,8 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 }
 
 struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	struct Computed_field *coordinate_field, struct Computed_field *data_field, struct GT_object *graphics_object)
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field, struct GT_object *graphics_object)
 {
 	GT_polyline_vertex_buffers *curves = 0;
 
@@ -212,11 +220,12 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_
 				return_code = Cmiss_field_cad_topology_get_curve_point_s_coordinate(cad_topology, identifier, j, s);
 				if (return_code)
 				{
-					Field_cad_geometry_curve_location loc(cad_topology, identifier, s);
-					return_code = Computed_field_evaluate_at_location(coordinate_field, loc, values);
+					Field_cad_geometry_curve_location *loc = new Field_cad_geometry_curve_location(cad_topology, identifier, s);
+					field_cache->setLocation(loc);
+					return_code = Cmiss_field_evaluate_real(coordinate_field, field_cache, number_of_components, values);
 					if (data && num_data_field_components && return_code)
 					{
-						return_code = Computed_field_evaluate_at_location(data_field, loc, data_values);
+						return_code = Cmiss_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
 						data[num_data_field_components * j + 0] = static_cast<float>(data_values[0]);
 						data[num_data_field_components * j + 1] = static_cast<float>(data_values[1]);
 						data[num_data_field_components * j + 2] = static_cast<float>(data_values[2]);

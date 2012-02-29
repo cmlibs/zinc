@@ -77,7 +77,8 @@ allowed during identifier changes.
  *
  * @param region  The pointer to a region
  * @param node_ranges  Multi_range of nodes
- * @param group_field  Group field of the region
+ * @param group_field  Optional conditional group field node must return true for.
+ * @param conditional_field  Optional conditional field node must return true for.
  * @param time  Time of the group field to be evaluated
  * @param use_data  Flag indicating either node or data is in used.
  * @return  Returns node list if successfully create a node list with the given
@@ -88,20 +89,6 @@ struct LIST(FE_node) *
 		struct Cmiss_region *region, struct Multi_range *node_ranges,
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data);
-
-/***************************************************************************//**
- * Create a node list with the supplied region, conditional field at a
- * specific time.
- *
- * @param region  The pointer to a region
- * @param conditional_field  Conditional field
- * @param time  Time of the group field to be evaluated
- * @return  Returns node list if successfully create a node list with the given
- *    arguments, otherwise NULL.
- */
-struct LIST(FE_node) *
-	FE_node_list_from_conditional_field(
-		struct FE_region *fe_region, struct Computed_field *conditional_field, FE_value time);
 
 struct LIST(FE_node) *
 	FE_node_list_from_ranges(

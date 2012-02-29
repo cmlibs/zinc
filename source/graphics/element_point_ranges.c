@@ -351,10 +351,10 @@ Element_point_ranges_identifier_is_valid.
 			FE_element_get_xi_points(identifier->element,
 				identifier->xi_discretization_mode,
 				identifier->number_in_xi, identifier->exact_xi,
+				(Cmiss_field_cache_id)0,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
-				&number_of_xi_points, /*xi_points_address*/(FE_value_triple **)NULL,
-				/*time*/0) &&
+				&number_of_xi_points, /*xi_points_address*/(FE_value_triple **)NULL) &&
 			(element_point_number < number_of_xi_points));
 	}
 	else
@@ -436,9 +436,10 @@ top_level. Assumes <identifier> has been validated.
 				FE_element_get_numbered_xi_point(identifier->element,
 					identifier->xi_discretization_mode,
 					identifier->number_in_xi, identifier->exact_xi,
+					(Cmiss_field_cache_id)0,
 					/*coordinate_field*/(struct Computed_field *)NULL,
 					/*density_field*/(struct Computed_field *)NULL,
-					*element_point_number, face_xi, /*time*/0) &&
+					*element_point_number, face_xi) &&
 				(top_level_element_dimension=
 					get_FE_element_dimension(identifier->top_level_element)))
 			{
@@ -630,10 +631,10 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 			element_point_ranges->id.xi_discretization_mode,
 			element_point_ranges->id.number_in_xi,
 			element_point_ranges->id.exact_xi,
+			(Cmiss_field_cache_id)0,
 			/*coordinate_field*/(struct Computed_field *)NULL,
 			/*density_field*/(struct Computed_field *)NULL,
-			&maximum_element_point_number, /*xi_points_address*/(FE_value_triple **)NULL,
-			/*time*/0);
+			&maximum_element_point_number, /*xi_points_address*/(FE_value_triple **)NULL);
 		if ((0<=start)&&(start<maximum_element_point_number)&&
 			(0<=stop)&&(stop<maximum_element_point_number))
 		{
@@ -1253,10 +1254,11 @@ returned in this location, for the calling function to use or destroy.
 									element_point_ranges_identifier.xi_discretization_mode,
 									element_point_ranges_identifier.number_in_xi,
 									element_point_ranges_identifier.exact_xi,
+									(Cmiss_field_cache_id)0,
 									/*coordinate_field*/(struct Computed_field *)NULL,
 									/*density_field*/(struct Computed_field *)NULL,
 									&number_of_xi_points,
-									/*xi_points_address*/(FE_value_triple **)NULL,/*time*/0)) ||
+									/*xi_points_address*/(FE_value_triple **)NULL)) ||
 									(1 > number_of_xi_points))
 								{
 									display_message(WARNING_MESSAGE, "Invalid number in xi");
@@ -1740,16 +1742,19 @@ If field and element_point_ranges not identically grid-based, clear
 		(destination_element=set_grid_values_data->element)&&
 		set_grid_values_data->destination_element_point_numbers)
 	{
+		int number_of_components = Cmiss_field_get_number_of_components(field);
 		if (FE_element_get_numbered_xi_point(
 				 source_element, source_identifier->xi_discretization_mode,
 				 source_identifier->number_in_xi, source_identifier->exact_xi,
+				 (Cmiss_field_cache_id)0,
 				 /*coordinate_field*/(struct Computed_field *)NULL,
 				 /*density_field*/(struct Computed_field *)NULL,
-				 set_grid_values_data->source_element_point_number, xi, /*time*/0)
-			&& ALLOCATE(values, FE_value, Computed_field_get_number_of_components(field))
-			&& Computed_field_evaluate_in_element(field,
-				source_element, xi, /*time*/0, /*top_level*/(struct FE_element *)NULL,
-				values, /*derivative*/(FE_value *)NULL))
+				 set_grid_values_data->source_element_point_number, xi)
+			&& ALLOCATE(values, FE_value, number_of_components)
+			&& Cmiss_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)
+			&& Cmiss_field_evaluate_real(field, set_grid_values_data->field_cache,
+				number_of_components, values))
 		{
 			start = 0;
 			stop = 0;
@@ -1764,18 +1769,18 @@ If field and element_point_ranges not identically grid-based, clear
 					if (FE_element_get_numbered_xi_point(
 							 destination_element, destination_identifier->xi_discretization_mode,
 							 destination_identifier->number_in_xi, destination_identifier->exact_xi,
+							 (Cmiss_field_cache_id)0,
 							 /*coordinate_field*/(struct Computed_field *)NULL,
 							 /*density_field*/(struct Computed_field *)NULL,
-							 grid_point_number, xi, /*time*/0)
-						&& Computed_field_set_values_in_element(field,
-							destination_element, xi, /*time*/0, values))
+							 grid_point_number, xi) &&
+						Cmiss_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
+						Cmiss_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values))
 					{
 						set_grid_values_data->number_of_points_set++;
 					}
 				}
 			}
-			/* clear field cache so elements not accessed by it */
-			Computed_field_clear_cache(field);
 		}
 		else
 		{

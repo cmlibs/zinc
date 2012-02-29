@@ -71,7 +71,7 @@ public:
 	};
 
 private:
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	Computed_field_core *copy()
 	{
@@ -95,243 +95,161 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_2d_strain::is_defined_at_location(
-	 Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
+bool Computed_field_2d_strain::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
-
-	ENTER(Computed_field_2d_strain::is_defined_at_location);
-	if (field && location)
+	Field_element_xi_location* element_xi_location;
+	// only works for element_xi locations & at least 2-D
+	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
+		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
 	{
-		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location))
-			/* 2d_strain requires at least 2-D elements */
-  			&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
-		{
-			/* check the source fields */
-			return_code = Computed_field_core::is_defined_at_location(location);
-		}
-		else
-		{
-			return_code = 0;
-		}
+		// check the source fields
+		return Computed_field_core::is_defined_at_location(cache);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain::is_defined_at_location.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+	return false;
+}
 
-	return (return_code);
-} /* Computed_field_2d_strain::is_defined_at_location */
-
-int Computed_field_2d_strain::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Computes the wrinkle strain. Derivatives are not available.
-Source fields are coordinates, undeformed_coordinates and fibre angle.
-==============================================================================*/
+int Computed_field_2d_strain::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double A,A2,B,B2,cos_fibre_angle,C2,D,dxi_dnu[6],E[4],fibre_angle, 
-		F_x[6],F_X[6],sin_fibre_angle;
-	FE_value def_derivative_xi[9], undef_derivative_xi[9];
-	int return_code;
-
-	ENTER(Computed_field_2d_strain::evaluate_cache_at_location);
-	if (field && location)
+	Field_element_xi_location* element_xi_location;
+	/* Only works for element_xi locations */
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location)))
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension = get_FE_element_dimension(element);
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		RealFieldValueCache *deformedCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
+		RealFieldValueCache *undeformedCache = RealFieldValueCache::cast(getSourceField(1)->evaluateWithDerivatives(cache, element_dimension));
+		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+		if (deformedCache && undeformedCache && fibreCache)
 		{
-			/* 2d_strain requires at least 2-D elements */
-			if (0==location->get_number_of_derivatives())
+			double A,A2,B,B2,cos_fibre_angle,C2,D,dxi_dnu[6],E[4],fibre_angle,
+				F_x[6],F_X[6],sin_fibre_angle;
+			FE_value def_derivative_xi[9], undef_derivative_xi[9];
+			valueCache.derivatives_valid = 0;
+			switch(element_dimension)
 			{
-				FE_element* element = element_xi_location->get_element();
-				int element_dimension=get_FE_element_dimension(element);
-				Field_element_xi_location location_with_derivatives =
-					Field_element_xi_location(element,
-						element_xi_location->get_xi(), element_xi_location->get_time(), 
-						element_xi_location->get_top_level_element(),
-						element_dimension);
-
-				/* 1. Precalculate any source fields that this field depends on.
-					Always need derivatives of deformed and undeformed coordinate fields */
-				if ((0 != (return_code =
-					Computed_field_evaluate_cache_at_location(field->source_fields[0],
-						&location_with_derivatives)))&&
-					Computed_field_evaluate_cache_at_location(field->source_fields[1],
-						&location_with_derivatives)&&
-					Computed_field_evaluate_cache_at_location(field->source_fields[2],
-						location))
+				case 2:
 				{
-					/* 2. Calculate the field */
-					field->derivatives_valid = 0;
-					switch(element_dimension)
-					{
-						case 2:
-						{
-							def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
-							def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
-							def_derivative_xi[3] = field->source_fields[0]->derivatives[2];
-							def_derivative_xi[4] = field->source_fields[0]->derivatives[3];
-							def_derivative_xi[6] = field->source_fields[0]->derivatives[4];
-							def_derivative_xi[7] = field->source_fields[0]->derivatives[5];
-							undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
-							undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
-							undef_derivative_xi[3] = field->source_fields[1]->derivatives[2];
-							undef_derivative_xi[4] = field->source_fields[1]->derivatives[3];
-							undef_derivative_xi[6] = field->source_fields[1]->derivatives[4];
-							undef_derivative_xi[7] = field->source_fields[1]->derivatives[5];
-						} break;
-						case 3:
-						{
-							/* Convert to 2D ignoring xi3, should be able to choose the
-								direction that is ignored */
-							def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
-							def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
-							def_derivative_xi[3] = field->source_fields[0]->derivatives[3];
-							def_derivative_xi[4] = field->source_fields[0]->derivatives[4];
-							def_derivative_xi[6] = field->source_fields[0]->derivatives[6];
-							def_derivative_xi[7] = field->source_fields[0]->derivatives[7];
-							undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
-							undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
-							undef_derivative_xi[3] = field->source_fields[1]->derivatives[3];
-							undef_derivative_xi[4] = field->source_fields[1]->derivatives[4];
-							undef_derivative_xi[6] = field->source_fields[1]->derivatives[6];
-							undef_derivative_xi[7] = field->source_fields[1]->derivatives[7];
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_2d_strain.  Unknown element dimension");
-							return_code=0;
-						} break;
-					}
-					if (return_code)
-					{
-						/* do 2D_strain calculation */
-						fibre_angle=field->source_fields[2]->values[0];
+					def_derivative_xi[0] = deformedCache->derivatives[0];
+					def_derivative_xi[1] = deformedCache->derivatives[1];
+					def_derivative_xi[3] = deformedCache->derivatives[2];
+					def_derivative_xi[4] = deformedCache->derivatives[3];
+					def_derivative_xi[6] = deformedCache->derivatives[4];
+					def_derivative_xi[7] = deformedCache->derivatives[5];
+					undef_derivative_xi[0] = undeformedCache->derivatives[0];
+					undef_derivative_xi[1] = undeformedCache->derivatives[1];
+					undef_derivative_xi[3] = undeformedCache->derivatives[2];
+					undef_derivative_xi[4] = undeformedCache->derivatives[3];
+					undef_derivative_xi[6] = undeformedCache->derivatives[4];
+					undef_derivative_xi[7] = undeformedCache->derivatives[5];
+				} break;
+				case 3:
+				{
+					/* Convert to 2D ignoring xi3, should be able to choose the
+						direction that is ignored */
+					def_derivative_xi[0] = deformedCache->derivatives[0];
+					def_derivative_xi[1] = deformedCache->derivatives[1];
+					def_derivative_xi[3] = deformedCache->derivatives[3];
+					def_derivative_xi[4] = deformedCache->derivatives[4];
+					def_derivative_xi[6] = deformedCache->derivatives[6];
+					def_derivative_xi[7] = deformedCache->derivatives[7];
+					undef_derivative_xi[0] = undeformedCache->derivatives[0];
+					undef_derivative_xi[1] = undeformedCache->derivatives[1];
+					undef_derivative_xi[3] = undeformedCache->derivatives[3];
+					undef_derivative_xi[4] = undeformedCache->derivatives[4];
+					undef_derivative_xi[6] = undeformedCache->derivatives[6];
+					undef_derivative_xi[7] = undeformedCache->derivatives[7];
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_2d_strain.  Unknown element dimension");
+					return 0;
+				} break;
+			}
+			/* do 2D_strain calculation */
+			fibre_angle = fibreCache->values[0];
 
-						/* X is the undeformed coordinates
-							x is the deformed coordinates
-							nu is the fibre coordinate system (2-D,within sheet) */
-						/* calculate F_X=dX_dnu and dxi_dnu */
-						cos_fibre_angle=cos(fibre_angle);
-						sin_fibre_angle=sin(fibre_angle);
-						A2=undef_derivative_xi[0]*undef_derivative_xi[0]+
-							undef_derivative_xi[3]*undef_derivative_xi[3]+
-							undef_derivative_xi[6]*undef_derivative_xi[6];
-						A=sqrt(A2);
-						B2=undef_derivative_xi[1]*undef_derivative_xi[1]+
-							undef_derivative_xi[4]*undef_derivative_xi[4]+
-							undef_derivative_xi[7]*undef_derivative_xi[7];
-						B=sqrt(B2);
-						C2=undef_derivative_xi[0]*undef_derivative_xi[1]+
-							undef_derivative_xi[3]*undef_derivative_xi[4]+
-							undef_derivative_xi[6]*undef_derivative_xi[7];
-						D=sin_fibre_angle*B/(A2*B2-C2*C2);
-						dxi_dnu[0] = cos_fibre_angle/A-sin_fibre_angle*C2*D;
-						dxi_dnu[1]=D*A2;
-						F_X[0]=dxi_dnu[0]*undef_derivative_xi[0]+
-							dxi_dnu[1]*undef_derivative_xi[1];
-						F_X[2]=dxi_dnu[0]*undef_derivative_xi[3]+
-							dxi_dnu[1]*undef_derivative_xi[4];
-						F_X[4]=dxi_dnu[0]*undef_derivative_xi[6]+
-							dxi_dnu[1]*undef_derivative_xi[7];
-						D=cos_fibre_angle*B/(A2*B2-C2*C2);
-						dxi_dnu[2]=
-							-(sin_fibre_angle/A+cos_fibre_angle*C2*D);
-						dxi_dnu[3]=D*A2;
-						F_X[1]=dxi_dnu[2]*undef_derivative_xi[0]+
-							dxi_dnu[3]*undef_derivative_xi[1];
-						F_X[3]=dxi_dnu[2]*undef_derivative_xi[3]+
-							dxi_dnu[3]*undef_derivative_xi[4];
-						F_X[5]=dxi_dnu[2]*undef_derivative_xi[6]+
-							dxi_dnu[3]*undef_derivative_xi[7];
-						/* calculate F_x=dx_dnu=dx_dxi*dxi_dnu */
-						F_x[0]=dxi_dnu[0]*def_derivative_xi[0]+
-							dxi_dnu[1]*def_derivative_xi[1];
-						F_x[1]=dxi_dnu[2]*def_derivative_xi[0]+
-							dxi_dnu[3]*def_derivative_xi[1];
-						F_x[2]=dxi_dnu[0]*def_derivative_xi[3]+
-							dxi_dnu[1]*def_derivative_xi[4];
-						F_x[3]=dxi_dnu[2]*def_derivative_xi[3]+
-							dxi_dnu[3]*def_derivative_xi[4];
-						F_x[4]=dxi_dnu[0]*def_derivative_xi[6]+
-							dxi_dnu[1]*def_derivative_xi[7];
-						F_x[5]=dxi_dnu[2]*def_derivative_xi[6]+
-							dxi_dnu[3]*def_derivative_xi[7];
-						/* calculate the strain tensor
-							E=0.5*(trans(F_x)*F_x-trans(F_X)*F_X) */
-						E[0]=0.5*((F_x[0]*F_x[0]+F_x[2]*F_x[2]+
-								F_x[4]*F_x[4])-
-							(F_X[0]*F_X[0]+F_X[2]*F_X[2]+
-								F_X[4]*F_X[4]));
-						E[1]=0.5*((F_x[0]*F_x[1]+F_x[2]*F_x[3]+
-								F_x[4]*F_x[5])-
-							(F_X[0]*F_X[1]+F_X[2]*F_X[3]+
-								F_X[4]*F_X[5]));
-						E[2]=E[1];
-						E[3]=0.5*((F_x[1]*F_x[1]+F_x[3]*F_x[3]+
-								F_x[5]*F_x[5])-
-							(F_X[1]*F_X[1]+F_X[3]*F_X[3]+
-								F_X[5]*F_X[5]));
-						field->values[0] = E[0];
-						field->values[1] = E[1];
-						field->values[2] = E[2];
-						field->values[3] = E[3];
-					}
-				}
-			}
-			else
-			{
-#if 0
-				display_message(ERROR_MESSAGE,
-					"Computed_field_2d_strain::evaluate_cache_at_location.  "
-					"Cannot calculate derivatives of strains");
-#endif
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
+			/* X is the undeformed coordinates
+				x is the deformed coordinates
+				nu is the fibre coordinate system (2-D,within sheet) */
+			/* calculate F_X=dX_dnu and dxi_dnu */
+			cos_fibre_angle=cos(fibre_angle);
+			sin_fibre_angle=sin(fibre_angle);
+			A2=undef_derivative_xi[0]*undef_derivative_xi[0]+
+				undef_derivative_xi[3]*undef_derivative_xi[3]+
+				undef_derivative_xi[6]*undef_derivative_xi[6];
+			A=sqrt(A2);
+			B2=undef_derivative_xi[1]*undef_derivative_xi[1]+
+				undef_derivative_xi[4]*undef_derivative_xi[4]+
+				undef_derivative_xi[7]*undef_derivative_xi[7];
+			B=sqrt(B2);
+			C2=undef_derivative_xi[0]*undef_derivative_xi[1]+
+				undef_derivative_xi[3]*undef_derivative_xi[4]+
+				undef_derivative_xi[6]*undef_derivative_xi[7];
+			D=sin_fibre_angle*B/(A2*B2-C2*C2);
+			dxi_dnu[0] = cos_fibre_angle/A-sin_fibre_angle*C2*D;
+			dxi_dnu[1]=D*A2;
+			F_X[0]=dxi_dnu[0]*undef_derivative_xi[0]+
+				dxi_dnu[1]*undef_derivative_xi[1];
+			F_X[2]=dxi_dnu[0]*undef_derivative_xi[3]+
+				dxi_dnu[1]*undef_derivative_xi[4];
+			F_X[4]=dxi_dnu[0]*undef_derivative_xi[6]+
+				dxi_dnu[1]*undef_derivative_xi[7];
+			D=cos_fibre_angle*B/(A2*B2-C2*C2);
+			dxi_dnu[2]=
+				-(sin_fibre_angle/A+cos_fibre_angle*C2*D);
+			dxi_dnu[3]=D*A2;
+			F_X[1]=dxi_dnu[2]*undef_derivative_xi[0]+
+				dxi_dnu[3]*undef_derivative_xi[1];
+			F_X[3]=dxi_dnu[2]*undef_derivative_xi[3]+
+				dxi_dnu[3]*undef_derivative_xi[4];
+			F_X[5]=dxi_dnu[2]*undef_derivative_xi[6]+
+				dxi_dnu[3]*undef_derivative_xi[7];
+			/* calculate F_x=dx_dnu=dx_dxi*dxi_dnu */
+			F_x[0]=dxi_dnu[0]*def_derivative_xi[0]+
+				dxi_dnu[1]*def_derivative_xi[1];
+			F_x[1]=dxi_dnu[2]*def_derivative_xi[0]+
+				dxi_dnu[3]*def_derivative_xi[1];
+			F_x[2]=dxi_dnu[0]*def_derivative_xi[3]+
+				dxi_dnu[1]*def_derivative_xi[4];
+			F_x[3]=dxi_dnu[2]*def_derivative_xi[3]+
+				dxi_dnu[3]*def_derivative_xi[4];
+			F_x[4]=dxi_dnu[0]*def_derivative_xi[6]+
+				dxi_dnu[1]*def_derivative_xi[7];
+			F_x[5]=dxi_dnu[2]*def_derivative_xi[6]+
+				dxi_dnu[3]*def_derivative_xi[7];
+			/* calculate the strain tensor
+				E=0.5*(trans(F_x)*F_x-trans(F_X)*F_X) */
+			E[0]=0.5*((F_x[0]*F_x[0]+F_x[2]*F_x[2]+
+					F_x[4]*F_x[4])-
+				(F_X[0]*F_X[0]+F_X[2]*F_X[2]+
+					F_X[4]*F_X[4]));
+			E[1]=0.5*((F_x[0]*F_x[1]+F_x[2]*F_x[3]+
+					F_x[4]*F_x[5])-
+				(F_X[0]*F_X[1]+F_X[2]*F_X[3]+
+					F_X[4]*F_X[5]));
+			E[2]=E[1];
+			E[3]=0.5*((F_x[1]*F_x[1]+F_x[3]*F_x[3]+
+					F_x[5]*F_x[5])-
+				(F_X[1]*F_X[1]+F_X[3]*F_X[3]+
+					F_X[5]*F_X[5]));
+			valueCache.values[0] = E[0];
+			valueCache.values[1] = E[1];
+			valueCache.values[2] = E[2];
+			valueCache.values[3] = E[3];
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_2d_strain::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_2d_strain::list()
 /*******************************************************************************

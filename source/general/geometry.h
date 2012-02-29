@@ -304,6 +304,26 @@ Calculate the <jacobian> if not NULL.
 ==============================================================================*/
 
 /***************************************************************************//**
+ * Converts source values and derivatives from their current coordinate system
+ * into rectangular cartesian, returning them in the 3 component
+ * <rc_coordinates> array. If <rc_derivatives> is not NULL, the derivatives are
+ * also converted to rc and returned in that 9-component FE_value array.
+ * Note that odd coordinate systems, such as FIBRE are treated as if they are
+ * RECTANGULAR_CARTESIAN, which just causes a copy of values.
+ * If <element_dimension> or the number of components in <field> are less than 3,
+ * the missing places in the <rc_coordinates> and <rc_derivatives> arrays are
+ * cleared to zero.
+ *
+ * Note the order of derivatives:
+ * 1. All the <element_dimension> derivatives of component 1.
+ * 2. All the <element_dimension> derivatives of component 2.
+ * 3. All the <element_dimension> derivatives of component 3.
+ */
+int convert_coordinates_and_derivatives_to_rc(struct Coordinate_system *source_coordinate_system,
+	int source_components, FE_value *source_coordinates, FE_value *source_derivatives,
+	int element_dimension, FE_value *rc_coordinates, FE_value *rc_derivatives);
+
+/***************************************************************************//**
  * Query if coordinate system type varies non-linearly with screen space.
  * Currently only RECTANGULAR_CARTESIAN and NORMALISED_WINDOW_COORDINATES are
  * linear, all other types are non-linear.

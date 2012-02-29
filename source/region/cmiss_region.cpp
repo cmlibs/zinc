@@ -48,6 +48,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/field_cache.hpp"
 extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "general/callback_private.h"
@@ -58,6 +59,8 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "user_interface/message.h"
 }
+#include <list>
+#include <vector>
 
 /*
 Module types
@@ -85,6 +88,9 @@ struct Cmiss_region
 	struct MANAGER(Computed_field) *field_manager;
 	void *field_manager_callback_id;
 	struct FE_region *fe_region;
+	int field_cache_size; // 1 more than highest field cache index given out
+	std::list<Cmiss_field_cache_id> *field_caches; // all caches currently in use
+		// for this region, needed to add value caches for new fields
 
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
@@ -336,6 +342,8 @@ struct Cmiss_region *CREATE(Cmiss_region)(struct Cmiss_region *base_region)
 		FE_region_set_Cmiss_region_private(region->fe_region, region);
 		ACCESS(FE_region)(region->fe_region);
 		FE_region_add_callback(region->fe_region, Cmiss_region_FE_region_change, (void *)region);
+		region->field_cache_size = 0;
+		region->field_caches = new std::list<Cmiss_field_cache_id>();
 		region->access_count = 1;
 		if (!(region->any_object_list && region->change_callback_list &&
 			region->field_manager && region->field_manager_callback_id &&
@@ -378,6 +386,7 @@ int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
 	{
 		if (0 == region->access_count)
 		{
+			delete region->field_caches;
 			DESTROY(LIST(Any_object))(&(region->any_object_list));
 
 			// destroy child list
@@ -433,6 +442,50 @@ Global functions
 */
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_region)
+
+int Cmiss_region_add_field_private(Cmiss_region_id region, Cmiss_field_id field)
+{
+	if (region && field)
+	{
+		int cache_index = region->field_cache_size;
+		int number_in_manager = NUMBER_IN_MANAGER(Computed_field)(region->field_manager);
+		if (cache_index == number_in_manager)
+		{
+			++region->field_cache_size;
+		}
+		else
+		{
+			std::vector<int> index_used(region->field_cache_size, 0);
+			const Cmiss_set_Cmiss_field& fields = Computed_field_manager_get_fields(region->field_manager);
+			for (Cmiss_set_Cmiss_field::const_iterator iter = fields.begin(); iter != fields.end(); ++iter)
+			{
+				index_used[Cmiss_field_get_cache_index_private((*iter))] = 1;
+			}
+			for (int i = 0; i < region->field_cache_size; i++)
+			{
+				if (!index_used[i])
+				{
+					cache_index = i;
+					break;
+				}
+			}
+		}
+		if (Computed_field_add_to_manager_private(field, region->field_manager))
+		{
+			int i = 1;
+			for (std::list<Cmiss_field_cache_id>::iterator iter = region->field_caches->begin();
+				iter != region->field_caches->end(); ++iter)
+			{
+				Cmiss_field_cache_id field_cache = *iter;
+				field_cache->setValueCache(cache_index, 0);
+				++i;
+			}
+			Cmiss_field_set_cache_index_private(field, cache_index);
+			return 1;
+		}
+	}
+	return 0;
+}
 
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region)
 {
@@ -542,6 +595,26 @@ struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
 	if (region)
 		return region->field_manager;
 	return 0;
+}
+
+int Cmiss_region_get_field_cache_size(Cmiss_region_id region)
+{
+	if (region)
+		return region->field_cache_size;
+	return 0;
+}
+
+void Cmiss_region_add_field_cache(Cmiss_region_id region, Cmiss_field_cache_id cache)
+{
+	if (region && cache)
+		region->field_caches->push_back(cache);
+}
+
+void Cmiss_region_remove_field_cache(Cmiss_region_id region,
+	Cmiss_field_cache_id cache)
+{
+	if (region && cache)
+		region->field_caches->remove(cache);
 }
 
 int set_Cmiss_region(struct Parse_state *state, void *region_address_void,

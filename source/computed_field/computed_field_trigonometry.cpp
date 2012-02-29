@@ -92,76 +92,48 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_sin::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_sin::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_sin::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)sin((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(sin u)/dx = cos u * du/dx */
-						*derivative =
-							(FE_value)(cos((double)(field->source_fields[0]->values[i])) *
-							field->source_fields[0]->derivatives[i * number_of_xi + j]);
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] = (FE_value)sin((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(sin u)/dx = cos u * du/dx */
+					*derivative =
+						(FE_value)(cos((double)(sourceCache->values[i])) *
+						sourceCache->derivatives[i * number_of_xi + j]);
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_sin::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_sin::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_sin::list()
 /*******************************************************************************
@@ -233,7 +205,7 @@ Computed_field *Computed_field_create_sin(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -406,76 +378,49 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cos::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_cos::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_cos::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)cos((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(cos u)/dx = -sin u * du/dx */
-						*derivative =
-							(FE_value)(-sin((double)(field->source_fields[0]->values[i])) *
-							field->source_fields[0]->derivatives[i * number_of_xi + j]);
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] =
+				(FE_value)cos((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(cos u)/dx = -sin u * du/dx */
+					*derivative =
+						(FE_value)(-sin((double)(sourceCache->values[i])) *
+						sourceCache->derivatives[i * number_of_xi + j]);
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cos::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cos::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_cos::list()
 /*******************************************************************************
@@ -547,7 +492,7 @@ Computed_field *Computed_field_create_cos(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -720,76 +665,50 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_tan::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_tan::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_tan::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		/* 2. Calculate the field */
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)tan((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(tan u)/dx = sec^2 u * du/dx */
-						*derivative = (FE_value)(field->source_fields[0]->derivatives[i * number_of_xi + j] /
-							(cos((double)(field->source_fields[0]->values[i])) * 
-							cos((double)(field->source_fields[0]->values[i]))));
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] =
+				(FE_value)tan((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(tan u)/dx = sec^2 u * du/dx */
+					*derivative = (FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
+						(cos((double)(sourceCache->values[i])) *
+						cos((double)(sourceCache->values[i]))));
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_tan::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_tan::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_tan::list()
 /*******************************************************************************
@@ -861,7 +780,7 @@ Computed_field *Computed_field_create_tan(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -1034,84 +953,56 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_asin::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_asin::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_asin::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)asin((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx */
-						if (field->source_fields[0]->values[i] != 1.0)
-						{
-							*derivative =
-								(FE_value)(field->source_fields[0]->derivatives[i * number_of_xi + j] /
-								sqrt(1.0 - ((double)field->source_fields[0]->values[i] * 
-								(double)field->source_fields[0]->values[i])));
-						}
-						else
-						{
-							*derivative = 0.0;
-						}
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] = (FE_value)asin((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx */
+					if (sourceCache->values[i] != 1.0)
+					{
+						*derivative =
+							(FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
+							sqrt(1.0 - ((double)sourceCache->values[i] *
+							(double)sourceCache->values[i])));
+					}
+					else
+					{
+						*derivative = 0.0;
+					}
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_asin::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_asin::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_asin::list()
 /*******************************************************************************
@@ -1183,7 +1074,7 @@ Computed_field *Computed_field_create_asin(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -1356,84 +1247,56 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_acos::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_acos::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_acos::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)acos((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(asin u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx */
-						if (field->source_fields[0]->values[i] != 1.0)
-						{
-							*derivative =
-								(FE_value)(-field->source_fields[0]->derivatives[i * number_of_xi + j] /
-								sqrt(1.0 - ((double)field->source_fields[0]->values[i] * 
-								(double)field->source_fields[0]->values[i])));
-						}
-						else
-						{
-							*derivative = 0.0;
-						}
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] = (FE_value)acos((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(asin u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx */
+					if (sourceCache->values[i] != 1.0)
+					{
+						*derivative =
+							(FE_value)(-sourceCache->derivatives[i * number_of_xi + j] /
+							sqrt(1.0 - ((double)sourceCache->values[i] *
+							(double)sourceCache->values[i])));
+					}
+					else
+					{
+						*derivative = 0.0;
+					}
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_acos::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_acos::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_acos::list()
 /*******************************************************************************
@@ -1505,7 +1368,7 @@ Computed_field *Computed_field_create_acos(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -1678,77 +1541,49 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_atan::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_atan::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_atan::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)atan((double)(field->source_fields[0]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx */
-						*derivative =
-							(FE_value)(field->source_fields[0]->derivatives[i * number_of_xi + j] /
-							(1.0 + ((double)field->source_fields[0]->values[i] * 
-							(double)field->source_fields[0]->values[i])));
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] = (FE_value)atan((double)(sourceCache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx */
+					*derivative =
+						(FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
+						(1.0 + ((double)sourceCache->values[i] *
+						(double)sourceCache->values[i])));
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_atan::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_atan::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_atan::list()
 /*******************************************************************************
@@ -1820,7 +1655,7 @@ Computed_field *Computed_field_create_atan(
 	struct Computed_field *source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -1993,82 +1828,54 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_atan2::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_atan2::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double u, v;
-	FE_value *derivative;
-	int i, j, number_of_xi, return_code;
-
-	ENTER(Computed_field_atan2::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields > 0) && 
-		(field->number_of_components ==
-      field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] =
-					(FE_value)atan2((double)(field->source_fields[0]->values[i]),
-					(double)(field->source_fields[1]->values[i]));
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& field->source_fields[1]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						/* d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( v^2 * u^2 ) */
-						u = field->source_fields[0]->values[i];
-						v = field->source_fields[1]->values[i];
-						*derivative =
-							(FE_value)(v * field->source_fields[0]->derivatives[i * number_of_xi + j] -
-							u * field->source_fields[1]->derivatives[i * number_of_xi + j]) /
-							(u * u + v * v);
-						derivative++;
-					}
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.values[i] =
+				(FE_value)atan2((double)(source1Cache->values[i]),
+				(double)(source2Cache->values[i]));
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					/* d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( v^2 * u^2 ) */
+					FE_value u = source1Cache->values[i];
+					FE_value v = source2Cache->values[i];
+					*derivative =
+						(FE_value)(v * source1Cache->derivatives[i * number_of_xi + j] -
+						u * source2Cache->derivatives[i * number_of_xi + j]) /
+						(u * u + v * v);
+					derivative++;
+				}
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_atan2::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_atan2::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_atan2::list()
 /*******************************************************************************
@@ -2149,7 +1956,8 @@ Computed_field *Computed_field_create_atan2(
 	struct Computed_field *source_field_two)
 {
 	struct Computed_field *field = NULL;
-	if (source_field_one && source_field_two &&
+	if (source_field_one && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{

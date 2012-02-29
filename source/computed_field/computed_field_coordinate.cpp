@@ -56,158 +56,6 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-int Computed_field_extract_rc(struct Computed_field *field,
-	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Takes the values in <field> and converts them from their current coordinate
-system into rectangular cartesian, returning them in the 3 component
-<rc_coordinates> array. If <rc_derivatives> is not NULL, the derivatives are
-also converted to rc and returned in that 9-component FE_value array.
-Note that odd coordinate systems, such as FIBRE are treated as if they are
-RECTANGULAR_CARTESIAN, which just causes a copy of values.
-If <element_dimension> or the number of components in <field> are less than 3,
-the missing places in the <rc_coordinates> and <rc_derivatives> arrays are
-cleared to zero.
-???RC Uses type float for in-between values x,y,z and jacobian for future
-compatibility with coordinate system transformation functions in geometry.c.
-This causes a slight drop in performance.
-
-Note the order of derivatives:
-1. All the <element_dimension> derivatives of component 1.
-2. All the <element_dimension> derivatives of component 2.
-3. All the <element_dimension> derivatives of component 3.
-==============================================================================*/
-{
-	FE_value *source;
-	FE_value coordinates[3],derivatives[9],*destination,x,y,z,*jacobian,temp[9];
-	int field_components,i,j,return_code;
-	
-	ENTER(Computed_field_extract_rc);
-	if (field&&rc_coordinates&&(((FE_value *)NULL==rc_derivatives)||
-		((0<element_dimension)&&field->derivatives_valid)))
-	{
-		field_components=field->number_of_components;
-		/* copy coordinates, padding to 3 components */
-		for (i=0;i<3;i++)
-		{
-			if (i<field_components)
-			{
-				coordinates[i] = field->values[i];
-			}
-			else
-			{
-				coordinates[i]=0.0;
-			}
-		}
-		if (rc_derivatives)
-		{
-			/* copy derivatives, padding to 3 components x 3 dimensions */
-			destination=derivatives;
-			source=field->derivatives;
-			for (i=0;i<3;i++)
-			{
-				for (j=0;j<3;j++)
-				{
-					if ((i<field_components)&&(j<element_dimension))
-					{
-						*destination = *source;
-						source++;
-					}
-					else
-					{
-						*destination = 0.0;
-					}
-					destination++;
-				}
-			}
-			/* make sure jacobian only calculated if rc_derivatives requested */
-			jacobian=temp;
-		}
-		else
-		{
-			jacobian=NULL;
-		}
-
-		switch (field->coordinate_system.type)
-		{
-			case CYLINDRICAL_POLAR:
-			{
-				cylindrical_polar_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
-			} break;
-			case SPHERICAL_POLAR:
-			{
-				spherical_polar_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
-			} break;
-			case PROLATE_SPHEROIDAL:
-			{
-				prolate_spheroidal_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],
-					field->coordinate_system.parameters.focus,&x,&y,&z,jacobian);
-			} break;
-			case OBLATE_SPHEROIDAL:
-			{
-				oblate_spheroidal_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],
-					field->coordinate_system.parameters.focus,&x,&y,&z,jacobian);
-			} break;
-			default:
-			{
-				/* treat all others as RECTANGULAR_CARTESIAN; copy coordinates */
-				x=coordinates[0];
-				y=coordinates[1];
-				z=coordinates[2];
-				if (rc_derivatives)
-				{
-					for (i=0;i<9;i++)
-					{
-						rc_derivatives[i]=static_cast<FE_value>(derivatives[i]);
-					}
-					/* clear jacobian to avoid derivative conversion below */
-					jacobian=NULL;
-				}
-			} break;
-		}
-		rc_coordinates[0]=x;
-		rc_coordinates[1]=y;
-		rc_coordinates[2]=z;
-		if (jacobian)
-		{
-			for (i=0;i<3;i++)
-			{
-				/* derivative of x with respect to xi[i] */
-				rc_derivatives[i]=
-					jacobian[0]*derivatives[0+i]+
-					jacobian[1]*derivatives[3+i]+
-					jacobian[2]*derivatives[6+i];
-				/* derivative of y with respect to xi[i] */
-				rc_derivatives[3+i]=
-					jacobian[3]*derivatives[0+i]+
-					jacobian[4]*derivatives[3+i]+
-					jacobian[5]*derivatives[6+i];
-				/* derivative of z with respect to xi[i] */
-				rc_derivatives[6+i]=
-					jacobian[6]*derivatives[0+i]+
-					jacobian[7]*derivatives[3+i]+
-					jacobian[8]*derivatives[6+i];
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_extract_rc.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_extract_rc */
-
 class Computed_field_coordinate_package : public Computed_field_type_package
 {
 };
@@ -246,43 +94,30 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int evaluate(int element_dimension,int calculate_derivatives);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
-
-	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+	virtual int propagate_find_element_xi(Cmiss_field_cache& field_cache,
+		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
-		FE_value time, Cmiss_mesh_id mesh);
+		Cmiss_mesh_id mesh);
 };
-	
-int Computed_field_coordinate_transformation::evaluate(
-	 int element_dimension,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
 
-DESCRIPTION :
-Function called by Computed_field_evaluate_cache_in_element/at_node to compute
-values in the coordinate system of this field from the source_field values in an 
-arbitrary coordinate system.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives if
-calculate_derivatives set) for the same element, with the given
-<element_dimension> = number of Xi coords.
-==============================================================================*/
+int Computed_field_coordinate_transformation::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *destination,*dx_dX,temp[9];
-	int i,j,return_code;
-	
-	ENTER(Computed_field_evaluate_rc_coordinate);
-	if (field)
+	Cmiss_field_id sourceField = getSourceField(0);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	if (sourceCache)
 	{
-		if (calculate_derivatives)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_value *dx_dX,temp[9];
+		int number_of_derivatives = cache.getRequestedDerivatives();
+		if (number_of_derivatives && sourceCache->derivatives_valid)
 		{
 			dx_dX=temp;
 		}
@@ -290,138 +125,53 @@ calculate_derivatives set) for the same element, with the given
 		{
 			dx_dX=(FE_value *)NULL;
 		}
-		if (0 != (return_code=convert_Coordinate_system(
-			&(field->source_fields[0]->coordinate_system),
-			field->source_fields[0]->number_of_components,
-			field->source_fields[0]->values,
-			&(field->coordinate_system),field->number_of_components,field->values,
-			dx_dX)))
+		if (convert_Coordinate_system(&(sourceField->coordinate_system),
+			sourceField->number_of_components, sourceCache->values,
+			&(field->coordinate_system), field->number_of_components, valueCache.values,
+			dx_dX))
 		{
-			if (calculate_derivatives)
+			if (dx_dX)
 			{
-				destination=field->derivatives;
-				for (i=0;i<field->number_of_components;i++)
+				FE_value *destination = valueCache.derivatives;
+				for (int i=0;i<field->number_of_components;i++)
 				{
-					for (j=0;j<element_dimension;j++)
+					for (int j=0;j<number_of_derivatives;j++)
 					{
-						*destination= dx_dX[0+i*3] * 
-							field->source_fields[0]->
-							derivatives[j+element_dimension*0]
-							+dx_dX[1+i*3] * 
-							field->source_fields[0]->
-							derivatives[j+element_dimension*1]
-							+dx_dX[2+i*3] * 
-							field->source_fields[0]->
-							derivatives[j+element_dimension*2];
+						*destination =
+							dx_dX[0+i*3]*sourceCache->derivatives[j+number_of_derivatives*0] +
+							dx_dX[1+i*3]*sourceCache->derivatives[j+number_of_derivatives*1] +
+							dx_dX[2+i*3]*sourceCache->derivatives[j+number_of_derivatives*2];
 						destination++;
 					}
 				}
-				field->derivatives_valid = 1;
+				valueCache.derivatives_valid = 1;
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_rc_coordinate.  Could not convert to RC");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_rc_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_rc_coordinate */
-
-int Computed_field_coordinate_transformation::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int number_of_derivatives, return_code;
-
-	ENTER(Computed_field_coordinate_transformation::evaluate_cache_at_location);
-	if (field && location && (0 < field->number_of_source_fields))
-	{
-		number_of_derivatives = location->get_number_of_derivatives();
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
-		{
-			/* 2. Calculate the field */
-			return_code=evaluate(number_of_derivatives,(number_of_derivatives>0));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_coordinate_transformation::evaluate_cache_at_location */
-
-int Computed_field_coordinate_transformation::set_values_at_location(
-   Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
-{
-	FE_value *source_values;
-	int return_code;
-
-	ENTER(Computed_field_coordinate_transformation::set_values_at_location);
-	if (field && location && values)
-	{
-		return_code=1;
-		/* 3 values for non-rc coordinate system */
-		if (ALLOCATE(source_values,FE_value,3))
-		{
-			/* convert RC values back into source coordinate system */
-			if (convert_Coordinate_system(&(field->coordinate_system),
-					3,values,&(field->source_fields[0]->coordinate_system),
-					field->source_fields[0]->number_of_components,
-					source_values,/*jacobian*/(FE_value *)NULL))
+			else
 			{
-				return_code=Computed_field_set_values_at_location(
-					field->source_fields[0],location,source_values);
+				valueCache.derivatives_valid = 0;
 			}
-			DEALLOCATE(source_values);
-		}
-		else
-		{
-			return_code=0;
+			return 1;
 		}
 	}
-	else
+	return 0;
+}
+
+enum FieldAssignmentResult Computed_field_coordinate_transformation::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+{
+	Cmiss_field_id sourceField = getSourceField(0);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->getValueCache(cache));
+	if (convert_Coordinate_system(&(field->coordinate_system), /*number_of_components*/3, valueCache.values,
+		&(sourceField->coordinate_system), sourceField->number_of_components, sourceCache->values,
+		/*jacobian*/(FE_value *)NULL))
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
+		return getSourceField(0)->assign(cache, *sourceCache);
 	}
-	LEAVE;
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
+}
 
-	return (return_code);
-} /* Computed_field_coordinate_transformation::set_values_at_location */
-
-
-int Computed_field_coordinate_transformation::propagate_find_element_xi(
+int Computed_field_coordinate_transformation::propagate_find_element_xi(Cmiss_field_cache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
+	FE_value *xi, Cmiss_mesh_id mesh)
 {
 	int return_code;
 
@@ -435,8 +185,8 @@ int Computed_field_coordinate_transformation::propagate_find_element_xi(
 			number_of_values,values, &(field->source_fields[0]->coordinate_system),
 			field->source_fields[0]->number_of_components, source_field_coordinates,
 			/*jacobian*/(FE_value *)NULL) && Computed_field_find_element_xi(
-			field->source_fields[0],source_field_coordinates,
-			field->source_fields[0]->number_of_components, time, element_address,
+			field->source_fields[0], &field_cache, source_field_coordinates,
+			field->source_fields[0]->number_of_components, element_address,
 			xi, mesh, /*propagate_field*/1,
 			/*find_nearest_location*/0);
 		if (!return_code)
@@ -529,13 +279,16 @@ struct Computed_field *Cmiss_field_module_create_coordinate_transformation(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		/*number_of_components*/3,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_coordinate_transformation());
-
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical())
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/3,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_coordinate_transformation());
+	}
 	return (field);
 }
 
@@ -685,210 +438,104 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int evaluate();
-
-	int set_values_at_location(Field_location* location, const FE_value *values);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_vector_coordinate_transformation::evaluate()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_cache_in_element/at_node to compute
-a vector in a different coordinate system from one that it may already be in.
-The <field> must be of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, 
-which gives it a source vector field - describing 1, 2 or 3 vectors - and a 
-coordinate field which says where in space the vector is being converted. 
-The function uses the jacobian between the old coordinate system and the new
-one at the coordinate position to get the new vector. Hence, derivatives of 
-the converted vectors are not available.
-==============================================================================*/
+/***************************************************************************//**
+ * Transforms 1, 2 or 3 vectors at a current coordinate position to a different
+ * coordinate system.
+ * The function uses the jacobian between the old coordinate system and the new
+ * one at the coordinate position to get the new vector. Hence, derivatives of
+ * the converted vectors are not available.
+ */
+int Computed_field_vector_coordinate_transformation::evaluate(
+	Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value cx[3],jacobian[9],*source,sum,x[3];
-	int coordinates_per_vector,i,j,k,number_of_vectors,return_code;
-
-	ENTER(Computed_field_evaluate_vector_coordinate_transformation);
-	if (field)
+	Cmiss_field_id vectorField = getSourceField(0);
+	Cmiss_field_id coordinateField = getSourceField(1);
+	RealFieldValueCache *vectorValueCache = RealFieldValueCache::cast(vectorField->evaluate(cache));
+	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
+	if (vectorValueCache && coordinateValueCache)
 	{
-		if (0 != (return_code=(convert_Coordinate_system(
-				&(field->source_fields[1]->coordinate_system),
-				field->source_fields[1]->number_of_components,
-				field->source_fields[1]->values,
-				&(field->source_fields[0]->coordinate_system),3,cx,
-				/*jacobian*/(FE_value *)NULL)&&
-			convert_Coordinate_system(&(field->source_fields[0]->coordinate_system),
-				3,cx,&(field->coordinate_system),3,x,jacobian))))
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+
+		FE_value cx[3],jacobian[9],*source,sum,x[3];
+		int coordinates_per_vector;
+		if (convert_Coordinate_system(&(coordinateField->coordinate_system),
+			coordinateField->number_of_components, coordinateValueCache->values,
+			&(vectorField->coordinate_system), 3, cx, /*jacobian*/(FE_value *)NULL) &&
+			convert_Coordinate_system(&(vectorField->coordinate_system),
+				3, cx, &(field->coordinate_system), 3, x, jacobian))
 		{
-			number_of_vectors=field->number_of_components/3;
-			coordinates_per_vector=
-				field->source_fields[0]->number_of_components/number_of_vectors;
-			source=field->source_fields[0]->values;
-			for (i=0;i<number_of_vectors;i++)
+			int number_of_vectors = field->number_of_components/3;
+			coordinates_per_vector = vectorField->number_of_components/number_of_vectors;
+			source = vectorValueCache->values;
+			for (int i=0;i<number_of_vectors;i++)
 			{
-				for (j=0;j<3;j++)
+				for (int j=0;j<3;j++)
 				{
 					sum=0.0;
-					for (k=0;k<coordinates_per_vector;k++)
+					for (int k=0;k<coordinates_per_vector;k++)
 					{
 						sum += jacobian[j*3+k]*source[i*coordinates_per_vector+k];
 					}
-					field->values[i*3+j]=sum;
+					valueCache.values[i*3+j]=sum;
 				}
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_vector_coordinate_transformation.  Could not convert to RC");
+			valueCache.derivatives_valid = 0;
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_vector_coordinate_transformation.  Invalid argument(s)");
-		return_code=0;
-	}
+	return 0;
+}
 
-	return (return_code);
-} /* Computed_field_evaluate_vector_coordinate_transformation */
-
-int Computed_field_vector_coordinate_transformation::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_vector_coordinate_transformation::evaluate_cache_at_location);
-	if (field && location && (0 < field->number_of_source_fields))
+	Cmiss_field_id vectorField = getSourceField(0);
+	Cmiss_field_id coordinateField = getSourceField(1);
+	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
+	if (coordinateValueCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		FE_value cx[3];
+		if (convert_Coordinate_system(&(coordinateField->coordinate_system),
+			coordinateField->number_of_components, coordinateValueCache->values,
+			&(vectorField->coordinate_system), 3, cx, /*jacobian*/(FE_value *)NULL))
 		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_vector_coordinate_transformation::evaluate();
-			/* no derivatives for this type */
-			field->derivatives_valid=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_coordinate_transformation::evaluate_cache_at_location */
-
-int Computed_field_vector_coordinate_transformation::set_values_at_location(
-   Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
-{
-	FE_value *source_values;
-	int i,k,return_code;
-	FE_value jacobian[9],non_rc_coordinates[3],
-		rc_coordinates[3],sum;
-	int coordinates_per_vector,m,number_of_vectors;
-	struct Computed_field *rc_coordinate_field;
-	
-	ENTER(Computed_field_vector_coordinate_transformation::set_values_at_location);
-	if (field && location && values)
-	{
-		return_code=1;
-		rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-				 field->source_fields[1]);
-		if (rc_coordinate_field != 0)
-		{
-			if (ALLOCATE(source_values,FE_value,field->source_fields[0]->number_of_components))
+			FE_value new_cx[3], jacobian[9];
+			/* need jacobian at current coordinate position for
+				converting to coordinate system of source vector field
+				(=source_fields[0]) */
+			if (convert_Coordinate_system(&(field->coordinate_system), 3, cx,
+				&(vectorField->coordinate_system), 3, new_cx, jacobian))
 			{
-				if (Computed_field_evaluate_cache_at_location(rc_coordinate_field,
-						location))
+				RealFieldValueCache *vectorValueCache = RealFieldValueCache::cast(vectorField->getValueCache(cache));
+				const int number_of_vectors = field->number_of_components/3;
+				const int coordinates_per_vector = vectorField->number_of_components/number_of_vectors;
+				for (int i=0;i<number_of_vectors;i++)
 				{
-					for (k=0;k<3;k++)
+					for (int m=0;m<coordinates_per_vector;m++)
 					{
-						rc_coordinates[k] = rc_coordinate_field->values[k];
-					}
-					/* need jacobian at current coordinate position for
-						converting to coordinate system of source vector field
-						(=source_fields[0]) */
-					if (convert_Coordinate_system(&(field->coordinate_system),
-							3,rc_coordinates,&field->source_fields[0]->coordinate_system,
-							3,non_rc_coordinates,jacobian))
-					{
-						number_of_vectors=field->number_of_components/3;
-						coordinates_per_vector=
-							field->source_fields[0]->number_of_components/
-							number_of_vectors;
-						for (i=0;i<number_of_vectors;i++)
+						FE_value sum=0.0;
+						for (int k=0;k<3;k++)
 						{
-							for (m=0;m<coordinates_per_vector;m++)
-							{
-								sum=0.0;
-								for (k=0;k<3;k++)
-								{
-									sum +=
-										jacobian[m*3+k]*values[(i*3+k)];
-								}
-								source_values[i*coordinates_per_vector+m]=sum;
-							}
+							sum += jacobian[m*3+k]*valueCache.values[(i*3+k)];
 						}
-					}
-					else
-					{
-						return_code=0;
+						vectorValueCache->values[i*coordinates_per_vector+m]=sum;
 					}
 				}
-				if (return_code)
-				{
-					return_code=Computed_field_set_values_at_location(
-						field->source_fields[0],location,source_values);
-				}
-				DEALLOCATE(source_values);
+				vectorValueCache->derivatives_valid = 0;
+				return vectorField->assign(cache, *vectorValueCache);
 			}
-			else
-			{
-				return_code=0;
-			}
-			Computed_field_end_wrap(&rc_coordinate_field);
-		}
-		else
-		{
-			return_code=0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_coordinate_transformation::set_values_at_location */
-
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
+}
 
 int Computed_field_vector_coordinate_transformation::list(
 	)

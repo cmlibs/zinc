@@ -200,38 +200,6 @@ is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
 ==============================================================================*/
 
-int Computed_field_has_string_value_type(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2002
-
-DESCRIPTION :
-Returns true if <field> is of string value type.
-Currently only FE_fields can return string value type, hence this function is
-restricted to this module.
-Eventually, other computed fields will be of string type and this function will
-belong elsewhere.
-Note: not returning possible true result for embedded field as evaluate
-at node function does not allow for string value either.
-==============================================================================*/
-
-/*****************************************************************************//**
- * Creates a field returning the values for the given <nodal_value_type> and
- * <version_number> of <fe_field> at a node.
- * Makes the number of components the same as in the <fe_field>.
- * Field automatically takes the coordinate system of the source fe_field.
- * 
- * @param field_module  Region field module which will own new field.
- * @param fe_field  FE_field whose nodal parameters will be extracted
- * @param nodal_value_type  Parameter value type to extract
- * @param version_number  Version of parameter value to extract.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_node_value(
-	struct Cmiss_field_module *field_module,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number);
-
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************
@@ -254,16 +222,6 @@ struct Computed_field *Computed_field_create_xi_coordinates(
 int Computed_field_is_type_node_value(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_get_FE_field_time_array_index_at_FE_value_time(
-	 struct Computed_field *field,FE_value time, FE_value *the_time_high,
-	 FE_value *the_time_low, int *the_array_index,int *the_index_high,
-	 int *the_index_low);
-/*******************************************************************************
-LAST MODIFIED : 9 Oct 2007
 
 DESCRIPTION :
 ==============================================================================*/

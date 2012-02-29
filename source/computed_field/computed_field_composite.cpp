@@ -95,7 +95,6 @@ public:
 		 source values for the field. */
 	int *source_field_numbers;
 	int *source_value_numbers;
-	FE_value** source_pointers;
 
 	Computed_field_composite(int number_of_components,
 		const int *source_field_numbers_in, const int *source_value_numbers_in) : Computed_field_core()
@@ -103,7 +102,6 @@ public:
 		int i;
 		source_field_numbers = new int[number_of_components];
 		source_value_numbers = new int[number_of_components];
-		source_pointers = (FE_value**)NULL;
 		for (i = 0 ; i < number_of_components ; i++)
 		{
 			source_field_numbers[i] = source_field_numbers_in[i];
@@ -130,27 +128,18 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int clear_cache()
-	{
-		if (source_pointers)
-		{
-			delete [] source_pointers;
-			source_pointers = (FE_value**)NULL;
-		}
-		return (1);
-	}
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
-
-	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+	virtual int propagate_find_element_xi(Cmiss_field_cache& field_cache,
+		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
-		FE_value time, Cmiss_mesh_id mesh);
+		Cmiss_mesh_id mesh);
 };
 
 Computed_field_composite::~Computed_field_composite()
@@ -171,10 +160,6 @@ Clear the type specific data used by this type.
 		if (source_value_numbers)
 		{
 			delete [] source_value_numbers;
-		}
-		if (source_pointers)
-		{
-			delete [] source_pointers;
 		}
 	}
 	else
@@ -221,210 +206,121 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_composite::compare */
 
-int Computed_field_composite::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_composite::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *destination = 0, *source;
-	int component_number, number_of_derivatives, i, j, return_code,
-		source_field_number;
-
-#if ! defined (OPTIMISED)
-	ENTER(Computed_field_composite::evaluate_cache_at_location);
-	if (field && location)
+	// try to avoid allocating cache array
+	const int CacheStackSize = 10;
+	RealFieldValueCache *fixedValueCache[CacheStackSize];
+	RealFieldValueCache **sourceValueCache = (field->number_of_source_fields <= CacheStackSize) ?
+		fixedValueCache : new RealFieldValueCache*[field->number_of_source_fields];
+	int return_code = 1;
+	int number_of_derivatives = cache.getRequestedDerivatives();
+	for (int i = 0; i < field->number_of_source_fields; ++i)
 	{
-#endif /* ! defined (OPTIMISED) */
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		sourceValueCache[i] = RealFieldValueCache::cast(getSourceField(i)->evaluate(cache));
+		if (!sourceValueCache[i])
 		{
-			/* 2. Cache value pointers directly into source fields. */
-			if (!source_pointers)
+			return_code = 0;
+			break;
+		}
+		if (number_of_derivatives && !sourceValueCache[i]->derivatives_valid)
+			number_of_derivatives = 0;
+	}
+	if (return_code)
+	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		valueCache.derivatives_valid = number_of_derivatives;
+		FE_value *destination = number_of_derivatives ? valueCache.derivatives : 0;
+		for (int i=0;i<field->number_of_components;i++)
+		{
+			if (0 <= source_field_numbers[i])
 			{
-				source_pointers = new FE_value*[field->number_of_components];
-				for (i=0;i<field->number_of_components;i++)
+				valueCache.values[i] = sourceValueCache[source_field_numbers[i]]->
+					values[source_value_numbers[i]];
+				if (valueCache.derivatives_valid)
 				{
-					if (0 <= source_field_numbers[i])
+					/* source field component */
+					FE_value *source = sourceValueCache[source_field_numbers[i]]->derivatives +
+						source_value_numbers[i]*number_of_derivatives;
+					for (int j=0;j<number_of_derivatives;j++)
 					{
-						source_pointers[i] =
-							&(field->source_fields[source_field_numbers[i]]->
-								values[source_value_numbers[i]]);
-					}
-					else
-					{
-						source_pointers[i] =
-							&field->source_values[source_value_numbers[i]];
+						*destination = *source;
+						destination++;
+						source++;
 					}
 				}
-			}
-			/* 2. Calculate the field */
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (number_of_derivatives > 0)
-			{
-				field->derivatives_valid = 1;
-				destination=field->derivatives;
 			}
 			else
 			{
-				field->derivatives_valid = 0;
-			}
-			for (i=0;i<field->number_of_components;i++)
-			{
-				field->values[i] = *(source_pointers[i]);
-
-				if (field->derivatives_valid)
+				valueCache.values[i] = field->source_values[source_value_numbers[i]];
+				if (valueCache.derivatives_valid)
 				{
-					source_field_number = source_field_numbers[i];
-					component_number = source_value_numbers[i];
-					if (0 <= source_field_number)
+					for (int j=0;j<number_of_derivatives;j++)
 					{
-						if (field->source_fields[source_field_number]->derivatives_valid)
-						{
-							/* source field component */
-							source = field->source_fields[source_field_number]->derivatives +
-								component_number*number_of_derivatives;
-							for (j=0;j<number_of_derivatives;j++)
-							{
-								*destination = *source;
-								destination++;
-								source++;
-							}
-						}
-						else
-						{
-							field->derivatives_valid = 0;
-						}
-					}
-					else
-					{
-						/* source value */
-						field->values[i] =
-							field->source_values[component_number];
-						if (number_of_derivatives)
-						{
-							for (j=0;j<number_of_derivatives;j++)
-							{
-								*destination = 0.0;
-								destination++;
-							}
-						}
+						*destination = 0.0;
+						destination++;
 					}
 				}
 			}
 		}
-#if ! defined (OPTIMISED)
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_composite::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-#endif /* ! defined (OPTIMISED) */
-
+	if (sourceValueCache != fixedValueCache)
+		delete[] sourceValueCache;
 	return (return_code);
-} /* Computed_field_composite::evaluate_cache_at_location */
+}
 
-int Computed_field_composite::set_values_at_location(
-	Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
+enum FieldAssignmentResult Computed_field_composite::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	FE_value *source_values;
-	int i, return_code, source_field_number;
-	
-	ENTER(Computed_field_composite::set_values_at_location);
-	if (field && location && values)
+	/* go through each source field, getting current values, changing values
+		for components that are used in the composite field, then setting the
+		whole field in one hit */
+	enum FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+	for (int source_field_number=0;
+		  (source_field_number<field->number_of_source_fields);
+		  source_field_number++)
 	{
-		return_code=1;
-		/* go through each source field, getting current values, changing values
-			for components that are used in the composite field, then setting the
-			whole field in one hit */
-		for (source_field_number=0;
-			  (source_field_number<field->number_of_source_fields)&&return_code;
-			  source_field_number++)
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(field->evaluate(cache));
+		if (!sourceValueCache)
+			return FIELD_ASSIGNMENT_RESULT_FAIL;
+		for (int i=0;i<field->number_of_components;i++)
 		{
-			int source_number_of_components = 
-				field->source_fields[source_field_number]->number_of_components;
-			if (ALLOCATE(source_values,FE_value,source_number_of_components))
+			if (source_field_numbers[i] == source_field_number)
 			{
-				if (Computed_field_evaluate_cache_at_location(
-					 field->source_fields[source_field_number], location))
-				{
-					/* It isn't easy to work out which of the source values are going
-					 * to be overwritten by new values so lets just copy them all.
-					 */
-               for (i=0;i<source_number_of_components;i++)
-               {
-               	source_values[i] = field->source_fields[source_field_number]->values[i];
-               }
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (source_field_number == source_field_numbers[i])
-						{
-							source_values[source_value_numbers[i]] = values[i];
-						}
-					}
-					return_code=Computed_field_set_values_at_location(
-						field->source_fields[source_field_number], location, 
-						source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-				DEALLOCATE(source_values);
-			}
-			else
-			{
-				return_code = 0;
+				sourceValueCache->values[source_value_numbers[i]] = valueCache.values[i];
 			}
 		}
-		// don't assign values to constants if assigning to cache
-		if (return_code && (!location->get_assign_to_cache()))
+		enum FieldAssignmentResult thisResult = field->assign(cache, *sourceValueCache);
+		if (thisResult == FIELD_ASSIGNMENT_RESULT_FAIL)
+			return FIELD_ASSIGNMENT_RESULT_FAIL;
+		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
+			(thisResult == FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET))
 		{
-			bool changed = false;
-			for (i = 0; i < field->number_of_components; i++)
-			{
-				if (-1 == source_field_numbers[i])
-				{
-					field->source_values[source_value_numbers[i]] = values[i];
-					changed = true;
-				}
-			}
-			if (changed)
-			{
-				Computed_field_changed(field);
-			}
+			result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
 		}
 	}
-	else
+	// don't assign values to constants if assigning to cache
+	if (!cache.assignInCacheOnly())
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_composite::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
+		bool changed = false;
+		for (int i = 0; i < field->number_of_components; i++)
+		{
+			if (-1 == source_field_numbers[i])
+			{
+				field->source_values[source_value_numbers[i]] = valueCache.values[i];
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Computed_field_changed(field);
+		}
 	}
-	LEAVE;
+	return result;
+}
 
-	return (return_code);
-} /* Computed_field_composite::set_values_at_location */
-
-int Computed_field_composite::propagate_find_element_xi(
+int Computed_field_composite::propagate_find_element_xi(Cmiss_field_cache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
+	FE_value *xi, Cmiss_mesh_id mesh)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -459,8 +355,8 @@ Zero is used for any source field values that aren't set from the composite fiel
 					}
 				}
 				return_code = Computed_field_find_element_xi(
-					field->source_fields[source_field_number], source_values,
-					number_of_values, time, element_address, xi, mesh,
+					field->source_fields[source_field_number], &field_cache, source_values,
+					number_of_values, element_address, xi, mesh,
 					/*propagate_field*/1, /*find_nearest*/0);
 				DEALLOCATE(source_values);
 			}
@@ -682,7 +578,7 @@ struct Computed_field *Computed_field_create_composite(
 		/* check all source fields exist and are not repeated */
 		for (i=0;i<number_of_source_fields;i++)
 		{
-			if (source_fields[i])
+			if (source_fields[i] && source_fields[i]->isNumerical())
 			{
 				for (j=0;j<i;j++)
 				{
@@ -697,8 +593,8 @@ struct Computed_field *Computed_field_create_composite(
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_composite.  Missing source field");
-				return_code=0;
+					"Computed_field_create_composite.  Missing or non-numerical source field");
+				return 0;
 			}
 		}
 		if (return_code)
@@ -1591,7 +1487,7 @@ Changes <field> into type composite with one input field, the <source_field>.
 	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_identity);
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		number_of_values = source_field->number_of_components;
 		ALLOCATE(source_field_numbers, int, number_of_values);
@@ -1643,7 +1539,7 @@ and the component index <component_number>.
 	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_component);
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		number_of_components = 1;
 		ALLOCATE(source_field_numbers, int, number_of_components);
@@ -1690,6 +1586,8 @@ struct Computed_field *Computed_field_create_concatenate(
 		number_of_components = 0;
 		for (i = 0; i < number_of_source_fields; i++)
 		{
+			if (!(source_fields[i] && source_fields[i]->isNumerical()))
+				return 0;
 			number_of_components += 
 				Computed_field_get_number_of_components(source_fields[i]);
 		}

@@ -109,6 +109,7 @@ struct Render_element_data
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
+	Cmiss_field_cache_id field_cache;
 	struct Computed_field *field;
 	FE_value values[3];
 };
@@ -156,13 +157,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 			xi[0] = 0.0;
 			xi[1] = 0.0;
-			Computed_field_evaluate_in_element(data->field, element, xi,
-				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+			Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 			xi[0] = 1.0;
 			xi[1] = 0.0;
-			Computed_field_evaluate_in_element(data->field, element, xi,
-				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+			Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 
 			/* Only need to check the first dimension as this is only working for 2D */
@@ -173,8 +174,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				Computed_field_evaluate_in_element(data->field, element, xi,
-					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 				glVertex2dv(data->values);
 			}
@@ -182,14 +183,14 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 1.0;
 				xi[1] = 1.0;
-				Computed_field_evaluate_in_element(data->field, element, xi,
-					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 				
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				Computed_field_evaluate_in_element(data->field, element, xi,
-					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 			}
 		}
@@ -207,7 +208,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 } /* Render_element_as_texture */
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
-int Computed_field_find_element_xi_special(struct Computed_field *field, 
+int Computed_field_find_element_xi_special(struct Computed_field *field,
+	Cmiss_field_cache_id field_cache,
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, Cmiss_mesh_id search_mesh,
@@ -234,6 +236,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	USE_PARAMETER(number_of_values);
 #if !defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	USE_PARAMETER(field);
+	USE_PARAMETER(field_cache);
 	USE_PARAMETER(cache_ptr);
 	USE_PARAMETER(values);
 	USE_PARAMETER(element);
@@ -260,6 +263,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		&& ((Cmiss_mesh_get_size(search_mesh) > 5))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
+		find_element_xi_data.field_cache = field_cache;
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = const_cast<FE_value *>(values);
 		find_element_xi_data.number_of_values = number_of_values;
@@ -332,6 +336,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 					/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
 						 /*minimum_accumulation_buffer_depth*/0)))
 				{
+					data.field_cache = field_cache;
 					data.field = field;
 					data.bit_shift = cache->bit_shift;
 					data.minimum_element_number = cache->minimum_element_number;

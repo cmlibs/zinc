@@ -173,74 +173,45 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,const char *);
 
-int Computed_field_clear_cache(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 10 February 1999
-
-DESCRIPTION :
-Clears any caching of elements/values of <field> and any fields it refers to.
-Must call this function for each field after you have used functions
-Computed_field_evaluate_in_element or Computed_field_evaluate_at_node and they
-are possibly not going to be called again for some time.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Returns true if <field> can be calculated in <element>. If the field depends
+ * on any other fields, this function is recursively called for them.
+ * Warning: inefficient as field cache is created and destroyed with each call.
+ * For new code, prefer managing your own field cache and directly using
+ * Cmiss_field_id_defined_at_location.
+ */
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
 
-DESCRIPTION :
-Returns true if <field> can be calculated in <element>. If the field depends on
-any other fields, this function is recursively called for them.
-==============================================================================*/
-
+/***************************************************************************//**
+ * List iterator version of Computed_field_is_defined_in_element.
+ * Returns true if <field> can be calculated in <element>.
+ * Warning: inefficient as field cache is created and destroyed with each call.
+ * For new code, prefer managing your own field cache and directly using
+ * Cmiss_field_id_defined_at_location.
+ */
 int Computed_field_is_defined_in_element_conditional(
 	struct Computed_field *field,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
 
-DESCRIPTION :
-Manager conditional function version of Computed_field_is_defined_in_element.
-==============================================================================*/
-
-int Computed_field_is_true_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns true if <field> is determined to be "true" at the centre of <element>.
-This is currently that the field is defined and any of the components are non zero.
-==============================================================================*/
-
-int FE_element_Computed_field_is_not_true_iterator(struct FE_element *element,
-	void *computed_field_conditional_data_void);
-/*******************************************************************************
-LAST MODIFIED : 5 December 2002
-
-DESCRIPTION :
-Iterator version of NOT Computed_field_is_true_in_element.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Returns true if <field> can be calculated in <node>. If the field depends
+ * on any other fields, this function is recursively called for them.
+ * Warning: inefficient as field cache is created and destroyed with each call.
+ * For new code, prefer managing your own field cache and directly using
+ * Cmiss_field_id_defined_at_location.
+ */
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
 
-DESCRIPTION :
-Returns true if <field> can be calculated at <node>. If the field depends on
-any other fields, this function is recursively called for them.
-==============================================================================*/
-
+/***************************************************************************//**
+ * List iterator version of Computed_field_is_defined_at_node.
+ * Returns true if <field> can be calculated in <element>.
+ * Warning: inefficient as field cache is created and destroyed with each call.
+ * For new code, prefer managing your own field cache and directly using
+ * Cmiss_field_id_defined_at_location.
+ */
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void);
-/*******************************************************************************
-LAST MODIFIED : 28 June 2000
-
-DESCRIPTION :
-Computed_field conditional function version of
-Computed_field_is_defined_at_node.
-==============================================================================*/
 
 int Computed_field_is_in_list(struct Computed_field *field,
 	void *field_list_void);
@@ -252,32 +223,12 @@ Computed_field conditional/iterator function returning true if <field> is in the
 computed <field_list>.
 ==============================================================================*/
 
-int Computed_field_is_true_at_node(struct Computed_field *field,
-	struct FE_node *node, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns true if <field> is determined to be "true" at <node>.  This is currently
-that the field is defined and any of the components are non zero.
-==============================================================================*/
-
-int FE_node_Computed_field_is_not_true_iterator(struct FE_node *node,
-	void *fe_node_computed_field_conditional_data_void);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Iterator version of NOT Computed_field_is_true_at_node.
-==============================================================================*/
-
-int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void);
-/*******************************************************************************
-LAST MODIFIED : 28 June 2000
-
-DESCRIPTION :
-FE_node conditional function version of Computed_field_is_defined_at_node.
-==============================================================================*/
+/***************************************************************************//**
+ * List conditional function returning true if field value type is
+ * CMISS_FIELD_VALUE_TYPE_STRING.
+ */
+int Computed_field_has_string_value_type(struct Computed_field *field,
+	void *dummy_void);
 
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,
 	struct Computed_field *other_field);
@@ -343,19 +294,6 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
 	Cmiss_element_id top_level_element);
 
 /***************************************************************************//**
- * Clears only values cache for field and its sources, not deeper type-specific
- * cache. Useful for doing quick evaluations at different locations.
- * Internal function.
- *
- * @param cache  The field cache to modify.
- * @param field  The field whose values cache is to be cleared, along with all
- * its source fields, recursively.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
-	Cmiss_field_id field);
-
-/***************************************************************************//**
  * Fully clears cache of supplied field, its source fields and any fields that
  * depend on its values.
  * Internal function.
@@ -368,34 +306,19 @@ int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
 int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
 	Cmiss_field_id field);
 
-/**
- * Cmiss field invalidate field internal.  Fully clears the cache of the supplied field, it's
- * source fields and any fields that depend on it's values.
- * Internal function.
- *
- * @param	field	The field whose values cache is to be cleared, along with all
- * its source and dependent fields, recursively..
- *
- * @return	1 on success, 0 on failure.
- */
-int Cmiss_field_invalidate_field_internal(Cmiss_field_id field);
-
 /***************************************************************************//**
- * Internal function similar to Cmiss_field_assign_real but which only assigns
- * the value in the field_cache, propagating it back to its source fields. This
- * means subsequent evaluations at the same cache location will return the
- * values if set. Changing the cache location clears these temporary cached
- * values.
+ * Internal function which if set means subsequent values are assigned into the
+ * cache only, not into field values. Subsequent evaluations return this and
+ * other fields as if the values had been set in the field.
+ * Remember to clear flag after experimental evaluation with assigned values.
+ * Warning: only a single assign works with the current code.
+ * Changing the cache location clears these temporary cached values.
  *
  * @param cache  Store of location to assign at and intermediate field values.
- * @param field  The field to assign real values to in the cache.
- * @param number_of_values  Size of values array. Checked that it equals or
- * exceeds the number of components of field.
- * @param values  Array of real values to assign to field.
+ * @param assign_to_cache  The new state of the assign-to-cache-only flag.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
-	Cmiss_field_id field, int number_of_values, double *values);
+int Cmiss_field_cache_set_assign_in_cache(Cmiss_field_cache_id cache, int assign_in_cache);
 
 /***************************************************************************//**
  * Internal function.
@@ -407,171 +330,16 @@ int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
 int Cmiss_field_evaluate_boolean(Cmiss_field_id field,
 	Cmiss_field_cache_id cache);
 
-char *Computed_field_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-Returns a string representing the value of <field>.<component_number> at
-<element>:<xi>. If <field> is a FINITE_ELEMENT wrapper without a value type of
-FE_VALUE_VALUE, requests the string from it, otherwise calls
-Computed_field_evaluate_cache_in_element and converts the value for
-<component_number> to a string (since result may already be in cache).
-
-Use -1 as the <component_number> if you want all the components.
-
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
-
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-???RC.  Allow derivatives to be evaluated as string too?
-==============================================================================*/
-
-int Computed_field_evaluate_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element,FE_value *values,FE_value *derivatives);
-/*******************************************************************************
-LAST MODIFIED : 29 June 1999
-
-DESCRIPTION :
-Returns the values and derivatives (if <derivatives> != NULL) of <field> at
-<element>:<xi>, if it is defined over the element. Can verify this in advance
-by calling function Computed_field_defined_in_element. Each <field> has a cache
-for storing its values and derivatives, which is allocated and filled by a call
-to Computed_field_evaluate_cache_in_element, then copied to the <values> and
-<derivatives> arrays.
-
-The optional <top_level_element> may be supplied for the benefit of this or
-any source fields that may require calculation on it instead of a face or line.
-FIBRE_AXES and GRADIENT are examples of such fields, since they require
-top-level coordinate derivatives. The term "top_level" refers to an ultimate
-parent element for the face or line, eg. the 3-D element parent to 2-D faces.
-If no such top level element is supplied and one is required, then the first
-available parent element will be chosen - if the user requires a top-level
-element in the same group as the face or with the face on the correct side,
-then they should supply the top_level_element here.
-
-The <values> and <derivatives> arrays must be large enough to store all the
-values and derivatives for this field in the given element, ie. values is
-number_of_components in size, derivatives has the element dimension times the
-number_of_components
-==============================================================================*/
-
-char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
-	int component_number, struct FE_node *node, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 July 2000
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at the <node>. If the
-field is based on an FE_field but not returning FE_values, it is asked to supply
-the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
-is used since it is likely the values are already in the cache in most cases,
-or can be used by other fields again if calculated now.
-The <component_number> indicates which component to calculate.  Use -1 to 
-create a string which represents all the components.
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-
-int Computed_field_evaluate_at_node(struct Computed_field *field,
-	struct FE_node *node, FE_value time, FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 21 November 2001
-
-DESCRIPTION :
-Returns the <values> of <field> at <node> if it is defined there. Can verify
-this in advance by calling function Computed_field_defined_at_node. Each <field>
-has a cache for storing its values and derivatives, which is allocated and the
-field->values array filled by a call to Computed_field_evaluate_cache_at_node,
-which is then copied to <values> by this function. Derivatives may only be
-calculated in elements, however, the field->derivatives array is allocated here
-with field->values since Computed_field_evaluate_cache_in_element expects both
-to be allocated together.
-
-The <values> array must be large enough to store as many FE_values as there are
-number_of_components.
-==============================================================================*/
-
-int Cmiss_field_evaluate_at_field_coordinates(
-	Cmiss_field_id field,
-	Cmiss_field_id reference_field, int number_of_input_values,
-	double *input_values, double time, double *values);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2008
-
-DESCRIPTION :
-Returns the <values> of <field> at the location of <input_values>
-with respect to the <reference_field> if it is defined there.
-
-The <values> array must be large enough to store as many FE_values as there are
-number_of_components.
-==============================================================================*/
-
-int Computed_field_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node, FE_value time, FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>. Only certain computed field
-types allow their values to be set. Fields that deal directly with FE_fields eg.
-FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the same
-function for it. If a field has more than one source field, eg. RC_VECTOR, it
-can in many cases still choose which one is actually being changed, for example,
-the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
-is reached for which its calculation is not reversible, or is not supported yet.
-???RC Note that some functions are not reversible in this way.
-==============================================================================*/
-
-#ifdef __cplusplus
-int Computed_field_evaluate_at_location(struct Computed_field *field,
-	Field_location& loc, FE_value *values, FE_value *derivatives = 0);
-#endif /* __cplusplus */
-
-int Computed_field_get_values_in_element(struct Computed_field *field,
-	struct FE_element *element, int *number_in_xi, FE_value time,
-	FE_value **values);
-/*******************************************************************************
-LAST MODIFIED : 27 October 2004
-
-DESCRIPTION :
-Companion function to Computed_field_set_values_in_element.
-Returns the <field> calculated at the corners of the <number_in_xi> cells,
-evenly spaced in xi, over the element. <values> should be allocated with enough
-space for number_of_components * product of number_in_xi+1 in each element
-direction, the returned values cycling fastest through number of grid points in
-xi1, number of grid points in xi2 etc. and lastly components.
-It is up to the calling function to deallocate the returned values.
-==============================================================================*/
-
-int Computed_field_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element, FE_value *xi, FE_value time,
-	FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 14 October 2005
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <xi> in the <element>. Only certain
-computed field types allow their values to be set. Fields that deal directly
-with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the
-same function for it. If a field has more than one source field, eg. RC_VECTOR,
-it can in many cases still choose which one is actually being changed, for
-example, the 'vector' field in this case - coordinates should not change. This
-process continues until the actual FE_field values in the element are changed or
-a field is reached for which its calculation is not reversible, or is not
-supported yet.
-==============================================================================*/
+/***************************************************************************//**
+ * Temporary function to allow derivatives to be evaluated with value.
+ * Currently only needed for evaluation of derivatives on CAD surfaces.
+ * @param number_of_derivatives  Expected number of derivatives for domain.
+ * @param derivatives  Array of size number_of_values*number_of_derivatives.
+ * IMPORTANT: Not approved for external API!
+ */
+int Cmiss_field_evaluate_real_with_derivatives(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, int number_of_values, double *values,
+	int number_of_derivatives, double *derivatives);
 
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
@@ -806,11 +574,12 @@ The number of components controls how the field is interpreted:
  * the prescribed values.
  *
  * @param field  The field whose values need to match.
+ * @param field_cache  Field cache to perform evaluations to find mesh location.
+ * Set time in the field cache to search for field values at particular times.
  * @param values  Array of values to match or get nearest to. Implementation
  * promises to copy this, hence can pass a pointer to field cache values.
  * @param number_of_values  The size of the values array, must equal the number
  * of components of field.
- * @param time  The time at which field values are evaluated.
  * @param element_address  Address to return element in. If mesh is omitted,
  * must point at a single element to search.
  * @param xi  Array of same dimension as mesh or element to return chart
@@ -828,8 +597,8 @@ The number of components controls how the field is interpreted:
  * found, or 0 if failed.
  */
 int Computed_field_find_element_xi(struct Computed_field *field,
-	const FE_value *values, int number_of_values,
-	FE_value time, struct FE_element **element_address, FE_value *xi,
+	Cmiss_field_cache_id field_cache, const FE_value *values,
+	int number_of_values, struct FE_element **element_address, FE_value *xi,
 	Cmiss_mesh_id mesh, int propagate_to_source, int find_nearest);
 
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,

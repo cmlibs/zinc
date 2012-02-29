@@ -968,12 +968,15 @@ int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 		Cmiss_rendition_set_minimum_graphic_defaults(rendition, graphic);
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
-		Cmiss_field_id coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
-		// could be smarter, e.g. using graphic type
-		if (!coordinate_field)
-			coordinate_field = Cmiss_rendition_guess_coordinate_field(rendition, graphic_type);
-		if (coordinate_field)
-			Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
+		if (graphic_type != CMISS_GRAPHIC_POINT)
+		{
+			Cmiss_field_id coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
+			// could be smarter, e.g. using graphic type
+			if (!coordinate_field)
+				coordinate_field = Cmiss_rendition_guess_coordinate_field(rendition, graphic_type);
+			if (coordinate_field)
+				Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
+		}
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
 			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&

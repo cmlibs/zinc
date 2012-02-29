@@ -900,18 +900,11 @@ data values for more efficient storage and smoother rendering.
 } /* Contour_lines_link_ends */
 
 int create_iso_lines_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *scalar_field,FE_value iso_value,FE_value time,
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *scalar_field,FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,FE_value graphics_object_time, int line_width)
-/*******************************************************************************
-LAST MODIFIED : 7 February 2002
-
-DESCRIPTION :
-Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
-<scalar_field> at <iso_value>.
-==============================================================================*/
+	struct GT_object *graphics_object, int line_width)
 {
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type1;
@@ -926,7 +919,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 	Triple *point,*points;
 
 	ENTER(create_iso_lines_from_FE_element);
-	if (element&&(2==get_FE_element_dimension(element))&&
+	if (element && field_cache && (2==get_FE_element_dimension(element))&&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
@@ -980,14 +973,10 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 				for (j=0;(j<adjusted_number_of_points_in_xi2)&&return_code;j++)
 				{
 					xi[1]=(FE_value)j / distance2;
-					/* evaluate the fields */
-					if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
-						time,top_level_element,coordinates,(FE_value *)NULL)&&
-						Computed_field_evaluate_in_element(scalar_field,element,xi,
-						time,top_level_element,scalar,(FE_value *)NULL)&&
-						((!data_field)||Computed_field_evaluate_in_element(
-						data_field,element,xi,time,top_level_element,datum,
-						(FE_value *)NULL)))
+					if (Cmiss_field_cache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element) &&
+						Cmiss_field_evaluate_real(coordinate_field, field_cache, 3, coordinates) &&
+						Cmiss_field_evaluate_real(scalar_field, field_cache, 1, scalar) &&
+						((!data_field) || Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, datum)))
 					{
 						(*point)[0]=coordinates[0];
 						(*point)[1]=coordinates[1];
@@ -1003,13 +992,6 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 						return_code=0;
 					}
 				}
-			}
-			/* clear Computed_field caches so elements not accessed */
-			Computed_field_clear_cache(coordinate_field);
-			Computed_field_clear_cache(scalar_field);
-			if (data_field)
-			{
-				Computed_field_clear_cache(data_field);
 			}
 			/* perform contouring on the squares joining the points */
 			point=points;
@@ -1068,7 +1050,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 				Contour_lines_link_ends(contour_lines);
 				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
-						graphics_object, graphics_object_time, line_width,
+						graphics_object, /*graphics_object_time*/0.0, line_width,
 						cm_identifier.number))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "

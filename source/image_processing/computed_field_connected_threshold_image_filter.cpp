@@ -177,7 +177,7 @@ public:
 	{
 	}
 
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -222,7 +222,7 @@ and generate the outputImage.
 
 		
 		return_code = connected_threshold_image_filter->update_output_image
-			(location, filter, this->outputImage,
+			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);

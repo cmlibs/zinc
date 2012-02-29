@@ -117,9 +117,16 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -165,130 +172,65 @@ int Computed_field_compose::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_compose::compare */
 
-int Computed_field_compose::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+bool Computed_field_compose::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	FE_value xi[3];
-	int return_code;
-	struct FE_element *element;
+	return (0 != field->evaluate(cache));
+}
 
-	ENTER(Computed_field_compose::is_defined_at_location);
-	if (field && location)
+int Computed_field_compose::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	int return_code = 0;
+	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (coordinateValueCache)
 	{
-		return_code=1;
-		return_code = Computed_field_is_defined_at_location(
-			field->source_fields[0],location);
-		if (return_code)
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		extraCache.setTime(cache.getTime());
+		/* The values from the first source field are inverted in the
+			second source field to get element_xi which is evaluated with
+			the third source field */
+		Cmiss_element_id compose_element =0;
+		FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		if (Computed_field_find_element_xi(getSourceField(1), &extraCache,
+			coordinateValueCache->values,
+			coordinateValueCache->componentCount,
+			&compose_element, compose_xi,
+			mesh, /*propagate_field*/0, find_nearest)
+			&& compose_element)
 		{
-			return_code=
-				Computed_field_evaluate_cache_at_location(
-				field->source_fields[0],location);
-			if (return_code)
+			/* calculate the third source_field at this new location */
+			extraCache.setMeshLocation(compose_element, compose_xi);
+			RealFieldValueCache *calculateValueCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(extraCache));
+			if (calculateValueCache)
 			{
-				if (Computed_field_find_element_xi(
-					field->source_fields[1], field->source_fields[0]->values,
-					field->source_fields[0]->number_of_components, location->get_time(),
-					&element, xi, mesh, /*propagate_field*/0, find_nearest) && element)
+				return_code = 1;
+				for (int i=0;i<field->number_of_components;i++)
 				{
-					/* calculate the third source_field at this new location */
-					return_code = Computed_field_is_defined_in_element(
-						field->source_fields[2],element);
-				}
-				else
-				{
-					return_code = 0;
+					valueCache.values[i] = calculateValueCache->values[i];
 				}
 			}
 		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_compose::is_defined_at_location */
-
-int Computed_field_compose::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, return_code;
-	struct FE_element *compose_element;
-
-	ENTER(Computed_field_compose::evaluate_cache_at_location);
-	if (field && location)
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		/* only calculate the first source_field at this location */
-		return_code=Computed_field_evaluate_cache_at_location(
-			field->source_fields[0],location);
-		if (return_code)
+		else
 		{
-			/* 2. Calculate the field */
-			/* The values from the first source field are inverted in the
-				second source field to get element_xi which is evaluated with
-				the third source field */
-			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
-					field->source_fields[0]->values,
-					field->source_fields[0]->number_of_components,
-					location->get_time(),  &compose_element, compose_xi,
-					mesh, /*propagate_field*/0, find_nearest))
-				&& compose_element)
+			if (use_point_five_when_out_of_bounds)
 			{
-				/* calculate the third source_field at this new location */
-				Field_element_xi_location new_location(compose_element,compose_xi,
-					location->get_time());
-				return_code=Computed_field_evaluate_cache_at_location(
-					field->source_fields[2], &new_location);
-				for (i=0;i<field->number_of_components;i++)
+				/* Actually don't fail here, just make the values constant so that
+					people can compose outside the valid range */
+				return_code = 1;
+				for (int i=0;i<field->number_of_components;i++)
 				{
-					field->values[i]=field->source_fields[2]->values[i];
+					valueCache.values[i]=0.5;
 				}
-				field->derivatives_valid = 0;
 			}
 			else
 			{
-				if (use_point_five_when_out_of_bounds)
-				{
-					/* Actually don't fail here, just make the values constant so that
-						people can compose outside the valid range */
-					return_code = 1;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						field->values[i]=0.5;
-					}
-					field->derivatives_valid = 0;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = 0;
 			}
 		}
+		valueCache.derivatives_valid = 0;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_compose::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_compose::evaluate_cache_at_location */
+	return return_code;
+}
 
 int Computed_field_compose::list()
 /*******************************************************************************
@@ -430,8 +372,10 @@ Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_compose);
-	if (texture_coordinate_field && find_element_xi_field &&
-		calculate_values_field && search_mesh &&
+	if (texture_coordinate_field && texture_coordinate_field->isNumerical() &&
+		find_element_xi_field && find_element_xi_field->isNumerical() &&
+		calculate_values_field && calculate_values_field->isNumerical() &&
+		search_mesh &&
 		(Cmiss_mesh_get_master_region_internal(search_mesh) ==
 			Cmiss_field_module_get_master_region_internal(field_module)))
 	{
@@ -465,7 +409,7 @@ Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_compose.  "
-				"The texuture_coordinate_field and find_element_xi_field "
+				"The texture_coordinate_field and find_element_xi_field "
 				"must have the same number of components");
 		}
 	}

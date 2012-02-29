@@ -198,7 +198,7 @@ public:
 	{
 	}
 
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -305,7 +305,7 @@ and generate the outputImage.
 		//		printf("Stopping value is %f", fast_marching_image_filter->stopping_value);
 
 		return_code = fast_marching_image_filter->update_output_image
-			(location, filter, this->outputImage,
+			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FMType*>(NULL));
 		
 		return (return_code);

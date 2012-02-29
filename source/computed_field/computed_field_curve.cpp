@@ -114,7 +114,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -198,73 +198,48 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_curve_lookup::compare */
 
-int Computed_field_curve_lookup::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_curve_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value dx_dt, *jacobian, *temp;
-	int i, j, number_of_derivatives, return_code;
-
-	ENTER(Computed_field_curve_lookup::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *parameterValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (parameterValueCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		FE_value *jacobian;
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && parameterValueCache->derivatives_valid)
 		{
-			/* 2. Calculate the field */
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (number_of_derivatives)
+			jacobian = valueCache.derivatives;
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			jacobian = (FE_value *)NULL;
+			valueCache.derivatives_valid = 0;
+		}
+		/* only slightly dodgy - stores derivatives of curve in start
+			 of derivatives space - must be at least big enough */
+		if (Curve_get_values_at_parameter(curve,
+			parameterValueCache->values[0], valueCache.values, jacobian))
+		{
+			if (jacobian)
 			{
-				jacobian = field->derivatives;
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				jacobian = (FE_value *)NULL;
-				field->derivatives_valid = 0;
-			}
-			/* only slightly dodgy - stores derivatives of curve in start
-				 of derivatives space - must be at least big enough */
-			return_code = Curve_get_values_at_parameter(curve,
-				field->source_fields[0]->values[0], field->values, jacobian);
-			if (return_code) 
-			{
-				if (jacobian)
+				/* use product rule to get derivatives */
+				FE_value *temp = parameterValueCache->derivatives;
+				/* count down in following loop because of slightly dodgy bit */
+				for (int j = field->number_of_components - 1; 0 <= j; j--)
 				{
-					/* use product rule to get derivatives */
-					temp = field->source_fields[0]->derivatives;
-					/* count down in following loop because of slightly dodgy bit */
-					for (j = field->number_of_components - 1; 0 <= j; j--)
+					FE_value dx_dt = jacobian[j];
+					for (int i = 0; i < number_of_xi ; i++)
 					{
-						dx_dt = jacobian[j];
-						for (i = 0; i < number_of_derivatives ; i++)
-						{
-							jacobian[j*number_of_derivatives + i] = dx_dt*temp[i];
-						}
+						jacobian[j*number_of_xi + i] = dx_dt*temp[i];
 					}
 				}
 			}
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_curve_lookup::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_curve_lookup::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_curve_lookup::list()
 /*******************************************************************************
@@ -379,15 +354,18 @@ struct Computed_field *Computed_field_create_curve_lookup(
 	Cmiss_field_module *field_module, struct Computed_field *source_field,
 	struct Curve *curve, struct MANAGER(Curve) *curve_manager)
 {
-	struct Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		/*number_of_components*/Curve_get_number_of_components(curve),
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_curve_lookup(curve, curve_manager));
-
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical())
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/Curve_get_number_of_components(curve),
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_curve_lookup(curve, curve_manager));
+	}
 	return (field);
-} /* Computed_field_set_type_curve_lookup */
+}
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
 	struct Computed_field **source_field, struct Curve **curve)

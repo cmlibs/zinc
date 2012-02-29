@@ -132,6 +132,24 @@ struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
 	struct Cmiss_region *region);
 
 /***************************************************************************//**
+ * Returns the size a field cache array needs to be to fit the assigned field
+ * cache indexes.
+ */
+int Cmiss_region_get_field_cache_size(Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Adds cache to the list of caches for this region. Region needs this list to
+ * add new value caches for any fields created while the cache exists.
+ */
+void Cmiss_region_add_field_cache(Cmiss_region_id region, Cmiss_field_cache_id cache);
+
+/***************************************************************************//**
+ * Removes cache from the list of caches for this region.
+ */
+void Cmiss_region_remove_field_cache(Cmiss_region_id region,
+	Cmiss_field_cache_id cache);
+
+/***************************************************************************//**
  * Option_table modifier function for selecting a region by relative path.
  * @see Option_table_add_set_Cmiss_region
  */

@@ -45,6 +45,7 @@ elements.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "api/cmiss_field_module.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
@@ -82,7 +83,8 @@ be used when integrating over the element.
 
 struct Integrate_Computed_field_over_element_data
 {
-	FE_value *result,time,*values;
+	Cmiss_field_cache_id field_cache;
+	FE_value *result, *values;
 	int error_code,number_of_components;
 	struct Computed_field *field;
 	struct Integration_scheme *scheme;
@@ -165,7 +167,7 @@ using the given scheme.  The result array needs to be big enough to hold one
 value for each component of the field.
 ==============================================================================*/
 {
-	FE_value *abscissa,*result,time,*values,*weight;
+	FE_value *abscissa,*result, *values,*weight;
 	int dimension,i,j,number_of_components,return_code;
 	struct Computed_field *field;
 	struct Integrate_Computed_field_over_element_data *data;
@@ -177,20 +179,20 @@ value for each component of the field.
 		integrate_Computed_field_over_element_data_void)&&(field=data->field)&&
 		(scheme=data->scheme)&&(values=data->values)&&(result=data->result))
 	{
-		if (Computed_field_is_defined_in_element(field,element))
+		if (Cmiss_field_cache_set_element(data->field_cache, element) &&
+			Cmiss_field_is_defined_at_location(field, data->field_cache))
 		{
 			if (Integration_scheme_get_dimension(scheme,&dimension)&&
 				(dimension==get_FE_element_dimension(element))&&
 				Integration_scheme_get_weights_and_abscissae(scheme,element,&i,&weight,
 				&abscissa))
 			{
-				time=data->time;
 				number_of_components=data->number_of_components;
 				return_code=1;
 				while (return_code&&(i>0))
 				{
-					if (Computed_field_evaluate_in_element(field,element,abscissa,time,
-						(struct FE_element *)NULL,values,(FE_value *)NULL))
+					if (Cmiss_field_cache_set_mesh_location(data->field_cache, element, dimension, abscissa) &&
+						Cmiss_field_evaluate_real(field, data->field_cache, number_of_components, values))
 					{
 						for (j=0;j<number_of_components;j++)
 						{
@@ -206,7 +208,6 @@ value for each component of the field.
 						return_code=0;
 					}
 				}
-				Computed_field_clear_cache(field);
 			}
 			else
 			{
@@ -482,9 +483,12 @@ value for each component of the <field>.
 				ALLOCATE(integrate_Computed_field_over_element_data.values,FE_value,
 				number_of_components))
 			{
+				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+				Cmiss_field_cache_set_time(field_cache, time);
+				integrate_Computed_field_over_element_data.field_cache = field_cache;
 				integrate_Computed_field_over_element_data.field=field;
 				integrate_Computed_field_over_element_data.scheme=scheme;
-				integrate_Computed_field_over_element_data.time=time;
 				integrate_Computed_field_over_element_data.result=result;
 				integrate_Computed_field_over_element_data.number_of_components=
 					number_of_components;
@@ -502,6 +506,8 @@ value for each component of the <field>.
 						integrate_Computed_field_over_element_data.error_code);
 				}
 				DEALLOCATE(integrate_Computed_field_over_element_data.values);
+				Cmiss_field_cache_destroy(&field_cache);
+				Cmiss_field_module_destroy(&field_module);
 			}
 			else
 			{

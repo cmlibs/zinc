@@ -123,7 +123,7 @@ private:
 		return (NULL != dynamic_cast<Field_parameters<ValueType> *>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -159,28 +159,11 @@ public:
 };
 
 template <typename ValueType>
-int Field_parameters<ValueType>::evaluate_cache_at_location(Field_location* location)
+int Field_parameters<ValueType>::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	if (field && location)
-	{
-		field->values[0] = 0;
-#if defined (FUTURE_CODE)
-		// GRC update for parameter lookup
-		EnsembleEntryRef ref;
-		if (location.getEnsembleEntry(this, ref))
-		{
-			Cmiss_ensemble_entry_identifier identifier = getIdentifier(ref);
-			if (0 < identifier)
-			{
-				field->values[0] = static_cast<FE_value>(identifier);
-				return_code = 1;
-			}
-		}
-#endif
-		field->derivatives_valid = 0;
-	}
-	return (return_code);
+	USE_PARAMETER(cache);
+	USE_PARAMETER(inValueCache);
+	return 0;
 }
 
 template <typename ValueType>

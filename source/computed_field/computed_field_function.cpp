@@ -90,13 +90,18 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
-
-	int set_values_at_location(Field_location* location, const FE_value *values);
 
 };
 
@@ -131,129 +136,82 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_function::compare */
 
-int Computed_field_function::evaluate_cache_at_location(
-	Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_function::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, j, return_code;
-
-	ENTER(Computed_field_function::evaluate_cache_at_location);
-	if (field && location)
+	Cmiss_field_id sourceField = getSourceField(0);
+	Cmiss_field_id resultField = getSourceField(1);
+	Cmiss_field_id referenceField = getSourceField(2);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate first source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_cache_at_location(field->source_fields[0],
-			location);
-		if (return_code)
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		extraCache.setTime(cache.getTime());
+		int number_of_xi = cache.getRequestedDerivatives();
+		if ((sourceField->number_of_components == referenceField->number_of_components))
 		{
-			int number_of_derivatives;
-			if (location->get_number_of_derivatives() &&
-				field->source_fields[0]->derivatives_valid)
+			RealFieldValueCache *resultCache = 0;
+			if (number_of_xi && sourceCache->derivatives_valid)
 			{
-				number_of_derivatives = location->get_number_of_derivatives();
+				extraCache.setFieldRealWithDerivatives(referenceField, referenceField->number_of_components,
+					sourceCache->values, number_of_xi, sourceCache->derivatives);
+				resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
 			}
 			else
 			{
-				number_of_derivatives = 0;
+				extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
+				resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 			}
-
-			if ((field->source_fields[0]->number_of_components ==
-				field->source_fields[2]->number_of_components))
+			if (resultCache)
 			{
-				Field_coordinate_location coordinate_location(
-					field->source_fields[2],
-					field->source_fields[0]->number_of_components,
-					field->source_fields[0]->values, location->get_time(),
-					number_of_derivatives, field->source_fields[0]->derivatives);
-				return_code=Computed_field_evaluate_cache_at_location(
-						 field->source_fields[1], &coordinate_location);
-				if (return_code)
+				valueCache.copyValues(*resultCache);
+				return 1;
+			}
+		}
+		else
+		{
+			/* Apply the scalar function operation to each source field component */
+			valueCache.derivatives_valid = sourceCache->derivatives_valid;
+			for (int i = 0; i < field->number_of_components; i++)
+			{
+				RealFieldValueCache *resultCache = 0;
+				if (valueCache.derivatives_valid)
 				{
-					/* copy values from cache to <values> */
-					for (i=0;i<field->number_of_components;i++)
+					extraCache.setFieldRealWithDerivatives(referenceField, 1,
+						sourceCache->values + i, number_of_xi, sourceCache->derivatives + i*number_of_xi);
+					resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
+				}
+				else
+				{
+					extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
+					resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
+				}
+				if (!resultCache)
+					return 0;
+				valueCache.values[i] = resultCache->values[0];
+				if (valueCache.derivatives_valid)
+				{
+					if (resultCache->derivatives_valid)
 					{
-						field->values[i]=field->source_fields[1]->values[i];
-					}
-					if (number_of_derivatives &&
-						field->source_fields[1]->derivatives_valid)
-					{
-						for (i=0;i<field->number_of_components*number_of_derivatives;i++)
+						for (int j=0;j<number_of_xi;j++)
 						{
-							field->derivatives[i]=field->source_fields[1]->derivatives[i];
+							valueCache.derivatives[i*number_of_xi+j] = resultCache->derivatives[j];
 						}
-						field->derivatives_valid = 1;
 					}
 					else
 					{
-						field->derivatives_valid = 0;
+						valueCache.derivatives_valid = 0;
 					}
 				}
 			}
-			else
-			{
-				/* Apply the scalar function operation to each source
-					field component */
-				return_code = 1;
-
-				/* Make all the locations before evaluating any of the 
-					result field values in case the result_field from 
-					reference_field calculation also involves the source field
-					and the subsequent evaluations would overwrite the current values. */
-				Field_coordinate_location **locations = new Field_coordinate_location*[field->number_of_components];
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					locations[i] = new Field_coordinate_location(
-						field->source_fields[2],
-						1, field->source_fields[0]->values +i,
-						location->get_time(),
-						number_of_derivatives,
-						field->source_fields[0]->derivatives +i*number_of_derivatives);
-				}
-				for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
-				{
-					field->derivatives_valid = 1;
-					return_code=Computed_field_evaluate_cache_at_location(
-						field->source_fields[1], locations[i]);
-					if (return_code)
-					{
-						field->values[i]=field->source_fields[1]->values[0];
-						if (number_of_derivatives && 
-							field->source_fields[1]->derivatives_valid)
-						{
-							for (j=0;j<number_of_derivatives;j++)
-							{
-								field->derivatives[i*number_of_derivatives+j]=
-									field->source_fields[1]->derivatives[j];
-							}
-						}
-						else
-						{
-							field->derivatives_valid = 0;
-						}
-					}
-					delete locations[i];
-				}
-				delete [] locations;
-			}
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_function::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* Computed_field_function::evaluate_cache_at_location */
-
+#if defined (OLD_CODE)
+// commenting out as doesn't look like it can work
 int Computed_field_function::set_values_at_location(
 	Field_location* location, const FE_value *values)
 /*******************************************************************************
@@ -314,6 +272,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Computed_field_function::set_values_at_location */
+#endif
 
 int Computed_field_function::list()
 /*******************************************************************************

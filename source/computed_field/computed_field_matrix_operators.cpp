@@ -154,66 +154,42 @@ private:
 		return (0 != dynamic_cast<Computed_field_determinant*>(other_field));
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_determinant::evaluate_cache_at_location(
-    Field_location* location)
+int Computed_field_determinant::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_determinant::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		if (0 == location->get_number_of_derivatives())
+		FE_value *source_values = sourceCache->values;
+		switch (getSourceField(0)->number_of_components)
 		{
-			return_code = Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
-			if (return_code)
-			{
-				FE_value *source_values = field->source_fields[0]->values;
-				switch (field->source_fields[0]->number_of_components)
-				{
-				case 1:
-					field->values[0] = source_values[0];
-					break;
-				case 4:
-					field->values[0] = source_values[0]*source_values[3] - source_values[1]*source_values[2];
-					break;
-				case 9:
-					field->values[0] =
-						source_values[0]*(source_values[4]*source_values[8] - source_values[5]*source_values[7]) +
-						source_values[1]*(source_values[5]*source_values[6] - source_values[3]*source_values[8]) +
-						source_values[2]*(source_values[3]*source_values[7] - source_values[4]*source_values[6]);
-					break;
-				default:
-					return_code = 0;
-					break;
-				}
-			}
+		case 1:
+			valueCache.values[0] = source_values[0];
+			break;
+		case 4:
+			valueCache.values[0] = source_values[0]*source_values[3] - source_values[1]*source_values[2];
+			break;
+		case 9:
+			valueCache.values[0] =
+				source_values[0]*(source_values[4]*source_values[8] - source_values[5]*source_values[7]) +
+				source_values[1]*(source_values[5]*source_values[6] - source_values[3]*source_values[8]) +
+				source_values[2]*(source_values[3]*source_values[7] - source_values[4]*source_values[6]);
+			break;
+		default:
+			return 0;
+			break;
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_determinant::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of determinant");
-			return_code = 0;
-		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_determinant::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_determinant::evaluate_cache_at_location */
+	return 0;
+}
 
 int Computed_field_determinant::list()
 {
@@ -325,22 +301,45 @@ int define_Computed_field_type_determinant(struct Parse_state *state,
 
 namespace {
 
+class EigenvalueFieldValueCache : public RealFieldValueCache
+{
+public:
+	/* cache for matrix, eigenvectors. eigenvalues go in values member of base class */
+	double *a, *v;
+
+	EigenvalueFieldValueCache(int componentCount) :
+		RealFieldValueCache(componentCount),
+		a(new double[componentCount*componentCount]),
+		v(new double[componentCount*componentCount])
+	{
+	}
+
+	virtual ~EigenvalueFieldValueCache()
+	{
+		delete[] a;
+		delete[] v;
+	}
+
+	static EigenvalueFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<EigenvalueFieldValueCache*>(valueCache);
+	}
+
+	static EigenvalueFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<EigenvalueFieldValueCache&>(valueCache);
+	}
+};
+
 char computed_field_eigenvalues_type_string[] = "eigenvalues";
 
 class Computed_field_eigenvalues : public Computed_field_core
 {
 public:
-	/* cache for matrix, eigenvalues and eigenvectors */
-	double *a, *d, *v;
 
 	Computed_field_eigenvalues() : Computed_field_core()
 	{
-		a = (double*)NULL;
-		d = (double*)NULL;
-		v = (double*)NULL;
 	};
-
-	~Computed_field_eigenvalues();
 
 private:
 	Computed_field_core *copy()
@@ -365,199 +364,49 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		return new EigenvalueFieldValueCache(field->number_of_components);
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
-
-	int clear_cache();
-
-	int evaluate();
 };
 
-Computed_field_eigenvalues::~Computed_field_eigenvalues()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
+int Computed_field_eigenvalues::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	ENTER(Computed_field_eigenvalues::~Computed_field_eigenvalues);
-	if (field)
+	EigenvalueFieldValueCache &valueCache = EigenvalueFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		if (a)
+		const int n = field->number_of_components;
+		const int matrix_size = n * n;
+		Cmiss_field_id source_field = getSourceField(0);
+		for (int i = 0; i < matrix_size; i++)
 		{
-			DEALLOCATE(a);
+			valueCache.a[i] = (double)(sourceCache->values[i]);
 		}
-		if (d)
+		if (!matrix_is_symmetric(n, valueCache.a, 1.0E-6))
 		{
-			DEALLOCATE(d);
+			display_message(WARNING_MESSAGE,
+				"Eigenanalysis of field %s may be wrong as matrix not symmetric",
+				source_field->name);
 		}
-		if (v)
+		/* get eigenvalues and eigenvectors sorted from largest to smallest */
+		int nrot;
+		if (Jacobi_eigenanalysis(n, valueCache.a, valueCache.values, valueCache.v, &nrot) &&
+			eigensort(n, valueCache.values, valueCache.v))
 		{
-			DEALLOCATE(v);
+			/* values now contains the eigenvalues, v the eigenvectors in columns, while
+				 values of a above the main diagonal are destroyed */
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvalues::~Computed_field_eigenvalues.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-} /* Computed_field_eigenvalues::~Computed_field_eigenvalues */
-
-int Computed_field_eigenvalues::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_eigenvalues::clear_cache);
-	if (field)
-	{
-		if (a)
-		{
-			DEALLOCATE(a);
-		}
-		if (d)
-		{
-			DEALLOCATE(d);
-		}
-		if (v)
-		{
-			DEALLOCATE(v);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvalues::clear_cache(.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_eigenvalues::clear_cache( */
-
-int Computed_field_eigenvalues::evaluate()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluates the eigenvalues and eigenvectors of the source field of <field> in
-double precision in the type_specific_data then copies the eigenvalues to the
-field->values.
-==============================================================================*/
-{
-	int i, matrix_size, n, nrot, return_code;
-	struct Computed_field *source_field;
-	
-	ENTER(Computed_field_eigenvalues::evaluate);
-	if (field)
-	{
-		n = field->number_of_components;
-		matrix_size = n * n;
-		if ((a || ALLOCATE(a, double, matrix_size)) &&
-			(d || ALLOCATE(d, double, n)) &&
-			(v || ALLOCATE(v, double, matrix_size)))
-		{
-			source_field = field->source_fields[0];
-			for (i = 0; i < matrix_size; i++)
-			{
-				a[i] = (double)(source_field->values[i]);
-			}
-			if (!matrix_is_symmetric(n, a, 1.0E-6))
-			{
-				display_message(WARNING_MESSAGE,
-					"Eigenanalysis of field %s may be wrong as matrix not symmetric",
-					source_field->name);
-			}
-			/* get eigenvalues and eigenvectors sorted from largest to smallest */
-			if (Jacobi_eigenanalysis(n, a, d, v, &nrot) &&
-				eigensort(n, d, v))
-			{
-				/* d now contains the eigenvalues, v the eigenvectors in columns, while
-					 values of a above the main diagonal are destroyed */
-				/* copy the eigenvalues into the field->values */
-				for (i = 0; i < n; i++)
-				{
-					field->values[i] = (FE_value)(d[i]);
-				}
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_eigenvalues::evaluate.  Eigenanalysis failed");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_eigenvalues::evaluate.  Could not allocate cache");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvalues::evaluate.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_eigenvalues::evaluate */
-
-int Computed_field_eigenvalues::evaluate_cache_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_eigenvalues::evaluate_cache_at_location);
-	if (field && location)
-	{
-		if (0 == location->get_number_of_derivatives())
-		{
-			field->derivatives_valid = 0;
-			return_code = Computed_field_evaluate_source_fields_cache_at_location(
-				field, location)
-				&& evaluate();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_eigenvalues::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of eigenvalues");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvalues::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_eigenvalues::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_eigenvalues::list()
 /*******************************************************************************
@@ -828,116 +677,33 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
-
-	int evaluate();
 };
 
-int Computed_field_eigenvectors::evaluate()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Extracts the eigenvectors out of the source eigenvalues field.
-Note the source field should already have been evaluated.
-==============================================================================*/
+int Computed_field_eigenvectors::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	Computed_field_eigenvalues* eigenvalue_core;
-	double *v;
-	int i, j, n, return_code;
-	struct Computed_field *source_field;
-	
-	ENTER(Computed_field_eigenvectors::evaluate);
-	if (field)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	EigenvalueFieldValueCache *eigenvalueCache = EigenvalueFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (eigenvalueCache)
 	{
-		source_field = field->source_fields[0];
-		eigenvalue_core = dynamic_cast<Computed_field_eigenvalues*>
-				(source_field->core);
-		if (eigenvalue_core != 0)
+		double *v = eigenvalueCache->v;
+		const int n = getSourceField(0)->number_of_components;
+		/* return the vectors across the rows of the field values */
+		for (int i = 0; i < n; i++)
 		{
-			v = eigenvalue_core->v;
-			if (v != 0)
+			for (int j = 0; j < n; j++)
 			{
-				n = source_field->number_of_components;
-				/* return the vectors across the rows of the field values */
-				for (i = 0; i < n; i++)
-				{
-					for (j = 0; j < n; j++)
-					{
-						field->values[i*n + j] = (FE_value)(v[j*n + i]);
-					}
-				}
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_eigenvectors::evaluate.  Missing eigenvalues cache");
-				return_code=0;
+				valueCache.values[i*n + j] = (FE_value)(v[j*n + i]);
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Computed_field_eigenvectors::evaluate.  "
-				"Source field is not an eigenvalues field");
-			return_code=0;
-		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvectors::evaluate.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_eigenvectors::evaluate */
-
-int Computed_field_eigenvectors::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_eigenvectors::evaluate_cache_at_location);
-	if (field && location)
-	{
-		if (0 == location->get_number_of_derivatives())
-		{
-			field->derivatives_valid = 0;
-			return_code = 
-				Computed_field_evaluate_source_fields_cache_at_location(field, location) &&
-				evaluate();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_eigenvectors::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of eigenvectors");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_eigenvectors::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_eigenvectors::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_eigenvectors::list()
 /*******************************************************************************
@@ -1129,23 +895,52 @@ its contents to be modified.
 
 namespace {
 
+
+class MatrixInvertFieldValueCache : public RealFieldValueCache
+{
+public:
+	// cache stores intermediate LU-decomposed matrix and RHS vector in double
+	// precision, as well as the integer pivot indx
+	int n;
+	double *a, *b;
+	int *indx;
+
+	MatrixInvertFieldValueCache(int componentCount, int n) :
+		RealFieldValueCache(componentCount),
+		n(n),
+		a(new double[n*n]),
+		b(new double[n]),
+		indx(new int[n])
+	{
+	}
+
+	virtual ~MatrixInvertFieldValueCache()
+	{
+		delete[] a;
+		delete[] b;
+		delete[] indx;
+	}
+
+	static MatrixInvertFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<MatrixInvertFieldValueCache*>(valueCache);
+	}
+
+	static MatrixInvertFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<MatrixInvertFieldValueCache&>(valueCache);
+	}
+};
+
 char computed_field_matrix_invert_type_string[] = "matrix_invert";
 
 class Computed_field_matrix_invert : public Computed_field_core
 {
 public:
-	/* cache for LU decomposed matrix, RHS vector and pivots */
-	double *a, *b;
-	int *indx;
 
 	Computed_field_matrix_invert() : Computed_field_core()
 	{
-		a = (double*)NULL;
-		b = (double*)NULL;
-		indx = (int*)NULL;
 	};
-
-	~Computed_field_matrix_invert();
 
 private:
 	Computed_field_core *copy()
@@ -1170,212 +965,68 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		return new MatrixInvertFieldValueCache(field->number_of_components, Computed_field_get_square_matrix_size(getSourceField(0)));
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
-
-	int clear_cache();
-
-	int evaluate();
 };
 
-Computed_field_matrix_invert::~Computed_field_matrix_invert()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
+int Computed_field_matrix_invert::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-
-	ENTER(Computed_field_matrix_invert::~Computed_field_matrix_invert);
-	if (field)
+	MatrixInvertFieldValueCache &valueCache = MatrixInvertFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		if (a)
+		const int n = valueCache.n;
+		const int matrix_size = n * n;
+		for (int i = 0; i < matrix_size; i++)
 		{
-			DEALLOCATE(a);
+			valueCache.a[i] = (double)(sourceCache->values[i]);
 		}
-		if (b)
+		double d;
+		if (LU_decompose(n, valueCache.a, valueCache.indx, &d,/*singular_tolerance*/1.0e-12))
 		{
-			DEALLOCATE(b);
-		}
-		if (indx)
-		{
-			DEALLOCATE(indx);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_invert::~Computed_field_matrix_invert.  Invalid argument(s)");
-	}
-	LEAVE;
-
-} /* Computed_field_matrix_invert::~Computed_field_matrix_invert */
-
-int Computed_field_matrix_invert::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_matrix_invert::clear_cache);
-	if (field)
-	{
-		if (a)
-		{
-			DEALLOCATE(a);
-		}
-		if (b)
-		{
-			DEALLOCATE(b);
-		}
-		if (indx)
-		{
-			DEALLOCATE(indx);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_invert::clear_cache.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_matrix_invert::clear_cache */
-
-int Computed_field_matrix_invert::evaluate()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluates the inverse of the matrix held in the <source_field>. The cache is
-used to store intermediate LU-decomposed matrix and RHS vector in double
-precision, as well as the integer pivot indx. Expects that source_field has
-been pre-calculated before calling this.
-==============================================================================*/
-{
-	double d;
-	int i, j, matrix_size, n, return_code;
-	struct Computed_field *source_field;
-	
-	ENTER(Computed_field_matrix_invert::evaluate);
-	if (field)
-	{
-		source_field = field->source_fields[0];
-		n = Computed_field_get_square_matrix_size(source_field);
-		matrix_size = n * n;
-		if ((a || ALLOCATE(a, double, matrix_size)) &&
-			(b || ALLOCATE(b, double, n)) &&
-			(indx || ALLOCATE(indx, int, n)))
-		{
-			for (i = 0; i < matrix_size; i++)
+			for (int i = 0; i < n; i++)
 			{
-				a[i] = (double)(source_field->values[i]);
-			}
-			if (LU_decompose(n, a, indx, &d,/*singular_tolerance*/1.0e-12))
-			{
-				return_code = 1;
-				for (i = 0; (i < n) && return_code; i++)
+				/* take a column of the identity matrix */
+				for (int j = 0; j < n; j++)
 				{
-					/* take a column of the identity matrix */
-					for (j = 0; j < n; j++)
+					valueCache.b[j] = 0.0;
+				}
+				valueCache.b[i] = 1.0;
+				if (LU_backsubstitute(n, valueCache.a, valueCache.indx, valueCache.b))
+				{
+					/* extract a column of the inverse matrix */
+					for (int j = 0; j < n; j++)
 					{
-						b[j] = 0.0;
-					}
-					b[i] = 1.0;
-					if (LU_backsubstitute(n, a, indx, b))
-					{
-						/* extract a column of the inverse matrix */
-						for (j = 0; j < n; j++)
-						{
-							field->values[j*n + i] = (FE_value)b[j];
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_matrix_invert::evaluate.  "
-							"Could not LU backsubstitute matrix");
-						return_code = 0;
+						valueCache.values[j*n + i] = (FE_value)valueCache.b[j];
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_matrix_invert::evaluate.  "
+						"Could not LU backsubstitute matrix");
+					return 0;
+				}
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_matrix_invert::evaluate.  "
-					"Could not LU decompose matrix");
-				return_code = 0;
-			}
+			return 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_matrix_invert::evaluate.  Could not allocate cache");
-			return_code=0;
+				"Computed_field_matrix_invert::evaluate.  "
+				"Could not LU decompose matrix");
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_invert::evaluate.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_matrix_invert::evaluate */
-
-int Computed_field_matrix_invert::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_matrix_invert::evaluate_cache_at_location);
-	if (field && location)
-	{
-		if (0 == location->get_number_of_derivatives())
-		{
-			field->derivatives_valid = 0;
-			return_code = Computed_field_evaluate_source_fields_cache_at_location(
-				field, location)
-				&& evaluate();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_matrix_invert::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of matrix_invert");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_invert::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_matrix_invert::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_matrix_invert::list()
 /*******************************************************************************
@@ -1591,7 +1242,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1630,85 +1281,64 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_matrix_multiply::compare */
 
-int Computed_field_matrix_multiply::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
+int Computed_field_matrix_multiply::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *a,*ad,*b,*bd,sum;
-	int d, i, j, k, m, n, number_of_derivatives, return_code, s;
-
-	ENTER(Computed_field_matrix_multiply::evaluate_cache_at_location);
-	if (field && location && (m = number_of_rows)&&
-		(n = field->source_fields[0]->number_of_components) &&
-		(0 == (n % m)) && (s = n/m) &&
-		(n = field->source_fields[1]->number_of_components) &&
-		(0 == (n % s)) && (n /= s))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		const int m = this->number_of_rows;
+		const int s = getSourceField(0)->number_of_components / m;
+		const int n = getSourceField(1)->number_of_components / s;
+		FE_value *a=source1Cache->values;
+		FE_value *b=source2Cache->values;
+		for (int i=0;i<m;i++)
 		{
-			/* 2. Calculate the field */
-			a=field->source_fields[0]->values;
-			b=field->source_fields[1]->values;
-			for (i=0;i<m;i++)
+			for (int j=0;j<n;j++)
 			{
-				for (j=0;j<n;j++)
+				FE_value sum=0.0;
+				for (int k=0;k<s;k++)
 				{
-					sum=0.0;
-					for (k=0;k<s;k++)
-					{
-						sum += a[i*s+k] * b[k*n+j];
-					}
-					field->values[i*n+j]=sum;
+					sum += a[i*s+k] * b[k*n+j];
 				}
-			}
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (0 < number_of_derivatives)
-			{
-				for (d=0;d<number_of_derivatives;d++)
-				{
-					/* use the product rule */
-					a = field->source_fields[0]->values;
-					ad = field->source_fields[0]->derivatives+d;
-					b = field->source_fields[1]->values;
-					bd = field->source_fields[1]->derivatives+d;
-					for (i=0;i<m;i++)
-					{
-						for (j=0;j<n;j++)
-						{
-							sum=0.0;
-							for (k=0;k<s;k++)
-							{
-								sum += a[i*s+k] * bd[number_of_derivatives*(k*n+j)] +
-									ad[number_of_derivatives*(i*s+k)] * b[k*n+j];
-							}
-							field->derivatives[number_of_derivatives*(i*n+j)+d]=sum;
-						}
-					}
-				}
-				field->derivatives_valid=1;
+				valueCache.values[i*n+j]=sum;
 			}
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
+		{
+			for (int d=0;d<number_of_xi;d++)
+			{
+				/* use the product rule */
+				a = source1Cache->values;
+				FE_value *ad = source1Cache->derivatives+d;
+				b = source2Cache->values;
+				FE_value *bd = source2Cache->derivatives+d;
+				for (int i=0;i<m;i++)
+				{
+					for (int j=0;j<n;j++)
+					{
+						FE_value sum=0.0;
+						for (int k=0;k<s;k++)
+						{
+							sum += a[i*s+k] * bd[number_of_xi*(k*n+j)] +
+								ad[number_of_xi*(i*s+k)] * b[k*n+j];
+						}
+						valueCache.derivatives[number_of_xi*(i*n+j)+d]=sum;
+					}
+				}
+			}
+			valueCache.derivatives_valid=1;
+		}
+		else
+		{
+			valueCache.derivatives_valid=0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_multiply::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_matrix_multiply::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_matrix_multiply::list()
 /*******************************************************************************
@@ -1792,7 +1422,8 @@ Computed_field *Cmiss_field_module_create_matrix_multiply(
 	struct Computed_field *source_field2)
 {
 	Computed_field *field = NULL;
-	if (field_module && (0 < number_of_rows) && source_field1 && source_field2)
+	if (field_module && (0 < number_of_rows) && source_field1 && source_field1->isNumerical() &&
+		source_field2 && source_field2->isNumerical())
 	{
 		int nc1 = source_field1->number_of_components;
 		int nc2 = source_field2->number_of_components;
@@ -2040,168 +1671,102 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int evaluate(int number_of_derivatives);
-
-	int set_values_at_location(Field_location* location, const FE_value *values);
-
-	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		FE_value time, Cmiss_mesh_id mesh);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_projection::evaluate(int number_of_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute a field
-transformed by a projection matrix.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives)
-for the same element, with the given <number_of_derivatives> = number of Xi coords.
-==============================================================================*/
+int Computed_field_projection::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double dhdxi, dh1dxi, perspective;
-	int coordinate_components, i, j, k,return_code;
-
-	ENTER(Computed_field_projection::evaluate);
-	if (field)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		if (number_of_derivatives > 0)
-		{
-			field->derivatives_valid=1;
-		}
-		else
-		{
-			field->derivatives_valid=0;
-		}
-
 		/* Calculate the transformed coordinates */
-		coordinate_components=field->source_fields[0]->number_of_components;
-		double *projection_matrix = field->source_fields[1]->values;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		int coordinate_components = getSourceField(0)->number_of_components;
+		FE_value *projection_matrix = source2Cache->values;
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			field->values[i] = 0.0;
-			for (j = 0 ; j < coordinate_components ; j++)
+			valueCache.values[i] = 0.0;
+			for (int j = 0 ; j < coordinate_components ; j++)
 			{
- 				field->values[i] +=
+ 				valueCache.values[i] +=
 					projection_matrix[i * (coordinate_components + 1) + j] *
-					field->source_fields[0]->values[j];
+					source1Cache->values[j];
 			}
 			/* The last source value is fixed at 1 */
-			field->values[i] += projection_matrix[
+			valueCache.values[i] += projection_matrix[
 				i * (coordinate_components + 1) + coordinate_components];
 		}
-
 		/* The last calculated value is the perspective value which divides through
 			all the other components */
-		perspective = 0.0;
-		for (j = 0 ; j < coordinate_components ; j++)
+		FE_value perspective = 0.0;
+		for (int j = 0 ; j < coordinate_components ; j++)
 		{
 			perspective += projection_matrix[field->number_of_components
-				* (coordinate_components + 1) + j] * field->source_fields[0]->values[j];
+				* (coordinate_components + 1) + j] * source1Cache->values[j];
 		}
 		perspective += projection_matrix[field->number_of_components 
 			* (coordinate_components + 1) + coordinate_components];
 		
-		if (number_of_derivatives > 0)
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
 		{
-			for (k=0;k<number_of_derivatives;k++)
+			for (int k=0;k<number_of_xi;k++)
 			{
 				/* Calculate the coordinate derivatives without perspective */
-				for (i = 0 ; i < field->number_of_components ; i++)
+				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
-					field->derivatives[i * number_of_derivatives + k] = 0.0;
-					for (j = 0 ; j < coordinate_components ; j++)
+					valueCache.derivatives[i * number_of_xi + k] = 0.0;
+					for (int j = 0 ; j < coordinate_components ; j++)
 					{
-						field->derivatives[i * number_of_derivatives + k] += 
+						valueCache.derivatives[i * number_of_xi + k] +=
 							projection_matrix[i * (coordinate_components + 1) + j]
-							* field->source_fields[0]->derivatives[j * number_of_derivatives + k];
+							* source1Cache->derivatives[j * number_of_xi + k];
 					}
 				}
-
 				/* Calculate the perspective derivative */
-				dhdxi = 0.0;
-				for (j = 0 ; j < coordinate_components ; j++)
+				FE_value dhdxi = 0.0;
+				for (int j = 0 ; j < coordinate_components ; j++)
 				{
 					dhdxi += projection_matrix[field->number_of_components 
 						* (coordinate_components + 1) + j]
-						* field->source_fields[0]->derivatives[j *number_of_derivatives + k];
+						* source1Cache->derivatives[j *number_of_xi + k];
 				}
 
 				/* Calculate the perspective reciprocal derivative using chain rule */
-				dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
+				FE_value dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
 
 				/* Calculate the derivatives of the perspective scaled transformed
 					 coordinates, which is ultimately what we want */
-				for (i = 0 ; i < field->number_of_components ; i++)
+				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
-					field->derivatives[i * number_of_derivatives + k] = 
-						field->derivatives[i * number_of_derivatives + k] / perspective
-						+ field->values[i] * dh1dxi;
+					valueCache.derivatives[i * number_of_xi + k] =
+						valueCache.derivatives[i * number_of_xi + k] / perspective
+						+ valueCache.values[i] * dh1dxi;
 				}
 			}
+			valueCache.derivatives_valid = 1;
 		}
-
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
 		/* Now apply the perspective scaling to the non derivative transformed
 			 coordinates */
-		for (i = 0 ; i < field->number_of_components ; i++)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			field->values[i] /= perspective;
+			valueCache.values[i] /= perspective;
 		}
-
-		return_code = 1;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_projection::evaluate.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_projection::evaluate */
-
-int Computed_field_projection::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_projection::evaluate_cache_at_location);
-	if (field && location)
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
-		{
-			return_code=evaluate(location->get_number_of_derivatives());
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_projection::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_projection::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_projection::list()
 /*******************************************************************************
@@ -2275,131 +1840,44 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_projection::get_command_string */
 
-int Computed_field_projection::set_values_at_location(
-   Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <location>.
-==============================================================================*/
+/** inverts the common 4x4 homogeneous transformation only */
+enum FieldAssignmentResult Computed_field_projection::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	double d,result[4];
-	int indx[4],return_code;
-	FE_value source_values[3];
-
-	ENTER(Computed_field_window_projection::set_values_at_location);
-	if (field && location && values)
+	if ((field->number_of_components == 3) && (matrix_rows == 4) && (matrix_columns == 4))
 	{
-		field->derivatives_valid = 0;
-		if (matrix_rows == matrix_columns)
+		Cmiss_field_id coordinateField = getSourceField(0);
+		Cmiss_field_id projectionField = getSourceField(1);
+		RealFieldValueCache *projectionCache = RealFieldValueCache::cast(projectionField->evaluate(cache));
+		if (projectionCache)
 		{
-			double *projection_matrix = field->source_fields[1]->values;
-			double *lu_matrix = NULL;
-			lu_matrix = new double[matrix_rows * matrix_columns];
-			copy_matrix(4,4,projection_matrix,lu_matrix);
-			result[0] = (double)values[0];
-			result[1] = (double)values[1];
-			result[2] = (double)values[2];
+			// Inefficient; inverse matrix could be cached
+			valueCache.derivatives_valid = 0;
+			double *projection_matrix = projectionCache->values;
+			double lu_matrix[16];
+			for (int i = 0; i < 16; ++i)
+			{
+				lu_matrix[i] = projection_matrix[i];
+			}
+			double d, result[4];
+			int indx[4];
+			result[0] = (double)valueCache.values[0];
+			result[1] = (double)valueCache.values[1];
+			result[2] = (double)valueCache.values[2];
 			result[3] = 1.0;
 			if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
 				LU_backsubstitute(4,lu_matrix,indx,result) &&
 				(0.0 != result[3]))
 			{
-				source_values[0] = (result[0] / result[3]);
-				source_values[1] = (result[1] / result[3]);
-				source_values[2] = (result[2] / result[3]);
-				return_code=Computed_field_set_values_at_location(
-					field->source_fields[0],location,source_values);
+				RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinateField->getValueCache(cache));
+				coordinateCache->values[0] = (result[0] / result[3]);
+				coordinateCache->values[1] = (result[1] / result[3]);
+				coordinateCache->values[2] = (result[2] / result[3]);
+				return coordinateField->assign(cache, *coordinateCache);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_projection::set_values_at_location.  "
-					"Could not invert field %s",field->name);
-				return_code=0;
-			}
-			delete[] lu_matrix;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_projection::set_values_at_location.  "
-				"Project matrix is not a square matrix.");
-			return_code=0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_projection::set_values_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_window_projection::set_values_at_location */
-
-int Computed_field_projection::propagate_find_element_xi(
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
-{
-	double d,result[4];
-	int indx[4],return_code;
-	FE_value source_values[3];
-
-	ENTER(Computed_field_window_projection::propagate_find_element_xi);
-	if (field && values && (number_of_values==field->number_of_components))
-	{
-		if (matrix_rows == matrix_columns)
-		{
-			double *projection_matrix = field->source_fields[1]->values;
-			double *lu_matrix = NULL;
-			lu_matrix = new double[matrix_rows * matrix_columns];
-			copy_matrix(matrix_rows,matrix_columns,projection_matrix,lu_matrix);
-			result[0] = (double)values[0];
-			result[1] = (double)values[1];
-			result[2] = (double)values[2];
-			result[3] = 1.0;
-			if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
-				LU_backsubstitute(4,lu_matrix,indx,result) &&
-				(0.0 != result[3]))
-			{
-				source_values[0] = (result[0] / result[3]);
-				source_values[1] = (result[1] / result[3]);
-				source_values[2] = (result[2] / result[3]);
-				return_code=Computed_field_find_element_xi(
-					field->source_fields[0], source_values, 3, time, element_address,
-					xi, mesh, /*propagate_field*/1,
-					/*find_nearest_location*/0);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_projection::propagate_find_element_xi.  "
-					"Could not invert field %s",field->name);
-				return_code=0;
-			}
-			delete[] lu_matrix;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_projection::propagate_find_element_xi.  "
-				"Project matrix is not a square matrix.");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection::propagate_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_window_projection::propagate_find_element_xi */
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
+}
 
 } //namespace
 
@@ -2408,7 +1886,8 @@ Cmiss_field_id Cmiss_field_module_create_projection(
 	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field)
 {
 	Computed_field *field = NULL;
-	if (field_module && source_field && projection_matrix_field)
+	if (field_module && source_field && source_field->isNumerical() &&
+		projection_matrix_field && projection_matrix_field->isNumerical())
 	{
 		int number_of_components = (projection_matrix_field->number_of_components /
 			(source_field->number_of_components + 1)) - 1;
@@ -2576,7 +2055,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -2615,72 +2094,52 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_transpose::compare */
 
-int Computed_field_transpose::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
+int Computed_field_transpose::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *destination_derivatives, *source_derivatives, *source_values;
-	int d, number_of_derivatives, i, j, m, n, return_code;
-
-	ENTER(Computed_field_transpose::evaluate_cache_at_location);
-	if (field && location && (m = source_number_of_rows) &&
-		(n = (field->source_fields[0]->number_of_components / m)))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		const int m = this->source_number_of_rows;
+		const int n = getSourceField(0)->number_of_components / m;
+		FE_value *source_values = sourceCache->values;
+		for (int i = 0; i < n; i++)
 		{
-			/* 2. Calculate the field */
-			source_values = field->source_fields[0]->values;
-			for (i = 0; i < n; i++)
+			for (int j = 0; j < m; j++)
 			{
-				for (j = 0; j < m; j++)
-				{
-					field->values[i*m + j] = source_values[j*n + i];
-				}
-			}
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (0 < number_of_derivatives)
-			{
-				/* transpose derivatives in same way as values */
-				for (i = 0; i < n; i++)
-				{
-					for (j = 0; j < m; j++)
-					{
-						source_derivatives = field->source_fields[0]->derivatives +
-							number_of_derivatives*(j*n + i);
-						destination_derivatives = field->derivatives +
-							number_of_derivatives*(i*m + j);
-						for (d = 0; d < number_of_derivatives; d++)
-						{
-							destination_derivatives[d] = source_derivatives[d];
-						}
-					}
-				}
-				field->derivatives_valid=1;
+				valueCache.values[i*m + j] = source_values[j*n + i];
 			}
 		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			/* transpose derivatives in same way as values */
+			for (int i = 0; i < n; i++)
+			{
+				for (int j = 0; j < m; j++)
+				{
+					FE_value *source_derivatives = sourceCache->derivatives +
+						number_of_xi*(j*n + i);
+					FE_value *destination_derivatives = valueCache.derivatives +
+						number_of_xi*(i*m + j);
+					for (int d = 0; d < number_of_xi; d++)
+					{
+						destination_derivatives[d] = source_derivatives[d];
+					}
+				}
+			}
+			valueCache.derivatives_valid=1;
+		}
+		else
+		{
+			valueCache.derivatives_valid=0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_transpose::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_transpose::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_transpose::list()
 /*******************************************************************************
@@ -2757,7 +2216,7 @@ Computed_field *Cmiss_field_module_create_transpose(
 	int source_number_of_rows, struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_module && (0 < source_number_of_rows) && source_field &&
+	if (field_module && (0 < source_number_of_rows) && source_field && source_field->isNumerical() &&
 		(0 == (source_field->number_of_components % source_number_of_rows)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2960,48 +2419,28 @@ private:
 			}			
 	 }
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_quaternion_to_matrix::evaluate_cache_at_location(
-	 Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 18 Jun 2008
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_quaternion_to_matrix::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	 int return_code;
-
-	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
-	 return_code = 0;
-	 if (field && location && field->number_of_components == 16 &&
-			field->source_fields[0]->number_of_components == 4)
-	 {
-			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
-			{
-				Quaternion quat(
-					/*w*/field->source_fields[0]->values[0],
-					/*x*/field->source_fields[0]->values[1],
-					/*y*/field->source_fields[0]->values[2],
-					/*z*/field->source_fields[0]->values[3]);
-				return_code = quat.quaternion_to_matrix(field->values);
-			}
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "Computed_field_quaternion_to_matrix::evaluate_cache_at_location.  "
-				 "Invalid argument(s)");
-	 }
-	 
-	 return (return_code);
-} /* Computed_field_quaternion_to_matrix::evaluate_cache_at_location */
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
+	{
+		Quaternion quat(
+			/*w*/sourceCache->values[0],
+			/*x*/sourceCache->values[1],
+			/*y*/sourceCache->values[2],
+			/*z*/sourceCache->values[3]);
+		return quat.quaternion_to_matrix(valueCache.values);
+	}
+	return 0;
+}
 
 int Computed_field_quaternion_to_matrix::list()
 /*******************************************************************************
@@ -3082,7 +2521,8 @@ Computed_field *Computed_field_create_quaternion_to_matrix(
 	struct Computed_field *source_field) 
 {
 	struct Computed_field *field = NULL;
-	if (field_module && source_field && (source_field->number_of_components == 4))
+	if (field_module && source_field && source_field->isNumerical() &&
+		(source_field->number_of_components == 4))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -3261,45 +2701,24 @@ private:
 			}
 	 }
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_matrix_to_quaternion::evaluate_cache_at_location(
-	 Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 22 February 2008
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_matrix_to_quaternion::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	 int return_code;
-
-	 ENTER(Computed_field_matrix_to_quaternion::evaluate_cache_at_location);
-	 return_code = 0;
-	 if (field && location && field->number_of_components == 4 &&
-			field->source_fields[0]->number_of_components == 16)
-	 {
-			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
-			{
-				return_code = Quaternion::matrix_to_quaternion(
-					/*source*/field->source_fields[0]->values, /*destination*/field->values);
-			}
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "Computed_field_matrix_to_quaternion::evaluate_cache_at_location.  "
-				 "Invalid argument(s)");
-	 }
-
-	 
-	 return (return_code);
-} /* Computed_field_matrix_to_quaternion::evaluate_cache_at_location */
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
+	{
+		return Quaternion::matrix_to_quaternion(
+			/*source*/sourceCache->values, /*destination*/valueCache.values);
+	}
+	return 0;
+}
 
 int Computed_field_matrix_to_quaternion::list()
 /*******************************************************************************
@@ -3381,7 +2800,8 @@ Computed_field *Computed_field_create_matrix_to_quaternion(
 	struct Computed_field *source_field) 
 {
 	struct Computed_field *field = NULL;
-	if (field_module && source_field && (source_field->number_of_components == 16))
+	if (field_module && source_field && source_field->isNumerical() &&
+		(source_field->number_of_components == 16))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,

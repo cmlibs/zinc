@@ -44,6 +44,7 @@ cannot reside in finite element modules.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include <math.h>
+#include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "node/node_operations.h"
 #include "user_interface/message.h"
@@ -62,9 +63,9 @@ DESCRIPTION :
 {
 	struct FE_region *fe_region;
 	struct Multi_range *node_ranges;
+	Cmiss_field_cache_id field_cache;
 	struct Computed_field *group_field;
 	struct Computed_field *conditional_field;
-	FE_value conditional_field_time;
 	struct LIST(FE_node) *node_list;
 }; /* struct FE_node_fe_region_selection_ranges_condition_data */
 
@@ -89,15 +90,17 @@ DESCRIPTION :
 		{
 			selected = FE_node_is_in_Multi_range(node, data->node_ranges);
 		}
-		if (selected && data->conditional_field)
+		if (selected)
 		{
-			selected = Computed_field_is_true_at_node(data->conditional_field,
-				node, data->conditional_field_time);
-		}
-		if (selected && data->group_field)
-		{
-			selected = Computed_field_is_true_at_node(data->group_field,
-				node, data->conditional_field_time);
+			if (data->group_field || data->conditional_field)
+			{
+				Cmiss_field_cache_set_node(data->field_cache, node);
+				if ((data->group_field && !Cmiss_field_evaluate_boolean(data->group_field, data->field_cache)) ||
+					(data->conditional_field && !Cmiss_field_evaluate_boolean(data->conditional_field, data->field_cache)))
+				{
+					selected = 0;
+				}
+			}
 		}
 		if (selected)
 		{
@@ -175,18 +178,14 @@ are identival. Used as a compare function for qsort.
 
 struct FE_node_and_values_to_array_data
 {
-	FE_value time;
+	Cmiss_field_cache_id field_cache;
 	struct FE_node_values_number *node_values;
 	struct Computed_field *sort_by_field;
+	int number_of_values;
 }; /* FE_node_and_values_to_array_data */
 
 static int FE_node_and_values_to_array(struct FE_node *node,
 	void *array_data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 December 2000
-
-DESCRIPTION :
-==============================================================================*/
 {
 	int return_code;
 	struct FE_node_and_values_to_array_data *array_data;
@@ -197,12 +196,13 @@ DESCRIPTION :
 		array_data->node_values)
 	{
 		return_code = 1;
+		Cmiss_field_cache_set_node(array_data->field_cache, node);
 		array_data->node_values->node = node;
 		if (array_data->sort_by_field)
 		{
-			if (!(array_data->node_values->values && Computed_field_evaluate_at_node(
-				array_data->sort_by_field, node, array_data->time,
-				array_data->node_values->values)))
+			if (!(array_data->node_values->values &&
+				Cmiss_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+					array_data->number_of_values, array_data->node_values->values)))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "
 					"sort_by field could not be evaluated at node");
@@ -253,6 +253,8 @@ allowed during identifier changes.
 		number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 		if (0 < number_of_nodes)
 		{
+			Cmiss_field_module_id field_module;
+			Cmiss_field_cache_id field_cache;
 			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (sort_by_field)
 			{
@@ -286,10 +288,14 @@ allowed during identifier changes.
 				}
 				if (return_code)
 				{
+					field_module = Cmiss_region_get_field_module(FE_region_get_Cmiss_region(fe_region));
+					field_cache = Cmiss_field_module_create_cache(field_module);
+					Cmiss_field_cache_set_time(field_cache, time);
 					/* make a linear array of the nodes in the group in current order */
+					array_data.field_cache = field_cache;
 					array_data.node_values = node_values;
 					array_data.sort_by_field = sort_by_field;
-					array_data.time = time;
+					array_data.number_of_values = number_of_values;
 					if (!FE_region_for_each_FE_node(fe_region,
 						FE_node_and_values_to_array, (void *)&array_data))
 					{
@@ -298,6 +304,8 @@ allowed during identifier changes.
 							"Could not build node/field values array");
 						return_code = 0;
 					}
+					Cmiss_field_cache_destroy(&field_cache);
+					Cmiss_field_module_destroy(&field_module);
 				}
 				if (return_code)
 				{
@@ -432,7 +440,7 @@ struct LIST(FE_node) *
 		FE_value time, int use_data)
 {
 	int i, node_number, nodes_in_region, nodes_in_ranges = 0,
-		number_of_ranges = 0, return_code, selected = 1, start, stop;
+		number_of_ranges = 0, return_code, start, stop;
 	struct FE_node *node;
 	struct FE_node_fe_region_selection_ranges_condition_data data;
 	struct FE_region *fe_region = NULL;
@@ -450,6 +458,9 @@ struct LIST(FE_node) *
 		data.node_list = CREATE(LIST(FE_node))();
 		if (NULL != data.node_list)
 		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			data.field_cache = Cmiss_field_module_create_cache(field_module);
+			Cmiss_field_cache_set_time(data.field_cache, time);
 			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
 			if (node_ranges)
 			{
@@ -469,7 +480,6 @@ struct LIST(FE_node) *
 			}
 			data.conditional_field = conditional_field;
 			data.group_field = group_field;
-			data.conditional_field_time = time;
 
 			if (data.node_ranges
 				&& (nodes_in_ranges < nodes_in_region))
@@ -480,18 +490,17 @@ struct LIST(FE_node) *
 					Multi_range_get_range(node_ranges, i, &start, &stop);
 					for (node_number = start ; node_number <= stop ; node_number++)
 					{
-						node = FE_region_get_FE_node_from_identifier(
-								 fe_region, node_number);
+						node = FE_region_get_FE_node_from_identifier(fe_region, node_number);
 						if (node != NULL)
 						{
-							if (group_field)
+							int selected = 1;
+							if (group_field || conditional_field)
 							{
-								selected = Computed_field_is_true_at_node(group_field,
-									node, time);
-								if (selected)
+								Cmiss_field_cache_set_node(data.field_cache, node);
+								if ((group_field && !Cmiss_field_evaluate_boolean(group_field, data.field_cache)) ||
+									(conditional_field && !Cmiss_field_evaluate_boolean(conditional_field, data.field_cache)))
 								{
-									selected = Computed_field_is_true_at_node(conditional_field,
-										node, time);
+									selected = 0;
 								}
 							}
 							if (selected)
@@ -507,14 +516,6 @@ struct LIST(FE_node) *
 				return_code =  FE_region_for_each_FE_node(fe_region,
 					FE_node_add_if_selection_ranges_condition, (void *)&data);
 			}
-			if (data.conditional_field)
-			{
-				Computed_field_clear_cache(data.conditional_field);
-			}
-			if (data.group_field)
-			{
-				Computed_field_clear_cache(data.group_field);
-			}
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
@@ -522,6 +523,8 @@ struct LIST(FE_node) *
 					"Error building list");
 				DESTROY(LIST(FE_node))(&data.node_list);
 			}
+			Cmiss_field_cache_destroy(&data.field_cache);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		else
 		{
@@ -541,160 +544,13 @@ struct LIST(FE_node) *
 	return (data.node_list);
 } /* FE_node_list_from_region_and_selection_group */
 
-
-struct LIST(FE_node) *
-	FE_node_list_from_conditional_field(
-		struct FE_region *fe_region, struct Computed_field *conditional_field, FE_value time)
-{
-	int return_code;
-	struct FE_node_fe_region_selection_ranges_condition_data data;
-	ENTER(FE_node_list_from_region_selection_ranges_condition);
-
-	data.node_list = (struct LIST(FE_node) *)NULL;
-
-	if (fe_region)
-	{
-		data.node_list = CREATE(LIST(FE_node))();
-		if (data.node_list != NULL)
-		{
-			data.fe_region = fe_region;
-			/* Seems odd to specify an empty node_ranges but I have
-				maintained the previous behaviour */
-			data.node_ranges = (struct Multi_range *)NULL;
-			data.conditional_field = conditional_field;
-			data.group_field = NULL;
-			data.conditional_field_time = time;
-			return_code =  FE_region_for_each_FE_node(fe_region,
-				FE_node_add_if_selection_ranges_condition, (void *)&data);
-			if (data.conditional_field)
-			{
-				Computed_field_clear_cache(data.conditional_field);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_list_from_conditional_field.  Error building list");
-				DESTROY(LIST(FE_node))(&data.node_list);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_list_from_conditional_field.  Could not create list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_list_from_conditional_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (data.node_list);
-} /* FE_node_list_from_region_and_selection_group */
-
 struct LIST(FE_node) *
 	FE_node_list_from_ranges(
 		struct FE_region *fe_region, struct Multi_range *node_ranges,
 		struct Computed_field *conditional_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Creates and returns an node list that is the intersection of:
-- all the nodes in <fe_region>;
-- all nodes in the given <node_ranges>, if any.
-- all nodes for which the <conditional_field> evaluates as "true"
-  in its centre at the specified <time>
-Up to the calling function to destroy the returned node list.
-==============================================================================*/
 {
-	int i, node_number, nodes_in_region, nodes_in_ranges = 0,
-		number_of_ranges = 0, return_code, selected, start, stop;
-	struct FE_node *node;
-	struct FE_node_fe_region_selection_ranges_condition_data data;
-
-	ENTER(FE_node_list_from_ranges);
-	data.node_list = (struct LIST(FE_node) *)NULL;
-	if (fe_region)
-	{
-		data.node_list = CREATE(LIST(FE_node))();
-		if (data.node_list != NULL)
-		{
-			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
-			if (node_ranges)
-			{
-				nodes_in_ranges = Multi_range_get_total_number_in_ranges(node_ranges);
-			}
-
-			data.fe_region = fe_region;
-			/* Seems odd to specify an empty node_ranges but I have
-				maintained the previous behaviour */
-			if (node_ranges &&
-				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(node_ranges))))
-			{
-				data.node_ranges = node_ranges;
-			}
-			else
-			{
-				data.node_ranges = (struct Multi_range *)NULL;
-			}
-			data.conditional_field = conditional_field;
-			data.group_field = NULL;
-			data.conditional_field_time = time;
-
-			if (data.node_ranges
-				&& (nodes_in_ranges < nodes_in_region))
-			{
-				return_code = 1;
-				for (i = 0 ; i < number_of_ranges ; i++)
-				{
-					Multi_range_get_range(node_ranges, i, &start, &stop);
-					for (node_number = start ; node_number <= stop ; node_number++)
-					{
-						node = FE_region_get_FE_node_from_identifier(
-								 fe_region, node_number);
-						if (node != NULL)
-						{
-							selected = 1;
-							if (selected && conditional_field)
-							{
-								selected = Computed_field_is_true_at_node(conditional_field,
-									node, time);
-							}
-							if (selected)
-							{
-								ADD_OBJECT_TO_LIST(FE_node)(node, data.node_list);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				return_code =  FE_region_for_each_FE_node(fe_region,
-					FE_node_add_if_selection_ranges_condition, (void *)&data);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_list_from_ranges.  Error building list");
-				DESTROY(LIST(FE_node))(&data.node_list);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_list_from_ranges.  Could not create list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_list_from_ranges.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (data.node_list);
-} /* FE_node_list_from_ranges */
-
+	return FE_node_list_from_region_and_selection_group(
+		FE_region_get_Cmiss_region(fe_region), node_ranges,
+		/*group_field*/(Cmiss_field_id)0, conditional_field,
+		time, FE_region_is_data_FE_region(fe_region));
+}

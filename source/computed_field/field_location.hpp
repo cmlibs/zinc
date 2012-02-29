@@ -58,11 +58,9 @@ class Field_location
 protected:
 	FE_value time;
 	int number_of_derivatives;
-	int assign_to_cache; // if set, assignment is to cache only, not to field
 
    Field_location(FE_value time = 0.0, int number_of_derivatives = 0) : 
-		time(time), number_of_derivatives(number_of_derivatives),
-		assign_to_cache(0)
+		time(time), number_of_derivatives(number_of_derivatives)
 	{};
 
 public:
@@ -70,6 +68,8 @@ public:
    /* Abstract virtual destructor declaration as we will not make objects of this
 		parent class */
 	virtual ~Field_location() = 0;
+
+	virtual Field_location *clone() = 0;
 
 	FE_value get_time()
 	{
@@ -86,26 +86,10 @@ public:
 		return number_of_derivatives;
 	}
 
-	int get_assign_to_cache() const
+	/** use with care in field evaluation & restore after evaluating with */
+	void set_number_of_derivatives(int number_of_derivatives_in)
 	{
-		return assign_to_cache;
-	}
-
-	void set_assign_to_cache(int assign_to_cache_in)
-	{
-		assign_to_cache = (assign_to_cache_in != 0);
-	}
-
-	virtual int check_cache_for_location(Cmiss_field * /*field*/)
-	{
-		/* Default is that the cache is invalid */
-		return 0;
-	}
-
-	virtual int update_cache_for_location(Cmiss_field * /*field*/)
-	{
-		/* Don't need to do anything */
-		return 1;
+		number_of_derivatives = number_of_derivatives_in;
 	}
 
 	virtual int set_values_for_location(Cmiss_field * /*field*/,
@@ -165,6 +149,11 @@ public:
 			DEACCESS(FE_element)(&top_level_element);
 	}
 
+   virtual Field_location *clone()
+   {
+   	return new Field_element_xi_location(element, xi, time, top_level_element);
+   }
+
 	int get_dimension() const
 	{
 		return dimension;
@@ -188,16 +177,6 @@ public:
 	int set_element_xi(struct FE_element *element_in,
 		int number_of_xi_in, const FE_value *xi_in,
 		struct FE_element *top_level_element_in = NULL);
-
-	/** use with care in field evaluation & restore after evaluating with */
-	void set_number_of_derivatives(int number_of_derivatives_in)
-	{
-		number_of_derivatives = number_of_derivatives_in;
-	}
-
-	int check_cache_for_location(Cmiss_field *field);
-
-	int update_cache_for_location(Cmiss_field *field);
 };
 
 class Field_node_location : public Field_location
@@ -218,6 +197,11 @@ public:
    	DEACCESS(FE_node)(&node);
 	}
 
+   virtual Field_location *clone()
+   {
+   	return new Field_node_location(node, time);
+   }
+
 	FE_node *get_node()
 	{
 		return node;
@@ -227,10 +211,6 @@ public:
 	{
 		REACCESS(FE_node)(&node, node_in);
 	}
-
-	int check_cache_for_location(Cmiss_field *field);
-
-	int update_cache_for_location(Cmiss_field *field);
 };
 
 class Field_time_location : public Field_location
@@ -245,9 +225,10 @@ public:
 	{
 	}
 
-	int check_cache_for_location(Cmiss_field *field);
-
-	int update_cache_for_location(Cmiss_field *field);
+   virtual Field_location *clone()
+   {
+   	return new Field_time_location(time);
+   }
 };
 
 class Field_coordinate_location : public Field_location
@@ -275,6 +256,11 @@ public:
 
 	~Field_coordinate_location();
 
+   virtual Field_location *clone()
+   {
+   	return new Field_coordinate_location(reference_field, number_of_values, values, time, number_of_derivatives, derivatives);
+   }
+
 	Cmiss_field *get_reference_field()
 	{
 		return reference_field;
@@ -292,10 +278,6 @@ public:
 
 	int set_field_values(Cmiss_field_id reference_field_in,
 		int number_of_values_in, const FE_value *values_in);
-
-	int check_cache_for_location(Cmiss_field *field);
-
-	int update_cache_for_location(Cmiss_field *field);
 
 	int set_values_for_location(Cmiss_field *field,
 		const FE_value *values);

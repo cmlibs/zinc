@@ -57,7 +57,9 @@ DESCRIPTION :
 
 /*****************************************************************************//**
  * Creates a field whose value equals source field calculated at the lookup node
- * instead of the domain location requested. 
+ * instead of the domain location requested.
+ * Do not put in external API; should instead make 'embedded' field take a
+ * any location-supplying field: mesh, node etc.
  * 
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.

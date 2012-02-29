@@ -67,14 +67,12 @@ class Computed_field_nodeset_operator : public Computed_field_core
 {
 protected:
 	Cmiss_nodeset_id nodeset;
-	int number_of_terms;
 
 public:
 	Computed_field_nodeset_operator(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_core(),
 		nodeset(Cmiss_nodeset_access(nodeset_in))
 	{
-		number_of_terms = 0;
 	};
 
 	virtual ~Computed_field_nodeset_operator()
@@ -95,31 +93,39 @@ public:
 		return nodeset;
 	}
 
-	int is_defined_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_nodeset_operator::is_defined_at_location(Field_location* location)
+bool Computed_field_nodeset_operator::is_defined_at_location(Cmiss_field_cache& cache)
 {
+	// Checks if source field is defined at a node in nodeset
+	FieldValueCache &inValueCache = *(field->getValueCache(cache));
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
 	int return_code = 0;
-	if (field && location)
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 	{
-		// Checks if source field is defined at a node in nodeset.
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		extraCache.setNode(node);
+		if (getSourceField(0)->core->is_defined_at_location(extraCache))
 		{
-			if (Computed_field_is_defined_at_node(field->source_fields[0], node))
-			{
-				return_code = 1;
-				break;
-			}
+			return_code = 1;
+			break;
 		}
-		Cmiss_node_iterator_destroy(&iterator);
 	}
+	Cmiss_node_iterator_destroy(&iterator);
 	return return_code;
 }
 
@@ -187,55 +193,50 @@ public:
 		return 0;
 	}
 
-protected:
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+	{
+		evaluate_sum(cache, inValueCache);
+		return 1;
+	}
 
+protected:
+	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum, but is for nodeset_mean */
+	int evaluate_sum(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_nodeset_sum::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_nodeset_sum::evaluate_sum(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-	if (field && location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	int number_of_terms = 0;
+	const int number_of_components = field->number_of_components;
+	FE_value *values = valueCache.values;
+	Cmiss_field_id sourceField = getSourceField(0);
+	int i;
+	for (i = 0; i < number_of_components; i++)
 	{
-		number_of_terms = 0;
-		const int number_of_components = field->number_of_components;
-		FE_value *values = field->values;
-		Cmiss_field_id source_field = field->source_fields[0];
-		FE_value current_time = location->get_time();
-		int i;
-		for (i = 0; i < number_of_components; i++)
+		values[i] = 0;
+	}
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	{
+		extraCache.setNode(node);
+		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		if (sourceValueCache)
 		{
-			values[i] = 0;
-		}
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
-		{
-			Field_node_location nodal_location(node, current_time);
-			if (Computed_field_evaluate_cache_at_location(source_field, &nodal_location))
+			for (i = 0 ; i < number_of_components ; i++)
 			{
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					values[i] += source_field->values[i];
-				}
-				++number_of_terms;
+				values[i] += sourceValueCache->values[i];
 			}
+			++number_of_terms;
 		}
-		Cmiss_node_iterator_destroy(&iterator);
-		field->derivatives_valid = 0;
-		return_code = 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodeset_sum::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	Cmiss_node_iterator_destroy(&iterator);
+	valueCache.derivatives_valid = 0;
+	return number_of_terms;
 }
-
 
 const char computed_field_nodeset_mean_type_string[] = "nodeset_mean";
 
@@ -266,33 +267,25 @@ public:
 		return 0;
 	}
 
-protected:
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_nodeset_mean::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_nodeset_mean::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = Computed_field_nodeset_sum::evaluate_cache_at_location(location);
-	if (return_code)
+	int number_of_terms = evaluate_sum(cache, inValueCache);
+	if (number_of_terms > 0)
 	{
-		if (number_of_terms > 0)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_value scaling = 1.0 / (FE_value)number_of_terms;
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			FE_value scaling = 1.0 / (FE_value)number_of_terms;
-			for (int i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] *= scaling;
-			}
+			valueCache.values[i] *= scaling;
 		}
-		else
-		{
-			return_code = 0;
-		}
+		return 1;
 	}
-	return (return_code);
+	return 0;
 }
-
 
 const char computed_field_nodeset_sum_squares_type_string[] = "nodeset_sum_squares";
 
@@ -328,124 +321,115 @@ public:
 		return 1;
 	}
 
-	virtual int get_number_of_sum_square_terms() const;
+	virtual int get_number_of_sum_square_terms(Cmiss_field_cache& cache) const;
 
-	int evaluate_sum_square_terms_at_location(Field_location* location,
+	int evaluate_sum_square_terms(Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-protected:
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+	{
+		evaluate_sum_squares(cache, inValueCache);
+		return 1;
+	}
 
+protected:
+	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum_squares, but is for nodeset_mean_squares */
+	int evaluate_sum_squares(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms() const
+int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
+	Cmiss_field_cache& cache) const
 {
-	int return_number_of_terms = 0;
-	if (field)
+	int number_of_terms = 0;
+	Cmiss_field_id sourceField = field->source_fields[0];
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 	{
-		Cmiss_field_id source_field = field->source_fields[0];
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		cache.setNode(node);
+		if (sourceField->core->is_defined_at_location(cache))
 		{
-			Field_node_location nodal_location(node);
-			if (source_field->core->is_defined_at_location(&nodal_location))
-			{
-				++return_number_of_terms;
-			}
+			++number_of_terms;
 		}
-		Cmiss_node_iterator_destroy(&iterator);
 	}
-	return return_number_of_terms;
+	Cmiss_node_iterator_destroy(&iterator);
+	return number_of_terms;
 }
 
-int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms_at_location(
-	Field_location* location, int number_of_values, FE_value *values)
+int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
+	Cmiss_field_cache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
-	int return_code = 0;
-	if (field && location && (0 <= number_of_values) && values)
+	Cmiss_field_cache& extraCache = *(valueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	int return_code = 1;
+	int number_of_terms = 0;
+	const int number_of_components = field->number_of_components;
+	const int max_terms = number_of_values / number_of_components;
+	FE_value *value = values;
+	Cmiss_field_id sourceField = getSourceField(0);
+	int i;
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 	{
-		return_code = 1;
-		number_of_terms = 0;
-		const int number_of_components = field->number_of_components;
-		const int max_terms = number_of_values / number_of_components;
-		FE_value *value = values;
-		Cmiss_field_id source_field = field->source_fields[0];
-		FE_value current_time = location->get_time();
-		int i;
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		extraCache.setNode(node);
+		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		if (sourceValueCache)
 		{
-			Field_node_location nodal_location(node, current_time);
-			if (Computed_field_evaluate_cache_at_location(source_field, &nodal_location))
+			if (number_of_terms >= max_terms)
 			{
-				if (number_of_terms >= max_terms)
-				{
-					return_code = 0;
-					break;
-				}
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					*value = source_field->values[i];
-					++value;
-				}
-				++number_of_terms;
+				return_code = 0;
+				break;
 			}
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				*value = sourceValueCache->values[i];
+				++value;
+			}
+			++number_of_terms;
 		}
-		Cmiss_node_iterator_destroy(&iterator);
-		if (number_of_terms*number_of_components != number_of_values)
-		{
-			return_code = 0;
-		}
+	}
+	Cmiss_node_iterator_destroy(&iterator);
+	if (number_of_terms*number_of_components != number_of_values)
+	{
+		return_code = 0;
 	}
 	return return_code;
 }
 
-int Computed_field_nodeset_sum_squares::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_nodeset_sum_squares::evaluate_sum_squares(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-	if (field && location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	int number_of_terms = 0;
+	const int number_of_components = field->number_of_components;
+	FE_value *values = valueCache.values;
+	Cmiss_field_id sourceField = getSourceField(0);
+	int i;
+	for (i = 0; i < number_of_components; i++)
 	{
-		number_of_terms = 0;
-		const int number_of_components = field->number_of_components;
-		FE_value *values = field->values;
-		Cmiss_field_id source_field = field->source_fields[0];
-		FE_value current_time = location->get_time();
-		int i;
-		for (i = 0; i < number_of_components; i++)
+		values[i] = 0;
+	}
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	{
+		extraCache.setNode(node);
+		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		if (sourceValueCache)
 		{
-			values[i] = 0;
-		}
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
-		{
-			Field_node_location nodal_location(node, current_time);
-			if (Computed_field_evaluate_cache_at_location(source_field, &nodal_location))
+			for (i = 0 ; i < number_of_components ; i++)
 			{
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					values[i] += source_field->values[i]*source_field->values[i];
-				}
-				++number_of_terms;
+				values[i] += sourceValueCache->values[i]*sourceValueCache->values[i];
 			}
+			++number_of_terms;
 		}
-		Cmiss_node_iterator_destroy(&iterator);
-		field->derivatives_valid = 0;
-		return_code = 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodeset_sum_squares::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	Cmiss_node_iterator_destroy(&iterator);
+	valueCache.derivatives_valid = 0;
+	return number_of_terms;
 }
-
 
 const char computed_field_nodeset_mean_squares_type_string[] = "nodeset_mean_squares";
 
@@ -476,21 +460,20 @@ public:
 		return 0;
 	}
 
-	int evaluate_sum_square_terms_at_location(Field_location* location,
+	int evaluate_sum_square_terms(Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-protected:
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms_at_location(
-	Field_location* location, int number_of_values, FE_value *values)
+int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms(
+	Cmiss_field_cache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
-	int return_code = Computed_field_nodeset_sum_squares::evaluate_sum_square_terms_at_location(
-		location, number_of_values, values);
+	int return_code = evaluate_sum_square_terms(cache, valueCache, number_of_values, values);
 	if (return_code)
 	{
+		int number_of_terms = number_of_values / field->number_of_components;
 		if (number_of_terms > 0)
 		{
 			FE_value scaling = 1.0 / sqrt((FE_value)number_of_terms);
@@ -507,26 +490,20 @@ int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms_at_location(
 	return (return_code);
 }
 
-int Computed_field_nodeset_mean_squares::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_nodeset_mean_squares::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = Computed_field_nodeset_sum_squares::evaluate_cache_at_location(location);
-	if (return_code)
+	int number_of_terms = evaluate_sum_squares(cache, inValueCache);
+	if (number_of_terms > 0)
 	{
-		if (number_of_terms > 0)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_value scaling = 1.0 / (FE_value)number_of_terms;
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			FE_value scaling = 1.0 / (FE_value)number_of_terms;
-			for (int i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] *= scaling;
-			}
+			valueCache.values[i] *= scaling;
 		}
-		else
-		{
-			return_code = 0;
-		}
+		return 1;
 	}
-	return (return_code);
+	return 0;
 }
 
 } //namespace
@@ -626,7 +603,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
 	Cmiss_nodeset_id nodeset)
 {
 	Cmiss_field_id field = 0;
-	if (source_field && nodeset &&
+	if (source_field && source_field->isNumerical() && nodeset &&
 		(Cmiss_field_module_get_master_region_internal(field_module) ==
 			Cmiss_nodeset_get_master_region_internal(nodeset)))
 	{
@@ -672,7 +649,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
 	Cmiss_nodeset_id nodeset)
 {
 	Cmiss_field_id field = 0;
-	if (source_field && nodeset &&
+	if (source_field && source_field->isNumerical() && nodeset &&
 		(Cmiss_field_module_get_master_region_internal(field_module) ==
 			Cmiss_nodeset_get_master_region_internal(nodeset)))
 	{
@@ -718,7 +695,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
 	Cmiss_nodeset_id nodeset)
 {
 	Cmiss_field_id field = 0;
-	if (source_field && nodeset &&
+	if (source_field && source_field->isNumerical() && nodeset &&
 		(Cmiss_field_module_get_master_region_internal(field_module) ==
 			Cmiss_nodeset_get_master_region_internal(nodeset)))
 	{
@@ -765,7 +742,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 	Cmiss_nodeset_id nodeset)
 {
 	Cmiss_field_id field = 0;
-	if (source_field && nodeset &&
+	if (source_field && source_field->isNumerical() && nodeset &&
 		(Cmiss_field_module_get_master_region_internal(field_module) ==
 			Cmiss_nodeset_get_master_region_internal(nodeset)))
 	{

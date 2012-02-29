@@ -1553,6 +1553,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				}
 				if (return_code)
 				{
+					Cmiss_field_module_id field_module = Cmiss_field_get_field_module(coordinate_field);
+					element_to_particle_data.field_cache = Cmiss_field_module_create_cache(field_module);
 					element_to_particle_data.coordinate_field=coordinate_field;
 					element_to_particle_data.element_number=element_number;
 					element_to_particle_data.stream_vector_field=stream_vector_field;
@@ -1614,6 +1616,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 								"gfx_create_flow_particles.  Error creating particles");
 						}
 					}
+		  			Cmiss_field_cache_destroy(&element_to_particle_data.field_cache);
+		  			Cmiss_field_module_destroy(&field_module);
 				}
 			}
 		} /* parse error,help */
@@ -1705,9 +1709,13 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
+				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(coordinate_field);
+				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 				return_code=update_flow_particle_list(
-					command_data->streampoint_list,coordinate_field,stream_vector_field,
+					command_data->streampoint_list,field_cache,coordinate_field,stream_vector_field,
 					stepsize,time);
+				Cmiss_field_cache_destroy(&field_cache);
+				Cmiss_field_module_destroy(&field_module);
 			}
 			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)

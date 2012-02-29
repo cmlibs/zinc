@@ -190,6 +190,7 @@ finishing points on the near and far plane. The exact amount is in proportion
 to its position between these two planes.
 ==============================================================================*/
 {
+	Cmiss_field_cache_id field_cache;
 	/* the actual coordinate change calculated from the drag at the last picked
 		 node */
 	double delta1,delta2,delta3;
@@ -227,6 +228,7 @@ to its position between these two planes.
 
 struct Node_tool_element_constraint_function_data
 {
+	Cmiss_field_cache_id field_cache;
 	struct FE_element *element, *found_element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *coordinate_field;
@@ -546,11 +548,12 @@ DESCRIPTION :
 	{
 		data->found_element = data->element;
 		return_code = Computed_field_find_element_xi(data->coordinate_field,
-			point, /*number_of_values*/3, /*time*/0, &(data->found_element), 
+			data->field_cache, point, /*number_of_values*/3, &(data->found_element),
 			data->xi, (Cmiss_mesh_id)0, /*propagate_field*/0, /*find_nearest_location*/1);
-		Computed_field_evaluate_in_element(data->coordinate_field,
-			data->found_element, data->xi, /*time*/0.0, (struct FE_element *)NULL,
-			point, (FE_value *)NULL);
+		Cmiss_field_cache_set_mesh_location(data->field_cache, data->found_element,
+			Cmiss_element_get_dimension(data->found_element), data->xi);
+		Cmiss_field_evaluate_real(data->coordinate_field, data->field_cache,
+			Cmiss_field_get_number_of_components(data->coordinate_field), point);
 	}
 	else
 	{
@@ -574,7 +577,6 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 	double model_coordinates[3],normalised_coordinates[3],placement_coordinates[3];
 	FE_value coordinates[3], initial_coordinates[3], final_coordinates[3];
 	int i, return_code;
-	struct Node_tool_element_constraint_function_data constraint_data;
 
 	ENTER(FE_node_calculate_delta_position);
 	if (node && edit_info &&
@@ -587,8 +589,9 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 		coordinates[0]=0.0;
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
-		if (Computed_field_evaluate_at_node(edit_info->rc_coordinate_field,
-			node,edit_info->time,coordinates))
+		Cmiss_field_cache_set_node(edit_info->field_cache, node);
+		if (Cmiss_field_evaluate_real(edit_info->rc_coordinate_field,
+			edit_info->field_cache, 3, coordinates))
 		{
 			initial_coordinates[0] = coordinates[0];
 			initial_coordinates[1] = coordinates[1];
@@ -598,11 +601,15 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 				return_code=model_to_world_coordinates(coordinates,
 					edit_info->transformation_matrix);
 			}
+			struct Node_tool_element_constraint_function_data constraint_data;
 			if (return_code)
 			{
 				if (edit_info->constrain_to_surface && edit_info->nearest_element &&
 					 edit_info->nearest_element_coordinate_field)
 				{
+					// need a new field cache for constraint as
+					Cmiss_field_module_id constraint_field_module = Cmiss_field_get_field_module(edit_info->nearest_element_coordinate_field);
+					constraint_data.field_cache = Cmiss_field_module_create_cache(constraint_field_module);;
 					constraint_data.element = edit_info->nearest_element;
 					constraint_data.found_element = edit_info->nearest_element;
 					constraint_data.coordinate_field = edit_info->nearest_element_coordinate_field;
@@ -616,6 +623,8 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 					coordinates[0] = placement_coordinates[0];
 					coordinates[1] = placement_coordinates[1];
 					coordinates[2] = placement_coordinates[2];		
+					Cmiss_field_cache_destroy(&constraint_data.field_cache);
+					Cmiss_field_module_destroy(&constraint_field_module);
 				}
 				else
 				{
@@ -648,14 +657,13 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 				if (edit_info->coordinate_field != edit_info->rc_coordinate_field)
 				{
 					/* get delta of coordinate_field from change of rc_coordinate_field */
-					return_code=Computed_field_evaluate_at_node(
-						edit_info->coordinate_field,node,edit_info->time,
-						initial_coordinates)&&
-						Computed_field_set_values_at_node(
-							edit_info->rc_coordinate_field,node,edit_info->time,
-							coordinates)&&
-						Computed_field_evaluate_at_node(edit_info->coordinate_field,
-							node,edit_info->time,final_coordinates);
+					return_code =
+						Cmiss_field_evaluate_real(edit_info->coordinate_field,
+							edit_info->field_cache, 3, initial_coordinates) &&
+						Cmiss_field_assign_real(edit_info->rc_coordinate_field,
+							edit_info->field_cache, 3, coordinates) &&
+						Cmiss_field_evaluate_real(edit_info->coordinate_field,
+							edit_info->field_cache, 3, final_coordinates);
 					edit_info->delta1 = final_coordinates[0] - initial_coordinates[0];
 					edit_info->delta2 = final_coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = final_coordinates[2] - initial_coordinates[2];
@@ -665,9 +673,8 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 					edit_info->delta1 = coordinates[0] - initial_coordinates[0];
 					edit_info->delta2 = coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = coordinates[2] - initial_coordinates[2];
-					return_code=Computed_field_set_values_at_node(
-						edit_info->rc_coordinate_field,node,edit_info->time,
-						coordinates);
+					return_code = Cmiss_field_assign_real(edit_info->rc_coordinate_field,
+						edit_info->field_cache, 3, coordinates);
 				}
 				/* may be some application for not editing element_xi field value */
 				if (return_code && edit_info->nearest_element &&
@@ -683,8 +690,6 @@ static int FE_node_calculate_delta_position(struct FE_node *node,
 		{
 			return_code=0;
 		}
-		/* always clear caches of evaluated fields */
-		Computed_field_clear_cache(edit_info->rc_coordinate_field);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
@@ -728,27 +733,22 @@ static int FE_node_edit_position(struct FE_node *node,
 			coordinates[0]=0.0;
 			coordinates[1]=0.0;
 			coordinates[2]=0.0;
+			Cmiss_field_cache_set_node(edit_info->field_cache, node);
 			/* If the field we are changing isn't defined at this node then we
 				don't complain and just do nothing */
-			if (Computed_field_is_defined_at_node(edit_info->coordinate_field,node)&&
-				Computed_field_evaluate_at_node(edit_info->coordinate_field,
-					node,edit_info->time,coordinates))
+			if (Cmiss_field_evaluate_real(edit_info->coordinate_field, edit_info->field_cache, 3, coordinates))
 			{
 				if (return_code)
 				{
 					coordinates[0] += edit_info->delta1;
 					coordinates[1] += edit_info->delta2;
 					coordinates[2] += edit_info->delta3;
-
-					if (!Computed_field_set_values_at_node(edit_info->coordinate_field,
-						node,edit_info->time, coordinates))
+					if (!Cmiss_field_assign_real(edit_info->coordinate_field, edit_info->field_cache, 3, coordinates))
 					{
 						return_code=0;
 					}
 				}
 			}
-			/* always clear caches of evaluated fields */
-			Computed_field_clear_cache(edit_info->coordinate_field);
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,"FE_node_edit_position.  Failed");
@@ -802,15 +802,15 @@ NOTE: currently does not tolerate having a variable_scale_field.
 		((struct Computed_field *)NULL == edit_info->variable_scale_field))
 	{
 		return_code=1;
-		/* clear coordinates in case less than 3 dimensions */
+		/* clear coordinates in case fewer than 3 dimensions */
 		coordinates[0]=0.0;
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
-		if (Computed_field_evaluate_at_node(
-			edit_info->wrapper_orientation_scale_field,node,edit_info->time,
-			orientation_scale)&&
-			Computed_field_evaluate_at_node(edit_info->rc_coordinate_field,
-				node,edit_info->time,coordinates)&&
+		Cmiss_field_cache_set_node(edit_info->field_cache, node);
+		if (Cmiss_field_evaluate_real(edit_info->wrapper_orientation_scale_field, edit_info->field_cache,
+				number_of_orientation_scale_components, orientation_scale) &&
+			Cmiss_field_evaluate_real(edit_info->rc_coordinate_field, edit_info->field_cache,
+				3, coordinates) &&
 			make_glyph_orientation_scale_axes(number_of_orientation_scale_components,
 				orientation_scale, a, b, c, size))
 		{
@@ -892,9 +892,8 @@ NOTE: currently does not tolerate having a variable_scale_field.
 			}
 			if (return_code)
 			{
-				if (!Computed_field_set_values_at_node(
-					edit_info->wrapper_orientation_scale_field,node,edit_info->time,
-					orientation_scale))
+				if (!Cmiss_field_assign_real(edit_info->wrapper_orientation_scale_field, edit_info->field_cache,
+					number_of_orientation_scale_components, orientation_scale))
 				{
 					return_code=0;
 				}
@@ -902,9 +901,8 @@ NOTE: currently does not tolerate having a variable_scale_field.
 					edit_info->wrapper_orientation_scale_field)
 				{
 					/* get delta values from the orientation_scale_field */
-					if (Computed_field_evaluate_at_node(
-						edit_info->orientation_scale_field,node,
-						edit_info->time,orientation_scale))
+					if (Cmiss_field_evaluate_real(edit_info->orientation_scale_field, edit_info->field_cache,
+						number_of_orientation_scale_components, orientation_scale))
 					{
 						number_of_orientation_scale_components=
 							Computed_field_get_number_of_components(
@@ -952,9 +950,6 @@ NOTE: currently does not tolerate having a variable_scale_field.
 		{
 			return_code=0;
 		}
-		/* always clear caches of evaluated fields */
-		Computed_field_clear_cache(edit_info->rc_coordinate_field);
-		Computed_field_clear_cache(edit_info->wrapper_orientation_scale_field);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,"FE_node_calculate_delta_vector.  Failed");
@@ -1017,9 +1012,9 @@ static int FE_node_edit_vector(struct FE_node *node,
 		if ((node != edit_info->last_picked_node)&&(
 			FE_region_contains_FE_node(edit_info->fe_region, node)))
 		{
-			if (Computed_field_evaluate_at_node(
-				edit_info->orientation_scale_field,node,edit_info->time,
-				orientation_scale))
+			Cmiss_field_cache_set_node(edit_info->field_cache, node);
+			if (Cmiss_field_evaluate_real(edit_info->orientation_scale_field, edit_info->field_cache,
+				number_of_orientation_scale_components, orientation_scale))
 			{
 				switch (number_of_orientation_scale_components)
 				{
@@ -1053,9 +1048,8 @@ static int FE_node_edit_vector(struct FE_node *node,
 				}
 				if (return_code)
 				{
-					if (!Computed_field_set_values_at_node(
-						edit_info->orientation_scale_field,node,edit_info->time,
-						orientation_scale))
+					if (!Cmiss_field_assign_real(edit_info->orientation_scale_field, edit_info->field_cache,
+						number_of_orientation_scale_components, orientation_scale))
 					{
 						return_code=0;
 					}
@@ -1065,8 +1059,6 @@ static int FE_node_edit_vector(struct FE_node *node,
 			{
 				return_code=0;
 			}
-			/* always clear caches of evaluated fields */
-			Computed_field_clear_cache(edit_info->orientation_scale_field);
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,"FE_node_edit_vector.  Failed");
@@ -1085,7 +1077,8 @@ static int FE_node_edit_vector(struct FE_node *node,
 } /* FE_node_edit_vector */
 
 static int Node_tool_define_field_at_node_from_picked_coordinates(
-	struct Node_tool *node_tool,struct FE_node *node)
+	struct Node_tool *node_tool,struct FE_node *node,
+	Cmiss_field_cache_id field_cache)
 /*******************************************************************************
 LAST MODIFIED : 29 September 2000
 
@@ -1100,7 +1093,7 @@ object's coordinate field.
 		*rc_coordinate_field, *rc_picked_coordinate_field;
 
 	ENTER(Node_tool_define_field_at_node_from_picked_coordinates);
-	if (node_tool&&node)
+	if (node_tool && node && field_cache)
 	{
 		coordinate_field=node_tool->coordinate_field;
 		if (node_tool->time_keeper)
@@ -1119,12 +1112,14 @@ object's coordinate field.
 				node_tool->graphic);
 			rc_picked_coordinate_field = Computed_field_begin_wrap_coordinate_field(
 				picked_coordinate_field);
-			if (Computed_field_evaluate_at_node(rc_picked_coordinate_field,
-				node,time,coordinates))
+
+			Cmiss_field_cache_set_node(field_cache, node);
+			Cmiss_field_cache_set_time(field_cache, time);
+			if (Cmiss_field_evaluate_real(rc_picked_coordinate_field, field_cache,
+				3, coordinates))
 			{
-				if (Node_tool_define_field_at_node(node_tool,node)&&
-					Computed_field_set_values_at_node(rc_coordinate_field,
-					node,time,coordinates))
+				if (Node_tool_define_field_at_node(node_tool,node) &&
+					Cmiss_field_assign_real(rc_coordinate_field, field_cache, 3, coordinates))
 				{
 					return_code=1;
 				}
@@ -1142,9 +1137,7 @@ object's coordinate field.
 					"Unable to evaluate picked position.");
 				return_code=0;
 			}
-			Computed_field_clear_cache(rc_picked_coordinate_field);
 			Computed_field_end_wrap(&rc_picked_coordinate_field);
-			Computed_field_clear_cache(rc_coordinate_field);
 			Computed_field_end_wrap(&rc_coordinate_field);
 		}
 		else
@@ -1192,7 +1185,6 @@ try to enforce that the node is created on that element.
 	struct FE_node *merged_node, *node;
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
-	struct Node_tool_element_constraint_function_data constraint_data;
 	struct Scene_picked_object *scene_picked_object;
 
 	ENTER(Node_tool_create_node_at_interaction_volume);
@@ -1220,6 +1212,9 @@ try to enforce that the node is created on that element.
 		}
 		else
 		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_tool->region);
+			Cmiss_field_module_begin_change(field_module);
+			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 			if (node_tool->use_data)
 			{
 				cmiss_graphic_type=CMISS_GRAPHIC_DATA_POINTS;
@@ -1250,12 +1245,15 @@ try to enforce that the node is created on that element.
 				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field);
 			if (rc_coordinate_field != 0)
 			{
+				struct Node_tool_element_constraint_function_data constraint_data;
 				node_number = FE_region_get_next_FE_node_identifier(
 					node_tool->fe_region, /*start*/1);
 
 				/* get new node coordinates from interaction_volume */
 				if (nearest_element && element_coordinate_field)
 				{
+					Cmiss_field_module_id constraint_field_module = Cmiss_region_get_field_module(node_tool->region);
+					constraint_data.field_cache = Cmiss_field_module_create_cache(field_module);;
 					constraint_data.element = nearest_element;
 					constraint_data.found_element = nearest_element;
 					constraint_data.coordinate_field = element_coordinate_field;
@@ -1266,6 +1264,8 @@ try to enforce that the node is created on that element.
 					Interaction_volume_get_placement_point(interaction_volume,
 						node_coordinates, Node_tool_element_constraint_function,
 						&constraint_data);
+					Cmiss_field_cache_destroy(&constraint_data.field_cache);
+					Cmiss_field_module_destroy(&constraint_field_module);
 				}
 				else
 				{
@@ -1296,9 +1296,9 @@ try to enforce that the node is created on that element.
 				else
 				{
 					ACCESS(FE_node)(node);
+					Cmiss_field_cache_set_node(field_cache, node);
 					if (!Node_tool_define_field_at_node(node_tool,node) ||
-						!Computed_field_set_values_at_node(rc_coordinate_field, node,
-							/*time*/0, coordinates) ||
+						!Cmiss_field_assign_real(rc_coordinate_field, field_cache, 3, coordinates) ||
 						(nearest_element && constraint_data.found_element && node_tool->element_xi_field &&
 							!FE_node_define_and_set_element_xi(node, node_tool->element_xi_field,
 								constraint_data.found_element, constraint_data.xi)) ||
@@ -1340,9 +1340,11 @@ try to enforce that the node is created on that element.
 					}
 					DEACCESS(FE_node)(&node);
 				}
-				Computed_field_clear_cache(rc_coordinate_field);
 				Computed_field_end_wrap(&rc_coordinate_field);
 			}
+			Cmiss_field_cache_destroy(&field_cache);
+			Cmiss_field_module_end_change(field_module);
+			Cmiss_field_module_destroy(&field_module);
 		}
 	}
 	if (node_tool)
@@ -1465,7 +1467,6 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
-	char *command_string;
 	double d;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	enum Interactive_event_type event_type;
@@ -1474,7 +1475,6 @@ release.
 	struct Computed_field *coordinate_field, *nearest_element_coordinate_field;
 	struct FE_element *nearest_element;
 	struct FE_node *picked_node;
-	struct FE_node_edit_information edit_info;
 	struct Cmiss_rendition *rendition = NULL, *rendition_element = NULL;
 	struct Cmiss_graphic *graphic = NULL, *graphic_element = NULL;
 	struct GT_object *glyph;
@@ -1537,12 +1537,14 @@ release.
 							}
 							if (picked_node)
 							{
+								Cmiss_region_id temp_region = FE_region_get_Cmiss_region(FE_node_get_FE_region(picked_node));
+								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
+								Cmiss_field_module_begin_change(field_module);
+								Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 								node_tool->picked_node_was_unselected=1;
 								Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
 								if (selection_group)
 								{
-									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
-									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
 									Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(
 										field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
 									Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(selection_group, master_nodeset);
@@ -1555,7 +1557,6 @@ release.
 										Cmiss_nodeset_group_destroy(&nodeset_group);
 										Cmiss_field_node_group_destroy(&node_group);
 									}
-									Cmiss_field_module_destroy(&field_module);
 									Cmiss_field_group_destroy(&selection_group);
 								}
 								REACCESS(Scene_picked_object)(
@@ -1565,13 +1566,16 @@ release.
 								REACCESS(Cmiss_graphic)(&(node_tool->graphic),graphic);
 								if (node_tool->define_enabled)
 								{
-									if (!Computed_field_is_defined_at_node(
-										node_tool->coordinate_field,picked_node))
+									Cmiss_field_cache_set_node(field_cache, picked_node);
+									if (!Cmiss_field_is_defined_at_location(node_tool->coordinate_field, field_cache))
 									{
 										Node_tool_define_field_at_node_from_picked_coordinates(
-											node_tool,picked_node);
+											node_tool, picked_node, field_cache);
 									}
 								}
+								Cmiss_field_cache_destroy(&field_cache);
+								Cmiss_field_module_end_change(field_module);
+								Cmiss_field_module_destroy(&field_module);
 							}
 							else
 							{
@@ -1675,6 +1679,10 @@ release.
 									DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 								}
 							}
+							Cmiss_region_id temp_region = Cmiss_rendition_get_region(node_tool->rendition);
+							Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
+							Cmiss_field_module_begin_change(field_module);
+							Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 							if (node_tool->create_enabled &&
 								node_tool->streaming_create_enabled &&
 								(INTERACTIVE_EVENT_MOTION_NOTIFY == event_type))
@@ -1700,6 +1708,8 @@ release.
 							{
 								return_code=1;
 								/* establish edit_info */
+								struct FE_node_edit_information edit_info;
+								edit_info.field_cache = field_cache;
 								edit_info.last_picked_node = (struct FE_node *)NULL;
 								edit_info.delta1=0.0;
 								edit_info.delta2=0.0;
@@ -1708,13 +1718,13 @@ release.
 									node_tool->last_interaction_volume;
 								edit_info.final_interaction_volume=interaction_volume;
 								edit_info.fe_region=node_tool->fe_region;
-								edit_info.time=Time_keeper_get_time(
-									node_tool->time_keeper);
+								edit_info.time=Time_keeper_get_time(node_tool->time_keeper);
 								edit_info.constrain_to_surface = node_tool->constrain_to_surface;
 								edit_info.element_xi_field = node_tool->element_xi_field;
 								edit_info.nearest_element = nearest_element;
 								edit_info.nearest_element_coordinate_field = 
 									nearest_element_coordinate_field;
+								Cmiss_field_cache_set_time(field_cache, edit_info.time);
 								/* get coordinate field to edit */
 								if (node_tool->define_enabled)
 								{
@@ -1783,18 +1793,14 @@ release.
 									Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(node_tool->rendition);
 									if (node_tool->rendition && selection_group)
 									{
-										Cmiss_region_id temp_region = Cmiss_rendition_get_region(node_tool->rendition);
-										Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
 										Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(
 											field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
-										Cmiss_field_module_destroy(&field_module);
 										edit_info.fe_region=Cmiss_region_get_FE_region(temp_region);
 										Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(selection_group, master_nodeset);
 										Cmiss_nodeset_destroy(&master_nodeset);
 										if (node_group)
 										{
 											Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
-											FE_region_begin_change(edit_info.fe_region);
 											/* edit vectors if non-constant orientation_scale field */
 											if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode)
 													|| (NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))
@@ -1841,7 +1847,6 @@ release.
 													return_code = 0;
 												}
 											}
-											FE_region_end_change(edit_info.fe_region);
 											Cmiss_field_node_group_destroy(&node_group);
 											Cmiss_nodeset_group_destroy(&nodeset_group);
 										}
@@ -1873,6 +1878,9 @@ release.
 									DESTROY(LIST(FE_node))(&temp_node_list);
 								}
 							}
+							Cmiss_field_cache_destroy(&field_cache);
+							Cmiss_field_module_end_change(field_module);
+							Cmiss_field_module_destroy(&field_module);
 						}
 						else if (node_tool->motion_detected)
 						{
@@ -1995,9 +2003,7 @@ release.
 						{
 							/* Execute command_field of last_picked_node as last step of button release as code
 							 * invoked by it may modify this tool, or change to another tool before returning */
-							if (node_tool->last_picked_node && node_tool->command_field &&
-								Computed_field_is_defined_at_node(node_tool->command_field,
-									node_tool->last_picked_node))
+							if (node_tool->last_picked_node && node_tool->command_field)
 							{
 								if (node_tool->time_keeper)
 								{
@@ -2007,15 +2013,18 @@ release.
 								{
 									time = 0;
 								}
-								if (node_tool->execute_command &&
-									(NULL != (command_string = Computed_field_evaluate_as_string_at_node(
-									node_tool->command_field, /*component_number*/-1,
-									node_tool->last_picked_node, time))))
+								Cmiss_field_module_id field_module = Cmiss_field_get_field_module(node_tool->command_field);
+								Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+								Cmiss_field_cache_set_time(field_cache, time);
+								Cmiss_field_cache_set_node(field_cache, node_tool->last_picked_node);
+								char *command_string = Cmiss_field_evaluate_string(node_tool->command_field, field_cache);
+								if (command_string)
 								{
-									Execute_command_execute_string(node_tool->execute_command,
-										command_string);
+									Execute_command_execute_string(node_tool->execute_command, command_string);
 									DEALLOCATE(command_string);
 								}
+								Cmiss_field_cache_destroy(&field_cache);
+								Cmiss_field_module_destroy(&field_module);
 							}
 							Node_tool_reset((void *)node_tool);
 						}

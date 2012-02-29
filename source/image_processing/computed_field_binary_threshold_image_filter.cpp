@@ -161,7 +161,7 @@ public:
  * @param location Field location
  * @return Return code indicating succes (1) or failure (0)
 */
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 	{
 		int return_code;
 		
@@ -173,7 +173,7 @@ public:
 		filter->SetUpperThreshold( binary_threshold_image_filter->upper_threshold );
 		
 		return_code = binary_threshold_image_filter->update_output_image
-			(location, filter, this->outputImage,
+			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);

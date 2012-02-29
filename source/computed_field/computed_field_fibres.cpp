@@ -94,272 +94,212 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 };
 
-int Computed_field_fibre_axes::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
+bool Computed_field_fibre_axes::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
-
-	ENTER(Computed_field_fibre_axes::is_defined_at_location);
-	if (field && location)
-	{
-		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location))
-			/* 2d_strain requires at least 2-D elements */
-  			&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
-		{
-			/* check the source fields */
-			return_code = Computed_field_core::is_defined_at_location(location);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain::is_defined_at_location.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_fibre_axes::is_defined_at_location */
-
-int Computed_field_fibre_axes::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compute the three 3-component fibre axes in the order fibre, sheet, normal from
-the source fibre and coordinate fields. Function reads the coordinate field and
-derivatives in rectangular cartesian coordinates. The 1 to 3 fibre angles in
-the fibre_field are used as follows (2 values omit step 3, 1 only does step 1):
-1 = fibre_angle in xi1-xi2 plane measured from xi1;
-2 = sheet_angle, inclination of the fibres from xi1-xi2 plane after step 1.
-3 = imbrication_angle, rotation of the sheet about the fibre vector.
-coordinates from the source_field values in an arbitrary
-<element_dimension> may be 2 or 3 only.
-Derivatives may not be computed for this type of Computed_field [yet].
-==============================================================================*/
-{
-	FE_element* top_level_element;
-	FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha,
-		cos_beta, cos_gamma ,dx_dxi[9], f11, f12, f13, f21, f22, f23, f31, f32, f33,
-		gamma, length, sin_alpha, sin_beta, sin_gamma,
-		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], x[3];
-	int return_code,top_level_element_dimension;
-	struct Computed_field *coordinate_field, *fibre_field;
-
-	ENTER(Computed_field_fibre_axes::evaluate_cache_at_location);
-
 	Field_element_xi_location* element_xi_location;
-	/* Only works for element_xi locations */
-	if (field && location && (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location)))
+	// only works for element_xi locations & at least 2-D
+	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
+		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
 	{
-		if (!location->get_number_of_derivatives())
+		// check the source fields
+		return Computed_field_core::is_defined_at_location(cache);
+	}
+	return false;
+}
+
+/***************************************************************************//**
+ * Compute the three 3-component fibre axes in the order fibre, sheet, normal from
+ * the source fibre and coordinate fields. Function reads the coordinate field and
+ * derivatives in rectangular cartesian coordinates. The 1 to 3 fibre angles in
+ * the fibre_field are used as follows (2 values omit step 3, 1 only does step 1):
+ * 1 = fibre_angle in xi1-xi2 plane measured from xi1;
+ * 2 = sheet_angle, inclination of the fibres from xi1-xi2 plane after step 1.
+ * 3 = imbrication_angle, rotation of the sheet about the fibre vector.
+ * coordinates from the source_field values in an arbitrary
+ * <element_dimension> may be 2 or 3 only.
+ * Derivatives may not be computed for this type of Computed_field [yet].
+ */
+int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	/* Only works for element_xi locations */
+	Field_element_xi_location* element_xi_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension = get_FE_element_dimension(element);
+		FE_element *top_level_element = element_xi_location->get_top_level_element();;
+		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		int top_level_element_dimension = 0;
+		FE_element_get_top_level_element_and_xi(element,
+			element_xi_location->get_xi(), element_dimension,
+			&top_level_element, top_level_xi, &top_level_element_dimension);
+		// use the normal cache if already on a top level element, otherwise use extra cache
+		Cmiss_field_cache *workingCache = &cache;
+		if (top_level_element != element)
 		{
-			FE_element* element = element_xi_location->get_element();
-			int element_dimension=get_FE_element_dimension(element);
+			workingCache = valueCache.getExtraCache();
+			workingCache->setTime(cache.getTime());
+			workingCache->setMeshLocation(top_level_element, top_level_xi);
+		}
 
-			field->derivatives_valid = 0;
+		Cmiss_field_id fibre_field = getSourceField(0);
+		Cmiss_field_id coordinate_field = getSourceField(1);
+		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
+		RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		FE_value x[3], dx_dxi[9];
+		if (fibreCache && coordinateCache && coordinateCache->derivatives_valid &&
+			convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
+				coordinate_field->number_of_components, coordinateCache->values, coordinateCache->derivatives,
+				top_level_element_dimension, x, dx_dxi))
+		{
+			FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha,
+				cos_beta, cos_gamma, f11, f12, f13, f21, f22, f23, f31, f32, f33,
+				gamma, length, sin_alpha, sin_beta, sin_gamma;
 
-			top_level_element = element_xi_location->get_top_level_element();
-			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
-				element_xi_location->get_xi(), element_dimension,
-				&top_level_element, top_level_xi, &top_level_element_dimension);
-
-			Field_element_xi_location location2(
-				element,element_xi_location->get_xi(),
-				element_xi_location->get_time(),top_level_element);
-			Field_element_xi_location top_level_location(
-				top_level_element,
-				top_level_xi, element_xi_location->get_time(), top_level_element,
-				get_FE_element_dimension(top_level_element));
-
-			/* 1. Precalculate any source fields that this field depends on.
-				 Always need derivatives of coordinate field and further, it must be
-				 calculated on the top_level_element */
-			fibre_field = field->source_fields[0];
-			coordinate_field = field->source_fields[1];
-			if ((0 != (return_code =
-				Computed_field_evaluate_cache_at_location(fibre_field,
-					&location2))) &&
-				Computed_field_evaluate_cache_at_location(coordinate_field,
-					&top_level_location) &&
-				Computed_field_extract_rc(coordinate_field,
-					top_level_element_dimension,x,dx_dxi))
+			/* 2. Calculate the field */
+			/* get f1~ = vector in xi1 direction */
+			f11=dx_dxi[0];
+			f12=dx_dxi[3];
+			f13=dx_dxi[6];
+			/* get f2~ = vector in xi2 direction */
+			f21=dx_dxi[1];
+			f22=dx_dxi[4];
+			f23=dx_dxi[7];
+			/* get f3~ = vector normal to xi1-xi2 plane */
+			f31=f12*f23-f13*f22;
+			f32=f13*f21-f11*f23;
+			f33=f11*f22-f12*f21;
+			/* normalise vectors f1~ and f3~ */
+			if (0.0<(length=sqrt(f11*f11+f12*f12+f13*f13)))
 			{
-				/* 2. Calculate the field */
-				/* get f1~ = vector in xi1 direction */
-				f11=dx_dxi[0];
-				f12=dx_dxi[3];
-				f13=dx_dxi[6];
-				/* get f2~ = vector in xi2 direction */
-				f21=dx_dxi[1];
-				f22=dx_dxi[4];
-				f23=dx_dxi[7];
-				/* get f3~ = vector normal to xi1-xi2 plane */
-				f31=f12*f23-f13*f22;
-				f32=f13*f21-f11*f23;
-				f33=f11*f22-f12*f21;
-				/* normalise vectors f1~ and f3~ */
-				if (0.0<(length=sqrt(f11*f11+f12*f12+f13*f13)))
-				{
-					f11 /= length;
-					f12 /= length;
-					f13 /= length;
-				}
-				if (0.0<(length=sqrt(f31*f31+f32*f32+f33*f33)))
-				{
-					f31 /= length;
-					f32 /= length;
-					f33 /= length;
-				}
-				/* get vector f2~ = f3~ (x) f1~ = normal to xi1 in xi1-xi2 plane */
-				f21=f32*f13-f33*f12;
-				f22=f33*f11-f31*f13;
-				f23=f31*f12-f32*f11;
-				/* get sin/cos of fibre angles alpha, beta and gamma */
-				alpha = fibre_field->values[0];
-				sin_alpha = sin(alpha);
-				cos_alpha = cos(alpha);
-				if (1 < fibre_field->number_of_components)
-				{
-					beta = fibre_field->values[1];
-					sin_beta = sin(beta);
-					cos_beta = cos(beta);
-				}
-				else
-				{
-					/* default beta is 0 */
-					sin_beta = 0;
-					cos_beta = 1;
-				}
-				if (2 < fibre_field->number_of_components)
-				{
-					gamma = fibre_field->values[2];
-					sin_gamma = sin(gamma);
-					cos_gamma = cos(gamma);
-				}
-				else
-				{
-#if defined (OLD_CODE)
-					/* default gamma is pi/2 */
-					sin_gamma = 1;
-					cos_gamma = 0;
-#endif /* defined (OLD_CODE) */
-					/* default gamma is 0 */
-					sin_gamma = 0;
-					cos_gamma = 1;
-				}
-				/* calculate the fibre axes a=fibre, b=sheet, c=normal */
-				a_x =  cos_alpha*f11 + sin_alpha*f21;
-				a_y =  cos_alpha*f12 + sin_alpha*f22;
-				a_z =  cos_alpha*f13 + sin_alpha*f23;
-				b_x = -sin_alpha*f11 + cos_alpha*f21;
-				b_y = -sin_alpha*f12 + cos_alpha*f22;
-				b_z = -sin_alpha*f13 + cos_alpha*f23;
-				f11 = a_x;
-				f12 = a_y;
-				f13 = a_z;
-				f21 = b_x;
-				f22 = b_y;
-				f23 = b_z;
-				/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
-					rotate anticlockwise about axis2, not -axis2 */
-#if defined (OLD_CODE)
-				a_x =  cos_beta*f11 + sin_beta*f31;
-				a_y =  cos_beta*f12 + sin_beta*f32;
-				a_z =  cos_beta*f13 + sin_beta*f33;
-				c_x = -sin_beta*f11 + cos_beta*f31;
-				c_y = -sin_beta*f12 + cos_beta*f32;
-				c_z = -sin_beta*f13 + cos_beta*f33;
-#endif /* defined (OLD_CODE) */
-				c_x =  cos_beta*f31 + sin_beta*f11;
-				c_y =  cos_beta*f32 + sin_beta*f12;
-				c_z =  cos_beta*f33 + sin_beta*f13;
-				a_x = -sin_beta*f31 + cos_beta*f11;
-				a_y = -sin_beta*f32 + cos_beta*f12;
-				a_z = -sin_beta*f33 + cos_beta*f13;
-				f31 = c_x;
-				f32 = c_y;
-				f33 = c_z;
-#if defined (OLD_CODE)
-				/* note rearrangement of sin/cos to give equivalent rotation of
-					gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
-					stage */
-				b_x = sin_gamma*f21 - cos_gamma*f31;
-				b_y = sin_gamma*f22 - cos_gamma*f32;
-				b_z = sin_gamma*f23 - cos_gamma*f33;
-				c_x = cos_gamma*f21 + sin_gamma*f31;
-				c_y = cos_gamma*f22 + sin_gamma*f32;
-				c_z = cos_gamma*f23 + sin_gamma*f33;
-#endif /* defined (OLD_CODE) */
-				b_x =  cos_gamma*f21 + sin_gamma*f31;
-				b_y =  cos_gamma*f22 + sin_gamma*f32;
-				b_z =  cos_gamma*f23 + sin_gamma*f33;
-				c_x = -sin_gamma*f21 + cos_gamma*f31;
-				c_y = -sin_gamma*f22 + cos_gamma*f32;
-				c_z = -sin_gamma*f23 + cos_gamma*f33;
-				/* put fibre, sheet then normal in field values */
-				field->values[0]=a_x;
-				field->values[1]=a_y;
-				field->values[2]=a_z;
-				field->values[3]=b_x;
-				field->values[4]=b_y;
-				field->values[5]=b_z;
-				field->values[6]=c_x;
-				field->values[7]=c_y;
-				field->values[8]=c_z;
-				return_code = 1;
+				f11 /= length;
+				f12 /= length;
+				f13 /= length;
+			}
+			if (0.0<(length=sqrt(f31*f31+f32*f32+f33*f33)))
+			{
+				f31 /= length;
+				f32 /= length;
+				f33 /= length;
+			}
+			/* get vector f2~ = f3~ (x) f1~ = normal to xi1 in xi1-xi2 plane */
+			f21=f32*f13-f33*f12;
+			f22=f33*f11-f31*f13;
+			f23=f31*f12-f32*f11;
+			/* get sin/cos of fibre angles alpha, beta and gamma */
+			alpha = fibreCache->values[0];
+			sin_alpha = sin(alpha);
+			cos_alpha = cos(alpha);
+			if (1 < fibre_field->number_of_components)
+			{
+				beta = fibreCache->values[1];
+				sin_beta = sin(beta);
+				cos_beta = cos(beta);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_fibre_axes::evaluate_cache_at_location.  "
-					"Could not evaluate source fields");
-				return_code = 0;
+				/* default beta is 0 */
+				sin_beta = 0;
+				cos_beta = 1;
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_fibre_axes::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of fibre axes");
-			return_code = 0;
+			if (2 < fibre_field->number_of_components)
+			{
+				gamma = fibreCache->values[2];
+				sin_gamma = sin(gamma);
+				cos_gamma = cos(gamma);
+			}
+			else
+			{
+#if defined (OLD_CODE)
+				/* default gamma is pi/2 */
+				sin_gamma = 1;
+				cos_gamma = 0;
+#endif /* defined (OLD_CODE) */
+				/* default gamma is 0 */
+				sin_gamma = 0;
+				cos_gamma = 1;
+			}
+			/* calculate the fibre axes a=fibre, b=sheet, c=normal */
+			a_x =  cos_alpha*f11 + sin_alpha*f21;
+			a_y =  cos_alpha*f12 + sin_alpha*f22;
+			a_z =  cos_alpha*f13 + sin_alpha*f23;
+			b_x = -sin_alpha*f11 + cos_alpha*f21;
+			b_y = -sin_alpha*f12 + cos_alpha*f22;
+			b_z = -sin_alpha*f13 + cos_alpha*f23;
+			f11 = a_x;
+			f12 = a_y;
+			f13 = a_z;
+			f21 = b_x;
+			f22 = b_y;
+			f23 = b_z;
+			/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
+				rotate anticlockwise about axis2, not -axis2 */
+#if defined (OLD_CODE)
+			a_x =  cos_beta*f11 + sin_beta*f31;
+			a_y =  cos_beta*f12 + sin_beta*f32;
+			a_z =  cos_beta*f13 + sin_beta*f33;
+			c_x = -sin_beta*f11 + cos_beta*f31;
+			c_y = -sin_beta*f12 + cos_beta*f32;
+			c_z = -sin_beta*f13 + cos_beta*f33;
+#endif /* defined (OLD_CODE) */
+			c_x =  cos_beta*f31 + sin_beta*f11;
+			c_y =  cos_beta*f32 + sin_beta*f12;
+			c_z =  cos_beta*f33 + sin_beta*f13;
+			a_x = -sin_beta*f31 + cos_beta*f11;
+			a_y = -sin_beta*f32 + cos_beta*f12;
+			a_z = -sin_beta*f33 + cos_beta*f13;
+			f31 = c_x;
+			f32 = c_y;
+			f33 = c_z;
+#if defined (OLD_CODE)
+			/* note rearrangement of sin/cos to give equivalent rotation of
+				gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
+				stage */
+			b_x = sin_gamma*f21 - cos_gamma*f31;
+			b_y = sin_gamma*f22 - cos_gamma*f32;
+			b_z = sin_gamma*f23 - cos_gamma*f33;
+			c_x = cos_gamma*f21 + sin_gamma*f31;
+			c_y = cos_gamma*f22 + sin_gamma*f32;
+			c_z = cos_gamma*f23 + sin_gamma*f33;
+#endif /* defined (OLD_CODE) */
+			b_x =  cos_gamma*f21 + sin_gamma*f31;
+			b_y =  cos_gamma*f22 + sin_gamma*f32;
+			b_z =  cos_gamma*f23 + sin_gamma*f33;
+			c_x = -sin_gamma*f21 + cos_gamma*f31;
+			c_y = -sin_gamma*f22 + cos_gamma*f32;
+			c_z = -sin_gamma*f23 + cos_gamma*f33;
+			/* put fibre, sheet then normal in field values */
+			valueCache.values[0]=a_x;
+			valueCache.values[1]=a_y;
+			valueCache.values[2]=a_z;
+			valueCache.values[3]=b_x;
+			valueCache.values[4]=b_y;
+			valueCache.values[5]=b_z;
+			valueCache.values[6]=c_x;
+			valueCache.values[7]=c_y;
+			valueCache.values[8]=c_z;
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_fibre_axes::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_fibre_axes::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_fibre_axes::list()
 /*******************************************************************************
@@ -441,8 +381,10 @@ struct Computed_field *Computed_field_create_fibre_axes(
 	struct Computed_field *fibre_field, struct Computed_field *coordinate_field)
 {
 	Computed_field *field = NULL;
-	if (field_module && fibre_field && (3>=fibre_field->number_of_components) &&
-		coordinate_field && (3 >= coordinate_field->number_of_components))
+	if (field_module && fibre_field && fibre_field->isNumerical() &&
+		(3>=fibre_field->number_of_components) &&
+		coordinate_field && coordinate_field->isNumerical() &&
+		(3 >= coordinate_field->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = fibre_field;

@@ -838,7 +838,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	struct GT_glyph_set *glyph_set;
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
-	struct GT_voltex *voltex;
 	struct Multi_range *ranges;
 	FE_value_triple *xi_points = NULL;
 
@@ -916,8 +915,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						}
 						if (draw_element)
 						{
-							return_code =
-								FE_element_add_line_to_vertex_array(element,
+							return_code = FE_element_add_line_to_vertex_array(
+								element, graphic_to_object_data->field_cache,
 								GT_object_get_vertex_set(graphic->graphics_object),
 								graphic_to_object_data->rc_coordinate_field,
 								graphic->data_field,
@@ -944,6 +943,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						{
 							if (surface ||
 								(surface = create_cylinder_from_FE_element(element,
+									graphic_to_object_data->field_cache,
+									graphic_to_object_data->master_mesh,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->data_field, graphic->constant_radius,
 									graphic->radius_scale_factor, graphic->radius_scalar_field,
@@ -989,10 +990,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						{
 							if (surface ||
 								(surface = create_GT_surface_from_FE_element(
-									graphic_to_object_data->field_cache, element,
+									element, graphic_to_object_data->field_cache,
+									graphic_to_object_data->master_mesh,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->texture_coordinate_field, graphic->data_field,
-									graphic_to_object_data->master_mesh,
 									number_in_xi[0], number_in_xi[1],
 									/*reverse_normals*/0, top_level_element,graphic->render_type,
 									graphic_to_object_data->time)))
@@ -1021,8 +1022,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					{
 						switch (GT_object_get_type(graphic->graphics_object))
 						{
+#if defined (OLD_CODE)
 							case g_VOLTEX:
 							{
+								struct GT_voltex *voltex;
 								if (3 == element_dimension)
 								{
 									if (graphic_to_object_data->existing_graphics)
@@ -1104,6 +1107,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									}
 								}
 							} break;
+#endif // defined (OLD_CODE)
 							case g_SURFACE:
 							{
 								if (3 == element_dimension)
@@ -1132,6 +1136,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										else
 										{
 											return_code = create_iso_surfaces_from_FE_element_new(element,
+												graphic_to_object_data->field_cache,
+												graphic_to_object_data->master_mesh,
 												graphic_to_object_data->time, number_in_xi,
 												graphic_to_object_data->iso_surface_specification,
 												graphic->graphics_object,
@@ -1180,12 +1186,12 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												for (i = 0 ; i < graphic->number_of_iso_values ; i++)
 												{
 													return_code = create_iso_lines_from_FE_element(element,
+														graphic_to_object_data->field_cache,
 														graphic_to_object_data->rc_coordinate_field,
 														graphic->iso_scalar_field, graphic->iso_values[i],
-														graphic_to_object_data->time,
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
-														top_level_element, graphic->graphics_object, 
-														/*graphics_object_time*/0.0, graphic->line_width);
+														top_level_element, graphic->graphics_object,
+														graphic->line_width);
 												}
 											}
 											else
@@ -1207,12 +1213,12 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 														graphic->first_iso_value +
 														(double)i * iso_value_range;
 													return_code = create_iso_lines_from_FE_element(element,
+														graphic_to_object_data->field_cache,
 														graphic_to_object_data->rc_coordinate_field,
 														graphic->iso_scalar_field, iso_value,
-														graphic_to_object_data->time,
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
-														top_level_element, graphic->graphics_object, 
-														/*graphics_object_time*/0.0,graphic->line_width);
+														top_level_element, graphic->graphics_object,
+														graphic->line_width);
 												}
 											}
 										}
@@ -1236,6 +1242,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					} break;
 					case CMISS_GRAPHIC_ELEMENT_POINTS:
 					{
+						Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 						glyph_set = (struct GT_glyph_set *)NULL;
 						if (graphic_to_object_data->existing_graphics)
 						{
@@ -1256,10 +1263,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								if (FE_element_get_xi_points(element,
 									graphic->xi_discretization_mode, number_in_xi,
 									element_point_ranges_identifier.exact_xi,
+									graphic_to_object_data->field_cache,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->xi_point_density_field,
-									&number_of_xi_points, &xi_points,
-									graphic_to_object_data->time))
+									&number_of_xi_points, &xi_points))
 								{
 									get_FE_element_identifier(element, &cm);
 									element_graphics_name = cm.number;
@@ -1318,6 +1325,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									/* NOT an error if no glyph_set produced == empty selection */
 									if ((0 < number_of_xi_points) &&
 										NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
+											graphic_to_object_data->field_cache,
 											use_element, top_level_element,
 											graphic_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
@@ -1325,8 +1333,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											graphic_to_object_data->wrapper_orientation_scale_field,
 											graphic->variable_scale_field, graphic->data_field,
 											graphic->font, graphic->label_field, graphic->select_mode,
-											element_selected, ranges, top_level_xi_point_numbers,
-											graphic_to_object_data->time)))
+											element_selected, ranges, top_level_xi_point_numbers)))
 									{
 										/* set auxiliary_object_name for glyph_set to
 											 element_graphics_name so we can edit */
@@ -1376,10 +1383,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						if (FE_element_get_xi_points(element,
 							graphic->xi_discretization_mode, number_in_xi,
 							element_point_ranges_identifier.exact_xi,
+							graphic_to_object_data->field_cache,
 							graphic_to_object_data->rc_coordinate_field,
 							graphic->xi_point_density_field,
-							&number_of_xi_points, &xi_points,
-							graphic_to_object_data->time))
+							&number_of_xi_points, &xi_points))
 						{
 							if (STREAM_LINE == graphic->streamline_type)
 							{
@@ -1388,12 +1395,12 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									initial_xi[0] = xi_points[i][0];
 									initial_xi[1] = xi_points[i][1];
 									initial_xi[2] = xi_points[i][2];
-									if (NULL != (polyline	= create_GT_polyline_streamline_FE_element(
-											element, initial_xi, graphic_to_object_data->rc_coordinate_field,
+									if (NULL != (polyline = create_GT_polyline_streamline_FE_element(
+											element, initial_xi, graphic_to_object_data->field_cache,
+											graphic_to_object_data->rc_coordinate_field,
 											graphic_to_object_data->wrapper_stream_vector_field,
 											graphic->reverse_track, graphic->streamline_length,
 											graphic->streamline_data_type, graphic->data_field,
-											graphic_to_object_data->time,
 											graphic_to_object_data->fe_region)))
 									{
 										if (!GT_OBJECT_ADD(GT_polyline)(graphic->graphics_object,
@@ -1415,12 +1422,12 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									initial_xi[1] = xi_points[i][1];
 									initial_xi[2] = xi_points[i][2];
 									if (NULL != (surface = create_GT_surface_streamribbon_FE_element(
-											element, initial_xi, graphic_to_object_data->rc_coordinate_field,
+											element, initial_xi, graphic_to_object_data->field_cache,
+											graphic_to_object_data->rc_coordinate_field,
 											graphic_to_object_data->wrapper_stream_vector_field,
 											graphic->reverse_track, graphic->streamline_length,
 											graphic->streamline_width, graphic->streamline_type,
 											graphic->streamline_data_type, graphic->data_field,
-											graphic_to_object_data->time,
 											graphic_to_object_data->fe_region)))
 									{
 										if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
@@ -1501,11 +1508,12 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			{
 				struct GT_polyline *polyline;
 				if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
-						xi,graphic_to_object_data->rc_coordinate_field,
+						xi, graphic_to_object_data->field_cache,
+						graphic_to_object_data->rc_coordinate_field,
 						graphic_to_object_data->wrapper_stream_vector_field,
 						graphic->reverse_track, graphic->streamline_length,
 						graphic->streamline_data_type, graphic->data_field,
-							graphic_to_object_data->time,graphic_to_object_data->fe_region)))
+						graphic_to_object_data->fe_region)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 								graphic->graphics_object,
@@ -1526,12 +1534,13 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			{
 				struct GT_surface *surface;
 				if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
-							xi,graphic_to_object_data->rc_coordinate_field,
+							xi, graphic_to_object_data->field_cache,
+							graphic_to_object_data->rc_coordinate_field,
 							graphic_to_object_data->wrapper_stream_vector_field,
 							graphic->reverse_track, graphic->streamline_length,
 							graphic->streamline_width, graphic->streamline_type,
 							graphic->streamline_data_type, graphic->data_field,
-							graphic_to_object_data->time,graphic_to_object_data->fe_region)))
+							graphic_to_object_data->fe_region)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 								graphic->graphics_object,
@@ -3078,7 +3087,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 				for (int i = 0; i < surface_count && return_code; i++)
 				{
 					Cmiss_cad_surface_identifier identifier = i;
-					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type, identifier);
+					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->field_cache, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type, identifier);
 					if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
 					{
 						//printf( "Surface added to graphics object\n" );
@@ -3099,7 +3108,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 					CREATE(GT_polyline_vertex_buffers)(
 					g_PLAIN, settings->line_width);
 				*/
-				GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
+				GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(cad_topology, graphic_to_object_data->field_cache, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
 				if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 					graphic->graphics_object, lines))
 				{
@@ -3898,6 +3907,7 @@ int Cmiss_graphic_to_graphics_object(
 									} break;
 									case CMISS_GRAPHIC_ISO_SURFACES:
 									{
+										Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 										if (0 < graphic->number_of_iso_values)
 										{
 											if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
@@ -3943,6 +3953,7 @@ int Cmiss_graphic_to_graphics_object(
 									} break;
 									case CMISS_GRAPHIC_STREAMLINES:
 									{
+										Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 										/* must always regenerate ALL streamlines since they can cross
 										into other elements */
 										if (graphic_to_object_data->existing_graphics)
@@ -4026,23 +4037,18 @@ int Cmiss_graphic_to_graphics_object(
 							{
 								graphic_to_object_data->number_of_data_values = 0;
 								DEALLOCATE(graphic_to_object_data->data_copy_buffer);
-								/* clear Computed_field caches so elements not accessed */
-								Computed_field_clear_cache(graphic->data_field);
 							}
 						}
 						if (graphic->stream_vector_field)
 						{
-							Computed_field_clear_cache(graphic_to_object_data->wrapper_stream_vector_field);
 							Computed_field_end_wrap(&(graphic_to_object_data->wrapper_stream_vector_field));
 						}
 						if (graphic->orientation_scale_field)
 						{
-							Computed_field_clear_cache(graphic_to_object_data->wrapper_orientation_scale_field);
 							Computed_field_end_wrap(&(graphic_to_object_data->wrapper_orientation_scale_field));
 						}
 						if (graphic_to_object_data->rc_coordinate_field)
 						{
-							Computed_field_clear_cache(graphic_to_object_data->rc_coordinate_field);
 							Computed_field_end_wrap(&(graphic_to_object_data->rc_coordinate_field));
 						}
 					}

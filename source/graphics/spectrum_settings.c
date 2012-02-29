@@ -51,6 +51,7 @@ appearance of spectrums.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include <stdio.h>
+#include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
 #include "general/indexed_list_private.h"
@@ -2466,6 +2467,9 @@ passed in render data.
 		{
 			if (settings->active)
 			{
+				// GRC probably inefficient to create and destroy cache here; keep it through render pass?
+				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(settings->output_field);
+				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 				number_of_components = Computed_field_get_number_of_components
 					(settings->output_field);
 				ALLOCATE(values, FE_value, number_of_components);
@@ -2474,10 +2478,7 @@ passed in render data.
 					FE_value dataValue[1];
 					float* tmpPointer = render_data->data + settings->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
-					Cmiss_field_evaluate_at_field_coordinates(settings->output_field,
-						settings->input_field, /*Number of values*/1,
-						dataValue,
-						/*time*/0.0, values);
+					Cmiss_field_cache_set_field_real(field_cache, settings->input_field, /*number_of_values*/1, dataValue);
 				}
 				else
 				{
@@ -2485,13 +2486,12 @@ passed in render data.
 					ALLOCATE(feData, FE_value,render_data->number_of_data_components);
 					CAST_TO_FE_VALUE_C(feData,render_data->data,
 						render_data->number_of_data_components);
-					Cmiss_field_evaluate_at_field_coordinates(settings->output_field,
-						settings->input_field, render_data->number_of_data_components,
-						feData,
-						/*time*/0.0, values);
+					Cmiss_field_cache_set_field_real(field_cache, settings->input_field, render_data->number_of_data_components, feData);
 					DEALLOCATE(feData);
 				}
-
+				Cmiss_field_evaluate_real(settings->output_field, field_cache, number_of_components, values);
+				Cmiss_field_cache_destroy(&field_cache);
+				Cmiss_field_module_destroy(&field_module);
 				for (i = 0 ; i < number_of_components ; i++)
 				{
 					/* ensure 0 - 1 */
@@ -2868,10 +2868,6 @@ DESCRIPTION :
 		return_code=1;
 		if (settings->active)
 		{
-			if (settings->settings_type == SPECTRUM_FIELD)
-			{
-				Computed_field_clear_cache(settings->output_field);
-			}
 			switch (settings->colour_mapping)
 			{
 				case SPECTRUM_RAINBOW:

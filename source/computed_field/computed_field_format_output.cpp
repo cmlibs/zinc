@@ -104,7 +104,12 @@ private:
 			return 0;
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		return new StringFieldValueCache();
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -125,79 +130,51 @@ private:
 
 };
 
-int Computed_field_format_output::evaluate_cache_at_location(
-    Field_location* location)
+int Computed_field_format_output::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields > 0) &&
-		(field->number_of_components <= 4) &&
-		(field->number_of_components == field->source_fields[0]->number_of_components))
+	StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (0 != (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
-		{
-			field->values_valid = 0; // string-valued
-			/* 2. Write out the source field values using the format_string */
-			/* Allocate a generous string.
-			 */
-			if (field->string_cache)
-				DEALLOCATE(field->string_cache);
-			ALLOCATE(field->string_cache, char, output_allocation_size);
+		/* 2. Write out the source field values using the format_string */
+		/* Allocate a generous string.
+		 */
+		if (valueCache.stringValue)
+			DEALLOCATE(valueCache.stringValue);
+		ALLOCATE(valueCache.stringValue, char, output_allocation_size);
 #if defined (_MSC_VER)
-			/* If the MSVC _snprintf overflows then it won't be null terminated so ensure this 0. */
-			field->string_cache[output_allocation_size-1] = 0;
+		/* If the MSVC _snprintf overflows then it won't be null terminated so ensure this 0. */
+		valueCache.stringValue[output_allocation_size-1] = 0;
 #endif // defined (_MSC_VER)
-			switch (field->number_of_components)
-			{
+		switch (field->number_of_components)
+		{
 			case 1:
 			{
-				snprintf(field->string_cache, output_allocation_size-1, format_string,
-					field->source_fields[0]->values[0]);
-				return_code = 1;
+				snprintf(valueCache.stringValue, output_allocation_size-1, format_string,
+					sourceCache->values[0]);
 			} break;
 			case 2:
 			{
-				snprintf(field->string_cache, output_allocation_size-1, format_string,
-					field->source_fields[0]->values[0],
-					field->source_fields[0]->values[1]);
-				return_code = 1;
+				snprintf(valueCache.stringValue, output_allocation_size-1, format_string,
+					sourceCache->values[0], sourceCache->values[1]);
 			} break;
 			case 3:
 			{
-				snprintf(field->string_cache, output_allocation_size-1, format_string,
-					field->source_fields[0]->values[0],
-					field->source_fields[0]->values[1],
-					field->source_fields[0]->values[2]);
-				return_code = 1;
+				snprintf(valueCache.stringValue, output_allocation_size-1, format_string,
+					sourceCache->values[0], sourceCache->values[1], sourceCache->values[2]);
 			} break;
 			case 4:
 			{
-				snprintf(field->string_cache, output_allocation_size-1, format_string,
-					field->source_fields[0]->values[0],
-					field->source_fields[0]->values[1],
-					field->source_fields[0]->values[2],
-					field->source_fields[0]->values[3]);
-				return_code = 1;
+				snprintf(valueCache.stringValue, output_allocation_size-1, format_string,
+					sourceCache->values[0], sourceCache->values[1], sourceCache->values[2], sourceCache->values[3]);
 			} break;
 			default:
-				return_code = 0;
-			}
+				return 0;
 		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_format_output_evaluate_as_string_at_node.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_format_output_evaluate_as_string_at_node */
+	return 0;
+}
 
 int Computed_field_format_output::list()
 /*******************************************************************************

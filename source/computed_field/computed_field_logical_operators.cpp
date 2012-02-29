@@ -93,58 +93,26 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+
 };
 
-int Computed_field_or::evaluate_cache_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_or::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	
-	int i, return_code;
-
-	ENTER(Computed_field_or::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = (0.0 != field->source_fields[0]->values[i]) || 
-					(0.0 != field->source_fields[1]->values[i]);
-			}	
-			field->derivatives_valid = 0;
-			if (0 < location->get_number_of_derivatives())
-			{
-				display_message(ERROR_MESSAGE,
-				"Computed_field_or::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of or");
-			        return_code = 0;
-			}
+			valueCache.values[i] = (0.0 != source1Cache->values[i]) || (0.0 != source2Cache->values[i]);
 		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_or::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_or::evaluate_cache_at_location */
+	return 0;
+}
 
 } //namespace
 
@@ -159,7 +127,8 @@ Computed_field *Cmiss_field_module_create_or(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
+	if (field_module && source_field_one && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -356,60 +325,26 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_and::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_and::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-
-	int i, return_code;
-
-	ENTER(Computed_field_and::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = (0.0 != field->source_fields[0]->values[i])
-					&& (0.0 != field->source_fields[1]->values[i]);
-			}	
-			field->derivatives_valid = 0;
-			if (0 < location->get_number_of_derivatives())
-			{
-				display_message(ERROR_MESSAGE,
-				"Computed_field_and::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of and");
-			        return_code = 0;
-			}
+			valueCache.values[i] = (0.0 != source1Cache->values[i]) && (0.0 != source2Cache->values[i]);
 		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_and::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_and::evaluate_cache_at_location */
+	return 0;
+}
 
 } //namespace
 
@@ -424,7 +359,8 @@ Computed_field *Cmiss_field_module_create_and(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
+	if (field_module && source_field_one && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -621,65 +557,32 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_xor::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_xor::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_xor::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
+			if (0.0 != source1Cache->values[i])
 			{
-				if (0.0 != field->source_fields[0]->values[i])
-				{
-					field->values[i] = (0.0 == field->source_fields[1]->values[i]);
-				}
-				else
-				{
-					field->values[i] = (0.0 != field->source_fields[1]->values[i]);
-				}
-			}	
-			if (0 < location->get_number_of_derivatives())
+				valueCache.values[i] = (0.0 == source2Cache->values[i]);
+			}
+			else
 			{
-				display_message(ERROR_MESSAGE,
-				"Computed_field_xor::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of xor");
-			        return_code = 0;
+				valueCache.values[i] = (0.0 != source2Cache->values[i]);
 			}
 		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_xor::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_xor::evaluate_cache_at_location */
-
-
+	return 0;
+}
 
 } //namespace
 
@@ -694,7 +597,8 @@ Computed_field *Cmiss_field_module_create_xor(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
+	if (field_module && source_field_one && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -891,90 +795,50 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_equal_to::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_equal_to::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_equal_to::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-		field->source_fields[0]->number_of_components) &&
-		(field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	switch (Cmiss_field_get_value_type(getSourceField(0)))
 	{
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		case CMISS_FIELD_VALUE_TYPE_REAL:
 		{
-			/* 2. Calculate the field */
-			if (field->source_fields[0]->values_valid &&
-				field->source_fields[1]->values_valid)
+			RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+			RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+			if (source1Cache && source2Cache)
 			{
-				for (i = 0 ; i < field->number_of_components ; i++)
+				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
-					field->values[i] = (field->source_fields[0]->values[i]
-						== field->source_fields[1]->values[i]);
+					valueCache.values[i] = (source1Cache->values[i] == source2Cache->values[i]) ? 1.0 : 0.0;
 				}
+				valueCache.derivatives_valid = 0;
+				return 1;
 			}
-			/* Also should try and convert a numerical valid value to match
-				a string valid value if possible */
-			else if (field->source_fields[0]->string_cache
-				&& field->source_fields[1]->string_cache)
+		} break;
+		case CMISS_FIELD_VALUE_TYPE_STRING:
+		{
+			StringFieldValueCache *source1Cache = StringFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+			StringFieldValueCache *source2Cache = StringFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+			if (source1Cache && source2Cache)
 			{
-				if (!strcmp(field->source_fields[0]->string_cache,
-						field->source_fields[1]->string_cache))
+				FE_value result = (FE_value)(0 == strcmp(source1Cache->stringValue, source2Cache->stringValue));
+				// should only be one component if string arguments
+				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
-					/* Cannot do a component wise comparison with the current
-						string cache storage unfortunately */
-					for (i = 0 ; i < field->number_of_components ; i++)
-					{
-						field->values[i] = 1;
-					}
+					valueCache.values[i] = result;
 				}
-				else
-				{
-					for (i = 0 ; i < field->number_of_components ; i++)
-					{
-						field->values[i] = 0;
-					}
-				}
+				return 1;
 			}
-			else
-			{
-				return_code = 0;
-			}
-			field->derivatives_valid = 0;
-			if (0 < location->get_number_of_derivatives())
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_equal_to::evaluate_cache_at_location.  "
-					"Cannot calculate derivatives of equal_to");
-				return_code = 0;
-			}
-		}
+		} break;
+		default:
+		{
+			// unsupported type
+		} break;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_equal_to::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_equal_to::evaluate_cache_at_location */
-
-
+	return 0;
+}
 
 } //namespace
 
@@ -990,6 +854,7 @@ Computed_field *Cmiss_field_module_create_equal_to(
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
 	if (field_module && source_field_one && source_field_two &&
+		(Cmiss_field_get_value_type(source_field_one) == Cmiss_field_get_value_type(source_field_two)) &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -1187,60 +1052,25 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_less_than::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_less_than::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_less_than::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = (field->source_fields[0]->values[i]
-					< field->source_fields[1]->values[i]);
-			}	
-			field->derivatives_valid = 0;
-			if (0 < location->get_number_of_derivatives())
-			{
-				display_message(ERROR_MESSAGE,
-				"Computed_field_less_than::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of less_than");
-			        return_code = 0;
-			}
+			valueCache.values[i] = (source1Cache->values[i] < source2Cache->values[i]) ? 1.0 : 0.0;
 		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_less_than::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_less_than::evaluate_cache_at_location */
-
-
+	return 0;
+}
 
 } //namespace
 
@@ -1255,7 +1085,8 @@ Computed_field *Computed_field_create_less_than(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
+	if (field_module && source_field_one  && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -1452,60 +1283,25 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_greater_than::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
+int Computed_field_greater_than::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_greater_than::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = (field->source_fields[0]->values[i]
-					> field->source_fields[1]->values[i]);
-			}	
-			field->derivatives_valid = 0;
-			if (0 < location->get_number_of_derivatives())
-			{
-				display_message(ERROR_MESSAGE,
-				"Computed_field_greater_than::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of greater_than");
-			        return_code = 0;
-			}
+			valueCache.values[i] = (source1Cache->values[i] > source2Cache->values[i]) ? 1.0 : 0.0;
 		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_greater_than::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_greater_than::evaluate_cache_at_location */
-
-
+	return 0;
+}
 
 } //namespace
 
@@ -1520,7 +1316,8 @@ Computed_field *Computed_field_create_greater_than(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
+	if (field_module && source_field_one  && source_field_one->isNumerical() &&
+		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -1717,70 +1514,20 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache&)
+	{
+		return true;
+	}
 };
 
-int Computed_field_is_defined::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Always returns 1 as the value is whether or not the source field is defined.
-==============================================================================*/
+int Computed_field_is_defined::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_is_defined::is_defined_at_location);
-	if (field && location)
-	{
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_defined::is_defined_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_defined::is_defined_at_location */
-
-int Computed_field_is_defined::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_defined::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 1))
-	{
-		/* Calculate the field */
-		field->values[0] = Computed_field_is_defined_at_location(
-			field->source_fields[0], location);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_defined::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_defined::evaluate_cache_at_location */
-
-
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	valueCache.values[0] = getSourceField(0)->core->is_defined_at_location(cache);
+	return 1;
+}
 
 } //namespace
 
@@ -1943,22 +1690,22 @@ private:
 		return (0 != dynamic_cast<Computed_field_not*>(other_field));
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_not::evaluate_cache_at_location(Field_location* location)
+int Computed_field_not::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	if (!(field && location))
-		return 0;
-	int return_code = Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
-	if (return_code)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			field->values[i] = (0 != field->source_fields[0]->values[i]) ? 0 : 1;
+			valueCache.values[i] = (0.0 != sourceCache->values[i]) ? 0.0 : 1.0;
 		}
+		return 1;
 	}
-	return return_code;
+	return 0;
 }
 
 } //namespace
@@ -1967,7 +1714,7 @@ Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field)
 {
 	Cmiss_field_id field = 0;
-	if (source_field)
+	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,

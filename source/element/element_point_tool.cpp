@@ -45,6 +45,7 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
+#include "api/cmiss_field_module.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -167,7 +168,6 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
-	char *command_string;
 	enum Interactive_event_type event_type;
 	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int clear_selection, input_modifier, shift_pressed, start, stop;
@@ -216,46 +216,45 @@ release.
 									if (Element_point_ranges_get_identifier(
 											 picked_element_point, &element_point_ranges_identifier))
 									{
-										if (Computed_field_is_defined_in_element(
-											element_point_tool->command_field,
-											element_point_ranges_identifier.element))
+										if (element_point_tool->time_keeper)
 										{
-											if (element_point_tool->time_keeper)
+											time =
+												Time_keeper_get_time(element_point_tool->time_keeper);
+										}
+										else
+										{
+											time = 0;
+										}
+										/* need to get the xi for the picked_element_point
+											 in order to evaluate the command_field there */
+										if ((multi_range = Element_point_ranges_get_ranges(
+											picked_element_point)) &&
+											(Multi_range_get_range(multi_range, /*range_no*/0,
+												&start, &stop)) &&
+											FE_element_get_numbered_xi_point(
+												element_point_ranges_identifier.element,
+												element_point_ranges_identifier.xi_discretization_mode,
+												element_point_ranges_identifier.number_in_xi,
+												element_point_ranges_identifier.exact_xi,
+												(Cmiss_field_cache_id)0,
+												/*coordinate_field*/(struct Computed_field *)NULL,
+												/*density_field*/(struct Computed_field *)NULL,
+												start, xi))
+										{
+											Cmiss_field_module_id field_module = Cmiss_field_get_field_module(element_point_tool->command_field);
+											Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+											Cmiss_field_cache_set_time(field_cache, time);
+											Cmiss_field_cache_set_mesh_location_with_parent(field_cache,
+												element_point_ranges_identifier.element, Cmiss_element_get_dimension(element_point_ranges_identifier.element),
+												xi, element_point_ranges_identifier.top_level_element);
+											char *command_string = Cmiss_field_evaluate_string(element_point_tool->command_field, field_cache);
+											if (command_string)
 											{
-												time =
-													Time_keeper_get_time(element_point_tool->time_keeper);
+												Execute_command_execute_string(element_point_tool->execute_command, command_string);
+												DEALLOCATE(command_string);
 											}
-											else
-											{
-												time = 0;
-											}
-											/* need to get the xi for the picked_element_point
-												 in order to evaluate the command_field there */
-											if ((multi_range = Element_point_ranges_get_ranges(
-												picked_element_point)) &&
-												(Multi_range_get_range(multi_range, /*range_no*/0,
-													&start, &stop)) &&
-												FE_element_get_numbered_xi_point(
-													element_point_ranges_identifier.element,
-													element_point_ranges_identifier.xi_discretization_mode,
-													element_point_ranges_identifier.number_in_xi,
-													element_point_ranges_identifier.exact_xi,
-													/*coordinate_field*/(struct Computed_field *)NULL,
-													/*density_field*/(struct Computed_field *)NULL,
-													start, xi, time))
-											{
-												if (element_point_tool && (NULL != (command_string =
-													Computed_field_evaluate_as_string_in_element(
-														element_point_tool->command_field,
-														/*component_number*/-1,
-														element_point_ranges_identifier.element, xi, time,
-														element_point_ranges_identifier.top_level_element))))
-												{
-													Execute_command_execute_string(element_point_tool->execute_command,
-														command_string);
-													DEALLOCATE(command_string);
-												}
-											}
+											Cmiss_field_cache_destroy(&field_cache);
+											Cmiss_field_module_destroy(&field_module);
 										}
 									}
 								}

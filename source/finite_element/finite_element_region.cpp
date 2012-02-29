@@ -3991,12 +3991,6 @@ Returns the node from <fe_region> whose number is in the string <name>.
 			node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(node_number,
 				fe_region->fe_node_list);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Text_choose_FE_node_from_fe_region_string_to_FE_node.  "
-				"Cannot read string");
-		}
 	}
 	else
 	{

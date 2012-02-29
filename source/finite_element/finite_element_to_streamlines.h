@@ -77,49 +77,6 @@ DESCRIPTION :
 Streampoint type is private.
 ==============================================================================*/
 
-struct Element_to_streamline_data
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
-
-DESCRIPTION :
-Data for converting a 3-D element into an array of streamlines.
-==============================================================================*/
-{
-	enum Streamline_type type;
-	enum Streamline_data_type data_type;
-	FE_value seed_xi[3], time;
-	struct Computed_field *coordinate_field,*data_field,*stream_vector_field;
-	float length, width;
-	/* reverse_track = track -vector and store -travel_scalar */
-	int reverse_track;
-	/* graphics object must be of correct type for Streamline_type */
-	struct GT_object *graphics_object;
-}; /* struct Element_to_streamline_data */
-
-struct Node_to_streamline_data
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Data for converting a node with an Element_xi field into a streamline.
-==============================================================================*/
-{
-	enum Streamline_type type;
-	enum Streamline_data_type data_type;
-	struct Computed_field *coordinate_field,*data_field,*stream_vector_field;
-	/* The seed_element and element_groups are now passed so that when used
-		with a seed_data_group the data actually drawn can be filtered by
-		these parameters */
-	struct FE_element *seed_element;
-	struct FE_region *fe_region;
-	struct FE_field *seed_data_field;
-	float length, width, time;
-	/* reverse_track = track -vector and store -travel_scalar */
-	int reverse_track;
-	/* graphics object must be of correct type for Streamline_type */
-	struct GT_object *graphics_object;
-}; /* struct Element_to_streamline_data */
-
 struct Element_to_particle_data
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -133,6 +90,7 @@ Data for converting a 3-D element into an array of particles.
 	int number_of_particles;
 	struct GT_object *graphics_object;
 	struct Streampoint **list;
+	Cmiss_field_cache_id field_cache;
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	int index;
 	Triple **pointlist;
@@ -216,11 +174,10 @@ Returns the GT_object which represents the streamline.
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	struct Computed_field *coordinate_field,
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field, FE_value time,
-	struct FE_region *fe_region);
+	struct Computed_field *data_field, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
 
@@ -231,15 +188,17 @@ the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
+@param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	struct Computed_field *coordinate_field,
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,float width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	FE_value time, struct FE_region *fe_region);
+	struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
 
@@ -250,35 +209,14 @@ the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
+@param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+expected to have been set in the field_cache if needed.
 ==============================================================================*/
-
-struct GT_pointset *create_interactive_streampoint(struct FE_element *element,
-	struct Computed_field *coordinate_field,float length,FE_value *xi,
-	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
-==============================================================================*/
-
-#if defined (OLD_CODE)
-int update_interactive_streamline(struct Interactive_streamline *streamline,
-	FE_value *new_point,
-	struct MANAGER(Interactive_streamline) *streamline_manager);
-/*******************************************************************************
-LAST MODIFIED : 16 May 1998
-
-DESCRIPTION :
-Moves a streampoint to the new_point position.  This function works by an
-incremental step change to allow it to calculate the correct element and the
-xi coordinates.  To be accurate the change in position must be small.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
-	struct Computed_field *coordinate_field,gtObject *graphics_object);
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	gtObject *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
 
@@ -287,7 +225,7 @@ Adds a new flow particle structure to the start of the Streampoint list
 ==============================================================================*/
 
 int update_flow_particle_list(struct Streampoint *point,
-	struct Computed_field *coordinate_field,
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,FE_value step,FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -297,24 +235,8 @@ Uses RungeKutta integration to update the position of the given streampoints
 using the vector/gradient field and stepsize.  If time is 0 then the previous
 point positions are updated adding no new objects.  Otherwise a new pointset is
 created with the given timestamp.
-==============================================================================*/
-
-int element_to_streamline(struct FE_element *element,
-	void *void_element_to_streamline_data);
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Converts a 3-D element into an array of streamlines.
-==============================================================================*/
-
-int node_to_streamline(struct FE_node *node,
-	void *void_node_to_streamline_data);
-/*******************************************************************************
-LAST MODIFIED : 4 May 1999
-
-DESCRIPTION :
-Converts a node into an array of a streamline.
+@param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
 int element_to_particle(struct FE_element *element,

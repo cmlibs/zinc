@@ -320,6 +320,57 @@ int write_Computed_field_element_integration_mapping(
 	return( 1 );
 }
 
+class IntegrationFieldValueCache : public RealFieldValueCache
+{
+public:
+	LIST(Computed_field_element_integration_mapping) *texture_mapping;
+	LIST(Computed_field_node_integration_mapping) *node_mapping;
+	/* last mapping successfully used by Computed_field_find_element_xi so
+		that it can first try this element again */
+	Computed_field_element_integration_mapping *find_element_xi_mapping;
+	FE_value cached_time;
+
+	IntegrationFieldValueCache(int componentCount) :
+		RealFieldValueCache(componentCount),
+		texture_mapping((LIST(Computed_field_element_integration_mapping) *)0),
+		node_mapping((LIST(Computed_field_node_integration_mapping) *)0),
+		find_element_xi_mapping((Computed_field_element_integration_mapping *)0),
+		cached_time(0)
+	{
+	}
+
+	virtual ~IntegrationFieldValueCache()
+	{
+		clear();
+	}
+
+	virtual void clear()
+	{
+		if (texture_mapping)
+		{
+			DESTROY_LIST(Computed_field_element_integration_mapping)
+				(&texture_mapping);
+		}
+		if (node_mapping)
+		{
+			DESTROY_LIST(Computed_field_node_integration_mapping)
+				(&node_mapping);
+		}
+		RealFieldValueCache::clear();
+	}
+
+	static IntegrationFieldValueCache* cast(FieldValueCache* valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<IntegrationFieldValueCache*>(valueCache);
+   }
+
+	static IntegrationFieldValueCache& cast(FieldValueCache& valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<IntegrationFieldValueCache&>(valueCache);
+   }
+
+};
+
 char computed_field_integration_type_string[] = "integration";
 char computed_field_xi_texture_coordinates_type_string[] = 
 "xi_texture_coordinates";
@@ -327,17 +378,11 @@ char computed_field_xi_texture_coordinates_type_string[] =
 class Computed_field_integration : public Computed_field_core
 {
 public:
-	float cached_time;
 	Cmiss_mesh_id mesh;
 	Cmiss_element_id seed_element;
 	/* Whether to integrate wrt to each coordinate separately or wrt the 
 		magnitude of the coordinate field */
 	int magnitude_coordinates;
-	LIST(Computed_field_element_integration_mapping) *texture_mapping;
-	LIST(Computed_field_node_integration_mapping) *node_mapping;
-	/* last mapping successfully used by Computed_field_find_element_xi so 
-		that it can first try this element again */
-	Computed_field_element_integration_mapping *find_element_xi_mapping;
 
 	Computed_field_integration(Cmiss_mesh_id mesh, Cmiss_element_id seed_element,
 		int magnitude_coordinates) :
@@ -346,16 +391,9 @@ public:
 		seed_element(Cmiss_element_access(seed_element)),
 		magnitude_coordinates(magnitude_coordinates)
 	{
-		cached_time = 0;
-		texture_mapping = 
-			(LIST(Computed_field_element_integration_mapping) *)NULL;
-		node_mapping = 
-			(LIST(Computed_field_node_integration_mapping) *)NULL;
-		find_element_xi_mapping=
-			(Computed_field_element_integration_mapping *)NULL;
 	};
 
-	~Computed_field_integration();
+	virtual ~Computed_field_integration();
 
 private:
 	Computed_field_core *copy();
@@ -367,19 +405,17 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
-
 	int list();
 
 	char* get_command_string();
 
 	int integrate_path(FE_element *element,
 		FE_value *initial_values, FE_value *initial_xi, FE_value *final_xi,
-		int number_of_gauss_points, Computed_field *integrand, 
+		int number_of_gauss_points, Cmiss_field_cache& workingCache, Computed_field *integrand,
 		int magnitude_coordinates, Computed_field *coordinate_field,
-		float time, FE_value *values);
+		FE_value *values);
 
-	int add_neighbours(
+	int add_neighbours(IntegrationFieldValueCache& valueCache,
 		Computed_field_element_integration_mapping *mapping_item,
 		LIST(Computed_field_element_integration_mapping) *texture_mapping,
 		Computed_field_element_integration_mapping_fifo **last_to_be_checked,
@@ -387,27 +423,35 @@ private:
 		int magnitude_coordinates, Computed_field *coordinate_field,
 		LIST(Index_multi_range) **node_element_list,
 		LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
-		float time_step, float time,
+		float time_step, FE_value time,
 		LIST(Computed_field_node_integration_mapping) *node_mapping);
 
-	int calculate_mapping(float time);
+	int calculate_mapping(IntegrationFieldValueCache& valueCache, FE_value time);
 
-	int clear_cache();
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
-	int is_defined_at_location(Field_location *location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new IntegrationFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
 
-	int is_defined_at_node(FE_node *node);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
-	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+#if defined (FUTURE_CODE)
+	virtual int propagate_find_element_xi(Cmiss_field_cache& field_cache,
+		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
-		FE_value time, Cmiss_mesh_id search_mesh);
+		Cmiss_mesh_id mesh);
+#endif // defined (FUTURE_CODE)
 };
 
 int Computed_field_integration::integrate_path(FE_element *element,
 	FE_value *initial_values, FE_value *initial_xi, FE_value *final_xi,
-	int number_of_gauss_points, Computed_field *integrand, 
+	int number_of_gauss_points, Cmiss_field_cache& workingCache, Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field,
-	float time, FE_value *values)
+	FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -431,7 +475,7 @@ specified.
 			  {0.5, 0.5}},
 		xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		xi_vector[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int coordinate_dimension, j, k, m, element_dimension, return_code;
+	int coordinate_dimension, j, k, m, return_code;
 			
 	ENTER(Computed_field_integration_integrate_path);
 	if (integrand && coordinate_field &&
@@ -439,12 +483,8 @@ specified.
 		(number_of_gauss_points > 0) &&
 		(number_of_gauss_points <= MAXIMUM_GAUSS_POINTS_DEFINED))
 	{
-		Field_element_xi_location location(element, xi, time, element);
-		Field_element_xi_location location_with_derivatives(element, xi, time, element,
-			get_FE_element_dimension(element));
-
 		return_code = 1;
-		element_dimension = get_FE_element_dimension(element);
+		int element_dimension = get_FE_element_dimension(element);
 		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 		{
@@ -477,14 +517,12 @@ specified.
 				xi[k] = initial_xi[k] * initial_position
 					+ final_xi[k] * final_position;
 			}
-			location.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
-			location_with_derivatives.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
+			workingCache.setMeshLocation(element, xi);
+			//location.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
+			//location_with_derivatives.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
 			/* Integrand elements should always be top level */
-			Computed_field_evaluate_cache_at_location(integrand,
-				&location);
-			Computed_field_evaluate_cache_at_location(coordinate_field,
-				&location_with_derivatives);
-
+			RealFieldValueCache* coordinateValueCache = coordinate_field->evaluateWithDerivatives(workingCache, element_dimension);
+			RealFieldValueCache* integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(workingCache));
 			if (magnitude_coordinates)
 			{
 				for (k = 0 ; k < element_dimension ; k++)
@@ -493,11 +531,11 @@ specified.
 					for (j = 0 ; j < coordinate_dimension ; j++)
 					{
 						dsdxi += 
-							coordinate_field->derivatives[j * element_dimension + k] *
-							coordinate_field->derivatives[j * element_dimension + k];
+							coordinateValueCache->derivatives[j * element_dimension + k] *
+							coordinateValueCache->derivatives[j * element_dimension + k];
 					}
 					dsdxi = sqrt(dsdxi);
-					values[0] += integrand->values[0] * 
+					values[0] += integrandValueCache->values[0] *
 						xi_vector[k] * dsdxi *
 						gauss_weights[number_of_gauss_points - 1][m];
 				}
@@ -508,8 +546,8 @@ specified.
 				{
 					for (j = 0 ; j < coordinate_dimension ; j++)
 					{
-						values[j] += integrand->values[0] * xi_vector[k] *
-							coordinate_field->derivatives[j * element_dimension + k] *
+						values[j] += integrandValueCache->values[0] * xi_vector[k] *
+							coordinateValueCache->derivatives[j * element_dimension + k] *
 							gauss_weights[number_of_gauss_points - 1][m];
 					}
 				}
@@ -667,7 +705,7 @@ upwind difference time integration.
 } /* Computed_field_integration_calculate_mapping_update */
 #endif /* defined (OLD_CODE) */
 
-int Computed_field_integration::add_neighbours(
+int Computed_field_integration::add_neighbours(IntegrationFieldValueCache& valueCache,
 	Computed_field_element_integration_mapping *mapping_item,
 	LIST(Computed_field_element_integration_mapping) *texture_mapping,
 	Computed_field_element_integration_mapping_fifo **last_to_be_checked,
@@ -675,7 +713,7 @@ int Computed_field_integration::add_neighbours(
 	int magnitude_coordinates, Computed_field *coordinate_field,
 	LIST(Index_multi_range) **node_element_list,
 	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
-	float time_step, float time,
+	float time_step, FE_value time,
 	LIST(Computed_field_node_integration_mapping) *node_mapping)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -703,6 +741,8 @@ varying integration and the behaviour is significantly different.
 	LIST(FE_field) *fe_field_list;
 
 	ENTER(Computed_field_integration_add_neighbours);
+	Cmiss_field_cache& workingCache = *(valueCache.getExtraCache());
+	workingCache.setTime(time);
 	if (mapping_item && texture_mapping && last_to_be_checked &&
 		(*last_to_be_checked))
 	{
@@ -818,9 +858,9 @@ varying integration and the behaviour is significantly different.
 								}
 								integrate_path(integrate_element,
 									mapping_item->values, initial_xi, final_xi,
-									/*number_of_gauss_points*/2, integrand, 
+									/*number_of_gauss_points*/2, workingCache, integrand,
 									magnitude_coordinates, coordinate_field,
-									time, mapping_neighbour->values);
+									mapping_neighbour->values);
 							USE_PARAMETER(previous_texture_mapping);
 							USE_PARAMETER(time_step);
 #if defined (OLD_CODE)
@@ -921,9 +961,9 @@ varying integration and the behaviour is significantly different.
 						}
 						integrate_path(mapping_item->element,
 							mapping_item->values, initial_xi, final_xi,
-							/*number_of_gauss_points*/2, integrand, 
+							/*number_of_gauss_points*/2, workingCache, integrand,
 							magnitude_coordinates, coordinate_field,
-							time, node_map->values);
+							node_map->values);
 						
 						ADD_OBJECT_TO_LIST(Computed_field_node_integration_mapping)(
 							node_map, node_mapping);
@@ -951,13 +991,10 @@ varying integration and the behaviour is significantly different.
 	return (return_code);
 } /* Computed_field_integration_add_neighbours */
 
-int Computed_field_integration::calculate_mapping(float time)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Calculates the mapping for the specified time.
-==============================================================================*/
+/***************************************************************************//**
+ * Calculates the mapping for the time and location details in the cache.
+ */
+int Computed_field_integration::calculate_mapping(IntegrationFieldValueCache& valueCache, FE_value time)
 {
 	int return_code;
 	Computed_field *integrand, *coordinate_field;
@@ -973,8 +1010,8 @@ Calculates the mapping for the specified time.
 		first_to_be_checked=last_to_be_checked=
 			(Computed_field_element_integration_mapping_fifo *)NULL;
 		node_element_list=(LIST(Index_multi_range) *)NULL;
-		if ((texture_mapping = CREATE_LIST(Computed_field_element_integration_mapping)())
-			&& (node_mapping = CREATE_LIST(Computed_field_node_integration_mapping)()))
+		if ((valueCache.texture_mapping = CREATE_LIST(Computed_field_element_integration_mapping)())
+			&& (valueCache.node_mapping = CREATE_LIST(Computed_field_node_integration_mapping)()))
 		{
 			if (ALLOCATE(fifo_node, 
 				Computed_field_element_integration_mapping_fifo,1)&&
@@ -982,7 +1019,7 @@ Calculates the mapping for the specified time.
 					 seed_element, Computed_field_get_number_of_components(field))))
 			{
 				ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)
-					(mapping_item, texture_mapping);
+					(mapping_item, valueCache.texture_mapping);
 				/* fill the fifo_node for the mapping_item; put at end of list */
 				fifo_node->mapping_item=mapping_item;
 				fifo_node->next=
@@ -1001,13 +1038,13 @@ Calculates the mapping for the specified time.
 			{
 				while (return_code && first_to_be_checked)
 				{
-					return_code = add_neighbours(
-						first_to_be_checked->mapping_item, texture_mapping,
+					return_code = add_neighbours(valueCache,
+						first_to_be_checked->mapping_item, valueCache.texture_mapping,
 						&last_to_be_checked, integrand,
 						magnitude_coordinates, coordinate_field,
 						&node_element_list,
 						(LIST(Computed_field_element_integration_mapping) *)NULL,
-						0.0, time, node_mapping);
+						0.0, time, valueCache.node_mapping);
 
 #if defined (DEBUG_CODE)
 					printf("Item removed\n");
@@ -1032,12 +1069,12 @@ Calculates the mapping for the specified time.
 					//	write_Computed_field_element_integration_mapping, NULL, to_be_checked);
 #endif /* defined (DEBUG_CODE) */
 				}
-				cached_time = time;
-				if (0 == NUMBER_IN_LIST(Computed_field_node_integration_mapping)(node_mapping))
+				valueCache.cached_time = time;
+				if (0 == NUMBER_IN_LIST(Computed_field_node_integration_mapping)(valueCache.node_mapping))
 				{
-					DESTROY(LIST(Computed_field_node_integration_mapping)(&node_mapping));
+					DESTROY(LIST(Computed_field_node_integration_mapping)(&valueCache.node_mapping));
 				}
-				find_element_xi_mapping=
+				valueCache.find_element_xi_mapping=
 					(Computed_field_element_integration_mapping *)NULL;
 			}
 			/* clean up to_be_checked list */
@@ -1047,12 +1084,9 @@ Calculates the mapping for the specified time.
 				first_to_be_checked = first_to_be_checked->next;
 				DEALLOCATE(fifo_node);
 			}
-			/* free cache on source fields */
-			Computed_field_clear_cache(integrand);
-			Computed_field_clear_cache(coordinate_field);
 			if (!return_code)
 			{
-				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
+				DESTROY_LIST(Computed_field_element_integration_mapping)(&valueCache.texture_mapping);
 			}
 			if (node_element_list)
 			{
@@ -1131,16 +1165,6 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(FE_element)(&(seed_element));
 		}
-		if (texture_mapping)
-		{
-			DESTROY_LIST(Computed_field_element_integration_mapping)
-				(&texture_mapping);
-		}
-		if (node_mapping)
-		{
-			DESTROY_LIST(Computed_field_node_integration_mapping)
-				(&node_mapping);
-		}
 	}
 	else
 	{
@@ -1165,37 +1189,6 @@ Copy the type specific data used by this type.
 
 	return (core);
 } /* Computed_field_integration::copy */
-
-int Computed_field_integration::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_integration::clear_cache);
-	if (field)
-	{
-		if (find_element_xi_mapping)
-		{
-			DEACCESS(Computed_field_element_integration_mapping)
-				(&find_element_xi_mapping);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_integration::clear_cache.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return(return_code);
-} /* Computed_field_integration::clear_cache */
 
 int Computed_field_integration::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -1229,15 +1222,15 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_integration::compare */
 
-int Computed_field_integration::is_defined_at_location(Field_location *location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns 1 if the all the source fields are defined in the supplied <element> and
-the mapping is defined for this element.
-==============================================================================*/
+/***************************************************************************//**
+ * @return  true if the all the source fields are defined in the supplied
+ * <element> and the mapping is defined for this element.
+ */
+bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache)
 {
+	return (0 != field->evaluate(cache));
+#if defined (OLD_CODE)
+	// @TODO: resurrect the slightly more efficient old code?
 	FE_value element_to_top_level[9];
 	int return_code;
 	CM_element_information cm;
@@ -1351,326 +1344,221 @@ the mapping is defined for this element.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_default::is_defined_at_location */
-	
-int Computed_field_integration::is_defined_at_node(FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
+#endif // defined (OLD_CODE)
+}
 
-DESCRIPTION :
-Returns 1 if the mapping is defined for this node.
-==============================================================================*/
+int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code;
+	IntegrationFieldValueCache& valueCache = IntegrationFieldValueCache::cast(inValueCache);
+	FE_value time = cache.getTime();
+	Cmiss_field_cache& workingCache = *(valueCache.getExtraCache());
+	workingCache.setTime(time);
 
-	ENTER(Computed_field_default_is_defined_at_node);
-	if (field && node)
-	{
-		if (!texture_mapping)
-		{
-			/* Try time 0 */
-			calculate_mapping(/*time*/0.0);
-		}
-		else
-		{
-			/* Use the mapping from whatever time */
-		}
-		/* If we calculated the mapping but no node_mapping was created then
-		 the field is not defined at nodes. */
-		if (node_mapping)
-		{
-			/* If we have a mapping look for the node */
-			if (FIND_BY_IDENTIFIER_IN_LIST
-				(Computed_field_node_integration_mapping,node_ptr)
-				(node, node_mapping))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_is_defined_at_node */
-
-int Computed_field_integration::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
 	double dsdxi;
-	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int coordinate_dimension, element_dimension, i, j, k, return_code, 
-		top_level_element_dimension = -1;
+	FE_value initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int coordinate_dimension, element_dimension, i, j, k,
+	top_level_element_dimension = -1;
 	CM_element_information cm;
 	Computed_field *coordinate_field, *integrand;
 
-	ENTER(Computed_field_integration::evaluate_cache_at_location);
-	if (field && location)
+	int return_code = 1;
+	Field_element_xi_location *element_xi_location;
+	Field_node_location *node_location;
+
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return_code = 1;
+		FE_element* element = element_xi_location->get_element();
+		FE_element* top_level_element = element_xi_location->get_top_level_element();
+		FE_value time = element_xi_location->get_time();
+		const FE_value* xi = element_xi_location->get_xi();
+		int number_of_derivatives = element_xi_location->get_number_of_derivatives();
 
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
+		Computed_field_element_integration_mapping *mapping;
 
-		element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location != 0)
+		if (!valueCache.texture_mapping)
 		{
-			FE_element* element = element_xi_location->get_element();
- 			FE_element* top_level_element = element_xi_location->get_top_level_element();
-			FE_value time = element_xi_location->get_time();
-			const FE_value* xi = element_xi_location->get_xi();
-			int number_of_derivatives = location->get_number_of_derivatives();
-
-			Computed_field_element_integration_mapping *mapping;
-
-			if (!texture_mapping)
+			calculate_mapping(valueCache, time);
+		}
+		else
+		{
+			if ((time != valueCache.cached_time)
+				&& (Computed_field_has_multiple_times(field->source_fields[0])
+					|| Computed_field_has_multiple_times(field->source_fields[1])))
 			{
-				calculate_mapping(time);
-			}
-			else
-			{
-				if ((time != cached_time)
-					&& (Computed_field_has_multiple_times(field->source_fields[0])
-						|| Computed_field_has_multiple_times(field->source_fields[1])))
-				{
-					DESTROY_LIST(Computed_field_element_integration_mapping)
-						(&texture_mapping);
-					calculate_mapping(time);
-				}
-			}
-			/* 1. Get top_level_element for types that must be calculated on them */
-			element_dimension=get_FE_element_dimension(element);
-			get_FE_element_identifier(element, &cm);
-			if (FE_element_is_top_level(element, (void *)NULL))
-			{
-				top_level_element=element;
-				for (i=0;i<element_dimension;i++)
-				{
-					top_level_xi[i]=xi[i];
-				}
-				/* do not set element_to_top_level */
-				top_level_element_dimension=element_dimension;
-			}
-			else
-			{
-				/* check or get top_level element and xi coordinates for it */
-				top_level_element=FE_element_get_top_level_element_conversion(
-						 element,top_level_element,
-						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-						 -1,element_to_top_level);
-				if (top_level_element != 0)
-				{
-					/* convert xi to top_level_xi */
-					top_level_element_dimension=get_FE_element_dimension(top_level_element);
-					for (j=0;j<top_level_element_dimension;j++)
-					{
-						top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
-						for (k=0;k<element_dimension;k++)
-						{
-							top_level_xi[j] +=
-								element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_integration::evaluate_cache_at_location.  "
-						"No top-level element found to evaluate field %s on",
-						field->name);
-					return_code=0;
-				}
-			}
-			integrand = field->source_fields[0];
-			coordinate_field = field->source_fields[1];
-			coordinate_dimension = 
-				Computed_field_get_number_of_components(field->source_fields[1]);
-			if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
-			{
-				/* Unlike the xi field we only deal with top level elements of a 
-					single dimension so we can match that dimension for our number
-					of coordinates */
-				coordinate_dimension = top_level_element_dimension;
-			}
-			/* 2. Calculate the field */
-			if (texture_mapping)
-			{
-				mapping = FIND_BY_IDENTIFIER_IN_LIST
-					(Computed_field_element_integration_mapping,element)
-					(top_level_element, texture_mapping);
-				if (mapping != 0)
-				{
-					/* Integrate to the specified top_level_xi location */
-					for (i = 0 ; i < top_level_element_dimension ; i++)
-					{
-						initial_xi[i] = 0.0;
-					}
-					integrate_path(top_level_element,
-						mapping->values, initial_xi, top_level_xi,
-						/*number_of_gauss_points*/2, field->source_fields[0], 
-						magnitude_coordinates, field->source_fields[1],
-						time, field->values);
-					if (number_of_derivatives)
-					{
-						Field_element_xi_location top_level_location(
-							top_level_element, top_level_xi, time,
-							top_level_element);
-						Field_element_xi_location top_level_location_with_derivatives(
-							top_level_element, top_level_xi, time,
-							top_level_element, get_FE_element_dimension(element));
-
-						/* Evaluate the fields at this location */
-						Computed_field_evaluate_cache_at_location(integrand,
-							&top_level_location);
-						Computed_field_evaluate_cache_at_location(coordinate_field,
-							&top_level_location_with_derivatives);
-						if (magnitude_coordinates)
-						{
-							for (k = 0 ; k < element_dimension ; k++)
-							{
-								dsdxi = 0.0;
-								for (j = 0 ; j < coordinate_dimension ; j++)
-								{
-									dsdxi += 
-										coordinate_field->derivatives[j * element_dimension + k] *
-										coordinate_field->derivatives[j * element_dimension + k];
-								}
-								dsdxi = sqrt(dsdxi);
-								field->derivatives[k] = integrand->values[0] * dsdxi;
-							}
-						}
-						else
-						{
-							for (k = 0 ; k < element_dimension ; k++)
-							{
-								for (j = 0 ; j < coordinate_dimension ; j++)
-								{
-									field->derivatives[j * element_dimension + k] = 
-										integrand->values[0] *
-										coordinate_field->derivatives[j * element_dimension + k];
-								}
-							}
-						}
-						field->derivatives_valid = 1;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_integration::evaluate_cache_at_location."
-						"  Element %d not found in Xi texture coordinate mapping field %s",
-						cm.number, field->name);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_integration::evaluate_cache_at_location.  "
-					"Xi texture coordinate mapping not calculated");
-				return_code=0;
+				DESTROY_LIST(Computed_field_element_integration_mapping)
+						(&valueCache.texture_mapping);
+				calculate_mapping(valueCache, time);
 			}
 		}
-		else if (0 != (node_location = 
-			dynamic_cast<Field_node_location*>(location)))
+		/* 1. Get top_level_element for types that must be calculated on them */
+		element_dimension=get_FE_element_dimension(element);
+		get_FE_element_identifier(element, &cm);
+		FE_element_get_top_level_element_and_xi(element,
+			xi, element_dimension,
+			&top_level_element, top_level_xi, &top_level_element_dimension);
+		integrand = field->source_fields[0];
+		coordinate_field = field->source_fields[1];
+		coordinate_dimension =
+			Computed_field_get_number_of_components(field->source_fields[1]);
+		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
 		{
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
-
-			Computed_field_node_integration_mapping *mapping;
-
-			return_code = 1;
-
-			if (!texture_mapping)
+			/* Unlike the xi field we only deal with top level elements of a
+					single dimension so we can match that dimension for our number
+					of coordinates */
+			coordinate_dimension = top_level_element_dimension;
+		}
+		/* 2. Calculate the field */
+		if (valueCache.texture_mapping)
+		{
+			mapping = FIND_BY_IDENTIFIER_IN_LIST
+				(Computed_field_element_integration_mapping,element)
+				(top_level_element, valueCache.texture_mapping);
+			if (mapping != 0)
 			{
-				calculate_mapping(time);
-			}
-			else
-			{
-				if ((time != cached_time)
-					&& (Computed_field_has_multiple_times(field->source_fields[0])
-						|| Computed_field_has_multiple_times(field->source_fields[1])))
+				/* Integrate to the specified top_level_xi location */
+				for (i = 0 ; i < top_level_element_dimension ; i++)
 				{
-					DESTROY_LIST(Computed_field_element_integration_mapping)
-						(&texture_mapping);
-					calculate_mapping(time);
+					initial_xi[i] = 0.0;
 				}
-			}
-			/* 2. Calculate the field */
-			if (node_mapping)
-			{
-				mapping = FIND_BY_IDENTIFIER_IN_LIST
-					(Computed_field_node_integration_mapping,node_ptr)
-					(node, node_mapping);
-				if (mapping != 0) 
+				integrate_path(top_level_element,
+					mapping->values, initial_xi, top_level_xi,
+					/*number_of_gauss_points*/2, workingCache, field->source_fields[0],
+					magnitude_coordinates, field->source_fields[1],
+					valueCache.values);
+				if (number_of_derivatives)
 				{
-					for(i = 0 ; i < field->number_of_components ; i++)
+					/* Evaluate the fields at this location */
+					// use the normal cache if already on a top level element, otherwise use extra cache
+					Cmiss_field_cache *workingCache = &cache;
+					if (top_level_element != element)
 					{
-						field->values[i] = mapping->values[i];
+						workingCache = valueCache.getExtraCache();
+						workingCache->setTime(cache.getTime());
+						workingCache->setMeshLocation(top_level_element, top_level_xi);
 					}
+					RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(*workingCache));
+					RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(
+						coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+					if (magnitude_coordinates)
+					{
+						for (k = 0 ; k < element_dimension ; k++)
+						{
+							dsdxi = 0.0;
+							for (j = 0 ; j < coordinate_dimension ; j++)
+							{
+								dsdxi +=
+									coordinateValueCache->derivatives[j * element_dimension + k] *
+									coordinateValueCache->derivatives[j * element_dimension + k];
+							}
+							dsdxi = sqrt(dsdxi);
+							valueCache.derivatives[k] = integrandValueCache->values[0] * dsdxi;
+						}
+					}
+					else
+					{
+						for (k = 0 ; k < element_dimension ; k++)
+						{
+							for (j = 0 ; j < coordinate_dimension ; j++)
+							{
+								valueCache.derivatives[j * element_dimension + k] =
+									integrandValueCache->values[0] *
+									coordinateValueCache->derivatives[j * element_dimension + k];
+							}
+						}
+					}
+					valueCache.derivatives_valid = 1;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_integration_evaluate_cache_at_node."
-						"  Node %d not found in Xi texture coordinate mapping field %s",
-						get_FE_node_identifier(node));
-					return_code=0;
+					valueCache.derivatives_valid = 0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration_evaluate_cache_at_node.  "
-					"Xi texture coordinate mapping not calculated");
+					"Computed_field_integration::evaluate."
+					"  Element %d not found in Xi texture coordinate mapping field %s",
+					cm.number, field->name);
 				return_code=0;
 			}
 		}
 		else
 		{
-			// Location type unknown or not implemented
-			return_code = 0;
+			display_message(ERROR_MESSAGE,
+				"Computed_field_integration::evaluate.  "
+				"Xi texture coordinate mapping not calculated");
+			return_code=0;
 		}
-		
+	}
+	else if (0 != (node_location =
+		dynamic_cast<Field_node_location*>(cache.getLocation())))
+	{
+		FE_node *node = node_location->get_node();
+		FE_value time = node_location->get_time();
+
+		Computed_field_node_integration_mapping *mapping;
+
+		return_code = 1;
+
+		if (!valueCache.texture_mapping)
+		{
+			calculate_mapping(valueCache, time);
+		}
+		else
+		{
+			if ((time != valueCache.cached_time)
+				&& (Computed_field_has_multiple_times(field->source_fields[0])
+					|| Computed_field_has_multiple_times(field->source_fields[1])))
+			{
+				DESTROY_LIST(Computed_field_element_integration_mapping)
+							(&valueCache.texture_mapping);
+				calculate_mapping(valueCache, time);
+			}
+		}
+		/* 2. Calculate the field */
+		if (valueCache.node_mapping)
+		{
+			mapping = FIND_BY_IDENTIFIER_IN_LIST
+				(Computed_field_node_integration_mapping,node_ptr)
+				(node, valueCache.node_mapping);
+			if (mapping != 0)
+			{
+				for(i = 0 ; i < field->number_of_components ; i++)
+				{
+					valueCache.values[i] = mapping->values[i];
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_integration_evaluate_cache_at_node."
+					"  Node %d not found in Xi texture coordinate mapping field %s",
+					get_FE_node_identifier(node));
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_integration_evaluate_cache_at_node.  "
+				"Xi texture coordinate mapping not calculated");
+			return_code=0;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_integration::evaluate_cache_at_location.  "
-			"Invalid arguments.");
+		// Location type unknown or not implemented
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_integration::evaluate_cache_at_location */
+}
 
-
-int Computed_field_integration::propagate_find_element_xi(
+// @TODO Migrate to new external field cache
+#if defined (FUTURE_CODE)
+int Computed_field_integration::propagate_find_element_xi(Cmiss_field_cache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id search_mesh)
+	FE_value *xi, Cmiss_mesh_id mesh)
 {
 	FE_value floor_values[3];
 	int i, return_code;
@@ -1794,6 +1682,7 @@ int Computed_field_integration::propagate_find_element_xi(
 
 	return (return_code);
 } /* Computed_field_integration::propagate_find_element_xi */
+#endif // defined (FUTURE_CODE)
 
 int Computed_field_integration::list(
 	)
@@ -1995,9 +1884,6 @@ timestep.
 				first_to_be_checked = first_to_be_checked->next;
 				DEALLOCATE(fifo_node);
 			}
-			/* free cache on source fields */
-			Computed_field_clear_cache(integrand);
-			Computed_field_clear_cache(coordinate_field);
 			if (!return_code)
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);

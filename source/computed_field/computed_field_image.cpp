@@ -155,8 +155,6 @@ public:
 			{
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
-				Computed_field_clear_cache(field);
-				Computed_field_rebuild_cache_values(field);
 				return_code = 1;
 			}
 			else
@@ -225,7 +223,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -475,86 +473,64 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	return (return_code);
 } /* Computed_field_image::evaluate_texture_from_source_field */
 
-int Computed_field_image::evaluate_cache_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_image::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double texture_values[4];
-	FE_value texture_coordinate[3];
-	int i, number_of_components, return_code = 0;
-	ENTER(Computed_field_image::evaluate_cache_at_location);
-	if (field && location)
+	check_evaluate_texture();
+	if (texture)
 	{
-		check_evaluate_texture();
-		if (texture)
+		RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+		if (sourceCache)
 		{
-			/* 1. Precalculate any source fields that this field depends on */
-			/* 2. Calculate the field */
-			return_code =
-				Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
-			if (return_code)
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			double texture_values[4];
+			FE_value texture_coordinate[3];
+			texture_coordinate[0] = 0.0;
+			texture_coordinate[1] = 0.0;
+			texture_coordinate[2] = 0.0;
+			for (int i = 0; i < field->source_fields[0]->number_of_components; i++)
 			{
-				texture_coordinate[0] = 0.0;
-				texture_coordinate[1] = 0.0;
-				texture_coordinate[2] = 0.0;
-				for (i = 0; i < field->source_fields[0]->number_of_components; i++)
+				texture_coordinate[i] = sourceCache->values[i];
+			}
+			Texture_get_pixel_values(texture,
+				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
+				texture_values);
+			int number_of_components = field->number_of_components;
+			if (minimum == 0.0)
+			{
+				if (maximum == 1.0)
 				{
-					texture_coordinate[i] = field->source_fields[0]->values[i];
-				}
-				Texture_get_pixel_values(texture,
-					texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
-					texture_values);	
-				number_of_components = field->number_of_components;
-				if (minimum == 0.0)
-				{
-					if (maximum == 1.0)
+					for (int i = 0 ; i < number_of_components ; i++)
 					{
-						for (i = 0 ; i < number_of_components ; i++)
-						{
-							field->values[i] =  texture_values[i];
-						}
-					}
-					else
-					{
-						for (i = 0 ; i < number_of_components ; i++)
-						{
-							field->values[i] =  texture_values[i] * maximum;
-						}
+						valueCache.values[i] =  texture_values[i];
 					}
 				}
 				else
 				{
-					for (i = 0 ; i < number_of_components ; i++)
+					for (int i = 0 ; i < number_of_components ; i++)
 					{
-						field->values[i] =  minimum +
-							texture_values[i] * (maximum - minimum);
+						valueCache.values[i] =  texture_values[i] * maximum;
 					}
 				}
 			}
-			field->derivatives_valid = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_image::evaluate_cache_at_location.  No texture");
-			return_code = 0;
+			else
+			{
+				for (int i = 0 ; i < number_of_components ; i++)
+				{
+					valueCache.values[i] =  minimum +
+						texture_values[i] * (maximum - minimum);
+				}
+			}
+			valueCache.derivatives_valid = 0;
+			return 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_image::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_image::evaluate.  No texture");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_image::evaluate_cache_at_location */
+	return 0;
+}
 
 
 int Computed_field_image::get_native_resolution(int *dimension,
@@ -1478,7 +1454,9 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 		spectrum_render_error_count, total_number_of_pixels;
 	struct FE_element *element = NULL;
 
-
+	int mesh_dimension = Cmiss_mesh_get_dimension(search_mesh);
+	Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+	Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 	if (image_depth > 1)
 	{
 		dimension = 3;
@@ -1573,9 +1551,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 					if (use_pixel_location)
 					{
 						/* Try to use a pixel coordinate first */
-						if (Cmiss_field_evaluate_at_field_coordinates(field,
-							texture_coordinate_field, number_of_texture_coordinate_components, values,
-							/*time*/0.0, data_values))
+						Cmiss_field_cache_set_field_real(field_cache, texture_coordinate_field, number_of_texture_coordinate_components, values);
+						if (Cmiss_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
 						{
 							if (!spectrum)
 							{
@@ -1615,13 +1592,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 						rgba[3] = fail_alpha;
 						if (search_mesh && (
 							(graphics_buffer_package && Computed_field_find_element_xi_special(
-								 texture_coordinate_field, &cache, values,
+								 texture_coordinate_field, field_cache, &cache, values,
 								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
-							Computed_field_find_element_xi(texture_coordinate_field,
+							Computed_field_find_element_xi(texture_coordinate_field, field_cache,
 								values, Computed_field_get_number_of_components(texture_coordinate_field),
-								/*time*/0, &element, xi, search_mesh, propagate_field,
+								&element, xi, search_mesh, propagate_field,
 								/*find_nearest_location*/0)))
 						{
 							if (element)
@@ -1633,9 +1610,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 									printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
 								}
 #endif /* defined (DEBUG_CODE) */
-								if (Computed_field_evaluate_in_element(field,
-										element, xi,/*time*/0,(struct FE_element *)NULL,
-										data_values, (FE_value *)NULL))
+								if (Cmiss_field_cache_set_mesh_location(field_cache, element, mesh_dimension, xi) &&
+									Cmiss_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
 								{
 									if (!spectrum)
 									{
@@ -1840,8 +1816,6 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 				 }
 			}
 		}
-		Computed_field_clear_cache(field);
-		Computed_field_clear_cache(texture_coordinate_field);
 		if (spectrum)
 		{
 			Spectrum_end_value_to_rgba(spectrum);
@@ -1880,6 +1854,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	{
 		DESTROY(Computed_field_find_element_xi_cache)(&cache);
 	}
+	Cmiss_field_cache_destroy(&field_cache);
+	Cmiss_field_module_destroy(&field_module);
 
 	return return_code;
 }

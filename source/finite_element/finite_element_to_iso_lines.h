@@ -51,17 +51,19 @@ value over 2-D elements.
 #include "graphics/graphics_object.h"
 
 int create_iso_lines_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *scalar_field, FE_value iso_value, FE_value time,
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *scalar_field, FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,FE_value graphics_object_time, int line_width);
+	struct GT_object *graphics_object, int line_width);
 /*******************************************************************************
 LAST MODIFIED : 7 February 2002
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 <iso_scalar_field> at <iso_value>.
+@param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_TO_ISO_LINES_H) */

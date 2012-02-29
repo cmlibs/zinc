@@ -227,7 +227,6 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
-	char *command_string;
 	enum Interactive_event_type event_type;
 	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int clear_selection, element_dimension, i, input_modifier,
@@ -277,48 +276,47 @@ release.
 								/* Open command_field of picked_element in browser */
 								if (element_tool->command_field)
 								{
-									if (Computed_field_is_defined_in_element(element_tool->command_field,
-										picked_element))
+									if (element_tool->time_keeper)
 									{
-										if (element_tool->time_keeper)
-										{
-											time = Time_keeper_get_time(element_tool->time_keeper);
-										}
-										else
-										{
-											time = 0;
-										}
-										/* since we don't really have fields constant over an
-										element, evaluate at its centre */
-										element_dimension =
-											get_FE_element_dimension(picked_element);
+										time = Time_keeper_get_time(element_tool->time_keeper);
+									}
+									else
+									{
+										time = 0;
+									}
+									/* since we don't really have fields constant over an
+									element, evaluate at its centre */
+									element_dimension =
+										get_FE_element_dimension(picked_element);
+									for (i = 0; i < element_dimension; i++)
+									{
+										number_in_xi[i] = 1;
+									}
+									get_FE_element_shape(picked_element, &element_shape);
+									if (FE_element_shape_get_xi_points_cell_centres(
+										element_shape, number_in_xi,
+										&number_of_xi_points, &xi_points))
+									{
+										/*???debug*/printf("element_tool: xi =");
 										for (i = 0; i < element_dimension; i++)
 										{
-											number_in_xi[i] = 1;
+											xi[i] = xi_points[0][i];
+											/*???debug*/printf(" %g",xi[i]);
 										}
-										get_FE_element_shape(picked_element, &element_shape);
-										if (FE_element_shape_get_xi_points_cell_centres(
-											element_shape, number_in_xi,
-											&number_of_xi_points, &xi_points))
+										/*???debug*/printf("\n");
+										Cmiss_field_module_id field_module = Cmiss_field_get_field_module(element_tool->command_field);
+										Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+										Cmiss_field_cache_set_time(field_cache, time);
+										Cmiss_field_cache_set_mesh_location(field_cache, picked_element, element_dimension, xi);
+										char *command_string = Cmiss_field_evaluate_string(element_tool->command_field, field_cache);
+										if (command_string)
 										{
-											/*???debug*/printf("element_tool: xi =");
-											for (i = 0; i < element_dimension; i++)
-											{
-												xi[i] = xi_points[0][i];
-												/*???debug*/printf(" %g",xi[i]);
-											}
-											/*???debug*/printf("\n");
-											if (element_tool->execute_command && (NULL != (command_string =
-												Computed_field_evaluate_as_string_in_element(
-												element_tool->command_field, /*component_number*/-1,
-												picked_element, xi, time, (struct FE_element *)NULL))))
-											{
-												Execute_command_execute_string(element_tool->execute_command,
-													command_string);
-												DEALLOCATE(command_string);
-											}
-											DEALLOCATE(xi_points);
+											Execute_command_execute_string(element_tool->execute_command, command_string);
+											DEALLOCATE(command_string);
 										}
+										Cmiss_field_cache_destroy(&field_cache);
+										Cmiss_field_module_destroy(&field_module);
+										DEALLOCATE(xi_points);
 									}
 								}
 								Cmiss_field_group_id group = Cmiss_rendition_get_selection_group(rendition);

@@ -356,6 +356,7 @@ Writes generated texture image to file
 Global functions
 ----------------
 */
+#if defined (OLD_CODE)
 int generate_textureimage_from_FE_element(
 	struct Graphics_window *graphics_window,char *infile,char *outfile,
 	struct FE_element *element,double ximax[3],
@@ -645,3 +646,4 @@ printf("xsize = %d ysize = %d\n", xsize, ysize);
 
 	return (return_code);
 } /* generate_textureimage_from_FE_element */
+#endif // defined (OLD_CODE)

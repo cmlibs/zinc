@@ -69,11 +69,12 @@ extern "C" {
  * propagate_find_element_xi.
  *
  * @param field  The field whose values need to match.
+ * @param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+ * expected to have been set in the field_cache if needed.
  * @param values  Array of values to match or get nearest to. Implementation
  * promises to copy this, hence can pass a pointer to field cache values.
  * @param number_of_values  The size of the values array, must equal the number
  * of components of field.
- * @param time  The time at which field values are evaluated.
  * @param element_address  Address to return element in. If mesh is omitted,
  * must point at a single element to search.
  * @param xi  Array of same dimension as mesh or element to return chart
@@ -85,7 +86,8 @@ extern "C" {
  * found, or 0 if failed.
  */
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	const FE_value *values, int number_of_values, FE_value time,
+	Cmiss_field_cache_id field_cache,
+	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	Cmiss_mesh_id search_mesh, int find_nearest);
 

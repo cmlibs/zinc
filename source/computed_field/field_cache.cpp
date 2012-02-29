@@ -37,30 +37,153 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cstdio>
 extern "C" {
 #include "api/cmiss_field.h"
+#include "computed_field/computed_field_find_xi.h"
 #include "finite_element/finite_element.h"
+#include "general/mystring.h"
 #include "region/cmiss_region.h"
 }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 
+FieldValueCache::~FieldValueCache()
+{
+	if (extraCache)
+		Cmiss_field_cache::deaccess(extraCache);
+	clear();
+}
+
+void FieldValueCache::clear()
+{
+#if defined (FUTURE_CODE)
+	// Not sure if something like this is needed:
+	if (extraCache)
+		extraCache->clear();
+#endif
+	resetEvaluationCounter();
+}
+
+void RealFieldValueCache::clear()
+{
+	if (find_element_xi_cache)
+	{
+		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
+		find_element_xi_cache = 0;
+	}
+	FieldValueCache::clear();
+}
+
+char *RealFieldValueCache::getAsString()
+{
+	char *valueAsString = 0;
+	int error = 0;
+	char tmp_string[50];
+	for (int i = 0; i < componentCount; i++)
+	{
+		if (0 < i)
+		{
+			sprintf(tmp_string, ", %g", values[i]);
+		}
+		else
+		{
+			sprintf(tmp_string, "%g", values[i]);
+		}
+		append_string(&valueAsString, tmp_string, &error);
+	}
+	return valueAsString;
+}
+
+void StringFieldValueCache::setString(const char *string_in)
+{
+	if (stringValue)
+		DEALLOCATE(stringValue);
+	stringValue = duplicate_string(string_in);
+}
+
+char *StringFieldValueCache::getAsString()
+{
+	return duplicate_string(stringValue);
+}
+
+char *MeshLocationFieldValueCache::getAsString()
+{
+	if (!element)
+		return 0;
+	char *valueAsString = 0;
+	int error = 0;
+	char tmp_string[50];
+	sprintf(tmp_string,"%d :", Cmiss_element_get_identifier(element));
+	append_string(&valueAsString, tmp_string, &error);
+	int dimension = Cmiss_element_get_dimension(element);
+	for (int i = 0; i < dimension; i++)
+	{
+		sprintf(tmp_string, " %g", xi[i]);
+		append_string(&valueAsString, tmp_string, &error);
+	}
+	return valueAsString;
+}
 
 Cmiss_field_cache::~Cmiss_field_cache()
 {
-	// clear cache for any evaluated fields
-	// but, don't know which have been evaluated, so clear all in region
-	// This will be fixed when field_cache actually owns its cached values.
-	MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(region);
-	const Cmiss_set_Cmiss_field& field_set = Computed_field_manager_get_fields(manager);
-	Cmiss_set_Cmiss_field::const_iterator iter = field_set.begin();
-	for (; iter != field_set.end(); ++iter)
-	{
-		Cmiss_field *field = *iter;
-		Cmiss_field_clear_cache_non_recursive(field);
-	}
+	clear();
+	Cmiss_region_remove_field_cache(region, this);
 	delete location;
 	Cmiss_region_destroy(&region);
+}
+
+void Cmiss_field_cache::clear()
+{
+	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	{
+		delete (*iter);
+		*iter = 0;
+	}
+}
+
+int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values)
+{
+	if (!(field && field->isNumerical() && (numberOfValues > field->number_of_components) && values))
+		return 0;
+	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
+	for (int i = 0; i < field->number_of_components; i++)
+	{
+		valueCache->values[i] = values[i];
+	}
+	valueCache->derivatives_valid = 0;
+	locationChanged();
+	valueCache->evaluationCounter = locationCounter;
+	FE_value time = location->get_time();
+	// still need to create Field_coordinate_location because image processing fields dynamic cast to recognise
+	delete location;
+	location = new Field_coordinate_location(field, numberOfValues, values, time);
+	return 1;
+}
+
+int Cmiss_field_cache::setFieldRealWithDerivatives(Cmiss_field_id field, int numberOfValues, const double *values,
+	int numberOfDerivatives, const double *derivatives)
+{
+	if (!(field && field->isNumerical() && (numberOfValues > field->number_of_components) && values &&
+		(0 < numberOfDerivatives) && (numberOfDerivatives < MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
+		return 0;
+	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
+	for (int i = 0; i < field->number_of_components; i++)
+	{
+		valueCache->values[i] = values[i];
+	}
+	const int size = field->number_of_components * numberOfDerivatives;
+	for (int i = 0; i < size; i++)
+	{
+		valueCache->derivatives[i] = derivatives[i];
+	}
+	valueCache->derivatives_valid = 1;
+	locationChanged();
+	valueCache->evaluationCounter = locationCounter;
+	FE_value time = location->get_time();
+	delete location;
+	location = new Field_coordinate_location(field, numberOfValues, values, time, numberOfDerivatives, derivatives);
+	return 1;
 }
 
 /*
@@ -71,14 +194,7 @@ Global functions
 Cmiss_field_cache_id Cmiss_field_module_create_cache(Cmiss_field_module_id field_module)
 {
 	if (field_module)
-	{
-		return Cmiss_field_cache::create(field_module);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_cache.  Missing field module");
-	}
+		return new Cmiss_field_cache(Cmiss_field_module_get_region_internal(field_module));
 	return 0;
 }
 
@@ -94,21 +210,11 @@ int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address)
 	return Cmiss_field_cache::deaccess(*cache_address);
 }
 
-int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
-	Cmiss_field_id field)
-{
-	if ((!cache) || (!field))
-		return 0;
-	Cmiss_field_clear_values_cache_recursive(field);
-	return 1;
-}
-
 int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
 {
 	if (!cache)
 		return 0;
-	cache->get_location()->set_time(time);
-	cache->increment_cache_counter();
+	cache->setTime(time);
 	return 1;
 }
 
@@ -125,30 +231,10 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	Cmiss_element_id top_level_element)
 {
-	if (!cache)
+	if (!(cache && element && (number_of_chart_coordinates == Cmiss_element_get_dimension(element))))
 		return 0;
-	Field_element_xi_location *element_xi_location =
-		dynamic_cast<Field_element_xi_location *>(cache->get_location());
-	bool new_element_xi_location = !element_xi_location;
-	if (new_element_xi_location)
-	{
-		element_xi_location = new Field_element_xi_location(cache->get_location()->get_time());
-	}
-	if (element_xi_location->set_element_xi(element, number_of_chart_coordinates,
-		chart_coordinates, top_level_element))
-	{
-		if (new_element_xi_location)
-		{
-			cache->replace_location(element_xi_location);
-		}
-		cache->increment_cache_counter();
-		return 1;
-	}
-	if (new_element_xi_location)
-	{
-		delete element_xi_location;
-	}
-	return 0;
+	cache->setMeshLocation(element, chart_coordinates, top_level_element);
+	return 1;
 }
 
 int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
@@ -161,20 +247,9 @@ int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 
 int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node)
 {
-	if ((!cache) || (!node))
+	if (!(cache && node))
 		return 0;
-	Field_node_location *node_location =
-		dynamic_cast<Field_node_location *>(cache->get_location());
-	if (node_location)
-	{
-		node_location->set_node(node);
-	}
-	else
-	{
-		node_location = new Field_node_location(node, cache->get_location()->get_time());
-		cache->replace_location(node_location);
-	}
-	cache->increment_cache_counter();
+	cache->setNode(node);
 	return 1;
 }
 
@@ -183,46 +258,16 @@ int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
 {
 	if (!cache)
 		return 0;
-	Field_coordinate_location *field_location =
-		dynamic_cast<Field_coordinate_location *>(cache->get_location());
-	bool new_field_location = !field_location;
-	if (new_field_location)
-	{
-		field_location = new Field_coordinate_location(cache->get_location()->get_time());
-	}
-	if (field_location->set_field_values(reference_field, number_of_values, values))
-	{
-		if (new_field_location)
-		{
-			cache->replace_location(field_location);
-		}
-		cache->increment_cache_counter();
-		return 1;
-	}
-	if (new_field_location)
-	{
-		delete field_location;
-	}
-	return 0;
+	cache->setFieldReal(reference_field, number_of_values, values);
+	return 1;
 }
 
 // Internal function
-int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
-	Cmiss_field_id field, int number_of_values, double *values)
+int Cmiss_field_cache_set_assign_in_cache(Cmiss_field_cache_id cache, int assign_in_cache)
 {
-	int return_code;
-	if (cache)
-	{
-		Field_location *location = cache->get_location();
-		location->set_assign_to_cache(1);
-		return_code = Cmiss_field_assign_real(field, cache, number_of_values, values);
-		location->set_assign_to_cache(0);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_cache_assign_field_real.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	if (!cache)
+		return 0;
+	cache->setAssignInCacheOnly(assign_in_cache != 0);
+	return 1;
 }
+

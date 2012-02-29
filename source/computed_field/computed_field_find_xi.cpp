@@ -145,8 +145,9 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 				iterations = 0;
 				while ((!converged) && return_code)
 				{
-					if (Computed_field_evaluate_in_element(data->field, element, data->xi,
-						data->time, (struct FE_element *)NULL, values, derivatives))
+					if (Cmiss_field_cache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
+						Cmiss_field_evaluate_real_with_derivatives(data->field, data->field_cache,
+							data->number_of_values, values, number_of_xi, derivatives))
 					{
 						/* least-squares approach: make the derivatives / right hand side
 							vector into square system to solve for delta-Xi */
@@ -300,34 +301,28 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 #undef MAX_FIND_XI_ITERATIONS
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	const FE_value *values, int number_of_values, FE_value time,
+	Cmiss_field_cache_id field_cache,
+	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	Cmiss_mesh_id search_mesh, int find_nearest)
 {
-	Computed_field_find_element_xi_base_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	int i, number_of_xi = -1, return_code;
+	RealFieldValueCache *valueCache;
 
 	ENTER(Computed_field_perform_find_element_xi);
 	const int element_dimension = search_mesh ?
 		Cmiss_mesh_get_dimension(search_mesh) : Cmiss_element_get_dimension(*element_address);
-	if (field && values && (number_of_values == field->number_of_components) &&
+	if (field && (0 != (valueCache = dynamic_cast<RealFieldValueCache*>(field->getValueCache(*field_cache)))) &&
+		values && (number_of_values == field->number_of_components) &&
 		element_address && xi && (search_mesh || *element_address) &&
 		(number_of_values >= element_dimension))
 	{
 		return_code = 1;
-		/* clear the cache if values already cached for a node as we are about to
-		   evaluate for elements and if the field is caching for elements it will
-		   automatically clear the cache, destroying the find_element_xi_cache it 
-			is in the process of filling in. */
-		if (field->node)
+		Computed_field_find_element_xi_base_cache *cache = 0;
+		if (valueCache->find_element_xi_cache && valueCache->find_element_xi_cache->cache_data)
 		{
-			Computed_field_clear_cache(field);
-		}
-		cache = (Computed_field_find_element_xi_base_cache*)NULL;
-		if (field->find_element_xi_cache && field->find_element_xi_cache->cache_data)
-		{
-			cache = field->find_element_xi_cache->cache_data;
+			cache = valueCache->find_element_xi_cache->cache_data;
 			if (cache->number_of_values != number_of_values)
 			{
 				cache->valid_values = 0;
@@ -336,7 +331,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 			}
 			if ((cache->element &&
 				(element_dimension != get_FE_element_dimension(cache->element))) ||
-				(cache->time != time))
+				(cache->time != field_cache->getTime()))
 			{
 				cache->valid_values = 0;
 			}
@@ -375,11 +370,11 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 		}
 		else
 		{
-			field->find_element_xi_cache =
+			valueCache->find_element_xi_cache =
 				CREATE(Computed_field_find_element_xi_cache)(new Computed_field_find_element_xi_base_cache());
-			if (field->find_element_xi_cache != 0)
+			if (valueCache->find_element_xi_cache != 0)
 			{
-				cache = field->find_element_xi_cache->cache_data;
+				cache = valueCache->find_element_xi_cache->cache_data;
 			}
 			else
 			{
@@ -392,7 +387,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 		}
 		if (return_code && !cache->values)
 		{
-			cache->time = time;
+			cache->time = field_cache->getTime();
 			cache->number_of_values = number_of_values;
 			if (!ALLOCATE(cache->values, FE_value, number_of_values))
 			{
@@ -437,6 +432,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 				{
 					find_element_xi_data.values[i] = values[i];
 				}
+				find_element_xi_data.field_cache = field_cache;
 				find_element_xi_data.field = field;
 				find_element_xi_data.number_of_values = number_of_values;
 				find_element_xi_data.found_number_of_xi = 0;
@@ -446,7 +442,6 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 				find_element_xi_data.nearest_element_distance_squared = 0.0;
 				find_element_xi_data.start_with_data_xi = 0;
-				find_element_xi_data.time = time;
 
 				if (search_mesh)
 				{

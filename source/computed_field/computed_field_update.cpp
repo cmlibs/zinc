@@ -45,7 +45,6 @@ extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 }
-#include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "api/cmiss_status.h"
 #include "computed_field/computed_field_update.h"
@@ -174,8 +173,8 @@ int Cmiss_nodeset_assign_field_from_source(
 
 struct Cmiss_element_assign_grid_field_from_source_data
 {
+	Cmiss_field_cache_id field_cache;
 	int selected_count, success_count, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	FE_value time;
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -196,6 +195,7 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 	ENTER(Cmiss_element_assign_grid_field_from_source_sub);
 	if (element && data)
 	{
+		int number_of_components = Cmiss_field_get_number_of_components(data->source_field);
 		element_point_ranges = (struct Element_point_ranges *)NULL;
 		return_code = 1;
 		/* trivial rejection to see if element has storage for any grid based field 
@@ -214,8 +214,8 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 			}
 			if (data->group_field)
 			{
-				if (Computed_field_is_true_in_element(data->group_field,
-						element, data->time))
+				if (Cmiss_field_cache_set_element(data->field_cache, element) &&
+					Cmiss_field_evaluate_boolean(data->group_field, data->field_cache))
 				{
 					element_selected = 1;
 					can_select_individual_points = 0;
@@ -268,11 +268,11 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 						element_point_ranges_identifier.xi_discretization_mode,
 						element_point_ranges_identifier.number_in_xi,
 						element_point_ranges_identifier.exact_xi,
+						(Cmiss_field_cache_id)0,
 						/*coordinate_field*/(struct Computed_field *)NULL,
 						/*density_field*/(struct Computed_field *)NULL,
 						&maximum_element_point_number,
-						/*xi_points_address*/(FE_value_triple **)NULL,
-						data->time);
+						/*xi_points_address*/(FE_value_triple **)NULL);
 					Element_point_ranges_add_range(element_point_ranges,
 						0, maximum_element_point_number - 1);
 				}
@@ -281,8 +281,9 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 			{
 				data->selected_count++;
 				if (destination_field_is_grid_based &&
-					Computed_field_is_defined_in_element(data->source_field, element)
-					&& ALLOCATE(values, FE_value, Computed_field_get_number_of_components(data->source_field)))
+					Cmiss_field_cache_set_element(data->field_cache, element) &&
+					Cmiss_field_is_defined_at_location(data->source_field, data->field_cache) &&
+					ALLOCATE(values, FE_value, number_of_components))
 				{
 					if (element_point_ranges)
 					{
@@ -300,22 +301,21 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 									if (FE_element_get_numbered_xi_point(
 											 element, element_point_ranges_identifier.xi_discretization_mode,
 											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
+											 (Cmiss_field_cache_id)0,
 											 /*coordinate_field*/(struct Computed_field *)NULL,
 											 /*density_field*/(struct Computed_field *)NULL,
-											 grid_point_number, xi, data->time))
+											 grid_point_number, xi))
 									{
-										Field_element_xi_location location(element, xi,
-											data->time);
-
-										if (Computed_field_evaluate_cache_at_location(
-												data->source_field, &location))
+										if (Cmiss_field_cache_set_mesh_location(data->field_cache,
+												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
+											Cmiss_field_evaluate_real(data->source_field,
+												data->field_cache, number_of_components, values))
 										{
-											Computed_field_set_values_at_location(
-												data->destination_field, 
-												&location, data->source_field->values);
+											Cmiss_field_assign_real(data->destination_field,
+												data->field_cache, number_of_components, values);
 										}
 									}
-								}									
+								}
 							}
 						}
 					}
@@ -356,14 +356,16 @@ int Cmiss_mesh_assign_grid_field_from_source(
 			Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
 			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 			Cmiss_field_module_begin_change(field_module);
+			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+			Cmiss_field_cache_set_time(field_cache, time);
 			Cmiss_element_assign_grid_field_from_source_data data;
+			data.field_cache = field_cache;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
 			data.element_point_ranges_selection = element_point_ranges_selection;
 			data.group_field = conditional_field;
 			data.selected_count = 0;
 			data.success_count = 0;
-			data.time = time;
 			Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
 			Cmiss_element_id element = 0;
 			while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
@@ -385,12 +387,7 @@ int Cmiss_mesh_assign_grid_field_from_source(
 					data.success_count, data.selected_count);
 				return_code = 0;
 			}
-			/* to be safe, clear cache of source and destination fields */
-			Computed_field_clear_cache(source_field);
-			Computed_field_clear_cache(destination_field);
-			if (conditional_field)
-				Computed_field_clear_cache(conditional_field);
-
+			Cmiss_field_cache_destroy(&field_cache);
 			Cmiss_field_module_end_change(field_module);
 			Cmiss_field_module_destroy(&field_module);
 		}

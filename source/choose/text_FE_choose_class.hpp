@@ -187,13 +187,14 @@ DESCRIPTION :
 Returns the currently chosen object.
 ============================================================================*/
 	{
-		 FE_object *new_object, *return_address; 
-		 new_object = FE_region_method_class::string_to_object(fe_region,
-				const_cast<char *>(GetValue().c_str()));
-		 select_object(new_object);
-		 return_address = current_object;
-		 
-		 return (return_address); 
+		FE_object *new_object, *return_address;
+		wxString tmpString = GetValue();
+		new_object = FE_region_method_class::string_to_object(fe_region,
+			const_cast<char *>(tmpString.c_str()));
+		select_object(new_object);
+		return_address = current_object;
+
+		return (return_address);
 	} /* FE_object_chooser::get_object */
 
 	int set_object(FE_object *new_object)

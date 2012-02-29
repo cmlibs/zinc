@@ -139,13 +139,25 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		Cmiss_region_id otherRegion = Computed_field_get_region(getSourceField(0));
+		if (otherRegion != Computed_field_get_region(field))
+		{
+			// @TODO: share extraCache with other alias fields in cache referencing otherRegion
+			valueCache->createExtraCache(parentCache, otherRegion);
+		}
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
 	void field_is_managed(void)
 	{
@@ -232,76 +244,47 @@ int Computed_field_alias::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_alias::compare */
 
-/***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
- */
-int Computed_field_alias::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_alias::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_alias::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache *extraCache = valueCache.getExtraCache();
+	RealFieldValueCache *sourceCache = 0;
+	if (extraCache)
 	{
-		if (0 != (return_code = Computed_field_evaluate_cache_at_location(
-			original_field(), location)))
-		{
-			return_code = Computed_field_evaluate_cache_at_location(
-				original_field(), location);
-			for (i = 0; i < field->number_of_components; i++)
-			{
-				field->values[i] = original_field()->values[i];
-			}
-			int number_of_derivatives = location->get_number_of_derivatives();
-			if ((0 < number_of_derivatives) && original_field()->derivatives_valid)
-			{
-				for (i = 0; i < field->number_of_components*number_of_derivatives; i++)
-				{
-					field->derivatives[i] = original_field()->derivatives[i];
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
-		}
+		extraCache->setLocation(cache.cloneLocation());
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_alias::evaluate_cache_at_location.  Invalid argument(s)");
-		return_code = 0;
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_alias::evaluate_cache_at_location */
+	if (sourceCache)
+	{
+		valueCache.copyValues(*sourceCache);
+		return 1;
+	}
+	return 0;
+}
 
 /***************************************************************************//**
  * Sets values of the original field at the supplied location. 
  */
-int Computed_field_alias::set_values_at_location(
-	Field_location* location, const FE_value *values)
+enum FieldAssignmentResult Computed_field_alias::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	int return_code;
-	
-	ENTER(Computed_field_alias::set_values_at_location);
-	if (field && location && values)
+	Cmiss_field_cache *extraCache = valueCache.getExtraCache();
+	RealFieldValueCache *sourceCache = 0;
+	if (extraCache)
 	{
-		return_code = Computed_field_set_values_at_location(
-			original_field(), location, values);
+		extraCache->setLocation(cache.cloneLocation());
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(*extraCache));
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_alias::set_values_at_location.  Invalid argument(s)");
-		return_code = 0;
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_alias::set_values_at_location */
+	sourceCache->setValues(valueCache.values);
+	return getSourceField(0)->assign(extraCache ? *extraCache : cache, *sourceCache);
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console. 
@@ -383,12 +366,9 @@ char *Computed_field_alias::get_command_string()
 Computed_field *Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
 	Computed_field *original_field)
 {
-	Computed_field *field;
-
-	ENTER(Computed_field_create_alias);
-	field = (Computed_field *)NULL;
-	// GRC original_field->manager check will soon be unnecessary
-	if (field_module && original_field && (NULL != original_field->manager))
+	Cmiss_field_id field = 0;
+	// @TODO Generalise to non-numeric types by adding createValueCache and modifying evaluate methods
+	if (original_field && original_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, original_field->number_of_components,
@@ -396,15 +376,8 @@ Computed_field *Cmiss_field_module_create_alias(Cmiss_field_module_id field_modu
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_alias());
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_alias.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (field);
-} /* Cmiss_field_module_create_alias */
+}
 
 /*****************************************************************************//**
  * Command modifier function for defining a field as type computed_field_alias

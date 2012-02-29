@@ -1108,9 +1108,10 @@ Otherwise the routine returns 0.
 static int FE_element_add_xi_points_1d_line_cell_random(
 	struct FE_element	*element,
 	enum Xi_discretization_mode xi_discretization_mode, FE_value xi_centre,
-	FE_value delta_xi, struct Computed_field *coordinate_field,
+	FE_value delta_xi, Cmiss_field_cache_id field_cache,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1151,14 +1152,10 @@ array is enlarged if necessary and the new points added at random locations.
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(2 == number_of_coordinate_components) ||
 					(3 == number_of_coordinate_components)) &&
-				density_field &&
-				Computed_field_is_scalar(density_field, (void *)NULL) &&
-				Computed_field_evaluate_in_element(coordinate_field, element,
-					&xi_centre, time, /*top_level_element*/(struct FE_element	*)NULL,
-					coordinates, jacobian) &&
-				Computed_field_evaluate_in_element(density_field, element, &xi_centre,
-					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
-					/*derivatives*/(FE_value *)NULL))
+				Cmiss_field_cache_set_mesh_location(field_cache, element, 1, &xi_centre) &&
+				Cmiss_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/1, jacobian) &&
+				Cmiss_field_evaluate_real(density_field, field_cache, 1, &density))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (double)(jacobian[0]);
@@ -1287,9 +1284,10 @@ static int FE_element_add_xi_points_2d_square_cell_random(
 	struct FE_element	*element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	enum FE_element_shape_category element_shape_category,
-	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
+	FE_value *centre_xi, FE_value *dxi, Cmiss_field_cache_id field_cache,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time,
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated,
 	FE_value *xi_offset)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
@@ -1332,14 +1330,10 @@ array is enlarged if necessary and the new points added at random locations.
 				((2 == (number_of_coordinate_components =
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(3 == number_of_coordinate_components)) &&
-				density_field &&
-				Computed_field_is_scalar(density_field, (void *)NULL) &&
-				Computed_field_evaluate_in_element(coordinate_field, element,
-					centre_xi, time, /*top_level_element*/(struct FE_element	*)NULL,
-					coordinates, jacobian) &&
-				Computed_field_evaluate_in_element(density_field, element, centre_xi,
-					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
-					/*derivatives*/(FE_value *)NULL))
+				Cmiss_field_cache_set_mesh_location(field_cache, element, 2, centre_xi) &&
+				Cmiss_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/2, jacobian) &&
+				Cmiss_field_evaluate_real(density_field, field_cache, 1, &density))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (double)(jacobian[0]);
@@ -1502,9 +1496,10 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	struct FE_element	*element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	enum FE_element_shape_category element_shape_category,
-	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
+	FE_value *centre_xi, FE_value *dxi, Cmiss_field_cache_id field_cache,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time,
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated,
 	FE_value *xi_offset)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
@@ -1546,14 +1541,10 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				(3 == Computed_field_get_number_of_components(coordinate_field)) &&
-				density_field &&
-				Computed_field_is_scalar(density_field, (void *)NULL) &&
-				Computed_field_evaluate_in_element(coordinate_field, element,
-					centre_xi, time, /*top_level_element*/(struct FE_element	*)NULL,
-					coordinates, jacobian) &&
-				Computed_field_evaluate_in_element(density_field, element, centre_xi,
-					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
-					/*derivatives*/(FE_value *)NULL))
+				Cmiss_field_cache_set_mesh_location(field_cache, element, 3, centre_xi) &&
+				Cmiss_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian) &&
+				Cmiss_field_evaluate_real(density_field, field_cache, 1, &density))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (double)(jacobian[0]);
@@ -1749,10 +1740,11 @@ array is enlarged if necessary and the new points added at random locations.
 	return (return_code);
 } /* FE_element_add_xi_points_3d_cube_cell_random */
 
-int FE_element_get_xi_points_cell_random(struct FE_element *element,
+static int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
-	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time)
+	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *density_field, int *number_of_xi_points_address,
+	FE_value_triple **xi_points_address)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
@@ -1775,6 +1767,8 @@ points is allocated and put in this address. Xi positions are always returned as
 triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 Note the actual number and layout is dependent on the <element_shape>; see
 comments for simplex and polygons shapes for more details.
+@param field_cache  Cmiss_field_cache for evaluating coordinate and density
+fields, required for DENSITY and POISSON modes.
 ==============================================================================*/
 {
 	enum FE_element_shape_category element_shape_category;
@@ -1796,7 +1790,7 @@ comments for simplex and polygons shapes for more details.
 			(Computed_field_get_number_of_components(coordinate_field) >=
 				element_dimension) && density_field &&
 			Computed_field_is_scalar(density_field, (void *)NULL) &&
-			number_of_xi_points_address) ||
+			field_cache && number_of_xi_points_address) ||
 			(XI_DISCRETIZATION_CELL_RANDOM == xi_discretization_mode)))
 	{
 		return_code = 1;
@@ -1841,9 +1835,9 @@ comments for simplex and polygons shapes for more details.
 						xi_centre = ((float)i + 0.5)/(float)number_in_xi[0];
 						return_code = FE_element_add_xi_points_1d_line_cell_random(
 							element, xi_discretization_mode, xi_centre, delta_xi,
-							coordinate_field, density_field,
+							field_cache, coordinate_field, density_field,
 							&number_of_xi_points, xi_points_address,
-							&number_of_xi_points_allocated, time);
+							&number_of_xi_points_allocated);
 					}
 				} break;
 				case ELEMENT_CATEGORY_2D_SQUARE:
@@ -1861,9 +1855,9 @@ comments for simplex and polygons shapes for more details.
 							centre_xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
 								element, xi_discretization_mode, element_shape_category, 
-								centre_xi, dxi, coordinate_field, density_field,
+								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
-								&number_of_xi_points_allocated, time, xi_offset);
+								&number_of_xi_points_allocated, xi_offset);
 						}
 					}
 				} break;
@@ -1891,9 +1885,9 @@ comments for simplex and polygons shapes for more details.
 							centre_xi[2] = 0.0;
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
 								element, xi_discretization_mode, element_shape_category, 
-								centre_xi, dxi, coordinate_field, density_field,
+								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
-								&number_of_xi_points_allocated, time, xi_offset);
+								&number_of_xi_points_allocated, xi_offset);
 						}
 					}
 				} break;
@@ -1923,9 +1917,9 @@ comments for simplex and polygons shapes for more details.
 								centre_xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
-									centre_xi, dxi, coordinate_field, density_field,
+									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time, xi_offset);
+									&number_of_xi_points_allocated, xi_offset);
 							}
 						}
 					}
@@ -1961,9 +1955,9 @@ comments for simplex and polygons shapes for more details.
 								centre_xi[0] = ((float)i + 0.25)/(float)number_in_xi_simplex;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
-									centre_xi, dxi, coordinate_field, density_field,
+									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time, xi_offset);
+									&number_of_xi_points_allocated, xi_offset);
 							}
 						}
 					}
@@ -2000,9 +1994,9 @@ comments for simplex and polygons shapes for more details.
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
-									centre_xi, dxi, coordinate_field, density_field,
+									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time, xi_offset);			
+									&number_of_xi_points_allocated, xi_offset);
 							}
 						}
 						xi_offset[linked_xi_directions[0]] = (FE_value)(-1.0/3.0);
@@ -2019,9 +2013,9 @@ comments for simplex and polygons shapes for more details.
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
-									centre_xi, dxi, coordinate_field, density_field,
+									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time, xi_offset);	
+									&number_of_xi_points_allocated, xi_offset);
 							}
 						}
 					}
@@ -2070,11 +2064,6 @@ comments for simplex and polygons shapes for more details.
 				}
 			}
 		}
-		if (XI_DISCRETIZATION_CELL_RANDOM != xi_discretization_mode)
-		{
-			Computed_field_clear_cache(coordinate_field);
-			Computed_field_clear_cache(density_field);
-		}
 	}
 	else
 	{
@@ -2089,22 +2078,9 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, FE_value_triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Calculates the <number_of_xi_points> across the <element_shape> according to
-the <xi_discretization> and some of <number_in_xi>, <exact_xi>,
-<coordinate_field> and <density_field>, depending on the mode.
-If <xi_points_address> is supplied an array containing the xi locations of these
-points is allocated and put in this address. Xi positions are always returned as
-triples with remaining xi coordinates 0 for 1-D and 2-D cases.
-<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - although it
-is trivial, it is passed and used here to provide a consistent interface.
-==============================================================================*/
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 {
 	int return_code;
 	struct CM_element_information identifier;
@@ -2137,8 +2113,8 @@ is trivial, it is passed and used here to provide a consistent interface.
 				get_FE_element_identifier(element, &identifier);
 				CMGUI_SEED_RANDOM(identifier.number);
 				return_code = FE_element_get_xi_points_cell_random(element,
-					xi_discretization_mode, number_in_xi,	coordinate_field, density_field,
-					number_of_xi_points_address, xi_points_address, time);
+					xi_discretization_mode, number_in_xi, field_cache, coordinate_field, density_field,
+					number_of_xi_points_address, xi_points_address);
 			} break;
 			case XI_DISCRETIZATION_EXACT_XI:
 			{
@@ -2314,20 +2290,9 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, FE_value_triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int xi_point_number, FE_value *xi, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Returns in <xi> the location of the <xi_point_number> out of those that would
-be calculated by FE_element_get_xi_points. The default_behaviour is to
-Call the above function, extract the xi location and DEALLOCATE the xi_points.
-This is quite expensive; for this reason cell_centres and cell_corners in line,
-square and cube elements, as well as exact_xi, are handled separately since the
-calculation is trivial.
-==============================================================================*/
+	int xi_point_number, FE_value *xi)
 {
 	enum FE_element_shape_category element_shape_category;
 	int default_behaviour, i, j, k, line_direction, linked_xi_directions[2], m, n,
@@ -2554,8 +2519,8 @@ calculation is trivial.
 			if (return_code && default_behaviour)
 			{
 				if (FE_element_get_xi_points(element, xi_discretization_mode,
-					number_in_xi, exact_xi, coordinate_field, density_field,
-					&number_of_xi_points, &xi_points, time))
+					number_in_xi, exact_xi, field_cache, coordinate_field, density_field,
+					&number_of_xi_points, &xi_points))
 				{
 					if ((0 <= xi_point_number) &&
 						(xi_point_number < number_of_xi_points))

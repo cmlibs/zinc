@@ -130,11 +130,12 @@ DESCRIPTION:
 Data for passing to Computed_field_iterative_element_conditional
 Important note:
 The <values> passed in this structure must not be a pointer to values
-inside a field cache otherwise they may be overwritten if that field
+inside the field_cache otherwise they may be overwritten if that field
 matches the <field> in this structure or one of its source fields.
 ==============================================================================*/
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	Cmiss_field_cache_id field_cache;
 	struct Computed_field *field;
 	int number_of_values;
 	FE_value *values;

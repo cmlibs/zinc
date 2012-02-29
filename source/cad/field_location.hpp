@@ -67,6 +67,11 @@ public:
 	Field_cad_geometry_surface_location(Cmiss_field_cad_topology_id id, Cmiss_cad_surface_identifier identifier, double u, double v, FE_value time = 0.0, int number_of_derivatives = 0);
 	~Field_cad_geometry_surface_location();
 
+   virtual Field_location *clone()
+   {
+   	return new Field_cad_geometry_surface_location(id, identifier, u, v, time);
+   }
+
 	inline Cmiss_cad_surface_identifier get_identifier() const {return identifier;}
 	inline double get_u() const {return u;}
 	inline double get_v() const {return v;}
@@ -82,6 +87,11 @@ protected:
 public:
 	Field_cad_geometry_curve_location(Cmiss_field_cad_topology_id id, Cmiss_cad_curve_identifier identifier, double s, FE_value time = 0.0, int number_of_derivatives = 0);
 	~Field_cad_geometry_curve_location();
+
+   virtual Field_location *clone()
+   {
+   	return new Field_cad_geometry_curve_location(id, identifier, s, time);
+   }
 
 	inline Cmiss_cad_curve_identifier get_identifier() const {return identifier;}
 	inline double get_s() const {return s;}

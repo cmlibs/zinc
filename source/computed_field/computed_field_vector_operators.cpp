@@ -91,78 +91,50 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_normalise::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_normalise::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double size;
-	FE_value *derivative, *source_derivative;
-	int i, number_of_xi, return_code;
-
-	ENTER(Computed_field_normalise::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields > 0) && 
-		(field->number_of_components == field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		FE_value size = 0.0;
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			size = 0.0;
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				size += field->source_fields[0]->values[i] *
-					field->source_fields[0]->values[i];
-			}
-			size = sqrt(size);
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = field->source_fields[0]->values[i] / size;
-			}
-			if (field->source_fields[0]->derivatives_valid
-				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
-			{
-				derivative = field->derivatives;
-				source_derivative = field->source_fields[0]->derivatives;
-				for (i = 0 ; i < field->number_of_components * number_of_xi ; i++)
-				{
-					*derivative = *source_derivative / size;
-					derivative++;
-					source_derivative++;
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			size += sourceCache->values[i] *	sourceCache->values[i];
 		}
+		size = sqrt(size);
+		for (int i = 0 ; i < field->number_of_components ; i++)
+		{
+			valueCache.values[i] = sourceCache->values[i] / size;
+		}
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *derivative = valueCache.derivatives;
+			FE_value *source_derivative = sourceCache->derivatives;
+			for (int i = 0 ; i < field->number_of_components * number_of_xi ; i++)
+			{
+				*derivative = *source_derivative / size;
+				derivative++;
+				source_derivative++;
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_normalise::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_normalise::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_normalise::list(
 	)
@@ -394,206 +366,168 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cross_product::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
+int Computed_field_cross_product::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *derivative, *source_derivative, *temp_vector;
-	int i, j, number_of_derivatives, return_code;
-
-	ENTER(Computed_field_cross_product::evaluate_cache_at_location);
-	if (field && location &&
-		(field->number_of_source_fields == field->number_of_components - 1))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache[3];
+	int derivatives_valid = 1;
+	for (int i = 0; i < field->number_of_source_fields; ++i)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		sourceCache[i] = RealFieldValueCache::cast(getSourceField(i)->evaluate(cache));
+		if (!sourceCache[i])
+			return 0;
+		if (!sourceCache[i]->derivatives_valid)
+			derivatives_valid = 0;
+	}
+	switch (field->number_of_components)
+	{
+		case 1:
 		{
-			/* 2. Calculate the field */
-			switch (field->number_of_components)
+			valueCache.values = 0;
+		} break;
+		case 2:
+		{
+			valueCache.values[0] = -sourceCache[0]->values[1];
+			valueCache.values[1] = sourceCache[0]->values[0];
+		} break;
+		case 3:
+		{
+			cross_product_FE_value_vector3(sourceCache[0]->values,
+				sourceCache[1]->values, valueCache.values);
+		} break;
+		case 4:
+		{
+			cross_product_FE_value_vector4(sourceCache[0]->values,
+				sourceCache[1]->values, sourceCache[2]->values, valueCache.values);
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_cross_product::evaluate.  "
+				"Unsupported number of components.");
+			return 0;
+		} break;
+	}
+	int number_of_xi = cache.getRequestedDerivatives();
+	if (number_of_xi && derivatives_valid)
+	{
+		FE_value *derivative, *source_derivative;
+		FE_value temp_vector[16]; // max field->number_of_components*field->number_of_components
+		switch (field->number_of_components)
+		{
+			case 1:
 			{
-				case 1:
+				derivative = valueCache.derivatives;
+				for (int i = 0 ; i < number_of_xi ; i++)
 				{
-					field->values = 0;
-				} break;
-				case 2:
-				{
-					field->values[0] = -field->source_fields[0]->values[1];
-					field->values[1] = field->source_fields[0]->values[0];
-				} break;
-				case 3:
-				{
-					cross_product_FE_value_vector3(field->source_fields[0]->values,
-						field->source_fields[1]->values, field->values);
-				} break;
-				case 4:
-				{
-					cross_product_FE_value_vector4(field->source_fields[0]->values,
-						field->source_fields[1]->values, 
-						field->source_fields[2]->values, field->values);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_cross_product_evaluate_cache_at_node.  "
-						"Unsupported number of components.");
-					return_code = 0;
-				} break;
-			}
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (0 < number_of_derivatives)
+					*derivative = 0;
+					derivative++;
+				}
+			} break;
+			case 2:
 			{
-				if (ALLOCATE(temp_vector, FE_value, field->number_of_components *
-					field->number_of_components))
+				derivative = valueCache.derivatives;
+				source_derivative = valueCache.derivatives + number_of_xi;
+				for (int i = 0 ; i < number_of_xi ; i++)
 				{
-					switch (field->number_of_components)
+					*derivative = -*source_derivative;
+					derivative++;
+					source_derivative++;
+				}
+				source_derivative = valueCache.derivatives + number_of_xi;
+				for (int i = 0 ; i < number_of_xi ; i++)
+				{
+					*derivative = *source_derivative;
+					derivative++;
+					source_derivative++;
+				}
+			} break;
+			case 3:
+			{
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					for (int i = 0 ; i < 3 ; i++)
 					{
-						case 1:
-						{
-							derivative = field->derivatives;
-							for (i = 0 ; i < number_of_derivatives ; i++)
-							{
-								*derivative = 0;
-								derivative++;
-							}
-						} break;
-						case 2:
-						{
-							derivative = field->derivatives;
-							source_derivative = field->derivatives + number_of_derivatives;
-							for (i = 0 ; i < number_of_derivatives ; i++)
-							{
-								*derivative = -*source_derivative;
-								derivative++;
-								source_derivative++;
-							}
-							source_derivative = field->derivatives + number_of_derivatives;
-							for (i = 0 ; i < number_of_derivatives ; i++)
-							{
-								*derivative = *source_derivative;
-								derivative++;
-								source_derivative++;
-							}
-						} break;
-						case 3:
-						{
-							for (j = 0 ; j < number_of_derivatives ; j++)
-							{
-								for (i = 0 ; i < 3 ; i++)
-								{
-									temp_vector[i] = field->source_fields[0]->
-										derivatives[i * number_of_derivatives + j];
-									temp_vector[i + 3] = field->source_fields[1]->
-										derivatives[i * number_of_derivatives + j];
-								}
-								cross_product_FE_value_vector3(temp_vector,
-									field->source_fields[1]->values, temp_vector + 6);
-								for (i = 0 ; i < 3 ; i++)
-								{
-									field->derivatives[i * number_of_derivatives + j] = 
-										temp_vector[i + 6];
-								}
-								cross_product_FE_value_vector3(
-									field->source_fields[0]->values,
-									temp_vector + 3, temp_vector + 6);
-								for (i = 0 ; i < 3 ; i++)
-								{
-									field->derivatives[i * number_of_derivatives + j] += 
-										temp_vector[i + 6];
-								}
-							}
-						} break;
-						case 4:
-						{
-							for (j = 0 ; j < number_of_derivatives ; j++)
-							{
-								for (i = 0 ; i < 4 ; i++)
-								{
-									temp_vector[i] = field->source_fields[0]->
-										derivatives[i * number_of_derivatives + j];
-									temp_vector[i + 4] = field->source_fields[1]->
-										derivatives[i * number_of_derivatives + j];
-									temp_vector[i + 8] = field->source_fields[2]->
-										derivatives[i * number_of_derivatives + j];
-								}
-								cross_product_FE_value_vector4(temp_vector,
-									field->source_fields[1]->values, 
-									field->source_fields[2]->values, temp_vector + 12);
-								for (i = 0 ; i < 4 ; i++)
-								{
-									field->derivatives[i * number_of_derivatives + j] = 
-										temp_vector[i + 12];
-								}
-								cross_product_FE_value_vector4(
-									field->source_fields[0]->values, temp_vector + 4,
-									field->source_fields[2]->values, temp_vector + 12);
-								for (i = 0 ; i < 4 ; i++)
-								{
-									field->derivatives[i * number_of_derivatives + j] += 
-										temp_vector[i + 12];
-								}
-								cross_product_FE_value_vector4(
-									field->source_fields[0]->values, 
-									field->source_fields[1]->values, 
-									temp_vector + 8, temp_vector + 12);
-								for (i = 0 ; i < 4 ; i++)
-								{
-									field->derivatives[i * number_of_derivatives + j] += 
-										temp_vector[i + 12];
-								}
-							}
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_cross_product_evaluate_cache_at_node.  "
-								"Unsupported number of components.");
-							field->derivatives_valid = 0;
-							return_code = 0;
-						} break;
+						temp_vector[i] = sourceCache[0]->derivatives[i * number_of_xi + j];
+						temp_vector[i + 3] = sourceCache[1]->derivatives[i * number_of_xi + j];
 					}
-					DEALLOCATE(temp_vector);
+					cross_product_FE_value_vector3(temp_vector,
+						sourceCache[1]->values, temp_vector + 6);
+					for (int i = 0 ; i < 3 ; i++)
+					{
+						valueCache.derivatives[i * number_of_xi + j] =
+							temp_vector[i + 6];
+					}
+					cross_product_FE_value_vector3(
+						sourceCache[0]->values,
+						temp_vector + 3, temp_vector + 6);
+					for (int i = 0 ; i < 3 ; i++)
+					{
+						valueCache.derivatives[i * number_of_xi + j] +=
+							temp_vector[i + 6];
+					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_cross_product_evaluate_cache_at_node.  "
-						"Unable to allocate temporary vector.");
-					field->derivatives_valid = 0;
-					return_code = 0;
-				}
-			}
-			else
+			} break;
+			case 4:
 			{
-				field->derivatives_valid = 0;
-			}
+				for (int j = 0 ; j < number_of_xi ; j++)
+				{
+					for (int i = 0 ; i < 4 ; i++)
+					{
+						temp_vector[i] = sourceCache[0]->derivatives[i * number_of_xi + j];
+						temp_vector[i + 4] = sourceCache[1]->derivatives[i * number_of_xi + j];
+						temp_vector[i + 8] = sourceCache[2]->derivatives[i * number_of_xi + j];
+					}
+					cross_product_FE_value_vector4(temp_vector,
+						sourceCache[1]->values,
+						sourceCache[2]->values, temp_vector + 12);
+					for (int i = 0 ; i < 4 ; i++)
+					{
+						valueCache.derivatives[i * number_of_xi + j] =
+							temp_vector[i + 12];
+					}
+					cross_product_FE_value_vector4(
+						sourceCache[0]->values, temp_vector + 4,
+						sourceCache[2]->values, temp_vector + 12);
+					for (int i = 0 ; i < 4 ; i++)
+					{
+						valueCache.derivatives[i * number_of_xi + j] +=
+							temp_vector[i + 12];
+					}
+					cross_product_FE_value_vector4(
+						sourceCache[0]->values,
+						sourceCache[1]->values,
+						temp_vector + 8, temp_vector + 12);
+					for (int i = 0 ; i < 4 ; i++)
+					{
+						valueCache.derivatives[i * number_of_xi + j] +=
+							temp_vector[i + 12];
+					}
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_cross_product::evaluate.  "
+					"Unsupported number of components.");
+				return 0;
+			} break;
 		}
+		valueCache.derivatives_valid = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cross_product_evaluate_cache_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
+		valueCache.derivatives_valid = 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cross_product_evaluate_cache_in_element */
-
+	return 1;
+}
 
 int Computed_field_cross_product::list(
 	)
@@ -978,95 +912,62 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_dot_product::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
+int Computed_field_dot_product::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *temp, *temp2;
-	int i, j, number_of_derivatives, return_code;
-
-	ENTER(Computed_field_dot_product::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (source1Cache && source2Cache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		int vector_number_of_components = getSourceField(0)->number_of_components;
+		FE_value sum = 0.0;
+		for (int i=0;i < vector_number_of_components;i++)
 		{
-			/* 2. Calculate the field */
-			number_of_derivatives = location->get_number_of_derivatives();
-			field->values[0] = 0.0;
-			if (0 < number_of_derivatives)
-			{
-				for (j=0;j<number_of_derivatives;j++)
-				{
-					field->derivatives[j]=0.0;
-				}
-			}
-			temp=field->source_fields[0]->values;
-			temp2=field->source_fields[1]->values;
-			for (i=0;i < field->source_fields[0]->number_of_components;i++)
-			{
-				field->values[0] += (*temp) * (*temp2);
-				temp++;
-				temp2++;
-			}
-			if (0 < number_of_derivatives)
-			{
-				temp=field->source_fields[0]->values;
-				temp2=field->source_fields[1]->derivatives;
-				for (i=0;i < field->source_fields[0]->number_of_components;i++)
-				{
-					for (j=0;j<number_of_derivatives;j++)
-					{
-						field->derivatives[j] += (*temp)*(*temp2);
-						temp2++;
-					}
-					temp++;
-				}
-				temp=field->source_fields[1]->values;
-				temp2=field->source_fields[0]->derivatives;
-				for (i=0;i < field->source_fields[0]->number_of_components;i++)
-				{
-					for (j=0;j<number_of_derivatives;j++)
-					{
-						field->derivatives[j] += (*temp)*(*temp2);
-						temp2++;
-					}
-					temp++;
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			sum += source1Cache->values[i] * source2Cache->values[i];
 		}
+		valueCache.values[0] = sum;
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
+		{
+			FE_value *temp=source1Cache->values;
+			FE_value *temp2=source2Cache->derivatives;
+			for (int i=0;i < vector_number_of_components;i++)
+			{
+				for (int j=0;j<number_of_xi;j++)
+				{
+					valueCache.derivatives[j] += (*temp)*(*temp2);
+					temp2++;
+				}
+				temp++;
+			}
+			temp=source2Cache->values;
+			temp2=source1Cache->derivatives;
+			for (int i=0;i < vector_number_of_components;i++)
+			{
+				for (int j=0;j<number_of_xi;j++)
+				{
+					valueCache.derivatives[j] += (*temp)*(*temp2);
+					temp2++;
+				}
+				temp++;
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_dot_product::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_dot_product::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_dot_product::list(
 	)
@@ -1338,149 +1239,76 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
+
 };
 
-int Computed_field_magnitude::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_magnitude::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *source_derivatives, *source_values, sum;
-	int number_of_derivatives, i, j, return_code, source_number_of_components;
-
-	ENTER(Computed_field_magnitude::evaluate_cache_at_location);
-	if (field && location && (0 < field->number_of_source_fields))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		int source_number_of_components = getSourceField(0)->number_of_components;
+		FE_value *source_values = sourceCache->values;
+		FE_value sum = 0.0;
+		for (int i=0;i<source_number_of_components;i++)
 		{
-			/* 2. Calculate the field */
-			source_number_of_components =
-				field->source_fields[0]->number_of_components;
-			source_values = field->source_fields[0]->values;
-			sum = 0.0;
-			for (i=0;i<source_number_of_components;i++)
-			{
-				sum += source_values[i]*source_values[i];
-			}
-			field->values[0] = sqrt(sum);
-
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (0 < number_of_derivatives)
-			{
-				source_derivatives=field->source_fields[0]->derivatives;
-				for (j=0;j<number_of_derivatives;j++)
-				{
-					sum = 0.0;
-					for (i=0;i<source_number_of_components;i++)
-					{
-						sum += source_values[i]*source_derivatives[i*number_of_derivatives+j];
-					}
-					field->derivatives[j] = sum / field->values[0];
-				}
-				field->derivatives_valid = 1;
-			}
+			sum += source_values[i]*source_values[i];
 		}
+		valueCache.values[0] = sqrt(sum);
+
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			FE_value *source_derivatives=sourceCache->derivatives;
+			for (int j=0;j<number_of_xi;j++)
+			{
+				sum = 0.0;
+				for (int i=0;i<source_number_of_components;i++)
+				{
+					sum += source_values[i]*source_derivatives[i*number_of_xi+j];
+				}
+				valueCache.derivatives[j] = sum / valueCache.values[0];
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* Computed_field_magnitude::evaluate_cache_at_location */
-
-int Computed_field_magnitude::set_values_at_location(
-   Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
+enum FieldAssignmentResult Computed_field_magnitude::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	FE_value magnitude,*source_values;
-	int k,return_code,source_number_of_components;
-
-	ENTER(Computed_field_magnitude::set_values_at_location);
-	if (field && location && values)
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (!sourceCache)
+		return FIELD_ASSIGNMENT_RESULT_FAIL;
+	const int source_number_of_components = getSourceField(0)->number_of_components;
+	FE_value scale_value = 0.0;
+	for (int i=0;i<source_number_of_components;i++)
 	{
-		return_code=1;
-		if (ALLOCATE(source_values, FE_value,
-			field->source_fields[0]->number_of_components))
-		{
-			/* need current field values to "magnify" */
-			if (Computed_field_evaluate_cache_at_location(field->source_fields[0],
-					location))
-			{
-				source_number_of_components =
-					field->source_fields[0]->number_of_components;
-				/* if the source field is not a zero vector, set its magnitude to
-					the given value */
-				magnitude = 0.0;
-				for (k=0;k<source_number_of_components;k++)
-				{
-					magnitude += field->source_fields[0]->source_values[k] *
-						field->source_fields[0]->source_values[k];
-				}
-				if (0.0 < magnitude)
-				{
-					magnitude = values[0] / sqrt(magnitude);
-					for (k=0;k<source_number_of_components;k++)
-					{
-						source_values[k] = field->source_fields[0]->source_values[k]
-							* magnitude;
-					}
-				}
-				else
-				{
-					/* not an error; just a warning */
-					display_message(WARNING_MESSAGE,
-						"Magnitude field %s cannot be inverted for zero vectors",
-						field->name);
-				}
-				return_code=Computed_field_set_values_at_location(
-					field->source_fields[0],location,source_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_magnitude::set_values_at_location.  "
-					"Could not evaluate source field for %s.",field->name);
-				return_code=0;
-			}
-			DEALLOCATE(source_values);
-		}
+		scale_value += sourceCache->values[i] * sourceCache->values[i];
 	}
-	else
+	if (0.0 >= scale_value)
+		return FIELD_ASSIGNMENT_RESULT_FAIL;
+	scale_value = valueCache.values[0] / sqrt(scale_value);
+	for (int i=0;i<source_number_of_components;i++)
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
+		sourceCache->values[i] *= scale_value;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_magnitude::set_values_at_location */
-
+	sourceCache->derivatives_valid = 0;
+	return getSourceField(0)->assign(cache, *sourceCache);
+}
 
 int Computed_field_magnitude::list(
 	)
@@ -1710,75 +1538,49 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cubic_texture_coordinates::evaluate_cache_at_location(
-   Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_cubic_texture_coordinates::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *temp;
-	int i, j, number_of_components, return_code;
-
-	ENTER(Computed_field_cubic_texture_coordinates::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields > 0) && 
-		(field->number_of_components == field->source_fields[0]->number_of_components))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		int number_of_components = field->number_of_components;
+		FE_value *temp=sourceCache->values;
+		valueCache.values[number_of_components - 1] = fabs(*temp);
+		temp++;
+		int j = 0;
+		for (int i=1;i<number_of_components;i++)
 		{
-			/* 2. Calculate the field */
-			number_of_components = field->number_of_components;
-			temp=field->source_fields[0]->values;
-			field->values[number_of_components - 1] = fabs(*temp);
+			if (fabs(*temp) > valueCache.values[number_of_components - 1])
+			{
+				valueCache.values[number_of_components - 1] = fabs(*temp);
+				j = i;
+			}
 			temp++;
-			j = 0;
-			for (i=1;i<number_of_components;i++)
-			{
-				if (fabs(*temp) > field->values[number_of_components - 1])
-				{
-					field->values[number_of_components - 1] = fabs(*temp);
-					j = i;
-				}
-				temp++;
-			}
-			temp=field->source_fields[0]->values;
-			for (i=0;i < number_of_components - 1;i++)
-			{
-				if ( i == j )
-				{
-					/* Skip over the maximum coordinate */
-					temp++;
-				}
-				field->values[i] = *temp / field->values[number_of_components - 1];
-				temp++;
-			}
-			field->derivatives_valid = 0;
 		}
+		temp=sourceCache->values;
+		for (int i=0;i < number_of_components - 1;i++)
+		{
+			if ( i == j )
+			{
+				/* Skip over the maximum coordinate */
+				temp++;
+			}
+			valueCache.values[i] = *temp / valueCache.values[number_of_components - 1];
+			temp++;
+		}
+		valueCache.derivatives_valid = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cubic_texture_coordinates::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cubic_texture_coordinates::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_cubic_texture_coordinates::list()
 /*******************************************************************************

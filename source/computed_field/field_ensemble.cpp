@@ -72,27 +72,24 @@ const char *Field_ensemble::get_type_string()
 	return (field_ensemble_type_string);
 }
 
-int Field_ensemble::evaluate_cache_at_location(Field_location* location)
+int Field_ensemble::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	if (field && location)
-	{
-		field->values[0] = 0;
+	USE_PARAMETER(cache);
+	USE_PARAMETER(inValueCache);
 #if defined (FUTURE_CODE)
-		EnsembleEntryRef ref;
-		if (location.getEnsembleEntry(this, ref))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	EnsembleEntryRef ref;
+	if (location.getEnsembleEntry(this, ref))
+	{
+		Cmiss_ensemble_identifier identifier = getIdentifier(ref);
+		if (0 < identifier)
 		{
-			Cmiss_ensemble_identifier identifier = getIdentifier(ref);
-			if (0 < identifier)
-			{
-				field->values[0] = static_cast<FE_value>(identifier);
-				return_code = 1;
-			}
+			valueCache.values[0] = static_cast<FE_value>(identifier);
+			return_code = 1;
 		}
-#endif
-		field->derivatives_valid = 0;
 	}
-	return (return_code);
+#endif
+	return 0;
 }
 
 int Field_ensemble::list()
@@ -442,23 +439,20 @@ const char *Field_ensemble_group::get_type_string()
 	return (field_ensemble_group_type_string);
 }
 
-int Field_ensemble_group::evaluate_cache_at_location(Field_location* location)
+int Field_ensemble_group::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	if (field && location)
-	{
-		field->values[0] = 0;
+	USE_PARAMETER(cache);
+	USE_PARAMETER(inValueCache);
 #if defined (FUTURE_CODE)
-		EnsembleEntryRef ref;
-		if (location.getEnsembleEntry(this, ref))
-		{
-			field->values = hasEntry(ref) ? 1.0 : 0.0;
-			return_code = 1;
-		}
-#endif
-		field->derivatives_valid = 0;
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	EnsembleEntryRef ref;
+	if (location.getEnsembleEntry(this, ref))
+	{
+		valueCache.values[0] = hasEntry(ref) ? 1.0 : 0.0;
+		return_code = 1;
 	}
-	return (return_code);
+#endif
+	return 0;
 }
 
 int Field_ensemble_group::list()

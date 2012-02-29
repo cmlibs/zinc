@@ -141,7 +141,7 @@ static int compare_FE_element_values_number_values(
 
 struct FE_element_and_values_to_array_data
 {
-	FE_value time;
+	Cmiss_field_cache_id field_cache;
 	struct FE_element_values_number *element_values;
 	struct Computed_field *sort_by_field;
 }; /* FE_element_and_values_to_array_data */
@@ -182,15 +182,10 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 						element_shape, number_in_xi,
 						&number_of_xi_points, &xi_points))
 			{
-				if (!(array_data->element_values->values
-						&& Computed_field_evaluate_in_element(
-							array_data->sort_by_field,
-							element,
-							*xi_points,
-							array_data->time,
-							/*top_level_element*/(struct FE_element *) NULL,
-							array_data->element_values->values,
-							/*derivatives*/(FE_value *) NULL)))
+				if (!(array_data->element_values->values &&
+					Cmiss_field_cache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points) &&
+					Cmiss_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+						Cmiss_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values)))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_element_and_values_to_array.  "
@@ -239,7 +234,6 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 {
 	int i, number_of_elements, number_of_values, return_code;
 	struct FE_element *element_with_identifier;
-	struct FE_element_and_values_to_array_data array_data;
 	struct FE_element_values_number *element_values;
 	struct FE_region *master_fe_region;
 
@@ -284,9 +278,13 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 				if (return_code)
 				{
 					/* make a linear array of elements in the group in current order */
+					struct FE_element_and_values_to_array_data array_data;
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(FE_region_get_Cmiss_region(fe_region));
+					Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+					Cmiss_field_cache_set_time(field_cache, time);
+					array_data.field_cache = field_cache;
 					array_data.element_values = element_values;
 					array_data.sort_by_field = sort_by_field;
-					array_data.time = time;
 					if (!FE_region_for_each_FE_element_of_dimension(fe_region,
 						dimension, FE_element_and_values_to_array,
 						(void *) &array_data))
@@ -296,6 +294,8 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							"Could not build element/field values array");
 						return_code = 0;
 					}
+					Cmiss_field_cache_destroy(&field_cache);
+					Cmiss_field_module_destroy(&field_module);
 				}
 				if (return_code)
 				{

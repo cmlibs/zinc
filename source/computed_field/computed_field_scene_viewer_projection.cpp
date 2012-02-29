@@ -172,15 +172,13 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
 	int calculate_matrix();
-
-	int evaluate_projection_matrix();
 
 	void add_transformation_callback();
 
@@ -552,87 +550,34 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_scene_viewer_projection::compare */
 
-int Computed_field_scene_viewer_projection::evaluate_projection_matrix()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute a field
-transformed by a projection matrix.
-==============================================================================*/
+int Computed_field_scene_viewer_projection::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
 {
-	int i, return_code = 0;
-	ENTER(Computed_field_evaluate_projection_matrix);
-	if (field)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	if (scene_viewer)
 	{
-		if (scene_viewer)
+		// note, assuming matrix is owned by field not cache. Not thread safe.
+		if (!requiredProjectionMatrixUpdate()	|| calculate_matrix())
 		{
-			if (!requiredProjectionMatrixUpdate()	|| calculate_matrix())
+			for (int i = 0 ; i < field->number_of_components ; i++)
 			{
-				return_code = 1;
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					field->values[i] = projection_matrix[i];
-				}
-			}
-			else
-			{
-				return_code=0;
+				valueCache.values[i] = projection_matrix[i];
 			}
 		}
 		else
 		{
-			/* Just set everything to zero */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = 0.0;
-			}
+			return 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_projection_matrix.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_projection_matrix */
-
-int Computed_field_scene_viewer_projection::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_scene_viewer_projection::evaluate_cache_at_location);
-	if (field && location)
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location);
-		if (return_code)
+		/* Just set everything to zero */
+		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			/* 2. Calculate the field */
-			return_code = evaluate_projection_matrix();
+			valueCache.values[i] = 0.0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_scene_viewer_projection::evaluate_cache_at_location */
+	return 1;
+}
 
 /* return 1 if projection matrix requires an update */
 int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()

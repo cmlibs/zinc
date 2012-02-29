@@ -93,40 +93,11 @@ If so, returns 1 and sets the <indices> to match.
 Otherwise the routine returns 0.
 ==============================================================================*/
 
-int FE_element_get_xi_points_cell_random(struct FE_element *element,
-	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
-	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 May 2001
-
-DESCRIPTION :
-Calculates the <number_of_xi_points> to be randomly located in uniform cells
-across the <element_shape> according to <number_in_xi>. The number of points
-placed in each cell depends on the <xi_discretization_mode> which can be one of:
-XI_DISCRETIZATION_CELL_DENSITY = rounded from density * volume|area|length.
-XI_DISCRETIZATION_CELL_POISSON = as for above but the actual number is sampled
-  from a Poisson distribution with mean given by the expected number. While this
-	adds noise to the density function, it overcomes the problem that small cells
-	with low densities can never be represented by xi points with CELL_DENSITY.
-XI_DISCRETIZATION_CELL_RANDOM = 1 point per cell.
-The density and the length/area/volume of the cell are evaluated from the
-<density_field> and <coordinate_field> at the cell centre, respectively.
-User should call CMGUI_SEED_RANDOM with the element number before calling this
-if they wish to get consistent random layouts in a given element over time.
-If <xi_points_address> is supplied an array containing the xi locations of these
-points is allocated and put in this address. Xi positions are always returned as
-triples with remaining xi coordinates 0 for 1-D and 2-D cases.
-Note the actual number and layout is dependent on the <element_shape>; see
-comments for simplex and polygons shapes for more details.
-==============================================================================*/
-
 int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, FE_value_triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, FE_value_triple **xi_points_address, 
-	FE_value time);
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
 
@@ -138,7 +109,10 @@ If <xi_points_address> is supplied an array containing the xi locations of these
 points is allocated and put in this address. Xi positions are always returned as
 triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 <exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - although it
-is trivial, it is passed and used here to provide a consistent interface.
+is trivial, it is passed and used here to provide a consistent interface.]
+@param field_cache  Cmiss_field_cache for evaluating coordinate and density
+fields, required for DENSITY and POISSON modes. Time is expected to have been
+set in the field_cache if needed.
 ==============================================================================*/
 
 int FE_element_convert_xi_points_cell_corners_to_top_level(
@@ -163,9 +137,9 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, FE_value_triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int xi_point_number, FE_value *xi, FE_value time);
+	int xi_point_number, FE_value *xi);
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
@@ -176,6 +150,9 @@ Call the above function, extract the xi location and DEALLOCATE the xi_points.
 This is quite expensive; for this reason cell_centres and cell_corners in line,
 square and cube elements, as well as exact_xi, are handled separately since the
 calculation is trivial.
+@param field_cache  Cmiss_field_cache for evaluating coordinate and density
+fields, required for DENSITY and POISSON modes. Time is expected to be set in
+the field_cache if needed.
 ==============================================================================*/
 
 int convert_xi_points_from_element_to_parent(int number_of_xi_points,

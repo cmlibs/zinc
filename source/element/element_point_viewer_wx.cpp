@@ -47,6 +47,7 @@ selected element point, or set it if entered in this dialog.
 #include "configure/cmgui_configure.h"
 #endif
 extern "C" {
+#include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_value_index_ranges.h"
@@ -412,7 +413,6 @@ Furthermore, if the <element_point_viewer>
 	int return_code;
 	struct Element_point_ranges_grid_to_multi_range_data grid_to_multi_range_data;
 	struct Element_point_ranges_identifier source_identifier;
-	struct Element_point_ranges_set_grid_values_data set_grid_values_data;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct LIST(Element_point_ranges) *element_point_ranges_list;
 
@@ -526,8 +526,13 @@ Furthermore, if the <element_point_viewer>
 							&(element_point_viewer->element_point_identifier));
 						if (return_code)
 						{
+							Cmiss_field_module_id field_module = Cmiss_region_get_field_module(FE_region_get_Cmiss_region(element_point_viewer->fe_region));
+							Cmiss_field_module_begin_change(field_module);
+							Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 							source_identifier.element=element_point_viewer->element_copy;
 							/* note values taken from the local element_copy... */
+							struct Element_point_ranges_set_grid_values_data set_grid_values_data;
+							set_grid_values_data.field_cache = field_cache;
 							set_grid_values_data.source_identifier=&source_identifier;
 							set_grid_values_data.source_element_point_number=
 								element_point_viewer->element_point_number;
@@ -541,7 +546,6 @@ Furthermore, if the <element_point_viewer>
 								 element points are not grid points */
 							set_grid_values_data.number_of_points = 0;
 							set_grid_values_data.number_of_points_set = 0;
-							FE_region_begin_change(element_point_viewer->fe_region);
 							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
 								Element_point_ranges_set_grid_values,
 								(void *)&set_grid_values_data,element_point_ranges_list);
@@ -551,7 +555,9 @@ Furthermore, if the <element_point_viewer>
 									"Values only set at %d element locations out of %d specified.",
 									set_grid_values_data.number_of_points_set, set_grid_values_data.number_of_points);
 							}
-							FE_region_end_change(element_point_viewer->fe_region);
+							Cmiss_field_cache_destroy(&field_cache);
+							Cmiss_field_module_end_change(field_module);
+							Cmiss_field_module_destroy(&field_module);
 						}
 						if (!return_code)
 						{
@@ -733,11 +739,11 @@ Ensures xi is correct for the currently selected element point, if any.
 				element_point_viewer->element_point_identifier.xi_discretization_mode,
 				element_point_viewer->element_point_identifier.number_in_xi,
 				element_point_viewer->element_point_identifier.exact_xi,
+				(Cmiss_field_cache_id)0,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
 				element_point_viewer->element_point_number,
-				element_point_viewer->xi, Time_object_get_current_time(
-				element_point_viewer->time_object));
+				element_point_viewer->xi);
 		}
 		else
 		{
@@ -1037,6 +1043,60 @@ DESCRIPTION :
 	LEAVE;
 	return(return_code);
 } /* element_point_viewer_time_change_callback */	
+
+/***************************************************************************//**
+ * Convenience function for evaluating field or field component as string.
+ * @param component_number  From 0 to field->number_of_components or -1 for all.
+ */
+static char *element_point_viewer_get_field_string(struct Element_point_viewer *element_point_viewer,
+	 Computed_field *field, int component_number)
+{
+	char *value_string = 0;
+	FE_value time, *xi;
+	struct FE_element *element,*top_level_element;
+
+	int number_of_components = Computed_field_get_number_of_components(field);
+	if (element_point_viewer &&
+		(element = element_point_viewer->element_point_identifier.element) &&
+		(top_level_element = element_point_viewer->element_point_identifier.top_level_element) &&
+		(xi = element_point_viewer->xi) &&
+		(component_number < number_of_components))
+	{
+		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+		time = Time_object_get_current_time(element_point_viewer->time_object);
+		Cmiss_field_cache_set_time(field_cache, time);
+		int element_dimension = Cmiss_element_get_dimension(element);
+		Cmiss_field_cache_set_mesh_location_with_parent(field_cache, element, element_dimension, xi, top_level_element);
+		if ((component_number < 0) || (1 == number_of_components))
+		{
+			value_string = Cmiss_field_evaluate_string(field, field_cache);
+		}
+		else
+		{
+			FE_value *values = new FE_value[number_of_components];
+			if (Cmiss_field_evaluate_real(field, field_cache, number_of_components, values))
+			{
+				char tmp[50];
+				sprintf(tmp, "%g", values[component_number]);
+				value_string = duplicate_string(tmp);
+			}
+		}
+		Cmiss_field_cache_destroy(&field_cache);
+		Cmiss_field_module_destroy(&field_module);
+		if (!value_string)
+		{
+			display_message(ERROR_MESSAGE,
+				"element_point_viewer_get_field_string.  Could not get component as string");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"element_point_viewer_get_field_string.  Invalid argument(s)");
+	}
+	return (value_string);
+}
 
 class wxElementPointViewer : public wxFrame
 {	
@@ -1774,148 +1834,145 @@ Called when the user has changed the data in the text widget.  Processes the
 data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
-	 char *field_value_string,*value_string;
-	 FE_value time,value,*values,*xi;
-	 int dimension,element_point_number,i,int_value,*int_values,
-			number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-			number_of_grid_values,return_code;
-	 struct FE_element *element,*top_level_element;
-	 struct FE_field *fe_field;
+	char *field_value_string,*value_string;
+	FE_value time,value,*values,*xi;
+	int dimension,element_point_number,i,int_value,*int_values,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		number_of_grid_values,return_code;
+	struct FE_element *element,*top_level_element;
+	struct FE_field *fe_field;
 
-	 if ((element_point_field_viewer) &&
-			(element=element_point_field_viewer->element_point_identifier.element)&&
-			(top_level_element=
-				 element_point_field_viewer->element_point_identifier.top_level_element)&&
+	int number_of_components = Cmiss_field_get_number_of_components(field);
+	if ((element_point_field_viewer) &&
+		(element=element_point_field_viewer->element_point_identifier.element)&&
+		(top_level_element=
+			element_point_field_viewer->element_point_identifier.top_level_element)&&
 			(xi=element_point_field_viewer->xi)&&
 			(field)&&
-			(0<=component_number)&&
-			(element_point_viewer->current_field=field) &&
-			(component_number<Computed_field_get_number_of_components(field)))
-	 {
-			time = Time_object_get_current_time(element_point_field_viewer->time_object);
-			/* get old_value_string to prevent needless updating and preserve text
+			(0 <= component_number) && (component_number < number_of_components) &&
+			(element_point_viewer->current_field=field))
+	{
+		time = Time_object_get_current_time(element_point_field_viewer->time_object);
+		/* get old_value_string to prevent needless updating and preserve text
 				 selections for cut-and-paste */
-			value_string=const_cast<char *>((textctrl->GetValue()).c_str());
-			if (value_string)
+		value_string=const_cast<char *>((textctrl->GetValue()).c_str());
+		if (value_string)
+		{
+			if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
+				element_point_identifier.xi_discretization_mode)&&
+				Computed_field_get_native_discretization_in_element(field,element,
+					number_in_xi))
 			{
-				 if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
-							 element_point_identifier.xi_discretization_mode)&&
-						Computed_field_get_native_discretization_in_element(field,element,
-							 number_in_xi))
-				 {
-						/* get the number of values that are stored in the grid */
-						dimension=get_FE_element_dimension(element);
-						number_of_grid_values=1;
-						for (i=0;i<dimension;i++)
-						{
-							 number_of_grid_values *= (number_in_xi[i]+1);
-						}
-						element_point_number=element_point_field_viewer->element_point_number;
-						/* check the element_point_number is valid */
-						if ((0<=element_point_number)&&
-							 (element_point_number<number_of_grid_values))
-						{
-							 return_code=0;
-							 if (Computed_field_is_type_finite_element(field)&&
-									Computed_field_get_type_finite_element(field,&fe_field)&&
-									(INT_VALUE==get_FE_field_value_type(fe_field)))
-							 {
-									/* handle integer value_type separately to avoid inaccuracies of
+				/* get the number of values that are stored in the grid */
+				dimension=get_FE_element_dimension(element);
+				number_of_grid_values=1;
+				for (i=0;i<dimension;i++)
+				{
+					number_of_grid_values *= (number_in_xi[i]+1);
+				}
+				element_point_number=element_point_field_viewer->element_point_number;
+				/* check the element_point_number is valid */
+				if ((0<=element_point_number)&&
+					(element_point_number<number_of_grid_values))
+				{
+					return_code=0;
+					if (Computed_field_is_type_finite_element(field)&&
+						Computed_field_get_type_finite_element(field,&fe_field)&&
+						(INT_VALUE==get_FE_field_value_type(fe_field)))
+					{
+						/* handle integer value_type separately to avoid inaccuracies of
 										 real->integer conversion */
-									if (1==sscanf(value_string,"%d",&int_value))
-									{
-										 if (get_FE_element_field_component_grid_int_values(element,
-													 fe_field,component_number,&int_values))
-										 {
-												/* change the value for this component */
-												int_values[element_point_number]=int_value;
-												return_code=set_FE_element_field_component_grid_int_values(
-													 element,fe_field,component_number,int_values);
-												DEALLOCATE(int_values);
-										 }
-									}
-							 }
-							 else
-							 {
-								  if (1==sscanf(value_string,FE_VALUE_INPUT_STRING,&value))
-									{
-										 if (ALLOCATE(values, FE_value, 
-													 Computed_field_get_number_of_components(field)))
-										 {
-												if (Computed_field_evaluate_in_element(
-															 field, element, xi, time, 
-															 /*top_level*/(struct FE_element *)NULL,
-															 values, /*derivative*/(FE_value *)NULL))
-												{
-													 values[component_number] = value;
-													 return_code=Computed_field_set_values_in_element(
-															field, element, xi, time, values);
-												}
-												else
-												{
-													 display_message(ERROR_MESSAGE,
-															"element_point_field_viewer_value_CB.  "
-															"Unable to evaluate field component values");
-												}
-												DEALLOCATE(values);
-										 }
-										 else
-										 {
-												display_message(ERROR_MESSAGE,
-													 "element_point_field_viewer_value_CB.  "
-													 "Unable to allocate temporary storage.");
-										 }
-										 Computed_field_clear_cache(field);
-									}
-							 }
-							 if (return_code)
-							 {
-									/* add this field component to the modified list */
-									Field_value_index_ranges_list_add_field_value_index(
-										 element_point_field_viewer->modified_field_components,
-										 field,component_number);
-							 }
-						}
-						else
+						if (1==sscanf(value_string,"%d",&int_value))
 						{
-							 display_message(ERROR_MESSAGE,
-									"element_point_viewer_value_CB.  "
-									"element_point_number out of range");
+							if (get_FE_element_field_component_grid_int_values(element,
+								fe_field,component_number,&int_values))
+							{
+								/* change the value for this component */
+								int_values[element_point_number]=int_value;
+								return_code=set_FE_element_field_component_grid_int_values(
+									element,fe_field,component_number,int_values);
+								DEALLOCATE(int_values);
+							}
 						}
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,"element_point_field_viewer_value_CB.  "
-							 "Cannot set values for non-grid-based field");
-				 }
-			}
-			/* redisplay the actual value for the field component */
-			field_value_string=Computed_field_evaluate_as_string_in_element(
-				field,component_number,element,xi,time,top_level_element);
-			if (field_value_string)
-			{
-				 /* only set string from field if different from that shown */
-				 if (strcmp(field_value_string,value_string))
-				 {
-						textctrl->SetValue(field_value_string);
-				 }
-				 DEALLOCATE(field_value_string);
+					}
+					else
+					{
+						if (1==sscanf(value_string,FE_VALUE_INPUT_STRING,&value))
+						{
+							if (ALLOCATE(values, FE_value, number_of_components))
+							{
+								Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+								Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+								if (Cmiss_field_cache_set_time(field_cache, time) &&
+									Cmiss_field_cache_set_mesh_location(field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
+									Cmiss_field_evaluate_real(field, field_cache, number_of_components, values))
+								{
+									values[component_number] = value;
+									return_code = Cmiss_field_assign_real(field, field_cache, number_of_components, values);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"ElementPointViewerTextEntered.  "
+										"Unable to evaluate field component values");
+								}
+								DEALLOCATE(values);
+								Cmiss_field_cache_destroy(&field_cache);
+								Cmiss_field_module_destroy(&field_module);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"ElementPointViewerTextEntered.  "
+									"Unable to allocate temporary storage.");
+							}
+						}
+					}
+					if (return_code)
+					{
+						/* add this field component to the modified list */
+						Field_value_index_ranges_list_add_field_value_index(
+							element_point_field_viewer->modified_field_components,
+							field,component_number);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"ElementPointViewerTextEntered.  "
+						"element_point_number out of range");
+				}
 			}
 			else
 			{
-				 display_message(ERROR_MESSAGE,
-						"element_point_viewer_value_CB.  "
-						"Could not get component as string");
+				display_message(ERROR_MESSAGE,"ElementPointViewerTextEntered.  "
+					"Cannot set values for non-grid-based field");
 			}
-			Computed_field_clear_cache(field);
-	 }
-	 else
-	 {
+		}
+		/* redisplay the actual value for the field component */
+		field_value_string = element_point_viewer_get_field_string(
+			element_point_viewer, field, component_number);
+		if (field_value_string)
+		{
+			/* only set string from field if different from that shown */
+			if (strcmp(field_value_string,value_string))
+			{
+				textctrl->SetValue(field_value_string);
+			}
+			DEALLOCATE(field_value_string);
+		}
+		else
+		{
 			display_message(ERROR_MESSAGE,
-				 "element_point_viewer_value_CB.  Invalid argument(s)");
-	 }
-
-} /* element_point_field_viewer_value_CB */
+				"ElementPointViewerTextEntered.  Could not get component as string");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ElementPointViewerTextEntered.  Invalid argument(s)");
+	}
+}
 
 int set_element_selection(Element_point_viewer *element_point_viewer)
 {
@@ -2001,50 +2058,6 @@ public:
 
 };
 
-char * element_point_viewer_update_value(struct Element_point_viewer *element_point_viewer, 
-	 Computed_field *field, int component_number)
-/*******************************************************************************
-LAST MODIFIED : 30 June 2000
-
-DESCRIPTION :
-Updates the value on the text ctrl.
-==============================================================================*/
-{
-	char *value_string = 0;
-	FE_value time, *xi;
-	int number_of_components;
-	struct FE_element *element,*top_level_element;
-	struct Field_value_index_ranges *modified_ranges;
-	
-	ENTER(element_point_viewer_update_value);
-	if (element_point_viewer&&(element=element_point_viewer->element_point_identifier.element)&&
-		(top_level_element=
-			element_point_viewer->element_point_identifier.top_level_element)&&
-		(xi=element_point_viewer->xi))
-	{
-		modified_ranges=FIND_BY_IDENTIFIER_IN_LIST(Field_value_index_ranges,field)(
-			field,element_point_viewer->modified_field_components);
-		number_of_components=Computed_field_get_number_of_components(field);
-		time = Time_object_get_current_time(element_point_viewer->time_object);
-		if (!(value_string=Computed_field_evaluate_as_string_in_element(
-						 field,component_number,element,xi,time,top_level_element)))
-		{
-			 value_string = NULL;
-			 display_message(ERROR_MESSAGE,
-					"element_point_viewer_update_value.  "
-					"Could not get component as string");
-		}
-		Computed_field_clear_cache(field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_point_viewer_update_values.  Invalid argument(s)");
-	}
-	return(value_string);
-	LEAVE;
-} /* element_point_field_viewer_widget_update_values */
-
 int element_point_viewer_add_textctrl(int editable, struct Element_point_viewer *element_point_viewer, 
 	 Computed_field *field, int component_number)
 /*******************************************************************************
@@ -2057,7 +2070,7 @@ Add textctrl box onto the viewer.
 	 char *temp_string;
 	 wxElementPointViewerTextCtrl *element_point_viewer_text = 
 			new wxElementPointViewerTextCtrl(element_point_viewer, field, component_number);
-	 temp_string = element_point_viewer_update_value(element_point_viewer, field, component_number);
+	 temp_string = element_point_viewer_get_field_string(element_point_viewer, field, component_number);
 	 if (temp_string)
 	 {
 			if (editable)
@@ -2598,10 +2611,10 @@ pass unmanaged elements in the element_point_identifier to this widget.
 					 element_point_identifier->xi_discretization_mode,
 					 element_point_identifier->number_in_xi,
 					 element_point_identifier->exact_xi,
+					 (Cmiss_field_cache_id)0,
 					 /*coordinate_field*/(struct Computed_field *)NULL,
 					 /*density_field*/(struct Computed_field *)NULL,
-					 element_point_number, element_point_viewer->xi,
-					 /*time*/0);
+					 element_point_number, element_point_viewer->xi);
 		 }
 		 else
 		 {
@@ -2836,7 +2849,6 @@ the field value, otherwise N/A.
 ==============================================================================*/
 {
 	char *field_value_string,*value_string;
-	FE_value time;
 	int is_sensitive,return_code;
 	struct Computed_field *grid_field;
 	struct FE_element *element,*top_level_element;
@@ -2855,10 +2867,7 @@ the field value, otherwise N/A.
 			if (element && top_level_element && grid_field &&
 				Computed_field_is_defined_in_element(grid_field,element))
 			{
-				time = Time_object_get_current_time(element_point_viewer->time_object);
-				field_value_string=Computed_field_evaluate_as_string_in_element(
-					grid_field,/*component_number*/-1,element,
-					element_point_viewer->xi,time,top_level_element);
+				field_value_string = element_point_viewer_get_field_string(element_point_viewer, grid_field, /*component_number*/-1);
 				if (field_value_string)
 				{
 					/* only set string from field if different from that shown */
@@ -2875,7 +2884,6 @@ the field value, otherwise N/A.
 						"Could not evaluate field");
 					element_point_viewer->gridvaluetextctrl->SetValue("ERROR");
 				}
-				Computed_field_clear_cache(grid_field);
 				is_sensitive=1;
 			}
 			else

@@ -91,6 +91,183 @@ DESCRIPTION :
 
 namespace {
 
+/***************************************************************************//**
+ * Establishes the FE_element_field values necessary for evaluating field in
+ * element at time, inherited from optional top_level_element. Uses existing
+ * values in cache if nothing changed.
+ * @param calculate_derivatives  Controls whether basis functions for
+ * derivatives are also evaluated.
+ * @param differential_order  Optional order to differentiate monomials by.
+ * @param differential_xi_indices  Which xi indices to differentiate.
+ */
+int calculate_FE_element_field_values_for_element(
+	LIST(FE_element_field_values) *field_values_cache,
+	FE_element_field_values* &fe_element_field_values,
+	FE_field *fe_field, int calculate_derivatives, struct FE_element *element,
+	FE_value time, struct FE_element *top_level_element, int differential_order = 0,
+	int *differential_xi_indices = 0)
+{
+	int return_code = 1;
+	if (field_values_cache && fe_field && element)
+	{
+		/* ensure we have FE_element_field_values for element, with
+			 derivatives_calculated if requested */
+		if ((!fe_element_field_values) ||
+			(!FE_element_field_values_are_for_element_and_time(
+				fe_element_field_values, element, time, top_level_element)) ||
+			(calculate_derivatives &&
+				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+		{
+			int need_update = 0;
+			int need_to_add_to_list = 0;
+			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
+				FE_element_field_values, element)(element, field_values_cache)))
+			{
+				need_update = 1;
+				fe_element_field_values = CREATE(FE_element_field_values)();
+				if (fe_element_field_values)
+				{
+					need_to_add_to_list = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+			else
+			{
+				if ((!FE_element_field_values_are_for_element_and_time(
+						 fe_element_field_values,element,time,top_level_element))||
+					(calculate_derivatives&&
+						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+				{
+					need_update = 1;
+					clear_FE_element_field_values(fe_element_field_values);
+				}
+			}
+			if (return_code && need_update)
+			{
+				/* note that FE_element_field_values accesses the element */
+				if (calculate_FE_element_field_values(element,fe_field,
+						time,calculate_derivatives,fe_element_field_values,
+						top_level_element))
+				{
+
+					for (int i = 0 ; i < differential_order ; i++)
+					{
+						FE_element_field_values_differentiate(fe_element_field_values,
+							differential_xi_indices[i]);
+					}
+
+					if (need_to_add_to_list)
+					{
+						/* Set a cache size limit */
+						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
+						{
+							REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)
+								(field_values_cache);
+						}
+						return_code = ADD_OBJECT_TO_LIST(FE_element_field_values)(
+							fe_element_field_values, field_values_cache);
+					}
+				}
+				else
+				{
+					/* clear element to indicate that values are clear */
+					clear_FE_element_field_values(fe_element_field_values);
+					return_code=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+class FiniteElementRealFieldValueCache : public RealFieldValueCache
+{
+public:
+	FE_element_field_values* fe_element_field_values; // cache for a single element at one time
+
+	/* Keep a cache of FE_element_field_values as calculation is expensive */
+	LIST(FE_element_field_values) *field_values_cache;
+
+	FiniteElementRealFieldValueCache(int componentCount) :
+		RealFieldValueCache(componentCount),
+		fe_element_field_values(0),
+		field_values_cache(CREATE(LIST(FE_element_field_values))())
+	{
+	}
+
+	virtual ~FiniteElementRealFieldValueCache()
+	{
+		DESTROY(LIST(FE_element_field_values))(&field_values_cache);
+	}
+
+	virtual void clear()
+	{
+		REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)(field_values_cache);
+		// Following was a pointer to an object just destroyed, so must clear
+		fe_element_field_values = (FE_element_field_values *)NULL;
+		RealFieldValueCache::clear();
+	}
+
+	static FiniteElementRealFieldValueCache* cast(FieldValueCache* valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<FiniteElementRealFieldValueCache*>(valueCache);
+   }
+
+	static FiniteElementRealFieldValueCache& cast(FieldValueCache& valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<FiniteElementRealFieldValueCache&>(valueCache);
+   }
+
+};
+
+// FE_element_field_values are needed to evaluate indexed string FE_fields on elements
+class FiniteElementStringFieldValueCache : public StringFieldValueCache
+{
+public:
+	FE_element_field_values* fe_element_field_values; // cache for a single element at one time
+
+	/* Keep a cache of FE_element_field_values as calculation is expensive */
+	LIST(FE_element_field_values) *field_values_cache;
+
+	FiniteElementStringFieldValueCache() :
+		StringFieldValueCache(),
+		fe_element_field_values(0),
+		field_values_cache(CREATE(LIST(FE_element_field_values))())
+	{
+	}
+
+	virtual ~FiniteElementStringFieldValueCache()
+	{
+		DESTROY(LIST(FE_element_field_values))(&field_values_cache);
+	}
+
+	virtual void clear()
+	{
+		REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)(field_values_cache);
+		// Following was a pointer to an object just destroyed, so must clear
+		fe_element_field_values = (FE_element_field_values *)NULL;
+		StringFieldValueCache::clear();
+	}
+
+	static FiniteElementStringFieldValueCache* cast(FieldValueCache* valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<FiniteElementStringFieldValueCache*>(valueCache);
+   }
+
+	static FiniteElementStringFieldValueCache& cast(FieldValueCache& valueCache)
+   {
+		return FIELD_VALUE_CACHE_CAST<FiniteElementStringFieldValueCache&>(valueCache);
+   }
+
+};
+
 char computed_field_finite_element_type_string[] = "finite_element";
 
 class Computed_field_finite_element : public Computed_field_core
@@ -98,21 +275,12 @@ class Computed_field_finite_element : public Computed_field_core
 public:
 	FE_field* fe_field;
 
-private:
-	FE_element_field_values* fe_element_field_values;
-	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
-		 Computed_field_finite_element::not_in_use */
-
-	/* Keep a cache of FE_element_field_values as calculation is expensive */
-	LIST(FE_element_field_values) *field_values_cache;
-
 public:
-	Computed_field_finite_element(FE_field *fe_field) : Computed_field_core(),
+	Computed_field_finite_element(FE_field *fe_field) :
+		Computed_field_core(),
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
 		FE_field_add_wrapper(fe_field);
-		fe_element_field_values = (FE_element_field_values*)NULL;
-		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
 
 	virtual ~Computed_field_finite_element();
@@ -127,15 +295,29 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		switch (value_type)
+		{
+			case ELEMENT_XI_VALUE:
+				return new MeshLocationFieldValueCache();
+			case STRING_VALUE:
+			case URL_VALUE:
+				return new FiniteElementStringFieldValueCache();
+			default:
+				break;
+		}
+		return new FiniteElementRealFieldValueCache(field->number_of_components);
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int clear_cache();
-
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_multiple_times();
 
@@ -143,24 +325,16 @@ private:
 
 	int not_in_use();
 
-	int calculate_FE_element_field_values_for_element(
-		int calculate_derivatives, struct FE_element *element,
-		FE_value time, struct FE_element *top_level_element);
+	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/);
 
-	virtual int set_mesh_location_value(Field_location* location, Cmiss_element_id element, const FE_value *xi);
-
-	int set_string_at_location(Field_location* location, const char *string_value);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
 
 	virtual void propagate_coordinate_system()
 	{
 		set_FE_field_coordinate_system(fe_field, &(field->coordinate_system));
 	}
-
-	virtual int make_string_cache(int component_number = -1);
-
-	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const;
 
 	int get_native_discretization_in_element(
 		struct FE_element *element,int *number_in_xi);
@@ -298,42 +472,6 @@ Copy the type specific data used by this type.
 	return (core);
 } /* Computed_field_finite_element::copy */
 
-int Computed_field_finite_element::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_finite_element::clear_cache_type_specific);
-	if (field)
-	{
-		if(fe_element_field_values)
-		{
-			clear_FE_element_field_values(fe_element_field_values);
-		}
-		if (field_values_cache)
-		{
-			DESTROY(LIST(FE_element_field_values))(&field_values_cache);
-		}
-		/* These are owned by the list */
-		fe_element_field_values = (FE_element_field_values *)NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::clear_cache_type_specific(.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::clear_cache_type_specific( */
-
 int Computed_field_finite_element::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -359,46 +497,20 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_finite_element::compare */
 
-int Computed_field_finite_element::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+bool Computed_field_finite_element::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
-
-	ENTER(Computed_field_finite_element::is_defined_at_location);
-	if (field && location && fe_field)
+	Field_element_xi_location *element_xi_location;
+	Field_node_location *node_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return_code = 0;
-
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
-		{
-			FE_element* element = element_xi_location->get_element();
-
-			return_code = FE_field_is_defined_in_element(fe_field,element);
-		}
-		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
-		{
-			FE_node *node = node_location->get_node();
-
-			return_code = FE_field_is_defined_at_node(fe_field,node);
-		}
+		return (0 != FE_field_is_defined_in_element(fe_field, element_xi_location->get_element()));
 	}
-	else
+	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::is_defined_at_location.  Invalid argument(s)");
-		return_code=0;
+		return (0 != FE_field_is_defined_at_node(fe_field, node_location->get_node()));
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::is_defined_at_location */
+	return false;
+}
 
 int Computed_field_finite_element::has_multiple_times()
 /*******************************************************************************
@@ -497,616 +609,435 @@ The FE_field must also not be in use.
 	return (return_code);
 } /* Computed_field_finite_element::not_in_use */
 
-int Computed_field_finite_element::calculate_FE_element_field_values_for_element(
-	int calculate_derivatives,
-	struct FE_element *element,FE_value time,struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Establishes the FE_element_field values necessary for evaluating <field>, which
-must be of type COMPUTED_FIELD_FINITE_ELEMENT. <calculate_derivatives> flag
-controls whether basis functions for derivatives are also evaluated. If <field>
-is already set up in the correct way, does nothing.
-==============================================================================*/
+int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int need_to_add_to_list, need_update, return_code;
-
-	ENTER(Computed_field_finite_element::calculate_FE_element_field_values_for_element);
-	if (field&&element)
+	int return_code = 0;
+	enum Value_type value_type = get_FE_field_value_type(fe_field);
+	switch (value_type)
 	{
-		return_code=1;
-		/* clear the cache if values already cached for a node */
-		if (field->node)
+		case ELEMENT_XI_VALUE:
 		{
-			Computed_field_clear_cache(field);
-		}
-		/* ensure we have FE_element_field_values for element, with
-			 derivatives_calculated if requested */
-		if ((!fe_element_field_values)||
-			(!FE_element_field_values_are_for_element_and_time(
-				fe_element_field_values,element,time,top_level_element))||
-			(calculate_derivatives&&
-				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+			Field_node_location *node_location;
+			if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+			{
+				MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
+				// can only have 1 component; can only be evaluated at node so assume node location
+				Cmiss_element_id element = 0;
+				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				return_code = get_FE_nodal_element_xi_value(node_location->get_node(), fe_field, /*component_number*/0,
+					/*version_number*/0, FE_NODAL_VALUE, &element, xi) && element;
+				if (return_code)
+				{
+					meshLocationValueCache.setMeshLocation(element, xi);
+				}
+			}
+		} break;
+		case STRING_VALUE:
+		case URL_VALUE:
 		{
-			need_update = 0;
-			need_to_add_to_list = 0;
-			if (!field_values_cache)
+			FiniteElementStringFieldValueCache& feStringValueCache = FiniteElementStringFieldValueCache::cast(inValueCache);
+			if (feStringValueCache.stringValue)
 			{
-				field_values_cache = CREATE(LIST(FE_element_field_values))();
+				DEALLOCATE(feStringValueCache.stringValue);
 			}
-			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
-						FE_element_field_values, element)(element, field_values_cache)))
+			Field_element_xi_location* element_xi_location;
+			Field_node_location *node_location;
+			if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 			{
-				need_update = 1;
-				fe_element_field_values = CREATE(FE_element_field_values)();
-				if (fe_element_field_values)
-				{
-					need_to_add_to_list = 1;
-				}
-				else
-				{
-					return_code=0;
-				}
+				// can only have 1 component
+				return_code = get_FE_nodal_value_as_string(node_location->get_node(), fe_field,
+					/*component_number*/0, /*version_number*/0, /*nodal_value_type*/FE_NODAL_VALUE,
+					/*ignored*/cache.getTime(), &(feStringValueCache.stringValue));
 			}
-			else
+			else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 			{
-				if ((!FE_element_field_values_are_for_element_and_time(
-						 fe_element_field_values,element,time,top_level_element))||
-					(calculate_derivatives&&
-						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+				Cmiss_element_id element = element_xi_location->get_element();
+				Cmiss_element_id top_level_element = element_xi_location->get_top_level_element();
+				FE_value time = element_xi_location->get_time();
+				const FE_value* xi = element_xi_location->get_xi();
+
+				return_code = calculate_FE_element_field_values_for_element(
+					feStringValueCache.field_values_cache, feStringValueCache.fe_element_field_values,
+					fe_field, /*number_of_derivatives*/0, element, time, top_level_element);
+				if (return_code)
 				{
-					need_update = 1;
-					clear_FE_element_field_values(fe_element_field_values);
+					return_code = calculate_FE_element_field_as_string(-1,
+						feStringValueCache.fe_element_field_values, xi, &(feStringValueCache.stringValue));
 				}
 			}
-			if (return_code && need_update)
-			{
-				/* note that FE_element_field_values accesses the element */
-				if (calculate_FE_element_field_values(element,fe_field,
-						time,calculate_derivatives,fe_element_field_values,
-						top_level_element))
-				{
-					if (need_to_add_to_list)
-					{
-						/* Set a cache size limit */
-						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
-						{
-							REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)
-								(field_values_cache);
-						}
-						return_code = ADD_OBJECT_TO_LIST(FE_element_field_values)(
-							fe_element_field_values, field_values_cache);
-					}
-				}
-				else
-				{
-					/* clear element to indicate that values are clear */
-					clear_FE_element_field_values(fe_element_field_values);
-					return_code=0;
-				}
-			 
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::calculate_FE_element_field_values_for_element.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::calculate_FE_element_field_values_for_element */
-
-int Computed_field_finite_element::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int error, i, *int_values, return_code;
-
-	ENTER(Computed_field_finite_element::evaluate_cache_at_location);
-	if (field && location)
-	{
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
+		} break;
+		default:
 		{
-			FE_element* element = element_xi_location->get_element();
- 			FE_element* top_level_element = element_xi_location->get_top_level_element();
-			FE_value time = element_xi_location->get_time();
-			const FE_value* xi = element_xi_location->get_xi();
-			int number_of_derivatives = location->get_number_of_derivatives();
-
-			/* 1. Precalculate any source fields that this field depends on.
-				For type COMPUTED_FIELD_FINITE_ELEMENT, this means getting
-				FE_element_field_values.*/
-			return_code=calculate_FE_element_field_values_for_element(
-				(0<number_of_derivatives),element,time,top_level_element);
-			if (return_code)
+			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
+			Field_element_xi_location* element_xi_location;
+			Field_node_location *node_location;
+			if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 			{
-				/* 2. Calculate the field */
-				value_type=get_FE_field_value_type(fe_field);
-				/* component number -1 = calculate all components */
-				switch (value_type)
+				Cmiss_element_id element = element_xi_location->get_element();
+				Cmiss_element_id top_level_element = element_xi_location->get_top_level_element();
+				FE_value time = element_xi_location->get_time();
+				const FE_value* xi = element_xi_location->get_xi();
+				int number_of_derivatives = element_xi_location->get_number_of_derivatives();
+
+				return_code = calculate_FE_element_field_values_for_element(
+					feValueCache.field_values_cache, feValueCache.fe_element_field_values,
+					fe_field, (0 < number_of_derivatives), element, time, top_level_element);
+				if (return_code)
 				{
-					case FE_VALUE_VALUE:
-					case SHORT_VALUE:
+					/* component number -1 = calculate all components */
+					switch (value_type)
 					{
-						if (number_of_derivatives)
+						case FE_VALUE_VALUE:
+						case SHORT_VALUE:
 						{
-							return_code=calculate_FE_element_field(-1,
-								fe_element_field_values,xi,field->values,
-								field->derivatives);
-							field->derivatives_valid = (0<number_of_derivatives);
-						}
-						else
-						{
-							return_code=calculate_FE_element_field(-1,
-								fe_element_field_values,xi,field->values,
-								(FE_value *)NULL);
-						}
-					} break;
-					case INT_VALUE:
-					{
-						/* no derivatives for this value_type */
-						field->derivatives_valid=0;
-						if (number_of_derivatives)
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_finite_element::evaluate_cache_at_location.  "
-								"Derivatives not defined for integer fields");
-							return_code=0;
-						}
-						else
-						{
-							if (ALLOCATE(int_values,int,field->number_of_components))
+							if (number_of_derivatives)
 							{
-								return_code=calculate_FE_element_field_int_values(-1,
-									fe_element_field_values,xi,int_values);
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i]=(FE_value)int_values[i];
-								}
-								DEALLOCATE(int_values);
+								return_code=calculate_FE_element_field(-1,
+									feValueCache.fe_element_field_values,xi,feValueCache.values,
+									feValueCache.derivatives);
+								feValueCache.derivatives_valid = (0<number_of_derivatives);
 							}
 							else
 							{
+								return_code=calculate_FE_element_field(-1,
+									feValueCache.fe_element_field_values,xi,feValueCache.values,
+									(FE_value *)NULL);
+							}
+						} break;
+						case INT_VALUE:
+						{
+							/* no derivatives for this value_type */
+							feValueCache.derivatives_valid=0;
+							if (number_of_derivatives)
+							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_finite_element::evaluate_cache_at_location.  "
-									"Not enough memory for int_values");
+									"Computed_field_finite_element::evaluate.  "
+									"Derivatives not defined for integer fields");
 								return_code=0;
 							}
-						}
-					} break;
-					case STRING_VALUE:
-					{
-						return_code = calculate_FE_element_field_as_string(-1,
-							fe_element_field_values,xi,&(field->string_cache));
-						field->values_valid = 0;
-						field->derivatives_valid = 0;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_finite_element::evaluate_cache_at_location.  "
-							"Unsupported value type %s in finite_element field",
-							Value_type_string(value_type));
-						return_code=0;
-					} break;
-				}
-			}
-		}
-		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
-		{
-			double double_value;
-			float float_value;
-			int int_value;
-			short short_value;
-
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
-
-			/* not very efficient - should cache FE_node_field or similar */
-			return_code = 1;
-			value_type=get_FE_field_value_type(fe_field);
-			error = 0;
-			for (i=0;(i<field->number_of_components)&&return_code;i++)
-			{
-				switch (value_type)
-				{
-					case DOUBLE_VALUE:
-					{
-						return_code=get_FE_nodal_double_value(node,
-							fe_field,/*component_number*/i, /*version_number*/0,
-							/*nodal_value_type*/FE_NODAL_VALUE,time,&double_value);
-						field->values[i] = (FE_value)double_value;
-					} break;
-					case FE_VALUE_VALUE:
-					{
-						return_code=get_FE_nodal_FE_value_value(node,
-							fe_field,/*component_number*/i, /*version_number*/0,
-							/*nodal_value_type*/FE_NODAL_VALUE,time,&(field->values[i]));
-					} break;
-					case FLT_VALUE:
-					{
-						return_code=get_FE_nodal_float_value(node,fe_field,/*component_number*/i, 
-							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time,&float_value);
-						field->values[i] = (FE_value)float_value;
-					} break;
-					case INT_VALUE:
-					{
-						return_code=get_FE_nodal_int_value(node,fe_field,/*component_number*/i, 
-							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time,&int_value);
-						field->values[i] = (FE_value)int_value;
-					} break;
-					case SHORT_VALUE:
-					{
-						return_code=get_FE_nodal_short_value(node,fe_field,/*component_number*/i, 
-							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time,&short_value);
-						field->values[i] = (FE_value)short_value;
-					} break;
-					case ELEMENT_XI_VALUE:
-					{
-						// don't cache the value as it is relatively cheap to extract from node
-						return_code = FE_field_is_defined_at_node(fe_field, node);
-						field->values_valid = 0;
-					} break;
-  					case STRING_VALUE:
-					case URL_VALUE:
-					{
-						// can only have 1 component
-						return_code = get_FE_nodal_value_as_string(node,fe_field,
-							/*component_number*/i,
-							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time, &(field->string_cache));
-						if (return_code && (!field->string_cache))
-						{
-							field->string_cache = duplicate_string("");
-						}
-						field->values_valid = 0;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_finite_element::evaluate_cache_at_location.  "
-							"Unsupported value type %s in finite_element field",
-							Value_type_string(value_type));
-						return_code=0;
-					} break;
-				}
-				/* No derivatives at node (at least at the moment!) */
-				field->derivatives_valid = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::evaluate_cache_at_location */
-
-int Computed_field_finite_element::set_values_at_location(
-	Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	FE_value *grid_values;
-	int element_dimension, i, j, k, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset,
-		return_code = 0;
-	struct FE_element_shape *element_shape;
-#if defined (OLD_CODE)
-	enum Value_type value_type;
-	int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		i,*int_values,j,k,number_of_points,offset,return_code;
-#endif /* defined (OLD_CODE) */
-
-	ENTER(Computed_field_finite_element::set_values_at_location);
-	if (field && location && values)
-	{
-		// avoid setting values in field if only assigning to cache
-		if (location->get_assign_to_cache())
-		{
-			return 1;
-		}
-
-		if (location->get_time() != 0)
-		{
-			display_message(WARNING_MESSAGE,
-				"Computed_field_finite_element::set_values_at_location.  "
-				"This function is not implemented for time.");
-			return_code = 0;
-		}
-
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
-		{
-			FE_element* element = element_xi_location->get_element();
-			const FE_value* xi = element_xi_location->get_xi();
-
-			element_dimension = get_FE_element_dimension(element);
-			if (FE_element_field_is_grid_based(element,fe_field))
-			{
-				return_code=1;
-				for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
-				{
-					/* ignore non-grid-based components */
-					if (get_FE_element_field_component_grid_map_number_in_xi(element,
-							fe_field, /*component_number*/k, grid_map_number_in_xi))
-					{
-						if (get_FE_element_shape(element, &element_shape) &&
-							FE_element_shape_get_indices_for_xi_location_in_cell_corners(
-								element_shape, grid_map_number_in_xi, xi, indices))
-						{
-							offset = indices[element_dimension - 1];
-							for (i = element_dimension - 2 ; i >= 0 ; i--)
+							else
 							{
-								offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
-							}
-							value_type=get_FE_field_value_type(fe_field);
-							switch (value_type)
-							{
-								case FE_VALUE_VALUE:
+								int *int_values;
+								if (ALLOCATE(int_values,int,field->number_of_components))
 								{
-									if (get_FE_element_field_component_grid_FE_value_values(element,
-											fe_field, k, &grid_values))
+									return_code=calculate_FE_element_field_int_values(-1,
+										feValueCache.fe_element_field_values,xi,int_values);
+									for (int i=0;i<field->number_of_components;i++)
 									{
-										grid_values[offset] = values[k];
-										if (!set_FE_element_field_component_grid_FE_value_values(
-												 element, fe_field, k, grid_values))
-										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_finite_element::set_values_at_location.  "
-												"Unable to set finite element grid FE_value values");
-											return_code=0;
-										}
-										DEALLOCATE(grid_values);
+										feValueCache.values[i]=(FE_value)int_values[i];
 									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_finite_element::set_values_at_location.  "
-											"Unable to get old grid FE_value values");
-										return_code=0;
-									}
-								} break;
-								case INT_VALUE:
+									DEALLOCATE(int_values);
+								}
+								else
 								{
-									if (get_FE_element_field_component_grid_int_values(element,
-											fe_field, k, &grid_int_values))
-									{
-										grid_int_values[offset] = (int)values[k];
-										if (!set_FE_element_field_component_grid_int_values(
-												 element, fe_field, k, grid_int_values))
-										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_finite_element::set_values_at_location.  "
-												"Unable to set finite element grid FE_value values");
-											return_code=0;
-										}
-										DEALLOCATE(grid_int_values);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_finite_element::set_values_at_location.  "
-											"Unable to get old grid FE_value values");
-										return_code=0;
-									}
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_finite_element::set_values_at_location.  "
-										"Unsupported value_type for finite_element field");
 									return_code=0;
-								} break;
+								}
 							}
-						}
-						else
+						} break;
+						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_finite_element::set_values_at_location.  "
-								"Element locations do not coincide with grid");
-							return_code = 0;
-						}
+								"Computed_field_finite_element::evaluate.  "
+								"Unsupported value type %s in finite_element field",
+								Value_type_string(value_type));
+							return_code=0;
+						} break;
 					}
 				}
 			}
-			else if (FE_element_field_is_standard_node_based(element, fe_field))
+			else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 			{
-				return_code=1;
-			
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_finite_element::set_values_at_location.  "
-					"Failed for field %s.",field->name,
-					Computed_field_get_type_string(field));
-			}
-		}
-		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
-		{
-			double double_value;
-			float float_value;
-			int int_value;
-			short short_value;
+				double double_value;
+				float float_value;
+				int int_value;
+				short short_value;
 
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
+				FE_node *node = node_location->get_node();
+				FE_value time = node_location->get_time();
 
-			return_code = 1;
-			value_type=get_FE_field_value_type(fe_field);
-			for (i=0;(i<field->number_of_components)&&return_code;i++)
-			{
-				/* set values all versions; to set values for selected version only,
-					use COMPUTED_FIELD_NODE_VALUE instead */
-				k=get_FE_node_field_component_number_of_versions(node,
-					fe_field,i);
-				for (j=0;(j<k)&&return_code;j++)
+				/* not very efficient - should cache FE_node_field or similar */
+				return_code = 1;
+				for (int i=0;(i<field->number_of_components)&&return_code;i++)
 				{
 					switch (value_type)
 					{
 						case DOUBLE_VALUE:
 						{
-							double_value=(double)values[i];
-							return_code=set_FE_nodal_double_value(node,fe_field,/*component_number*/i, 
-								j,/*nodal_value_type*/FE_NODAL_VALUE,time,double_value);
+							return_code=get_FE_nodal_double_value(node,
+								fe_field,/*component_number*/i, /*version_number*/0,
+								/*nodal_value_type*/FE_NODAL_VALUE,time,&double_value);
+							feValueCache.values[i] = (FE_value)double_value;
 						} break;
 						case FE_VALUE_VALUE:
 						{
-							return_code=set_FE_nodal_FE_value_value(node,fe_field,/*component_number*/i, 
-								j,/*nodal_value_type*/FE_NODAL_VALUE,time,values[i]);
+							return_code=get_FE_nodal_FE_value_value(node,
+								fe_field,/*component_number*/i, /*version_number*/0,
+								/*nodal_value_type*/FE_NODAL_VALUE,time,&(feValueCache.values[i]));
 						} break;
 						case FLT_VALUE:
 						{
-							float_value=(float)values[i];
-							return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i, 
-								j,/*nodal_value_type*/FE_NODAL_VALUE,time,float_value);
+							return_code=get_FE_nodal_float_value(node,fe_field,/*component_number*/i,
+								/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+								time,&float_value);
+							feValueCache.values[i] = (FE_value)float_value;
 						} break;
 						case INT_VALUE:
 						{
-							int_value=(int)floor(values[i]+0.5);
-							return_code=set_FE_nodal_int_value(node,fe_field,/*component_number*/i, 
-								j,/*nodal_value_type*/FE_NODAL_VALUE,time,int_value);
+							return_code=get_FE_nodal_int_value(node,fe_field,/*component_number*/i,
+								/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+								time,&int_value);
+							feValueCache.values[i] = (FE_value)int_value;
 						} break;
 						case SHORT_VALUE:
 						{
-							short_value=(short)floor(values[i]+0.5);
-							return_code=set_FE_nodal_short_value(node,fe_field,/*component_number*/i, 
-								j,/*nodal_value_type*/FE_NODAL_VALUE,time,short_value);
+							return_code=get_FE_nodal_short_value(node,fe_field,/*component_number*/i,
+								/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+								time,&short_value);
+							feValueCache.values[i] = (FE_value)short_value;
 						} break;
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_finite_element::set_values_at_location.  "
-								"Could not set finite_element field %s at node",field->name);
+								"Computed_field_finite_element::evaluate.  "
+								"Unsupported value type %s in finite_element field",
+								Value_type_string(value_type));
 							return_code=0;
 						} break;
+					}
+					/* No derivatives at node (at least at the moment!) */
+					feValueCache.derivatives_valid = 0;
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
+		} break;
+	}
+	return return_code;
+}
+
+// GRC !!! Must clear element values list, cache.
+// GRC URGENT TO DO:
+//- finite element field caches must be shared between related caches & cleared together
+enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+{
+	if (cache.assignInCacheOnly())
+	{
+		return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+	}
+	FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+	enum Value_type value_type = get_FE_field_value_type(fe_field);
+	Field_element_xi_location *element_xi_location;
+	Field_node_location *node_location;
+	element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (element_xi_location)
+	{
+		enum Value_type value_type;
+		FE_value *grid_values;
+		int element_dimension, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+			indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset;
+		struct FE_element_shape *element_shape;
+
+		FE_element* element = element_xi_location->get_element();
+		const FE_value* xi = element_xi_location->get_xi();
+
+		element_dimension = get_FE_element_dimension(element);
+		if (FE_element_field_is_grid_based(element,fe_field))
+		{
+			int return_code=1;
+			for (int k = 0 ; (k < field->number_of_components) && return_code ; k++)
+			{
+				/* ignore non-grid-based components */
+				if (get_FE_element_field_component_grid_map_number_in_xi(element,
+						fe_field, /*component_number*/k, grid_map_number_in_xi))
+				{
+					if (get_FE_element_shape(element, &element_shape) &&
+						FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+							element_shape, grid_map_number_in_xi, xi, indices))
+					{
+						offset = indices[element_dimension - 1];
+						for (int i = element_dimension - 2 ; i >= 0 ; i--)
+						{
+							offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
+						}
+						value_type=get_FE_field_value_type(fe_field);
+						switch (value_type)
+						{
+							case FE_VALUE_VALUE:
+							{
+								if (get_FE_element_field_component_grid_FE_value_values(element,
+										fe_field, k, &grid_values))
+								{
+									grid_values[offset] = valueCache.values[k];
+									if (!set_FE_element_field_component_grid_FE_value_values(
+											 element, fe_field, k, grid_values))
+									{
+										display_message(ERROR_MESSAGE,
+											"Computed_field_finite_element::assign.  "
+											"Unable to set finite element grid FE_value values");
+										return_code=0;
+									}
+									DEALLOCATE(grid_values);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_finite_element::assign.  "
+										"Unable to get old grid FE_value values");
+									return_code=0;
+								}
+							} break;
+							case INT_VALUE:
+							{
+								result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
+								if (get_FE_element_field_component_grid_int_values(element,
+										fe_field, k, &grid_int_values))
+								{
+									grid_int_values[offset] = (int)valueCache.values[k];
+									if (!set_FE_element_field_component_grid_int_values(
+											 element, fe_field, k, grid_int_values))
+									{
+										display_message(ERROR_MESSAGE,
+											"Computed_field_finite_element::assign.  "
+											"Unable to set finite element grid int values");
+										return_code=0;
+									}
+									DEALLOCATE(grid_int_values);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_finite_element::assign.  "
+										"Unable to get old grid int values");
+									return_code=0;
+								}
+							} break;
+							default:
+							{
+								return_code=0;
+							} break;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_finite_element::assign.  "
+							"Element locations do not coincide with grid");
+						return_code = 0;
 					}
 				}
 			}
 			if (!return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_finite_element::set_values_at_location.  "
-					"Could not set finite_element field %s at node",field->name);
+				result = FIELD_ASSIGNMENT_RESULT_FAIL;
 			}
 		}
-		else
+		else if (FE_element_field_is_standard_node_based(element, fe_field))
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_finite_element::set_values_at_location.  "
-				"Location type is unknown or not implemented.");
-			return_code=0;
+			result = FIELD_ASSIGNMENT_RESULT_FAIL;
+		}
+	}
+	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	{
+		FE_node *node = node_location->get_node();
+		FE_value time = node_location->get_time();
+		for (int i=0;i<field->number_of_components;i++)
+		{
+			/* set values all versions; to set values for selected version only,
+				use COMPUTED_FIELD_NODE_VALUE instead */
+			int k=get_FE_node_field_component_number_of_versions(node, fe_field, i);
+			for (int j=0; j<k; j++)
+			{
+				int return_code = 0;
+				switch (value_type)
+				{
+					case DOUBLE_VALUE:
+					{
+						double double_value=(double)valueCache.values[i];
+						return_code=set_FE_nodal_double_value(node,fe_field,/*component_number*/i,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,double_value);
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						return_code=set_FE_nodal_FE_value_value(node,fe_field,/*component_number*/i,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,valueCache.values[i]);
+					} break;
+					case FLT_VALUE:
+					{
+						float float_value=(float)valueCache.values[i];
+						return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,float_value);
+					} break;
+					case INT_VALUE:
+					{
+						result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
+						int int_value=(int)floor(valueCache.values[i]+0.5);
+						return_code=set_FE_nodal_int_value(node,fe_field,/*component_number*/i,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,int_value);
+					} break;
+					case SHORT_VALUE:
+					{
+						result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
+						short short_value=(short)floor(valueCache.values[i]+0.5);
+						return_code=set_FE_nodal_short_value(node,fe_field,/*component_number*/i,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,short_value);
+					} break;
+					default:
+					{
+					} break;
+				}
+				if (!return_code)
+					return FIELD_ASSIGNMENT_RESULT_FAIL;
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
+		result = FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
-	LEAVE;
+	if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
+	{
+		// clear finite element field cache due to DOFs changing (wasteful if data points changed):
+		valueCache.clear();
+		valueCache.derivatives_valid = 0;
+	}
+	return result;
+}
 
-	return (return_code);
-} /* Computed_field_finite_element::set_values_at_location */
-
-int Computed_field_finite_element::set_mesh_location_value(
-	Field_location* location, Cmiss_element_id element, const FE_value *xi)
+enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, MeshLocationFieldValueCache& valueCache)
 {
-	int return_code;
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (node_location &&
 		(get_FE_field_value_type(fe_field) == ELEMENT_XI_VALUE) &&
 		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
 	{
-		return_code = set_FE_nodal_element_xi_value(node_location->get_node(), fe_field,
-			/*component_number*/0, /*version*/0, FE_NODAL_VALUE, element, xi);
+		if (cache.assignInCacheOnly() ||
+			set_FE_nodal_element_xi_value(node_location->get_node(), fe_field,
+				/*component_number*/0, /*version*/0, FE_NODAL_VALUE, valueCache.element, valueCache.xi))
+		{
+			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
 };
 
-int Computed_field_finite_element::set_string_at_location(
-	Field_location* location, const char *string_value)
+enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, StringFieldValueCache& valueCache)
 {
-	int return_code;
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (node_location &&
 		(get_FE_field_value_type(fe_field) == STRING_VALUE) &&
 		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
 	{
-		return_code = set_FE_nodal_string_value(node_location->get_node(),
-			fe_field, /*component_number*/0, /*version*/0,
-			FE_NODAL_VALUE, const_cast<char *>(string_value));
+		if (cache.assignInCacheOnly() ||
+			set_FE_nodal_string_value(node_location->get_node(),
+				fe_field, /*component_number*/0, /*version*/0,
+				FE_NODAL_VALUE, const_cast<char *>(valueCache.stringValue)))
+		{
+			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-int Computed_field_finite_element::make_string_cache(int component_number)
-{
-	if (!field)
-		return 0;
-	if (field->string_cache)
-		return 1;
-	if (get_FE_field_value_type(fe_field) != ELEMENT_XI_VALUE)
-	{
-		return Computed_field_core::make_string_cache(component_number);
-	}
-	field->string_component = -1;
-	return get_FE_nodal_value_as_string(field->node, fe_field,
-		/*component_number*/0, /*version_number*/0,
-		/*nodal_value_type*/FE_NODAL_VALUE,  field->time,
-		&(field->string_cache));
-}
-
-Cmiss_element_id Computed_field_finite_element::get_mesh_location_value(FE_value *xi) const
-{
-	Cmiss_element_id element = 0;
-	// can only have 1 component; can only be evaluated at node so assume node location
-	get_FE_nodal_element_xi_value(field->node, fe_field, /*component_number*/0,
-		/*version_number*/0, FE_NODAL_VALUE, &element, xi);
-	return element;
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }
 
 int Computed_field_finite_element::get_native_discretization_in_element(
@@ -1827,80 +1758,47 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cmiss_number::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
+int Computed_field_cmiss_number::evaluate(Cmiss_field_cache& cache,
+	FieldValueCache& inValueCache)
 {
-	int element_dimension, i, return_code;
-	struct CM_element_information cm_identifier;
-
-	ENTER(Computed_field_cmiss_number::evaluate_cache_at_location);
-	if (field && location)
+	int return_code = 1;
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location *element_xi_location;
+	Field_node_location *node_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
+		FE_element* element = element_xi_location->get_element();
+		CM_element_information cm;
+		get_FE_element_identifier(element, &cm);
+		valueCache.values[0] = (FE_value)cm.number;
+		/* derivatives are always zero for this type, hence always calculated */
+		int element_dimension = get_FE_element_dimension(element);
+		for (int i = 0; i < element_dimension; i++)
 		{
-			FE_element* element = element_xi_location->get_element();
-
-			/* simply convert the element number into an FE_value */
-			if (get_FE_element_identifier(element, &cm_identifier))
-			{
-				field->values[0] = cm_identifier.number;
-				return_code = 1;
-			}
-			else
-			{
-				field->values[0] = 0;
-				return_code = 0;
-			}
-			/* derivatives are always zero for this type, hence always calculated */
-			element_dimension = get_FE_element_dimension(element);
-			for (i = 0; i < element_dimension; i++)
-			{
-				field->derivatives[i] = 0.0;
-			}
-			field->derivatives_valid = 1;
+			valueCache.derivatives[i] = 0.0;
 		}
-		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
-		{
-			FE_node *node = node_location->get_node();
-
-			/* simply convert the node number into an FE_value */
-			field->values[0]=(FE_value)get_FE_node_identifier(node);
-			field->derivatives_valid = 0;
-			return_code = 1;
-		}
-		else
-		{
-			// Location type unknown or not implemented
-			return_code = 0;
-		}
+		valueCache.derivatives_valid = 1;
+	}
+	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	{
+		FE_node *node = node_location->get_node();
+		valueCache.values[0] = (FE_value)get_FE_node_identifier(node);
+		valueCache.derivatives_valid = 0;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cmiss_number::evaluate_cache_at_location.  "
-			"Invalid arguments.");
+		// Location type unknown or not implemented
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_cmiss_number::evaluate_cache_at_location */
+}
 
 int Computed_field_cmiss_number::list()
 /*******************************************************************************
@@ -2082,62 +1980,36 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_access_count::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_access_count::evaluate(Cmiss_field_cache& cache,
+	FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_access_count::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location *element_xi_location;
+	Field_node_location *node_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-
-		element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location != 0)
-		{
-			FE_element* element = element_xi_location->get_element();			
-			field->values[0] = (FE_value)FE_element_get_access_count(element);
-		}
-		else if (0 != (node_location = 
-			dynamic_cast<Field_node_location*>(location)))
-		{
-			FE_node *node = node_location->get_node();
-			field->values[0] = (FE_value)FE_node_get_access_count(node);
-		}
-		else
-		{
-			field->values[0] = 0;
-		}
-	  /* no derivatives for this type */
-	  field->derivatives_valid=0;
-	  return_code = 1;
+		FE_element* element = element_xi_location->get_element();
+		valueCache.values[0] = (FE_value)FE_element_get_access_count(element);
+	}
+	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	{
+		FE_node *node = node_location->get_node();
+		valueCache.values[0] = (FE_value)FE_node_get_access_count(node);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_access_count::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
+		valueCache.values[0] = 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_access_count::evaluate_cache_at_location */
+	valueCache.derivatives_valid = 0;
+	return 1;
+}
 
 int Computed_field_access_count::list()
 /*******************************************************************************
@@ -2266,15 +2138,21 @@ char computed_field_node_value_type_string[] = "node_value";
 class Computed_field_node_value : public Computed_field_core
 {
 public:
+	Cmiss_field_id finite_element_field;
 	struct FE_field *fe_field;
 	enum FE_nodal_value_type nodal_value_type;
 	int version_number;
 
-	Computed_field_node_value(FE_field *fe_field,
-		enum FE_nodal_value_type nodal_value_type, int version_number) : 
-		Computed_field_core(), fe_field(ACCESS(FE_field)(fe_field)),
-		nodal_value_type(nodal_value_type), version_number(version_number)
+	Computed_field_node_value(Cmiss_field_id finite_element_field,
+			enum FE_nodal_value_type nodal_value_type, int version_number) :
+		Computed_field_core(),
+		finite_element_field(Cmiss_field_access(finite_element_field)),
+		fe_field(0),
+		nodal_value_type(nodal_value_type),
+		version_number(version_number)
 	{
+		Computed_field_get_type_finite_element(finite_element_field, &fe_field);
+		ACCESS(FE_field)(fe_field);
 	};
 			
 	virtual ~Computed_field_node_value();
@@ -2298,17 +2176,17 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_numerical_components();
 
-	int set_values_at_location(Field_location* location, const FE_value *values);
+	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
 
 	int has_multiple_times();
 };
@@ -2325,11 +2203,8 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_node_value::~Computed_field_node_value);
 	if (field)
 	{
-		if (fe_field)
-		{
-			DEACCESS(FE_field)(&(fe_field));
-		}
-		
+		DEACCESS(FE_field)(&(fe_field));
+		Cmiss_field_destroy(&finite_element_field);
 	}
 	else
 	{
@@ -2350,7 +2225,7 @@ Copy the type specific data used by this type.
 ==============================================================================*/
 {
 	Computed_field_node_value* core =
-		new Computed_field_node_value(fe_field, nodal_value_type, version_number);
+		new Computed_field_node_value(finite_element_field, nodal_value_type, version_number);
 
 	return (core);
 } /* Computed_field_node_value::copy */
@@ -2382,56 +2257,28 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_node_value::compare */
 
-int Computed_field_node_value::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the fe_field
-==============================================================================*/
+bool Computed_field_node_value::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int comp_no,return_code = 0;
-
-	ENTER(Computed_field_node_value_is_defined_at_node);
-	if (field && location)
+	Field_node_location *node_location;
+	if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 	{
-		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
-		if (node_location)
+		FE_node *node = node_location->get_node();
+		if (FE_field_is_defined_at_node(fe_field, node))
 		{
-			FE_node *node = node_location->get_node();
-			
-			if (FE_field_is_defined_at_node(fe_field,node))
+			/* must ensure at least one component of version_number,
+				nodal_value_type defined at node */
+			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				/* must ensure at least one component of version_number,
-					nodal_value_type defined at node */
-				return_code=0;
-				for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
-					  comp_no++)
+				if (FE_nodal_value_version_exists(node, fe_field, /*component_number*/i,
+					version_number, nodal_value_type))
 				{
-					if (FE_nodal_value_version_exists(node,fe_field,/*component_number*/comp_no, 
-							version_number,nodal_value_type))
-					{
-						return_code=1;
-					}
+					return true;
 				}
 			}
 		}
-		else
-		{
-			return_code = 0;
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_node_value_is_defined_at_node */
+	return false;
+}
 
 int Computed_field_node_value::has_numerical_components()
 /*******************************************************************************
@@ -2458,208 +2305,146 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_value::has_numerical_components */
 
-int Computed_field_node_value::evaluate_cache_at_location(
-	Field_location *location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
+int Computed_field_node_value::evaluate(Cmiss_field_cache& cache,
+	FieldValueCache& inValueCache)
 {
-	double double_value;
-	enum Value_type value_type;
-	float float_value;
-	int i, int_value, return_code;
-	short short_value;
-
-	ENTER(Computed_field_node_value::evaluate_cache_at_location);
-	if (field && location)
+	int return_code = 1;
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	if (node_location)
 	{
-		Field_node_location *node_location =	dynamic_cast<Field_node_location*>(location);
+		FE_node *node = node_location->get_node();
+		FE_value time = node_location->get_time();
+		double double_value;
+		float float_value;
+		int i, int_value, return_code = 1;
+		short short_value;
 
-		if (node_location)
+		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		for (i=0;(i<field->number_of_components)&&return_code;i++)
 		{
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
-	
-			return_code = 1;
-			value_type=get_FE_field_value_type(fe_field);
-			for (i=0;(i<field->number_of_components)&&return_code;i++)
+			if (FE_nodal_value_version_exists(node,fe_field,/*component_number*/i,
+					version_number,nodal_value_type))
 			{
-				if (FE_nodal_value_version_exists(node,fe_field,/*component_number*/i, 
-						version_number,nodal_value_type))
+				switch (value_type)
 				{
-					switch (value_type)
+					case DOUBLE_VALUE:
 					{
-						case DOUBLE_VALUE:
-						{
-							return_code=get_FE_nodal_double_value(node,
-								fe_field,/*component_number*/i, version_number,
-								nodal_value_type,time,&double_value);
-							field->values[i] = (FE_value)double_value;
-						} break;
-						case FE_VALUE_VALUE:
-						{
-							return_code=get_FE_nodal_FE_value_value(node,
-								fe_field,/*component_number*/i, version_number,
-								nodal_value_type,time,&(field->values[i]));
-						} break;
-						case FLT_VALUE:
-						{
-							return_code=get_FE_nodal_float_value(node,
-								fe_field,/*component_number*/i, version_number,
-								nodal_value_type,time,&float_value);
-							field->values[i] = (FE_value)float_value;
-						} break;
-						case INT_VALUE:
-						{
-							return_code=get_FE_nodal_int_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,&int_value);
-							field->values[i] = (FE_value)int_value;
-						} break;
-						case SHORT_VALUE:
-						{
-							return_code=get_FE_nodal_short_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,&short_value);
-							field->values[i] = (FE_value)short_value;
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_node_value::evaluate_cache_at_location.  "
-								"Unsupported value type %s in node_value field",
-								Value_type_string(value_type));
-							return_code=0;
-						} break;
-					}
-				}
-				else
-				{
-					/* use 0 for all undefined components */
-					field->values[i]=0.0;
+						return_code=get_FE_nodal_double_value(node,
+							fe_field,/*component_number*/i, version_number,
+							nodal_value_type,time,&double_value);
+						valueCache.values[i] = (FE_value)double_value;
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						return_code=get_FE_nodal_FE_value_value(node,
+							fe_field,/*component_number*/i, version_number,
+							nodal_value_type,time,&(valueCache.values[i]));
+					} break;
+					case FLT_VALUE:
+					{
+						return_code=get_FE_nodal_float_value(node,
+							fe_field,/*component_number*/i, version_number,
+							nodal_value_type,time,&float_value);
+						valueCache.values[i] = (FE_value)float_value;
+					} break;
+					case INT_VALUE:
+					{
+						return_code=get_FE_nodal_int_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,&int_value);
+						valueCache.values[i] = (FE_value)int_value;
+					} break;
+					case SHORT_VALUE:
+					{
+						return_code=get_FE_nodal_short_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,&short_value);
+						valueCache.values[i] = (FE_value)short_value;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_node_value::evaluate.  "
+							"Unsupported value type %s in node_value field",
+							Value_type_string(value_type));
+						return_code=0;
+					} break;
 				}
 			}
-		}
-		else
-		{
-			// Only valid for Field_node_location type
-			return_code = 0;
+			else
+			{
+				/* use 0 for all undefined components */
+				valueCache.values[i]=0.0;
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value::evaluate_cache_at_location.  "
-			"Invalid arguments.");
+		// Only valid for Field_node_location type
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_node_value::evaluate_cache_at_location */
+}
 
-int Computed_field_node_value::set_values_at_location(
-	Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
-==============================================================================*/
+enum FieldAssignmentResult Computed_field_node_value::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	double double_value;
-	enum Value_type value_type;
-	float float_value;
-	int i,int_value,return_code;
-
-	ENTER(Computed_field_node_value_set_values_at_node);
-	if (field&&location&&values)
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	if (node_location)
 	{
-		// avoid setting values in field if only assigning to cache
-		if (location->get_assign_to_cache())
+		if (cache.assignInCacheOnly())
 		{
-			return 1;
+			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		}
-
-		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
-
-		if (node_location)
+		// clear finite element field cache due to DOFs changing (wasteful if data points changed):
+		finite_element_field->getValueCache(cache)->clear();
+		FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+		FE_node *node = node_location->get_node();
+		FE_value time = node_location->get_time();
+		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		for (int i=0; (i<field->number_of_components); i++)
 		{
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
-	
-			return_code=1;
-
-			value_type=get_FE_field_value_type(fe_field);
-			for (i=0;(i<field->number_of_components)&&return_code;i++)
+			/* only set nodal value/versions that exist */
+			if (FE_nodal_value_version_exists(node,fe_field,/*component_number*/i,
+					version_number,nodal_value_type))
 			{
-				/* only set nodal value/versions that exist */
-				if (FE_nodal_value_version_exists(node,fe_field,/*component_number*/i, 
-						version_number,nodal_value_type))
+				int return_code = 0;
+				switch (value_type)
 				{
-					switch (value_type)
+					case DOUBLE_VALUE:
 					{
-						case DOUBLE_VALUE:
-						{
-							double_value=(double)values[i];
-							return_code=set_FE_nodal_double_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,double_value);
-						} break;
-						case FE_VALUE_VALUE:
-						{
-							return_code=set_FE_nodal_FE_value_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,values[i]);
-						} break;
-						case FLT_VALUE:
-						{
-							float_value=(float)values[i];
-							return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,float_value);
-						} break;
-						case INT_VALUE:
-						{
-							int_value=(int)floor(values[i]+0.5);
-							return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i, 
-								version_number,nodal_value_type,time,int_value);
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_set_values_at_location.  "
-								"Could not set finite_element field %s at node",field->name);
-							return_code=0;
-						} break;
-					}
+						double double_value = (double)valueCache.values[i];
+						return_code=set_FE_nodal_double_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,double_value);
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						return_code=set_FE_nodal_FE_value_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,valueCache.values[i]);
+					} break;
+					case FLT_VALUE:
+					{
+						float float_value=(float)valueCache.values[i];
+						return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,float_value);
+					} break;
+					case INT_VALUE:
+					{
+						result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
+						int int_value=(int)floor(valueCache.values[i]+0.5);
+						return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i,
+							version_number,nodal_value_type,time,int_value);
+					} break;
+					default:
+					{
+					} break;
 				}
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_at_location.  "
-					"Could not set node_value field at node",field->name);
-				return_code=0;
+				if (!return_code)
+					return FIELD_ASSIGNMENT_RESULT_FAIL;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_node_value::set_values_at_location.  "
-				"Only valid for Field_node_location type.");
-			return_code = 0;
-		}
+		return result;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value::set_values_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_node_value::set_values_at_location */
-
+	return FIELD_ASSIGNMENT_RESULT_FAIL;
+}
 
 int Computed_field_node_value::list()
 /*******************************************************************************
@@ -2767,9 +2552,22 @@ Check the fe_field
 
 } //namespace
 
+/*****************************************************************************//**
+ * Creates a field returning the values for the given <nodal_value_type> and
+ * <version_number> of <fe_field> at a node.
+ * Makes the number of components the same as in the <fe_field>.
+ * Field automatically takes the coordinate system of the source fe_field.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param fe_field  FE_field whose nodal parameters will be extracted
+ * @param nodal_value_type  Parameter value type to extract
+ * @param version_number  Version of parameter value to extract.
+ * @return Newly created field
+ */
+
 struct Computed_field *Computed_field_create_node_value(
 	struct Cmiss_field_module *field_module,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
+	Cmiss_field_id finite_element_field, enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 {
 	char **component_names;
@@ -2777,7 +2575,9 @@ struct Computed_field *Computed_field_create_node_value(
 	struct Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_node_value);
-	if (fe_field)
+	struct FE_field *fe_field = 0;
+	if (finite_element_field && finite_element_field->isNumerical() &&
+		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field)
 	{
 		return_code=1;
 		number_of_components = get_FE_field_number_of_components(fe_field);
@@ -2803,7 +2603,7 @@ struct Computed_field *Computed_field_create_node_value(
 				/*number_of_source_fields*/0, NULL,
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_node_value(
-					fe_field, nodal_value_type, version_number));
+					finite_element_field, nodal_value_type, version_number));
 			if (field)
 			{
 				// following should be a function call
@@ -2834,7 +2634,7 @@ struct Computed_field *Computed_field_create_node_value(
 } /* Computed_field_create_node_value */
 
 int Computed_field_get_type_node_value(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
+	Cmiss_field_id *finite_element_field_address, enum FE_nodal_value_type *nodal_value_type,
 	int *version_number)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -2850,7 +2650,7 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 	ENTER(Computed_field_get_type_node_value);
 	if (field&&(core = dynamic_cast<Computed_field_node_value*>(field->core)))
 	{
-		*fe_field=core->fe_field;
+		*finite_element_field_address=core->finite_element_field;
 		*nodal_value_type=core->nodal_value_type;
 		*version_number=core->version_number;
 		return_code=1;
@@ -2892,7 +2692,6 @@ and allows its contents to be modified.
 	  "d3/ds1ds2ds3"
 	};
 	Computed_field_modify_data *field_modify;
-	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_node_value);
@@ -2900,7 +2699,7 @@ and allows its contents to be modified.
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
-		fe_field=(struct FE_field *)NULL;
+		Cmiss_field_id finite_element_field = 0;
 		nodal_value_type=FE_NODAL_UNKNOWN;
 		/* user enters version number starting at 1; field stores it as 0 */
 		version_number=1;
@@ -2908,17 +2707,21 @@ and allows its contents to be modified.
 			(computed_field_node_value_type_string ==
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_node_value(field_modify->get_field(),&fe_field,
+			return_code=Computed_field_get_type_node_value(field_modify->get_field(),&finite_element_field,
 				&nodal_value_type,&version_number);
 			version_number++;
 		}
 		if (return_code)
 		{
 			/* have ACCESS/DEACCESS because set_FE_field does */
-			if (fe_field)
+			if (finite_element_field)
 			{
-				ACCESS(FE_field)(fe_field);
+				Cmiss_field_access(finite_element_field);
 			}
+			struct Set_Computed_field_conditional_data set_fe_field_data;
+			set_fe_field_data.computed_field_manager = field_modify->get_field_manager();
+			set_fe_field_data.conditional_function = Computed_field_is_type_finite_element_iterator;
+			set_fe_field_data.conditional_function_user_data = (void *)NULL;
 			/* try to handle help first */
 			current_token=state->current_token;
 			if (current_token)
@@ -2928,9 +2731,8 @@ and allows its contents to be modified.
 				{
 					option_table=CREATE(Option_table)();
 					/* fe_field */
-					Option_table_add_set_FE_field_from_FE_region(
-						option_table, "fe_field" ,&fe_field,
-					  Cmiss_region_get_FE_region(field_modify->get_region()));
+					Option_table_add_Computed_field_conditional_entry(option_table, "fe_field",
+						&finite_element_field, &set_fe_field_data);
 					/* nodal_value_type */
 					nodal_value_type_string=nodal_value_type_strings[0];
 					Option_table_add_enumerator(option_table,
@@ -2951,13 +2753,12 @@ and allows its contents to be modified.
 				{
 					option_table=CREATE(Option_table)();
 					/* fe_field */
-					Option_table_add_set_FE_field_from_FE_region(
-						option_table, "fe_field" ,&fe_field,
-					  Cmiss_region_get_FE_region(field_modify->get_region()));
+					Option_table_add_Computed_field_conditional_entry(option_table, "fe_field",
+						&finite_element_field, &set_fe_field_data);
 					return_code=Option_table_parse(option_table,state);
 					if (return_code)
 					{
-						if (!fe_field)
+						if (!finite_element_field)
 						{
 							display_parse_state_location(state);
 							display_message(ERROR_MESSAGE,"Missing or invalid fe_field");
@@ -3036,7 +2837,7 @@ and allows its contents to be modified.
 				/* user enters version number starting at 1; field stores it as 0 */
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_node_value(field_modify->get_field_module(),
-						fe_field, nodal_value_type, version_number-1));
+						finite_element_field, nodal_value_type, version_number-1));
 			}
 			if (!return_code)
 			{
@@ -3049,9 +2850,9 @@ and allows its contents to be modified.
 						"define_Computed_field_type_node_value.  Failed");
 				}
 			}
-			if (fe_field)
+			if (finite_element_field)
 			{
-				DEACCESS(FE_field)(&fe_field);
+				Cmiss_field_destroy(&finite_element_field);
 			}
 		}
 	}
@@ -3096,13 +2897,20 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_numerical_components();
 
@@ -3118,11 +2926,9 @@ int Computed_field_embedded::compare(Computed_field_core *other_core)
 	return (field && (0 != dynamic_cast<Computed_field_embedded*>(other_core)));
 }
 
-int Computed_field_embedded::is_defined_at_location(Field_location* location)
+bool Computed_field_embedded::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	// can't just call method evaluate_cache_at_location as value cache may
-	// not be allocated yet.
-	return Computed_field_evaluate_cache_at_location(field, location);
+	return (0 != field->evaluate(cache));
 }
 
 int Computed_field_embedded::has_numerical_components()
@@ -3131,31 +2937,24 @@ int Computed_field_embedded::has_numerical_components()
 		field->source_fields[0],(void *)NULL));
 }
 
-int Computed_field_embedded::evaluate_cache_at_location(Field_location* location)
+int Computed_field_embedded::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	if (field && location)
+	// assumes mesh-location valued fields all create MeshLocationFieldValueCache
+	MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (meshLocationValueCache)
 	{
-		if (Computed_field_evaluate_cache_at_location(field->source_fields[1], location))
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
+		extraCache.setTime(cache.getTime());
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		if (sourceValueCache)
 		{
-			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-			Cmiss_element_id element = field->source_fields[1]->core->get_mesh_location_value(xi);
-			if (element)
-			{
-				Field_element_xi_location element_xi_location(element, xi, location->get_time());
-				if (Computed_field_evaluate_cache_at_location(
-					field->source_fields[0], &element_xi_location))
-				{
-					for (int i = 0; i < field->number_of_components; i++)
-					{
-						field->values[i] = field->source_fields[0]->values[i];
-					}
-					return_code = 1;
-				}
-			}
+			valueCache.copyValues(*sourceValueCache);
+			return 1;
 		}
 	}
-	return (return_code);
+	return 0;
 }
 
 int Computed_field_embedded::list()
@@ -3354,16 +3153,13 @@ class Computed_field_find_mesh_location : public Computed_field_core
 private:
 	Cmiss_mesh_id mesh;
 	enum Cmiss_field_find_mesh_location_search_mode search_mode;
-	Cmiss_element_id element_cache;
-	FE_value xi_cache[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 public:
 
 	Computed_field_find_mesh_location(Cmiss_mesh_id mesh) :
 		Computed_field_core(),
 		mesh(Cmiss_mesh_access(mesh)),
-		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT),
-		element_cache(0)
+		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT)
 	{
 	};
 
@@ -3409,24 +3205,25 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		MeshLocationFieldValueCache *valueCache = new MeshLocationFieldValueCache();
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int clear_cache();
-
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_numerical_components()
 	{
 		return 0;
 	}
-
-	virtual int make_string_cache(int component_number = -1);
-
-	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const;
 
 	virtual Cmiss_field_value_type get_value_type() const
 	{
@@ -3437,22 +3234,12 @@ private:
 
 Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
 {
-	clear_cache();
 	Cmiss_mesh_destroy(&mesh);
 }
 
 Computed_field_core* Computed_field_find_mesh_location::copy()
 {
 	return new Computed_field_find_mesh_location(mesh);
-}
-
-int Computed_field_find_mesh_location::clear_cache()
-{
-	if (element_cache)
-	{
-		Cmiss_element_destroy(&element_cache);
-	}
-	return 1;
 }
 
 int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
@@ -3466,42 +3253,33 @@ int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
 	return (return_code);
 }
 
-int Computed_field_find_mesh_location::is_defined_at_location(Field_location* location)
+bool Computed_field_find_mesh_location::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	return evaluate_cache_at_location(location);
+	return (0 != field->evaluate(cache));
 }
 
-int Computed_field_find_mesh_location::evaluate_cache_at_location(Field_location* location)
+int Computed_field_find_mesh_location::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-
-	ENTER(Computed_field_find_mesh_location::evaluate_cache_at_location);
-	if (field && location)
+	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluateNoDerivatives(cache));
+	if (sourceValueCache)
 	{
-		if (Computed_field_evaluate_cache_at_location(get_source_field(), location))
+		MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
+		if (meshLocationValueCache.element)
 		{
-			if (element_cache)
-			{
-				Cmiss_element_destroy(&element_cache);
-			}
-			if (Computed_field_find_element_xi(get_mesh_field(),
-					get_source_field()->values, get_source_field()->number_of_components,
-					location->get_time(), &element_cache, xi_cache, mesh,
-					/*propagate_field*/0,
-					/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
-					&& element_cache)
-			{
-				Cmiss_element_access(element_cache);
-				field->values_valid = 0; // not real valued
-				return_code = 1;
-			}
+			Cmiss_element_destroy(&meshLocationValueCache.element);
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_find_mesh_location::evaluate_cache_at_location.  "
-			"Invalid arguments.");
+		Cmiss_field_cache& extraCache = *meshLocationValueCache.getExtraCache();
+		extraCache.setTime(cache.getTime());
+		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
+			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
+			meshLocationValueCache.xi, mesh, /*propagate_field*/0,
+			/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
+			&& meshLocationValueCache.element)
+		{
+			Cmiss_element_access(meshLocationValueCache.element);
+			return_code = 1;
+		}
 	}
 	return (return_code);
 }
@@ -3569,43 +3347,6 @@ char *Computed_field_find_mesh_location::get_command_string()
 		DEALLOCATE(source_field_name);
 	}
 	return (command_string);
-}
-
-
-int Computed_field_find_mesh_location::make_string_cache(int component_number)
-{
-	if ((component_number > 0) || !element_cache || !field)
-		return 0;
-	if (field->string_cache)
-		return 1;
-	int error = 0;
-	char tmp_string[50];
-	sprintf(tmp_string,"%d : ", Cmiss_element_get_identifier(element_cache));
-	append_string(&(field->string_cache), tmp_string, &error);
-	int dimension = Cmiss_element_get_dimension(element_cache);
-	for (int i = 0; i < dimension; i++)
-	{
-		if (0 < i)
-		{
-			sprintf(tmp_string,", %g", xi_cache[i]);
-		}
-		else
-		{
-			sprintf(tmp_string,"%g", xi_cache[i]);
-		}
-		append_string(&(field->string_cache), tmp_string, &error);
-	}
-	field->string_component = -1;
-	return (!error);
-}
-
-Cmiss_element_id Computed_field_find_mesh_location::get_mesh_location_value(FE_value *xi) const
-{
-	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-	{
-		xi[i] = xi_cache[i];
-	}
-	return element_cache;
 }
 
 } // namespace
@@ -3902,118 +3643,63 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 };
 
-int Computed_field_xi_coordinates::is_defined_at_location(
-	 Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
+bool Computed_field_xi_coordinates::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
+	return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+}
 
-	ENTER(Computed_field_xi_coordinates::is_defined_at_location);
-	if (field && location)
-	{
-		/* Only valid for Field_element_xi_location */
-		if (dynamic_cast<Field_element_xi_location*>(location))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_xi_coordinates_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_xi_coordinates_is_defined_at_node */
-
-int Computed_field_xi_coordinates::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_xi_coordinates::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *temp;
-	int element_dimension, i, j, return_code = 0;
-
-	ENTER(Computed_field_xi_coordinates::evaluate_cache_at_location);
-	if (field && location)
+	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (element_xi_location)
 	{
-		Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_element* element = element_xi_location->get_element();
+		const FE_value* xi = element_xi_location->get_xi();
 
-		if (element_xi_location)
+		/* returns the values in xi, up to the element_dimension and padded
+			with zeroes */
+		int element_dimension = get_FE_element_dimension(element);
+		FE_value *temp = valueCache.derivatives;
+		for (int i=0;i<field->number_of_components;i++)
 		{
-			FE_element* element = element_xi_location->get_element();
-			const FE_value* xi = element_xi_location->get_xi();
-			
-			/* returns the values in xi, up to the element_dimension and padded
-				with zeroes */
-			element_dimension=get_FE_element_dimension(element);
-			temp=field->derivatives;
-			for (i=0;i<field->number_of_components;i++)
+			if (i<element_dimension)
 			{
-				if (i<element_dimension)
+				valueCache.values[i]=xi[i];
+			}
+			else
+			{
+				valueCache.values[i]=0.0;
+			}
+			for (int j=0;j<element_dimension;j++)
+			{
+				if (i==j)
 				{
-					field->values[i]=xi[i];
+					*temp = 1.0;
 				}
 				else
 				{
-					field->values[i]=0.0;
+					*temp = 0.0;
 				}
-				for (j=0;j<element_dimension;j++)
-				{
-					if (i==j)
-					{
-						*temp = 1.0;
-					}
-					else
-					{
-						*temp = 0.0;
-					}
-					temp++;
-				}
+				temp++;
 			}
-			/* derivatives are always calculated since they are merely part of
-				the identity matrix */
-			field->derivatives_valid=1;
-			return_code = 1;
 		}
+		/* derivatives are always calculated since they are merely part of
+			the identity matrix */
+		valueCache.derivatives_valid=1;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_xi_coordinates::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_xi_coordinates::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_xi_coordinates::list()
 /*******************************************************************************
@@ -4173,12 +3859,6 @@ public:
 	FE_field* fe_field;
 	int order;
 	int *xi_indices;
-	FE_element_field_values* fe_element_field_values;
-	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
-		 Computed_field_basis_derivative::not_in_use */
-
-	/* Keep a cache of FE_element_field_values as calculation is expensive */
-	LIST(FE_element_field_values) *field_values_cache;
 
 	Computed_field_basis_derivative(
 		FE_field *fe_field, int order, int *xi_indices_in) :
@@ -4192,8 +3872,6 @@ public:
 		{
 			xi_indices[i] = xi_indices_in[i];
 		}
-		fe_element_field_values = (FE_element_field_values*)NULL;
-		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
 
 	virtual ~Computed_field_basis_derivative();
@@ -4208,25 +3886,22 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		return new FiniteElementRealFieldValueCache(field->number_of_components);
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int clear_cache();
-
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_multiple_times();
 
 	int has_numerical_components();
-
-	int calculate_FE_element_field_values_for_element(
-		int calculate_derivatives, struct FE_element *element,
-		FE_value time, struct FE_element *top_level_element);
-
-	int set_values_at_location(Field_location* location, const FE_value *values);
 };
 
 Computed_field_basis_derivative::~Computed_field_basis_derivative()
@@ -4271,42 +3946,6 @@ Copy the type specific data used by this type.
 	return (core);
 } /* Computed_field_basis_derivative::copy */
 
-int Computed_field_basis_derivative::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_basis_derivative::clear_cache_type_specific);
-	if (field)
-	{
-		if(fe_element_field_values)
-		{
-			clear_FE_element_field_values(fe_element_field_values);
-		}
-		if (field_values_cache)
-		{
-			DESTROY(LIST(FE_element_field_values))(&field_values_cache);
-		}
-		/* These are owned by the list */
-		fe_element_field_values = (FE_element_field_values *)NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::clear_cache_type_specific(.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::clear_cache_type_specific( */
-
 int Computed_field_basis_derivative::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -4332,46 +3971,15 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_basis_derivative::compare */
 
-int Computed_field_basis_derivative::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+bool Computed_field_basis_derivative::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
-
-	ENTER(Computed_field_basis_derivative::is_defined_at_location);
-	if (field && location && fe_field)
+	Field_element_xi_location *element_xi_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return_code = 0;
-
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
-		{
-			FE_element* element = element_xi_location->get_element();
-
-			return_code = FE_field_is_defined_in_element(fe_field,element);
-		}
-		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
-		{
-			FE_node *node = node_location->get_node();
-
-			return_code = FE_field_is_defined_at_node(fe_field,node);
-		}
+		return (0 != FE_field_is_defined_in_element(fe_field, element_xi_location->get_element()));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::is_defined_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::is_defined_at_location */
+	return false;
+}
 
 int Computed_field_basis_derivative::has_multiple_times()
 /*******************************************************************************
@@ -4425,250 +4033,58 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_basis_derivative::has_numerical_components */
 
-int Computed_field_basis_derivative::calculate_FE_element_field_values_for_element(
-	int calculate_derivatives,
-	struct FE_element *element,FE_value time,struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Establishes the FE_element_field values necessary for evaluating <field>, which
-must be of type COMPUTED_FIELD_BASIS_DERIVATIVE. <calculate_derivatives> flag
-controls whether basis functions for derivatives are also evaluated. If <field>
-is already set up in the correct way, does nothing.
-==============================================================================*/
+int Computed_field_basis_derivative::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, need_to_add_to_list, need_update, return_code;
-
-	ENTER(Computed_field_basis_derivative::calculate_FE_element_field_values_for_element);
-	if (field&&element)
+	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location* element_xi_location;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return_code=1;
-		/* clear the cache if values already cached for a node */
-		if (field->node)
-		{
-			Computed_field_clear_cache(field);
-		}
-		/* ensure we have FE_element_field_values for element, with
-			 derivatives_calculated if requested */
-		if ((!fe_element_field_values)||
-			(!FE_element_field_values_are_for_element_and_time(
-				fe_element_field_values,element,time,top_level_element))||
-			(calculate_derivatives&&
-				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
-		{
-			need_update = 0;
-			need_to_add_to_list = 0;
-			if (!field_values_cache)
-			{
-				field_values_cache = CREATE(LIST(FE_element_field_values))();
-			}
-			fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
-				FE_element_field_values, element)(element, field_values_cache);
-			if (!fe_element_field_values)
-			{
-				need_update = 1;
-				fe_element_field_values = CREATE(FE_element_field_values)();
-				if (fe_element_field_values)
-				{
-					need_to_add_to_list = 1;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				if ((!FE_element_field_values_are_for_element_and_time(
-						 fe_element_field_values,element,time,top_level_element))||
-					(calculate_derivatives&&
-						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
-				{
-					need_update = 1;
-					clear_FE_element_field_values(fe_element_field_values);
-				}
-			}
-			if (return_code && need_update)
-			{
-				/* note that FE_element_field_values accesses the element */
-				if (calculate_FE_element_field_values(element,fe_field,
-						time,calculate_derivatives,fe_element_field_values,
-						top_level_element))
-				{
+		FE_element* element = element_xi_location->get_element();
+		FE_element* top_level_element = element_xi_location->get_top_level_element();
+		FE_value time = element_xi_location->get_time();
+		const FE_value* xi = element_xi_location->get_xi();
+		int number_of_derivatives = element_xi_location->get_number_of_derivatives();
 
-					for (i = 0 ; i < order ; i++)
+		if (calculate_FE_element_field_values_for_element(
+			feValueCache.field_values_cache, feValueCache.fe_element_field_values,
+			fe_field, /*derivatives_required*/1, element, time, top_level_element, order, xi_indices))
+		{
+			int return_code = 1;
+			/* component number -1 = calculate all components */
+			enum Value_type value_type=get_FE_field_value_type(fe_field);
+			switch (value_type)
+			{
+				case FE_VALUE_VALUE:
+				case SHORT_VALUE:
+				{
+					if (number_of_derivatives)
 					{
-						FE_element_field_values_differentiate(fe_element_field_values,
-							xi_indices[i]);
+						return_code=calculate_FE_element_field(-1,
+							feValueCache.fe_element_field_values,xi,feValueCache.values,
+							feValueCache.derivatives);
+						feValueCache.derivatives_valid = (0<number_of_derivatives);
 					}
-					
-					if (need_to_add_to_list)
+					else
 					{
-						/* Set a cache size limit */
-						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
-						{
-							REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)
-								(field_values_cache);
-						}
-						return_code = ADD_OBJECT_TO_LIST(FE_element_field_values)(
-							fe_element_field_values, field_values_cache);
+						return_code=calculate_FE_element_field(-1,
+							feValueCache.fe_element_field_values,xi,feValueCache.values,
+							(FE_value *)NULL);
 					}
-				}
-				else
+				} break;
+				default:
 				{
-					/* clear element to indicate that values are clear */
-					clear_FE_element_field_values(fe_element_field_values);
+					display_message(ERROR_MESSAGE,
+						"Computed_field_basis_derivative::evaluate.  "
+						"Unsupported value type %s in basis_derivative field",
+						Value_type_string(value_type));
 					return_code=0;
-				}
-			 
+				} break;
 			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_basis_derivative::calculate_FE_element_field_values_for_element.  "
-				"Failed");
+			return return_code;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::calculate_FE_element_field_values_for_element.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::calculate_FE_element_field_values_for_element */
-
-int Computed_field_basis_derivative::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int return_code = 0;
-
-	ENTER(Computed_field_basis_derivative::evaluate_cache_at_location);
-	if (field && location)
-	{
-		Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
-		//Field_node_location *node_location;
-		if (element_xi_location)
-		{
-			FE_element* element = element_xi_location->get_element();
- 			FE_element* top_level_element = element_xi_location->get_top_level_element();
-			FE_value time = element_xi_location->get_time();
-			const FE_value* xi = element_xi_location->get_xi();
-			int number_of_derivatives = location->get_number_of_derivatives();
-
-			/* 1. Precalculate any source fields that this field depends on.
-				For type COMPUTED_FIELD_BASIS_DERIVATIVE, this means getting
-				FE_element_field_values.*/
-			return_code=calculate_FE_element_field_values_for_element(
-				/*derivatives_required*/1,element,time,top_level_element);
-			if (return_code)
-			{
-				/* 2. Calculate the field */
-				value_type=get_FE_field_value_type(fe_field);
-				/* component number -1 = calculate all components */
-				switch (value_type)
-				{
-					case FE_VALUE_VALUE:
-					case SHORT_VALUE:
-					{
-						if (number_of_derivatives)
-						{
-							return_code=calculate_FE_element_field(-1,
-								fe_element_field_values,xi,field->values,
-								field->derivatives);
-							field->derivatives_valid = (0<number_of_derivatives);
-						}
-						else
-						{
-							return_code=calculate_FE_element_field(-1,
-								fe_element_field_values,xi,field->values,
-								(FE_value *)NULL);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_basis_derivative::evaluate_cache_at_location.  "
-							"Unsupported value type %s in basis_derivative field",
-							Value_type_string(value_type));
-						return_code=0;
-					} break;
-				}
-			}
-		}
-#if 0
-		else 
-		{
-			 //if (node_location = dynamic_cast<Field_node_location*>(location))
-			 if (dynamic_cast<Field_node_location*>(location))
-			 {
-					display_message(ERROR_MESSAGE,
-						 "Computed_field_basis_derivative::evaluate_cache_at_location.  "
-						 "This field is valid for elements only.");
-			 }
-			 else
-			 {
-					display_message(ERROR_MESSAGE,
-						 "Computed_field_basis_derivative::evaluate_cache_at_location.  "
-						 "Location type unknown or not implemented.");
-			 }
-		}
-#endif
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::evaluate_cache_at_location */
-
-int Computed_field_basis_derivative::set_values_at_location(
-	Field_location* location, const FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_basis_derivative::set_values_at_location);
-	if (field && location && values)
-	{
-		display_message(WARNING_MESSAGE,
-			"Computed_field_basis_derivative::set_values_at_location.  "
-			"The basis derivative is calculated from another field and cannot be set.");
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::set_values_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::set_values_at_location */
+	return 0;
+}
 
 int Computed_field_basis_derivative::list()
 /*******************************************************************************
@@ -5226,8 +4642,10 @@ changed, added or removed in <fe_field_change_log>.
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
-			return_code = Computed_field_get_type_node_value(field, &fe_field,
-				&nodal_value_type, &version_number);
+			Cmiss_field_id finite_element_field = 0;
+			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
+					&nodal_value_type, &version_number) &&
+				Computed_field_get_type_finite_element(field, &fe_field);
 		}
 		else
 		{
@@ -5275,8 +4693,10 @@ If <field> has a source FE_field, ensures it is in <fe_field_list>.
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
-			return_code = Computed_field_get_type_node_value(field, &fe_field,
-				&nodal_value_type, &version_number);
+			Cmiss_field_id finite_element_field = 0;
+			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
+					&nodal_value_type, &version_number) &&
+				Computed_field_get_type_finite_element(field, &fe_field);
 		}
 		else
 		{
@@ -5579,54 +4999,6 @@ Used for choosing field suitable for identifying grid points.
 	return (return_code);
 } /* Computed_field_is_scalar_integer_grid_in_element */
 
-int Computed_field_has_string_value_type(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns true if <field> is of string value type.
-Currently only FE_fields can return string value type, hence this function is
-restricted to this module.
-Eventually, other computed fields will be of string type and this function will
-belong elsewhere.
-Note: not returning possible true result for embedded field as evaluate
-at node function does not allow for string value either.
-==============================================================================*/
-{
-	enum FE_nodal_value_type nodal_value_type;
-	int return_code;
-	int version_number;
-	struct FE_field *fe_field;
-
-	ENTER(Computed_field_has_string_value_type);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		fe_field = (struct FE_field *)NULL;
-		if (dynamic_cast<Computed_field_finite_element*>(field->core))
-		{
-			Computed_field_get_type_finite_element(field, &fe_field);
-		}
-		else if (dynamic_cast<Computed_field_node_value*>(field->core))
-		{
-			Computed_field_get_type_node_value(field, &fe_field,
-				&nodal_value_type, &version_number);
-		}
-		return_code = ((struct FE_field *)NULL != fe_field) &&
-			(STRING_VALUE == get_FE_field_value_type(fe_field));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_string_value_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_has_string_value_type */
-
 Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package)
@@ -5690,55 +5062,6 @@ This function registers the finite_element related types of Computed_fields.
 
 	return (return_ptr);
 } /* Computed_field_register_types_finite_element */
-
-
-int Computed_field_get_FE_field_time_array_index_at_FE_value_time(
-	 struct Computed_field *field,FE_value time, FE_value *the_time_high,
-	 FE_value *the_time_low, int *the_array_index,int *the_index_high,
-	 int *the_index_low)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Given a <field> and <time>, checks that <field> has times defined and returns:
-<the_array_index>, the array index of <field> times closest to <time>.
-<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
-(ideally <the_index_high>==<the_index_low>==<the_array_index>).
-<the_time_low> the time corresponding to <the_index_low>.
-<the_time_high> the time corresponding to <the_index_high>.
-
-All this information (rather than just <the_array_index> ) is returned so can
-perform interpolation, etc.
-==============================================================================*/
-{
-	Computed_field_finite_element* core;
-	int return_code;
-
-	ENTER(Computed_field_get_FE_field_time_array_index_at_FE_value_time);
-	if (field)
-	{
-		core=dynamic_cast<Computed_field_finite_element*>(field->core);
-		if (core)
-		{
-			 return_code = get_FE_field_time_array_index_at_FE_value_time(
-					core->fe_field, time, the_time_high, the_time_low, the_array_index,
-					the_index_high, the_index_low);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_FE_field_time_array_index_at_FE_value_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_scalar_integer_grid_in_element */
 
 struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *field, struct FE_node *node)
@@ -5804,8 +5127,6 @@ Cmiss_field_id Cmiss_field_module_create_node_value(
 {
 	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
 	{
-		struct FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
 		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (type)
 		{
@@ -5841,7 +5162,7 @@ Cmiss_field_id Cmiss_field_module_create_node_value(
 		{
 			return NULL;
 		}
-		return Computed_field_create_node_value(field_module, fe_field,	fe_nodal_value_type, version-1);
+		return Computed_field_create_node_value(field_module, field, fe_nodal_value_type, version-1);
 	}
 	else
 	{

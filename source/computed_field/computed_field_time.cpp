@@ -96,123 +96,41 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
 	int has_multiple_times();
-
-	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		FE_value time, Cmiss_mesh_id mesh);
 };
 
-int Computed_field_time_lookup::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_time_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value *temp, *temp1;
-	int i, number_of_derivatives, return_code;
-
-	ENTER(Computed_field_time_lookup::evaluate_cache_at_location);
-	if (field && location && (field->number_of_source_fields == 2) && 
-		(field->number_of_components == field->source_fields[0]->number_of_components) && 
-		(1 == field->source_fields[1]->number_of_components))
+	RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluateNoDerivatives(cache));
+	if (timeValueCache)
 	{
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
-
-		/* 1. Precalculate any source fields that this field depends on */
-		if (0 != (element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location)))
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		Field_location *location = cache.cloneLocation();
+		location->set_time(timeValueCache->values[0]);
+		extraCache.setLocation(location);
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		if (sourceValueCache)
 		{
-			Field_element_xi_location location_no_derivatives(
-				element_xi_location->get_element(), element_xi_location->get_xi(),
-				element_xi_location->get_time(), element_xi_location->get_top_level_element());
-
-			return_code = Computed_field_evaluate_cache_at_location(
-				field->source_fields[1], &location_no_derivatives);
-			if (return_code)
-			{
-				Field_element_xi_location location_lookup_time(
-					element_xi_location->get_element(), element_xi_location->get_xi(),
-					field->source_fields[1]->values[0], 
-					element_xi_location->get_top_level_element(),
-					location->get_number_of_derivatives());
-				
-				return_code = Computed_field_evaluate_cache_at_location(
-					field->source_fields[0], &location_lookup_time);
-			}
-		}
-		else if (0 != (node_location = 
-			dynamic_cast<Field_node_location*>(location)))
-		{
-			Field_node_location location_no_derivatives(
-				node_location->get_node(), node_location->get_time());
-
-			return_code = Computed_field_evaluate_cache_at_location(
-				field->source_fields[1], &location_no_derivatives);
-			if (return_code)
-			{
-				Field_node_location location_lookup_time(
-					node_location->get_node(),
-					field->source_fields[1]->values[0], 
-					location->get_number_of_derivatives());
-				
-				return_code = Computed_field_evaluate_cache_at_location(
-					field->source_fields[0], &location_lookup_time);
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			/* 2. Copy the results */
-			for (i=0;i<field->number_of_components;i++)
-			{
-				field->values[i] = field->source_fields[0]->values[i];
-			}
-			number_of_derivatives = location->get_number_of_derivatives();
-			if (number_of_derivatives > 0)
-			{
-				temp=field->derivatives;
-				temp1=field->source_fields[0]->derivatives;
-				for (i=(field->number_of_components*number_of_derivatives);
-					  0<i;i--)
-				{
-					(*temp)=(*temp1);
-					temp++;
-					temp1++;
-				}
-				field->derivatives_valid = 1;
-			}
-			else
-			{
-				field->derivatives_valid = 0;
-			}
+			valueCache.copyValues(*sourceValueCache);
+			return 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_time_lookup::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_time_lookup::list()
 /*******************************************************************************
@@ -321,53 +239,6 @@ global time do not matter.
 
 	return (return_code);
 } /* Computed_field_time_lookup::has_multiple_times */
-
-int Computed_field_time_lookup::propagate_find_element_xi(
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
-{
-	FE_value *source_values;
-	int i,return_code;
-
-	ENTER(Computed_field_time_lookup::propagate_find_element_xi);
-	USE_PARAMETER(time);
-	if (field && values && (number_of_values == field->number_of_components))
-	{
-		return_code = 1;
-		/* reverse the offset */
-		Field_element_xi_location location_no_derivatives(
-			*element_address, xi, time);
-		if (Computed_field_evaluate_cache_at_location(
-					field->source_fields[1], &location_no_derivatives) &&
-			ALLOCATE(source_values,FE_value,field->number_of_components))
-		{
-			for (i=0;i<field->number_of_components;i++)
-			{
-				source_values[i] = values[i];
-			}
-			return_code=Computed_field_find_element_xi(
-				field->source_fields[0],source_values,number_of_values,
-				field->source_fields[1]->values[0],element_address,
-				xi,mesh,/*propagate_field*/1,
-				/*find_nearest_location*/0);
-			DEALLOCATE(source_values);
-			Computed_field_clear_cache(field->source_fields[1]);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup::propagate_find_element_xi.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_offset::propagate_find_element_xi */
 
 } //namespace
 
@@ -591,7 +462,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -632,37 +503,13 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_time_value::compare */
 
-int Computed_field_time_value::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_time_value::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
 {
-	int return_code;
-
-	ENTER(Computed_field_time_value::evaluate_cache_at_location);
-	USE_PARAMETER(location);
-	if (field)
-	{
-		field->values[0] = Time_object_get_current_time(time_object);
-		field->derivatives_valid = 0;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_time_value::evaluate_cache_at_location */
-
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	valueCache.values[0] = Time_object_get_current_time(time_object);
+	valueCache.derivatives_valid = 0;
+	return 1;
+}
 
 int Computed_field_time_value::list()
 /*******************************************************************************

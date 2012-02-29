@@ -53,6 +53,12 @@ Global functions
 */
 
 /***************************************************************************//**
+ * Private function for adding field to region. Ensures the new field has a
+ * unique cache_index.
+ */
+int Cmiss_region_add_field_private(Cmiss_region_id region, Cmiss_field_id field);
+
+/***************************************************************************//**
  * Deaccesses fields from region and all child regions recursively.
  * Temporary until circular references sorted out - certain fields access
  * regions. Call ONLY before deaccessing root_region in Cmiss_context.

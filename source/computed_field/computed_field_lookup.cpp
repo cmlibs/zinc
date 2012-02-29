@@ -121,13 +121,22 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
-
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		// set node once as doesn't change
+		valueCache->getExtraCache()->setNode(lookup_node);
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int has_multiple_times();
 };
@@ -206,87 +215,27 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_nodal_lookup::compare */
 
-int Computed_field_nodal_lookup::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Returns true if <field> can be calculated in <element>, which is determined
-by checking the source field on the lookup node.
-==============================================================================*/
+bool Computed_field_nodal_lookup::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
+	FieldValueCache &inValueCache = *(field->getValueCache(cache));
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	return getSourceField(0)->core->is_defined_at_location(extraCache);
+}
 
-	ENTER(Computed_field_nodal_lookup::is_defined_at_location);
-	if (field && location)
-	{
-		Field_node_location nodal_location(lookup_node,
-			location->get_time());
-
-		return_code = Computed_field_is_defined_at_location(field->source_fields[0],
-			&nodal_location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup::is_defined_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_nodal_lookup::is_defined_at_location */
-
-int Computed_field_nodal_lookup::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_nodal_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code,i;
-
-	ENTER(Computed_field_nodal_lookup::evaluate_cache_at_location);
-	if (field)
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(valueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+	if (sourceValueCache)
 	{
-		Field_node_location nodal_location(lookup_node,
-			location->get_time());
-
-		/* 1. Precalculate any source fields that this field depends on */
-		/* only calculate the time_field at this time and then use the
-		   results of that field for the time of the source_field */
-		return_code=Computed_field_evaluate_cache_at_location(
-			field->source_fields[0], &nodal_location);
-		if (return_code)
-		{
-			/* 2. Copy the results */
-			for (i=0;i<field->number_of_components;i++)
-			{
-				field->values[i] = field->source_fields[0]->values[i];
-			}
-			/* 3. Set all derivatives to 0 */
-			for (i=0;i<(field->number_of_components * 
-					location->get_number_of_derivatives());i++)
-			{
-				field->derivatives[i] = (FE_value)0.0;
-			}
-			field->derivatives_valid = 1;
-		}
+		valueCache.copyValuesZeroDerivatives(*sourceValueCache);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_time_value::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_nodal_lookup::list()
 {
@@ -444,7 +393,8 @@ struct Computed_field *Computed_field_create_nodal_lookup(
 	struct Computed_field *source_field, struct FE_node *lookup_node) 
 {
 	Computed_field *field = NULL;
-	if (source_field && lookup_node)
+	if (source_field && source_field->isNumerical() && lookup_node &&
+		(FE_node_get_FE_region(lookup_node) == Cmiss_region_get_FE_region(Cmiss_field_module_get_region(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -617,8 +567,6 @@ public:
 		Computed_field_core(),
 		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node))
 	{
-		normalised_t = 0;
-		quaternion_component = NULL;
 	};
 
 	virtual bool attach_to_field(Computed_field *parent)
@@ -642,8 +590,6 @@ public:
 	 
 private:
 
-	 double *quaternion_component, old_w, old_x, old_y, old_z, w, x, y, z, normalised_t;
-
 	 Computed_field_core *copy();
 
 	 const char *get_type_string()
@@ -653,13 +599,22 @@ private:
 	 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		// set node once as doesn't change
+		valueCache->getExtraCache()->setNode(nodal_lookup_node);
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
-
-	int is_defined_at_location(Field_location* location);
 
 	int has_multiple_times();
 };
@@ -684,10 +639,6 @@ Clear the type specific data used by this type.
 		if (nodal_lookup_node)
 		{
 			DEACCESS(FE_node)(&(nodal_lookup_node));
-		}
-		if (quaternion_component)
-		{
-			DEALLOCATE(quaternion_component);
 		}
 	}
 	else
@@ -745,126 +696,69 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_quaternion_SLERP::compare */
 
-int Computed_field_quaternion_SLERP::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 10 Oct 2007
-
-DESCRIPTION :
-Returns true if <field> can be calculated in <element>, which is determined
-by checking the source field on the lookup node.
-==============================================================================*/
+bool Computed_field_quaternion_SLERP::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
+	FieldValueCache &inValueCache = *(field->getValueCache(cache));
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	return getSourceField(0)->core->is_defined_at_location(extraCache);
+}
 
-	ENTER(Computed_field_quaternion_SLERP::is_defined_at_location);
-	if (field && location)
-	{
-		Field_node_location nodal_location(nodal_lookup_node,
-			location->get_time());
-
-		return_code = Computed_field_is_defined_at_location(field->source_fields[0],
-			&nodal_location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_quaternion_SLERP::is_defined_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_quaternion_SLERP::is_defined_at_location */
-
-int Computed_field_quaternion_SLERP::evaluate_cache_at_location(
-	 Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 5 October 2007
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+int Computed_field_quaternion_SLERP::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int i, return_code = 0;
-	double time;
-	FE_time_sequence *time_sequence;
-
-
-	ENTER(Computed_field_quaternion_SLERP::evaluate_cache_at_location);
-	if (field && location && field->number_of_components == 4 &&
-		field->source_fields[0]->number_of_components == 4)
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(valueCache.getExtraCache());
+	FE_value time = cache.getTime();
+	//t is the normalised time scaled from 0 to 1
+	FE_time_sequence *time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(
+		getSourceField(0), nodal_lookup_node);
+	if (time_sequence)
 	{
-		time = location->get_time();
-		//t is the normalised time scaled from 0 to 1
-
-		int time_index_one, time_index_two;
 		FE_value xi, lower_time, upper_time;
-		time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(field->source_fields[0],
-			nodal_lookup_node);
-		if (time_sequence)
-		{
-			FE_time_sequence_get_interpolation_for_time(
-				time_sequence, time, &time_index_one,
-				&time_index_two, &xi);
-			FE_time_sequence_get_time_for_index(
-				time_sequence, time_index_one, &lower_time);
-			FE_time_sequence_get_time_for_index(
-				time_sequence, time_index_two, &upper_time);
-			normalised_t = xi;
-			// get the starting quaternion
-			Field_node_location old_location(nodal_lookup_node, lower_time);
-			Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
-			old_w = (double)(field->source_fields[0]->values[0]);
-			old_x = (double)(field->source_fields[0]->values[1]);
-			old_y = (double)(field->source_fields[0]->values[2]);
-			old_z = (double)(field->source_fields[0]->values[3]);
-			// get the last quaternion
-			Field_node_location new_location(nodal_lookup_node, upper_time);
-			Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
-			w = (double)(field->source_fields[0]->values[0]);
-			x = (double)(field->source_fields[0]->values[1]);
-			y = (double)(field->source_fields[0]->values[2]);
-			z = (double)(field->source_fields[0]->values[3]);
+		int time_index_one, time_index_two;
+		FE_time_sequence_get_interpolation_for_time(
+			time_sequence, time, &time_index_one,
+			&time_index_two, &xi);
+		FE_time_sequence_get_time_for_index(
+			time_sequence, time_index_one, &lower_time);
+		FE_time_sequence_get_time_for_index(
+			time_sequence, time_index_two, &upper_time);
+		FE_value normalised_t = xi;
+		// get the starting quaternion
+		extraCache.setTime(lower_time);
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		FE_value old_w = sourceValueCache->values[0];
+		FE_value old_x = sourceValueCache->values[1];
+		FE_value old_y = sourceValueCache->values[2];
+		FE_value old_z = sourceValueCache->values[3];
+		// get the last quaternion
+		extraCache.setTime(upper_time);
+		getSourceField(0)->evaluate(extraCache);
+		FE_value w = sourceValueCache->values[0];
+		FE_value x = sourceValueCache->values[1];
+		FE_value y = sourceValueCache->values[2];
+		FE_value z = sourceValueCache->values[3];
 
-			Quaternion from(old_w, old_x, old_y, old_z);
-			Quaternion to(w, x, y, z);
-			Quaternion current;
-			from.normalise();
-			to.normalise();
-			current.interpolated_with_SLERP(from, to, normalised_t);
-
-			if (!quaternion_component)
-			{
-				ALLOCATE(quaternion_component, double, 4);
-			}
-			if(quaternion_component)
-			{
-				current.get(quaternion_component);
-			}
-			for (i=0; i<4;i++)
-			{
-				field->values[i] =quaternion_component [i];
-			}
-			return_code = 1;
-		}
-		else
+		Quaternion from(old_w, old_x, old_y, old_z);
+		Quaternion to(w, x, y, z);
+		Quaternion current;
+		from.normalise();
+		to.normalise();
+		current.interpolated_with_SLERP(from, to, normalised_t);
+		double quaternion_component[4];
+		current.get(quaternion_component);
+		for (int i = 0; i < 4; ++i)
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_quaternion::evaluate_cache_at_location.  "
-				"time sequence is missing.");
+			valueCache.values[i] = quaternion_component[i];
 		}
+		return 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
+		display_message(ERROR_MESSAGE, "Computed_field_quaternion::evaluate.  time sequence is missing.");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_quaternion_SLERP::evaluate_cache_at_location */
+	return 0;
+}
 
 int Computed_field_quaternion_SLERP::list()
 /*******************************************************************************

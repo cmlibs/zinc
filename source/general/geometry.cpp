@@ -1335,6 +1335,135 @@ Calculate the <jacobian> if not NULL.
 	return (return_code);
 } /* convert_Coordinate_system */
 
+int convert_coordinates_and_derivatives_to_rc(struct Coordinate_system *source_coordinate_system,
+	int source_components, FE_value *source_coordinates, FE_value *source_derivatives,
+	int element_dimension, FE_value *rc_coordinates, FE_value *rc_derivatives)
+{
+	FE_value *source;
+	FE_value coordinates[3],derivatives[9],*destination,x,y,z,*jacobian,temp[9];
+	int i,j,return_code;
+
+	if (source_coordinate_system && source_components && source_coordinates &&
+		rc_coordinates && ((0 == rc_derivatives) || (source_derivatives && (0 < element_dimension))))
+	{
+		/* copy coordinates, padding to 3 components */
+		for (i=0;i<3;i++)
+		{
+			if (i<source_components)
+			{
+				coordinates[i] = source_coordinates[i];
+			}
+			else
+			{
+				coordinates[i]=0.0;
+			}
+		}
+		if (rc_derivatives)
+		{
+			/* copy derivatives, padding to 3 components x 3 dimensions */
+			destination=derivatives;
+			source=source_derivatives;
+			for (i=0;i<3;i++)
+			{
+				for (j=0;j<3;j++)
+				{
+					if ((i<source_components)&&(j<element_dimension))
+					{
+						*destination = *source;
+						source++;
+					}
+					else
+					{
+						*destination = 0.0;
+					}
+					destination++;
+				}
+			}
+			/* make sure jacobian only calculated if rc_derivatives requested */
+			jacobian=temp;
+		}
+		else
+		{
+			jacobian=NULL;
+		}
+
+		switch (source_coordinate_system->type)
+		{
+			case CYLINDRICAL_POLAR:
+			{
+				cylindrical_polar_to_cartesian(
+					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
+			} break;
+			case SPHERICAL_POLAR:
+			{
+				spherical_polar_to_cartesian(
+					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
+			} break;
+			case PROLATE_SPHEROIDAL:
+			{
+				prolate_spheroidal_to_cartesian(
+					coordinates[0],coordinates[1],coordinates[2],
+					source_coordinate_system->parameters.focus,&x,&y,&z,jacobian);
+			} break;
+			case OBLATE_SPHEROIDAL:
+			{
+				oblate_spheroidal_to_cartesian(
+					coordinates[0],coordinates[1],coordinates[2],
+					source_coordinate_system->parameters.focus,&x,&y,&z,jacobian);
+			} break;
+			default:
+			{
+				/* treat all others as RECTANGULAR_CARTESIAN; copy coordinates */
+				x=coordinates[0];
+				y=coordinates[1];
+				z=coordinates[2];
+				if (rc_derivatives)
+				{
+					for (i=0;i<9;i++)
+					{
+						rc_derivatives[i]=static_cast<FE_value>(derivatives[i]);
+					}
+					/* clear jacobian to avoid derivative conversion below */
+					jacobian=NULL;
+				}
+			} break;
+		}
+		rc_coordinates[0]=x;
+		rc_coordinates[1]=y;
+		rc_coordinates[2]=z;
+		if (jacobian)
+		{
+			for (i=0;i<3;i++)
+			{
+				/* derivative of x with respect to xi[i] */
+				rc_derivatives[i]=
+					jacobian[0]*derivatives[0+i]+
+					jacobian[1]*derivatives[3+i]+
+					jacobian[2]*derivatives[6+i];
+				/* derivative of y with respect to xi[i] */
+				rc_derivatives[3+i]=
+					jacobian[3]*derivatives[0+i]+
+					jacobian[4]*derivatives[3+i]+
+					jacobian[5]*derivatives[6+i];
+				/* derivative of z with respect to xi[i] */
+				rc_derivatives[6+i]=
+					jacobian[6]*derivatives[0+i]+
+					jacobian[7]*derivatives[3+i]+
+					jacobian[8]*derivatives[6+i];
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"convert_coordinates_and_derivatives_to_rc.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+}
+
 int Coordinate_system_type_is_non_linear(enum Coordinate_system_type type)
 {
 	return ((RECTANGULAR_CARTESIAN != type) &&

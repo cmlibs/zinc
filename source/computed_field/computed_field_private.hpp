@@ -57,6 +57,7 @@ Types used only internally to computed fields.
 
 #include "general/cmiss_set.hpp"
 #include "computed_field/field_location.hpp"
+#include "computed_field/field_cache.hpp"
 extern "C" {
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
@@ -179,6 +180,17 @@ struct Cmiss_field_change_detail
 	}
 };
 
+/***************************************************************************//**
+ * Return value for field assignment functions. Partial success is needed for
+ * EDIT_MASK field which can successfully set some of the values passed.
+ */
+enum FieldAssignmentResult
+{
+	FIELD_ASSIGNMENT_RESULT_FAIL = 0,
+	FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET = 1,
+	FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET = 2,
+};
+
 class Computed_field_core
 /*******************************************************************************
 LAST MODIFIED : 23 August 2006
@@ -229,7 +241,9 @@ public:
 	{
 		return field;
 	}
-	
+
+	inline Cmiss_field_id getSourceField(int index);
+
 	/**
 	 * Override to inherit attributes such as coordinate system from source fields.
 	 */
@@ -241,14 +255,19 @@ public:
 
 	virtual const char *get_type_string() = 0;
 
-	virtual int clear_cache()
+	// override for fields requiring specialised value caches
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/);
+
+	virtual int clear_cache() // GRC remove
 	{
 		return 1;
 	};
 
 	virtual int compare(Computed_field_core* other) = 0;
 
-	virtual int is_defined_at_location(Field_location* location);
+	/** default implementation returns true if all source fields are defined at location.
+	 * override if different logic is needed. */
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	virtual int has_numerical_components()
 	{
@@ -260,7 +279,7 @@ public:
 		return 1;
 	};
 
-	virtual int evaluate_cache_at_location(Field_location* location) = 0;
+	virtual int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache) = 0;
 
 	/** Override & return 1 for field types supporting the sum_square_terms API */
 	virtual int supports_sum_square_terms() const
@@ -271,40 +290,41 @@ public:
 	/** Override for field types whose value is a sum of squares to get the
 	 * number of terms summed. Multiply by number of components to get number of values.
 	 * Can be expensive. */
-	virtual int get_number_of_sum_square_terms() const
+	virtual int get_number_of_sum_square_terms(Cmiss_field_cache&) const
 	{
 		return 0;
 	}
 
 	/** Override for field types whose value is a sum of squares to get the array of
 	 * individual terms PRIOR to being squared*/
-	virtual int evaluate_sum_square_terms_at_location(Field_location* /*location*/,
+	virtual int evaluate_sum_square_terms(Cmiss_field_cache&, RealFieldValueCache&,
 		int /*number_of_values*/, FE_value* /* *values*/)
 	{
 		return 0;
 	}
 
-	virtual int set_values_at_location(Field_location* /*location*/, const FE_value * /*values*/)
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/)
 	{
-		return 0;
-	};
+		return FIELD_ASSIGNMENT_RESULT_FAIL;
+	}
 
-	virtual int set_mesh_location_value(Field_location* /*location*/, Cmiss_element_id /*element*/, const FE_value* /*xi*/)
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/)
 	{
-		return 0;
-	};
+		return FIELD_ASSIGNMENT_RESULT_FAIL;
+	}
 
-	virtual int set_string_at_location(Field_location* /*location*/, const char * /*string_value*/)
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/)
 	{
-		return 0;
-	};
+		return FIELD_ASSIGNMENT_RESULT_FAIL;
+	}
 
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int propagate_find_element_xi(const FE_value * /*values*/, int /*number_of_values*/,
+	virtual int propagate_find_element_xi(Cmiss_field_cache&,
+		const FE_value * /*values*/, int /*number_of_values*/,
 		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
-		FE_value /*time*/, Cmiss_mesh_id /*mesh*/)
+		Cmiss_mesh_id /*mesh*/)
 	{
 		return 0;
 	};
@@ -385,18 +405,6 @@ public:
 	{
 	}
 
-	/** default implementation converts numerical values into string. Override for
-	 * non-string, non-numeric type to make string version of field values.
-	 */
-	virtual int make_string_cache(int component_number = -1);
-
-	/** override for MESH_LOCATION value type fields to return cached value */
-	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const
-	{
-		USE_PARAMETER(xi);
-		return 0;
-	}
-
 	/** Override if field is not real valued */
 	virtual Cmiss_field_value_type get_value_type() const
 	{
@@ -422,6 +430,8 @@ DESCRIPTION :
 {
 	/* the name/identifier of the Computed_field */
 	const char *name;
+	/* index of field values in field cache, unique in region */
+	int cache_index;
 	/* The command string is what is printed for GET_NAME.  This is usually
 		the same as the name (and just points to it) however it is separated
 		out so that we can specify an string for the command_string which is not
@@ -434,55 +444,6 @@ DESCRIPTION :
 
 	struct Coordinate_system coordinate_system;
 
-	/* Value cache: This should probably form another object kept here, rather
-	 than explicit storage. */
-	/* For all Computed_field_types: computed values/derivatives.
-		 When the field is computed its values and derivatives are first placed
-		 in these arrays. If the field is then recomputed at element:xi, the values
-		 are returned immediately. The <values> array is allocated when the field is
-		 evaluated and deallocated when the number_of_components is [re]established
-		 or the field is copied over. The values array is made large enough to store
-		 the values of the field while the derivatives fit those of the field in an
-		 element of dimension MAXIMUM_ELEMENT_XI_DIMENSIONS. */
-	/* ???RC note: separation of cache and field probably necessary if computed
-		 fields are to be efficient under multiprocessing */
-	FE_value *values,*derivatives,xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	/* flag to say whether the values are valid (normally this will be true,
-		but is the beginning of different types of values, 
-		where a field may return a string_cache but not valid values */
-	int values_valid;
-	/* flag saying whether derivatives were calculated */
-	int derivatives_valid;
-	/* A string cache value */
-	char *string_cache;
-
-	/* Only one of element/node should be accessed at a time - if there is an
-		 element accessed, then values are guaranteed to be valid and derivatives
-		 are valid if the derivatives_valid flag is set - both at the above xi only.
-		 If node is accessed, then the values are valid at that node. Either modes
-		 of caching must be cleared by a call to Computed_field_clear_cache once
-		 the field is no longer of immediate use. */
-	/* last element in which values/derivatives calculated - ACCESSed by field */
-	struct FE_element *element;
-	/* last node at which values calculated - ACCESSed by field */
-	struct FE_node *node;
-	/* last time at which values were calculated */
-	FE_value time;
-	/* last time the string cache was evaluated this is the component that was 
-		requested (-1 for all components) */
-	int string_component;
-	/* Record what reference field the values are calculated for with
-		a coordinate location. */
-	struct Computed_field *coordinate_reference_field;
-	/* Cache whether or not the value in the cache depends on the
-		cached location (node, element or coordinate_reference_field).
-		If it does not then the cache can be deemed valid if the next
-		location is the same type and for coordinates, has the same
-		reference field but different values. */
-	int field_does_not_depend_on_cached_location;
-
-	/* cache used when doing find_xi calculations */
-	struct Computed_field_find_element_xi_cache *find_element_xi_cache;
 
 	Computed_field_core* core;
 
@@ -516,7 +477,96 @@ DESCRIPTION :
 		return DEACCESS(Computed_field)(field_address);
 	}
 
+	inline FieldValueCache *getValueCache(Cmiss_field_cache& cache)
+	{
+		FieldValueCache *valueCache = cache.getValueCache(cache_index);
+		if (!valueCache)
+		{
+			valueCache = core->createValueCache(cache);
+			cache.setValueCache(cache_index, valueCache);
+		}
+		return valueCache;
+	}
+
+	template <class FieldValueCacheClass>
+	inline enum FieldAssignmentResult assign(Cmiss_field_cache& cache, FieldValueCacheClass& valueCache)
+	{
+		enum FieldAssignmentResult result = core->assign(cache, valueCache);
+		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
+			cache.assignInCacheOnly())
+		{
+			valueCache.evaluationCounter = cache.getLocationCounter();
+		}
+		else
+		{
+			valueCache.clear();
+		}
+		return result;
+	}
+
+	inline FieldValueCache *evaluate(Cmiss_field_cache& cache)
+	{
+		FieldValueCache *valueCache = getValueCache(cache);
+		// GRC: move derivatives to a separate value cache in future
+		if ((valueCache->evaluationCounter < cache.getLocationCounter()) ||
+			(cache.getRequestedDerivatives() && (!valueCache->hasDerivatives())))
+		{
+			if (core->evaluate(cache, *valueCache))
+				valueCache->evaluationCounter = cache.getLocationCounter();
+			else
+				valueCache = 0;
+		}
+		return valueCache;
+	}
+
+	/** @param numberOfDerivatives  positive number of xi dimension of element location */
+	inline RealFieldValueCache *evaluateWithDerivatives(Cmiss_field_cache& cache, int numberOfDerivatives)
+	{
+		int requestedDerivatives = cache.getRequestedDerivatives();
+		cache.setRequestedDerivatives(numberOfDerivatives);
+		RealFieldValueCache *valueCache = RealFieldValueCache::cast(evaluate(cache));
+		cache.setRequestedDerivatives(requestedDerivatives);
+		if (valueCache && valueCache->derivatives_valid)
+			return valueCache;
+		return 0;
+	}
+
+	inline FieldValueCache *evaluateNoDerivatives(Cmiss_field_cache& cache)
+	{
+		int requestedDerivatives = cache.getRequestedDerivatives();
+		cache.setRequestedDerivatives(0);
+		FieldValueCache *valueCache = evaluate(cache);
+		cache.setRequestedDerivatives(requestedDerivatives);
+		return valueCache;
+	}
+
+	int isNumerical()
+	{
+		return core->has_numerical_components();
+	}
+
+	int get_number_of_sum_square_terms(Cmiss_field_cache& cache)
+	{
+		return core->get_number_of_sum_square_terms(cache);
+	}
+
+	int evaluate_sum_square_terms(Cmiss_field_cache& cache, int number_of_values, FE_value *values)
+	{
+		if ((0 <= number_of_values) && values)
+		{
+			RealFieldValueCache *valueCache = RealFieldValueCache::cast(getValueCache(cache));
+			return core->evaluate_sum_square_terms(cache, *valueCache, number_of_values, values);
+		}
+		return 0;
+	}
+
+
 }; /* struct Computed_field */
+
+inline Cmiss_field_id Computed_field_core::getSourceField(int index)
+{
+	return field->source_fields[index];
+}
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
@@ -583,6 +633,23 @@ char *Computed_field_manager_get_unique_field_name(
  * Create an iterator for the objects in the manager.
  */
 Cmiss_field_iterator_id Computed_field_manager_create_iterator(
+	struct MANAGER(Computed_field) *manager);
+
+/***************************************************************************//**
+ * Return index of field in field cache.
+ */
+int Cmiss_field_get_cache_index_private(Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Set index of field in field cache. Private; use only from Cmiss_region.
+ */
+int Cmiss_field_set_cache_index_private(Cmiss_field_id field, int cache_index);
+
+/***************************************************************************//**
+ * Private function for adding field to manager; use only from Cmiss_region.
+ * Ensures field name is unique and informs field core that field is managed.
+ */
+int Computed_field_add_to_manager_private(struct Computed_field *field,
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
@@ -707,44 +774,6 @@ Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
 
-int Computed_field_default_clear_type_specific(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2002
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-
-void *Computed_field_default_copy_type_specific(
-	struct Computed_field *source, struct Computed_field *destination);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2002
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-
-int Computed_field_default_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2002
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-
-int Computed_field_is_defined_at_location(struct Computed_field *field,
-	Field_location* location);
-/*******************************************************************************
-LAST MODIFIED : 9 August 2006
-
-DESCRIPTION :
-Returns 1 if the all the source fields are defined at the supplied <location>.
-==============================================================================*/
-
 /***************************************************************************//**
  * Sets coordinate system of the <field> to that of its first source field.
  */
@@ -769,182 +798,6 @@ If the two fields are non scalar and have different numbers of components then
 nothing is done, although other shape broadcast operations could be proposed
 for matrix operations.
 ==============================================================================*/
-
-// caller must ensure valid field is passed and field->values is zero
-inline int Computed_field_allocate_values_cache(Computed_field *field)
-{
-	/* get enough space for derivatives in highest dimension element */
-	if (!(ALLOCATE(field->values, FE_value, field->number_of_components) &&
-		ALLOCATE(field->derivatives, FE_value,
-			MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
-	{
-		// make sure we have allocated values AND derivatives, or nothing
-		DEALLOCATE(field->values);
-		return 0;
-	}
-	for (int i = 0; i < field->number_of_components; i++)
-	{
-		field->values[i] = 0.0;
-	}
-	return 1;
-}
-
-inline int Computed_field_evaluate_cache_at_location(
-	Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Calculates the values of <field> at <location>.
-Upon successful return the node values of the <field> are stored in its cache.
-==============================================================================*/
-{
-	 int return_code;
-
-	ENTER(Computed_field_evaluate_cache_at_location);
-#if ! defined (OPTIMISED)
-	if (field && field->core && location)
-	{
-#endif /* ! defined (OPTIMISED) */
-		return_code=1;
-		if (!field->values)
-		{
-			return_code = Computed_field_allocate_values_cache(field);
-		}
-		if (!location->check_cache_for_location(field))
-		{
-			field->derivatives_valid=0;
-			if (field->string_cache)
-			{
-				DEALLOCATE(field->string_cache);
-			}
-			if (return_code)
-			{
-				/* Before we set up a better typed cache storage we are assuming 
-					the evaluate will generate valid values, for those which don't
-					this will be set to zero in the evaluate.  This allows the valid
-					evaluation to a string, which potentially will expand to more types. */
-				field->values_valid = 1;
-				return_code = field->core->evaluate_cache_at_location(location);
-
-				if (return_code)
-				{
-					location->update_cache_for_location(field);
-				}
-				else
-				{
-					/* Not calling clear_cache here because that does far more
-						work and propagates back down to the source fields */
-					if (field->node)
-					{
-						DEACCESS(FE_node)(&field->node);
-					}
-					if (field->element)
-					{
-						DEACCESS(FE_element)(&field->element);
-					}
-					if (field->coordinate_reference_field)
-					{
-						DEACCESS(Computed_field)(&field->coordinate_reference_field);
-					}
-					field->field_does_not_depend_on_cached_location = 0;
-				}
-			}
-		}
-#if ! defined (OPTIMISED)
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_cache_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-#endif /* ! defined (OPTIMISED) */
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_evaluate_cache_at_location */
-
-int Computed_field_set_values_at_location(struct Computed_field *field,
-	Field_location* location, const FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 10 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <location>. Only certain computed field
-types allow their values to be set. Fields that deal directly with FE_fields eg.
-FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the same
-function for it. If a field has more than one source field, eg. RC_VECTOR, it
-can in many cases still choose which one is actually being changed, for example,
-the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
-is reached for which its calculation is not reversible, or is not supported yet.
-==============================================================================*/
-
-inline int Computed_field_evaluate_source_fields_cache_at_location(
-	struct Computed_field *field, Field_location *location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Calculates the cache values of each source field in <field> at <node>, if it 
-is defined.
-Upon successful return the node values of the source fields are stored in their
-cache.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_evaluate_source_fields_cache_at_location);
-#if ! defined (OPTIMISED)
-	/* These checks cost us a lot when evaluating thousands of fields */
-	if (field && location)
-	{
-#endif /* ! defined (OPTIMISED) */
-		return_code = 1;
-		/* calculate values of source_fields */
-		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-		{
-			return_code=Computed_field_evaluate_cache_at_location(
-				field->source_fields[i], location);
-		}
-#if ! defined (OPTIMISED)
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_source_fields_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-#endif /* ! defined (OPTIMISED) */
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_evaluate_source_fields_cache_at_location */
-
-/***************************************************************************//**
- * Clears values cache of field but not deeper type-specific cache.
- * Does not recurse through all source fields.
- * Caller's responsibility to ensure field argument is valid.
- */
-void Cmiss_field_clear_values_cache_non_recursive(Cmiss_field *field);
-
-/***************************************************************************//**
- * Clears values cache of field but not deeper type-specific cache.
- * Does same for all source fields.
- * Caller's responsibility to ensure field argument is valid.
- */
-void Cmiss_field_clear_values_cache_recursive(Cmiss_field *field);
-
-/***************************************************************************//**
- * Variant of Computed_field_clear_cache which does not recurse over source
- * fields.
- * Caller's responsibility to ensure field argument is valid.
- */
-void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field);
 
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.
@@ -1039,31 +892,6 @@ int Cmiss_field_module_set_replace_field(
  */
 struct Computed_field *Cmiss_field_module_get_replace_field(
 	struct Cmiss_field_module *field_module);
-
-/***************************************************************************//**
- * Rebuild the cache values of the field. This is only used by 
- * computed_field_image to wipe out the cache when number of components changes.
- *
- * @param field  Field to be updated.
- * @return  1 if successfully rebuild cache_values, or 0
- * if none.
- */
-inline int Computed_field_rebuild_cache_values(
-	Computed_field *field)
-{
-	int return_code = 1;
-
-	if (field)
-	{
-		if (field->values)
-		{
-			DEALLOCATE(field->values);
-			DEALLOCATE(field->derivatives);
-		}
-	}
-
-	return (return_code);
-}
 
 /***************************************************************************//**
  * For each hierarchical field in manager, propagates changes from sub-region

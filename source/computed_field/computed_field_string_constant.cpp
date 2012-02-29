@@ -98,16 +98,20 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	{
+		return new StringFieldValueCache();
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location)
+	virtual bool is_defined_at_location(Cmiss_field_cache&)
 	{
-		USE_PARAMETER(location);
-		return 1;
+		return true;
 	}
 
 	int has_numerical_components()
@@ -115,7 +119,7 @@ private:
 		return 0;
 	}
 
-	int set_string_at_location(Field_location* location, const char *string_value_in);
+	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
 
 	virtual Cmiss_field_value_type get_value_type() const
 	{
@@ -144,29 +148,13 @@ int Computed_field_string_constant::compare(Computed_field_core* other_field)
 	return (return_code);
 }
 
-int Computed_field_string_constant::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_string_constant::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
 {
-	USE_PARAMETER(location);
-	int return_code = 1;
-	if (field)
-	{
-		if (field->string_cache)
-		{
-			DEALLOCATE(field->string_cache);
-		}
-		field->string_cache = duplicate_string(string_value);
-		field->values_valid = 0;
-		field->derivatives_valid = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	StringFieldValueCache& stringValueCache = StringFieldValueCache::cast(inValueCache);
+	if (stringValueCache.stringValue)
+		DEALLOCATE(stringValueCache.stringValue);
+	stringValueCache.stringValue = duplicate_string(string_value);
+	return 1;
 }
 
 int Computed_field_string_constant::list()
@@ -196,23 +184,20 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 }
 
-int Computed_field_string_constant::set_string_at_location(
-	Field_location* location, const char *string_value_in)
+enum FieldAssignmentResult Computed_field_string_constant::assign(Cmiss_field_cache& cache, StringFieldValueCache& valueCache)
 {
-	USE_PARAMETER(location);
-	int return_code = 1;
-	char *new_string_value = duplicate_string(string_value_in);
-	if (new_string_value)
+	// avoid setting values in field if only assigning to cache
+	if (cache.assignInCacheOnly())
+	{
+		return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
+	}
+	if (string_value)
 	{
 		DEALLOCATE(string_value);
-		string_value = new_string_value;
-		Computed_field_changed(field);
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
+	string_value = duplicate_string(valueCache.stringValue);
+	Computed_field_changed(field);
+	return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 }
 
 } //namespace

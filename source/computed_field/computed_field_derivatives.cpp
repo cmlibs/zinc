@@ -90,19 +90,6 @@ public:
 	{
 	};
 
-	int clear_cache()
-	{
-		int return_code = Computed_field_ImageFilter::clear_cache();
-		return (return_code);
-	};
-
-	int evaluate_cache_at_location(Field_location* location)
-	{
-		int return_code =
-			Computed_field_ImageFilter::evaluate_cache_at_location(location);
-		return (return_code);
-	};
-
 private:
 	virtual void create_functor();
 
@@ -204,7 +191,7 @@ public:
 	{
 	}
 
-	int set_filter(Field_location* location)
+	int set_filter(Cmiss_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
 
@@ -223,7 +210,7 @@ and generate the outputImage.
 		filter->SetOrder( derivative_image_filter->derivative_operator_order );
 		
 		return_code = derivative_image_filter->update_output_image
-			(location, filter, this->outputImage,
+			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
@@ -297,24 +284,13 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
-
-	int clear_cache()
-	{
-		/* Call the parent */
-		int return_code = Computed_field_core::clear_cache();
-		if (derivative_image_filter)
-		{
-			return_code = derivative_image_filter->clear_cache();
-		}
-		return (return_code);
-	};
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 };
 
@@ -364,177 +340,96 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_derivative::compare */
 
-int Computed_field_derivative::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
+bool Computed_field_derivative::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
-
-	ENTER(Computed_field_derivative::is_defined_at_location);
-	if (field && location)
+	// derivative values are only defined for element_xi locations, and only up to element dimension...
+	Field_element_xi_location* element_xi_location;
+	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())) &&
+  		(xi_index < element_xi_location->get_dimension()))
 	{
-		Field_element_xi_location* element_xi_location;
-		/* Derivative values are only defined for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location))
-			/* Derivatives can only be calculated up to element dimension */
-  			&& (xi_index < get_FE_element_dimension(
-				element_xi_location->get_element())))
-		{
-			/* Check the source field */
-			return_code = Computed_field_core::is_defined_at_location(location);
-		}
-		else if (dynamic_cast<Field_coordinate_location*>(location))
-		{
-			/* This can only be valid if the input field has 
-				a native resolution as we will be using image filter. */
-			if (Computed_field_core::is_defined_at_location(location))
-			{
-				int dimension;
-				int *sizes = static_cast<int *>(NULL);
-				Computed_field *texture_coordinate_field;
-
-				return_code = Computed_field_get_native_resolution(
-					field->source_fields[0], &dimension, &sizes, 
-					&texture_coordinate_field);
-
-				if (sizes)
-				{
-					DEALLOCATE(sizes);
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
+		// check the source fields
+		return Computed_field_core::is_defined_at_location(cache);
 	}
-	else
+	// ... or image based field derivative with field location
+	else if (dynamic_cast<Field_coordinate_location*>(cache.getLocation()))
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative::is_defined_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_derivative::is_defined_at_location */
-
-int Computed_field_derivative::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_derivative::evaluate_cache_at_location);
-	if (field && Computed_field_has_numerical_components(field, NULL) && 
-		location)
-	{
-		return_code = 0;
-		/* Only works for element_xi locations */
-		Field_element_xi_location *element_xi_location  =
-			dynamic_cast<Field_element_xi_location*>(location);
-		if (element_xi_location)
-		{
-			FE_element* element = element_xi_location->get_element();
-			int element_dimension=get_FE_element_dimension(element);
-			if (xi_index < element_dimension)
-			{
-				Field_element_xi_location location_with_derivatives =
-					Field_element_xi_location(element,
-						element_xi_location->get_xi(), element_xi_location->get_time(), 
-						element_xi_location->get_top_level_element(),
-						element_dimension);
-
-				/* 1. Precalculate any source fields that this field depends on,
-					we always want the derivatives */
-				if (Computed_field_evaluate_cache_at_location(
-						 field->source_fields[0], &location_with_derivatives) && 
-					field->source_fields[0]->derivatives_valid)
-				{
-					return_code = 1;
-					/* 2. Calculate the field */
-					for (i = 0 ; i < field->number_of_components ; i++)
-					{
-						field->values[i] = field->source_fields[0]->
-							derivatives[i * element_dimension + xi_index];
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_derivative::evaluate_cache_at_location.  "
-					"Derivative %d not defined on element.",
-					xi_index + 1);
-			}
-			field->derivatives_valid = 0;
-		}
-		if (!return_code)
+		/* This can only be valid if the input field has
+			a native resolution as we will be using image filter. */
+		if (Computed_field_core::is_defined_at_location(cache))
 		{
 			int dimension;
 			int *sizes = static_cast<int *>(NULL);
 			Computed_field *texture_coordinate_field;
-
-			/* If it isn't calculated then try with the ImageFilter */
-			if (Computed_field_get_native_resolution(field->source_fields[0],
-					&dimension, &sizes, &texture_coordinate_field))
-			{
-				if (!derivative_image_filter)
-				{
-					/* Hard coding the default first order operator for now */
-					derivative_image_filter = new 
-						Computed_field_derivative_image_filter(field->source_fields[0],
-							xi_index, /*derivative_operator_order*/1);
-					// GRC: following attaches another core to the same field
-					if (derivative_image_filter)
-					{
-						derivative_image_filter->attach_to_field(field);
-					}
-				}
-				if (derivative_image_filter)
-				{
-					return_code = derivative_image_filter->evaluate_cache_at_location(
-						location);
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			
+			bool result = Computed_field_get_native_resolution(
+				field->source_fields[0], &dimension, &sizes,
+				&texture_coordinate_field);
 			if (sizes)
 			{
 				DEALLOCATE(sizes);
+			}
+			return result;
+		}
+	}
+	return false;
+}
+
+int Computed_field_derivative::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	/* Only works for element_xi locations, or field locations for image-based fields */
+	Field_element_xi_location *element_xi_location =
+		dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (element_xi_location)
+	{
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension=get_FE_element_dimension(element);
+		if (xi_index < element_dimension)
+		{
+			RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
+			if (sourceCache)
+			{
+				for (int i = 0 ; i < field->number_of_components ; i++)
+				{
+					valueCache.values[i] = sourceCache->derivatives[i * element_dimension + xi_index];
+				}
+				valueCache.derivatives_valid = 0;
+				return 1;
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
+		int dimension;
+		int *sizes = static_cast<int *>(NULL);
+		Computed_field *texture_coordinate_field;
+		/* If it isn't calculated then try with the ImageFilter */
+		if (Computed_field_get_native_resolution(field->source_fields[0],
+			&dimension, &sizes, &texture_coordinate_field))
+		{
+			if (!derivative_image_filter)
+			{
+				/* Hard coding the default first order operator for now */
+				derivative_image_filter = new
+					Computed_field_derivative_image_filter(field->source_fields[0],
+						xi_index, /*derivative_operator_order*/1);
+				// Note: following attaches another core to the same field
+				if (derivative_image_filter)
+				{
+					derivative_image_filter->attach_to_field(field);
+				}
+			}
+			if (sizes)
+			{
+				DEALLOCATE(sizes);
+			}
+			if (derivative_image_filter && derivative_image_filter->evaluate(cache, inValueCache))
+			{
+				return 1;
+			}
+		}
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_derivative::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_derivative::list()
 /*******************************************************************************
@@ -799,173 +694,119 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int evaluate(int element_dimension);
 };
 
-int Computed_field_curl::evaluate(int element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute the curl.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives)
-for the same element, with the given <element_dimension> = number of Xi coords.
-If function fails to invert the coordinate derivatives then the curl is
-returned as 0 with a warning - as may happen at certain locations of the mesh.
-Note currently requires vector_field to be RC.
-==============================================================================*/
+/***************************************************************************//**
+ * Evaluates the curl of a vector field.
+ * If function fails to invert the coordinate derivatives then the curl is
+ * returned as 0 with a warning - as may happen at certain locations of the mesh.
+ * Note currently requires vector_field to be RC.
+ */
+int Computed_field_curl::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value curl,dx_dxi[9],dxi_dx[9],x[3],*source;
-	int coordinate_components,i,return_code;
-	
-	ENTER(Computed_field_evaluate_curl);
-	if (field&&(dynamic_cast<Computed_field_curl*>(field->core)))
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location* element_xi_location;
+	//Field_node_location* node_location;
+	Cmiss_field_id source_field = getSourceField(0);
+	Cmiss_field_id coordinate_field = getSourceField(1);
+	/* cannot calculate derivatives for curl yet */
+	valueCache.derivatives_valid = 0;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		coordinate_components=field->source_fields[1]->number_of_components;
-		/* curl is only valid in 3 dimensions */
-		if ((3==element_dimension)&&(3==coordinate_components))
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension = get_FE_element_dimension(element);
+		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		int top_level_element_dimension = 0;
+		FE_element_get_top_level_element_and_xi(element,
+			element_xi_location->get_xi(), element_dimension,
+			&top_level_element, top_level_xi, &top_level_element_dimension);
+		// use the normal cache if already on a top level element, otherwise use extra cache
+		Cmiss_field_cache *workingCache = &cache;
+		if (top_level_element != element)
 		{
+			workingCache = valueCache.getExtraCache();
+			workingCache->setTime(cache.getTime());
+			workingCache->setMeshLocation(top_level_element, top_level_xi);
+		}
+
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		if (sourceValueCache && sourceValueCache->derivatives_valid &&
+			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		{
+			FE_value curl,dx_dxi[9],dxi_dx[9],x[3],*source;
+			/* curl is only valid in 3 dimensions */
+			// Constructor already checked (3==element_dimension)&&(3==coordinate_number_of_components)
 			/* only support RC vector fields */
-			if (RECTANGULAR_CARTESIAN==
-				field->source_fields[0]->coordinate_system.type)
+			if (RECTANGULAR_CARTESIAN == source_field->coordinate_system.type)
 			{
-				return_code=Computed_field_extract_rc(field->source_fields[1],
-					element_dimension,x,dx_dxi);
-				if (return_code)
+				Cmiss_field_id coordinate_field = getSourceField(1);
+				if (convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
+					coordinate_field->number_of_components, coordinateValueCache->values, coordinateValueCache->derivatives,
+					top_level_element_dimension, x, dx_dxi))
 				{
 					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
 					{
-						source=field->source_fields[0]->derivatives;
+						source=sourceValueCache->derivatives;
 						/* curl[0] = dVz/dy - dVy/dz */
 						curl=0.0;
-						for (i=0;i<element_dimension;i++)
+						for (int i=0;i<top_level_element_dimension;i++)
 						{
 							curl += (source[6+i]*dxi_dx[3*i+1] - source[3+i]*dxi_dx[3*i+2]);
 						}
-						field->values[0]=curl;
+						valueCache.values[0]=curl;
 						/* curl[1] = dVx/dz - dVz/dx */
 						curl=0.0;
-						for (i=0;i<element_dimension;i++)
+						for (int i=0;i<top_level_element_dimension;i++)
 						{
 							curl += (source[  i]*dxi_dx[3*i+2] - source[6+i]*dxi_dx[3*i  ]);
 						}
-						field->values[1]=curl;
+						valueCache.values[1]=curl;
 						/* curl[2] = dVy/dx - dVx/dy */
 						curl=0.0;
-						for (i=0;i<element_dimension;i++)
+						for (int i=0;i<top_level_element_dimension;i++)
 						{
 							curl += (source[3+i]*dxi_dx[3*i  ] - source[  i]*dxi_dx[3*i+1]);
 						}
-						field->values[2]=curl;
+						valueCache.values[2]=curl;
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE,
 							"Could not invert coordinate derivatives; setting curl to 0");
-						for (i=0;i<field->number_of_components;i++)
+						for (int i=0;i<field->number_of_components;i++)
 						{
-							field->values[i]=0.0;
+							valueCache.values[i]=0.0;
 						}
 					}
 					/* cannot calculate derivatives for curl yet */
-					field->derivatives_valid=0;
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_evaluate_curl.  Failed");
+					valueCache.derivatives_valid=0;
+					return 1;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_curl.  Vector field must be RC");
-				return_code=0;
+				//display_message(ERROR_MESSAGE,
+				//	"Computed_field_evaluate_curl.  Vector field must be RC");
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_curl.  Elements of wrong dimension");
-			return_code=0;
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_curl.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_curl */
-
-int Computed_field_curl::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	FE_element *top_level_element;
-	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, return_code, top_level_element_dimension;
-
-	ENTER(Computed_field_curl::evaluate_cache_at_location);
-	if (field && location)
-	{
-		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location)))
-		{
-			element_dimension = get_FE_element_dimension(
-				element_xi_location->get_element());
-			/* 1. Precalculate any source fields that this field depends on,
-				we always want the derivatives and want to use the top_level element */
-			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
-				element_xi_location->get_xi(), element_dimension,
-				&top_level_element, top_level_xi, &top_level_element_dimension);
-
-			Field_element_xi_location top_level_location(top_level_element,
-				top_level_xi, element_xi_location->get_time(), top_level_element,
-				get_FE_element_dimension(top_level_element));
-			return_code = Computed_field_evaluate_source_fields_cache_at_location(field,
-				&top_level_location);
-			if (return_code)
-			{
-				/* 2. Calculate the field */
-				return_code=evaluate(top_level_element_dimension);
-			}
-			field->derivatives_valid = 0;
-		}
-		else
-		{
-			// Only calculable in elements
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_curl::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_curl::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_curl::list()
 /*******************************************************************************
@@ -1238,174 +1079,125 @@ private:
 		}
 	}
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	int evaluate(int element_dimension);
 };
 
-int Computed_field_divergence::evaluate(int element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute the divergence.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives)
-for the same element, with the given <element_dimension> = number of Xi coords.
-If function fails to invert the coordinate derivatives then the divergence is
-returned as 0 with a warning - as may happen at certain locations of the mesh.
-Note currently requires vector_field to be RC.
-==============================================================================*/
+/***************************************************************************//**
+ * Evaluates the divergence of a vector field.
+ * If function fails to invert the coordinate derivatives then the divergence is
+ * returned as 0 with a warning - as may happen at certain locations of the mesh.
+ * Note currently requires vector_field to be RC.
+ */
+int Computed_field_divergence::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	FE_value divergence,dx_dxi[9],dxi_dx[9],x[3],*source;
-	int coordinate_components,i,j,return_code;
-	
-	ENTER(Computed_field_evaluate_divergence);
-	if (field&&(dynamic_cast<Computed_field_divergence*>(field->core)))
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location* element_xi_location;
+	//Field_node_location* node_location;
+	Cmiss_field_id source_field = getSourceField(0);
+	Cmiss_field_id coordinate_field = getSourceField(1);
+	/* cannot calculate derivatives for curl yet */
+	valueCache.derivatives_valid = 0;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		coordinate_components=field->source_fields[1]->number_of_components;
-		/* Following asks: can dx_dxi be inverted? */
-		if (((3==element_dimension)&&(3==coordinate_components))||
-			((RECTANGULAR_CARTESIAN==field->source_fields[1]->coordinate_system.type)
-				&&(coordinate_components==element_dimension))||
-			((CYLINDRICAL_POLAR==field->source_fields[1]->coordinate_system.type)&&
-				(2==element_dimension)&&(2==coordinate_components)))
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension = get_FE_element_dimension(element);
+		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		int top_level_element_dimension = 0;
+		FE_element_get_top_level_element_and_xi(element,
+			element_xi_location->get_xi(), element_dimension,
+			&top_level_element, top_level_xi, &top_level_element_dimension);
+		// use the normal cache if already on a top level element, otherwise use extra cache
+		Cmiss_field_cache *workingCache = &cache;
+		if (top_level_element != element)
 		{
-			/* only support RC vector fields */
-			if (RECTANGULAR_CARTESIAN==
-				field->source_fields[0]->coordinate_system.type)
+			workingCache = valueCache.getExtraCache();
+			workingCache->setTime(cache.getTime());
+			workingCache->setMeshLocation(top_level_element, top_level_xi);
+		}
+
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		if (sourceValueCache && sourceValueCache->derivatives_valid &&
+			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		{
+			FE_value divergence,dx_dxi[9],dxi_dx[9],x[3],*source;
+			int coordinate_components = coordinate_field->number_of_components;
+			/* Following asks: can dx_dxi be inverted? */
+			if (((3==top_level_element_dimension)&&(3==coordinate_components))||
+				((RECTANGULAR_CARTESIAN==coordinate_field->coordinate_system.type)
+					&&(coordinate_components==top_level_element_dimension))||
+				((CYLINDRICAL_POLAR==coordinate_field->coordinate_system.type)&&
+					(2==top_level_element_dimension)&&(2==coordinate_components)))
 			{
-				return_code = Computed_field_extract_rc(field->source_fields[1],
-					element_dimension,x,dx_dxi);
-				if (return_code)
+				/* only support RC vector fields */
+				if (RECTANGULAR_CARTESIAN == source_field->coordinate_system.type)
 				{
-					/* if the element_dimension is less than 3, put ones on the main
-						 diagonal to allow inversion of dx_dxi */
-					if (3>element_dimension)
+					if (convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
+						coordinate_field->number_of_components, coordinateValueCache->values, coordinateValueCache->derivatives,
+						top_level_element_dimension, x, dx_dxi))
 					{
-						dx_dxi[8]=1.0;
-						if (2>element_dimension)
+						/* if the element_dimension is less than 3, put ones on the main
+							 diagonal to allow inversion of dx_dxi */
+						if (3>top_level_element_dimension)
 						{
-							dx_dxi[4]=1.0;
-						}
-					}
-					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
-					{
-						divergence=0.0;
-						source=field->source_fields[0]->derivatives;
-						for (i=0;i<element_dimension;i++)
-						{
-							for (j=0;j<element_dimension;j++)
+							dx_dxi[8]=1.0;
+							if (2>top_level_element_dimension)
 							{
-								divergence += (*source) * dxi_dx[3*j+i];
-								source++;
+								dx_dxi[4]=1.0;
 							}
 						}
-						field->values[0]=divergence;
+						if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
+						{
+							divergence=0.0;
+							source=sourceValueCache->derivatives;
+							for (int i=0;i<top_level_element_dimension;i++)
+							{
+								for (int j=0;j<top_level_element_dimension;j++)
+								{
+									divergence += (*source) * dxi_dx[3*j+i];
+									source++;
+								}
+							}
+							valueCache.values[0]=divergence;
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"Could not invert coordinate derivatives; "
+								"setting divergence to 0");
+							valueCache.values[0]=0.0;
+						}
+						return 1;
 					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"Could not invert coordinate derivatives; "
-							"setting divergence to 0");
-						field->values[0]=0.0;
-					}
-					/* cannot calculate derivatives for divergence yet */
-					field->derivatives_valid=0;
 				}
-				if (!return_code)
+				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_evaluate_divergence.  Failed");
+					//display_message(ERROR_MESSAGE,
+					//	"Computed_field_divergence::evaluate.  Vector field must be RC");
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_divergence.  Vector field must be RC");
-				return_code=0;
+				//display_message(ERROR_MESSAGE,
+				//	"Computed_field_divergence::evaluate.  Elements of wrong dimension");
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_divergence.  Elements of wrong dimension");
-			return_code=0;
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_divergence.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_divergence */
-
-int Computed_field_divergence::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	FE_element *top_level_element;
-	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, return_code, top_level_element_dimension;
-
-	ENTER(Computed_field_divergence::evaluate_cache_at_location);
-	if (field && location)
-	{
-		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
-		if ((element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location)))
-		{
-			element_dimension = get_FE_element_dimension(
-				element_xi_location->get_element());
-			/* 1. Precalculate any source fields that this field depends on,
-				we always want the derivatives and want to use the top_level element */
-			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
-				element_xi_location->get_xi(), element_dimension,
-				&top_level_element, top_level_xi, &top_level_element_dimension);
-
-			Field_element_xi_location top_level_location(top_level_element,
-				top_level_xi, element_xi_location->get_time(), top_level_element,
-				get_FE_element_dimension(top_level_element));
-			return_code = Computed_field_evaluate_source_fields_cache_at_location(field,
-				&top_level_location);
-			if (return_code)
-			{
-				/* 2. Calculate the field */
-				return_code=evaluate(top_level_element_dimension);
-			}
-			field->derivatives_valid = 0;
-		}
-		else
-		{
-			// Only calculable in elements
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_divergence::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_divergence::evaluate_cache_at_location */
-
+	return 0;
+}
 
 int Computed_field_divergence::list()
 /*******************************************************************************
@@ -1655,32 +1447,12 @@ class Computed_field_gradient : public Computed_field_core
 public:
 	Computed_field_gradient() : Computed_field_core()
 	{
-		down_values = NULL;
-		coordinate_values = NULL;
 	};
 
 private:
 	~Computed_field_gradient()
 	{
-		if (down_values)
-			delete[] down_values;
-		if (coordinate_values)
-			delete[] coordinate_values;
 	}
-
-	virtual bool attach_to_field(Computed_field *parent)
-	{
-		if (Computed_field_core::attach_to_field(parent))
-		{
-			down_values = new FE_value[field->source_fields[0]->number_of_components];
-			coordinate_values = new FE_value[field->source_fields[1]->number_of_components];
-			return true;
-		}
-		return false;
-	}
-
-	FE_value *down_values;
-	FE_value *coordinate_values;
 	
 	Computed_field_core *copy()
 	{
@@ -1704,264 +1476,225 @@ private:
 		}
 	}
 
-	int is_defined_at_location(Field_location* location);
+	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
-	int evaluate_cache_at_location(Field_location* location);
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_gradient::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-Implemented for element_xi and node locations
-==============================================================================*/
+/***************************************************************************//**
+ * Implemented for element_xi and node locations
+ */
+bool Computed_field_gradient::is_defined_at_location(Cmiss_field_cache& cache)
 {
-	int return_code;
+	return ((0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation())) ||
+		(0 != dynamic_cast<Field_node_location*>(cache.getLocation()))) &&
+		Computed_field_core::is_defined_at_location(cache);
+}
 
-	ENTER(Computed_field_gradient::is_defined_at_location);
-	if (field && location)
-	{
-		if (dynamic_cast<Field_element_xi_location*>(location))
-		{
-			return_code = Computed_field_core::is_defined_at_location(location);
-		}
-		else if (dynamic_cast<Field_node_location*>(location))
-		{
-			return_code = Computed_field_core::is_defined_at_location(location);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_gradient::is_defined_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_gradient::is_defined_at_location */
-
-int Computed_field_gradient::evaluate_cache_at_location(
-    Field_location* location)
+int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	double a[9], b[3], d;
-	FE_element *top_level_element;
-	FE_value *destination, *source, top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int coordinate_components, i, indx[3], j, return_code,
-		source_components, top_level_element_dimension;
-	struct Computed_field *coordinate_field, *source_field;
-
-	ENTER(Computed_field_gradient::evaluate_cache_at_location);
-	return_code = 0;
-	if (field && location)
+	int return_code = 0;
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	Field_element_xi_location* element_xi_location;
+	//Field_node_location* node_location;
+	Cmiss_field_id source_field = getSourceField(0);
+	Cmiss_field_id coordinate_field = getSourceField(1);
+	int source_number_of_components = source_field->number_of_components;
+	int coordinate_number_of_components = coordinate_field->number_of_components;
+	/* cannot calculate derivatives for gradient yet */
+	valueCache.derivatives_valid = 0;
+	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		Field_element_xi_location* element_xi_location  = dynamic_cast<Field_element_xi_location*>(location);
-		Field_node_location* node_location;
-		if (element_xi_location)
+		FE_element* element = element_xi_location->get_element();
+		int element_dimension = get_FE_element_dimension(element);
+		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		int top_level_element_dimension = 0;
+		FE_element_get_top_level_element_and_xi(element,
+			element_xi_location->get_xi(), element_dimension,
+			&top_level_element, top_level_xi, &top_level_element_dimension);
+		// use the normal cache if already on a top level element, otherwise use extra cache
+		Cmiss_field_cache *workingCache = &cache;
+		if (top_level_element != element)
 		{
-			/* cannot calculate derivatives for gradient yet */
-			field->derivatives_valid = 0;
-			if (!location->get_number_of_derivatives())
+			workingCache = valueCache.getExtraCache();
+			workingCache->setTime(cache.getTime());
+			workingCache->setMeshLocation(top_level_element, top_level_xi);
+		}
+
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		if (sourceValueCache && sourceValueCache->derivatives_valid &&
+			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		{
+			/*  Calculate the field. First verify we can invert the derivatives of
+				the coordinate field, which we can if dx_dxi is square */
+			double a[9], b[3], d;
+			int i, indx[3], j;
+			if (top_level_element_dimension == coordinate_number_of_components)
 			{
-				FE_element* element = element_xi_location->get_element();
-				int element_dimension=get_FE_element_dimension(element);
-	
-				FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
-					element_xi_location->get_xi(), element_dimension,
-					&top_level_element, top_level_xi, &top_level_element_dimension);
-	
-				Field_element_xi_location top_level_location(top_level_element,
-					top_level_xi, element_xi_location->get_time(), top_level_element,
-					get_FE_element_dimension(top_level_element));
-	
-				/* 1. Precalculate any source fields that this field depends on,
-					we always want the derivatives and want to use the top_level element */
-				if (Computed_field_evaluate_source_fields_cache_at_location(
-						 field, &top_level_location))
+				/* fill square matrix a with coordinate field derivatives w.r.t. xi */
+				for (i = 0; i < coordinate_number_of_components; i++)
 				{
-					/* 2. Calculate the field. First verify we can invert the derivatives of
-						the coordinate field, which we can if dx_dxi is square */
-					source_field = field->source_fields[0];
-					source_components = source_field->number_of_components;
-					coordinate_field = field->source_fields[1];
-					coordinate_components = coordinate_field->number_of_components;
-					if (top_level_element_dimension == coordinate_components)
+					for (j = 0; j < coordinate_number_of_components; j++)
 					{
-						/* fill square matrix a with coordinate field derivatives w.r.t. xi */
-						for (i = 0; i < coordinate_components; i++)
-						{
-							for (j = 0; j < coordinate_components; j++)
-							{
-								a[i*coordinate_components + j] =
-									coordinate_field->derivatives[j*coordinate_components+i];
-							}
-						}
-						/* invert to get derivatives of xi w.r.t. coordinates */
-						if (LU_decompose(coordinate_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
-						{
-							return_code = 1;
-							destination = field->values;
-							source = source_field->derivatives;
-							for (i = 0; (i < source_components) && return_code; i++)
-							{
-								for (j = 0; j < coordinate_components; j++)
-								{
-									b[j] = (double)(*source);
-									source++;
-								}
-								if (LU_backsubstitute(coordinate_components,a,indx,b))
-								{
-									for (j = 0; j < coordinate_components; j++)
-									{
-										*destination = (FE_value)b[j];
-										destination++;
-									}
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-						}
-						if (!return_code)
-						{
-							/* cannot invert at apex of heart, so set to zero to allow values
-								to be viewed elsewhere in mesh */
-							display_message(WARNING_MESSAGE,
-								"Computed_field_gradient::evaluate_cache_at_location.  "
-								"Could not invert coordinate derivatives; setting gradient to 0");
-							for (i = 0; i < field->number_of_components; i++)
-							{
-								field->values[i] = 0.0;
-							}
-							return_code = 1;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_gradient::evaluate_cache_at_location.  "
-							"Cannot invert coordinate derivatives");
+						a[i*coordinate_number_of_components + j] =
+							coordinateValueCache->derivatives[j*coordinate_number_of_components+i];
 					}
 				}
-				else
+				/* invert to get derivatives of xi w.r.t. coordinates */
+				FE_value *destination = valueCache.values;
+				if (LU_decompose(coordinate_number_of_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_gradient::evaluate_cache_at_location.  "
-						"Cannot evaluate source fields");
+					return_code = 1;
+					FE_value *source = sourceValueCache->derivatives;
+					for (i = 0; i < source_number_of_components; i++)
+					{
+						for (j = 0; j < coordinate_number_of_components; j++)
+						{
+							b[j] = (double)(*source);
+							source++;
+						}
+						if (LU_backsubstitute(coordinate_number_of_components,a,indx,b))
+						{
+							for (j = 0; j < coordinate_number_of_components; j++)
+							{
+								*destination = (FE_value)b[j];
+								destination++;
+							}
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
+					}
+				}
+				if (!return_code)
+				{
+					/* cannot invert at apex of heart, so set to zero to allow values
+						to be viewed elsewhere in mesh */
+					display_message(WARNING_MESSAGE,
+						"Computed_field_gradient::evaluate.  "
+						"Could not invert coordinate derivatives; setting gradient to 0");
+					for (i = 0; i < field->number_of_components; i++)
+					{
+						destination[i] = 0.0;
+					}
+					return_code = 1;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_gradient::evaluate_cache_at_location.  "
-					"Derivatives not available for gradient field");
+					"Computed_field_gradient::evaluate.  "
+					"Cannot invert coordinate derivatives");
 			}
 		}
-		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
+	}
+	else // if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation()))) // should work with any location now
+	{
+		// small efficiency gain can be made by allocating following in valueCache:
+		FE_value *down_values = new FE_value[source_number_of_components];
+		FE_value *coordinate_values = new FE_value[coordinate_number_of_components];
+
+		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		Field_location *location = cache.cloneLocation();
+		extraCache.setLocation(location);
+
+		/* Do a finite difference calculation varying the coordinate field */
+		int i, j, k;
+		const FE_value perturb_scale = 1e-5;
+
+		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(extraCache));
+		if (coordinateValueCache)
 		{
-			/* Do a finite difference calculation varying the coordinate field*/
-			int k;
-			FE_node *node = node_location->get_node();
-			FE_node *temporary_node = ACCESS(FE_node)(CREATE(FE_node)(get_FE_node_identifier(node),
-				(struct FE_region *)NULL, node));
-			
-			const FE_value perturb_scale = 1e-5;
-			int source_number_of_components = field->source_fields[0]->number_of_components;
-			int coordinate_number_of_components = field->source_fields[1]->number_of_components;
-			source_field = field->source_fields[0];
-			coordinate_field = field->source_fields[1];
-			
-			if (Computed_field_evaluate_cache_at_location(coordinate_field, location))
+			return_code = 1;
+			for (j = 0 ; j < coordinate_number_of_components ; j++)
 			{
-				return_code = 1;
-				for (j = 0 ; j < coordinate_number_of_components ; j++)
+				coordinate_values[j] = coordinateValueCache->values[j];
+			}
+			for (i = 0 ; i < coordinate_number_of_components ; i++)
+			{
+				for (k = 0 ; k < 2 ; k++)
 				{
-					coordinate_values[j] = field->source_fields[1]->values[j];
-				}
-				for (i = 0 ; i < coordinate_number_of_components ; i++)
-				{
-					for (k = 0 ; k < 2 ; k++)
+					double sign;
+					FE_value *field_values;
+					if (k == 0)
 					{
-						double sign;
-						FE_value *field_values;
-						if (k == 0)
+						sign = -1;
+						field_values = down_values;
+					}
+					else
+					{
+						sign = 1;
+						field_values = valueCache.values + i * source_number_of_components;
+					}
+					for (j = 0 ; j < coordinate_number_of_components ; j++)
+					{
+						if (i == j + 1)
 						{
-							sign = -1;
-							field_values = down_values;
+							// Set back the perturbed value from last time
+							coordinate_values[j] = coordinateValueCache->values[j];
 						}
-						else
+						if (i == j)
 						{
-							sign = 1;
-							field_values = field->values + i * source_number_of_components;
+							coordinate_values[j] += sign * perturb_scale * coordinate_values[j];
 						}
-						for (j = 0 ; j < coordinate_number_of_components ; j++)
+					}
+					/* Set the coordinate field values in cache only and evaluate the source field */
+					extraCache.setAssignInCacheOnly(true);
+					if (Cmiss_field_assign_real(coordinate_field, &extraCache,
+						coordinate_number_of_components, coordinate_values))
+					{
+						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(extraCache));
+						if (sourceValueCache)
 						{
-							if (i == j + 1)
+							for (int m = 0; m < source_number_of_components; ++m)
 							{
-								// Set back the perturbed value from last time
-								coordinate_values[j] = coordinate_field->values[j];
-							}
-							if (i == j)
-							{
-								coordinate_values[j] += sign * perturb_scale * coordinate_values[j];
-							}
-						}
-						
-						/* Set the coordinate field and evaluate the source field */
-						if (Computed_field_set_values_at_node(coordinate_field,
-								temporary_node, node_location->get_time(), coordinate_values))
-						{
-							/* We need to explicitly clear the label_field cache as if
-								 we are caching computed_field manager messages then the 
-								 changes to the coordinate field will not be notified to
-								 the source field yet. */
-							Computed_field_clear_cache(source_field);
-							if (!(Computed_field_evaluate_at_node(source_field,
-								temporary_node, node_location->get_time(), field_values)))
-							{
-								display_message(WARNING_MESSAGE,
-									"Computed_field_gradient::evaluate_cache_at_location.  "
-									"Unable to evaluate source field when evaluating nodal finite difference.");
-								return_code = 0;
+								field_values[m] = sourceValueCache->values[m];
 							}
 						}
 						else
 						{
 							display_message(WARNING_MESSAGE,
-								"Computed_field_gradient::evaluate_cache_at_location.  "
-								"Unable to set coordinate field when evaluating nodal finite difference.");
+								"Computed_field_gradient::evaluate.  "
+								"Unable to evaluate source field when evaluating nodal finite difference.");
 							return_code = 0;
 						}
 					}
-					for (j = 0 ; j < source_number_of_components ; j++)
+					else
 					{
-						field->values[i * source_number_of_components + j] = 
-								(field->values[i * source_number_of_components + j] - down_values[j]) / (2.0 * perturb_scale);
-					}					
+						display_message(WARNING_MESSAGE,
+							"Computed_field_gradient::evaluate.  "
+							"Unable to set coordinate field when evaluating nodal finite difference.");
+						return_code = 0;
+					}
+					extraCache.setAssignInCacheOnly(false);
+				}
+				for (j = 0 ; j < source_number_of_components ; j++)
+				{
+					valueCache.values[i * source_number_of_components + j] =
+						(valueCache.values[i * source_number_of_components + j] - down_values[j]) / (2.0 * perturb_scale);
 				}
 			}
-			DEACCESS(FE_node)(&temporary_node);
 		}
+		delete[] down_values;
+		delete[] coordinate_values;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_gradient::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_gradient::evaluate_cache_at_location */
-
+}
 
 int Computed_field_gradient::list()
 /*******************************************************************************

@@ -160,6 +160,7 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 	struct FE_region *fe_region);
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
+	Cmiss_field_cache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
@@ -169,7 +170,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field, 
 	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
-	struct Multi_range *selected_ranges, int *point_numbers, FE_value time);
+	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -200,6 +201,8 @@ from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 - the coordinate system of the variable_scale_field is ignored/not used.
+@param field_cache  Cmiss_field_cache for evaluating fields. Time is expected
+to be set in the field_cache if needed.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
@@ -236,30 +239,11 @@ Notes:
 - the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 
-struct GT_polyline *create_GT_polyline_from_FE_element(
-	struct FE_element *element,struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,int number_of_segments,
-	struct FE_element *top_level_element, FE_value time,
-	int line_width);
-/*******************************************************************************
-LAST MODIFIED : 22 April 2004
-
-DESCRIPTION :
-Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
-using <number_of_segments> spaced equally in xi.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the polyline, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-If the <line_width> is non zero then it will override the default line width.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-==============================================================================*/
-
 /***************************************************************************//**
  * Adds vertex values to the supplied vertex array to create a line representing
  * the 1-D finite element.
- * 
+ *
+ * @param field_cache  Cache for field location and working values.
  * @param element The element that primitives will be generated for.
  * @param vertex_array The array which this primitive will be added to.
  * @param coordinate_field The required position coordinate field.  It is assumed
@@ -275,51 +259,38 @@ Notes:
  * to say which parent element they should be evaluated on as necessary.
  * @param time The time used for evaluating the various fields.
  */
-int FE_element_add_line_to_vertex_array(
-	struct FE_element *element, struct Graphics_vertex_array *vertex_array,
+int FE_element_add_line_to_vertex_array(struct FE_element *element,
+	Cmiss_field_cache_id field_cache, struct Graphics_vertex_array *vertex_array,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	struct Computed_field *texture_coordinate_field,
 	unsigned int number_of_segments, struct FE_element *top_level_element, FE_value time);
 
-struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,struct Computed_field *data_field,
+/***************************************************************************//**
+ * Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
+ * finite <element> using a grid of points.  The cylinder is built out of an
+ * array of rectangles <number_of_segments_along> by <number_of_segments_around>
+ * the cylinder.The actual radius is calculated as:
+ * radius = constant_radius + scale_factor*radius_field(a scalar field)
+ * The optional <data_field> (currently only a scalar) is calculated as data over
+ * the length of the cylinder, for later colouration by a spectrum.
+ * The optional <top_level_element> may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * The first component of <texture_coordinate_field> is used to control the
+ * texture coordinates along the element. If not supplied it will match Xi. The
+ * texture coordinate around the cylinders is always from 0 to 1.
+ * Notes:
+ * - the coordinate field is assumed to be rectangular cartesian.
+ */
+struct GT_surface *create_cylinder_from_FE_element(
+	struct FE_element *element, Cmiss_field_cache_id field_cache,
+	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
 	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2002
-
-DESCRIPTION :
-Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
-finite <element> using a grid of points.  The cylinder is built out of an array
-of rectangles <number_of_segments_along> by <number_of_segments_around> the
-cylinder.The actual radius is calculated as:
-radius = constant_radius + scale_factor*radius_field(a scalar field)
-The optional <data_field> (currently only a scalar) is calculated as data over
-the length of the cylinder, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-The first component of <texture_coordinate_field> is used to control the
-texture coordinates along the element. If not supplied it will match Xi. The
-texture coordinate around the cylinders is always from 0 to 1.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-==============================================================================*/
-
-struct GT_nurbs *create_GT_nurb_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-==============================================================================*/
 
 /****************************************************************************//**
  * Sorts out how standard, polygon and simplex elements are segmented, based on
@@ -349,75 +320,13 @@ int get_surface_element_segmentation(struct FE_element *element,
  * @param surface_mesh  2-D surface mesh being converted to surface graphics.
 */
 struct GT_surface *create_GT_surface_from_FE_element(
-	Cmiss_field_cache_id field_cache, struct FE_element *element,
-	struct Computed_field *coordinate_field,
+	struct FE_element *element, Cmiss_field_cache_id field_cache,
+	Cmiss_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *data_field, Cmiss_mesh_id surface_mesh,
+	struct Computed_field *data_field,
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
 	enum Cmiss_graphics_render_type render_type, FE_value time);
-
-struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
-	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *vtexture, enum Cmiss_graphics_render_type render_type,
-	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *texture_coordinate_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2005
-
-DESCRIPTION :
-Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
-The volume texture contains a list of coloured triangular polygons representing
-an isosurface calculated from the volumetric data. These polygons are stored in
-local xi1,2,3 space and undergo a free form deformation (FFD) when mapped onto
-the finite <element> <block>. The output contains the deformed polygon & normal
-list.  Only the vertices are transformed. The polygons are then generated from a
-list of pointers to the vertices.  Normals are calculated from the resulting
-deformed vertices by taking the average of the cross products of the surrounding
-faces.
-Added a surface_points set and a controlling texture_map and scale which list
-seed points distributed on the surface randomly but with density due to the 
-texture_map.
-==============================================================================*/
-
-struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
-	struct FE_element *element,struct Computed_field *coordinate_field,
-	struct VT_vector_field *vector_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Interpolates xi points (triples in vector field) over the finite <element>
-<block>.  Outputs the updated field.
-==============================================================================*/
-
-struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
-	struct Clipping *clipping,struct FE_element *element,
-	struct Computed_field *coordinate_field,struct Computed_field *field_scalar,
-	struct VT_volume_texture *texture, enum Cmiss_graphics_render_type render_type,
-	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *texture_coordinate_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2005
-
-DESCRIPTION :
-Generates clipped voltex from <volume texture> and <clip_function> over
-<element><block>
-==============================================================================*/
-
-int create_iso_surfaces_from_FE_element(struct FE_element *element,
-	double iso_value, FE_value time,struct Clipping *clipping,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,struct Computed_field *scalar_field,
-	struct Computed_field *texture_coordinate_field,
-	int *number_in_xi, double decimation_threshold,
-	struct GT_object *graphics_object, enum Cmiss_graphics_render_type render_type);
-/*******************************************************************************
-LAST MODIFIED : 8 December 2005
-
-DESCRIPTION :
-Converts a 3-D element into an iso_surface (via a volume_texture).
-==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

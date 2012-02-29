@@ -90,7 +90,11 @@ static void* GlobalVariableMinimisation = NULL;
 
 int ObjectiveFieldData::prepareTerms()
 {
-	numTerms = field->core->get_number_of_sum_square_terms();
+	Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+	Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+	numTerms = field->get_number_of_sum_square_terms(*field_cache);
+	Cmiss_field_cache_destroy(&field_cache);
+	Cmiss_field_module_destroy(&field_module);
 	bufferSize = numComponents;
 	if (numTerms > 0)
 		bufferSize *= numTerms;
@@ -343,11 +347,14 @@ void Minimisation::list_dof_values()
  */
 void Minimisation::invalidate_independent_field_caches()
 {
+	field_cache->clear();
+#if defined (FUTURE_CODE)
 	for (FieldVector::iterator iter = independentFields.begin();
 		iter != independentFields.end(); ++iter)
 	{
 		Cmiss_field_cache_invalidate_field(field_cache, *iter);
 	}
+#endif // defined (FUTURE_CODE)
 }
 
 /***************************************************************************//**
@@ -487,7 +494,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		const int bufferSize = objective->bufferSize;
 		FE_value *buffer = objective->buffer;
 		if (objective->numTerms > 0)
-			return_code = objective->field->core->evaluate_sum_square_terms_at_location(&location, bufferSize, buffer);
+			return_code = objective->field->evaluate_sum_square_terms(*(minimisation->field_cache), bufferSize, buffer);
 		else
 			return_code = Cmiss_field_evaluate_real(objective->field, minimisation->field_cache, objective->bufferSize, objective->buffer);
 		if (!return_code)
