@@ -394,7 +394,7 @@ struct Computed_field *Computed_field_create_nodal_lookup(
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
-		(FE_node_get_FE_region(lookup_node) == Cmiss_region_get_FE_region(Cmiss_field_module_get_region(field_module))))
+		(FE_node_get_FE_region(lookup_node) == Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -928,7 +928,8 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 {
 	Computed_field *field = NULL;
 	if (source_field && (4 == source_field->number_of_components) &&
-		quaternion_SLERP_node)
+		quaternion_SLERP_node && (FE_node_get_FE_region(quaternion_SLERP_node) ==
+			Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
