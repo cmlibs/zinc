@@ -550,17 +550,33 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_scene_viewer_projection::compare */
 
-int Computed_field_scene_viewer_projection::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
+int Computed_field_scene_viewer_projection::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	if (scene_viewer)
 	{
 		// note, assuming matrix is owned by field not cache. Not thread safe.
-		if (!requiredProjectionMatrixUpdate()	|| calculate_matrix())
+		if (!requiredProjectionMatrixUpdate() || calculate_matrix())
 		{
 			for (int i = 0 ; i < field->number_of_components ; i++)
 			{
 				valueCache.values[i] = projection_matrix[i];
+			}
+			int number_of_xi = cache.getRequestedDerivatives();
+			if (number_of_xi)
+			{
+				for (int i = 0 ; i < field->number_of_components ; i++)
+				{
+					for (int k = 0; k < number_of_xi; k++)
+					{
+						valueCache.derivatives[i*number_of_xi + k] = 0.0;
+					}
+				}
+				valueCache.derivatives_valid = 1;
+			}
+			else
+			{
+				valueCache.derivatives_valid = 0;
 			}
 		}
 		else
