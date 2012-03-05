@@ -122,6 +122,7 @@ int Computed_field_time_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCac
 		Field_location *location = cache.cloneLocation();
 		location->set_time(timeValueCache->values[0]);
 		extraCache.setLocation(location);
+		extraCache.setRequestedDerivatives(cache.getRequestedDerivatives());
 		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		if (sourceValueCache)
 		{

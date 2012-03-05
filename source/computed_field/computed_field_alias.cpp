@@ -252,6 +252,7 @@ int Computed_field_alias::evaluate(Cmiss_field_cache& cache, FieldValueCache& in
 	if (extraCache)
 	{
 		extraCache->setLocation(cache.cloneLocation());
+		extraCache->setRequestedDerivatives(cache.getRequestedDerivatives());
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
 	else
