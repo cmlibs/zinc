@@ -144,7 +144,7 @@ void Cmiss_field_cache::clear()
 
 int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values)
 {
-	if (!(field && field->isNumerical() && (numberOfValues > field->number_of_components) && values))
+	if (!(field && field->isNumerical() && (numberOfValues >= field->number_of_components) && values))
 		return 0;
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -164,8 +164,8 @@ int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, co
 int Cmiss_field_cache::setFieldRealWithDerivatives(Cmiss_field_id field, int numberOfValues, const double *values,
 	int numberOfDerivatives, const double *derivatives)
 {
-	if (!(field && field->isNumerical() && (numberOfValues > field->number_of_components) && values &&
-		(0 < numberOfDerivatives) && (numberOfDerivatives < MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
+	if (!(field && field->isNumerical() && (numberOfValues >= field->number_of_components) && values &&
+		(0 < numberOfDerivatives) && (numberOfDerivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
 		return 0;
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -258,8 +258,7 @@ int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
 {
 	if (!cache)
 		return 0;
-	cache->setFieldReal(reference_field, number_of_values, values);
-	return 1;
+	return cache->setFieldReal(reference_field, number_of_values, values);
 }
 
 // Internal function

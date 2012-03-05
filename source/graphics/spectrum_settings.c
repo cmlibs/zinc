@@ -2467,16 +2467,19 @@ passed in render data.
 		{
 			if (settings->active)
 			{
+				Cmiss_field_module_id field_module;
+				Cmiss_field_cache_id field_cache;
 				// GRC probably inefficient to create and destroy cache here; keep it through render pass?
-				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(settings->output_field);
-				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+				field_module = Cmiss_field_get_field_module(settings->output_field);
+				field_cache = Cmiss_field_module_create_cache(field_module);
 				number_of_components = Computed_field_get_number_of_components
 					(settings->output_field);
 				ALLOCATE(values, FE_value, number_of_components);
 				if (settings->component_number > 0)
 				{
 					FE_value dataValue[1];
-					float* tmpPointer = render_data->data + settings->component_number;
+					float* tmpPointer;
+					tmpPointer = render_data->data + settings->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
 					Cmiss_field_cache_set_field_real(field_cache, settings->input_field, /*number_of_values*/1, dataValue);
 				}
