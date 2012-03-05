@@ -144,12 +144,14 @@ void Cmiss_field_cache::clear()
 
 int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values)
 {
-	if (!(field && field->isNumerical() && (numberOfValues >= field->number_of_components) && values))
+	// to support the xi field which has 3 components regardless of dimensions, do not
+	// check (numberOfValues >= field->number_of_components), just pad with zeros
+	if (!(field && field->isNumerical() && (numberOfValues > 0) && values))
 		return 0;
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
 	{
-		valueCache->values[i] = values[i];
+		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
 	}
 	valueCache->derivatives_valid = 0;
 	locationChanged();
@@ -164,18 +166,21 @@ int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, co
 int Cmiss_field_cache::setFieldRealWithDerivatives(Cmiss_field_id field, int numberOfValues, const double *values,
 	int numberOfDerivatives, const double *derivatives)
 {
-	if (!(field && field->isNumerical() && (numberOfValues >= field->number_of_components) && values &&
+	// to support the xi field which has 3 components regardless of dimensions, do not
+	// check (numberOfValues >= field->number_of_components), just pad with zeros
+	if (!(field && field->isNumerical() && (numberOfValues > 0) && values &&
 		(0 < numberOfDerivatives) && (numberOfDerivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
 		return 0;
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
 	{
-		valueCache->values[i] = values[i];
+		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
 	}
 	const int size = field->number_of_components * numberOfDerivatives;
+	const int suppliedSize = numberOfValues * numberOfDerivatives;
 	for (int i = 0; i < size; i++)
 	{
-		valueCache->derivatives[i] = derivatives[i];
+		valueCache->derivatives[i] = (i < suppliedSize) ? derivatives[i] : 0.0;
 	}
 	valueCache->derivatives_valid = 1;
 	locationChanged();

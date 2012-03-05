@@ -1010,6 +1010,7 @@ for subsequent operations.
 			|| (coordinate_location = 
 				dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
 		{
+			return_code = 1;
 			Cmiss_field_id sourceField = getSourceField(0);
 			// If the input contains an ImageFilter of the correct type then use that as
 			// the input field
@@ -1078,8 +1079,15 @@ for subsequent operations.
 
 						field_cache->setMeshLocation(element, pixel_xi);
 						RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
-				
-						generateInput.Set( valueCache->values[0] );
+						if (valueCache)
+						{
+							generateInput.Set( valueCache->values[0] );
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
 					}
 				}
 				else if (coordinate_location)
@@ -1104,8 +1112,15 @@ for subsequent operations.
 
 						field_cache->setFieldReal(reference_field, dimension, pixel_xi);
 						RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
-
-						generateInput.Set( valueCache->values[0] );
+						if (valueCache)
+						{
+							generateInput.Set( valueCache->values[0] );
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
 					}
 				}
 				Cmiss_field_cache_destroy(&field_cache);
@@ -1244,8 +1259,6 @@ for subsequent operations.
 #endif // defined (NEW_CODE)
 
 			}
-
-			return_code = 1;
 		}
 		else
 		{
