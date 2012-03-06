@@ -68,10 +68,12 @@ private:
 
 public:
 	int evaluationCounter; // set to Cmiss_field_cache::locationCounter when field evaluated
+	int derivatives_valid; // only relevant to real caches, but having here saves a virtual function call
 
 	FieldValueCache() :
 		extraCache(0),
-		evaluationCounter(-1)
+		evaluationCounter(-1),
+		derivatives_valid(0)
 	{
 	}
 
@@ -99,10 +101,9 @@ public:
 	 */
 	virtual char *getAsString() = 0;
 
-	/** override if derivatives have been calculated */
-	virtual bool hasDerivatives()
+	bool hasDerivatives()
 	{
-		return false;
+		return derivatives_valid;
 	}
 
 };
@@ -305,7 +306,6 @@ class RealFieldValueCache : public FieldValueCache
 public:
 	int componentCount;
 	FE_value *values, *derivatives;
-	int derivatives_valid;
 	Computed_field_find_element_xi_cache *find_element_xi_cache;
 
 	RealFieldValueCache(int componentCount) :
@@ -313,7 +313,6 @@ public:
 		componentCount(componentCount),
 		values(new FE_value[componentCount]),
 		derivatives(new FE_value[componentCount*MAXIMUM_ELEMENT_XI_DIMENSIONS]),
-		derivatives_valid(0),
 		find_element_xi_cache(0)
 	{
 	}
@@ -376,11 +375,6 @@ public:
 	}
 
 	virtual char *getAsString();
-
-	virtual bool hasDerivatives()
-	{
-		return derivatives_valid;
-	}
 
 	void setValues(const FE_value *values_in)
 	{
