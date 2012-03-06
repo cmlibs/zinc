@@ -4667,7 +4667,8 @@ static int Graphics_object_render_opengl(
 						graphics_object_item->name);
 				}
 			}
-			if (GRAPHICS_DRAW_SELECTED != graphics_object_item->select_mode)
+			// there is no highlight_functor when picking, but draw_selected graphics need to be pickable
+			if ((GRAPHICS_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
 			{
 				if (graphics_object_item->default_material)
 				{

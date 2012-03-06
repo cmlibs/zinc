@@ -4513,7 +4513,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		}
 #endif /*(WX_USER_INTERFACE)*/
 		}
-		region = Cmiss_region_access(node_tool->root_region);
+		if (node_tool)
+		{
+			region = Cmiss_region_access(node_tool->root_region);
+		}
 		option_table=CREATE(Option_table)();
 		/* coordinate_field */
 		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field_name,
@@ -4541,7 +4544,15 @@ Which tool that is being modified is passed in <node_tool_void>.
 		Option_table_add_entry(option_table,"element_xi_field",&xi_field_name,
 			NULL,set_name);
 		/* group */
-		Option_table_add_region_or_group_entry(option_table, "group", &region, &group);
+		char *dummy_region_string = 0;
+		if (region)
+		{
+			Option_table_add_region_or_group_entry(option_table, "group", &region, &group);
+		}
+		else
+		{
+			Option_table_add_string_entry(option_table, "group", &dummy_region_string, " REGION_PATH/GROUP");
+		}
 		/* motion_update/no_motion_update */
 		Option_table_add_switch(option_table,"motion_update","no_motion_update",
 			&motion_update_enabled);
@@ -4628,6 +4639,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
 		Cmiss_region_destroy(&region);
+		DEALLOCATE(dummy_region_string);
 		if (group)
 		{
 			Cmiss_field_group_destroy(&group);

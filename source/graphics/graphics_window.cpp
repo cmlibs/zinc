@@ -7012,7 +7012,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 {
 	int return_code = 0;
 	Graphics_window *window = NULL;
-	Interactive_tool *interactive_tool;
 	Node_tool *node_tool = NULL;
 	USE_PARAMETER(dummy_void);
 	ENTER(execute_command_gfx_node_tool);
@@ -7021,7 +7020,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		window = (Graphics_window *)window_void;
 		if (window)
 		{
-			interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager);
+			Interactive_tool *interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager);
 			if (interactive_tool)
 			{
 				node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(interactive_tool));
