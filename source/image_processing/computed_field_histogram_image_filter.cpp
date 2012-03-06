@@ -1151,6 +1151,15 @@ already) and allows its contents to be modified.
 				DEALLOCATE(numberOfBins);
 			}
 		}
+		if (histogramMinimum)
+		{
+			DEALLOCATE(histogramMinimum);
+		}
+
+		if (histogramMaximum)
+		{
+			DEALLOCATE(histogramMaximum);
+		}
 	}
 	else
 	{
