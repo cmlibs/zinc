@@ -1086,8 +1086,9 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 		{
 			if (IS_OBJECT_IN_LIST(Computed_field)(object,manager->object_list))
 			{
-				/* can only change number_of_components if field NOT_IN_USE */
-				if ((new_data->number_of_components == object->number_of_components) ||
+				/* can only change number_of_components and value type if field NOT_IN_USE */
+				if (((new_data->number_of_components == object->number_of_components) &&
+					(Cmiss_field_get_value_type(new_data) == Cmiss_field_get_value_type(object))) ||
 					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
 				{
 					return_code = 1;
@@ -1120,7 +1121,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 				{
 					display_message(ERROR_MESSAGE,
 						"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
-						"Cannot change number of components while field is in use");
+						"Cannot change number of components or value type while field is in use");
 					return_code = 0;
 				}
 			}
