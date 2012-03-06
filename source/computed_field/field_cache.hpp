@@ -116,6 +116,7 @@ private:
 	Cmiss_region_id region;
 	int locationCounter; // incremented whenever domain location changes
 	Field_location *location;
+	int requestedDerivatives;
 	ValueCacheVector valueCaches;
 	bool assignInCache;
 	int access_count;
@@ -143,6 +144,7 @@ public:
 		region(Cmiss_region_access(region)),
 		locationCounter(0),
 		location(new Field_time_location()),
+		requestedDerivatives(0),
 		valueCaches(Cmiss_region_get_field_cache_size(region), (FieldValueCache*)0),
 		assignInCache(false),
 		access_count(1)
@@ -218,12 +220,15 @@ public:
 
 	int getRequestedDerivatives()
 	{
-		return location->get_number_of_derivatives();
+		return requestedDerivatives;
 	}
 
 	void setRequestedDerivatives(int requestedDerivativesIn)
 	{
-		location->set_number_of_derivatives(requestedDerivativesIn);
+		if ((requestedDerivativesIn >= 0) && (requestedDerivativesIn <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+		{
+			requestedDerivatives = requestedDerivativesIn;
+		}
 	}
 
 	/** @param topLevelElement  Optional top-level element to inherit fields from */

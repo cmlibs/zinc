@@ -677,7 +677,7 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 				Cmiss_element_id top_level_element = element_xi_location->get_top_level_element();
 				FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
-				int number_of_derivatives = element_xi_location->get_number_of_derivatives();
+				int number_of_derivatives = cache.getRequestedDerivatives();
 
 				return_code = calculate_FE_element_field_values_for_element(
 					feValueCache.field_values_cache, feValueCache.fe_element_field_values,
@@ -4043,7 +4043,7 @@ int Computed_field_basis_derivative::evaluate(Cmiss_field_cache& cache, FieldVal
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
 		FE_value time = element_xi_location->get_time();
 		const FE_value* xi = element_xi_location->get_xi();
-		int number_of_derivatives = element_xi_location->get_number_of_derivatives();
+		int number_of_derivatives = cache.getRequestedDerivatives();
 
 		if (calculate_FE_element_field_values_for_element(
 			feValueCache.field_values_cache, feValueCache.fe_element_field_values,

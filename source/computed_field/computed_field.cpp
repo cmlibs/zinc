@@ -2005,10 +2005,7 @@ int Cmiss_field_evaluate_derivative(Cmiss_field_id field,
 			int element_dimension = element_xi_location->get_dimension();
 			if (element_dimension == differential_operator->getDimension())
 			{
-				int old_number_of_derivatives = element_xi_location->get_number_of_derivatives();
-				element_xi_location->set_number_of_derivatives(element_dimension);
-				FieldValueCache *valueCache = field->evaluate(*cache);
-				element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
+				FieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, element_dimension);
 				if (valueCache)
 				{
 					RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
