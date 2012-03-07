@@ -2536,33 +2536,32 @@ void OnCreateElementsPressed(wxCommandEvent &event)
  }
 
 void OnDimensionEntered(wxCommandEvent &event)
- {
-		char *value_string;
-		int element_dimension;
-		
-	USE_PARAMETER(event);
-		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
-		if (node_tool)
-		{
-			 value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str());
-			 if (value_string != 0)
-			 {
-					if (1==sscanf(value_string,"%d",&element_dimension))
-					{
-						 Node_tool_set_element_dimension(node_tool,
-								element_dimension);
-					}
-			 }
-			 /* always restore element_dimension_text to actual value stored */
-			 Node_tool_refresh_element_dimension_text(node_tool);
-		}
-		else
-		{
-			 display_message(ERROR_MESSAGE,
-					"Element_creator_element_dimension_text_CB.  Invalid argument(s)");
-		}
- }
+{
+	int element_dimension;
 
+	USE_PARAMETER(event);
+	dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
+	if (node_tool)
+	{
+		wxString wxTextEntry = dimension_textctrl->GetValue();
+		const char *value_string = wxTextEntry.c_str();
+		if (value_string != 0)
+		{
+			if (1==sscanf(value_string,"%d",&element_dimension))
+			{
+				Node_tool_set_element_dimension(node_tool,
+					element_dimension);
+			}
+		}
+		/* always restore element_dimension_text to actual value stored */
+		Node_tool_refresh_element_dimension_text(node_tool);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"wxNodeTool::OnDimensionEntered.  Invalid argument(s)");
+	}
+}
 
 void NodeToolInterfaceRenew_element_xi_field(Node_tool *node_tool)
 {
@@ -4309,25 +4308,26 @@ DESCRIPTION :
 Updates what is shown on the dimension text field.
 ==============================================================================*/
 {
-	 char temp_string[20],*value_string;
-	 int return_code;
- 	 wxTextCtrl *dimension_textctrl;
-	 dimension_textctrl = XRCCTRL(*node_tool->wx_node_tool, "DimensionTextCtrl", wxTextCtrl);
+	int return_code;
+	wxTextCtrl *dimension_textctrl;
+	dimension_textctrl = XRCCTRL(*node_tool->wx_node_tool, "DimensionTextCtrl", wxTextCtrl);
 
 	ENTER(Node_tool_refresh_element_dimension_text);
 	if (node_tool)
 	{
 		return_code=1;
-		value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str());
+		wxString wxTextEntry = dimension_textctrl->GetValue();
+		const char *value_string = wxTextEntry.c_str();
 		if (value_string != 0)
 		{
-			 sprintf(temp_string,"%d",node_tool->element_dimension);
-			 /* only set string if different from that shown */
-			 if (strcmp(temp_string,value_string))
-			 {
-					wxString string(temp_string, wxConvUTF8);
-					dimension_textctrl->ChangeValue(string);
-			 }
+			char temp_string[20];
+			sprintf(temp_string,"%d",node_tool->element_dimension);
+			/* only set string if different from that shown */
+			if (strcmp(temp_string,value_string))
+			{
+				wxString string(temp_string, wxConvUTF8);
+				dimension_textctrl->ChangeValue(string);
+			}
 		}
 	}
 	else
