@@ -61,7 +61,6 @@ extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 #include "minimise/minimise.h"
 }

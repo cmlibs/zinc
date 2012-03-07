@@ -63,7 +63,6 @@ extern "C" {
 	#include "general/debug.h"
 	#include "general/indexed_list_private.h"
 	#include "general/object.h"
-	#include "region/cmiss_region_private.h"
 	#include "time/time_keeper.h"
 	#include "user_interface/message.h"
 }
@@ -347,14 +346,12 @@ void Minimisation::list_dof_values()
  */
 void Minimisation::invalidate_independent_field_caches()
 {
-	field_cache->clear();
-#if defined (FUTURE_CODE)
 	for (FieldVector::iterator iter = independentFields.begin();
 		iter != independentFields.end(); ++iter)
 	{
-		Cmiss_field_cache_invalidate_field(field_cache, *iter);
+		Cmiss_field_id independentField = *iter;
+		independentField->clearCaches();
 	}
-#endif // defined (FUTURE_CODE)
 }
 
 /***************************************************************************//**

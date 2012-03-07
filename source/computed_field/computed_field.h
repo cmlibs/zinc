@@ -230,24 +230,6 @@ computed <field_list>.
 int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void);
 
-int Computed_field_depends_on_Computed_field(struct Computed_field *field,
-	struct Computed_field *other_field);
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Returns true if the two fields are identical or one of the source_fields of
-<field> is <other_field> or depends on it.
-
-This function is used by MANAGER_COPY_WITHOUT_IDENTIFIER to ensure that the
-destination field will not depend on itself, thus leading to an infinite loop,
-and also to prevent copying a field over itself.
-
-Parts of the program receiving manager messages for Computed_fields should call
-this function with the field=field in use and other_field=modified field to
-determine if the field in use needs updating.
-==============================================================================*/
-
 int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
 	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
 	void *user_data);
@@ -292,19 +274,6 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	Cmiss_element_id top_level_element);
-
-/***************************************************************************//**
- * Fully clears cache of supplied field, its source fields and any fields that
- * depend on its values.
- * Internal function.
- *
- * @param cache  The field cache to modify.
- * @param field  The field whose values cache is to be cleared, along with all
- * its source and dependent fields, recursively.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
-	Cmiss_field_id field);
 
 /***************************************************************************//**
  * Internal function which if set means subsequent values are assigned into the

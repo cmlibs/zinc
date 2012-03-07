@@ -487,6 +487,21 @@ int Cmiss_region_add_field_private(Cmiss_region_id region, Cmiss_field_id field)
 	return 0;
 }
 
+void Cmiss_region_clear_field_value_caches(Cmiss_region_id region, Cmiss_field_id field)
+{
+	int cacheIndex = Cmiss_field_get_cache_index_private(field);
+	for (std::list<Cmiss_field_cache_id>::iterator iter = region->field_caches->begin();
+		iter != region->field_caches->end(); ++iter)
+	{
+		Cmiss_field_cache_id cache = *iter;
+		FieldValueCache *valueCache = cache->getValueCache(cacheIndex);
+		if (valueCache)
+		{
+			valueCache->clear();
+		}
+	}
+}
+
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region)
 {
 	if (region) 

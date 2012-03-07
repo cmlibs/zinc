@@ -477,6 +477,11 @@ DESCRIPTION :
 		return DEACCESS(Computed_field)(field_address);
 	}
 
+	/** call whenever field values have been assigned to. Clears all cached data for
+	 * this field and any field that depends on it.
+	 */
+	void clearCaches();
+
 	inline FieldValueCache *getValueCache(Cmiss_field_cache& cache)
 	{
 		FieldValueCache *valueCache = cache.getValueCache(cache_index);
@@ -496,10 +501,6 @@ DESCRIPTION :
 			cache.assignInCacheOnly())
 		{
 			valueCache.evaluationCounter = cache.getLocationCounter();
-		}
-		else
-		{
-			valueCache.clear();
 		}
 		return result;
 	}
@@ -538,6 +539,21 @@ DESCRIPTION :
 		FieldValueCache *valueCache = evaluate(cache);
 		cache.setRequestedDerivatives(requestedDerivatives);
 		return valueCache;
+	}
+
+	/** @return  true if this field equals otherField or otherField is a source
+	 * field directly or indirectly, otherwise false.
+	 */
+	bool dependsOnField(Cmiss_field *otherField)
+	{
+		if (this == otherField)
+			return true;
+		for (int i = 0; i < this->number_of_source_fields; ++i)
+		{
+			if (this->source_fields[i]->dependsOnField(otherField))
+				return true;
+		}
+		return false;
 	}
 
 	int isNumerical()

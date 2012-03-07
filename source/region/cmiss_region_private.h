@@ -59,6 +59,12 @@ Global functions
 int Cmiss_region_add_field_private(Cmiss_region_id region, Cmiss_field_id field);
 
 /***************************************************************************//**
+ * Private function for clearing field value caches for field in all caches
+ * listed in region.
+ */
+void Cmiss_region_clear_field_value_caches(Cmiss_region_id region, Cmiss_field_id field);
+
+/***************************************************************************//**
  * Deaccesses fields from region and all child regions recursively.
  * Temporary until circular references sorted out - certain fields access
  * regions. Call ONLY before deaccessing root_region in Cmiss_context.

@@ -53,18 +53,6 @@ on itself in any way, to prevent infinite loops.
 for an FE_field, the component names will match those for the FE_field,
 otherwise they will be called "1", "2", etc.
 
-- Handling messages from the MANAGER(Computed_field) is made tricky by the
-possibility of fields depending on each other. If you are informed that field
-"bob" has changed, and you are using field "fred", you must call function
-Computed_field_depends_on_Computed_field to determine the dependency.
-
-- After using a computed field in a block of code (ie. for a period until the
-application main loop is returned to), you must call Computed_field_clear_cache
-to clear its cache so that it is not accessing elements or nodes or promising
-values at certain positions that may have changed. Alternative of getting
-messages from element/node managers seems a little expensive. Forgetting to
-clear the cache could cause some unexpected behaviour.
-
 
 FUTURE PLANS AND ISSUES:
 ------------------------
@@ -982,7 +970,7 @@ Do not allow copy if:
 	{
 		return_code = 1;
 		/* check <source> does not depend on <destination> else infinite loop */
-		if (Computed_field_depends_on_Computed_field(source,destination))
+		if (source->dependsOnField(destination))
 		{
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
@@ -1475,60 +1463,20 @@ inline bool Cmiss_field_cache_check(Cmiss_field_id field, Cmiss_field_cache_id c
 	return (field && cache && (field->manager->owner == cache->getRegion()));
 }
 
-#if defined (FUTURE_CODE)
-/**
- * Recursive function for clearing cache of field if any field it depends on
- * has no cached value. Note: do not mix with calls to clear_values_cache().
- * @return  1 if the field has no cache or has cleared cache due to source
- * fields returning true for this function. Otherwise returns 0.
- */
-static int Cmiss_field_check_invalid_cache(Cmiss_field_cache_id cache, Cmiss_field_id field)
+void Cmiss_field::clearCaches()
 {
-	if (field)
+	// some fields (integration, histogram) still have caches in field itself to clear:
+	core->clear_cache();
+	Cmiss_region_id region = this->manager->owner;
+	Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(this->manager->object_list);
+	for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
 	{
-		FieldValueCache *valueCache = field->getValueCache(*cache);
-		if (valueCache)
+		Cmiss_field_id field = *iter;
+		if (field->dependsOnField(this))
 		{
-			for (int i = 0; i < field->number_of_source_fields; i++)
-			{
-				if (Cmiss_field_check_invalid_cache(cache, field->source_fields[i]))
-				{
-					valueCache->clear();
-					return 1;
-				}
-			}
-		}
-		else
-		{
-			return 1;
+			Cmiss_region_clear_field_value_caches(region, field);
 		}
 	}
-	return 0;
-}
-#endif // defined (FUTURE_CODE)
-
-int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id cache,
-	Cmiss_field_id field)
-{
-	if (Cmiss_field_cache_check(field, cache))
-	{
-		cache->clear();
-#if defined (FUTURE_CODE)
-		// @TODO Be more precise about invalidation
-		FieldValueCache *valueCache = field->getValueCache(*cache);
-		if (valueCache)
-		{
-			valueCache->clear();
-			Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
-			for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
-			{
-				Cmiss_field_check_invalid_cache(cache, *iter);
-			}
-		}
-#endif // defined (FUTURE_CODE)
-		return 1;
-	}
-	return 0;
 }
 
 int Computed_field_is_defined_in_element(struct Computed_field *field,
@@ -1651,93 +1599,6 @@ Returns 1 if any of the source fields have multiple times.
 
 	return (return_code);
 } /* Computed_field_default_has_multiple_times */
-
-int Computed_field_depends_on_Computed_field(struct Computed_field *field,
-	struct Computed_field *other_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if the two fields are identical or one of the source_fields of
-<field> is <other_field> or depends on it.
-
-This function is used by MANAGER_COPY_WITHOUT_IDENTIFIER to ensure that the
-destination field will not depend on itself, thus leading to an infinite loop,
-and also to prevent copying a field over itself.
-
-Parts of the program receiving manager messages for Computed_fields should call
-this function with the field=field in use and other_field=modified field to
-determine if the field in use needs updating.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_depends_on_Computed_field);
-	if (field&&other_field)
-	{
-		if (field==other_field)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-			{
-				return_code=Computed_field_depends_on_Computed_field(
-					field->source_fields[i],other_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_depends_on_Computed_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_depends_on_Computed_field */
-
-int Computed_field_depends_on_Computed_field_in_list(
-	struct Computed_field *field, struct LIST(Computed_field) *field_list)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if <field> depends on any field in <field_list>.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_depends_on_Computed_field_in_list);
-	if (field && field_list)
-	{
-		if (IS_OBJECT_IN_LIST(Computed_field)(field, field_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-			for (i = 0; (i < field->number_of_source_fields) && (!return_code); i++)
-			{
-				return_code = Computed_field_depends_on_Computed_field_in_list(
-					field->source_fields[i], field_list);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_depends_on_Computed_field_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_depends_on_Computed_field_in_list */
 
 int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
 	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
@@ -4452,7 +4313,7 @@ int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_
 
 	if (field && source_field && field != source_field)
 	{
-		return_code = Computed_field_depends_on_Computed_field(field,source_field);
+		return_code = field->dependsOnField(source_field);
 	}
 
 	return !return_code;

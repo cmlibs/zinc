@@ -53,11 +53,17 @@ extern "C" {
 
 struct Computed_field_find_element_xi_cache;
 
-#if (defined (OPTIMISED)) || (defined (NDEBUG)) // macros not consistent across platforms
+// dynamic_cast may make cache value type crashes more predictable.
+// Enable for spurious errors, but switching off for performance reasons, release and debug.
+#if defined (TEST_FIELD_VALUE_CACHE_CAST)
+#  if (defined (OPTIMISED)) || (defined (NDEBUG)) // macros not consistent across platforms
+#    define FIELD_VALUE_CACHE_CAST static_cast
+#  else
+#    define FIELD_VALUE_CACHE_CAST dynamic_cast
+#  endif
+#else // defined (TEST_FIELD_VALUE_CACHE_CAST)
 #  define FIELD_VALUE_CACHE_CAST static_cast
-#else
-#  define FIELD_VALUE_CACHE_CAST dynamic_cast
-#endif
+#endif // defined (TEST_FIELD_VALUE_CACHE_CAST)
 
 class FieldValueCache
 {
@@ -153,8 +159,6 @@ public:
 	}
 
 	~Cmiss_field_cache();
-
-	void clear();
 
 	Cmiss_field_cache_id access()
 	{
@@ -324,12 +328,7 @@ public:
 	{
 	}
 
-	virtual ~RealFieldValueCache()
-	{
-		clear();
-		delete[] values;
-		delete[] derivatives;
-	}
+	virtual ~RealFieldValueCache();
 
 	virtual void clear();
 
@@ -438,6 +437,11 @@ public:
 	}
 
 	virtual ~MeshLocationFieldValueCache()
+	{
+		Cmiss_element_destroy(&element);
+	}
+
+	virtual void clear()
 	{
 		Cmiss_element_destroy(&element);
 	}

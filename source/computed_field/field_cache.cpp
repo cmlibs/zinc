@@ -52,17 +52,22 @@ FieldValueCache::~FieldValueCache()
 {
 	if (extraCache)
 		Cmiss_field_cache::deaccess(extraCache);
-	clear();
 }
 
 void FieldValueCache::clear()
 {
-#if defined (FUTURE_CODE)
-	// Not sure if something like this is needed:
-	if (extraCache)
-		extraCache->clear();
-#endif
 	resetEvaluationCounter();
+}
+
+RealFieldValueCache::~RealFieldValueCache()
+{
+	if (find_element_xi_cache)
+	{
+		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
+		find_element_xi_cache = 0;
+	}
+	delete[] values;
+	delete[] derivatives;
 }
 
 void RealFieldValueCache::clear()
@@ -127,19 +132,14 @@ char *MeshLocationFieldValueCache::getAsString()
 
 Cmiss_field_cache::~Cmiss_field_cache()
 {
-	clear();
-	Cmiss_region_remove_field_cache(region, this);
-	delete location;
-	Cmiss_region_destroy(&region);
-}
-
-void Cmiss_field_cache::clear()
-{
 	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
+	Cmiss_region_remove_field_cache(region, this);
+	delete location;
+	Cmiss_region_destroy(&region);
 }
 
 int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values)

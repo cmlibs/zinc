@@ -308,6 +308,10 @@ private:
 			default:
 				break;
 		}
+		// Note it will be more efficient in some cases to allow finite element field value caches
+		// in related Cmiss_field_cache objects to have a common FE_element_field_values list,
+		// however they must not be shared with time lookup fields as only a single time is cached
+		// and performance will be poor. Leaving implementation to a later date.
 		return new FiniteElementRealFieldValueCache(field->number_of_components);
 	}
 
@@ -817,9 +821,6 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 	return return_code;
 }
 
-// GRC !!! Must clear element values list, cache.
-// GRC URGENT TO DO:
-//- finite element field caches must be shared between related caches & cleared together
 enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	if (cache.assignInCacheOnly())
@@ -998,8 +999,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cac
 	}
 	if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
 	{
-		// clear finite element field cache due to DOFs changing (wasteful if data points changed):
-		valueCache.clear();
+		// clear this and dependent field caches due to DOFs changing (wasteful if data points changed):
+		field->clearCaches();
 		valueCache.derivatives_valid = 0;
 	}
 	return result;
@@ -2395,7 +2396,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(Cmiss_field_cache& 
 			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		}
 		// clear finite element field cache due to DOFs changing (wasteful if data points changed):
-		finite_element_field->getValueCache(cache)->clear();
+		finite_element_field->clearCaches();
 		FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		FE_node *node = node_location->get_node();
 		FE_value time = node_location->get_time();
@@ -2600,7 +2601,7 @@ struct Computed_field *Computed_field_create_node_value(
 		{
 			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true, number_of_components,
-				/*number_of_source_fields*/0, NULL,
+				/*number_of_source_fields*/1, &finite_element_field,
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_node_value(
 					finite_element_field, nodal_value_type, version_number));
@@ -4225,23 +4226,22 @@ Returns true if <field> has the appropriate static type string.
  * is calculated with respect to.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_basis_derivative(
-	struct Cmiss_field_module *field_module,
-	struct FE_field *fe_field, int order, int *xi_indices)
+Cmiss_field_id Cmiss_field_module_create_basis_derivative(
+	Cmiss_field_module_id field_module, Cmiss_field_id finite_element_field,
+	int order, int *xi_indices)
 {
-	char **component_names;
-	int i, number_of_components, return_code;
-	Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_basis_derivative);
-	if (fe_field)
+	Cmiss_field_id field = 0;
+	struct FE_field *fe_field = 0;
+	if (finite_element_field && finite_element_field->isNumerical() &&
+		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field &&
+		(order > 0) && xi_indices)
 	{
-		return_code=1;
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		/* 1. make dynamic allocations for any new type-specific data */
+		int return_code=1;
+		int number_of_components = get_FE_field_number_of_components(fe_field);
+		char **component_names = 0;
 		if (ALLOCATE(component_names, char *, number_of_components))
 		{
-			for (i = 0 ; i < number_of_components; i++)
+			for (int i = 0 ; i < number_of_components; i++)
 			{
 				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
 				{
@@ -4257,7 +4257,7 @@ struct Computed_field *Computed_field_create_basis_derivative(
 		{
 			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true, number_of_components,
-				/*number_of_source_fields*/0, NULL,
+				/*number_of_source_fields*/1, &finite_element_field,
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_basis_derivative(
 					fe_field, order, xi_indices));
@@ -4273,7 +4273,7 @@ struct Computed_field *Computed_field_create_basis_derivative(
 		}
 		if ((!return_code) && (component_names))
 		{
-			for (i = 0 ; i < number_of_components ; i++)
+			for (int i = 0 ; i < number_of_components ; i++)
 			{
 				DEALLOCATE(component_names[i]);
 			}
@@ -4283,42 +4283,10 @@ struct Computed_field *Computed_field_create_basis_derivative(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_basis_derivative.  Invalid argument(s)");
+			"Cmiss_field_module_create_basis_derivative.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
 }
-
-int Computed_field_get_type_basis_derivative(struct Computed_field *field,
-	struct FE_field **fe_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BASIS_DERIVATIVE, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
-{
-	Computed_field_basis_derivative* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_basis_derivative);
-	if (field&&(core=dynamic_cast<Computed_field_basis_derivative*>(field->core)))
-	{
-		*fe_field=core->fe_field;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_basis_derivative.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_basis_derivative */
 
 int define_Computed_field_type_basis_derivative(struct Parse_state *state,
 	void *field_modify_void,void *computed_field_finite_element_package_void)
@@ -4335,136 +4303,119 @@ FE_field being made and/or modified.
 	char basis_derivative_help[] =
 		"The basis_derivative calculates a monomial derivative on element based fields.  It is not defined for nodes.  It allows you to calculate an arbitrary derivative by specifying an <order> and a list of <xi_indices> of length order.  This derivative then becomes the \"value\" for the field.";
 	const char *current_token;
-	int i, order, previous_state_index, return_code, *xi_indices, *temp_xi_indices;
+	int return_code = 1;
 	Computed_field_modify_data *field_modify;
-	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
 	USE_PARAMETER(computed_field_finite_element_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
-		return_code = 1;
-		order = 1;
-		xi_indices = (int *)NULL;
-		fe_field = (struct FE_field *)NULL;
-		if ((NULL != field_modify->get_field()) &&
-			(computed_field_basis_derivative_type_string ==
-				Computed_field_get_type_string(field_modify->get_field())))
+		int order = 1;
+		int *xi_indices = (int *)NULL;
+		Cmiss_field_id finite_element_field = 0;
+		if (field_modify->get_field() &&
+			(0 != dynamic_cast<Computed_field_basis_derivative*>(field_modify->get_field()->core)))
 		{
-			return_code =
-				Computed_field_get_type_basis_derivative(field_modify->get_field(), &fe_field);
-		} else {
+			finite_element_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
 		}
 
 		/* Assign default values for xi_indices */
 		ALLOCATE(xi_indices, int, order);
-		for (i = 0 ; i < order ; i++)
+		for (int i = 0 ; i < order ; i++)
 		{
 			xi_indices[i] = 1;
 		}
 
+		struct Set_Computed_field_conditional_data set_fe_field_data;
+		set_fe_field_data.computed_field_manager = field_modify->get_field_manager();
+		set_fe_field_data.conditional_function = Computed_field_is_type_finite_element_iterator;
+		set_fe_field_data.conditional_function_user_data = (void *)NULL;
+
+		/* try to handle help first */
+		current_token=state->current_token;
+		if (Parse_state_help_mode(state))
+		{
+			option_table=CREATE(Option_table)();
+			Option_table_add_help(option_table, basis_derivative_help);
+			/* fe_field */
+			Option_table_add_Computed_field_conditional_entry(option_table, "fe_field",
+				&finite_element_field, &set_fe_field_data);
+			Option_table_add_int_positive_entry(option_table,
+				"order", &order);
+			Option_table_add_int_vector_entry(option_table,
+				"xi_indices", xi_indices, &order);
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+		}
+		/* parse the order first */
 		if (return_code)
 		{
-			if (fe_field)
-			{
-				ACCESS(FE_field)(fe_field);
-			}
-			/* try to handle help first */
-			current_token=state->current_token;
-			if (current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					option_table=CREATE(Option_table)();
-					Option_table_add_help(option_table, basis_derivative_help);
-					/* fe_field */
-					Option_table_add_set_FE_field_from_FE_region(
-						option_table, "fe_field" ,&fe_field,
-					  Cmiss_region_get_FE_region(field_modify->get_region()));
-					Option_table_add_int_positive_entry(option_table,
-						"order", &order);
-					Option_table_add_int_vector_entry(option_table,
-						"xi_indices", xi_indices, &order);
-					return_code=Option_table_multi_parse(option_table,state);
-					DESTROY(Option_table)(&option_table);
-				}
-			}
-			/* parse the fe_field if the "fe_field" token is next */
-			if (return_code)
-			{
-				// store previous state so that we can return to it
-				previous_state_index = state->current_index;
+			// store previous state so that we can return to it
+			int previous_state_index = state->current_index;
 
-				/* parse the order of the differentiation. */
-				option_table = CREATE(Option_table)();
-				Option_table_add_help(option_table, basis_derivative_help);
-				Option_table_add_int_positive_entry(option_table, "order",
-					&order);
-				/* Ignore all the other entries */
-				Option_table_ignore_all_unmatched_entries(option_table);
-				return_code = Option_table_multi_parse(option_table, state);
-				DESTROY(Option_table)(&option_table);				
-				/* Return back to where we were */
-				shift_Parse_state(state, previous_state_index - state->current_index);
-			}
-			if (return_code)
+			/* parse the order of the differentiation. */
+			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table, basis_derivative_help);
+			Option_table_add_int_positive_entry(option_table, "order",
+				&order);
+			/* Ignore all the other entries */
+			Option_table_ignore_all_unmatched_entries(option_table);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			/* Return back to where we were */
+			shift_Parse_state(state, previous_state_index - state->current_index);
+		}
+		if (return_code)
+		{
+			/* Allocate memory for xi_indices array based on order
+				 and default all index values to 1 */
+			int *temp_xi_indices;
+			if (REALLOCATE(temp_xi_indices, xi_indices, int, order))
 			{
-				/* Allocate memory for xi_indices array based on order
-					 and default all index values to 1 */
-				if (REALLOCATE(temp_xi_indices, xi_indices, int, order))
+				xi_indices = temp_xi_indices;
+				for (int i = 0 ; i < order ; i++)
 				{
-					xi_indices = temp_xi_indices;
-					for (i = 0 ; i < order ; i++)
-					{
-						xi_indices[i] = 1;
-					}
-				}
-
-				option_table=CREATE(Option_table)();
-				/* fe_field */
-				Option_table_add_set_FE_field_from_FE_region(
-					option_table, "fe_field" ,&fe_field,
-					Cmiss_region_get_FE_region(field_modify->get_region()));
-				Option_table_add_int_positive_entry(option_table,
-					"order", &order);
-
-				Option_table_add_int_vector_entry(option_table,
-					"xi_indices", xi_indices, &order);
-				return_code=Option_table_multi_parse(option_table,state);
-				DESTROY(Option_table)(&option_table);
-			}
-			if (return_code)
-			{
-				/* decrement each xi index so that the first index is 0 rather than 1*/
-				for (i = 0 ; i < order ; i++)
-				{
-					xi_indices[i]--;
-				}
-				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_basis_derivative(field_modify->get_field_module(),
-						fe_field, order, xi_indices));
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_basis_derivative.  Failed");
+					xi_indices[i] = 1;
 				}
 			}
 
-			DEALLOCATE(xi_indices);
-
-			if (fe_field)
+			option_table=CREATE(Option_table)();
+			/* fe_field */
+			Option_table_add_Computed_field_conditional_entry(option_table, "fe_field",
+				&finite_element_field, &set_fe_field_data);
+			Option_table_add_int_positive_entry(option_table,
+				"order", &order);
+			Option_table_add_int_vector_entry(option_table,
+				"xi_indices", xi_indices, &order);
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+		}
+		if (return_code)
+		{
+			/* decrement each xi index so that the first index is 0 rather than 1*/
+			for (int i = 0 ; i < order ; i++)
 			{
-				DEACCESS(FE_field)(&fe_field);
+				xi_indices[i]--;
+			}
+			return_code = field_modify->update_field_and_deaccess(
+				Cmiss_field_module_create_basis_derivative(field_modify->get_field_module(),
+					finite_element_field, order, xi_indices));
+		}
+		if (!return_code)
+		{
+			if ((!state->current_token)||
+				(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+			{
+				/* error */
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_basis_derivative.  Failed");
 			}
 		}
+
+		DEALLOCATE(xi_indices);
+		Cmiss_field_destroy(&finite_element_field);
 	}
 	else
 	{
