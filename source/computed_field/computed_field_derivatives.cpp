@@ -694,13 +694,6 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
-	{
-		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		return valueCache;
-	}
-
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
@@ -738,7 +731,7 @@ int Computed_field_curl::evaluate(Cmiss_field_cache& cache, FieldValueCache& inV
 		Cmiss_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getExtraCache();
+			workingCache = valueCache.getOrCreateExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -1079,13 +1072,6 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
-	{
-		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		return valueCache;
-	}
-
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
@@ -1123,7 +1109,7 @@ int Computed_field_divergence::evaluate(Cmiss_field_cache& cache, FieldValueCach
 		Cmiss_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getExtraCache();
+			workingCache = valueCache.getOrCreateExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -1478,13 +1464,6 @@ private:
 
 	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
-	{
-		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		return valueCache;
-	}
-
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
@@ -1528,7 +1507,7 @@ int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 		Cmiss_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getExtraCache();
+			workingCache = valueCache.getOrCreateExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -1609,7 +1588,7 @@ int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 		FE_value *down_values = new FE_value[source_number_of_components];
 		FE_value *coordinate_values = new FE_value[coordinate_number_of_components];
 
-		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		Cmiss_field_cache& extraCache = *valueCache.getOrCreateExtraCache(cache);
 		Field_location *location = cache.cloneLocation();
 		extraCache.setLocation(location);
 

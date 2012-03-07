@@ -94,13 +94,6 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
-	{
-		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		return valueCache;
-	}
-
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
@@ -154,7 +147,7 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 		Cmiss_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getExtraCache();
+			workingCache = valueCache.getOrCreateExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}

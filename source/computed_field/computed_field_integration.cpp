@@ -320,38 +320,6 @@ int write_Computed_field_element_integration_mapping(
 	return( 1 );
 }
 
-class IntegrationFieldValueCache : public RealFieldValueCache
-{
-public:
-
-	IntegrationFieldValueCache(int componentCount) :
-		RealFieldValueCache(componentCount)
-	{
-	}
-
-	virtual ~IntegrationFieldValueCache()
-	{
-		clear();
-	}
-
-	virtual void clear()
-	{
-		// GRC see clear_cache()
-		RealFieldValueCache::clear();
-	}
-
-	static IntegrationFieldValueCache* cast(FieldValueCache* valueCache)
-   {
-		return FIELD_VALUE_CACHE_CAST<IntegrationFieldValueCache*>(valueCache);
-   }
-
-	static IntegrationFieldValueCache& cast(FieldValueCache& valueCache)
-   {
-		return FIELD_VALUE_CACHE_CAST<IntegrationFieldValueCache&>(valueCache);
-   }
-
-};
-
 char computed_field_integration_type_string[] = "integration";
 char computed_field_xi_texture_coordinates_type_string[] = 
 "xi_texture_coordinates";
@@ -425,13 +393,6 @@ private:
 	int clear_cache();
 
 	bool is_defined_at_location(Cmiss_field_cache& cache);
-
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
-	{
-		RealFieldValueCache *valueCache = new IntegrationFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		return valueCache;
-	}
 
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
@@ -1384,10 +1345,8 @@ bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache
 
 int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	IntegrationFieldValueCache& valueCache = IntegrationFieldValueCache::cast(inValueCache);
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	FE_value time = cache.getTime();
-	Cmiss_field_cache& workingCache = *(valueCache.getExtraCache());
-	workingCache.setTime(time);
 
 	double dsdxi;
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -1488,6 +1447,8 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 				(top_level_element, texture_mapping);
 			if (mapping != 0)
 			{
+				Cmiss_field_cache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
+				workingCache.setTime(time);
 				/* Integrate to the specified top_level_xi location */
 				for (i = 0 ; i < top_level_element_dimension ; i++)
 				{

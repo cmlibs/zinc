@@ -94,7 +94,7 @@ public:
 		return extraCache;
 	}
 
-	void setExtraCache(Cmiss_field_cache *inExtraCache);
+	Cmiss_field_cache *getOrCreateExtraCache(Cmiss_field_cache& parentCache);
 
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
@@ -292,6 +292,7 @@ public:
 	}
 };
 
+/** use this function with getExtraCache() when creating FieldValueCache for fields that must use an extraCache */
 inline void FieldValueCache::createExtraCache(Cmiss_field_cache& /*parentCache*/, Cmiss_region *region)
 {
 	if (extraCache)
@@ -299,11 +300,12 @@ inline void FieldValueCache::createExtraCache(Cmiss_field_cache& /*parentCache*/
 	extraCache = new Cmiss_field_cache(region);
 }
 
-inline void FieldValueCache::setExtraCache(Cmiss_field_cache *inExtraCache)
+/** use this function for fields that may use an extraCache, e.g. derivatives propagating to top-level-element */
+inline Cmiss_field_cache *FieldValueCache::getOrCreateExtraCache(Cmiss_field_cache& parentCache)
 {
-	if (extraCache)
-		Cmiss_field_cache::deaccess(extraCache);
-	extraCache = inExtraCache->access();
+	if (!extraCache)
+		extraCache = new Cmiss_field_cache(parentCache.getRegion());
+	return extraCache;
 }
 
 class RealFieldValueCache : public FieldValueCache
