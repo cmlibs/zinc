@@ -1422,7 +1422,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration::evaluate_cache_at_location.  "
+					"Computed_field_integration::evaluate.  "
 					"No top-level element found to evaluate field %s on",
 					field->name);
 				return_code=0;
@@ -1509,7 +1509,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration::evaluate_cache_at_location."
+					"Computed_field_integration::evaluate."
 					"  Element %d not found in Xi texture coordinate mapping field %s",
 					cm.number, field->name);
 				return_code=0;
@@ -1518,7 +1518,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_integration::evaluate_cache_at_location.  "
+				"Computed_field_integration::evaluate.  "
 				"Xi texture coordinate mapping not calculated");
 			return_code=0;
 		}

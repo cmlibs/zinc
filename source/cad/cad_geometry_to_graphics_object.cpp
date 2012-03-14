@@ -110,7 +110,7 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 				{
 					// don't set number of derivatives in location, set it when evaluating otherwise all
 					// field derivatives are evaluated even when unnecessary
-					Field_cad_geometry_surface_location loc = new Field_cad_geometry_surface_location(
+					Field_cad_geometry_surface_location *loc = new Field_cad_geometry_surface_location(
 						cad_topology, surface_index, u, v, 0.0, /*number_of_derivatives*/0);
 					field_cache->setLocation(loc);
 					return_code = Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,

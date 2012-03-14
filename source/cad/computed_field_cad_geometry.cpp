@@ -93,11 +93,6 @@ public:
 
 	~Computed_field_cad_geometry()
 	{
-		for ( int i = 0; i < field->number_of_source_fields; i++ )
-		{
-			DEACCESS(Computed_field)(&(field->source_fields[i]));
-		}
-		DEALLOCATE(field->source_fields);
 	}
 
 private:
@@ -110,7 +105,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -160,80 +155,68 @@ int Computed_field_cad_geometry::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_geometry::compare */
 
-/***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
- */
-int Computed_field_cad_geometry::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_cad_geometry::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-
-	if (field && field->source_fields[0])
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cad_topology_id cad_topology = reinterpret_cast<Cmiss_field_cad_topology_id>(getSourceField(0));
+	// @TODO: prescribe location directly in cad_topology field's value cache
+	Field_cad_geometry_surface_location *cad_surface_location;
+	Field_cad_geometry_curve_location *cad_curve_location;
+	if (0 != (cad_surface_location = dynamic_cast<Field_cad_geometry_surface_location*>(cache.getLocation())))
 	{
-		Field_cad_geometry_surface_location *cad_geometry_surface_location = dynamic_cast<Field_cad_geometry_surface_location*>(location);
-		Field_cad_geometry_curve_location *cad_geometry_curve_location = dynamic_cast<Field_cad_geometry_curve_location*>(location);
-		if (cad_geometry_surface_location)
+		//printf("compare? 0x%x and 0x%x\n", cad_topology, cad_geometry_location->id());
+		double point[3], uDerivative[3], vDerivative[3];
+		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_surface_location->get_id()) &&
+			Computed_field_cad_topology_get_surface_point(cad_topology,
+				cad_surface_location->get_identifier(),
+				cad_surface_location->get_u(),
+				cad_surface_location->get_v(),
+				point, uDerivative, vDerivative))
 		{
-			//printf("compare? 0x%x and 0x%x\n", field->source_fields[0], cad_geometry_location->id());
-			//Computed_field_cad_geometry *cad_geometry = static_cast<Computed_field_cad_geometry*>(field->core);
-			//field->source_fields[0]->core->evaluate_cache_at_location(location);
-			double point[3], uDerivative[3], vDerivative[3];
-			Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-			if ((field->source_fields[0] == (Computed_field *)cad_geometry_surface_location->get_id()) &&
-				Computed_field_cad_topology_get_surface_point(cad_topology,
-					cad_geometry_surface_location->get_identifier(),
-					cad_geometry_surface_location->get_u(),
-					cad_geometry_surface_location->get_v(),
-					point, uDerivative, vDerivative))
+			valueCache.values[0] = point[0];
+			valueCache.values[1] = point[1];
+			valueCache.values[2] = point[2];
+			int number_of_xi = cache.getRequestedDerivatives();
+			if (number_of_xi)
 			{
-				field->values[0] = point[0];
-				field->values[1] = point[1];
-				field->values[2] = point[2];
-				if (location->get_number_of_derivatives())
-				{
-					//printf("START ", location->get_number_of_derivatives());
-					//printf("(%.2f,%.2f,%.2f) -", uDerivative[0], uDerivative[1], uDerivative[2]);
-					//printf(" (%.2f,%.2f,%.2f)\n", vDerivative[0], vDerivative[1], vDerivative[2]);
-					field->derivatives[0] = uDerivative[0];
-					field->derivatives[2] = uDerivative[1];
-					field->derivatives[4] = uDerivative[2];
-					field->derivatives[1] = vDerivative[0];
-					field->derivatives[3] = vDerivative[1];
-					field->derivatives[5] = vDerivative[2];
-					field->derivatives_valid = 1;
-				}
-				//printf( "START[%.2f, %.2f , %.2f] ", field->values[0], field->values[1], field->values[2] );
-				return_code = 1;
+				//printf("START %d ", number_of_xi);
+				//printf("(%.2f,%.2f,%.2f) -", uDerivative[0], uDerivative[1], uDerivative[2]);
+				//printf(" (%.2f,%.2f,%.2f)\n", vDerivative[0], vDerivative[1], vDerivative[2]);
+				valueCache.derivatives[0] = uDerivative[0];
+				valueCache.derivatives[2] = uDerivative[1];
+				valueCache.derivatives[4] = uDerivative[2];
+				valueCache.derivatives[1] = vDerivative[0];
+				valueCache.derivatives[3] = vDerivative[1];
+				valueCache.derivatives[5] = vDerivative[2];
+				valueCache.derivatives_valid = 1;
 			}
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
-		}
-		else if (cad_geometry_curve_location)
-		{
-			double point[3];
-			Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-			if ((field->source_fields[0] == (Computed_field *)cad_geometry_curve_location->get_id()) &&
-				Computed_field_cad_topology_get_curve_point(cad_topology,
-					cad_geometry_curve_location->get_identifier(),
-					cad_geometry_curve_location->get_s(),
-					point))
+			else
 			{
-				field->values[0] = point[0];
-				field->values[1] = point[1];
-				field->values[2] = point[2];
-				//printf("START: (%.2f,%.2f,%.2f)\n", point[0], point[1], point[2]);
-				return_code = 1;
+				valueCache.derivatives_valid = 0;
 			}
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
+			//printf( "START[%.2f, %.2f , %.2f] ", valueCache.values[0], valueCache.values[1], valueCache.values[2] );
+			return 1;
 		}
 	}
-	else
+	else if (0 != (cad_curve_location = dynamic_cast<Field_cad_geometry_curve_location*>(cache.getLocation())))
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cad_geometry::evaluate_cache_at_location.  Invalid argument(s)");
+		double point[3];
+		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_curve_location->get_id()) &&
+			Computed_field_cad_topology_get_curve_point(cad_topology,
+				cad_curve_location->get_identifier(),
+				cad_curve_location->get_s(),
+				point))
+		{
+			valueCache.values[0] = point[0];
+			valueCache.values[1] = point[1];
+			valueCache.values[2] = point[2];
+			valueCache.derivatives_valid = 0;
+			//printf("START: (%.2f,%.2f,%.2f)\n", point[0], point[1], point[2]);
+			return 1;
+		}
 	}
-
-	return (return_code);
-} /* Computed_field_cad_geometry::evaluate_cache_at_location */
+	return 0;
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console.

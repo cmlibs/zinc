@@ -70,11 +70,6 @@ public:
 
 	~Computed_field_cad_colour()
 	{
-		for ( int i = 0; i < field->number_of_source_fields; i++ )
-		{
-			DEACCESS(Computed_field)(&(field->source_fields[i]));
-		}
-		DEALLOCATE(field->source_fields);
 	}
 
 private:
@@ -87,7 +82,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -128,50 +123,38 @@ int Computed_field_cad_colour::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_colour::compare */
 
-/***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
- */
-int Computed_field_cad_colour::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_cad_colour::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-
-	ENTER(Computed_field_cad_colour::evaluate_cache_at_location);
-	Field_cad_geometry_surface_location *cad_colour_location = static_cast<Field_cad_geometry_surface_location*>(location);
-	if (field && field->source_fields[0] && cad_colour_location)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cad_topology_id cad_topology = reinterpret_cast<Cmiss_field_cad_topology_id>(getSourceField(0));
+	// @TODO: prescribe location directly in cad_topology field's value cache
+	Field_cad_geometry_surface_location *cad_surface_location;
+	if (0 != (cad_surface_location = dynamic_cast<Field_cad_geometry_surface_location*>(cache.getLocation())))
 	{
 		//printf("need to populate some values here\n");
 		double colour[3];
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-		if (Computed_field_cad_topology_get_surface_colour(cad_topology,
-				cad_colour_location->get_identifier(),
-				cad_colour_location->get_u(),
-				cad_colour_location->get_v(),
+		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_surface_location->get_id()) &&
+			Computed_field_cad_topology_get_surface_colour(cad_topology,
+				cad_surface_location->get_identifier(),
+				cad_surface_location->get_u(),
+				cad_surface_location->get_v(),
 				colour))
 		{
-			field->values[0] = colour[0];
-			field->values[1] = colour[1];
-			field->values[2] = colour[2];
+			valueCache.values[0] = colour[0];
+			valueCache.values[1] = colour[1];
+			valueCache.values[2] = colour[2];
 			//printf("colour is: (%.2f,%.2f,%.2f)\n", colour[0], colour[1], colour[2]);
-			return_code = 1;
+			return 1;
 		}
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		//Computed_field_cad_colour *cad_colour = static_cast<Computed_field_cad_colour*>(field->core);
 		//field->source_fields[0]->core->evaluate_cache_at_location(location);
-		//field->values[0] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 0);
-		//field->values[1] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 1);
-		//field->values[2] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 2);
-		//printf( "START[%.2f, %.2f , %.2f] ", field->values[0], field->values[1], field->values[2] );
+		//valueCache.values[0] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 0);
+		//valueCache.values[1] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 1);
+		//valueCache.values[2] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 2);
+		//printf( "START[%.2f, %.2f , %.2f] ", valueCache.values[0], valueCache.values[1], valueCache.values[2] );
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cad_colour::evaluate_cache_at_location.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cad_colour::evaluate_cache_at_location */
+	return 0;
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console.

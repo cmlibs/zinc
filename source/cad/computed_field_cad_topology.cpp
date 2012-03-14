@@ -111,7 +111,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -154,35 +154,19 @@ int Computed_field_cad_topology::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_topology::compare */
 
-
-/***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
- */
-int Computed_field_cad_topology::evaluate_cache_at_location(
-	Field_location* location)
+int Computed_field_cad_topology::evaluate(Cmiss_field_cache&, FieldValueCache& /*inValueCache*/)
 {
-	int return_code = 0;
+	// @TODO: prescribe location directly in cad_topology field's value cache
+	// This means cad_topology field is evaluated if location prescribed, otherwise it fails
+	// Should be able to view the value as a string, i.e. as a label field
 
-	if (m_geometric_shape && location)
-	{
-#if defined(DEBUG_CODE)
-		printf("Hi from Computed_field_cad_topology::evaluate_cache_at_location ...  doing nothing\n");
-#endif /* defined(DEBUG_CODE) */
-		//Field_cad_geometry_location *cad_geometry_location = static_cast<Field_cad_geometry_location*>(location);
-		//field->values[0] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 0 );
-		//field->values[1] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 1 );
-		//field->values[2] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 2 );
-		//printf( "START[%.2f, %.2f , %.2f] ", field->values[0], field->values[1], field->values[2] );
-		//return_code = 1; always fail this function
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cad_topology::evaluate_cache_at_location.  Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Computed_field_cad_topology::evaluate_cache_at_location */
+	//Field_cad_geometry_location *cad_geometry_location = static_cast<Field_cad_geometry_location*>(location);
+	//field->values[0] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 0 );
+	//field->values[1] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 1 );
+	//field->values[2] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 2 );
+	//printf( "START[%.2f, %.2f , %.2f] ", field->values[0], field->values[1], field->values[2] );
+	return 0;
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console.
@@ -524,7 +508,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -564,27 +548,11 @@ int Field_cad_element_group::compare(Computed_field_core *other_core)
 } /* Field_cad_element_group::compare */
 
 
-/***************************************************************************//**
- * Evaluate the values of the field at the supplied location.
- */
-int Field_cad_element_group::evaluate_cache_at_location(
-	Field_location* location)
+int Field_cad_element_group::evaluate(Cmiss_field_cache& /*cache*/, FieldValueCache& /*inValueCache*/)
 {
-	int return_code = 0;
-
-	if (location)
-	{
-		printf("Hi from Field_cad_element_group::evaluate_cache_at_location ...  doing nothing\n");
-		return_code = 0; // always fail this function
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cad_topology::evaluate_cache_at_location.  Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Field_cad_element_group::evaluate_cache_at_location */
+	printf("Hi from Field_cad_element_group::evaluate ...  doing nothing\n");
+	return 0;
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console.
