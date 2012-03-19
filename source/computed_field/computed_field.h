@@ -74,11 +74,7 @@ if a value is already known.
 #include "general/manager.h"
 #include "general/object.h"
 #include "user_interface/message.h"
-#ifdef __cplusplus
-#include "computed_field/field_location.hpp"
-#endif /* __cplusplus */
 
-struct Field_location;
 struct Cmiss_region;
 
 /*

@@ -494,13 +494,19 @@ DESCRIPTION :
 	}
 
 	template <class FieldValueCacheClass>
-	inline enum FieldAssignmentResult assign(Cmiss_field_cache& cache, FieldValueCacheClass& valueCache)
+	inline FieldAssignmentResult assign(Cmiss_field_cache& cache, FieldValueCacheClass& valueCache)
 	{
-		enum FieldAssignmentResult result = core->assign(cache, valueCache);
+		FieldAssignmentResult result = core->assign(cache, valueCache);
 		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
 			cache.assignInCacheOnly())
 		{
 			valueCache.evaluationCounter = cache.getLocationCounter();
+		}
+		else
+		{
+			// ensure supplied values are never used if failed or partially set
+			// or have minor numerical differences when all values set
+			valueCache.resetEvaluationCounter();
 		}
 		return result;
 	}
