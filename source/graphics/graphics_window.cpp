@@ -5436,7 +5436,7 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
 {
-	int frame_width, frame_height, number_of_components, return_code;
+	int frame_width, frame_height, number_of_components, return_code, antialias;
 	double bottom = 0.0, fraction_across, fraction_down, left,
 		NDC_left = 0.0, NDC_top = 0.0, NDC_width = 0.0, NDC_height = 0.0,
 		original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height,
@@ -5468,6 +5468,11 @@ graphics window on screen.
 	{
 		Graphics_window_get_viewing_area_size(window, &panel_width, 
 			&panel_height);
+		antialias = preferred_antialias;
+		if (antialias == -1)
+		{
+			antialias = window->antialias_mode;
+		}
 		if ((*width) && (*height))
 		{
 			frame_width = *width;
@@ -5606,7 +5611,7 @@ graphics window on screen.
 				if (Graphics_buffer_get_type(offscreen_buffer) ==	
 					GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 				{
-					if (preferred_antialias != 0)
+					if (antialias > 1)
 					{
 #if !defined (USE_MSAA)
 						display_message(WARNING_MESSAGE,
@@ -5615,7 +5620,7 @@ graphics window on screen.
 #else
 #if defined (OPENGL_API)  && defined (WX_USER_INTERFACE)
 						multisample_framebuffer_flag = 
-							Graphics_buffer_set_multisample_framebuffer(offscreen_buffer, preferred_antialias);
+							Graphics_buffer_set_multisample_framebuffer(offscreen_buffer, antialias);
 #endif
 #endif
 					}
@@ -5699,7 +5704,7 @@ graphics window on screen.
 #else
 								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
-									preferred_antialias, preferred_transparency_layers,
+									antialias, preferred_transparency_layers,
 									/*drawing_offscreen*/1);
 #endif
 							}
@@ -5707,7 +5712,7 @@ graphics window on screen.
 							{
 								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
-									preferred_antialias, preferred_transparency_layers,
+									antialias, preferred_transparency_layers,
 									/*drawing_offscreen*/1);
 							}
 							if (return_code)
@@ -5798,7 +5803,7 @@ graphics window on screen.
 			}
 			Scene_viewer_redraw_now_with_overrides(
 				Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-				preferred_antialias, preferred_transparency_layers);
+				antialias, preferred_transparency_layers);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,

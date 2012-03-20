@@ -12149,7 +12149,7 @@ Executes a GFX PRINT command.
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
-		antialias = 0;
+		antialias = -1;
 		file_name = (char *)NULL;
 		height = 0;
 		force_onscreen_flag = 0;
