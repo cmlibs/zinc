@@ -2328,8 +2328,13 @@ and allows its contents to be modified.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
+			if ((!state->current_token) ||
+				(strcmp(PARSER_HELP_STRING, state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
+			}
 			return_code = 0;
 		}
 		double value = 1.0;
