@@ -33,8 +33,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <cstdlib>
+extern "C" {
 #include "api/cmiss_field_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"

@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <cstdlib>
+extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
