@@ -1252,8 +1252,9 @@ try to enforce that the node is created on that element.
 				/* get new node coordinates from interaction_volume */
 				if (nearest_element && element_coordinate_field)
 				{
-					Cmiss_field_module_id constraint_field_module = Cmiss_region_get_field_module(node_tool->region);
-					constraint_data.field_cache = Cmiss_field_module_create_cache(field_module);;
+					Cmiss_field_module_id constraint_field_module = Cmiss_field_get_field_module(element_coordinate_field);
+					/* field_module used for field_cache should be the on of coordinate_field */
+					constraint_data.field_cache = Cmiss_field_module_create_cache(constraint_field_module);
 					constraint_data.element = nearest_element;
 					constraint_data.found_element = nearest_element;
 					constraint_data.coordinate_field = element_coordinate_field;
@@ -1350,8 +1351,7 @@ try to enforce that the node is created on that element.
 	if (node_tool)
 	{
 		/* only need following if editing; in which case need all of them */
-		if ((!merged_node) || (!scene_picked_object) || (!rendition) ||
-			(!graphic))
+		if ((!merged_node) || (!scene_picked_object) || (!rendition))
 		{
 			scene_picked_object=(struct Scene_picked_object *)NULL;
 			if (rendition)
@@ -1401,10 +1401,6 @@ Resets current edit. Called on button release or when tool deactivated.
 			(struct Cmiss_rendition *)NULL);
 		REACCESS(Cmiss_graphic)(&(node_tool->graphic),
 			(struct Cmiss_graphic *)NULL);
-		REACCESS(Cmiss_rendition)(&(node_tool->rendition),
-			(struct Cmiss_rendition *)NULL);
-		if (node_tool->graphic)
-			Cmiss_graphic_destroy(&node_tool->graphic);
 	}
 	else
 	{
