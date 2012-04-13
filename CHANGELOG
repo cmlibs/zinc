@@ -17,21 +17,20 @@ API Changes:
 (New) Enable more field types for create/define fields APIs
 
 Added Features (some incomplete):
-3133 FieldML 0.5 Import
+3133 FieldML 0.5 import, replaces FieldML 0.4 import.
 3184 Allowed reading data into a specific region.
 
 Bugs fixed:
-Fixed numerous occasional crashes.
-2769 gfx read elements generate option works for root region
-3115 key presses now get sent to scene viewer callbacks
-3160 Fixed crashes casued when passing a null field to Cmiss_field_module_create_abs
-3167 Fixed setting linear filter for image field has no effect.
+Fixed several bugs causing occasional crashes.
+3115 Key presses now get sent to scene viewer callbacks
+3160 Fixed crashes caused when passing a null field to Cmiss_field_module_create_abs
+3167 Fixed setting linear filter for image field has no effect
 3181 Fixed crashes when passing null context to Cmiss_context_get_default_region
 3207 Fixed streamlines not showing on 2D models
 
-Improvemnets:
-2512 Remove group regions
-3213 Improved field caching
+Improvements:
+2512 Remove group regions, replaced by group fields
+3213 Improved field evaluation/assignment caching
 
 Miscellaneous:
 Removed cmgui-motif from current build
