@@ -9050,7 +9050,7 @@ Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
 
 #if defined (CARBON_USER_INTERFACE)
 int Scene_viewer_carbon_set_window_size(struct Scene_viewer *scene_viewer,
-	int width, int height, int portx, int porty, int clip_width, int clip_height)
+	int width, int height, int clip_width, int clip_height)
 /*******************************************************************************
 LAST MODIFIED : 16 February 2007
 
@@ -9065,7 +9065,7 @@ respect.
 	if (scene_viewer)
 	{
 		return_code = Graphics_buffer_carbon_set_window_size(scene_viewer->graphics_buffer,
-			width, height, portx, porty, clip_width, clip_height);
+			width, height, clip_width, clip_height);
 	}
 	else
 	{
@@ -9354,7 +9354,7 @@ chosen.
 #if defined (CARBON_USER_INTERFACE)
 Cmiss_scene_viewer_id Cmiss_scene_viewer_create_Carbon(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	CGrafPtr port, int port_x, int port_y,
+	WindowRef windowIn,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -9410,7 +9410,7 @@ chosen.
 		}
 		graphics_buffer = create_Graphics_buffer_Carbon(
 			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
-			port, port_x, port_y,
+			windowIn,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 			minimum_accumulation_buffer_depth);
@@ -10193,20 +10193,38 @@ scene viewer on screen.
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
-	struct Graphics_buffer_input *input)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-The callback for mouse or keyboard input in the Scene_viewer window. The
-resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
-mouse clicks and drags are converted to transformation; in Select mode OpenGL
-picking is performed with picked objects and mouse click and drag information
-returned to the scene.
-==============================================================================*/
+Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
+	Cmiss_scene_viewer_id scene_viewer)
 {
-	return Scene_viewer_default_input_callback(scene_viewer, input,
+	if (scene_viewer)
+		return new Graphics_buffer_input;
+	return NULL;
+}
+
+int Cmiss_scene_viewer_input_destroy(
+		Cmiss_scene_viewer_input_id *input_data)
+{
+	if (input_data && *input_data)
+	{
+		delete *input_data;
+		*input_data = NULL;
+		return 1;
+	}
+	return 0;
+}
+
+/***************************************************************************//**
+ * Manually calls the scene viewer's list of input callbacks with the supplied
+ * input data.
+ *
+ * @param scene_viewer  Handle to Cmiss_scene_viewer object.
+ * @param input_data  Description of the input event.
+ * @return  Status CMISS_OK on success, any other value if failed.
+ */
+int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
+    Cmiss_scene_viewer_input_id input_data)
+{
+	return Scene_viewer_default_input_callback(scene_viewer, input_data,
 		/*dummy_void*/NULL);
 }
 

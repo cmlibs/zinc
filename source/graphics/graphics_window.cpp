@@ -3795,7 +3795,6 @@ it.
 			OSStatus result; 
 
 			window_attributes = kWindowResizableAttribute
-				| kWindowLiveResizeAttribute
 				| kWindowCloseBoxAttribute
 				| kWindowLiveResizeAttribute
 				| kWindowStandardHandlerAttribute
@@ -3822,14 +3821,10 @@ it.
 			
 			CFRelease (carbon_window_title);
 
-			Rect portRect;
-
-			GetPortBounds(GetWindowPort(carbon_window), &portRect);
-
 
 			if (graphics_buffer = create_Graphics_buffer_Carbon(
 					 graphics_buffer_package,
-					 GetWindowPort(carbon_window), portRect.left, portRect.bottom,
+					 carbon_window,
 					 graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 					 minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 					 minimum_accumulation_buffer_depth))

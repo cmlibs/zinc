@@ -301,7 +301,7 @@ chosen.
 #if defined (CARBON_USER_INTERFACE)
 Cmiss_scene_viewer_id Cmiss_scene_viewer_create_Carbon(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	CGrafPtr port, int port_x, int port_y,
+	WindowRef windowIn,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -377,7 +377,7 @@ Closes the scene_viewer.
 
 #if defined (CARBON_USER_INTERFACE)
 int Cmiss_scene_viewer_carbon_set_window_size(Cmiss_scene_viewer_id scene_viewer,
-	int width, int height, int portx, int porty, int clip_width, int clip_height);
+	int width, int height, int clip_width, int clip_height);
 /*******************************************************************************
 LAST MODIFIED : 16 February 2007
 
@@ -936,19 +936,37 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_default_input_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_input_id input_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
+/***************************************************************************//**
+ * Create a scene viewer input object for manually setting mouse or other input
+ * event data, for passing to Cmiss_scene_viewer_process_input. Use with UIs
+ * (e.g. carbon on Mac) which don't send events directly to sub windows.
+ * @see Cmiss_scene_viewer_process_input
+ *
+ * @param scene_viewer  Handle to Cmiss_scene_viewer object.
+ * @return  Handle to Cmiss_scene_viewer_input on success, or NULL on failure.
+ */
+Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
+    Cmiss_scene_viewer_id scene_viewer);
 
-DESCRIPTION :
-The callback for mouse or keyboard input in the Scene_viewer window. The
-resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
-mouse clicks and drags are converted to transformation; in Select mode OpenGL
-picking is performed with picked objects and mouse click and drag information
-returned to the scene.
-==============================================================================*/
+/*******************************************************************************
+ * Destroys this handle to the scene viewer inpit, and sets it to NULL.
+ *
+ * @param input_address  The address to the handle of the input
+ *    to be destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
+
+/***************************************************************************//**
+ * Manually calls the scene viewer's list of input callbacks with the supplied
+ * input data.
+ *
+ * @param scene_viewer  Handle to Cmiss_scene_viewer object.
+ * @param input_data  Description of the input event.
+ * @return  Status CMISS_OK on success, any other value if failed.
+ */
+int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
+    Cmiss_scene_viewer_input_id input_data);
 
 int Cmiss_scene_viewer_add_input_callback(
 	Cmiss_scene_viewer_id scene_viewer,

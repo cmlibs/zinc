@@ -306,13 +306,11 @@ DESCRIPTION :
     int offscreen_render_required;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
-	CGrafPtr port;
+    WindowRef theWindow;
 	/* These parameters are provided by the hosting application and should be
 		respected by this graphics_buffer */
 	int width;
 	int height;
-	int portx;
-	int porty;
 	int clip_width;
 	int clip_height;
 	AGLPixelFormat aglPixelFormat;
@@ -432,11 +430,9 @@ contained in the this module only.
 #endif // defined (WIN32_USER_INTERFACE)
 
 #if defined (CARBON_USER_INTERFACE)
-		 buffer->port = 0;
+		 buffer->theWindow = 0;
 		 buffer->width = 0;
 		 buffer->height = 0;
-		 buffer->portx = 0;
-		 buffer->porty = 0;
 		 buffer->clip_width = 0;
 		 buffer->clip_height = 0;
 		 buffer->aglPixelFormat = (AGLPixelFormat)NULL;
@@ -4061,7 +4057,7 @@ DESCRIPTION :
 #endif // defined (DEBUG_CODE)
 
  		// Convert from global screen coordinates to window coordinates
-		GetWindowBounds(GetWindowFromPort(buffer->port),
+		GetWindowBounds(buffer->theWindow,
 			kWindowGlobalPortRgn, &global_bounds);
 
 #if defined (DEBUG_CODE)
@@ -4075,17 +4071,14 @@ DESCRIPTION :
 		printf("    local coordinates %lf %lf\n", location.x, location.y);
 #endif // defined (DEBUG_CODE)
 
-		location.x -= -buffer->portx;
-		location.y -= -buffer->porty;
-
 #if defined (DEBUG_CODE)
 		printf("    graphics buffer coordinates %lf %lf\n", location.x, location.y);
 #endif // defined (DEBUG_CODE)
-
+		printf("x, y, bufferwidth, bufferheight: %lf, %lf, %lf, %lf\n", location.x, location.y, buffer->clip_width, buffer->clip_height);
 		if ((location.x < 0) ||
-			(location.x > buffer->clip_width) ||
+			(location.x > buffer->clip_width-2) ||
 			(location.y < 0) ||
-			(location.y > buffer->clip_height))
+			(location.y > buffer->clip_height-2))
 		{
 			// If the event isn't ours, pass it on.
 			OSStatus result = CallNextEventHandler(handler, event);
@@ -4216,7 +4209,7 @@ DESCRIPTION :
 
 	if (graphics_buffer = (struct Graphics_buffer *)buffer_void)
 	{
-		aglSetDrawable(graphics_buffer->aglContext, graphics_buffer->port);
+		aglSetWindowRef(graphics_buffer->aglContext, graphics_buffer->theWindow);
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
@@ -4234,9 +4227,7 @@ DESCRIPTION :
 #if defined (CARBON_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	CGrafPtr port,
-	int    portx,
-	int    porty,
+	WindowRef windowIn,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -4247,10 +4238,21 @@ LAST MODIFIED : 21 November 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	GLint attributes[] = {AGL_RGBA,
-								 AGL_DOUBLEBUFFER,
-								 AGL_DEPTH_SIZE, 16,
-								 AGL_NONE};
+	GLint attributes[] = {
+		AGL_MINIMUM_POLICY,
+		AGL_RGBA,
+		AGL_DOUBLEBUFFER,
+		AGL_RED_SIZE, 1,
+		AGL_GREEN_SIZE, 1,
+		AGL_BLUE_SIZE, 1,
+		AGL_ALPHA_SIZE, 1,
+		AGL_ACCUM_RED_SIZE, 1,
+		AGL_ACCUM_GREEN_SIZE, 1,
+		AGL_ACCUM_BLUE_SIZE, 1,
+		AGL_ACCUM_ALPHA_SIZE, 1,
+	    AGL_DEPTH_SIZE, 1,
+	    AGL_STENCIL_SIZE, 1,
+	    AGL_NONE};
 	/* int accumulation_colour_size; */
 	struct Graphics_buffer *buffer;
 
@@ -4263,21 +4265,20 @@ DESCRIPTION :
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
 		buffer->type = GRAPHICS_BUFFER_CARBON_TYPE;
-
-		buffer->port = port;
-		buffer->portx = portx;
-		buffer->porty = porty;
-		buffer->width = 0;
-		buffer->height = 0;
-		buffer->clip_width = 0;
-		buffer->clip_height = 0;
+		buffer->theWindow = windowIn;
+		Rect contentBounds;
+		GetWindowBounds (buffer->theWindow, kWindowContentRgn, &contentBounds);
+		buffer->width = contentBounds.right - contentBounds.left;
+		buffer->height = contentBounds.bottom - contentBounds.top;
+		buffer->clip_width = contentBounds.right - contentBounds.left;
+		buffer->clip_height = contentBounds.bottom - contentBounds.top;
 
 		if (buffer->aglPixelFormat = aglChoosePixelFormat(NULL, 0, attributes))
 		{
 			if (buffer->aglContext = aglCreateContext(buffer->aglPixelFormat, NULL))
 			{
 
-				if(aglSetDrawable(buffer->aglContext, port))
+				if(aglSetWindowRef(buffer->aglContext, windowIn))
 				{
 
 					if (aglSetCurrentContext(buffer->aglContext))
@@ -4300,21 +4301,21 @@ DESCRIPTION :
 						expose_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_expose_Carbon_callback);
 
-						InstallWindowEventHandler(GetWindowFromPort(port),
+						InstallWindowEventHandler(windowIn,
 							expose_handler_UPP, GetEventTypeCount(expose_event_list),
 							expose_event_list, buffer, &buffer->expose_handler_ref);
 
 						resize_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_resize_Carbon_callback);
 
-						InstallWindowEventHandler(GetWindowFromPort(port),
+						InstallWindowEventHandler(windowIn,
 							resize_handler_UPP, GetEventTypeCount(resize_event_list),
 							resize_event_list, buffer, &buffer->resize_handler_ref);
 
 						mouse_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_mouse_Carbon_callback);
 
-						InstallWindowEventHandler(GetWindowFromPort(port),
+						InstallWindowEventHandler(windowIn,
 							mouse_handler_UPP, GetEventTypeCount(mouse_event_list),
 							mouse_event_list, buffer, &buffer->mouse_handler_ref);
 
@@ -4365,7 +4366,7 @@ DESCRIPTION :
 
 #if defined (CARBON_USER_INTERFACE)
 int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *buffer,
-	int width, int height, int portx, int porty, int clip_width, int clip_height)
+	int width, int height, int clip_width, int clip_height)
 /*******************************************************************************
 LAST MODIFIED : 16 February 2007
 
@@ -4381,8 +4382,6 @@ respect.
 	{
 		buffer->width = width;
 		buffer->height = height;
-		buffer->portx = portx;
-		buffer->porty = porty;
 		buffer->clip_width = clip_width;
 		buffer->clip_height = clip_height;
 	}
@@ -4494,22 +4493,17 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
 				GLint parms[4] ;
-				Rect bounds, port_bounds;
-				GetWindowPortBounds(GetWindowFromPort(buffer->port), &bounds);
-
- 				GetPortBounds(buffer->port, &port_bounds);
-
-				aglSetCurrentContext(buffer->aglContext);
-
-				parms[0] = -buffer->portx;
-				parms[1] = bounds.bottom - bounds.top + buffer->porty - buffer->clip_height;
+				Rect port_bounds;
+				GetWindowBounds (buffer->theWindow, kWindowContentRgn, &port_bounds);
+ 				buffer->clip_width = port_bounds.right - port_bounds.left;
+ 				buffer->clip_height = port_bounds.bottom - port_bounds.top;
+				parms[0] = 0;
+				parms[1] = 0;
 				parms[2] = buffer->clip_width;
 				parms[3] = buffer->clip_height;
 				aglSetInteger(buffer->aglContext, AGL_BUFFER_RECT, parms) ;
-				//aglSetInteger(buffer->aglContext, AGL_SWAP_RECT, parms) ;
-
 				aglUpdateContext(buffer->aglContext);
-
+				aglSetCurrentContext(buffer->aglContext);
 				return_code = 1;
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
@@ -4740,6 +4734,21 @@ Returns the depth of the colour buffer used by the graphics buffer.
 				*colour_buffer_depth = pfd.cColorBits;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				 GLint colour_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_RED_SIZE, &colour_buffer_bits);
+				 *colour_buffer_depth = colour_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_GREEN_SIZE, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_BLUE_SIZE, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_ALPHA_SIZE, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
@@ -4817,6 +4826,15 @@ Returns the depth of the depth buffer used by the graphics buffer.
 				*depth_buffer_depth = pfd.cDepthBits;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				 GLint depth_bits;
+				 aglDescribePixelFormat(buffer->aglPixelFormat, AGL_DEPTH_SIZE, &depth_bits);
+				 *depth_buffer_depth = depth_bits;
+				 return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
@@ -4909,6 +4927,21 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 				*accumulation_buffer_depth = pfd.cAccumBits;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				 GLint accumulation_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_ACCUM_RED_SIZE, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth = accumulation_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_ACCUM_GREEN_SIZE, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_ACCUM_BLUE_SIZE, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 aglDescribePixelFormat (buffer->aglPixelFormat, AGL_ACCUM_ALPHA_SIZE, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
@@ -5324,7 +5357,9 @@ Returns the width of buffer represented by <buffer>.
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
 				// Respect the values we have been given
-				width = buffer->width;
+				Rect portRect;
+				GetWindowBounds (buffer->theWindow, kWindowContentRgn, &portRect);
+				width = portRect.right - portRect.left;
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 			default:
@@ -5454,7 +5489,9 @@ Returns the height of buffer represented by <buffer>.
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
 				// Respect the values we have been given
-				height = buffer->height;
+				Rect portRect;
+				GetWindowBounds (buffer->theWindow, kWindowContentRgn, &portRect);
+				height = portRect.bottom - portRect.top;
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 			default:

@@ -279,9 +279,7 @@ will be requested with handle_windows_event.
 #if defined (CARBON_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	CGrafPtr port,
-	int    portx,
-	int    porty,
+	WindowRef windowIn,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
@@ -517,7 +515,7 @@ required in the win32 case.
 
 #if defined (CARBON_USER_INTERFACE)
 int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *graphics_buffer,
-	int width, int height, int portx, int porty, int clip_width, int clip_height);
+	int width, int height, int clip_width, int clip_height);
 /*******************************************************************************
 LAST MODIFIED : 16 February 2007
 

@@ -1566,7 +1566,7 @@ scene viewer on screen.
 
 #if defined (CARBON_USER_INTERFACE)
 int Scene_viewer_carbon_set_window_size(struct Scene_viewer *scene_viewer,
-	int width, int height, int portx, int porty, int clip_width, int clip_height);
+	int width, int height, int clip_width, int clip_height);
 /*******************************************************************************
 LAST MODIFIED : 16 February 2007
 
