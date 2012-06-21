@@ -92,31 +92,39 @@ const char *libraryChartArgumentNames[] =
 	"chart.3d.argument"
 };
 
+// map from zienkiewicz winding to cmgui
+//const int triquadraticSimplex_zienkiewicz_swizzle[10] = { 1, 5, 2, 7, 10, 4, 6, 8, 9, 3 };
+const int triquadraticSimplex_zienkiewicz_swizzle[10] = { 1, 3, 6, 10, 2, 4, 7, 5, 9, 8 };
+const int biquadraticSimplex_vtk_swizzle[6] = { 1, 3, 6, 2, 5, 4 };
+
 struct BasisType
 {
 	int dimension;
 	const char *fieldmlBasisEvaluatorName;
 	bool homogeneous;
 	enum Cmiss_basis_function_type functionType[3];
+	const int *swizzle;
 };
 
 const BasisType libraryBases[] =
 {
-	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
-	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
-	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE } },
-	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX } },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX } },
-	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
-	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
+	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
 	// GRC add Hermite!
 	// GRC add vtk, zienkiewicz simplex ordering, swizzle
 };
@@ -137,17 +145,22 @@ struct ElementFieldComponent
 	Cmiss_field_integer_parameters_id local_point_to_node;
 	Cmiss_ensemble_index_id index;
 	int local_point_count;
+	const int *swizzle;
 	int *local_point_indexes;
+	int *swizzled_local_point_indexes;
 	int *node_identifiers;
 
 	ElementFieldComponent(Cmiss_element_basis_id element_basis,
 			Cmiss_field_integer_parameters_id local_point_to_node,
-			Cmiss_ensemble_index_id index, int local_point_count) :
+			Cmiss_ensemble_index_id index, int local_point_count,
+			const int *swizzle) :
 		element_basis(element_basis),
 		local_point_to_node(local_point_to_node),
 		index(index),
 		local_point_count(local_point_count),
+		swizzle(swizzle),
 		local_point_indexes(new int[local_point_count]),
+		swizzled_local_point_indexes(new int[local_point_count]),
 		node_identifiers(new int[local_point_count])
 	{
 	}
@@ -158,6 +171,7 @@ struct ElementFieldComponent
 		Cmiss_field_integer_parameters_destroy(&local_point_to_node);
 		Cmiss_ensemble_index_destroy(&index);
 		delete[] local_point_indexes;
+		delete[] swizzled_local_point_indexes;
 		delete[] node_identifiers;
 	}
 };
@@ -1401,7 +1415,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mes
 		}
 	}
 	int basis_number_of_nodes = Cmiss_element_basis_get_number_of_nodes(element_basis);
-	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, index, local_point_count);
+	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, index, local_point_count, libraryBases[basis_index].swizzle);
 	if (local_point_to_node && index && local_point_count && (local_point_count == basis_number_of_nodes))
 	{
 		componentMap[fmlEvaluator] = component;
@@ -1600,9 +1614,18 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				}
 				if (new_local_point_to_node)
 				{
+					const int *swizzle = components[ic]->swizzle;
 					for (int i = 0; i < components[ic]->local_point_count; i++)
 					{
 						components[ic]->local_point_indexes[i] = total_local_point_count + i + 1;
+						if (swizzle)
+						{
+							components[ic]->swizzled_local_point_indexes[i] = total_local_point_count + swizzle[i];
+						}
+						else
+						{
+							components[ic]->swizzled_local_point_indexes[i] = components[ic]->local_point_indexes[i];
+						}
 					}
 					total_local_point_count += components[ic]->local_point_count;
 					Cmiss_element_template_set_number_of_nodes(element_template, total_local_point_count);
@@ -1647,7 +1670,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						return_code = 0;
 						break;
 					}
-					Cmiss_element_template_set_node(element_template, component->local_point_indexes[i], node);
+					Cmiss_element_template_set_node(element_template, component->swizzled_local_point_indexes[i], node);
 					Cmiss_node_destroy(&node);
 				}
 			}
