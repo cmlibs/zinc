@@ -49,6 +49,7 @@ DESCRIPTION :
 
 extern "C"
 {
+#include "api/cmiss_graphics_module.h"
 #include "command/cmiss.h"
 #include "context/context.h"
 #include "context/user_interface_module.h"
@@ -241,6 +242,12 @@ Main program for the CMISS Graphical User Interface
 				}
 			}
 #endif
+			Cmiss_graphics_module_id graphics_module = NULL;
+			if (NULL != (graphics_module = Cmiss_context_get_default_graphics_module(context)))
+			{
+				Cmiss_graphics_module_define_standard_materials(graphics_module);
+				Cmiss_graphics_module_destroy(&graphics_module);
+			}
 			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
 			{
 				Cmiss_command_data_set_cmgui_string(command_data, CMISS_NAME_STRING, 

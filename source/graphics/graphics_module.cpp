@@ -38,6 +38,7 @@ FILE : graphics_module.cpp
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
+#include "api/cmiss_graphics_material.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "graphics/glyph.h"
@@ -746,7 +747,12 @@ int Cmiss_graphics_module_define_standard_materials(
 	{
 		for (i = 0; i < number_of_startup_materials; i++)
 		{
-			if (NULL != (material = CREATE(Graphical_material)(startup_materials[i].name)))
+			material = NULL;
+			if (NULL != (material = Cmiss_graphics_module_find_material_by_name(graphics_module, startup_materials[i].name)))
+			{
+				Cmiss_graphics_material_destroy(&material);
+			}
+			else if (NULL != (material = CREATE(Graphical_material)(startup_materials[i].name)))
 			{
 					colour.red   = startup_materials[i].ambient[0];
 					colour.green = startup_materials[i].ambient[1];
