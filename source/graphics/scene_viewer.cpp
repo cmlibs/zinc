@@ -2939,7 +2939,6 @@ LAST MODIFIED : 1 July 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
 	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_initialise_callback);
@@ -2948,16 +2947,14 @@ DESCRIPTION :
 	{
 		Graphics_buffer_make_current(graphics_buffer);
 		/* initialise graphics library to load XFont */
-		return_code = initialize_graphics_library(scene_viewer->user_interface);
+		initialize_graphics_library(scene_viewer->user_interface);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_initialise_callback.  Missing scene_viewer");
-		return_code = 0;
 	}
 	LEAVE;
-	USE_PARAMETER(return_code);
 } /* Scene_viewer_initialise_callback */
 
 static void Scene_viewer_resize_callback(struct Graphics_buffer *graphics_buffer,
@@ -2970,7 +2967,6 @@ Called when part of the Scene_viewer window is resized. All it does is notify
 callbacks interested in the scene_viewers transformations.
 ==============================================================================*/
 {
-	int return_code;
 	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_resize_callback);
@@ -2979,16 +2975,13 @@ callbacks interested in the scene_viewers transformations.
 	if (scene_viewer != 0)
 	{
 		Scene_viewer_set_transform_flag(scene_viewer);
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_resize_callback.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
-	USE_PARAMETER(return_code);
 } /* Scene_viewer_resize_callback */
 
 static void Scene_viewer_expose_callback(struct Graphics_buffer *graphics_buffer,
@@ -3002,7 +2995,6 @@ redraw just the exposed area. Instead, it redraws the whole picture, but only
 if there are no more expose events pending.
 ==============================================================================*/
 {
-	int return_code;
 	struct Graphics_buffer_expose_data *expose_data;
 	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
@@ -3013,7 +3005,7 @@ if there are no more expose events pending.
 		if (!(expose_data = (struct Graphics_buffer_expose_data *)expose_data_void))
 		{
 			/* The redraw everything in idle time default */
-			return_code = Scene_viewer_redraw(scene_viewer);
+			Scene_viewer_redraw(scene_viewer);
 		}
 		else
 		{
@@ -3026,10 +3018,8 @@ if there are no more expose events pending.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_expose_callback.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
-	USE_PARAMETER(return_code);
 } /* Scene_viewer_expose_callback */
 
 static int Scene_viewer_unproject(int pointer_x,int pointer_y,
