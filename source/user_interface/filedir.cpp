@@ -691,18 +691,6 @@ specified file.
 										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
 										temp_name=&filename[lastlength];
-										if (file_open_data->operation)
-										{
-											 if ((file_open_data->operation)((temp_name)
-														 ,file_open_data->arguments))
-											 {
-													retry=0;
-											 }
-											 else
-											 {
-													retry=1;
-											 }
-										}
 										DEALLOCATE(temp_string);
 								 }
 							}
