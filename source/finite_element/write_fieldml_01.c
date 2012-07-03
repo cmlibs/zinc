@@ -3241,7 +3241,6 @@ Notes:
 * element_xi values currently restricted to being in the root_region.
 ==============================================================================*/
 {
-	const char *write_path_const;
 	char *write_path_copy = NULL;
 	int return_code;
 	struct Cmiss_region *write_path_region;
@@ -3260,7 +3259,6 @@ Notes:
 			/* if <write_path> is "" or "/", the following clears it to NULL and
 				 sets write_region to region */
 			write_path_copy = duplicate_string(write_path);
-			write_path_const = write_path;
 			write_path_region = Cmiss_region_find_subregion_at_path(region, write_path);
 			if (NULL == write_path_region)
 			{

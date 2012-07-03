@@ -566,13 +566,11 @@ If current_settings is NULL, no editing fields are displayed.
 {
 	int return_code,i,num_children;
 	struct Spectrum_settings *temp_settings;
-	struct LIST(Spectrum_settings) *list_of_settings;
 	ENTER(spectrum_editor_select_settings_item);
 	/* check arguments */
 	if (spectrum_editor)
 	{
 		 /* get list of settings items */
-		 list_of_settings = get_Spectrum_settings_list(spectrum_editor->edit_spectrum);
 		 num_children = spectrum_editor->spectrum_settings_checklist->GetCount();
 		 if (0<num_children)
 		 {

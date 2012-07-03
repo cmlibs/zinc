@@ -219,7 +219,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		dxdxi[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], error, fraction,
-		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size, local_step_size_A,
+		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size,
 		point1[3], point2[3], point3[3], tolerance, 
 		vector[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		xiA[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiB[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
@@ -289,7 +289,6 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			 magnitude of deltaxi 0.01 */
 			local_step_size=1.0e-2/sqrt(deltaxi[0]*deltaxi[0]+deltaxi[1]*deltaxi[1]
 				+deltaxi[2]*deltaxi[2]);
-			local_step_size_A = local_step_size;
 		}
 		/* whole step */
 		for (i = 0 ; i < element_dimension ; i++)

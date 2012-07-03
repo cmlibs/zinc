@@ -141,7 +141,7 @@ const Triangle_vertex *Triangle_mesh::add_vertex(const float *coordinates)
 		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordiantes_FEValue);
 		Octree_object_set_user_data(octree_vertex, (void *)vertex_in_set);
 		Octree_add_object(octree, octree_vertex);
-		std::pair<Triangle_vertex_set_iterator,bool> insert_result = vertex_set.insert(vertex_in_set);
+		vertex_set.insert(vertex_in_set);
 	}
 	else
 	{

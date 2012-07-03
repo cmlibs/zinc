@@ -75,7 +75,6 @@ struct User_interface_module *User_interface_module_create(
 #endif
 {
 	struct User_interface_module  *UI_module = NULL;
-	int return_code = 1;
 	Cmiss_region *root_region = NULL;;
 	struct Cmiss_graphics_module *graphics_module = NULL;
 	int visual_id = 0;
@@ -145,7 +144,6 @@ struct User_interface_module *User_interface_module_create(
 								"cmgui")))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
-						return_code=0;
 					}
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
@@ -153,7 +151,6 @@ struct User_interface_module *User_interface_module_create(
 								initial_main_window_state, &(UI_module->argc), UI_module->argv, UI_module->event_dispatcher)))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
-						return_code=0;
 					}
 #endif /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 				}
@@ -162,7 +159,6 @@ struct User_interface_module *User_interface_module_create(
 		else
 		{
 			display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
-			return_code = 0;
 		}
 		if (command_line_options.example_file_name)
 		{

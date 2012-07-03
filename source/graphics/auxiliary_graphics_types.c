@@ -265,8 +265,8 @@ A modifier function for setting number of segments used to draw circles.
 	const char *current_token;
 	int return_code;
 	int *circle_discretization;
-	struct User_interface *user_interface;
 
+	USE_PARAMETER(user_interface_void);
 	ENTER(set_Circle_discretization);
 	if (state)
 	{
@@ -276,7 +276,6 @@ A modifier function for setting number of segments used to draw circles.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				user_interface=(struct User_interface *)user_interface_void;
 				circle_discretization = (int *)circle_discretization_void;
 				if (circle_discretization)
 				{
@@ -415,8 +414,8 @@ A modifier function for setting discretization in each element direction.
 	const char *current_token;
 	int return_code,multiple_default;
 	struct Element_discretization *element_discretization;
-	struct User_interface *user_interface;
 
+	USE_PARAMETER(user_interface_void);
 	ENTER(set_Element_discretization);
 	if (state)
 	{
@@ -426,7 +425,6 @@ A modifier function for setting discretization in each element direction.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				user_interface=(struct User_interface *)user_interface_void;
 				element_discretization=
 					(struct Element_discretization *)element_discretization_void;
 				if (element_discretization)

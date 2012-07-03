@@ -4302,7 +4302,6 @@ FE_field being made and/or modified.
 {
 	char basis_derivative_help[] =
 		"The basis_derivative calculates a monomial derivative on element based fields.  It is not defined for nodes.  It allows you to calculate an arbitrary derivative by specifying an <order> and a list of <xi_indices> of length order.  This derivative then becomes the \"value\" for the field.";
-	const char *current_token;
 	int return_code = 1;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
@@ -4333,7 +4332,6 @@ FE_field being made and/or modified.
 		set_fe_field_data.conditional_function_user_data = (void *)NULL;
 
 		/* try to handle help first */
-		current_token=state->current_token;
 		if (Parse_state_help_mode(state))
 		{
 			option_table=CREATE(Option_table)();

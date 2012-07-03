@@ -4373,7 +4373,6 @@ void OnItemMenu(wxTreeEvent &event)
 {
 	wxTreeItemId itemId = event.GetItem();
 	wxPoint clientpt = event.GetPoint();
-	wxPoint screenpt = ClientToScreen(clientpt);
 	
 	ShowMenu(itemId, clientpt);
 	event.Skip();

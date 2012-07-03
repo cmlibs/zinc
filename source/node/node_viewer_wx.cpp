@@ -775,10 +775,7 @@ Since both nodes and data can depend on embedded fields, the
 <actual_node_manager> and <actual_element_manager> also need to be passed.
 ==============================================================================*/
 {
-	struct Computed_field *initial_field;
 	struct Node_viewer *node_viewer;
-	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
-		*choose_field_conditional_function;
 	ENTER(CREATE(Node_viewer));
 	node_viewer = (struct Node_viewer *)NULL;
 	if (node_viewer_address && dialog_title && region)
@@ -786,22 +783,9 @@ Since both nodes and data can depend on embedded fields, the
 		 /* allocate memory */
 		 if (ALLOCATE(node_viewer,struct Node_viewer,1))
 		 {
-				if (initial_node)
-				{
-					choose_field_conditional_function=
-						Computed_field_is_defined_at_node_conditional;
-				}
-				else
-				{
-					choose_field_conditional_function=
-						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-				}
 				node_viewer->region = region;
 				node_viewer->computed_field_manager =
 					Cmiss_region_get_Computed_field_manager(node_viewer->region);
-				initial_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					choose_field_conditional_function,(void *)initial_node,
-					node_viewer->computed_field_manager);
 				node_viewer->nodal_value_types=(enum FE_nodal_value_type *)NULL;
 				node_viewer->node_copy = (struct FE_node *)NULL;
 				node_viewer->node_viewer_address = node_viewer_address;
@@ -1133,7 +1117,7 @@ DESCRIPTION :
 Give the textctrl a value.
 ==============================================================================*/
 	char *cmiss_number_string, *new_value_string, temp_value_string[VALUE_STRING_SIZE];
-	int element_dimension, j, number_of_components = 0, return_code;
+	int element_dimension, j, number_of_components = 0;
 	struct CM_element_information cm_identifier;
 	struct FE_node *node = NULL;
 	struct Computed_field *temp_field  = NULL;
@@ -1146,23 +1130,19 @@ Give the textctrl a value.
 	FE_value time = Time_object_get_current_time(node_viewer->time_object);
 	FE_value *values = 0;
 	cmiss_number_string = (char *)NULL;
-	return_code = 1;
 	Cmiss_field_module_id field_module = Cmiss_field_get_field_module(temp_field);
 	Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 	Cmiss_field_cache_set_time(field_cache, time);
 	Cmiss_field_cache_set_node(field_cache, node);
 	 if (Computed_field_is_type_finite_element(temp_field))
 	 {
-			return_code = Computed_field_get_type_finite_element(temp_field, &fe_field);
+			Computed_field_get_type_finite_element(temp_field, &fe_field);
 	 }
 	 else
 	 {
 			if (Computed_field_is_type_cmiss_number(temp_field))
 			{
-				 if (!(cmiss_number_string = Cmiss_field_evaluate_string(temp_field, field_cache)))
-				 {
-						return_code = 0;
-				 }
+				 cmiss_number_string = Cmiss_field_evaluate_string(temp_field, field_cache);
 			}
 			else if (Computed_field_has_numerical_components(temp_field, NULL))
 			{				
@@ -1171,7 +1151,6 @@ Give the textctrl a value.
 						if (CMISS_OK != Cmiss_field_evaluate_real(temp_field, field_cache, number_of_components, values))
 						{
 							 DEALLOCATE(values);
-							 return_code = 0;
 						}
 				 }
 			}

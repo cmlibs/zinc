@@ -3168,7 +3168,7 @@ Currently limited to 1 byte per component.
 ==============================================================================*/
 {
 	char *field_name;
-	int bytes_per_pixel, dimension, number_of_components, return_code,
+	int bytes_per_pixel, number_of_components, return_code,
 		source_dimension, *source_sizes, tex_number_of_components, use_pixel_location = 1;
 	struct Computed_field *source_texture_coordinate_field = NULL;
 
@@ -3222,21 +3222,7 @@ Currently limited to 1 byte per component.
 			}
 			DEALLOCATE(source_sizes);
 		}
-		if (image_depth > 1)
-		{
-			dimension = 3;
-		}
-		else
-		{
-			if (image_height > 1)
-			{
-				dimension = 2;
-			}
-			else
-			{
-				dimension = 1;
-			}
-		}
+
 		if (texture_coordinate_field &&
 			(3 >= (tex_number_of_components =
 			Computed_field_get_number_of_components(texture_coordinate_field))))
@@ -13230,7 +13216,7 @@ Executes a GFX SELECT command.
 ==============================================================================*/
 {
 	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag, *conditional_field_name,
-		lines_flag,nodes_flag, *region_path, selected_flag, verbose_flag;
+		lines_flag,nodes_flag, *region_path, verbose_flag;
 	FE_value time;
 	int return_code;
 	struct Computed_field *conditional_field;
@@ -13267,7 +13253,6 @@ Executes a GFX SELECT command.
 			conditional_field_name = NULL;
 			/* With the current method the selection is always additive
 				and so to set the selected flag makes the command useless */
-			selected_flag = 0;
 			multi_range=CREATE(Multi_range)();
 			if ((grid_field = FE_region_get_FE_field_from_name(fe_region,
 				"grid_point_number")) &&
@@ -13598,7 +13583,7 @@ Executes a GFX UNSELECT command.
 ==============================================================================*/
 {
 	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag, *conditional_field_name,
-		lines_flag,nodes_flag, *region_path,selected_flag,verbose_flag;
+		lines_flag,nodes_flag, *region_path, verbose_flag;
 	FE_value time;
 	int return_code;
 	struct Computed_field *conditional_field;
@@ -13634,7 +13619,6 @@ Executes a GFX UNSELECT command.
 			lines_flag = 0;
 			nodes_flag = 0;
 			/* We only want to unselected from selected objects */
-			selected_flag = 1;
 			multi_range=CREATE(Multi_range)();
 			if ((grid_field = FE_region_get_FE_field_from_name(fe_region,
 				"grid_point_number")) &&
@@ -17895,7 +17879,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	char *cm_examples_directory,*cm_parameters_file_name,*comfile_name,
 		*example_id,*examples_directory,*examples_environment,*execute_string,
 		*version_command_id;
-	const char *version_string_to_pass;
 	char global_temp_string[1000];
 	int return_code;
 	int batch_mode, console_mode, command_list, no_display, non_random,
@@ -18495,7 +18478,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			if (!no_display)
 			{
 				/* create the main window */
-				version_string_to_pass =  NULL;
 				if (!server_mode)
 				{
 #if defined(USE_CMGUI_COMMAND_WINDOW)

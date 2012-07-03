@@ -261,7 +261,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 #if defined (WX_USER_INTERFACE)
 	const char *shell_title;
 	char *allocated_shell_title,*filename,*temp_string,*extension;
-	int retry, length;
+	int length;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
@@ -417,15 +417,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 										temp_name=&filename[lastlength];
 										if (file_open_data->operation)
 										{
-											if ((file_open_data->operation)((temp_name)
-														,file_open_data->arguments))
-											{
-													retry=0;
-											}
-											else
-											{
-													retry=1;
-											}
+											(file_open_data->operation)((temp_name)
+														,file_open_data->arguments);
 										}
 										DEALLOCATE(temp_string);
 								}
@@ -438,15 +431,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 #else /*defined (WIN32_SYSTEM)*/
 		 if (file_open_data->operation)
 		 {
-				if ((file_open_data->operation)((file_open_data->file_name)
-							,file_open_data->arguments))
-				{
-					 retry=0;
-				}
-				else
-				{
-					 retry=1;
-				}
+				(file_open_data->operation)((file_open_data->file_name)
+							,file_open_data->arguments);
 		 }
 		 char *old_directory = NULL;
 		 char *old_directory_name = NULL;
@@ -544,7 +530,6 @@ specified file.
 {
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
-  int retry;
 	const char *shell_title;
 	char *temp_string,*extension;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -728,15 +713,8 @@ specified file.
 #else /*defined (WIN32_SYSTEM)*/
 		 if (file_open_data->operation)
 		 {
-				if ((file_open_data->operation)((file_open_data->file_name)
-							,file_open_data->arguments))
-				{
-					 retry=0;
-				}
-				else
-				{
-					 retry=1;
-				}
+				(file_open_data->operation)((file_open_data->file_name)
+							,file_open_data->arguments);
 		 }
 #endif /* !defined (WIN32_SYSTEM)*/
 	}

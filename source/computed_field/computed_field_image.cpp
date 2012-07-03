@@ -317,7 +317,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	int image_width = -1, image_height = -1, image_depth = -1, bytes_per_pixel,
 	  number_of_components = 1, dimension, *sizes,
 		return_code, tex_number_of_components = 1,
-		use_pixel_location = 1, texture_dimension = 1, source_field_is_image = 0;
+		use_pixel_location = 1, source_field_is_image = 0;
 	struct Computed_field *texture_coordinate_field = NULL, *source_field = NULL,
 		*source_texture_coordinate_field = NULL;
 	enum Texture_storage_type specify_format = TEXTURE_LUMINANCE;
@@ -366,21 +366,6 @@ int Computed_field_image::evaluate_texture_from_source_field()
 					image_depth = 1;
 				}
 				DEALLOCATE(sizes);
-			}
-			if (image_depth > 1)
-			{
-				texture_dimension = 3;
-			}
-			else
-			{
-				if (image_height > 1)
-				{
-					texture_dimension = 2;
-				}
-				else
-				{
-					texture_dimension = 1;
-				}
 			}
 
 			if (3 >= (tex_number_of_components =

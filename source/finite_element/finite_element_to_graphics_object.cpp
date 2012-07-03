@@ -207,15 +207,10 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					field_cache, glyph_set_data->n_data_components,
 					glyph_set_data->data_values);
 			}
-			int label_defined = 0;
 			if (all_fields_defined && label_field)
 			{
 				*(glyph_set_data->label) = Cmiss_field_evaluate_string(label_field,
 					field_cache);
-				if (*(glyph_set_data->label))
-				{
-					label_defined = 1;
-				}
 				if (label_density_field)
 				{
 					all_fields_defined = Cmiss_field_evaluate_real(label_density_field,

@@ -1070,16 +1070,12 @@ Updates all the basis modes from the active
 emoter slider's Curve
 ==============================================================================*/
 {
-	int slider_position;
 	struct Emoter_slider *active;
 
 	ENTER(emoter_set_play_slider_value);
 	if ( emoter_dialog && emoter_dialog->shared )
 	{
 		emoter_dialog->shared->time = new_value;
-
-		/* Check slider position */
-		slider_position = (int)new_value;
 
 		/* Update the 'combine' sliders from the active slider */
 		active = emoter_dialog->shared->active_slider;
@@ -1091,7 +1087,7 @@ emoter slider's Curve
 	else
 	{
 		display_message(ERROR_MESSAGE,
-		"emoter_set_play_slider_value.  Invalid arguments");
+			"emoter_set_play_slider_value.  Invalid arguments");
 	}
 	LEAVE;
 } /* emoter_set_play_slider_value */

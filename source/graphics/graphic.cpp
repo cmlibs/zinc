@@ -3037,11 +3037,6 @@ int Cmiss_graphic_to_point_object_at_time(
 					return_code=0;
 				}
 			}
-			int	overlay = 0;
-			if (graphic->overlay_flag)
-			{
-				overlay = graphic->overlay_order;
-			}
 		}
 		else
 		{

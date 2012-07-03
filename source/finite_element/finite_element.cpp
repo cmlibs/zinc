@@ -24867,7 +24867,7 @@ function must be called before calling calculate_FE_element_field_values again.
 ==============================================================================*/
 {
 	FE_value **component_values;
-	int element_dimension,i,return_code;
+	int i, return_code;
 	int **component_standard_basis_function_arguments;
 
 	ENTER(clear_FE_element_field_values);
@@ -24875,11 +24875,6 @@ function must be called before calling calculate_FE_element_field_values again.
 	if (element_field_values)
 	{
 		return_code=1;
-		element_dimension = 0;
-		if (element_field_values->element)
-		{
-			element_dimension = get_FE_element_dimension(element_field_values->element);
-		}
 		if (element_field_values->component_number_in_xi)
 		{
 			if (element_field_values->field)

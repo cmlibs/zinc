@@ -1950,7 +1950,7 @@ and overwritten.
 ==============================================================================*/
 {
 	int bytes_per_pixel, copy_row_width_bytes = 0, end_x = 0, end_y = 0, end_z = 0, i,
-		number_of_components, number_of_bytes_per_component, overlap_bytes,
+		number_of_components, number_of_bytes_per_component,
 		pad_x_start = 0, pad_x_end = 0, pad_y_start = 0, pad_y_end = 0,
 		pad_z_start = 0, pad_z_end = 0, return_code, source_row_width_bytes,
 		tile_row_width_bytes, start_x = 0, start_y = 0, start_z = 0,
@@ -1970,7 +1970,6 @@ and overwritten.
 		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
 		cropped_size[0] = texture_tiling->tile_size[0]
 			- 2 * texture_tiling->overlap;
-		overlap_bytes = texture_tiling->overlap * bytes_per_pixel;
 		for (i = 1 ; i < texture_tiling->dimension ; i++)
 		{
 			cropped_size[i] = texture_tiling->tile_size[i]

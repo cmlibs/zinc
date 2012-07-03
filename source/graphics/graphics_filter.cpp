@@ -999,7 +999,6 @@ int gfx_define_graphics_filter_contents(struct Parse_state *state, void *graphic
 	void *filter_data_void)
 {
 	int return_code = 1;
-	enum Cmiss_graphics_filter_type filter_type;
 	struct Define_graphics_filter_data *filter_data = (struct Define_graphics_filter_data *)filter_data_void;
 	char *match_graphic_name, match_visibility_flags, *match_region_path;
 	int inverse;
@@ -1008,14 +1007,6 @@ int gfx_define_graphics_filter_contents(struct Parse_state *state, void *graphic
 	{
 		Cmiss_graphics_filter_id *graphics_filter_handle = (Cmiss_graphics_filter_id *)graphics_filter_handle_void; // can be null
 		Cmiss_graphics_filter_id graphics_filter = *graphics_filter_handle;
-		if (graphics_filter)
-		{
-			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
-		}
-		else
-		{
-			filter_type = CMISS_GRAPHICS_FILTER_TYPE_INVALID;
-		}
 		match_graphic_name = NULL;
 		match_visibility_flags = 0;
 		match_region_path = NULL;

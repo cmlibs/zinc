@@ -3189,7 +3189,7 @@ it.
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	int ortho_front_axis,ortho_up_axis;
 #endif /*(WX_USER_INTERFACE) */
-	int pane_no,return_code;
+	int pane_no;
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_window *window=NULL;
 
@@ -3273,7 +3273,6 @@ it.
 				{
 					display_message(ERROR_MESSAGE,
 						"CREATE(Graphics_window).  Invalid buffering mode");
-					return_code=0;
 				}
 			}
 			switch (stereo_mode)
@@ -3297,7 +3296,6 @@ it.
 				{
 					display_message(ERROR_MESSAGE,
 						"CREATE(Graphics_window).  Invalid buffering mode");
-					return_code=0;
 				}
 			}
 #if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
@@ -3742,7 +3740,6 @@ it.
 									/* initial view is of all of the current scene */
 									Graphics_window_view_all(window);
 									window->wx_graphics_window->Show();		
-									return_code = 1;
 							 }
 							 else
 							 {

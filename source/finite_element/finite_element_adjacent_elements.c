@@ -145,7 +145,7 @@ For a 1D top level element this routine will return the list of
 correct size and should be DEALLOCATED when calls to this function are finished.
 ==============================================================================*/
 {
-	int dimension, element_number, i, j, node_number, number_of_elements,
+	int element_number, i, j, node_number, number_of_elements,
 		number_of_ranges, range_no, return_code, start, stop;
 	struct CM_element_information element_id;
 	struct FE_element *adjacent_element;
@@ -156,7 +156,6 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	if (element && node_element_list && mesh)
 	{
 		return_code = 1;
-		dimension = get_FE_element_dimension(element);
 		get_FE_element_identifier(element, &element_id);
 		element_number = element_id.number;
 		if (get_FE_element_node(element, node_index, &node) && node)

@@ -3096,7 +3096,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 		 *tile_surface_2;
 	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
-	struct Multi_range *selected_name_ranges;
 	struct Spectrum *spectrum;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
@@ -3226,7 +3225,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										glLoadName((GLuint)interpolate_glyph_set->object_name);
 									}
 									/* work out if subobjects selected  */
-									selected_name_ranges=(struct Multi_range *)NULL;
 									draw_glyphsetGL(interpolate_glyph_set->number_of_points,
 										interpolate_glyph_set->point_list,
 										interpolate_glyph_set->axis1_list,
@@ -3261,7 +3259,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									glLoadName((GLuint)glyph_set->object_name);
 								}
 								/* work out if subobjects selected  */
-								selected_name_ranges=(struct Multi_range *)NULL;
 								draw_glyphsetGL(glyph_set->number_of_points,
 									glyph_set->point_list, glyph_set->axis1_list,
 									glyph_set->axis2_list, glyph_set->axis3_list,
@@ -3398,7 +3395,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						while (voltex)
 						{
 							/* work out if subobjects selected */
-							selected_name_ranges=(struct Multi_range *)NULL;
 							name_selected=0;
 							if ((name_selected&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
@@ -4226,7 +4222,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								glLoadName((GLuint)nurbs->object_name);
 							}
 							/* work out if subobjects selected */
-							selected_name_ranges = (struct Multi_range *)NULL;
 							name_selected=0;
 							if ((name_selected&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))

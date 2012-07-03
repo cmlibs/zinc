@@ -672,34 +672,34 @@ int Cmiss_stream_information_image_set_pixel_format(
 class Cmiss_stream_information_image_pixel_format_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_stream_information_image_pixel_format format)
-    {
-    	const char *enum_string = 0;
-    	switch (format)
-    	{
-    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
-    			enum_string = "LUMINANCE";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
-    			enum_string = "RGB";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
-    			enum_string = "RGBA";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
-    			enum_string = "ABGR";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
-    			enum_string = "BGR";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
-    			enum_string = "TIFF";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_stream_information_image_pixel_format format)
+	{
+		const char *enum_string = 0;
+		switch (format)
+		{
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+				enum_string = "LUMINANCE";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+				enum_string = "RGB";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+				enum_string = "RGBA";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
+				enum_string = "ABGR";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
+				enum_string = "BGR";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+				enum_string = "LUMINANCE_ALPHA";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_stream_information_image_pixel_format

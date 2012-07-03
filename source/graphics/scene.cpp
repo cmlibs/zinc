@@ -3684,7 +3684,6 @@ understood for the type of <interaction_volume> passed.
 	GLuint *select_buffer,*select_buffer_ptr;
 	int hit_no,i,j,num_hits,number_of_names,return_code, rendition_no;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
-	struct Scene *parent_scene;
 	struct Scene_picked_object *scene_picked_object;
 	struct Cmiss_rendition *rendition;
 	ENTER(Scene_pick_objects);
@@ -3768,8 +3767,6 @@ understood for the type of <interaction_volume> passed.
 										 path to picked graphic. Must be at least one; only more
 										 than one if contains child_scene, which then becomes the
 										 parent of the next level of scene objects */
-									parent_scene = scene;
-									
 									rendition_no=(int)(*select_buffer_ptr);
 									select_buffer_ptr++;
 									number_of_names--;

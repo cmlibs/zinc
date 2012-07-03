@@ -94,7 +94,6 @@ Creates a dialog widget that allows the user to edit the properties of any of
 the spectrums contained in the global list.
 ==============================================================================*/
 {
-	int init_widgets;
 // 	struct Callback_data callback;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog=NULL;
 
@@ -120,7 +119,6 @@ the spectrums contained in the global list.
 				spectrum_editor_dialog->autorange_scene = (struct Scene *)NULL;
 				spectrum_editor_dialog->user_interface = user_interface;
 				/* set the mode toggle to the correct position */
-				init_widgets=1;
 				if (!(spectrum_editor_dialog->spectrum_editor =
 							CREATE(Spectrum_editor)(
 								 spectrum_editor_dialog_address,
@@ -134,7 +132,6 @@ the spectrums contained in the global list.
 									 display_message(ERROR_MESSAGE,
 											"CREATE(Spectrum_editor_dialog).  "
 											"Could not create spectrum editor");
-									 init_widgets = 0;
 				}
 #if defined (OLD_CODE)
 				spectrum_editor_dialog_set_spectrum(
