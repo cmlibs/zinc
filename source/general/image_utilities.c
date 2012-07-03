@@ -1323,6 +1323,9 @@ Writes an image in SGI rgb file format.
 							row_size_char[2] = (unsigned char)(((0x0000ff00 & row_size)) >> 8);
 							row_size_char[3] = (unsigned char)(((0x000000ff & row_size)));
 							written=fwrite(row_size_char,4,1,output_file);
+							if (written)
+							{
+							}
 							row_start += row_size;
 						}
 					}
@@ -1863,6 +1866,9 @@ Uses LZW compression to compress a stream of bytes to a file.
 			"LZW_compress_to_file.  Invalid argument(s)");
 		return_code=0;
 	}
+	if (written)
+	{
+	}
 #if defined (DEBUG_CODE)
 	/*???debug */
 	/*printf("leave LZW_compress_to_file\n");*/
@@ -1920,6 +1926,9 @@ For writing a field in an image file directory.
 	}
 #endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 	written=fwrite(&value_offset_temp,sizeof(unsigned long),1,tiff_file);
+	if (written)
+	{
+	}
 	LEAVE;
 
 	return (return_code);
@@ -1998,6 +2007,9 @@ Uses pack bits compression to compress a stream of bytes to a file.
 	}
 	*number_of_compressed_bytes_address=number_of_compressed_bytes;
 	LEAVE;
+	if (written)
+	{
+	}
 
 	return (return_code);
 } /* pack_bits_compress_to_file */
@@ -2783,6 +2795,9 @@ Not working for 64 bit as assumes a long is 4 bytes!
 			"write_tiff_image_file.  Missing argument(s)");
 		return_code=0;
 	}
+	if (written)
+	{
+	}
 #if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave write_tiff_image_file\n");
@@ -3417,7 +3432,6 @@ the second the denominator.
 ==============================================================================*/
 {
 	FILE *tiff_file;
-	float x_resolution, y_resolution;
 	int i,least_to_most,return_code;
 	long image_length,image_width,*strip_offset,*strip_offsets;
 	unsigned char bit,byte,byte_array[4],*pbyte_array,colour_0,colour_1,*image,*image_ptr,
@@ -3426,11 +3440,12 @@ the second the denominator.
 		number_of_fields,number_of_strips,rows_per_strip,
 		*strip_byte_count,*strip_byte_counts;
 	unsigned short bits_per_sample,compression,field_tag,field_type,file_type,
-		photometric_interpretation,planar_configuration,resolution_unit,
-		samples_per_pixel;
+		photometric_interpretation,resolution_unit,samples_per_pixel;
 
 	ENTER(read_tiff_image_file);
 #if defined (DEBUG_CODE)
+	float x_resolution, y_resolution;
+	unsigned short planar_configuration;
 	/*???debug */
 	printf("enter read_tiff_image_file\n");
 #endif /* defined (DEBUG_CODE) */
@@ -3569,15 +3584,17 @@ the second the denominator.
 								image_length=0;
 								image_width=0;
 								resolution_unit=TIFF_INCH;
+#if defined (DEBUG_CODE)
 								x_resolution= -1;
 								y_resolution= -1;
+								planar_configuration=TIFF_CHUNKY_PLANAR_CONFIGURATION;
+#endif /* defined (DEBUG_CODE) */
 								rows_per_strip=0;
 								strip_offsets=(long int *)NULL;
 								strip_byte_counts=(unsigned long int *)NULL;
 								bits_per_sample=0;
 								samples_per_pixel=0;
 								number_of_strips=0;
-								planar_configuration=TIFF_CHUNKY_PLANAR_CONFIGURATION;
 								/* search through tags to find relevant fields */
 								while (return_code&&(number_of_fields>0))
 								{
@@ -3991,10 +4008,10 @@ the second the denominator.
 													(TIFF_RATIONAL_FIELD == field_type) &&
 													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
 												{
+#if defined (DEBUG_CODE)
 													x_resolution =
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
-#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%g\n",x_resolution);
 #endif /* defined (DEBUG_CODE) */
@@ -4019,10 +4036,10 @@ the second the denominator.
 													(TIFF_RATIONAL_FIELD == field_type)&&
 													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
 												{
+#if defined (DEBUG_CODE)
 													y_resolution =
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
-#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%g\n",y_resolution);
 #endif /* defined (DEBUG_CODE) */
@@ -4045,9 +4062,9 @@ the second the denominator.
 #endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
+#if defined (DEBUG_CODE)
 													planar_configuration =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",planar_configuration);
 #endif /* defined (DEBUG_CODE) */
@@ -4555,11 +4572,11 @@ present in some files */
 #if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave read_tiff_image_file\n");
-#endif /* defined (DEBUG_CODE) */
-	/* Keep these in case we want to use them sometime */
-	USE_PARAMETER(planar_configuration);
 	USE_PARAMETER(x_resolution);
 	USE_PARAMETER(y_resolution);
+	USE_PARAMETER(planar_configuration);
+#endif /* defined (DEBUG_CODE) */
+	/* Keep these in case we want to use them sometime */
 	LEAVE;
 
 	return (return_code);
@@ -5432,6 +5449,8 @@ int Cmgui_image_information_clear_memory_blocks(struct Cmgui_image_information *
 				{
 					RelinquishMagickMemory(block->buffer);
 				}
+#else
+				USE_PARAMETER(remove_memory_blob);
 #endif
 				DEALLOCATE(block);
 			}
@@ -7634,9 +7653,9 @@ that the images be adjoined in the single file.
 {
 	char *file_name;
 	int i, number_of_file_names = 0, return_code;
+#if defined (USE_IMAGEMAGICK)
 	size_t magick_memory_block_length = 0;
 	void *temp_memory_block = NULL;
-#if defined (USE_IMAGEMAGICK)
 	char *magick_file_name;
 	ExceptionInfo magick_exception;
 	Image *local_magick_image, *magick_image, *temp_next, *temp_previous;
