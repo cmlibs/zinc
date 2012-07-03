@@ -577,7 +577,7 @@ IF( WX_USER_INTERFACE )
 			SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} wxUSE_NO_MANIFEST=1 )
 			SET( DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} wxUSE_NO_MANIFEST=1 )
 		ENDIF( MSVC )
-		IF( UNIX ) # A not very good way of getting wxWidgets to compile with gcc 4.6.2
+		IF( UNIX AND NOT APPLE ) # A not very good way of getting wxWidgets to compile with gcc 4.6.2
 			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} /usr/lib/libX11.so )
 		ENDIF()
 		INCLUDE( source/cmake/xrc_source_files.cmake )
