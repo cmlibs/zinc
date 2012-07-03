@@ -191,6 +191,10 @@ public:
 		block_array<IndexType, unsigned int, intBlockLength>::swap(other);
 	}
 
+	using block_array<IndexType, unsigned int, intBlockLength>::getValue;
+	using block_array<IndexType, unsigned int, intBlockLength>::setValue;
+	using block_array<IndexType, unsigned int, intBlockLength>::setValues;
+
 	/** @param oldValue  Returns old value so client can determine if status changed */
 	int setBool(IndexType index, bool value, bool& oldValue)
 	{
