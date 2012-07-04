@@ -178,7 +178,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 							for (i = 0; i < number_of_xi; i++)
 							{
 								/* converged if all xi increments on or within tolerance */
-								if (fabs(b[i]) > data->tolerance)
+								if (fabs(b[i]) > data->xi_tolerance)
 								{
 									converged = 0;
 								}
@@ -188,7 +188,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 							if (!converged)
 							{
 								FE_element_shape_limit_xi_to_element(shape,
-									data->xi, data->tolerance);
+									data->xi, data->xi_tolerance);
 								if (iterations == MAX_FIND_XI_ITERATIONS)
 								{
 									/* too many iterations; give up */
@@ -201,7 +201,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 									return_code = 0;
 									for (i = 0; i < number_of_xi; i++)
 									{
-										if (fabs(data->xi[i] - last_xi[i]) > data->tolerance)
+										if (fabs(data->xi[i] - last_xi[i]) > data->xi_tolerance)
 										{
 											return_code = 1;
 										}
@@ -437,7 +437,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 				find_element_xi_data.number_of_values = number_of_values;
 				find_element_xi_data.found_number_of_xi = 0;
 				find_element_xi_data.found_derivatives = (FE_value *)NULL;
-				find_element_xi_data.tolerance = 1e-05;
+				find_element_xi_data.xi_tolerance = 1e-05;
 				find_element_xi_data.find_nearest_location = find_nearest;
 				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 				find_element_xi_data.nearest_element_distance_squared = 0.0;

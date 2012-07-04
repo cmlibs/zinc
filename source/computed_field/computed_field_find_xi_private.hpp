@@ -142,7 +142,7 @@ matches the <field> in this structure or one of its source fields.
 	int found_number_of_xi;
 	FE_value *found_values;
 	FE_value *found_derivatives;
-	float tolerance;
+	FE_value xi_tolerance;
 	int find_nearest_location;
 	struct FE_element *nearest_element;
 	FE_value nearest_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
