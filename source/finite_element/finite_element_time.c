@@ -458,7 +458,8 @@ and 1 if it is.
 ==============================================================================*/
 {
 	int return_code, time_index_one, time_index_two;
-	FE_value xi;
+	FE_value xi, xi_tolerance = 1e-5;
+
 	
 	ENTER(FE_time_sequence_get_index_for_time);
 	
@@ -468,9 +469,14 @@ and 1 if it is.
 		if (FE_time_sequence_get_interpolation_for_time(fe_time_sequence, 
 			time, &time_index_one, &time_index_two, &xi))
 		{
-			if (0 == xi)
+			if (xi < (0.0 + xi_tolerance))
 			{
 				*time_index = time_index_one;
+				return_code = 1;
+			}
+			else if ((1.0 - xi_tolerance) < xi)
+			{
+				*time_index = time_index_two;
 				return_code = 1;
 			}
 		}
