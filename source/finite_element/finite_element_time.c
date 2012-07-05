@@ -459,7 +459,7 @@ and 1 if it is.
 {
 	int return_code, time_index_one, time_index_two;
 	FE_value xi;
-	const xi_tolerance = 1e-5;
+	const FE_value xi_tolerance = 1e-5;
 
 	
 	ENTER(FE_time_sequence_get_index_for_time);
