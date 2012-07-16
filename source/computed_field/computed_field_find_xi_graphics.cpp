@@ -269,7 +269,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		find_element_xi_data.number_of_values = number_of_values;
 		find_element_xi_data.found_number_of_xi = 0;
 		find_element_xi_data.found_derivatives = (FE_value *)NULL;
-		find_element_xi_data.tolerance = 1e-06;
+		find_element_xi_data.xi_tolerance = 1e-06;
 		find_element_xi_data.find_nearest_location = 0; /* Find exact location */
 		find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 		find_element_xi_data.nearest_element_distance_squared = 0.0;
@@ -442,7 +442,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 #if defined (DEBUG_CODE)
 						printf("First element %d\n", identifier);
 #endif /* defined (DEBUG_CODE) */
-						find_element_xi_data.tolerance = 1e-06;
+						find_element_xi_data.xi_tolerance = 1e-06;
 						if (Computed_field_iterative_element_conditional(*element, &find_element_xi_data))
 						{
 							for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
@@ -552,7 +552,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 							if (! *element)
 							{
 								/* Revert to the originally found element and extrapolate if it close (to allow for boundaries) */
-								find_element_xi_data.tolerance = 1.0;
+								find_element_xi_data.xi_tolerance = 1.0;
 								if (Computed_field_iterative_element_conditional(
 									first_element, &find_element_xi_data))
 								{
