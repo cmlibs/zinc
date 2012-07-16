@@ -3361,7 +3361,6 @@ it.
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
 							gtk_widget_show_all(window->shell_window);
-							return_code = 1;
 						}
 						else
 						{
@@ -3488,7 +3487,6 @@ it.
 								/* initial view is of all of the current scene */
 								Graphics_window_view_all(window);
 
-								return_code = 1;
 							}
 							else
 							{
@@ -3866,7 +3864,6 @@ it.
 								/* initial view is of all of the current scene */
 								Graphics_window_view_all(window);
 
-								return_code = 1;
 							}
 							else
 							{
