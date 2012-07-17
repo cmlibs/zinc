@@ -42,7 +42,7 @@ GL rendering calls - API specific.
 #include <stdio.h>
 #include <math.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {

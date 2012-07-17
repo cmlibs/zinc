@@ -43,7 +43,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif
 extern "C" {
 #include "computed_field/computed_field.h"

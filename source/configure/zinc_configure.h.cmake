@@ -1,6 +1,6 @@
 
-#ifndef CMGUI_CONFIGURE_H
-#define CMGUI_CONFIGURE_H
+#ifndef ZINC_CONFIGURE_H
+#define ZINC_CONFIGURE_H
 
 // Platform specific defines
 #cmakedefine UNIX

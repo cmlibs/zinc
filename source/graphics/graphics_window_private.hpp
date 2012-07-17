@@ -45,7 +45,7 @@ Private interface for internal methods
 #define GRAPHICS_WINDOW_PRIVATE_HPP
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (WX_USER_INTERFACE)

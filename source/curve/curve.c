@@ -600,7 +600,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 {
 	FE_value *values,*derivatives,*left_derivatives,left_parameter,
 		left_parameter_change,left_sf,parameter,parameter_change,sf,slope,
-		right_parameter,temp_sf,*temp_values,xi;
+		right_parameter,temp_sf = 0.0,*temp_values,xi;
 	int comp_no,i,max_number_of_components,node_no,number_of_components,
 		return_code;
 	struct FE_node *destination_node,*left_node,*right_node,*source_node;

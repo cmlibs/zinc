@@ -43,7 +43,7 @@ This provides a Cmgui interface to the font contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "general/debug.h"

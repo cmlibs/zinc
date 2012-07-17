@@ -54,7 +54,7 @@ assignments in the ASSERT_IF expression.
 #include <stdarg.h>
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 /*

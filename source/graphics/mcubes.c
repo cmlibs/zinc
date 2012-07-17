@@ -67,7 +67,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 
 /* #define DEBUG_CODE */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 

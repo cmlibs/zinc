@@ -42,7 +42,7 @@ Functions for interfacing with the graphics library.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (OPENGL_API)

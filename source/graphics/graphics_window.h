@@ -50,7 +50,7 @@ interest and set scene_viewer values directly.
 #define GRAPHICS_WINDOW_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/image_utilities.h"
 #include "general/list.h"

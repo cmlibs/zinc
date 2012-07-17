@@ -44,7 +44,7 @@ Spectrum structures and support code.
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/list.h"
 #include "general/manager.h"

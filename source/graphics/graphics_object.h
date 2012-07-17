@@ -72,7 +72,7 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "api/cmiss_graphic.h"
 #include "general/geometry.h"

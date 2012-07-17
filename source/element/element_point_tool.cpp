@@ -42,7 +42,7 @@ Interactive tool for selecting element/grid points with mouse and other devices.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
 #include "api/cmiss_field_module.h"

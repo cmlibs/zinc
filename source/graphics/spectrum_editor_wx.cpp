@@ -8,7 +8,7 @@ Provides the wxWidgets interface to manipulate spectrum settings.
 ==============================================================================*/
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <stdio.h>

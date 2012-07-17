@@ -43,7 +43,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -547,7 +547,7 @@ public:
 	{
 		struct Graphics_buffer_input input;
 		input.type = GRAPHICS_BUFFER_KEY_RELEASE;
-		key_code = 0;
+		key_code = event.GetKeyCode();
 		input.key_code = key_code;
 		int input_modifier = 0;
 		if (event.ShiftDown())
@@ -599,11 +599,6 @@ public:
 		struct Graphics_buffer_input input;
 
 		return_code = 1;
-		if (event.Entering())
-		{
-			key_code = 0;
-			this->SetFocus();
-		}
 		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
 		input.button_number = 0;
 		input.key_code = key_code;
@@ -638,6 +633,11 @@ public:
 		}
 		else if (event.ButtonDown())
 		{
+			if (this != this->FindFocus())
+			{
+				input.key_code = 0;
+				this->SetFocus();
+			}
 			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
 			switch (event.GetButton())
 			{

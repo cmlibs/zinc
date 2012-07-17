@@ -49,7 +49,7 @@ Utilities for handling images.
 #include <sys/stat.h>
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "command/parser.h"

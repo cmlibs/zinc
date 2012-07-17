@@ -45,7 +45,7 @@ The functions for manipulating graphical textures.
 #include <stdlib.h>
 #include <string.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #if defined (WIN32_SYSTEM)
 #define _USE_MATH_DEFINES

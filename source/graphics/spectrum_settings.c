@@ -47,7 +47,7 @@ appearance of spectrums.
 #include <math.h>
 #include <stdlib.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include <stdio.h>

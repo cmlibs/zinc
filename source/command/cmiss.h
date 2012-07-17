@@ -50,7 +50,7 @@ This should only be included in cmgui.c and command/cmiss.c
 #include "context/context.h"
 #include "context/user_interface_module.h"
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/io_stream.h"
 #include "general/manager.h"

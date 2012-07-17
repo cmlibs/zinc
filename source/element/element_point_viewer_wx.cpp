@@ -44,7 +44,7 @@ selected element point, or set it if entered in this dialog.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
+#include "configure/zinc_configure.h"
 #endif
 extern "C" {
 #include "api/cmiss_field_module.h"
