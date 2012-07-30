@@ -45,20 +45,6 @@ scenes.
 #ifndef __CMISS_SCENE_VIEWER_H__
 #define __CMISS_SCENE_VIEWER_H__
 
-#if defined (GTK_USER_INTERFACE)
-#include <gtk/gtk.h>
-#endif /* defined (GTK_USER_INTERFACE) */
-#if defined (CARBON_USER_INTERFACE)
-#include <carbon/carbon.h>
-#endif /* defined (CARBON_USER_INTERFACE) */
-#if defined (WIN32_USER_INTERFACE)
-//#define WINDOWS_LEAN_AND_MEAN
-#if !defined (NOMINMAX)
-#define NOMINMAX
-#endif
-#include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
-
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_image_id.h"
 #include "types/cmiss_graphics_coordinate_system.h"
@@ -245,128 +231,6 @@ Global functions
 ----------------
 */
 
-#if defined (WX_USER_INTERFACE)
-/***************************************************************************//**
- * Creates a Cmiss_scene_viewer by creating a wxCanvas inside the specified
- * wxPanel container.If <minimum_colour_buffer_depth>, 
- * <minimum_depth_buffer_depth> or <minimum_accumulation_buffer_depth> are not 
- * zero then they are used to filter out the possible visuals selected for 
- * graphics_buffers.  If they are zero then the accumulation_buffer_depth 
- * are not tested and the maximum colour buffer depth is chosen.
- * 
- * @param cmiss_scene_viewer_package  Package containing information required
- * @param parent_void  void pointer to a wxPanel in wxWidgets. 
- * @param buffer_mode  see enum Cmiss_scene_viewer_buffering_mode.
- * @param stereo_mode  see enum Cmiss_scene_viewer_stereo_mode
- * @param minimum_colour_buffer_depth  minimum colour buffer depth to be set on 
- *    scene viewer.
- * @param minimum_depth_buffer_depth  minimum_depth_buffer_depth to be set on 
- *    scene viewer.
- * @param minimum_accumulation_buffer_depth  minimum_accumulation_buffer_depth 
- *    to be set on scene viewer.
- * @return  Cmiss_scene_viewer_id if successfully create the scene viewer,
- *    otherwise NULL.
- */
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_wx(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	void *parent_void,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-#endif /* defined (WX_USER_INTERFACE) */
-
-#if defined (GTK_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_gtk(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	GtkContainer *scene_viewer_widget,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a GtkGlArea inside the specified 
-<scene_viewer_widget> container.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
-<minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
-the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
-chosen.
-==============================================================================*/
-#endif /* defined (GTK_USER_INTERFACE) */
-
-#if defined (CARBON_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_Carbon(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	WindowRef windowIn,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 27 November 2006
-
-DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
-<port> window handle.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
-<minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
-the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
-chosen.
-==============================================================================*/
-#endif /* defined (CARBON_USER_INTERFACE) */
-
-#if defined (WIN32_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_win32(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	HWND hWnd, HDC hDC,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 1 June 2007
-
-DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
-<hWnd> window handle.  If the <hDC> is specified it is used to render.
-Alternatively if <hWnd> is NULL and <hDC> is specified then no window functions
-are performed but the graphics window will render into the supplied device context.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
-<minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
-the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
-chosen.
-==============================================================================*/
-#endif /* defined (WIN32_USER_INTERFACE) */
-
-#if defined (WIN32_USER_INTERFACE)
-int Cmiss_scene_viewer_handle_windows_event(Cmiss_scene_viewer_id scene_viewer,
-	UINT event,WPARAM first_message,LPARAM second_message);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2007
-
-DESCRIPTION:
-Passes the supplied windows event on to the graphics buffer.
-==============================================================================*/
-#endif /* defined (WIN32_USER_INTERFACE) */
-
-#if defined (WIN32_USER_INTERFACE)
-int Cmiss_scene_viewer_win32_set_window_size(Cmiss_scene_viewer_id scene_viewer,
-	int width, int height, int x, int y);
-/*******************************************************************************
-LAST MODIFIED : 14 September 2007
-
-DESCRIPTION :
-Sets the maximum extent of the graphics window within which individual paints 
-will be requested with handle_windows_event.
-==============================================================================*/
-#endif /* defined (WIN32_USER_INTERFACE) */
-
 int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
@@ -374,19 +238,6 @@ LAST MODIFIED : 4 September 2007
 DESCRIPTION :
 Closes the scene_viewer.
 ==============================================================================*/
-
-#if defined (CARBON_USER_INTERFACE)
-int Cmiss_scene_viewer_carbon_set_window_size(Cmiss_scene_viewer_id scene_viewer,
-	int width, int height, int clip_width, int clip_height);
-/*******************************************************************************
-LAST MODIFIED : 16 February 2007
-
-DESCRIPTION :
-Sets the coordinates within the graphics port which the scene_viewer should
-respect.
-==============================================================================*/
-
-#endif /* defined (CARBON_USER_INTERFACE) */
 
 int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_id scene);
