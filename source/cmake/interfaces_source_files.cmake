@@ -13,41 +13,43 @@
 
 # All
 SET( USER_INTERFACE_SRCS
-	source/user_interface/confirmation.cpp
-	source/user_interface/event_dispatcher.cpp
-	source/user_interface/filedir.cpp
-	source/user_interface/message.c
-	source/user_interface/user_interface.cpp
-	source/user_interface/idle.c )
+	source/ui/confirmation.cpp
+	source/ui/event_dispatcher.cpp
+	source/ui/filedir.cpp
+	source/ui/message.c
+	source/ui/user_interface.cpp
+	source/ui/idle.c )
 SET( USER_INTERFACE_HDRS
-	source/user_interface/confirmation.h
-	source/user_interface/event_dispatcher.h
-	source/user_interface/fd_io.h
-	source/user_interface/filedir.h
-	source/user_interface/idle.h
-	source/user_interface/message.h
-	source/user_interface/process_list_or_write_command.hpp
-	source/user_interface/user_interface.h )
+	source/ui/confirmation.h
+	source/ui/event_dispatcher.h
+	source/ui/fd_io.h
+	source/ui/filedir.h
+	source/ui/idle.h
+	source/ui/message.h
+	source/ui/process_list_or_write_command.hpp
+	source/ui/user_interface.h )
 
 # Most
 IF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
 	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
 	SET( API_INTERFACE_SRCS )
 
-	SET( COMMAND_INTERFACE_SRCS source/command/command_window.cpp )
-	SET( COMMAND_INTERFACE_HDRS source/command/command_window.h )
+	SET( COMMAND_INTERFACE_SRCS source/ui/command_window.cpp )
+	SET( COMMAND_INTERFACE_HDRS source/ui/command_window.h )
 
 	SET( COMPUTED_FIELD_INTERFACE_SRCS
-		source/computed_field/computed_field_scene_viewer_projection.cpp )
+		source/ui/computed_field_scene_viewer_projection.cpp )
 
-	SET( GRAPHICS_INTERFACE_SRCS source/graphics/graphics_window.cpp )
+	SET( GRAPHICS_INTERFACE_SRCS source/ui/graphics_window.cpp )
+	SET( GRAPHICS_INTERFACE_HDRS source/ui/graphics_window.h
+		source/ui/graphics_window_private.hpp )
 ENDIF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
 	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
 
 # Wx
 IF( WX_USER_INTERFACE )
 	SET( USER_INTERFACE_HDRS ${USER_INTERFACE_HDRS}
-		source/user_interface/user_interface_wx.hpp )
+		source/ui/user_interface_wx.hpp )
 	SET( COMFILE_INTERFACE_SRCS source/comfile/comfile_window_wx.cpp )
 	SET( COMFILE_INTERFACE_HDRS
 		source/comfile/comfile_window_wx.h

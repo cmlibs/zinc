@@ -56,8 +56,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
 	source/graphics/graphics_object_highlight.hpp
-	source/graphics/graphics_window.h
-	source/graphics/graphics_window_private.hpp
 	source/graphics/image.h
 	source/graphics/import_graphics_object.h
 	source/graphics/iso_field_calculation.h
