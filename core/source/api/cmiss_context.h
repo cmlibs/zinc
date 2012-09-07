@@ -123,29 +123,6 @@ Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
 Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
 /***************************************************************************//**
- * Enable the internal user interface in cmgui.
- *
- * @param context  Handle to a cmiss_context object.
- * @param user_interface_instance  a void pointer to user provided interface
- *   instance. Only wx_user_interface is supported at this moment.
- *   For wx_user_interface, this void pointer should point to a wxApp.
- *   Only use this if you want to provide your own main loop to cmgui, if not
- *   set this to NULL. If a valid instance is provided, cmgui will use it
- *   as the main instance and create time event with it.
- * @see Cmiss_context_process_idle_event
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-int Cmiss_context_enable_user_interface(Cmiss_context_id context,
-	void *user_interface_instance);
-#else
-int Cmiss_context_enable_user_interface(
-	Cmiss_context_id context, HINSTANCE current_instance,
-	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
-	void *user_interface_instance);
-#endif
-
-/***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application. 
  * User interface must be enabled before this function can be called successfully.
  *

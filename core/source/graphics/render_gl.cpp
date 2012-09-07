@@ -41,9 +41,9 @@ GL rendering calls - API specific.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 extern "C" {
 #include "general/debug.h"

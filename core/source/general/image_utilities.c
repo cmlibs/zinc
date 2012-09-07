@@ -48,9 +48,9 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #include "command/parser.h"
 #include "general/debug.h"

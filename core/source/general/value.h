@@ -46,9 +46,9 @@ checking.
 #if !defined (VALUE_H)
 #define VALUE_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (UNIX)
 #  if defined (CYGWIN)

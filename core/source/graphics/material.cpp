@@ -59,9 +59,9 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 extern "C" {
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_graphics_material.h"

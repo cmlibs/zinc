@@ -54,9 +54,9 @@ A module for supporting command parsing.
 #include <math.h>
 #include <ctype.h>
 #include "command/parser.h"
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"

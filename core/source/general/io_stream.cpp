@@ -43,9 +43,9 @@ streams.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (GENERIC_PC) && defined (UNIX)
 /* SAB 10 December 2004 Specifying -std=gnu99 on the command line doesn't seem

@@ -45,9 +45,9 @@ The data structures used for representing textures.
 #define TEXTURE_H
 
 #include <stdio.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 #include "general/enumerator.h"
 #include "general/object.h"
 #include "graphics/colour.h"

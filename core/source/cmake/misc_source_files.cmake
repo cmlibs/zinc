@@ -3,9 +3,6 @@
 # FINITE_ELEMENT_SRCS (definition includes the previous two), INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS, 
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
 
-SET( COMFILE_SRCS source/comfile/comfile.cpp )
-SET( COMFILE_HDRS source/comfile/comfile.h )
-
 SET( CURVE_SRCS source/curve/curve.c )
 SET( CURVE_HDRS source/curve/curve.h )
 
@@ -44,8 +41,6 @@ SET( FIELD_IO_SRCS
 	source/field_io/read_fieldml.cpp )
 SET( FIELD_IO_HDRS
 	source/field_io/read_fieldml.h )
-
-SET( MAIN_SRCS source/cmgui.cpp )
 
 SET( MESH_SRCS 
 	source/mesh/cmiss_element_private.cpp

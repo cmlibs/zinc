@@ -41,9 +41,9 @@ Functions for interfacing with the graphics library.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (OPENGL_API)
 #if defined (USE_GLEW)

@@ -51,9 +51,9 @@ gtObject/gtWindow management routines.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 extern "C" {
 #include "api/cmiss_field.h"

@@ -43,9 +43,9 @@ Spectrum structures and support code.
  * ***** END LICENSE BLOCK ***** */
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

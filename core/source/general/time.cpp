@@ -41,9 +41,9 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (WIN32_SYSTEM)
 extern "C" {

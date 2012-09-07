@@ -66,9 +66,9 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include <math.h>
 
 /* #define DEBUG_CODE */
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 
 #if defined (DEBUG_CODE)

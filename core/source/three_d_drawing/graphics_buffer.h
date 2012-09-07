@@ -44,9 +44,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_BUFFER_H)
 #define GRAPHICS_BUFFER_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #include "general/callback.h"
 #include "general/object.h"

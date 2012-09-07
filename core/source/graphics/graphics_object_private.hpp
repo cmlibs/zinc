@@ -74,9 +74,9 @@ Used to be gtypes.h
 #if !defined (GRAPHICS_OBJECT_PRIVATE_H)
 #define GRAPHICS_OBJECT_PRIVATE_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 extern "C"
 {
 #include "general/geometry.h"

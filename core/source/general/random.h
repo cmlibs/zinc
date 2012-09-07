@@ -44,9 +44,9 @@ Standard macros for returning random numbers.
 #if !defined (RANDOM_H)
 #define RANDOM_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 /* Must #include <stdlib.h> in calling module to use: */

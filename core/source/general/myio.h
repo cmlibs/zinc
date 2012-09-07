@@ -45,9 +45,9 @@ Some additions/modifications to stdio.
 #define MYIO_H
 
 #include <stdio.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (UNIX) && defined (GENERIC_PC)
 #if defined (CYGWIN)

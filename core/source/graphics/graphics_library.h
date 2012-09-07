@@ -44,9 +44,9 @@ Functions and structures for interfacing with the graphics library.
 #if !defined (GRAPHICS_LIBRARY_H)
 #define GRAPHICS_LIBRARY_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES

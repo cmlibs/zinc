@@ -45,11 +45,11 @@ Functions associated with commands.
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
 #include "command/command.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
-#include "user_interface/user_interface.h"
+#include "general/message.h"
 
 /*
 Module types

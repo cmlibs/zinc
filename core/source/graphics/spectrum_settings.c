@@ -46,9 +46,9 @@ appearance of spectrums.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 #include <stdlib.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #include <stdio.h>
 #include "api/cmiss_field_module.h"

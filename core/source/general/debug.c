@@ -45,9 +45,9 @@ Function definitions for debugging.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 #include "user_interface/message.h"
 #include "general/debug.h"

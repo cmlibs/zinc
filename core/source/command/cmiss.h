@@ -46,22 +46,12 @@ This should only be included in cmgui.c and command/cmiss.c
 #if !defined (COMMAND_CMISS_H)
 #define COMMAND_CMISS_H
 
+#include "configure/cmiss_zinc_configure.h"
 #include "command/command.h"
 #include "context/context.h"
-#include "context/user_interface_module.h"
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/io_stream.h"
 #include "general/manager.h"
 #include "region/cmiss_region.h"
-#if defined (WIN32_USER_INTERFACE)
-//#define WINDOWS_LEAN_AND_MEAN
-#if !defined (NOMINMAX)
-#define NOMINMAX
-#endif
-#include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global types

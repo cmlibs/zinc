@@ -41,6 +41,11 @@
 # This is the project name and shows up in ides
 PROJECT( ZincCore )
 
+IF( ${ZINC_BUILD_LIBRARY_TYPE} STREQUAL "SHARED" )
+	SET( ZINC_SHARED_OBJECT TRUE )
+	SET( ZINC_EXPORTS TRUE )
+ENDIF()
+
 CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_zinc_configure.h.cmake
 	${PROJECT_BINARY_DIR}/source/configure/cmiss_zinc_configure.h )
 	
@@ -89,7 +94,7 @@ SET( CONFIGURE_HDRS
 	${PROJECT_BINARY_DIR}/source/configure/cmiss_zinc_configure.h )
 
 INCLUDE_DIRECTORIES( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
-	${INCLUDE_DIRS} )
+	${PROJECT_BINARY_DIR}/source/configure ${INCLUDE_DIRS} )
 
 SET( TARGET_ZINC_LIB "zinc" )
 

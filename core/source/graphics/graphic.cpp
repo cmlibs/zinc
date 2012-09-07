@@ -41,9 +41,9 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 #include <string>
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 extern "C" {
 #include <stdlib.h>
 #include <stdio.h>

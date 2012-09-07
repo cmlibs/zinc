@@ -50,9 +50,9 @@ longjmp .
 #include "general/error_handler.h"
 #include <setjmp.h>
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+
+#include "configure/cmiss_zinc_configure.h"
+
 
 /*
 Global variables

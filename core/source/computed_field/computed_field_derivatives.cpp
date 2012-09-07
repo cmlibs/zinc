@@ -42,8 +42,8 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
+
+#include "configure/cmiss_zinc_configure.h"
 #endif
 extern "C" {
 #include "computed_field/computed_field.h"

@@ -44,9 +44,7 @@ Defines the finite function for UNIX and WIN32_SYSTEM
 #if !defined (MATH_H)
 #define MATH_H
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
+#include "configure/cmiss_zinc_configure.h"
 
 #if defined (SGI)
 /* For finite so that we can check for Nans which some compilers seem

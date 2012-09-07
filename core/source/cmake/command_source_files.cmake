@@ -1,11 +1,9 @@
 
 # Defines COMMAND_SRCS, CONTEXT_SRCS
 
-SET( CONTEXT_SRCS source/context/context.cpp
-	source/context/user_interface_module.cpp )
+SET( CONTEXT_SRCS source/context/context.cpp )
 
-SET( CONTEXT_HDRS source/context/context.h
-	source/context/user_interface_module.h )
+SET( CONTEXT_HDRS source/context/context.h )
 
 SET( COMMAND_SRCS source/command/command.c
 	source/command/console.c
