@@ -1049,38 +1049,3 @@ Use function Computed_field_get_type to determine the field type.
 	return (return_code);
 } /* Computed_field_get_type_scene_viewer_projection */
 
-int Computed_field_register_type_scene_viewer_projection(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Graphics_window) *graphics_window_manager)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_scene_viewer_projection_package
-		*computed_field_scene_viewer_projection_package =
-		new Computed_field_scene_viewer_projection_package;
-
-	ENTER(Computed_field_register_type_scene_viewer_projection);
-	if (computed_field_package && graphics_window_manager)
-	{
-		computed_field_scene_viewer_projection_package->graphics_window_manager =
-			graphics_window_manager;
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_scene_viewer_projection_type_string,
-			define_Computed_field_type_scene_viewer_projection,
-			computed_field_scene_viewer_projection_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_type_scene_viewer_projection.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_type_scene_viewer_projection */
-

@@ -70,8 +70,6 @@ registered file descriptors to the correct callbacks.
 #define USE_GENERIC_EVENT_DISPATCHER
 #endif /* switch (USER_INTERFACE) */
 
-#include "user_interface/fd_io.h"
-
 /*
 Global types
 ------------
@@ -220,17 +218,6 @@ LAST MODIFIED : 13 November 2002
 DESCRIPTION :
 Remove the <callback_id> created by Event_dispatcher_add_descriptor_callback
 from the <event_dispatcher>.
-==============================================================================*/
-
-Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *event_dispatcher,
-	Cmiss_native_socket_t descriptor);
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Create a file-descriptor I/O object from an event dispatcher and a descriptor.
-Note that Cmiss_native_socket_t may be a file-descriptor int if you are on a
-*nix platform, or a SOCKET type on Win32.
 ==============================================================================*/
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(

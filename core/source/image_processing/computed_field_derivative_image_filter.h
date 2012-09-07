@@ -46,14 +46,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-int Computed_field_register_types_derivative_image_filter(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
-
-DESCRIPTION :
-==============================================================================*/
-
 /***************************************************************************//**
  * Creates a field performing ITK derivative image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.

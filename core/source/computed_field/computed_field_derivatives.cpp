@@ -44,12 +44,11 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  * ***** END LICENSE BLOCK ***** */
 
 #include "configure/cmiss_zinc_configure.h"
-#endif
 extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "image_processing/computed_field_ImageFilter.hpp"
+#include "image_processing/computed_field_image_filter.h"
 extern "C" {
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_set.h"
@@ -73,7 +72,7 @@ namespace {
 
 char computed_field_derivative_type_string[] = "derivative";
 
-class Computed_field_derivative_image_filter : public Computed_field_ImageFilter
+class Computed_field_derivative_image_filter : public computed_field_image_filter
 {
 	/* This class is only used when the input is deemed to be grid based, 
 		the derivative is not calculable on the input field and the 
@@ -171,7 +170,7 @@ Not needed but required to construct object.
 
 template < class ImageType >
 class Computed_field_derivative_image_filter_Functor :
-	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
+	public computed_field_image_filter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
 
@@ -186,7 +185,7 @@ public:
 
 	Computed_field_derivative_image_filter_Functor(
 		Computed_field_derivative_image_filter *derivative_image_filter) :
-		Computed_field_ImageFilter_FunctorTmpl< ImageType >(derivative_image_filter),
+		computed_field_image_filter_FunctorTmpl< ImageType >(derivative_image_filter),
 		derivative_image_filter(derivative_image_filter)
 	{
 	}
@@ -220,7 +219,7 @@ and generate the outputImage.
 
 Computed_field_derivative_image_filter::Computed_field_derivative_image_filter(
 	Computed_field *source_field, int xi_index, int derivative_operator_order) : 
-	Computed_field_ImageFilter(source_field), 
+	computed_field_image_filter(source_field), 
 	xi_index(xi_index), derivative_operator_order(derivative_operator_order)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
@@ -1502,48 +1501,4 @@ used by it are returned.
 
 	return (return_code);
 } /* Computed_field_get_type_gradient */
-
-int Computed_field_register_types_derivatives(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_derivatives_package
-		*computed_field_derivatives_package =
-		new Computed_field_derivatives_package;
-
-	ENTER(Computed_field_register_type_derivative);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_derivative_type_string, 
-			define_Computed_field_type_derivative,
-			computed_field_derivatives_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_curl_type_string, 
-			define_Computed_field_type_curl,
-			computed_field_derivatives_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_divergence_type_string, 
-			define_Computed_field_type_divergence,
-			computed_field_derivatives_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_gradient_type_string, 
-			define_Computed_field_type_gradient,
-			computed_field_derivatives_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_type_derivative.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_type_derivative */
 

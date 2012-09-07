@@ -45,11 +45,4 @@ DESCRIPTION :
 
 #include "api/cmiss_field_coordinate_transformation.h"
 
-int Computed_field_register_types_coordinate(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_COORDINATE_H) */

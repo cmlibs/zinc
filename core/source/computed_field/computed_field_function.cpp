@@ -437,34 +437,3 @@ internally used path.
 	return (return_code);
 } /* Computed_field_get_type_function */
 
-int Computed_field_register_types_function(
-	Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_function_package
-		*computed_field_function_package = 
-		new Computed_field_function_package;
-
-	ENTER(Computed_field_register_types_function);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_function_type_string,
-			define_Computed_field_type_function,
-			computed_field_function_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_function.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_function */

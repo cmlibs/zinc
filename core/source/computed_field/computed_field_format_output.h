@@ -44,9 +44,6 @@ Implements computed fields that control the format_output behaviour.
 #if !defined (COMPUTED_FIELD_FORMAT_OUTPUT_H)
 #define COMPUTED_FIELD_FORMAT_OUTPUT_H
 
-int Computed_field_register_types_format_output(
-	struct Computed_field_package *computed_field_package);
-
 /*****************************************************************************//**
  * Creates a string field with the components of the source field rendered using
  * the format_string. 

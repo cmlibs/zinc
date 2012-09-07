@@ -65,11 +65,4 @@ struct Computed_field *Computed_field_create_fibre_axes(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *fibre_field, struct Computed_field *coordinate_field);
 
-int Computed_field_register_types_fibres(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 17 October 2000
-
-DESCRIPTION :
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_FIBRES_H) */

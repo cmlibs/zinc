@@ -3469,50 +3469,6 @@ allow interfacing to the choose_object widgets.
 	return (computed_field_manager);
 } /* Computed_field_package_get_computed_field_manager */
 
-int Computed_field_package_add_type(
-	struct Computed_field_package *computed_field_package, const char *name,
-	Define_Computed_field_type_function define_Computed_field_type_function,
-	Computed_field_type_package *define_type_user_data)
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Adds the type of Computed_field described by <name> and 
-<define_Computed_field_type_function> to those in the LIST held by the 
-<computed_field_package>.  This type is then added to the 
-define_Computed_field_type option table when parsing commands.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_type_data *data;
-
-	ENTER(Computed_field_package_add_type);
-	if (computed_field_package && name && define_Computed_field_type_function &&
-		 define_type_user_data)
-	{
-		if(NULL != (data = CREATE(Computed_field_type_data)(name,
-			define_Computed_field_type_function, define_type_user_data)))
-		{
-			data->define_type_user_data->addref();
-			return_code = ADD_OBJECT_TO_LIST(Computed_field_type_data)(data,
-				computed_field_package->computed_field_type_list);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_package_add_type.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_package_add_type */
-
 int Computed_field_package_remove_types(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************

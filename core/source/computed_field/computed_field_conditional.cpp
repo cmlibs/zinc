@@ -331,35 +331,3 @@ are returned.
 	return (return_code);
 } /* Computed_field_get_type_if */
 
-int Computed_field_register_types_conditional(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 27 July 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_conditional_package
-		*computed_field_conditional_package = 
-		new Computed_field_conditional_package;
-
-	ENTER(Computed_field_register_types_conditional);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_if_type_string, 
-			define_Computed_field_type_if,
-			computed_field_conditional_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_conditional.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_conditional */
-

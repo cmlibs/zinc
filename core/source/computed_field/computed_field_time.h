@@ -46,13 +46,4 @@ Implements computed fields that control the time behaviour.
 
 #include "time/time_keeper.h"
 
-int Computed_field_register_types_time(
-	struct Computed_field_package *computed_field_package,
-	struct Time_keeper *time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2003
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_TIME_H) */

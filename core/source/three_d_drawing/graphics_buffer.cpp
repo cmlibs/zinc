@@ -102,8 +102,6 @@ extern "C" {
 #include "user_interface/event_dispatcher.h"
 #endif /* defined (UNIX) && !defined (DARWIN) */
 #include "general/message.h"
-#include "user_interface/user_interface.h"
-
 #include "three_d_drawing/window_system_extensions.h"
 
 /* #define DEBUG_CODE */

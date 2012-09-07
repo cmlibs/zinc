@@ -45,7 +45,6 @@ Decimate the triangles in the GT_voltex to satisfy a curvature threshold.
 #include <stdio.h>
 #include <math.h>
 extern "C" {
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/compare.h"
 #include "general/debug.h"

@@ -51,8 +51,9 @@ extern "C" {
  * For now can only represent a differential differential_operator give first derivatives
  * with respect to differential_operator elements of given dimension from fe_region.
  */
-class Cmiss_differential_operator
+struct Cmiss_differential_operator
 {
+private:
 	FE_region *fe_region;
 	int dimension;
 	int term; // which derivative for multiple dimensions, 1 = d/dx1

@@ -43,14 +43,6 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_EXTERNAL_H)
 #define COMPUTED_FIELD_EXTERNAL_H
 
-int Computed_field_register_types_external(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-==============================================================================*/
-
 int Computed_field_set_type_external(struct Computed_field *field,
 	char *filename, int timeout,
 	int number_of_source_values, FE_value *source_values,

@@ -607,38 +607,3 @@ If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the
 	return (return_code);
 } /* Computed_field_get_type_vector_coordinate_transformation */
 
-int Computed_field_register_types_coordinate(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_coordinate_package 
-		*computed_field_coordinate_package =
-		new Computed_field_coordinate_package;
-
-	ENTER(Computed_field_register_types_coordinate);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_coordinate_transformation_type_string,
-			define_Computed_field_type_coordinate_transformation,
-			computed_field_coordinate_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_vector_coordinate_transformation_type_string,
-			define_Computed_field_type_vector_coordinate_transformation,
-			computed_field_coordinate_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_coordinate */

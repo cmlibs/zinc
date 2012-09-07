@@ -44,14 +44,6 @@ Implements computed fields that control the string_constant behaviour.
 #if !defined (COMPUTED_FIELD_STRING_CONSTANT_H)
 #define COMPUTED_FIELD_STRING_CONSTANT_H
 
-int Computed_field_register_types_string_constant(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-==============================================================================*/
-
 /*****************************************************************************//**
  * Creates a string constant field with the supplied <number_of_components> and
  * the string values from <string_constant_array> 

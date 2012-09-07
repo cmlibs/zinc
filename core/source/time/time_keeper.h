@@ -12,7 +12,6 @@ This is intended to be multithreaded......
 #define TIME_KEEPER_H
 
 #include "api/cmiss_time_keeper.h"
-#include "user_interface/user_interface.h"
 
 #define Time_keeper Cmiss_time_keeper
 #define Time_object Cmiss_time_notifier

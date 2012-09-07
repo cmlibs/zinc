@@ -126,7 +126,7 @@ bool Computed_field_nodeset_operator::is_defined_at_location(Cmiss_field_cache& 
 		}
 	}
 	Cmiss_node_iterator_destroy(&iterator);
-	return return_code;
+	return return_code == 1;
 }
 
 /** Lists a description of the nodeset_operator arguments */
@@ -584,47 +584,3 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 	return field;
 }
 
-int Computed_field_register_types_nodeset_operators(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 01 May 2007
-
-DESCRIPTION :
-Registering the region operations.
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_nodeset_operators_package
-		*computed_field_nodeset_operators_package = 
-		new Computed_field_nodeset_operators_package;
-
-	ENTER(Computed_field_register_types_nodeset_operators);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_nodeset_sum_type_string, 
-			define_Computed_field_type_nodeset_sum,
-			computed_field_nodeset_operators_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_nodeset_mean_type_string, 
-			define_Computed_field_type_nodeset_mean,
-			computed_field_nodeset_operators_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_nodeset_sum_squares_type_string,
-			define_Computed_field_type_nodeset_sum_squares,
-			computed_field_nodeset_operators_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_nodeset_mean_squares_type_string,
-			define_Computed_field_type_nodeset_mean_squares,
-			computed_field_nodeset_operators_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_nodeset_operators.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}

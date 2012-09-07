@@ -41,7 +41,6 @@
  * ***** END LICENSE BLOCK ***** */
 #include <cstdlib>
 extern "C" {
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"

@@ -45,14 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-int Computed_field_register_types_canny_edge_detection_image_filter(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
-
-DESCRIPTION :
-==============================================================================*/
-
 /***************************************************************************//**
  * Creates a field returning result of ITK canny edge detection filter on the
  * source field image. Sets number of components to same number as source field.

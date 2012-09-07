@@ -1625,33 +1625,6 @@ Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_modu
 	return (field);
 } /* Cmiss_field_module_create_group */
 
-int Computed_field_register_type_group(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region)
-{
-	int return_code;
-	Computed_field_group_package *computed_field_group_package = 
-		new Computed_field_group_package(root_region);
-
-	ENTER(Computed_field_register_type_group);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_group_type_string,
-			define_Computed_field_type_group,
-			computed_field_group_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_type_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_type_group */
-
 int Cmiss_field_group_clear(Cmiss_field_group_id group)
 {
 	if (group)

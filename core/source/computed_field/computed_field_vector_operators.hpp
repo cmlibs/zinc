@@ -40,12 +40,4 @@
 #if !defined (COMPUTED_FIELD_VECTOR_OPERATORS_H)
 #define COMPUTED_FIELD_VECTOR_OPERATORS_H
 
-int Computed_field_register_types_vector_operators(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_VECTOR_OPERATORS_H) */

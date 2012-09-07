@@ -43,7 +43,6 @@ extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_time_sequence.h"
-#include "command/parser.h"
 }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
@@ -367,119 +366,6 @@ struct Computed_field *Cmiss_field_module_get_replace_field(
 		replace_field = field_module->replace_field;
 	}
 	return (replace_field);
-}
-
-int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
-	const char *field_name, const char *command_string)
-{
-	int return_code = 0;
-	struct MANAGER(Computed_field) *manager;
-	struct Computed_field_package* package;
-
-	ENTER(Cmiss_field_module_define_field);
-	if (field_module && field_name && command_string &&
-		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
-	{
-		package = CREATE(Computed_field_package)(manager);
-		/* Add "safe" Computed_fields to the Computed_field_package, includes only those
-		 * that do not depend on data external to region */
-		if (package)
-		{
-			Computed_field_register_type_alias(package, field_module->region);
-			Computed_field_register_types_arithmetic_operators(package);
-			Computed_field_register_types_compose(package, field_module->region);
-			Computed_field_register_types_composite(package);
-			Computed_field_register_types_conditional(package);
-			Computed_field_register_types_coordinate(package);
-			Computed_field_register_types_deformation(package);
-#if defined (USE_ITK)
-			Computed_field_register_types_derivatives(package);
-#endif
-			Computed_field_register_types_fibres(package);
-			Computed_field_register_types_finite_element(package);
-			Computed_field_register_types_format_output(package);
-			Computed_field_register_types_function(package);	
-			Computed_field_register_types_image_resample(package);
-			Computed_field_register_type_integration(package, field_module->region);
-			Computed_field_register_types_logical_operators(package);
-			Computed_field_register_types_lookup(package, field_module->region);
-			Computed_field_register_types_matrix_operators(package);
-			Computed_field_register_types_nodeset_operators(package);
-			Computed_field_register_types_string_constant(package);
-			Computed_field_register_types_trigonometry(package);
-			Computed_field_register_types_vector_operators(package);
-#if defined (USE_ITK)
-			Computed_field_register_types_threshold_image_filter(package);
-			Computed_field_register_types_binary_threshold_image_filter(package);
-			Computed_field_register_types_canny_edge_detection_image_filter(package);
-			Computed_field_register_types_mean_image_filter(package);
-			Computed_field_register_types_sigmoid_image_filter(package);
-			Computed_field_register_types_discrete_gaussian_image_filter(package);
-			Computed_field_register_types_histogram_image_filter(package);
-			Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(package);
-			Computed_field_register_types_derivative_image_filter(package);
-			Computed_field_register_types_rescale_intensity_image_filter(package);
-			Computed_field_register_types_connected_threshold_image_filter(package);
-			Computed_field_register_types_gradient_magnitude_recursive_gaussian_image_filter(package);
-			Computed_field_register_types_fast_marching_image_filter(package);
-			Computed_field_register_types_binary_dilate_image_filter(package);
-			Computed_field_register_types_binary_erode_image_filter(package);
-#endif /* defined (USE_ITK) */
-			// execute command
-			std::string fullCommand(field_name);
-			fullCommand += " ";
-			fullCommand += command_string;
-			// tidy up
-			Computed_field_package_remove_types(package);
-			DESTROY(Computed_field_package)(&package);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_define_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_module,
-	const char *field_name, const char *command_string)
-{
-	Cmiss_field_id return_field = NULL;
-
-	ENTER(Cmiss_field_module_create_field);
-	if (field_module && field_name && command_string)
-	{
-		return_field = Cmiss_field_module_find_field_by_name(field_module,field_name);
-		if (return_field)
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_field_module_create_field.  Field '%s' already exists.",field_name);
-			Cmiss_field_destroy(&return_field);
-			return_field = NULL;
-		}
-		else
-		{
-			if (Cmiss_field_module_define_field(field_module, field_name, command_string))
-			{
-				return_field = Cmiss_field_module_find_field_by_name(field_module,field_name);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_field_module_create_field.  Error defining field '%s'.", field_name);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_field);
 }
 
 Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(

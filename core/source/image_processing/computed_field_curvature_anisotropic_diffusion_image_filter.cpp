@@ -46,7 +46,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "image_processing/computed_field_ImageFilter.hpp"
+#include "image_processing/computed_field_image_filter.h"
 extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -64,7 +64,7 @@ namespace {
 
 char computed_field_curvature_anisotropic_diffusion_image_filter_type_string[] = "curvature_anisotropic_diffusion_filter";
 
-class Computed_field_curvature_anisotropic_diffusion_image_filter : public Computed_field_ImageFilter
+class Computed_field_curvature_anisotropic_diffusion_image_filter : public computed_field_image_filter
 {
 
 public:
@@ -212,7 +212,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 template < class ImageType >
 class Computed_field_curvature_anisotropic_diffusion_image_filter_Functor :
-	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
+	public computed_field_image_filter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -227,7 +227,7 @@ public:
 
 	Computed_field_curvature_anisotropic_diffusion_image_filter_Functor(
 		Computed_field_curvature_anisotropic_diffusion_image_filter *curvature_anisotropic_diffusion_image_filter) :
-		Computed_field_ImageFilter_FunctorTmpl< ImageType >(curvature_anisotropic_diffusion_image_filter),
+		computed_field_image_filter_FunctorTmpl< ImageType >(curvature_anisotropic_diffusion_image_filter),
 		curvature_anisotropic_diffusion_image_filter(curvature_anisotropic_diffusion_image_filter)
 	{
 	}
@@ -262,7 +262,7 @@ and generate the outputImage.
 
 Computed_field_curvature_anisotropic_diffusion_image_filter::Computed_field_curvature_anisotropic_diffusion_image_filter(
 	Computed_field *source_field, double timeStep, double conductance, int numIterations) : 
-	Computed_field_ImageFilter(source_field), 
+	computed_field_image_filter(source_field), 
 	timeStep(timeStep), conductance(conductance), numIterations(numIterations)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -345,31 +345,3 @@ used by it are returned - otherwise an error is reported.
 	return (return_code);
 } /* Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter */
 
-int Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 18 October 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_register_types_curvature_anisotropic_diffusion_image_filter);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_curvature_anisotropic_diffusion_image_filter_type_string, 
-			define_Computed_field_type_curvature_anisotropic_diffusion_image_filter,
-			Computed_field_package_get_simple_package(computed_field_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_curvature_anisotropic_diffusion_image_filter */

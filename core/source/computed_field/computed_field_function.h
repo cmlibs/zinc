@@ -80,11 +80,4 @@ If the field is of type COMPUTED_FIELD_FUNCTION, the function returns the three
 fields which define the field.
 ==============================================================================*/
 
-int Computed_field_register_types_function(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_FUNCTION_H) */

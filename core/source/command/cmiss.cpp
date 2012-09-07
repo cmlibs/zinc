@@ -65,9 +65,6 @@ extern "C" {
 #include "api/cmiss_scene.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_stream.h"
-#include "command/console.h"
-#include "command/example_path.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_alias.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
@@ -104,7 +101,6 @@ extern "C" {
 #include "computed_field/computed_field_wrappers.h"
 #include "context/context.h"
 #include "element/element_operations.h"
-#include "emoter/emoter_dialog.h"
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_cm_files.h"
 #if defined (USE_NETGEN)
@@ -141,13 +137,13 @@ extern "C" {
 #include "graphics/light_model.h"
 #include "graphics/material.h"
 #include "graphics/graphic.h"
-#include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/render_stl.h"
 #include "graphics/render_vrml.h"
 #include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
+#include "graphics/graphics_module.h"
 #include "finite_element/finite_element_helper.h"
 }
 #include "graphics/triangle_mesh.hpp"
@@ -379,43 +375,6 @@ to change the interactive tool settings.
 }
 
 #endif /*(WX_USER_INTERFACE)*/
-
-static int set_command_prompt(const char *prompt, struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 26 June 2002
-
-DESCRIPTION :
-Changes the command prompt provided to the user.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(set_command_prompt);
-	if (prompt && command_data)
-	{
-#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-		if (command_data->command_window)
-		{
-			return_code = Command_window_set_command_prompt(command_data->command_window,
-				prompt);
-		}
-#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
-		if (command_data->command_console)
-		{
-			return_code = Console_set_command_prompt(command_data->command_console,
-				prompt);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_command_prompt.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_command_prompt */
 
 struct Interpreter_command_element_selection_callback_data
 {
@@ -1694,120 +1653,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->computed_field_package = 
 			CREATE(Computed_field_package)(computed_field_manager);
 		/* Add Computed_fields to the Computed_field_package */
-		if (command_data->computed_field_package)
-		{
-			Computed_field_register_types_coordinate(
-				command_data->computed_field_package);
-			if (command_data->root_region)
-			{
-				Computed_field_register_type_alias(
-					command_data->computed_field_package, 
-					command_data->root_region);
-			}
-			Computed_field_register_types_arithmetic_operators(
-				command_data->computed_field_package);
-			Computed_field_register_types_trigonometry(
-				command_data->computed_field_package);
-			Computed_field_register_types_format_output(
-				command_data->computed_field_package);
-			if (command_data->root_region)
-			{
-				Computed_field_register_types_compose(
-					command_data->computed_field_package, 
-					command_data->root_region);
-			}
-			Computed_field_register_types_composite(
-				command_data->computed_field_package);		
-			Computed_field_register_types_conditional(
-				command_data->computed_field_package);		
-			if (command_data->curve_manager)
-			{
-				Computed_field_register_types_curve(
-					command_data->computed_field_package, 
-					command_data->curve_manager);
-			}
-#if defined (USE_ITK)
-			Computed_field_register_types_derivatives(
-				command_data->computed_field_package);
-#endif /* defined (USE_ITK) */
-			Computed_field_register_types_fibres(
-				command_data->computed_field_package);
-			Computed_field_register_types_function(
-					command_data->computed_field_package);
-			Computed_field_register_types_logical_operators(
-				command_data->computed_field_package);
-			if (command_data->root_region)
-			{
-				Computed_field_register_types_lookup(
-					command_data->computed_field_package, 
-					command_data->root_region);
-			}
-			Computed_field_register_types_matrix_operators(
-				command_data->computed_field_package);
-			Computed_field_register_types_nodeset_operators(
-				command_data->computed_field_package);
-			Computed_field_register_types_vector_operators(
-				command_data->computed_field_package);
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-			if (command_data->graphics_window_manager)
-			{
-				Computed_field_register_type_scene_viewer_projection(
-					command_data->computed_field_package,
-					command_data->graphics_window_manager);
-			}
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-			Computed_field_register_type_image(
-				command_data->computed_field_package);
-			if (command_data->root_region)
-			{
-				Computed_field_register_type_integration(
-					command_data->computed_field_package, 
-					command_data->root_region);
-			}
-			Computed_field_register_types_finite_element(
-				command_data->computed_field_package);
-			Computed_field_register_types_deformation(
-				command_data->computed_field_package);
-			Computed_field_register_types_string_constant(
-				command_data->computed_field_package);
-
-			Computed_field_register_types_image_resample(
-				command_data->computed_field_package);
-#if defined (USE_ITK)
-			Computed_field_register_types_threshold_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_binary_threshold_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_canny_edge_detection_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_mean_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_sigmoid_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_discrete_gaussian_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_histogram_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_derivative_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_rescale_intensity_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_connected_threshold_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_gradient_magnitude_recursive_gaussian_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_fast_marching_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_binary_dilate_image_filter(
-				command_data->computed_field_package);
-			Computed_field_register_types_binary_erode_image_filter(
-				command_data->computed_field_package);
-#endif /* defined (USE_ITK) */
-		}
 		/* graphics_module */
-		command_data->default_time_keeper=ACCESS(Time_keeper)(UI_module->default_time_keeper);
+		//command_data->default_time_keeper=ACCESS(Time_keeper)(UI_module->default_time_keeper);
 
 		/* scene manager */
 		/*???RC & SAB.   LOTS of managers need to be created before this 
@@ -1824,19 +1671,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 //			display_message(INFORMATION_MESSAGE,"Cmiss_command_data *CREATE\n");
 				Cmiss_scene_set_region(command_data->default_scene, command_data->root_region);
 			}
-		}
-
-#if defined (OLD_CODE)
-		if(command_data->default_scene)
-		{
-			Scene_enable_time_behaviour(command_data->default_scene,
-				command_data->default_time_keeper);
-		}
-#endif /* defined (OLD_CODE) */
-		if (command_data->computed_field_package && command_data->default_time_keeper)
-		{
-			Computed_field_register_types_time(command_data->computed_field_package,
-				command_data->default_time_keeper);
 		}
 
 		/* properly set up the Execute_command objects */
@@ -1885,18 +1719,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				/* Can't get the startupComfile name without X at the moment */
 				cmgui_execute_comfile(user_settings.startup_comfile, NULL,
 					NULL, NULL, (char **)NULL, command_data->execute_command);
-			}
-			if (execute_string)
-			{
-				cmiss_execute_command(execute_string,(void *)command_data);
-			}
-			if (example_id||comfile_name)
-			{
-				/* open the command line comfile */
-				cmgui_execute_comfile(comfile_name,example_id,
-					command_data->examples_directory,
-					CMGUI_EXAMPLE_DIRECTORY_SYMBOL, &command_data->example_comfile,
-					command_data->execute_command);
 			}
 		}
 
@@ -1970,9 +1792,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 ==============================================================================*/
 {
 	int return_code = 0;
-#if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
-	int status;
-#endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
 	struct Cmiss_command_data *command_data;
 	ENTER(DESTROY(Cmiss_command_data));
 
@@ -1984,40 +1803,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 				"Call to DESTROY(Cmiss_command_data) while still in use");
 			return 0;
 		}
-		if (command_data->emoter_slider_dialog)
-		{
-			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
-		}
-#if defined (WX_USER_INTERFACE)
-		/* viewers */
-		if (command_data->data_viewer)
-		{
-			DESTROY(Node_viewer)(&(command_data->data_viewer));
-		}
-		if (command_data->node_viewer)
-		{
-			DESTROY(Node_viewer)(&(command_data->node_viewer));
-		}
-		if (command_data->element_point_viewer)
-		{
-			DESTROY(Element_point_viewer)(&(command_data->element_point_viewer));
-		}
-#endif /* defined (WX_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-		if (command_data->material_editor)
-		{
-			DESTROY(Material_editor)(&(command_data->material_editor));
-		}
-		if (command_data->region_tree_viewer)
-		{
-			DESTROY(Region_tree_viewer)(&(command_data->region_tree_viewer));
-		}
-		if (command_data->spectrum_editor_dialog)
-		{
-			DESTROY(Spectrum_editor_dialog)(&(command_data->spectrum_editor_dialog));
-		}
-#endif /* defined (WX_USER_INTERFACE) */
-
 		DEACCESS(Scene)(&command_data->default_scene);
 		if (command_data->graphics_module)
 		{
@@ -2053,10 +1838,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DEALLOCATE(command_data->example_directory);
 		}
-		if (command_data->example_comfile)
-		{
-			DEALLOCATE(command_data->example_comfile);
-		}
 		if (command_data->example_requirements)
 		{
 			DEALLOCATE(command_data->example_requirements);
@@ -2066,22 +1847,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 
 		DESTROY(Execute_command)(&command_data->execute_command);
 		DESTROY(Execute_command)(&command_data->set_command);
-
-#if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
-		destroy_interpreter(command_data->interpreter, &status);
-#endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
-
-		if (command_data->command_console)
-		{
-			DESTROY(Console)(&command_data->command_console);
-		}
-#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-		if (command_data->command_window)
-		{
-			DESTROY(Command_window)(&command_data->command_window);
-		}
-#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
-
 		if (command_data->user_interface)
 			command_data->user_interface = NULL;
 		if (command_data->event_dispatcher)
@@ -2153,28 +1918,6 @@ int Cmiss_command_data_destroy(
 
 	return (return_code);
 }
-
-int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Process events until some events request the program to finish.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_command_data_main_loop);
-	/* main processing / loop */
-	if (command_data && command_data->event_dispatcher)
-	{
-		/* user interface loop */						
-		return_code=Event_dispatcher_main_loop(command_data->event_dispatcher);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_command_data_main_loop */
 
 struct Cmiss_region *Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data)
@@ -2259,29 +2002,6 @@ Returns the io_stream_package structure from the <command_data>
 
 	return (io_stream_package);
 } /* Cmiss_command_data_get_io_stream_package */
-
-Idle_package_id Cmiss_command_data_get_idle_package(
-	struct Cmiss_command_data *command_data
-)
-/*******************************************************************************
-LAST MODIFIED : 21 March 2005
-
-DESCRIPTION :
-Gets an Idle_package for this <command_data>
-==============================================================================*/
-{
-	struct Idle_package *idle_package;
-
-	ENTER(Cmiss_command_data_get_idle_package);
-	idle_package = (struct Idle_package *)NULL;
-	if (command_data)
-	{
-		idle_package = CREATE(Idle_package)(command_data->event_dispatcher);
-	}
-	LEAVE;
-
-	return (idle_package);
-}
 
 struct MANAGER(Computed_field) *Cmiss_command_data_get_computed_field_manager(
 	struct Cmiss_command_data *command_data)

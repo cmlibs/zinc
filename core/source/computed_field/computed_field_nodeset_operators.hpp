@@ -41,7 +41,4 @@
 #if !defined (COMPUTED_FIELD_NODESET_OPERATORS_HPP)
 #define COMPUTED_FIELD_NODESET_OPERATORS_HPP
 
-int Computed_field_register_types_nodeset_operators(
-	struct Computed_field_package *computed_field_package);
-
 #endif /* !defined (COMPUTED_FIELD_NODESET_OPERATORS_HPP) */

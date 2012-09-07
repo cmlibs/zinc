@@ -55,7 +55,6 @@ extern "C" {
 #include "api/cmiss_scene.h"
 #include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_rendition.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_set.h"
@@ -86,11 +85,10 @@ extern "C" {
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-#include "user_interface/user_interface.h"
 }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.hpp"
 
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"

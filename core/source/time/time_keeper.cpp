@@ -53,7 +53,6 @@ extern "C" {
 #include "general/time.h"
 #include "user_interface/event_dispatcher.h"
 #include "general/message.h"
-#include "user_interface/user_interface.h"
 #include "time/time.h"
 #include "time/time_private.h"
 #include "time/time_keeper.h"
@@ -1980,22 +1979,22 @@ int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
 class Cmiss_time_keeper_frame_mode_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_time_keeper_frame_mode mode)
-    {
-    	const char *enum_string = 0;
-    	switch (mode)
-    	{
-    		case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME:
-    			enum_string = "PLAY_REAL_TIME";
-    			break;
-    		case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME:
-    			enum_string = "PLAY_EVERY_FRAME";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_time_keeper_frame_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+			case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME:
+				enum_string = "PLAY_REAL_TIME";
+				break;
+			case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME:
+				enum_string = "PLAY_EVERY_FRAME";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(

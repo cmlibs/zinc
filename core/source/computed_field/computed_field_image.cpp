@@ -895,42 +895,6 @@ returned.
 	return (return_code);
 } /* Computed_field_get_type_image */
 
-int Computed_field_register_type_image(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_image_package
-		*computed_field_image_package =
-		new Computed_field_image_package;
-
-	ENTER(Computed_field_register_type_image);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_image_type_string,
-			define_Computed_field_type_sample_texture,
-			computed_field_image_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			"sample_texture",
-			define_Computed_field_type_sample_texture,
-			computed_field_image_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_type_image.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_type_image */
-
 int Computed_field_depends_on_texture(struct Computed_field *field,
 	struct Texture *texture)
 /*******************************************************************************

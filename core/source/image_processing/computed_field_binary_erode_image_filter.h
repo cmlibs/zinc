@@ -45,14 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-int Computed_field_register_types_binary_erode_image_filter(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 13 July 2007
-
-DESCRIPTION :
-==============================================================================*/
-
 /***************************************************************************//**
  * Creates a field performing ITK binary erode image filter on scalar source
  * field image. Sets number of components to same number as <source_field>.

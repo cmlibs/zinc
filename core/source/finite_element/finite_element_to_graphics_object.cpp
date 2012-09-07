@@ -45,7 +45,6 @@ The functions for creating graphical objects from finite elements.
 extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "api/cmiss_element.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

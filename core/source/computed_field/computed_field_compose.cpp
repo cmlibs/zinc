@@ -458,36 +458,3 @@ int Computed_field_compose::get_type(
 	return (return_code);
 }
 
-int Computed_field_register_types_compose(
-	struct Computed_field_package *computed_field_package, 
-	struct Cmiss_region *root_region)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_compose_package
-		*computed_field_compose_package = 
-		new Computed_field_compose_package;
-
-	ENTER(Computed_field_register_types_compose);
-	if (computed_field_package && root_region)
-	{
-		computed_field_compose_package->root_region = root_region;
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_compose_type_string, 
-			define_Computed_field_type_compose,
-			computed_field_compose_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_compose.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_compose */

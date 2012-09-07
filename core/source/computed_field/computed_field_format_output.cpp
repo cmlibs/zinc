@@ -311,32 +311,3 @@ int Computed_field_get_type_format_output(struct Computed_field *field,
 	return (return_code);
 } /* Computed_field_get_type_format_output */
 
-int Computed_field_register_types_format_output(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_register_types_format_output);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_format_output_type_string,
-			define_Computed_field_type_format_output,
-			Computed_field_package_get_simple_package(computed_field_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_format_output.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_format_output */
-

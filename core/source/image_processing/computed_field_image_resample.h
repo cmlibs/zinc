@@ -59,12 +59,4 @@ Computed_field *Cmiss_field_module_create_image_resample(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int dimension, int *sizes);
 
-int Computed_field_register_types_image_resample(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 7 March 2007
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_IMAGE_RESAMPLE_H) */

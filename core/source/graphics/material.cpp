@@ -65,7 +65,6 @@ return to direct rendering, as described with these routines.
 extern "C" {
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_graphics_material.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
@@ -85,7 +84,7 @@ extern "C" {
 #include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.hpp"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
 

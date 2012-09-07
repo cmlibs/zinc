@@ -48,7 +48,6 @@ extern "C" {
 #include <string.h>
 #include <math.h>
 #include "api/cmiss_spectrum.h"
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
@@ -62,9 +61,8 @@ extern "C" {
 #include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/spectrum.hpp"
-#include "user_interface/process_list_or_write_command.hpp"
 
 /*
 Module types

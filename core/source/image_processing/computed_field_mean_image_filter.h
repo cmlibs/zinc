@@ -45,14 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-int Computed_field_register_types_mean_image_filter(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-
 /***************************************************************************//**
  * Create field performing ITK mean image filter on source_field image.
  * The <radius_sizes> is a vector of integers of dimension specified by the

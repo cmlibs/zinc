@@ -36,7 +36,6 @@
 #include <cstdlib>
 extern "C" {
 #include "api/cmiss_field_group.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/mystring.h"

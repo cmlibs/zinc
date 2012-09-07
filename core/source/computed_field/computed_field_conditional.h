@@ -68,12 +68,4 @@ struct Computed_field *Computed_field_create_if(
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three);
 
-int Computed_field_register_types_conditional(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 27 July 2007
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_CONDITIONAL_H) */

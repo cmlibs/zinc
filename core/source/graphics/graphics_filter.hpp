@@ -79,7 +79,7 @@ PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_filter);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_filter,name,const char *);
 
 
-class Cmiss_graphics_filter
+struct Cmiss_graphics_filter
 {
 private:
 	bool inverse;

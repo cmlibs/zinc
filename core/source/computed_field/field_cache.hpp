@@ -109,7 +109,7 @@ public:
 
 	bool hasDerivatives()
 	{
-		return derivatives_valid;
+		return derivatives_valid == 1;
 	}
 
 };

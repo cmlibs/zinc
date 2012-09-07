@@ -399,36 +399,3 @@ used by it are returned - otherwise an error is reported.
 	return (return_code);
 } /* Computed_field_get_type_curve_lookup */
 
-int Computed_field_register_types_curve(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Curve) *curve_manager)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_curve_package
-		*computed_field_curve_package =
-		new Computed_field_curve_package;
-
-	ENTER(Computed_field_register_types_curve);
-	if (computed_field_package && curve_manager)
-	{
-		computed_field_curve_package->curve_manager = curve_manager;
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_curve_lookup_type_string, 
-			define_Computed_field_type_curve_lookup,
-			computed_field_curve_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_curve.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_curve */

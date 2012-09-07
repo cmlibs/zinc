@@ -47,7 +47,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "general/callback.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "user_interface/user_interface.h"
 
 /*
 Global types

@@ -60,14 +60,6 @@ Implements a number of basic component wise operators on computed fields.
 #define Computed_field_create_sqrt Cmiss_field_module_create_sqrt
 #define Computed_field_create_abs Cmiss_field_module_create_abs
 
-int Computed_field_register_types_arithmetic_operators(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 13 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 struct Computed_field *Computed_field_create_power(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,

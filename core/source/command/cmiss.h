@@ -156,14 +156,6 @@ struct Cmiss_command_data * Cmiss_command_data_access(
 int Cmiss_command_data_destroy(
 	struct Cmiss_command_data **command_data_address);
 
-int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Process events until some events request the program to finish.
-==============================================================================*/
-
 struct Cmiss_region *Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************
@@ -209,15 +201,6 @@ LAST MODIFIED : 10 March 2005
 
 DESCRIPTION :
 Gets an Fdio_package for this <command_data>
-==============================================================================*/
-
-struct Cmiss_idle_package* Cmiss_command_data_get_idle_package(
-	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 21 March 2005
-
-DESCRIPTION :
-Gets an Idle_package for this <command_data>
 ==============================================================================*/
 
 struct User_interface *Cmiss_command_data_get_user_interface(

@@ -16,6 +16,11 @@ SET( EMOTER_SRCS
 SET( EMOTER_HDRS 
 	source/emoter/em_cmgui.h )
 
+SET( USER_INTERFACE_SRCS
+	source/user_interface/event_dispatcher.cpp )
+SET( USER_INTERFACE_HDRS
+	source/user_interface/event_dispatcher.h )
+
 SET( INTERACTION_SRCS
 	source/interaction/interaction_graphics.c
 	source/interaction/interaction_volume.c
@@ -73,7 +78,9 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/three_d_drawing/window_system_extensions.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
-SET( TIME_SRCS source/time/time.c source/time/time_keeper.cpp )
+SET( TIME_SRCS
+	source/time/time.c
+	source/time/time_keeper.cpp )
 SET( TIME_HDRS
 	source/time/time.h
 	source/time/time_keeper.h

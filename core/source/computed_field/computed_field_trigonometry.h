@@ -82,11 +82,4 @@ Computed_field *Computed_field_create_atan2(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
-int Computed_field_register_types_trigonometry(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 10 June 2004
-
-DESCRIPTION :
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_TRIGONOMETRY_H) */

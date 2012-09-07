@@ -46,7 +46,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "image_processing/computed_field_ImageFilter.hpp"
+#include "image_processing/computed_field_image_filter.h"
 extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -65,7 +65,7 @@ namespace {
 
 char computed_field_histogram_image_filter_type_string[] = "histogram_filter";
 
-class Computed_field_histogram_image_filter : public Computed_field_ImageFilter
+class Computed_field_histogram_image_filter : public computed_field_image_filter
 {
 
 public:
@@ -459,7 +459,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 template < class ImageType, class HistogramGeneratorType >
 class Computed_field_histogram_image_filter_Functor :
-	public Computed_field_ImageFilter_Functor
+	public computed_field_image_filter_Functor
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -672,7 +672,7 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_ImageFilter::select_filter_single_component);
+	ENTER(computed_field_image_filter::select_filter_single_component);
 
 	switch (dimension)
 	{
@@ -711,7 +711,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						sourceNumberOfComponents);
 					return_code = 0;
@@ -753,7 +753,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						sourceNumberOfComponents);
 					return_code = 0;
@@ -795,7 +795,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						sourceNumberOfComponents);
 					return_code = 0;
@@ -805,7 +805,7 @@ Evaluate the fields cache at the location
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+				"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 				"Template invocation not declared for dimension %d.", 
 				dimension);
 			return_code = 0;
@@ -814,12 +814,12 @@ Evaluate the fields cache at the location
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
+} /* computed_field_image_filter::create_filters_multicomponent_multidimensions */
 
 Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
 	Computed_field *source_field, const int *numberOfBinsIn, double marginalScale,
 	const double *histogramMinimumIn, const double *histogramMaximumIn) :
-	Computed_field_ImageFilter(source_field), marginalScale(marginalScale)
+	computed_field_image_filter(source_field), marginalScale(marginalScale)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -855,7 +855,7 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 	else
 		histogramMaximum = (double *)NULL;
 	/* We need to leave the sizes and dimension for 
-		using the functions from Computed_field_ImageFilter::set_input_image */
+		using the functions from computed_field_image_filter::set_input_image */
 	if (dimension > 0 && sizes)
 	{
 		totalPixels = sizes[0];
@@ -958,31 +958,3 @@ used by it are returned - otherwise an error is reported.
 	return (return_code);
 } /* Cmiss_field_get_type_histogram_image_filter */
 
-int Computed_field_register_types_histogram_image_filter(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 18 October 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_register_types_histogram_image_filter);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_histogram_image_filter_type_string, 
-			define_Computed_field_type_histogram_image_filter,
-			Computed_field_package_get_simple_package(computed_field_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_histogram_image_filter.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_histogram_image_filter */

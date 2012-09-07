@@ -448,7 +448,7 @@ namespace {
  * Frees the memory for the graphics_filter of <*graphics_filter_address>.
  * Sets *graphics_filter_address to NULL.
  */
-int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filter_address)
+int DESTROY(Cmiss_graphics_filter)(class Cmiss_graphics_filter **graphics_filter_address)
 {
 	int return_code;
 

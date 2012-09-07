@@ -745,20 +745,6 @@ int Computed_field_dependency_changed(struct Computed_field *field);
  */
 int Computed_field_dependency_change_private(struct Computed_field *field);
 
-int Computed_field_package_add_type(
-	struct Computed_field_package *computed_field_package, const char *name,
-	Define_Computed_field_type_function define_Computed_field_type_function,
-	Computed_field_type_package *define_type_user_data);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Adds the type of Computed_field described by <name> and 
-<define_Computed_field_type_function> to those in the LIST held by the 
-<computed_field_package>.  This type is then added to the 
-define_Computed_field_type option table when parsing commands.
-==============================================================================*/
-
 Computed_field_simple_package *Computed_field_package_get_simple_package(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************

@@ -45,7 +45,6 @@ extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_optimisation.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"

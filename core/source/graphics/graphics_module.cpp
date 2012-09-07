@@ -42,12 +42,12 @@ extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "graphics/glyph.h"
-#include "graphics/graphics_module.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "graphics/graphics_module.h"
 }
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"

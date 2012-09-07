@@ -441,7 +441,7 @@ private:
 
 struct Cmiss_element_template
 {
-	friend class Cmiss_mesh; // to obtain template_element
+	friend struct Cmiss_mesh; // to obtain template_element
 private:
 	FE_region *fe_region;
 	int element_dimension;

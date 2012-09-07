@@ -431,34 +431,3 @@ fields used by it are returned - otherwise an error is reported.
 	return (return_code);
 } /* Computed_field_get_type_fibre_axes */
 
-int Computed_field_register_types_fibres(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_fibres_package
-		*computed_field_fibres_package =
-		new Computed_field_fibres_package;
-
-	ENTER(Computed_field_register_types_fibres);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_fibre_axes_type_string,
-			define_Computed_field_type_fibre_axes,
-			computed_field_fibres_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_fibres.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_fibres */

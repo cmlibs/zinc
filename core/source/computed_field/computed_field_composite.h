@@ -163,12 +163,4 @@ struct Computed_field *Computed_field_create_concatenate(
 	struct Cmiss_field_module *field_module,
 	int number_of_source_fields, struct Computed_field **source_fields);
 
-int Computed_field_register_types_composite(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 25 October 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_COMPOSITE_H) */

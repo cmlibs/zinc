@@ -63,7 +63,6 @@ long lround(double d)
 }
 #endif // defined (WIN32_SYSTEM)
 extern "C" {
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"

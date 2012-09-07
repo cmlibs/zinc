@@ -217,32 +217,3 @@ struct Computed_field *Computed_field_create_string_constant(
 	return (field);
 }
 
-int Computed_field_register_types_string_constant(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_register_types_string_constant);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_string_constant_type_string,
-			define_Computed_field_type_string_constant,
-			Computed_field_package_get_simple_package(computed_field_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_string_constant.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_types_string_constant */
-

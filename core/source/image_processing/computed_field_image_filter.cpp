@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_ImageFilter.cpp
+FILE : computed_field_image_filter.cpp
 
 LAST MODIFIED : 9 September 2006
 
@@ -45,7 +45,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "image_processing/computed_field_ImageFilter.hpp"
+#include "image_processing/computed_field_image_filter.h"
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -53,7 +53,7 @@ extern "C" {
 }
 
 namespace CMISS {
-int Computed_field_ImageFilter::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int computed_field_image_filter::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	return functor->update_and_evaluate_filter(cache, valueCache);

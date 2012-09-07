@@ -63,7 +63,6 @@ return to direct rendering, as described with these routines.
 
 
 extern "C" {
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -74,7 +73,7 @@ extern "C" {
 #include "graphics/light_model.h"
 #include "general/message.h"
 }
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 
 /*
 Module types

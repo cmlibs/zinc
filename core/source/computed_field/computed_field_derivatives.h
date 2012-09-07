@@ -114,12 +114,4 @@ struct Computed_field *Computed_field_create_gradient(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *coordinate_field);
 
-int Computed_field_register_types_derivatives(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

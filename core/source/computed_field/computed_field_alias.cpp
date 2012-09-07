@@ -380,29 +380,3 @@ Computed_field *Cmiss_field_module_create_alias(Cmiss_field_module_id field_modu
 	return (field);
 }
 
-int Computed_field_register_type_alias(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region)
-{
-	int return_code;
-	Computed_field_alias_package *computed_field_alias_package = 
-		new Computed_field_alias_package(root_region);
-
-	ENTER(Computed_field_register_type_alias);
-	if (computed_field_package)
-	{
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_alias_type_string,
-			define_Computed_field_type_alias,
-			computed_field_alias_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_register_type_alias.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_register_type_alias */

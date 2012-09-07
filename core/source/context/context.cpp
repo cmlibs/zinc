@@ -40,7 +40,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "time/time_keeper.h"
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_graphics_module.h"
 #include "command/cmiss.h"
@@ -53,6 +52,8 @@ extern "C" {
 #include "graphics/rendition.h"
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
+#include "time/time_keeper.h"
+#include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for Cmiss_region  */
 #include "region/cmiss_region_private.h"
 }
@@ -109,8 +110,8 @@ int Cmiss_context_destroy(struct Context **context_address)
 				DEALLOCATE(context->id);
 			if (context->default_command_data)
 				Cmiss_command_data_destroy(&context->default_command_data);
-			if (context->UI_module)
-				User_interface_module_destroy(&context->UI_module);
+			//if (context->UI_module)
+			//	User_interface_module_destroy(&context->UI_module);
 			if (context->graphics_module)
 				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->root_region)
@@ -181,12 +182,12 @@ struct Cmiss_graphics_module *Cmiss_context_create_graphics_module(struct Contex
 	if (context)
 	{
 		graphics_module = Cmiss_graphics_module_create(context);
-		if (graphics_module && context->UI_module &&
-			context->UI_module->default_time_keeper)
-		{
-			Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
-				context->UI_module->default_time_keeper );
-		}
+		//if (graphics_module && context->UI_module &&
+		//	context->UI_module->default_time_keeper)
+		//{
+		//	Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
+		//		context->UI_module->default_time_keeper );
+		//}
 	}
 	else
 	{
@@ -284,57 +285,6 @@ struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct 
 	}
 
 	return command_data;
-}
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-struct User_interface_module *Cmiss_context_create_user_interface(
-	struct Context *context, int in_argc, const char *in_argv[],
-	void *user_interface_instance)
-#else
-struct User_interface_module *Cmiss_context_create_user_interface(
-	struct Context *context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance,
-	LPSTR command_line,int initial_main_window_state,
-	void *user_interface_instance)
-#endif
-{
-	USE_PARAMETER(user_interface_instance);
-	struct User_interface_module *UI_module = NULL;
-
-	if (context)
-	{
-		if (!context->UI_module)
-		{
-#if defined (WX_USER_INTERFACE)
-			if (user_interface_instance)
-				Event_dispatcher_set_wx_instance(Cmiss_context_get_default_event_dispatcher(context), user_interface_instance);
-#endif
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-			context->UI_module = User_interface_module_create(
-				context, in_argc, in_argv);
-#else
-			context->UI_module = User_interface_module_create(
-				context, in_argc, in_argv, current_instance,
-				previous_instance, command_line, initial_main_window_state);
-#endif
-			if (context->UI_module && context->UI_module->default_time_keeper &&
-				context->graphics_module)
-			{
-				Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
-					context->UI_module->default_time_keeper );
-			}
-		}
-		if (context->UI_module)
-		{
-			UI_module = User_interface_module_access(context->UI_module);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_create_user_interface.  Missing context.");
-	}
-
-	return UI_module;
 }
 
 struct Any_object_selection *Cmiss_context_get_any_object_selection(
@@ -439,38 +389,19 @@ int Cmiss_context_execute_command(Cmiss_context_id context,
 	return return_code;
 }
 
-int Cmiss_context_run_main_loop(Cmiss_context_id context)
-{
-	int return_code = 0;
-	if (context && context->UI_module)
-	{
-		struct Cmiss_command_data *command_data = 
-			Cmiss_context_get_default_command_interpreter(context);
-		return_code = Cmiss_command_data_main_loop(command_data);
-		Cmiss_command_data_destroy(&command_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_start_main_loop.  Missing context or user interface");
-	}
-
-	return return_code;
-}
-
 Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_context_id context)
 {
 	Cmiss_time_keeper *time_keeper = NULL;
-	if (context && context->UI_module && context->UI_module->default_time_keeper)
-	{
-		time_keeper = Cmiss_time_keeper_access(context->UI_module->default_time_keeper);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_time_keeper.  Missing context or user interface");
-	}
+	//if (context && context->UI_module && context->UI_module->default_time_keeper)
+	//{
+	//	time_keeper = Cmiss_time_keeper_access(context->UI_module->default_time_keeper);
+	//}
+	//else
+	//{
+	//	display_message(ERROR_MESSAGE,
+	//		"Cmiss_context_get_default_time_keeper.  Missing context or user interface");
+	//}
 	return time_keeper;
 }
 
@@ -478,16 +409,16 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context)
 {
 	Cmiss_scene_viewer_package *scene_viewer_package = NULL;
-	if (context && context->UI_module && context->UI_module->scene_viewer_package)
-	{
-		scene_viewer_package = context->UI_module->scene_viewer_package;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_scene_viewer_package.  "
-			"Missing context or user interface");
-	}
+	//if (context && context->UI_module && context->UI_module->scene_viewer_package)
+	//{
+	//	scene_viewer_package = context->UI_module->scene_viewer_package;
+	//}
+	//else
+	//{
+	//	display_message(ERROR_MESSAGE,
+	//		"Cmiss_context_get_default_scene_viewer_package.  "
+	//		"Missing context or user interface");
+	//}
 	return scene_viewer_package;
 }
 
@@ -525,16 +456,16 @@ int Cmiss_context_enable_user_interface(
 	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
 		context, 0, 0, user_interface_instance);
 #else
-	struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
-		context, 0, 0, current_instance, previous_instance,
-		command_line, initial_main_window_state, user_interface_instance);
+	//struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
+	//	context, 0, 0, current_instance, previous_instance,
+	//	command_line, initial_main_window_state, user_interface_instance);
 #endif
-	if (UI_module)
-	{
-		UI_module->external = 1;
-		return_code = 1;
-		User_interface_module_destroy(&UI_module);
-	}
+	//if (UI_module)
+	//{
+	//	UI_module->external = 1;
+	//	return_code = 1;
+	//	User_interface_module_destroy(&UI_module);
+	//}
 
 	return return_code;
 }

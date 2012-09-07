@@ -61,7 +61,6 @@ Functions for manipulating finite element structures.
 #include "general/list_btree_private.hpp"
 extern "C" {
 #include <math.h>
-#include "command/parser.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"

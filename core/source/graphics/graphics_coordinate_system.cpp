@@ -38,7 +38,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"

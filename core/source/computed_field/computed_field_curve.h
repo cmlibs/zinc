@@ -45,15 +45,6 @@ DESCRIPTION :
 
 #include "curve/curve.h"
 
-int Computed_field_register_types_curve(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Curve) *curve_manager);
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-==============================================================================*/
-
 /*****************************************************************************//**
  * Creates a field which returns the value of curve at the time/parameter value
  * given by scalar <source_field>.

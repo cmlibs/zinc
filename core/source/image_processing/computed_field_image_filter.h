@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_ImageFilter.hpp
+FILE : computed_field_image_filter.hpp
 
 LAST MODIFIED : 11 September 2006
 
@@ -43,8 +43,8 @@ equivalent to the scene_viewer assigned to it.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (COMPUTED_FIELD_IMAGEFILTER_H)
-#define COMPUTED_FIELD_IMAGEFILTER_H
+#if !defined (computed_field_image_filter_H)
+#define computed_field_image_filter_H
 
 extern "C" {
 #include "computed_field/computed_field.h"
@@ -69,21 +69,21 @@ extern "C" {
 
 namespace CMISS {
 
-class Computed_field_ImageFilter_Functor
+class computed_field_image_filter_Functor
 {
 public:
    virtual int set_filter(Cmiss_field_cache& cache) = 0;
 
 	virtual int update_and_evaluate_filter(Cmiss_field_cache& cache, RealFieldValueCache& valueCache) = 0;
 
-	virtual ~Computed_field_ImageFilter_Functor()
+	virtual ~computed_field_image_filter_Functor()
 	{
 	}
 
 	virtual int clear_cache() = 0;
 };
 
-class Computed_field_ImageFilter : public Computed_field_core
+class computed_field_image_filter : public Computed_field_core
 {
 
 public:
@@ -92,9 +92,9 @@ public:
 
 	Computed_field *texture_coordinate_field;
 
-	Computed_field_ImageFilter_Functor* functor;
+	computed_field_image_filter_Functor* functor;
 
-	Computed_field_ImageFilter(Computed_field *source_field) : Computed_field_core()
+	computed_field_image_filter(Computed_field *source_field) : Computed_field_core()
 	{
 		if (Computed_field_get_native_resolution(source_field,
 				&dimension, &sizes, &texture_coordinate_field))
@@ -104,7 +104,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_ImageFilter::Computed_field_ImageFilter.  "
+				"computed_field_image_filter::computed_field_image_filter.  "
 				"Unable to get native resolution from source field");
 			dimension = 0;
 			texture_coordinate_field = (Computed_field *)NULL;
@@ -129,7 +129,7 @@ public:
 		return false;
 	}
 
-	~Computed_field_ImageFilter()
+	~computed_field_image_filter()
 	{
 		if (functor)
 		{
@@ -205,7 +205,7 @@ public:
 	/* This is the normal implementation */
 template < template <class> class ComputedFieldImageFunctor,
 	class ComputedFieldFilter >
-int Computed_field_ImageFilter::create_filters_multicomponent_multidimensions(
+int computed_field_image_filter::create_filters_multicomponent_multidimensions(
   ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
@@ -216,7 +216,7 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_ImageFilter::select_filter_single_component);
+	ENTER(computed_field_image_filter::select_filter_single_component);
 
 	switch (dimension)
 	{
@@ -251,7 +251,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -289,7 +289,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -327,7 +327,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -337,7 +337,7 @@ Evaluate the fields cache at the location
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+				"computed_field_image_filter::create_filters_multicomponent_multidimensions.  "
 				"Template invocation not declared for dimension %d.", 
 				dimension);
 			return_code = 0;
@@ -346,11 +346,11 @@ Evaluate the fields cache at the location
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
+} /* computed_field_image_filter::create_filters_multicomponent_multidimensions */
 
 template < template <class> class ComputedFieldImageFunctor,
 	class ComputedFieldFilter >
-int Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions(
+int computed_field_image_filter::create_filters_singlecomponent_multidimensions(
   ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
@@ -361,7 +361,7 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_ImageFilter::select_filter_single_component);
+	ENTER(computed_field_image_filter::select_filter_single_component);
 
 	switch (dimension)
 	{
@@ -378,7 +378,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -398,7 +398,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -418,7 +418,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -428,7 +428,7 @@ Evaluate the fields cache at the location
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+				"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  "
 				"Template invocation not declared for dimension %d.", 
 				dimension);
 			return_code = 0;
@@ -437,11 +437,11 @@ Evaluate the fields cache at the location
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions */
+} /* computed_field_image_filter::create_filters_singlecomponent_multidimensions */
 	
 template < template <class> class ComputedFieldImageFunctor,
 	class ComputedFieldFilter >
-int Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions(
+int computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions(
   ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
@@ -452,7 +452,7 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_ImageFilter::select_filter_single_component);
+	ENTER(computed_field_image_filter::select_filter_single_component);
 
 	switch (dimension)
 	{
@@ -469,7 +469,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+						"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -489,7 +489,7 @@ Evaluate the fields cache at the location
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+						"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  "
 						"Template invocation not declared for number of components %d.",
 						field->number_of_components);
 					return_code = 0;
@@ -499,7 +499,7 @@ Evaluate the fields cache at the location
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+				"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  "
 				"Template invocation not declared for dimension %d.", 
 				dimension);
 			return_code = 0;
@@ -508,7 +508,7 @@ Evaluate the fields cache at the location
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions */
+} /* computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions */
 
 #else /* ! defined (DONOTUSE_TEMPLATETEMPLATES) */
 
@@ -557,7 +557,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -595,7 +595,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -633,7 +633,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_multicomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -643,7 +643,7 @@ Evaluate the fields cache at the location \
 		default: \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+				"computed_field_image_filter::create_filters_multicomponent_multidimensions.  " \
 				"Template invocation not declared for dimension %d.",  \
 				dimension); \
 			return_code = 0; \
@@ -651,7 +651,7 @@ Evaluate the fields cache at the location \
 	} \
 	USE_PARAMETER(return_code);							\
  \
-} /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
+} /* computed_field_image_filter::create_filters_multicomponent_multidimensions */
 
 #define create_filters_singlecomponent_multidimensions( \
 	ComputedFieldImageFunctor, filter ) \
@@ -680,7 +680,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -700,7 +700,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -720,7 +720,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -730,7 +730,7 @@ Evaluate the fields cache at the location \
 		default: \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+				"computed_field_image_filter::create_filters_singlecomponent_multidimensions.  " \
 				"Template invocation not declared for dimension %d.",  \
 				dimension); \
 			return_code = 0; \
@@ -739,7 +739,7 @@ Evaluate the fields cache at the location \
 \
 	USE_PARAMETER(return_code); \
 \
-} /* Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions */
+} /* computed_field_image_filter::create_filters_singlecomponent_multidimensions */
 
 #define create_filters_singlecomponent_twoormoredimensions( \
 	ComputedFieldImageFunctor, filter) \
@@ -752,7 +752,7 @@ Evaluate the fields cache at the location \
 { \
 	int return_code; \
  \
-	ENTER(Computed_field_ImageFilter::select_filter_single_component); \
+	ENTER(computed_field_image_filter::select_filter_single_component); \
  \
 	switch (dimension) \
 	{ \
@@ -769,7 +769,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+						"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -789,7 +789,7 @@ Evaluate the fields cache at the location \
 				default: \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+						"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  " \
 						"Template invocation not declared for number of components %d.", \
 						field->number_of_components); \
 					return_code = 0; \
@@ -799,7 +799,7 @@ Evaluate the fields cache at the location \
 		default: \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+				"computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions.  " \
 				"Template invocation not declared for dimension %d.",  \
 				dimension); \
 			return_code = 0; \
@@ -807,24 +807,24 @@ Evaluate the fields cache at the location \
 	} \
 	USE_PARAMETER(return_code);						\
  \
-} /* Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions */
+} /* computed_field_image_filter::create_filters_singlecomponent_twoormoredimensions */
 #endif /* ! defined (DONOTUSE_TEMPLATETEMPLATES) */
 
 template < >
-inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache& valueCache, float pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, float pixel )
 {
 	valueCache.values[0] = pixel;
 }
 
 template < >
-inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 2 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 2 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
 }
 
 template < >
-inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 3 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 3 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
@@ -832,7 +832,7 @@ inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache
 }
 
 template < >
-inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 4 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 4 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
@@ -841,7 +841,7 @@ inline void Computed_field_ImageFilter::assign_field_values( RealFieldValueCache
 }
 
 template <class ImageType >
-int Computed_field_ImageFilter::evaluate_output_image(
+int computed_field_image_filter::evaluate_output_image(
 	Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
 	typename ImageType::Pointer &outputImage, ImageType * /*dummytemplarg*/)
 /*******************************************************************************
@@ -894,18 +894,18 @@ Evaluate the templated version of this filter
 }
 
 template < class ImageType >
-class Computed_field_ImageFilter_FunctorTmpl :
-	public Computed_field_ImageFilter_Functor
+class computed_field_image_filter_FunctorTmpl :
+	public computed_field_image_filter_Functor
 {
 protected:
 	typename ImageType::Pointer outputImage;
 
-	Computed_field_ImageFilter* image_filter;
+	computed_field_image_filter* image_filter;
 
 public:
 
-	Computed_field_ImageFilter_FunctorTmpl(
-		Computed_field_ImageFilter* image_filter) :
+	computed_field_image_filter_FunctorTmpl(
+		computed_field_image_filter* image_filter) :
 		image_filter(image_filter)
 	{
 		outputImage = NULL;
@@ -953,20 +953,20 @@ location.
 };
 
 template < >
-inline void Computed_field_ImageFilter::setPixelValues( float& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( float& pixel, float *values )
 {
 	pixel = values[0];
 }
 
 template < >
-inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 2 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 2 >& pixel, float *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
 }
 
 template < >
-inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 3 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 3 >& pixel, float *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
@@ -974,7 +974,7 @@ inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 3 >&
 }
 
 template < >
-inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 4 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 4 >& pixel, float *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
@@ -983,7 +983,7 @@ inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 4 >&
 }
 
 template <class ImageType >
-int Computed_field_ImageFilter::create_input_image(Cmiss_field_cache& cache,
+int computed_field_image_filter::create_input_image(Cmiss_field_cache& cache,
 	typename ImageType::Pointer &inputImage,
 	ImageType * /*dummytemplarg1*/)
 /*******************************************************************************
@@ -996,10 +996,10 @@ for subsequent operations.
 {
 	int return_code;
 	int i;
-	Computed_field_ImageFilter *input_field_image_filter;
-	Computed_field_ImageFilter_FunctorTmpl< ImageType > *input_field_image_functor;
+	computed_field_image_filter *input_field_image_filter;
+	computed_field_image_filter_FunctorTmpl< ImageType > *input_field_image_functor;
 
-	ENTER(Computed_field_ImageFilter::create_input_image);
+	ENTER(computed_field_image_filter::create_input_image);
 	if (field)
 	{
 		Field_element_xi_location* element_xi_location = NULL;
@@ -1014,9 +1014,9 @@ for subsequent operations.
 			Cmiss_field_id sourceField = getSourceField(0);
 			// If the input contains an ImageFilter of the correct type then use that as
 			// the input field
-			if ((input_field_image_filter = dynamic_cast<Computed_field_ImageFilter *>
+			if ((input_field_image_filter = dynamic_cast<computed_field_image_filter *>
 					(field->source_fields[0]->core))
-					&& (input_field_image_functor = dynamic_cast<Computed_field_ImageFilter_FunctorTmpl<ImageType>*>
+					&& (input_field_image_functor = dynamic_cast<computed_field_image_filter_FunctorTmpl<ImageType>*>
 					(input_field_image_filter->functor)))
 			{
 
@@ -1268,17 +1268,17 @@ for subsequent operations.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_ImageFilter::create_input_image.  "
+			"computed_field_image_filter::create_input_image.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::create_input_image */
+} /* computed_field_image_filter::create_input_image */
 
 template <class ImageType, class FilterType >
-int Computed_field_ImageFilter::update_output_image(Cmiss_field_cache& cache,
+int computed_field_image_filter::update_output_image(Cmiss_field_cache& cache,
 	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
 	ImageType * dummytemplarg1, FilterType * /*dummytemplarg2*/)
 /*******************************************************************************
@@ -1319,5 +1319,5 @@ Evaluate the templated version of this filter
 } //CMISS namespace
 
 
-#endif /* COMPUTED_FIELD_IMAGEFILTER_H */
+#endif /* computed_field_image_filter_H */
 

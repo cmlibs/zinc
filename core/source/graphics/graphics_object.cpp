@@ -58,7 +58,6 @@ gtObject/gtWindow management routines.
 extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_subobject_group.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 #include "general/compare.h"

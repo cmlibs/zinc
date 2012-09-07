@@ -50,6 +50,7 @@ DESCRIPTION :
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/graphic.h"
+#include "graphics/graphics_library.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
 
