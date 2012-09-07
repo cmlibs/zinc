@@ -79,7 +79,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/tessellation.hpp
 	source/graphics/texture.h
 	source/graphics/texture.hpp
-	source/graphics/texturemap.h
 	source/graphics/texture_line.h
 	source/graphics/triangle_mesh.hpp
 	source/graphics/userdef_objects.h
