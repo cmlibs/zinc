@@ -41,9 +41,9 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_location.hpp"
 

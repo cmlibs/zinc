@@ -44,15 +44,17 @@ Functions for discretizing finite elements into points and simple sub-domains.
 
 #include <math.h>
 #include <stdlib.h>
-extern "C" {
+
+//-- extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/random.h"
-#include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-}
+//-- }
+#include "general/statistics.h"
+
 /*
 Module types
 ------------

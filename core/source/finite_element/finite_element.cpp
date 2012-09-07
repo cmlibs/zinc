@@ -59,7 +59,7 @@ Functions for manipulating finite element structures.
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
@@ -67,9 +67,9 @@ extern "C" {
 #include "general/change_log_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/matrix_vector.h"
@@ -78,7 +78,7 @@ extern "C" {
 #include "general/object.h"
 #include "general/value.h"
 #include "general/message.h"
-}
+//-- }
 
 /*
 Module Constants

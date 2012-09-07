@@ -34,7 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cstdlib>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_group.h"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
@@ -43,13 +43,13 @@ extern "C" {
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
 #include "region/cmiss_region.h"
-}
+//-- }
 #include "graphics/selection.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/message.h"
-}
+//-- }
 
 static void  Cmiss_selection_handler_callback(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *selection_handler_void);

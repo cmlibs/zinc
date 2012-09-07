@@ -62,7 +62,7 @@ return to direct rendering, as described with these routines.
 #include "configure/cmiss_zinc_configure.h"
 
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -72,7 +72,7 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "graphics/light_model.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/render_gl.h"
 
 /*

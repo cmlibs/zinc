@@ -40,7 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 #include <list>
 #include <map>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -51,10 +51,10 @@ extern "C" {
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/volume_texture.h"
-}
-extern "C" {
+//-- }
+//-- extern "C" {
 #include "general/message.h"
-}
+//-- }
 
 /*
 Global types

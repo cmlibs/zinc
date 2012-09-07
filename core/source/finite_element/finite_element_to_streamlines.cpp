@@ -45,7 +45,7 @@ Functions for calculating streamlines in finite elements.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_region.h"
@@ -56,7 +56,7 @@ extern "C" {
 #include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-}
+//-- }
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
 	of a pointset. */

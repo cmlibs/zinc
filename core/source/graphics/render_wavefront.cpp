@@ -45,7 +45,7 @@ Renders gtObjects to Wavefront OBJ file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -53,12 +53,12 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
-}
+//-- }
 #include "graphics/scene.hpp"
-extern "C" {
+//-- extern "C" {
 #include "graphics/spectrum.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/graphics_object_private.hpp"
 
 

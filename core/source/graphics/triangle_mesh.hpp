@@ -46,9 +46,9 @@
 #include <list>
 #include <set>
 
-extern "C" {
+//-- extern "C" {
 #include "general/octree.h"
-}
+//-- }
 
 class Triangle_vertex
 {

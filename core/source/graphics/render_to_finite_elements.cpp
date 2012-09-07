@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_field_module.h"
@@ -53,26 +53,26 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
 #include "general/random.h"
-#include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
-}
+//-- }
+#include "general/statistics.h"
 #include "graphics/scene.hpp"
-extern "C" {
+//-- extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "general/message.h"
 #include "graphics/render_to_finite_elements.h"
-}
+//-- }
 #include "graphics/graphics_object_private.hpp"
 
 /*

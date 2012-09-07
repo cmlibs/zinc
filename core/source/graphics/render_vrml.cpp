@@ -45,7 +45,7 @@ Renders gtObjects to VRML file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -63,7 +63,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 

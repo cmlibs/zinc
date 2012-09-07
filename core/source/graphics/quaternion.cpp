@@ -43,9 +43,9 @@ operations should be added into this class.
  * ***** END LICENSE BLOCK ***** */
 
 #include "quaternion.hpp"
-extern "C" {
+//-- extern "C" {
 #include <math.h>
-}
+//-- }
 
 void Quaternion::set(const double quat_w, const double quat_x, const double quat_y, const double quat_z)
 {

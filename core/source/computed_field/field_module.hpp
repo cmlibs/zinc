@@ -41,10 +41,9 @@
 #if !defined (FIELD_MODULE_H)
 #define FIELD_MODULE_H
 
-extern "C"
-{
+//-- extern "C" {
 	#include "api/cmiss_field_module.h"
-}
+//-- }
 
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.

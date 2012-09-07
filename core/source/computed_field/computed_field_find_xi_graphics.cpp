@@ -42,34 +42,34 @@ lookup of the element.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <stdio.h>
 #include <math.h>
-}
+//-- }
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_graphics.h"
-}
+//-- }
 #include "computed_field/computed_field_find_xi_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
-}
+//-- }
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-extern "C" {
+//-- extern "C" {
 #if defined (USE_GLEW)
 #include <GL/glew.h>
 #else

@@ -46,10 +46,10 @@
 #if !defined (__FIELD_LOCATION_HPP__)
 #define __FIELD_LOCATION_HPP__
 
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "general/value.h"
-}
+//-- }
 
 struct Cmiss_field;
 

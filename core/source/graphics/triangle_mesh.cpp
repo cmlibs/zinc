@@ -40,10 +40,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/message.h"
-}
+//-- }
 #include "triangle_mesh.hpp"
 
 void Triangle_vertex::get_coordinates(float *coord1, float *coord2, float *coord3) const

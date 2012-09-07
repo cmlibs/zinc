@@ -43,16 +43,16 @@ and the nodes for 1D elements.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -65,7 +65,7 @@ extern "C" {
 #include "general/list_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_integration.h"
-}
+//-- }
 #include "mesh/cmiss_element_private.hpp"
 
 namespace {

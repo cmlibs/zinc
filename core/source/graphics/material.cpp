@@ -62,7 +62,7 @@ return to direct rendering, as described with these routines.
 
 #include "configure/cmiss_zinc_configure.h"
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_graphics_material.h"
 #include "computed_field/computed_field.h"
@@ -82,7 +82,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/material.hpp"
@@ -3471,8 +3471,8 @@ Create a shared information container for Materials.
 		/*alpha*/1.0,
 		/*shininess*/0.0},
 	default_selected = {
-		/*ambient*/ { 1.00, 0.20, 0.00},
-		/*diffuse*/ { 1.00, 0.20, 0.00},
+		/*ambient*/ { 1.00, 0.20f, 0.00},
+		/*diffuse*/ { 1.00, 0.20f, 0.00},
 		/*emission*/{ 0.00, 0.00, 0.00},
 		/*specular*/{ 0.00, 0.00, 0.00},
 		/*alpha*/1.0,

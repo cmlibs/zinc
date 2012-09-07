@@ -77,8 +77,7 @@ Used to be gtypes.h
 
 #include "configure/cmiss_zinc_configure.h"
 
-extern "C"
-{
+//-- extern "C" {
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
@@ -87,7 +86,7 @@ extern "C"
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
-}
+//-- }
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 /*

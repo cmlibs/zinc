@@ -48,7 +48,7 @@ fibre_axes out of a fibre field.
 #define COMPUTED_FIELD_WRAPPERS_H
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 struct Computed_field *Computed_field_begin_wrap_coordinate_field(
@@ -93,6 +93,6 @@ Cleans up a field accessed/created by a Computed_field_begin_wrap*() function.
 ==============================================================================*/
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_WRAPPERS_H) */

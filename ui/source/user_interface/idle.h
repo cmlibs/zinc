@@ -47,7 +47,7 @@ The private interface to idle callback functions of cmgui.
 #include "api/cmiss_idle.h"
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 struct Event_dispatcher;
@@ -63,6 +63,6 @@ Idle_package_id Cmiss_idle_package_create(struct Event_dispatcher *event_dispatc
 
 
 #ifdef __cplusplus
-} /* extern "C" */
+//-- } /* extern "C" */
 #endif /* __cplusplus */
 #endif /* __IDLE_H__ */

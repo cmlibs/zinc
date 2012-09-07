@@ -47,7 +47,7 @@ The public interface to idle callbacks
 #include "cmiss_zinc_configure.h"
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 typedef struct Cmiss_idle_package * Cmiss_idle_package_id;
@@ -101,6 +101,6 @@ Destroys the idle package object.
 ==============================================================================*/
 
 #ifdef __cplusplus
-} /* extern "C" */
+//-- } /* extern "C" */
 #endif /* __cplusplus */
 #endif /* __API_CMISS_IDLE_H__ */

@@ -40,15 +40,15 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
-}
+//-- }
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_rendition.h"
@@ -61,7 +61,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
+//-- }
 #include "mesh/cmiss_node_private.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #if defined (USE_OPENCASCADE)

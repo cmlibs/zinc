@@ -39,7 +39,7 @@ FILE : rendition.cpp
 
 #include <algorithm>
 #include <list>
-extern "C" {
+//-- extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -72,7 +72,7 @@ extern "C" {
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "graphics/selection.hpp"

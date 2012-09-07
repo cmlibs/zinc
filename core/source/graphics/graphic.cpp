@@ -44,7 +44,7 @@ DESCRIPTION :
 
 #include "configure/cmiss_zinc_configure.h"
 
-extern "C" {
+//-- extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -73,13 +73,13 @@ extern "C" {
 #include "finite_element/finite_element_to_iso_surfaces.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/graphic.h"
 #include "graphics/rendition.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
+#include "graphics/graphic.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
@@ -1912,7 +1912,7 @@ int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
 	if (graphic)
 	{
 		return_code = 1;
-		bool bool_visibility_flag = visibility_flag;
+		bool bool_visibility_flag = visibility_flag == 1;
 		if (graphic->visibility_flag != bool_visibility_flag)
 		{
 			graphic->visibility_flag = bool_visibility_flag;
@@ -3013,21 +3013,21 @@ int Cmiss_graphic_to_point_object_at_time(
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
 			/* NOT an error if no glyph_set produced == empty group */
-			(*point_list)[0] = offset[0];
-			(*point_list)[1] = offset[1];
-			(*point_list)[2] = offset[2];
-			(*axis1_list)[0] = base_size[0];
+			(*point_list)[0] = (float)offset[0];
+			(*point_list)[1] = (float)offset[1];
+			(*point_list)[2] = (float)offset[2];
+			(*axis1_list)[0] = (float)base_size[0];
 			(*axis1_list)[1] = 0.0;
 			(*axis1_list)[2] = 0.0;
 			(*axis2_list)[0] = 0.0;
-			(*axis2_list)[1] = base_size[1];
+			(*axis2_list)[1] = (float)base_size[1];
 			(*axis2_list)[2] = 0.0;
 			(*axis3_list)[0] = 0.0;
 			(*axis3_list)[1] = 0.0;
-			(*axis3_list)[2] = base_size[2];
-			(*scale_list)[0] = scale_factors[0];
-			(*scale_list)[1] = scale_factors[1];
-			(*scale_list)[2] = scale_factors[2];
+			(*axis3_list)[2] = (float)base_size[2];
+			(*scale_list)[0] = (float)scale_factors[0];
+			(*scale_list)[1] = (float)scale_factors[1];
+			(*scale_list)[2] = (float)scale_factors[2];
 			if (glyph_set)
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
@@ -5410,7 +5410,7 @@ int Cmiss_graphic_FE_region_change(
 							data->element_type = Cmiss_graphic_get_dimension(graphic, data->fe_region);
 							/* partial rebuild for few node/element field changes */
 							GT_object_remove_primitives_at_time(graphic->graphics_object,
-								data->time, FE_element_as_graphics_name_is_removed_or_modified,
+								(float)data->time, FE_element_as_graphics_name_is_removed_or_modified,
 								data_void);
 							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD);
 						}
@@ -6895,19 +6895,19 @@ int Cmiss_graphics_material_change(
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
 				material_change_data->manager_message, graphic->material);
-			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (!material_change && graphic->secondary_material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
 				material_change_data->manager_message, graphic->secondary_material);
-			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (!material_change && graphic->selected_material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
 				material_change_data->manager_message, graphic->selected_material);
-			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (material_change)
 		{

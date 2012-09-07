@@ -39,20 +39,20 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_matrix_operators.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "graphics/quaternion.hpp"
-}
+//-- }
 
 class Computed_field_matrix_operators_package : public Computed_field_type_package
 {

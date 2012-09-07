@@ -64,7 +64,7 @@ class Graphics_vertex_array_internal;
 /*****************************************************************************//**
  * Object for storing attributes for arrays of vertices.
 */
-class Graphics_vertex_array
+struct Graphics_vertex_array
 {
 private:
 	class Graphics_vertex_array_internal *internal;

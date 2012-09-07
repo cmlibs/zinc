@@ -39,17 +39,17 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_node.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -58,7 +58,7 @@ extern "C" {
 #include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
-}
+//-- }
 #include <list>
 #include <vector>
 

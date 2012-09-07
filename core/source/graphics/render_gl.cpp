@@ -45,7 +45,7 @@ GL rendering calls - API specific.
 #include "configure/cmiss_zinc_configure.h"
 
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -57,7 +57,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"

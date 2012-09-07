@@ -42,11 +42,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
-
 #include "configure/cmiss_zinc_configure.h"
 
-
-extern "C" {
+//-- extern "C" {
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -77,9 +75,9 @@ extern "C" {
 #include <OpenGL/glu.h>
 #include <AGL/agl.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
-}
+//-- }
 #if defined (WX_USER_INTERFACE)
-extern "C" {
+//-- extern "C" {
 #if defined (WIN32)
 //#	define WINDOWS_LEAN_AND_MEAN
 #	define NOMINMAX
@@ -87,16 +85,17 @@ extern "C" {
 #endif
 #define GL_GLEXT_PROTOTYPES
 #include "graphics/graphics_library.h"
-}
+//-- }
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
 #include <wx/debug.h>
 #endif /* defined (WX_USER_INTERFACE) */
-extern "C" {
+//-- extern "C" {
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
+#include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
 #if defined (UNIX) && !defined (DARWIN)
 #include "user_interface/event_dispatcher.h"
@@ -108,7 +107,7 @@ extern "C" {
 #if defined DEBUG_CODE || defined (WIN32_USER_INTERFACE)
 #  include <stdio.h>
 #endif
-}
+//-- }
 
 #if !defined (AIX)
 /* SAB 30 June 2004
@@ -3374,7 +3373,7 @@ are performed but the graphics window will render into the supplied device conte
 /* This is a relatively recent addition (version 3.7 2006-04-07) to the free W32API headers
    so declaring here if the headers are too old,
    however the actual function and dll was available in windows 98 */
-extern "C" {
+//-- extern "C" {
   WINGDIAPI BOOL  WINAPI AlphaBlend(HDC,int,int,int,int,HDC,int,int,int,int,BLENDFUNCTION);
 }
 #endif /* defined (WIN32_USER_INTERFACE) && (defined (__CYGWIN__) || defined (__MINGW__)) */
@@ -5884,7 +5883,7 @@ Adds an expose callback to the graphics <buffer>.
 } /* Graphics_buffer_add_expose_callback */
 
 int Graphics_buffer_add_input_callback(struct Graphics_buffer *buffer,
-	CMISS_CALLBACK_FUNCTION(Graphics_buffer_input_callback) input_callback,
+	callback_function_Graphics_buffer_input_callback input_callback,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -5919,7 +5918,7 @@ LAST MODIFIED : 1 July 2002
 
 DESCRIPTION :
 Closes a Graphics buffer instance
-x==============================================================================*/
+===============================================================================*/
 {
 	int return_code;
 	struct Graphics_buffer *buffer;

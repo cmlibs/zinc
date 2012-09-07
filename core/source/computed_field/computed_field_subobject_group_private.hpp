@@ -41,22 +41,22 @@
 
 #if !defined (COMPUTED_FIELD_SUBOBJECT_GROUP_HPP)
 #define COMPUTED_FIELD_SUBOBJECT_GROUP_HPP
-extern "C" {
+//-- extern "C" {
 #include <stdlib.h>
 #include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
-}
+//-- }
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
+//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #include <map>

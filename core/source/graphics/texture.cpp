@@ -62,7 +62,7 @@ long lround(double d)
 	return (long)(d>0 ? d+0.5 : ceil(d-0.5));
 }
 #endif // defined (WIN32_SYSTEM)
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
@@ -75,7 +75,7 @@ extern "C" {
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/texture.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
 #include "graphics/texture.hpp"
 #include "graphics/render_gl.h"

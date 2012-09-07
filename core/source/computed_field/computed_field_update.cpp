@@ -41,11 +41,9 @@ Functions for updating values of one computed field from those of another.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
-}
-extern "C" {
 #include "api/cmiss_status.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
@@ -53,7 +51,7 @@ extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/message.h"
-}
+//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 

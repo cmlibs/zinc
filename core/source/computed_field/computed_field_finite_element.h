@@ -64,7 +64,7 @@ Global functions
 ----------------
 */
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 int Computed_field_is_type_finite_element(struct Computed_field *field);
@@ -237,6 +237,6 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void);
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

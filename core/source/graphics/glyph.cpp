@@ -58,7 +58,7 @@ reference graphical materials or spectrums.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/glyph.h"
@@ -66,7 +66,7 @@ extern "C" {
 #include "graphics/defined_graphics_objects.h"
 #include "general/message.h"
 #include "graphics/spectrum.h"
-}
+//-- }
 #include "graphics/graphics_object.hpp"
 #include "graphics/render_gl.h"
 
@@ -288,7 +288,7 @@ Renders the label_bounds as lines and labels.
 			label_bounds[label_bounds_component];
 		fabs_length = fabs(length);
 
-		if (fabs_length > 1e-12)
+		if (fabs_length > 1e-7)
 		{
 			minor_grid_size *= fabs_length;
 			log_scale = ceil(-0.5 + log10(minor_grid_size * 2.0));
@@ -311,7 +311,7 @@ Renders the label_bounds as lines and labels.
 		}
 		else
 		{
-			length = 1e-12;
+			length = 1e-7f;
 			if (label_density)
 			{
 				grid_scale = 0.01 * (*label_density)[0];				
@@ -575,8 +575,8 @@ so only the first component of the label_bounds is drawn.
 			label_bounds_dimension, label_bounds_components, label_bounds,
 			label_density,
 			/*primary_axis_number*/0, /*label_bounds_component*/0,
-			/*major_cross_min*/-0.05, /*major_cross_max*/0.05,
-			/*minor_cross_min*/-0.01, /*minor_cross_max*/0.01,
+			/*major_cross_min*/-0.05f, /*major_cross_max*/0.05f,
+			/*minor_cross_min*/-0.01f, /*minor_cross_max*/0.01f,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/5,
 			/*min_minor_grid*/0.01, /*min_major_grid*/0.1,
 			material, secondary_material, font, renderer);
@@ -616,8 +616,8 @@ second component on the second axis.
 			label_bounds_dimension, label_bounds_components, label_bounds,
 			label_density,
 			/*primary_axis_number*/0, /*label_bounds_component*/0,
-			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
-			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
+			/*major_cross_min*/-0.01f, /*major_cross_max*/1.01f,
+			/*minor_cross_min*/-0.01f, /*minor_cross_max*/1.01f,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
 			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
 			material, secondary_material, font, renderer);
@@ -625,8 +625,8 @@ second component on the second axis.
 			label_bounds_dimension, label_bounds_components, label_bounds,
 			label_density,
 			/*primary_axis_number*/1, /*label_bounds_component*/1,
-			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
-			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
+			/*major_cross_min*/-0.01f, /*major_cross_max*/1.01f,
+			/*minor_cross_min*/-0.01f, /*minor_cross_max*/1.01f,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
 			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
 			material, secondary_material, font, renderer);
@@ -879,8 +879,8 @@ The length and width of the arrow heads are specified by the final parameters.
 			if (ALLOCATE(glyph_name, char, strlen(name) + 8))
 			{
 				glyph = make_glyph_arrow_solid(name, /*primary_axis*/1,
-					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
-					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
+					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = CREATE(Graphical_material)("red");
 				colour.red = 1;
 				colour.green = 0;
@@ -891,8 +891,8 @@ The length and width of the arrow heads are specified by the final parameters.
 
 				sprintf(glyph_name, "%s_arrow2", name);
 				arrow2 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/2,
-					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
-					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
+					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = CREATE(Graphical_material)("green");
 				colour.red = 0;
 				colour.green = 1;
@@ -904,8 +904,8 @@ The length and width of the arrow heads are specified by the final parameters.
 
 				sprintf(glyph_name, "%s_arrow3", name);
 				arrow3 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/3,
-					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
-					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
+					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = CREATE(Graphical_material)("blue");
 				colour.red = 0;
 				colour.green = 0;
@@ -2115,7 +2115,7 @@ Creates a list of standard glyphs for the cmgui applications.
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
-			12,2./3.,1./6.,/*cone_radius*/0.5);
+			12,2.f/3.f,1.f/6.f,/*cone_radius*/0.5f);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
@@ -2126,32 +2126,32 @@ Creates a list of standard glyphs for the cmgui applications.
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1,font);
+		glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1f,0.025f,labels_xyz, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1,font);
+		glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1f,0.025f,labels_fsn, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1,font);
+		glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1f,0.025f,labels_123, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(const char **)NULL, 0.1,font);
+		glyph=make_glyph_axes("axes",/*make_solid*/0,0.1f,0.025f,(const char **)NULL, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(const char **)NULL, 0.1,font);
+		glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1f,0.025f,(const char **)NULL, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025, labels_xyz, 0.1,font);
+		glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1f,0.025f, labels_xyz, 0.1f,font);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
@@ -2219,7 +2219,7 @@ Creates a list of standard glyphs for the cmgui applications.
 		}
 		glyph=make_glyph_axes("grid_lines",
 			/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
-			/*labels*/(const char **)NULL, /*label_offset*/0.1, font);
+			/*labels*/(const char **)NULL, /*label_offset*/0.1f, font);
 		if (glyph)
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);

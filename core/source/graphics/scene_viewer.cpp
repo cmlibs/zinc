@@ -55,20 +55,20 @@ November 97 Created from rendering part of Drawing.
 #include <cmath>
 #include <cstdio>
 #include <map>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_graphic.h"
+//#include "api/cmiss_graphic.h"
 //#include "computed_field/computed_field.h"
 //#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
-}
+//-- }
 //#include "computed_field/field_module.hpp"
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/geometry.h"
 #include "general/image_utilities.h"
 #include "general/list.h"
@@ -87,7 +87,8 @@ extern "C" {
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
-}
+#include "interaction/interactive_event.h"
+//-- }
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/scene_viewer.hpp"
@@ -2366,7 +2367,7 @@ access this function.
 			
 			if (SCENE_VIEWER_NO_INPUT_OR_DRAW==scene_viewer->input_mode)
 			{
-				glClearColor(0.6,0.6,0.6,0.);
+				glClearColor(0.6f,0.6f,0.6f,0.0);
 				glClearDepth(1.0);
 				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 				return_code=1;
@@ -2482,7 +2483,7 @@ access this function.
 
 				if (scene_viewer->perturb_lines)
 				{
-					glPolygonOffset(1.5,0.000001);
+					glPolygonOffset(1.5f,0.000001f);
 					glEnable(GL_POLYGON_OFFSET_FILL);
 				}
 				else
@@ -4470,7 +4471,7 @@ performed in idle time so that multiple redraws are avoided.
 					Scene_viewer_expose_callback, scene_viewer);
 
 				Graphics_buffer_add_input_callback(graphics_buffer,
-					 Scene_viewer_graphics_buffer_input_callback, scene_viewer);
+					Scene_viewer_graphics_buffer_input_callback, scene_viewer);
 
 				Scene_viewer_awaken(scene_viewer);
 				Graphics_buffer_awaken(scene_viewer->graphics_buffer);
@@ -4770,7 +4771,7 @@ Sets the <scene_viewer> tumble angle.
 } /* Scene_viewer_set_freespin_tumble_angle */
 
 int Scene_viewer_get_freespin_tumble_axis(struct Scene_viewer *scene_viewer,
-	float *tumble_axis)
+	double *tumble_axis)
 /*******************************************************************************
 LAST MODIFIED : 9 October 2003
 
@@ -4801,7 +4802,7 @@ about which the scene is turning relative to its lookat point.
 } /* Scene_viewer_get_freespin_tumble_axis */
 
 int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
-	float *tumble_axis, double tumble_angle)
+	double *tumble_axis, double tumble_angle)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 

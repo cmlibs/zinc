@@ -46,13 +46,13 @@ Functions for performing coordinate transformations.
 #include <stdio.h>
 #include <string.h>
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/message.h"
-}
+//-- }
 
 #if defined (OLD_CODE)
 /*

@@ -43,7 +43,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 	#include <stdio.h>
 	#include <math.h>
 	#include "api/cmiss_field.h"
@@ -65,7 +65,7 @@ extern "C" {
 	#include "general/object.h"
 	#include "time/time_keeper.h"
 	#include "general/message.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"
 #include "general/enumerator_private.hpp"

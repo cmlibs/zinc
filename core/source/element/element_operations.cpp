@@ -45,8 +45,7 @@
 
 #include <cmath>
 #include <cstdlib>
-extern "C"
-{
+//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "api/cmiss_field_logical_operators.h"
 #include "api/cmiss_field_subobject_group.h"
@@ -56,7 +55,7 @@ extern "C"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "general/message.h"
-}
+//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 
@@ -476,7 +475,7 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
 					if (conditional_field)
 					{
 						Cmiss_field_cache_set_element(field_cache, element);
-						add = Cmiss_field_evaluate_boolean(conditional_field, field_cache);
+						add = Cmiss_field_evaluate_boolean(conditional_field, field_cache) == 1;
 					}
 					if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
 					{
@@ -495,12 +494,12 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
 			bool add = true;
 			if (element_ranges)
 			{
-				add = Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element));
+				add = Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element)) == 1;
 			}
 			if (add && conditional_field)
 			{
 				Cmiss_field_cache_set_element(field_cache, element);
-				add = Cmiss_field_evaluate_boolean(conditional_field, field_cache);
+				add = Cmiss_field_evaluate_boolean(conditional_field, field_cache) == 1;
 			}
 			if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
 			{

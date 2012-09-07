@@ -55,7 +55,7 @@ Global types
 */
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 /*******************************************************************************
@@ -98,6 +98,6 @@ int Cmiss_mesh_assign_grid_field_from_source(
 	FE_value time);
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_UPDATE_H) */

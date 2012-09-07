@@ -45,7 +45,7 @@ This provides a Cmgui interface to the font contexts of many types.
 
 #include "configure/cmiss_zinc_configure.h"
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -71,7 +71,7 @@ extern "C" {
 #define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
-}
+//-- }
 #if defined (WX_USER_INTERFACE)
 #include <wx/bitmap.h>
 #include <wx/image.h>

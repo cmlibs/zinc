@@ -58,7 +58,7 @@ struct Computed_field_find_element_xi_cache is private.
 ==============================================================================*/
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 /***************************************************************************//**
@@ -101,6 +101,6 @@ Frees memory/deaccess cache at <*cache_address>.
 ==============================================================================*/
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_H) */

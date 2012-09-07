@@ -41,20 +41,20 @@ Implements a number of basic component wise operations on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <math.h>
 #include "api/cmiss_field_time.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "time/time.h"
 #include "general/message.h"
 #include "computed_field/computed_field_time.h"
-}
+//-- }
 
 class Computed_field_time_package : public Computed_field_type_package
 {

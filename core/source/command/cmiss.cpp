@@ -54,7 +54,7 @@
 #include <math.h>
 #include <time.h>
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_context.h"
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_module.h"
@@ -86,12 +86,12 @@ extern "C" {
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
-}
+//-- }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/computed_field_subobject_group_internal.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_time.h"
@@ -143,13 +143,13 @@ extern "C" {
 #include "graphics/scene.h"
 #include "graphics/graphics_module.h"
 #include "finite_element/finite_element_helper.h"
-}
+//-- }
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
-extern "C" {
+//-- extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
@@ -184,7 +184,7 @@ extern "C" {
 #include "graphics/font.h"
 #include "time/time_keeper.h"
 #include "curve/curve.h"
-}
+//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #if defined (USE_OPENCASCADE)

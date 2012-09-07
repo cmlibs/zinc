@@ -42,11 +42,11 @@ Image processing fields use the native resolution to determine their image size.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element_region.h"
 #include "region/cmiss_region.h"
@@ -54,7 +54,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_image_resample.h"
-}
+//-- }
 
 namespace {
 

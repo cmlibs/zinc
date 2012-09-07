@@ -41,7 +41,7 @@ Functions for exporting finite element data to a file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_group.h"
@@ -53,16 +53,16 @@ extern "C" {
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
 #include "general/debug.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/list.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "region/cmiss_region_write_info.h"
 #include "general/message.h"
-}
+//-- }
 #include <iostream>
 #include <sstream>
 #include <fstream>

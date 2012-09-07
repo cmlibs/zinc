@@ -43,7 +43,7 @@ interface to CMISS.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_field_subobject_group.h"
@@ -56,7 +56,7 @@ extern "C" {
 #include "general/io_stream.h"
 #include "general/mystring.h"
 #include "general/message.h"
-}
+//-- }
 
 #include <ctype.h>
 

@@ -42,12 +42,12 @@
 #ifndef GRAPHICS_FILTER_HPP
 #define GRAPHICS_FILTER_HPP
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_scene.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-}
+//-- }
 
 struct Cmiss_rendition;
 struct Cmiss_graphic;

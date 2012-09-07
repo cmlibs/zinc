@@ -10,7 +10,7 @@ SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/finite_element_discretization.cpp
 	source/finite_element/finite_element_helper.cpp
 	source/finite_element/finite_element_region.cpp
-	source/finite_element/finite_element_time.c
+	source/finite_element/finite_element_time.cpp
 	source/finite_element/import_finite_element.cpp )
 SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/export_finite_element.h
@@ -36,11 +36,11 @@ SET( FINITE_ELEMENT_GRAPHICS_HDRS
 	source/finite_element/finite_element_to_streamlines.h )
 
 SET( FINITE_ELEMENT_ADDITIONAL_SRCS
-	source/finite_element/export_cm_files.c
-	source/finite_element/finite_element_adjacent_elements.c
+	source/finite_element/export_cm_files.cpp
+	source/finite_element/finite_element_adjacent_elements.cpp
 	source/finite_element/finite_element_conversion.cpp
-	source/finite_element/finite_element_to_iges.c
-	source/finite_element/snake.c )
+	source/finite_element/finite_element_to_iges.cpp
+	source/finite_element/snake.cpp )
 SET( FINITE_ELEMENT_ADDITIONAL_HDRS
 	source/finite_element/export_cm_files.h
 	source/finite_element/finite_element_adjacent_elements.h

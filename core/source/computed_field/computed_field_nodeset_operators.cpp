@@ -44,7 +44,7 @@
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_node_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_nodeset_operators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
@@ -53,7 +53,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/message.h"
 #include "finite_element/finite_element_region.h"
-}
+//-- }
 using namespace std;
 
 class Computed_field_nodeset_operators_package : public Computed_field_type_package

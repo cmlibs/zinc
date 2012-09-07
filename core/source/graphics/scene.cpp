@@ -51,7 +51,7 @@
 #include "configure/cmiss_zinc_configure.h"
 
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_scene.h"
 #include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_rendition.h"
@@ -63,10 +63,10 @@ extern "C" {
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -85,7 +85,7 @@ extern "C" {
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 #include "graphics/render_gl.h"
@@ -3133,6 +3133,8 @@ manager, ensures it is in the list.
 	struct Cmiss_graphic *graphic = NULL;
 	struct Scene_picked_object_region_element_map_data *picked_elements_data;
 	struct CM_element_information cm;
+	cm.type = CM_ELEMENT_TYPE_INVALID;
+	cm.number = -1;
 
 	ENTER(Scene_picked_object_get_picked_elements);
 	if (scene_picked_object&&(picked_elements_data=

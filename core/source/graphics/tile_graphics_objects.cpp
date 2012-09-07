@@ -45,12 +45,12 @@ and Texture_tiling boundaries.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
 #include "graphics/tile_graphics_objects.h"
-}
+//-- }
 #include "graphics/graphics_object_private.hpp"
 
 const float small_tolerance = 1e-5;

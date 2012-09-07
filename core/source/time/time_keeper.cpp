@@ -43,9 +43,10 @@ This is intended to be multithreaded......
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <math.h>
 #include <stdio.h>
+
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/mystring.h"
@@ -54,9 +55,9 @@ extern "C" {
 #include "user_interface/event_dispatcher.h"
 #include "general/message.h"
 #include "time/time.h"
-#include "time/time_private.h"
 #include "time/time_keeper.h"
-}
+//-- }
+#include "time/time_private.h"
 #include "general/enumerator_conversion.hpp"
 
 static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);

@@ -38,14 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/rendition.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
-}
+//-- }
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"

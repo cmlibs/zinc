@@ -39,13 +39,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_helper.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/message.h"
-}
+//-- }
 
 FE_field *FE_field_create_coordinate_3d(struct FE_region* fe_region,
 	const char *name)

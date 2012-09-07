@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_graphics_module.h"
 #include "context/context.h"
@@ -55,7 +55,7 @@ extern "C" {
 #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for Cmiss_region  */
 #include "region/cmiss_region_private.h"
-}
+//-- }
 
 struct Context
 {

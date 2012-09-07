@@ -43,7 +43,7 @@ Renders gtObjects to STL stereolithography file.
  * ***** END LICENSE BLOCK ***** */
 
 #include <stack>
-extern "C" {
+//-- extern "C" {
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -52,7 +52,7 @@ extern "C" {
 #include "graphics/render_stl.h"
 #include "graphics/scene.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
 

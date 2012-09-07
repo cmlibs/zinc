@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -50,7 +50,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/rendition.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"

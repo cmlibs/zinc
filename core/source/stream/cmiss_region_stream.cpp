@@ -40,7 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_region.h"
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_finite_element.h"
@@ -49,7 +49,7 @@ extern "C" {
 #include "general/mystring.h"
 //#include "finite_element/finite_element_region.h"
 #include "region/cmiss_region.h"
-}
+//-- }
 #include "stream/cmiss_region_stream.hpp"
 
 namespace {

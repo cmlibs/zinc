@@ -44,7 +44,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/zinc_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-extern "C" {
+//-- extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include "general/time.h"
@@ -55,28 +55,28 @@ extern "C" {
 #include "general/object.h"
 #include "general/message.h"
 #include "user_interface/event_dispatcher.h"
-}
+//-- }
 
 /* After the event_dispatcher.h has set up these variables */
 #if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <wx/wx.h>
 #include <wx/apptrait.h>
-extern "C" {
+//-- extern "C" {
 #include "user_interface/user_interface.h"
-}
+//-- }
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-extern "C" {
+//-- extern "C" {
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #include "general/callback.h"
-}
+//-- }
 #elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include "carbon/carbon.h"
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
-extern "C" {
+//-- extern "C" {
 #include <gtk/gtk.h>
-}
+//-- }
 #endif /* switch (USER_INTERFACE) */
 
 /*

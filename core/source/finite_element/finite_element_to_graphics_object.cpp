@@ -42,7 +42,7 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <cmath>
 #include <cstdlib>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "api/cmiss_element.h"
 #include "computed_field/computed_field.h"
@@ -55,9 +55,9 @@ extern "C" {
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -69,7 +69,7 @@ extern "C" {
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/graphics_object.hpp"
 #include "mesh/cmiss_node_private.hpp"
 

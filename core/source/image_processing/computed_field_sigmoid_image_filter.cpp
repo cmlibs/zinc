@@ -42,18 +42,18 @@ Wraps itk::SigmoidImageFilter
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_sigmoid_image_filter.h"
-}
+//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkSigmoidImageFilter.h"

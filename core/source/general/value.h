@@ -134,23 +134,23 @@ Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
 without knowing which order the types are in.
 ==============================================================================*/
 {
-  UNKNOWN_VALUE,
+	UNKNOWN_VALUE,
 	VALUE_TYPE_BEFORE_FIRST,
-  DOUBLE_ARRAY_VALUE,
-  DOUBLE_VALUE,
-  ELEMENT_XI_VALUE,
-  FE_VALUE_ARRAY_VALUE,
-  FE_VALUE_VALUE,
-  FLT_ARRAY_VALUE,
-  FLT_VALUE, /* FLOAT_VALUE used in /unemap/ and /cell/ */
-  INT_ARRAY_VALUE,
-  INT_VALUE,
+	DOUBLE_ARRAY_VALUE,
+	DOUBLE_VALUE,
+	ELEMENT_XI_VALUE,
+	FE_VALUE_ARRAY_VALUE,
+	FE_VALUE_VALUE,
+	FLT_ARRAY_VALUE,
+	FLT_VALUE, /* FLOAT_VALUE used in /unemap/ and /cell/ */
+	INT_ARRAY_VALUE,
+	INT_VALUE,
 	SHORT_ARRAY_VALUE, 
 	SHORT_VALUE, /* beware memory alignment probs. Pointers must be DWORD aligned*/
-  STRING_VALUE,
-  UNSIGNED_ARRAY_VALUE,
-  UNSIGNED_VALUE,
-  URL_VALUE, /* actually just a string */
+	STRING_VALUE,
+	UNSIGNED_ARRAY_VALUE,
+	UNSIGNED_VALUE,
+	URL_VALUE, /* actually just a string */
 	VALUE_TYPE_AFTER_LAST
 }; /* enum Value_type */
 

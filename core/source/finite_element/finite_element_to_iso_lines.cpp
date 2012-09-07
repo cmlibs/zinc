@@ -45,7 +45,7 @@ value over 2-D elements.
 
 #include <math.h>
 
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_iso_lines.h"
@@ -55,7 +55,7 @@ extern "C" {
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-}
+//-- }
 
 #define CONTOUR_POLYLINE_REALLOCATE_SIZE 25
 

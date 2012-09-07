@@ -56,14 +56,14 @@ HISTORY :
 #include <stdio.h>
 #include <stdlib.h>
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "general/message.h"
-}
+//-- }
 #include "graphics/material.hpp"
 #include "graphics/scene_viewer.hpp"
 

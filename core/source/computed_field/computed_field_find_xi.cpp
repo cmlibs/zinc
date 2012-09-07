@@ -43,26 +43,26 @@ lookup of the element.
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include <stdio.h>
 #include <math.h>
-}
+//-- }
 
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_find_xi.h"
-}
+//-- }
 #include "computed_field/computed_field_find_xi_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
-}
+//-- }
 
 #define MAX_FIND_XI_ITERATIONS 50
 

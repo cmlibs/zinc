@@ -62,7 +62,16 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 int gettimeofday(struct timeval *time, void *timezone);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 typedef long clock_t;
 struct tms 
 {

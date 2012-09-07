@@ -42,7 +42,7 @@ streams.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 
 #include "configure/cmiss_zinc_configure.h"
 
@@ -72,7 +72,7 @@ extern "C" {
 #if !defined (HAVE_VFSCANF)
 #	include "general/alt_vfscanf.h"
 #endif /* !defined (HAVE_VFSCANF) */
-}
+//-- }
 
 /* SAB 16 Sept 2004
 	Unfortunately sscanf does a strlen on the buffer.  If the buffer is large
@@ -924,8 +924,6 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 				return_code = vfscanf(stream->file_handle, format, arguments);
 #else
 				return_code = alt_vfscanf(stream->file_handle, format, arguments);
-				//display_message(ERROR_MESSAGE,
-				//	"IO_stream_scan. vfscanf not available on this platform.");
 #endif /* defined (HAVE_VFSCANF) */
 				va_end(arguments);
 			} break;

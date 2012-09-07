@@ -144,7 +144,7 @@ Global functions
 ----------------
 */
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
@@ -765,6 +765,6 @@ int Cmiss_field_get_access_count(Cmiss_field_id field);
 #endif /* defined (DEBUG_CODE) */
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_H) */

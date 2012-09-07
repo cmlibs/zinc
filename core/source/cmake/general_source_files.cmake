@@ -2,28 +2,28 @@
 # Defines GENERAL_SRCS
 
 SET( GENERAL_SRCS
-	source/general/any_object.c
-	source/general/callback.c
-	source/general/child_process.c
-	source/general/compare.c
-	source/general/debug.c
-	source/general/error_handler.c
+	source/general/any_object.cpp
+	source/general/callback.cpp
+	source/general/child_process.cpp
+	source/general/compare.cpp
+	source/general/debug.cpp
+	source/general/error_handler.cpp
 	source/general/geometry.cpp
-	source/general/heapsort.c
-	source/general/image_utilities.c
-	source/general/indexed_multi_range.c
-	source/general/integration.c
+	source/general/heapsort.cpp
+	source/general/image_utilities.cpp
+	source/general/indexed_multi_range.cpp
+	source/general/integration.cpp
 	source/general/io_stream.cpp
-	source/general/machine.c
-	source/general/matrix_vector.c
-	source/general/message.c
-	source/general/multi_range.c
-	source/general/myio.c
-	source/general/mystring.c
-	source/general/octree.c
-	source/general/statistics.c
+	source/general/machine.cpp
+	source/general/matrix_vector.cpp
+	source/general/message.cpp
+	source/general/multi_range.cpp
+	source/general/myio.cpp
+	source/general/mystring.cpp
+	source/general/octree.cpp
+	source/general/statistics.cpp
 	source/general/time.cpp
-	source/general/value.c
+	source/general/value.cpp
 	source/stream/cmiss_stream_private.cpp )
 SET( GENERAL_HDRS
 	source/general/any_object.h
@@ -80,7 +80,7 @@ IF( NOT HAVE_VFSCANF )
 		source/general/alt_vfscanf.h )
 ENDIF( NOT HAVE_VFSCANF )
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	SET( GENERAL_SRCS ${GENERAL_SRCS} source/general/photogrammetry.c )
+	SET( GENERAL_SRCS ${GENERAL_SRCS} source/general/photogrammetry.cpp )
 	SET( GENERAL_HDRS ${GENERAL_HDRS} source/general/photogrammetry.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	

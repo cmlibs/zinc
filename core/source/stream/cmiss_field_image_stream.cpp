@@ -40,7 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_image.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"
@@ -48,7 +48,7 @@ extern "C" {
 #include "general/image_utilities.h"
 #include "graphics/texture.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "stream/cmiss_field_image_stream.hpp"
 

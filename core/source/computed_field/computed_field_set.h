@@ -88,7 +88,7 @@ Global functions
 */
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 /***************************************************************************//**
@@ -105,6 +105,6 @@ Cmiss_field_id Computed_field_manager_get_field_or_component(
 	int *component_number_address);
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_SET_H) */

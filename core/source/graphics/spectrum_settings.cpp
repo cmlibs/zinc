@@ -51,7 +51,7 @@ appearance of spectrums.
 
 
 #include <stdio.h>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -67,7 +67,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_private.hpp"
 /*
 Global variables

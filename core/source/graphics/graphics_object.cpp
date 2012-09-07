@@ -55,7 +55,7 @@ gtObject/gtWindow management routines.
 #include "configure/cmiss_zinc_configure.h"
 
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
@@ -78,7 +78,7 @@ extern "C" {
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
-}
+//-- }
 #include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"

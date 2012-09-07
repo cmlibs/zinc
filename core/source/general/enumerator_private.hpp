@@ -56,9 +56,9 @@ of these functions yourself.
 #if !defined (ENUMERATOR_PRIVATE_H)
 #define ENUMERATOR_PRIVATE_H
 
-extern "C" {
+//-- extern "C" {
 #include "general/enumerator.h"
-}
+//-- }
 
 /*
 Macros
@@ -197,10 +197,28 @@ Default version assumes all valid enumerator values are sequential from 0. \
 	return (return_code); \
 } /* STRING_TO_ENUMERATOR(enumerator_type) */
 
+#define DEFINE_DEFAULT_ENUMERATOR_PREFIX_INCREMENT_OPERATOR( enumerator_type ) \
+enumerator_type& operator++(enumerator_type& orig) \
+{ \
+	orig = static_cast<enumerator_type>(orig + 1); \
+	return orig; \
+}
+
+#define DEFINE_DEFAULT_ENUMERATOR_POSTFIX_INCREMENT_OPERATOR( enumerator_type ) \
+enumerator_type operator++(enumerator_type& orig, int) \
+{ \
+	enumerator_type rVal = orig; \
+	++orig; \
+	return rVal; \
+}
+
+
 #define set_enumerator_macro(enumerator_type) set_enumerator ## enumerator_type
 
 #define DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( enumerator_type ) \
 DEFINE_DEFAULT_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type) \
-DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type)
+DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type) \
+DEFINE_DEFAULT_ENUMERATOR_PREFIX_INCREMENT_OPERATOR( enumerator_type ) \
+DEFINE_DEFAULT_ENUMERATOR_POSTFIX_INCREMENT_OPERATOR( enumerator_type )
 
 #endif /* !defined (ENUMERATOR_PRIVATE_H) */

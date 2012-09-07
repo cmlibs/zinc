@@ -52,11 +52,11 @@ Types used only internally to computed fields.
 #include "general/cmiss_set.hpp"
 #include "computed_field/field_location.hpp"
 #include "computed_field/field_cache.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "region/cmiss_region.h"
-}
+//-- }
 
 /**
  * Argument to field modifier functions supplying region, default name,

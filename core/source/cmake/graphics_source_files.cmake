@@ -2,23 +2,23 @@
 # Defines GRAPHICS_SRCS
 
 SET( GRAPHICS_SRCS
-	source/graphics/auxiliary_graphics_types.c
+	source/graphics/auxiliary_graphics_types.cpp
 	source/graphics/graphic.cpp
 	source/graphics/graphics_coordinate_system.cpp
 	source/graphics/graphics_module.cpp
 	source/graphics/rendition.cpp
-	source/graphics/colour.c
-	source/graphics/complex.c
+	source/graphics/colour.cpp
+	source/graphics/complex.cpp
 	source/graphics/decimate_voltex.cpp
-	source/graphics/defined_graphics_objects.c
-	source/graphics/element_point_ranges.c
-	source/graphics/environment_map.c
+	source/graphics/defined_graphics_objects.cpp
+	source/graphics/element_point_ranges.cpp
+	source/graphics/environment_map.cpp
 	source/graphics/glyph.cpp
-	source/graphics/import_graphics_object.c
-	source/graphics/iso_field_calculation.c
-	source/graphics/laguer.c
+	source/graphics/import_graphics_object.cpp
+	source/graphics/iso_field_calculation.cpp
+	source/graphics/laguer.cpp
 	source/graphics/material.cpp
-	source/graphics/mcubes.c
+	source/graphics/mcubes.cpp
 	source/graphics/order_independent_transparency.cpp
 	source/graphics/render_to_finite_elements.cpp
 	source/graphics/render_stl.cpp
@@ -26,16 +26,16 @@ SET( GRAPHICS_SRCS
 	source/graphics/render_wavefront.cpp
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
-	source/graphics/selected_graphic.c
+	source/graphics/selected_graphic.cpp
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
 	source/graphics/spectrum_settings.cpp
 	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
-	source/graphics/texture_line.c
+	source/graphics/texture_line.cpp
 	source/graphics/triangle_mesh.cpp
-	source/graphics/userdef_objects.c
-	source/graphics/volume_texture.c )
+	source/graphics/userdef_objects.cpp
+	source/graphics/volume_texture.cpp )
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphic.h
@@ -88,9 +88,9 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
 		source/graphics/font.cpp
 		source/graphics/graphics_filter.cpp
-		source/graphics/graphics_library.c
+		source/graphics/graphics_library.cpp
 		source/graphics/graphics_object.cpp
-		source/graphics/light.c
+		source/graphics/light.cpp
 		source/graphics/light_model.cpp
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp

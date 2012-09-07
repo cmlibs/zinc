@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <list>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -48,7 +48,7 @@ extern "C" {
 #include "graphics/graphic.h"
 #include "graphics/graphics_module.h"
 #include "region/cmiss_region.h"
-}
+//-- }
 #include "general/cmiss_set.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"

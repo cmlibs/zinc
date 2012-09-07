@@ -51,7 +51,7 @@ lookup of the element.
 struct Graphics_buffer_package;
 
 #ifdef __cplusplus
-extern "C" {
+//-- extern "C" {
 #endif /* __cplusplus */
 
 /***************************************************************************//**
@@ -83,6 +83,6 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution);
 
 #ifdef __cplusplus
-}
+//-- }
 #endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_GRAPHICS_H) */

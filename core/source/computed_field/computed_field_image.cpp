@@ -40,13 +40,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_stream.h"
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -59,7 +59,7 @@ extern "C" {
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
-}
+//-- }
 #include <math.h>
 #include "general/enumerator_conversion.hpp"
 

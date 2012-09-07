@@ -42,18 +42,18 @@ and real values in any order into a single vector field.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_function.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-}
+//-- }
 
 /*
 Module types

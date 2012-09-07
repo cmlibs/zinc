@@ -44,19 +44,19 @@ Essentially it is used to embed one mesh in the elements of another.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/computed_field_compose.h"
-}
+//-- }
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_element_private.hpp"
 
@@ -146,7 +146,7 @@ Computed_field_core *Computed_field_compose::copy()
 int Computed_field_compose::compare(Computed_field_core *other_core)
 {
 	int return_code;
-	struct Computed_field_compose *other;
+	Computed_field_compose *other;
 
 	ENTER(Computed_field_compose::type_specific_contents_match);
 	if (field && (0 != (other = dynamic_cast<Computed_field_compose*>(other_core))))

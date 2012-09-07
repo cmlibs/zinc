@@ -39,14 +39,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <string>
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_time_sequence.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_alias.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_compose.h"
@@ -88,7 +88,7 @@ extern "C" {
 #endif
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
+//-- }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"

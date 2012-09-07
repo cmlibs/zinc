@@ -37,7 +37,7 @@ FILE : graphics_module.cpp
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_graphics_material.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -50,14 +50,14 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/light_model.h"
-}
+//-- }
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
-extern "C" {
+//-- extern "C" {
 #include "region/cmiss_region_private.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-}
+//-- }
 #include <list>
 
 struct Startup_material_definition
@@ -657,80 +657,80 @@ int Cmiss_graphics_module_define_standard_materials(
 			 /*ambient*/ { 0.00, 0.00, 0.00},
 			 /*diffuse*/ { 0.00, 0.00, 0.00},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.30, 0.30},
+			 /*specular*/{ 0.30f, 0.30f, 0.30f},
 	 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"blue",
-			 /*ambient*/ { 0.00, 0.00, 0.50},
-			 /*diffuse*/ { 0.00, 0.00, 1.00},
+			 /*ambient*/ { 0.00, 0.00, 0.50f},
+			 /*diffuse*/ { 0.00, 0.00, 1.00f},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*specular*/{ 0.20f, 0.20f, 0.20f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"bone",
-			 /*ambient*/ { 0.70, 0.70, 0.60},
-			 /*diffuse*/ { 0.90, 0.90, 0.70},
+			 /*ambient*/ { 0.70f, 0.70f, 0.60f},
+			 /*diffuse*/ { 0.90f, 0.90f, 0.70f},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
+			 /*specular*/{ 0.10f, 0.10f, 0.10f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"gray50",
-			 /*ambient*/ { 0.50, 0.50, 0.50},
-			 /*diffuse*/ { 0.50, 0.50, 0.50},
-			 /*emission*/{ 0.50, 0.50, 0.50},
-			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*ambient*/ { 0.50f, 0.50f, 0.50f},
+			 /*diffuse*/ { 0.50f, 0.50f, 0.50f},
+			 /*emission*/{ 0.50f, 0.50f, 0.50f},
+			 /*specular*/{ 0.50f, 0.50f, 0.50f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"gold",
-			 /*ambient*/ { 1.00, 0.40, 0.00},
-			 /*diffuse*/ { 1.00, 0.70, 0.00},
+			 /*ambient*/ { 1.00, 0.40f, 0.00},
+			 /*diffuse*/ { 1.00, 0.70f, 0.00},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*specular*/{ 0.50f, 0.50f, 0.50f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.3},
+			 /*shininess*/0.3f},
 			{"green",
-			 /*ambient*/ { 0.00, 0.50, 0.00},
+			 /*ambient*/ { 0.00, 0.50f, 0.00},
 			 /*diffuse*/ { 0.00, 1.00, 0.00},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*specular*/{ 0.20f, 0.20f, 0.20f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.1},
+			 /*shininess*/0.1f},
 			{"muscle",
-			 /*ambient*/ { 0.40, 0.14, 0.11},
-			 /*diffuse*/ { 0.50, 0.12, 0.10},
+			 /*ambient*/ { 0.40f, 0.14f, 0.11f},
+			 /*diffuse*/ { 0.50f, 0.12f, 0.10f},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.50, 0.50},
+			 /*specular*/{ 0.30f, 0.50f, 0.50f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"red",
-			 /*ambient*/ { 0.50, 0.00, 0.00},
+			 /*ambient*/ { 0.50f, 0.00, 0.00},
 			 /*diffuse*/ { 1.00, 0.00, 0.00},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*specular*/{ 0.20f, 0.20f, 0.20f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"silver",
-			 /*ambient*/ { 0.40, 0.40, 0.40},
-			 /*diffuse*/ { 0.70, 0.70, 0.70},
+			 /*ambient*/ { 0.40f, 0.40f, 0.40f},
+			 /*diffuse*/ { 0.70f, 0.70f, 0.70f},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*specular*/{ 0.50f, 0.50f, 0.50f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.3},
+			 /*shininess*/0.3f},
 			{"tissue",
-			 /*ambient*/ { 0.90, 0.70, 0.50},
-			 /*diffuse*/ { 0.90, 0.70, 0.50},
+			 /*ambient*/ { 0.90f, 0.70f, 0.50f},
+			 /*diffuse*/ { 0.90f, 0.70f, 0.50f},
 			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.30},
+			 /*specular*/{ 0.20f, 0.20f, 0.30f},
 			 /*alpha*/1.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			/* Used as the default fail_material for texture evaluation. */
 			{"transparent_gray50",
-			 /*ambient*/ { 0.50, 0.50, 0.50},
-			 /*diffuse*/ { 0.50, 0.50, 0.50},
-			 /*emission*/{ 0.50, 0.50, 0.50},
-			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*ambient*/ { 0.50f, 0.50f, 0.50f},
+			 /*diffuse*/ { 0.50f, 0.50f, 0.50f},
+			 /*emission*/{ 0.50f, 0.50f, 0.50f},
+			 /*specular*/{ 0.50f, 0.50f, 0.50f},
 			 /*alpha*/0.0,
-			 /*shininess*/0.2},
+			 /*shininess*/0.2f},
 			{"white",
 			 /*ambient*/ { 1.00, 1.00, 1.00},
 			 /*diffuse*/ { 1.00, 1.00, 1.00},
@@ -1017,9 +1017,9 @@ struct Light_model *Cmiss_graphics_module_get_default_light_model(
 			if (NULL != (graphics_module->default_light_model=CREATE(Light_model)("default")))
 			{
 				struct Colour ambient_colour;
-				ambient_colour.red=0.2;
-				ambient_colour.green=0.2;
-				ambient_colour.blue=0.2;
+				ambient_colour.red=0.2f;
+				ambient_colour.green=0.2f;
+				ambient_colour.blue=0.2f;
 				Light_model_set_ambient(graphics_module->default_light_model,&ambient_colour);
 				Light_model_set_side_mode(graphics_module->default_light_model,
 					LIGHT_MODEL_TWO_SIDED);

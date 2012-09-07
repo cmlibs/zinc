@@ -41,7 +41,7 @@ Spectrum functions and support code.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,7 +59,7 @@ extern "C" {
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/spectrum.hpp"

@@ -46,16 +46,16 @@ equivalent to the scene_viewer assigned to it.
 #if !defined (computed_field_image_filter_H)
 #define computed_field_image_filter_H
 
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field.h"
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
-extern "C" {
+//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-}
+//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkImageRegionIteratorWithIndex.h"

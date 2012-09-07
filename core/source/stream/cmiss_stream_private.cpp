@@ -40,11 +40,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-}
+//-- }
 #include "stream/cmiss_stream_private.hpp"
 
 Cmiss_stream_resource_id Cmiss_stream_resource_access(Cmiss_stream_resource_id resource)

@@ -37,9 +37,9 @@
 #if !defined (SELECTION_HPP)
 #define SELECTION_HPP
 
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_selection.h"
-}
+//-- }
 
 struct Cmiss_selection_event;
 

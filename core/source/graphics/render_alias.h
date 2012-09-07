@@ -47,9 +47,9 @@ DESCRIPTION :
 Global functions
 ----------------
 */
-#if defined (__cplusplus)
-extern "C"  //  Makes this function available to C by not mangling function name
-#endif /* defined (__cplusplus) */
+//-- #if defined (__cplusplus)
+//-- extern "C"  //  Makes this function available to C by not mangling function name
+//-- #endif /* defined (__cplusplus) */
 int export_to_alias(struct Scene *scene,char *filename);
 /******************************************************************************
 LAST MODIFIED :  7 January 1998
@@ -59,9 +59,9 @@ Saves the visible objects in an Alias wire file. (Currently only volumes and
 surfaces.)
 ==============================================================================*/
 
-#if defined (__cplusplus)
-extern "C"  //  Makes this function available to C by not mangling function name
-#endif /* defined (__cplusplus) */
+//-- #if defined (__cplusplus)
+//-- extern "C"  //  Makes this function available to C by not mangling function name
+//-- #endif /* defined (__cplusplus) */
 int export_to_alias_frames(struct Scene *scene,char *filename,float frame_in,
 	float frame_out, int save_now,int destroy_when_saved);
 /******************************************************************************
@@ -79,9 +79,9 @@ but not saved.
 after it has been saved.
 ==============================================================================*/
 
-#if defined (__cplusplus)
-extern "C"  //  Makes this function available to C by not mangling function name
-#endif /* defined (__cplusplus) */
+//-- #if defined (__cplusplus)
+//-- extern "C"  //  Makes this function available to C by not mangling function name
+//-- #endif /* defined (__cplusplus) */
 int export_to_alias_sdl( struct Scene *scene, char *filename,
 	char *retrieve_filename, float view_frame	);
 /******************************************************************************

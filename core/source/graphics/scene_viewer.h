@@ -62,7 +62,6 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
-#include "interaction/interactive_tool.h"
 
 struct Graphics_buffer;
 #define Graphics_buffer_input Cmiss_scene_viewer_input
@@ -388,7 +387,7 @@ Sets the <scene_viewer> tumble angle.
 ==============================================================================*/
 
 int Scene_viewer_get_freespin_tumble_axis(struct Scene_viewer *scene_viewer,
-	float *tumble_axis);
+	double *tumble_axis);
 /*******************************************************************************
 LAST MODIFIED : 9 October 2003
 
@@ -398,7 +397,7 @@ about which the scene is turning relative to its lookat point.
 ==============================================================================*/
 
 int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
-	float *tumble_axis, double tumble_angle);
+	double *tumble_axis, double tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 

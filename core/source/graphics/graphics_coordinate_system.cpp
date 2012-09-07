@@ -38,11 +38,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <string.h>
-extern "C" {
+//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-}
+//-- }
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
 #include "graphics/graphics_coordinate_system.hpp"

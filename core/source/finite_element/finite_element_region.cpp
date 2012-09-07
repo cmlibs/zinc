@@ -45,7 +45,7 @@ finite element fields defined on or interpolated over them.
 
 #include <cstdlib>
 #include <cstdio>
-extern "C" {
+//-- extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -58,7 +58,7 @@ extern "C" {
 #include "general/object.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
+//-- }
 
 /*
 Module types

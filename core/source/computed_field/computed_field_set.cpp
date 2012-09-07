@@ -40,7 +40,7 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
+//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
@@ -49,7 +49,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/message.h"
 #include <stdio.h>
-}
+//-- }
 #include "computed_field/computed_field_private.hpp"
 
 Cmiss_field_id Computed_field_manager_get_field_or_component(
