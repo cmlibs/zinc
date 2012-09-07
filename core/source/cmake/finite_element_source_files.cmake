@@ -40,17 +40,13 @@ SET( FINITE_ELEMENT_ADDITIONAL_SRCS
 	source/finite_element/finite_element_adjacent_elements.c
 	source/finite_element/finite_element_conversion.cpp
 	source/finite_element/finite_element_to_iges.c
-	source/finite_element/read_fieldml_01.c
-	source/finite_element/snake.c
-	source/finite_element/write_fieldml_01.c )
+	source/finite_element/snake.c )
 SET( FINITE_ELEMENT_ADDITIONAL_HDRS
 	source/finite_element/export_cm_files.h
 	source/finite_element/finite_element_adjacent_elements.h
 	source/finite_element/finite_element_conversion.h
 	source/finite_element/finite_element_to_iges.h
-	source/finite_element/read_fieldml_01.h
-	source/finite_element/snake.h
-	source/finite_element/write_fieldml_01.h )
+	source/finite_element/snake.h )
 
 IF( USE_NETGEN )
 	SET( FINITE_ELEMENT_CORE_SRCS

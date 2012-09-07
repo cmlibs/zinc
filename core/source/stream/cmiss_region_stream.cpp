@@ -45,7 +45,6 @@ extern "C" {
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
-#include "finite_element/read_fieldml_01.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 //#include "finite_element/finite_element_region.h"
@@ -91,17 +90,7 @@ int Cmiss_region_read_field_file_of_name(struct Cmiss_region *region, const char
 	struct FE_import_time_index *time_index)
 {
 	int return_code = 0;
-	// Only supporting FieldML 0.1 until it requires maintenance
-	// Users can always read into an old cmgui and save in EX format
-	if (is_fieldml_01_file(file_name))
-	{
-		if (time_index)
-		{
-			display_message(WARNING_MESSAGE, "Cmiss_region_read. Time not supported by FieldML 0.1 reader");
-		}
-		return_code = parse_fieldml_01_file(region, file_name);
-	}
-	else if (is_FieldML_file(file_name))
+	if (is_FieldML_file(file_name))
 	{
 		if (time_index)
 		{
