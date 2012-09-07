@@ -613,7 +613,7 @@ ENDIF( TARGET_ZINC_LIB )
 # Create the FooBarConfig.cmake and FooBarConfigVersion files
 FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR}"
 	"${ZINC_INSTALL_INC_DIR}" )
-CONFIGURE_FILE( CMake/ZincConfigVersion.cmake.in
+CONFIGURE_FILE( cmake/ZincConfigVersion.cmake.in
 	"${PROJECT_BINARY_DIR}/ZincConfigVersion.cmake" @ONLY )
 
 LIST( REMOVE_DUPLICATES INCLUDE_DIRS )
@@ -662,7 +662,7 @@ SET( CONFIG_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake )
 FILE( WRITE ${CONFIG_FILE_NAME} ${CONFIG_FILE_CONTENTS} )
 
 # Create a FooBarBuildTreeSettings.cmake file for the use from the build tree
-CONFIGURE_FILE( CMake/ZincBuildTreeSettings.cmake.in
+CONFIGURE_FILE( cmake/ZincBuildTreeSettings.cmake.in
   "${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
  
 
