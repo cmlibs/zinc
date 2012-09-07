@@ -44,7 +44,6 @@ checking.
  *
  * ***** END LICENSE BLOCK ***** */
 #include "general/debug.h"
-#include "command/parser.h"
 #include "general/object.h"
 #include "general/value.h"
 #include "general/message.h"

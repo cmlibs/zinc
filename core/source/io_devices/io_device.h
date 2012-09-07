@@ -48,7 +48,6 @@ X events or poll frequently with timeouts.
 #define IO_DEVICE_H
 
 #include "general/list.h"
-#include "user_interface/user_interface.h"
 
 /*
 Global types

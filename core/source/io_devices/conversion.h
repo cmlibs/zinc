@@ -64,8 +64,6 @@ implemented.
 #if !defined (CONVERSION_H)
 #define CONVERSION_H
 
-#include "command/parser.h"
-
 /*
 Constants
 ---------

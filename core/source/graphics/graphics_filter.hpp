@@ -183,12 +183,4 @@ public:
 int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
 	struct Cmiss_graphics_module *graphics_module);
 
-int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void,
-	void *graphics_module_void);
-
-int gfx_list_graphics_filter(struct Parse_state *state, void *dummy_to_be_modified,
-	void *graphics_module_void);
-
-int set_Cmiss_graphics_filter(struct Parse_state *state,
-	void *graphics_filter_address_void, void *graphics_module_void);
 #endif /* GRAPHICS_FILTER_HPP_ */

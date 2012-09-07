@@ -44,7 +44,6 @@ Definitions of machine specific stuff.
 #if !defined (MACHINE_H)
 #define MACHINE_H
 #include "general/object.h"
-#include "command/parser.h"
 
 /*
 Global types
@@ -101,12 +100,4 @@ Creates a machine information structure.
 ???GMH.  Perhaps this could be extended to tell it a machine to interrogate?
 ==============================================================================*/
 
-int set_machine_type(struct Parse_state *state,void *machine_type_address_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 26 September 1996
-
-DESCRIPTION :
-Parses the name, and turns it into a type.
-==============================================================================*/
 #endif /* !defined (MACHINE_H) */

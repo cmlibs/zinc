@@ -253,15 +253,6 @@ DESCRIPTION :
 Sets the light_type of the light (infinite/point/spot).
 ==============================================================================*/
 
-int modify_Light(struct Parse_state *state,void *light_void,
-	void *modify_light_data_void);
-/*******************************************************************************
-LAST MODIFIED : 17 February 1997
-
-DESCRIPTION :
-Modifies the properties of a light.
-==============================================================================*/
-
 int list_Light(struct Light *light,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 21 September 1998
@@ -309,15 +300,6 @@ DESCRIPTION :
 Must be called at start of rendering before lights are activate with
 execute_Light. Ensures all lights are off at the start of the rendering loop,
 and makes sure the lights that are subsequently defined start at GL_LIGHT0...
-==============================================================================*/
-
-int set_Light(struct Parse_state *state,
-	void *light_address_void,void *light_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 11 December 1997
-
-DESCRIPTION :
-Modifier function to set the light from a command.
 ==============================================================================*/
 
 int compile_Light(struct Light *light,void *dummy_void);

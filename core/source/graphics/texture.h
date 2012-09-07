@@ -501,15 +501,6 @@ The <image_file_name> is specified purely so that it may be recorded with the
 texture, and must be given a value.
 ==============================================================================*/
 
-int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 June 2000
-
-DESCRIPTION :
-A modifier function to set the texture storage type.
-==============================================================================*/
-
 int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values);
 /*******************************************************************************

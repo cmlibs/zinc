@@ -43,12 +43,6 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_PRIVATE_H)
 #define COMPUTED_FIELD_PRIVATE_H
 
-/* Used by the register_type_function, Computed_field_type_data and 
-	Computed_field_add_type_to_option_table*/
-typedef int (*Define_Computed_field_type_function)(
-	struct Parse_state *state,void *field_void,void *computed_field_package_void);
-
-
 /*
 Computed field types
 --------------------

@@ -511,67 +511,6 @@ DESCRIPTION :
 
 		font->access_count = 0;
 
-#if defined (WX_USER_INTERFACE)
-		font->font_settings = NULL;
-		struct Parse_state *state;
-		const char *current_token;
-		enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
-		enum wxFontWeight font_weight = wxFONTWEIGHT_NORMAL;
-		enum wxFontStyle font_style = wxFONTSTYLE_NORMAL;
-		int size = 8;
-		if (strcmp(font->font_string,"default"))
-		{
-			 state=create_Parse_state(font->font_string);
-			 if (state != 0)
-			 {
-					current_token = state->current_token;
-					if (current_token != 0)
-					{
-						 sscanf(current_token,"%u",&size);
-						 if (shift_Parse_state(state,1)&&
-						 (current_token=state->current_token))
-						 {
-								if (!strcmp(current_token, "roman"))
-									 font_family=wxFONTFAMILY_ROMAN;
-								else if (!strcmp(current_token, "decorative"))
-									 font_family=wxFONTFAMILY_DECORATIVE;
-								else if (!strcmp(current_token, "script"))
-									 font_family=wxFONTFAMILY_SCRIPT;								
-								else if (!strcmp(current_token, "swiss"))
-									 font_family=wxFONTFAMILY_SWISS;
-								else if (!strcmp(current_token, "modern"))
-									 font_family=wxFONTFAMILY_MODERN;
-								else if (!strcmp(current_token, "teletype"))
-									 font_family=wxFONTFAMILY_TELETYPE;
-								if (shift_Parse_state(state,1)&&
-									 (current_token=state->current_token))
-								{
-									 if (!strcmp(current_token, "italic"))
-											font_style = wxFONTSTYLE_ITALIC;
-									 else if (!strcmp(current_token, "slant"))
-											font_style = wxFONTSTYLE_SLANT;
-									 if (shift_Parse_state(state,1)&&
-											(current_token=state->current_token))
-									 {
-											if (!strcmp(current_token, "light"))
-												 font_weight=wxFONTWEIGHT_LIGHT;
-											else if (!strcmp(current_token, "bold"))
-												 font_weight=wxFONTWEIGHT_BOLD;
-									 }
-								}
-						 }
-					}
-					destroy_Parse_state(&state);
-			 }
-			 else
-			 {
-					display_message(ERROR_MESSAGE,"CREATE(Graphics_font). Cannot parse the statement. "
-						 "Default font settings will be used instead. \n"
-						 "Use the command gfx define font ? for more information.\n");
-			 }
-		}
-		font->font_settings = new wxFont(size, font_family, font_style, font_weight);
-#endif /* (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -608,10 +547,6 @@ DESCRIPTION :
 		{
 			glDeleteLists(font->display_list_offset, font->number_of_bitmaps);
 		}
-#if defined (WX_USER_INTERFACE)
-		if (font->font_settings)
-			delete font->font_settings;
-#endif /* defined (WX_USER_INTERFACE) */
 
 		DEALLOCATE(*font_address);
 		*font_address = (struct Graphics_font *)NULL;

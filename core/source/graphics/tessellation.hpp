@@ -52,7 +52,6 @@ extern "C" {
 
 struct Cmiss_graphics_module;
 struct Option_table;
-struct Parse_state;
 
 /***************************************************************************//**
  * Object describing how elements / continuous field domains are  tessellated
@@ -132,27 +131,5 @@ int Option_table_add_divisions_entry(struct Option_table *option_table,
 int Option_table_add_Cmiss_tessellation_entry(struct Option_table *option_table,
 	const char *token, struct Cmiss_graphics_module *graphics_module,
 	struct Cmiss_tessellation **tessellation_address);
-
-/***************************************************************************//**
- * gfx define tessellation command.
- * @param state  Command parse state.
- * @param graphics_module_void  Cmiss_graphics_module.
- */
-int gfx_define_tessellation(struct Parse_state *state, void *dummy_to_be_modified,
-	void *graphics_module_void);
-
-/***************************************************************************//**
- * gfx destroy tessellation command.
- * @param state  Command parse state.
- * @param graphics_module_void  Cmiss_graphics_module.
- */
-int gfx_destroy_tessellation(struct Parse_state *state, void *dummy_to_be_modified,
-	void *graphics_module_void);
-
-/***************************************************************************//**
- * gfx list tessellation command.
- */
-int gfx_list_tessellation(struct Parse_state *state, void *dummy_to_be_modified,
-	void *graphics_module_void);
 
 #endif

@@ -371,24 +371,6 @@ DESCRIPTION :
 Returns the flag set for per_pixel_lighting.
 ==============================================================================*/
 
-int gfx_create_material(struct Parse_state *state,
-	void *dummy_to_be_modified, void *material_package_void);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Shifted from command/cmiss.c now that there is a material package.
-If the material already exists, then behaves like gfx modify material.
-==============================================================================*/
-
-int modify_Graphical_material(struct Parse_state *parse_state,void *material,
-	void *material_package_void);
-/*******************************************************************************
-LAST MODIFIED : 5 September 1996
-
-DESCRIPTION :
-==============================================================================*/
-
 int list_Graphical_material(struct Graphical_material *material,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 22 September 1998
@@ -483,15 +465,6 @@ LAST MODIFIED : 2 May 2005
 DESCRIPTION :
 Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency. 
-==============================================================================*/
-
-int set_Graphical_material(struct Parse_state *state,
-	void *material_address_void,void *graphical_material_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 20 June 1996
-
-DESCRIPTION :
-Modifier function to set the material from a command.
 ==============================================================================*/
 
 int Option_table_add_set_Material_entry(

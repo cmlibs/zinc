@@ -210,16 +210,6 @@ DESCRIPTION :
 Returns the position of <settings> in <spectrum>.
 ==============================================================================*/
 
-int set_Spectrum(struct Parse_state *state,void *spectrum_address_void,
-	void *spectrum_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 13 August 1997
-
-DESCRIPTION :
-A modifier function to set the spectrum by finding in the spectrum manager
-the name given in the next token of the parser
-==============================================================================*/
-
 int set_Spectrum_minimum(struct Spectrum *spectrum,float minimum);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
@@ -234,24 +224,6 @@ LAST MODIFIED : 29 July 1998
 
 DESCRIPTION :
 A function to set the spectrum maximum.
-==============================================================================*/
-
-int set_Spectrum_minimum_command(struct Parse_state *state,void *spectrum_ptr_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
-
-DESCRIPTION :
-A modifier function to set the spectrum minimum.
-==============================================================================*/
-
-int set_Spectrum_maximum_command(struct Parse_state *state,void *spectrum_ptr_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
-
-DESCRIPTION :
-A modifier function to set the spectrum maximum.
 ==============================================================================*/
 
 float get_Spectrum_minimum(struct Spectrum *spectrum);
@@ -411,15 +383,6 @@ DESCRIPTION :
 Returns the settings list that describes the spectrum.  This
 is the pointer to the object inside the spectrum so do not
 destroy it, any changes to it change that spectrum
-==============================================================================*/
-
-int gfx_destroy_spectrum(struct Parse_state *state,
-	void *dummy_to_be_modified,void *Spectrum_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 28 October 1997
-
-DESCRIPTION :
-Executes a GFX DESTROY SPECTRUM command.
 ==============================================================================*/
 
 int for_each_spectrum_list_or_write_commands(struct Spectrum *spectrum,void *write_enabled_void);

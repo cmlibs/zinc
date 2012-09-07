@@ -482,15 +482,6 @@ DESCRIPTION :
 Frees the memory for the clipping and sets <*clipping_address> to NULL.
 ==============================================================================*/
 
-int set_Clipping(struct Parse_state *state,void *clipping_address_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1996
-
-DESCRIPTION :
-Modifier function to set the clipping from a command.
-==============================================================================*/
-
 struct VT_iso_vertex *CREATE(VT_iso_vertex)(void);
 /*******************************************************************************
 LAST MODIFIED : 9 November 2005

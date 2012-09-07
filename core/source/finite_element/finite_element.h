@@ -47,7 +47,6 @@ interface to CMISS.
 
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
-#include "command/parser.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"
@@ -2846,44 +2845,6 @@ DESCRIPTION :
 Iterator function for adding <field> to <field_list> if not currently in it.
 ==============================================================================*/
 
-int set_FE_field(struct Parse_state *state,void *field_address_void,
-	void *fe_field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Modifier function to set the field from the command line.
-==============================================================================*/
-
-int set_FE_field_conditional(struct Parse_state *state,
-	void *field_address_void,void *set_field_data_void);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Modifier function to set the field from a command. <set_field_data_void> should
-point to a struct Set_FE_field_conditional_data containing the
-fe_field_list and an optional conditional function for narrowing the
-range of fields available for selection. If the conditional_function is NULL,
-this function works just like set_FE_field.
-==============================================================================*/
-
-int set_FE_fields(struct Parse_state *state,
-	void *field_order_info_address_void, void *fe_field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Modifier function to set an ordered list of fields, each separated by white
-space until an unrecognised field name is encountered. Two special tokens are
-understood in place of any fields: 'all' and 'none'.
-For the case of 'all', a NULL FE_field_order_info structure is returned.
-For the case of 'none', an empty FE_field_order_info structure is returned.
-It is up to the calling function to destroy any FE_field_order_info structure
-returned by this function, however, any such structure passed to this function
-may be destroyed here - ie. in the 'all' case.
-==============================================================================*/
-
 struct FE_region *FE_field_get_FE_region(struct FE_field *fe_field);
 /*******************************************************************************
 LAST MODIFIED : 26 February 2003
@@ -3332,18 +3293,6 @@ Should only call this function for unmanaged fields.
 int set_FE_field_name(struct FE_field *field, const char *name);
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component);
-
-int set_FE_field_component(struct Parse_state *state,void *component_void,
-	void *fe_field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Used in command parsing to translate a field component name into an field
-component.
-???DB.  Should it be here ?
-???RC.  Does not ACCESS the field (unlike set_FE_field, above).
-==============================================================================*/
 
 int calculate_FE_field(struct FE_field *field,int component_number,
 	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,

@@ -51,8 +51,6 @@ Utilities for handling images.
 
 #include "configure/cmiss_zinc_configure.h"
 
-
-#include "command/parser.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
 #include "general/image_utilities.h"

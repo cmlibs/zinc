@@ -1394,15 +1394,6 @@ Ensures the <spectrum> maximum and minimum is at least large enough to include
 the range of data values in <graphics_object>.
 ==============================================================================*/
 
-int set_Graphics_object(struct Parse_state *state,
-	void *graphics_object_address_void,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 15 May 1998
-
-DESCRIPTION :
-Modifier function to set the graphics_object from a command.
-==============================================================================*/
-
 int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
 	Triple axis3, Triple scale, int mirror, int reverse, Triple final_point,
 	Triple final_axis1, Triple final_axis2, Triple final_axis3);

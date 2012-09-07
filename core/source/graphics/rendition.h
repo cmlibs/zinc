@@ -142,14 +142,6 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
 	Cmiss_rendition_callback callback, void *user_data);
 
 /***************************************************************************//**
- * Executes a GFX MODIFY RENDITION GENERAL command.
- * Allows general rendition to be changed (eg. discretization) and
- * updates graphics of settings affected by the changes (probably all).
- */
-int gfx_modify_rendition_general(struct Parse_state *state,
-	void *cmiss_region_void, void *dummy_void);
-
-/***************************************************************************//**
  * Attempt to guess which field is the most appropriate to use as a coordinate
  * field for graphics.
  * @param rendition  The rendition whose graphics need a coordinate field.
@@ -378,14 +370,6 @@ int Cmiss_rendition_update_callback(struct Cmiss_rendition *rendition, void *dum
 
 int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *child_rendition,
 	void *region_void);
-
-/***************************************************************************//**
- * Shared gfx commands used via Cmiss_rendition_execute_command API and
- * command/cmiss
- * @param group  Optional group field for migrating group regions.
- */
-int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
-	Cmiss_field_group_id group, struct Parse_state *state);
 
 int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *rendition,
 	void *command_prefix_void);

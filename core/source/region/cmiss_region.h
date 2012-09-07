@@ -44,7 +44,6 @@
 
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_region.h"
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"
@@ -150,13 +149,6 @@ void Cmiss_region_remove_field_cache(Cmiss_region_id region,
 	Cmiss_field_cache_id cache);
 
 /***************************************************************************//**
- * Option_table modifier function for selecting a region by relative path.
- * @see Option_table_add_set_Cmiss_region
- */
-int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
-	void *root_region_void);
-
-/***************************************************************************//**
  * Adds an entry to the <option_table> under the given <token> that selects a 
  * region by relative path from the <root_region>.
  * @param token  Optional token. If omitted, must be last option in table.
@@ -166,16 +158,6 @@ int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
 int Option_table_add_set_Cmiss_region(struct Option_table *option_table,
 	const char *token, struct Cmiss_region *root_region,
 	struct Cmiss_region **region_address);
-
-int set_Cmiss_region_path(struct Parse_state *state, void *path_address_void,
-	void *root_region_void);
-/*******************************************************************************
-LAST MODIFIED : 13 January 2003
-
-DESCRIPTION :
-Modifier function for entering a path to a Cmiss_region, starting at
-<root_region>.
-==============================================================================*/
 
 int Option_table_add_set_Cmiss_region_path(struct Option_table *option_table,
 	const char *entry_name, struct Cmiss_region *root_region, char **path_address);
@@ -488,17 +470,6 @@ int Option_table_add_region_path_and_or_field_name_entry(
 	struct Option_table *option_table, char *token,
 	struct Cmiss_region_path_and_name *region_path_and_name,
 	struct Cmiss_region *root_region);
-
-/***************************************************************************//**
- * Modifier function to set the region and optional group field.
- * Fields must not be the same name as a child region.
- *
- * Examples:
- *   /heart/ventricles = region and group
- *   /heart            = region only
- */
-int set_Cmiss_region_or_group(struct Parse_state *state,
-	void *region_address_void, void *group_address_void);
 
 /***************************************************************************//**
  * Adds token to the option table for setting a region and an optional group

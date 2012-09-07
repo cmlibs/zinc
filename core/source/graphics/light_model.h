@@ -200,15 +200,6 @@ DESCRIPTION :
 Sets the viewer_mode of the light_model (local/infinite).
 ==============================================================================*/
 
-int modify_Light_model(struct Parse_state *parse_state,void *light_model_void,
-	void *modify_light_model_data_void);
-/*******************************************************************************
-LAST MODIFIED : 17 February 1997
-
-DESCRIPTION :
-Modifies the properties of a light model.
-==============================================================================*/
-
 int list_Light_model(struct Light_model *light_model,void *dummy);
 /*****************************************************************************
 LAST MODIFIED : 27 July 1995
@@ -216,15 +207,6 @@ LAST MODIFIED : 27 July 1995
 DESCRIPTION :
 Write the properties of the <light_model> to the command window.
 ============================================================================*/
-
-int set_Light_model(struct Parse_state *state,
-	void *light_model_address_void,void *light_model_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 11 December 1997
-
-DESCRIPTION :
-Modifier function to set the light model from a command.
-==============================================================================*/
 
 int compile_Light_model(struct Light_model *light_model);
 /*******************************************************************************
