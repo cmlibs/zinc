@@ -40,19 +40,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cstdlib>
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "graphics/graphics_module.h"
-//-- }
 #include "general/cmiss_set.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/tessellation.hpp"
-//-- extern "C" {
 #include "general/message.h"
-//-- }
 
 /*
 Module types

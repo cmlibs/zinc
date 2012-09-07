@@ -44,9 +44,8 @@ Functions and structures for interfacing with the graphics library.
 #if !defined (GRAPHICS_LIBRARY_H)
 #define GRAPHICS_LIBRARY_H
 
-
-#include "configure/cmiss_zinc_configure.h"
-
+#include "api/cmiss_zinc_configure.h"
+#include "api/cmiss_shared_object.h"
 
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES
@@ -87,7 +86,7 @@ Global types
 ------------
 */
 
-typedef double gtMatrix[4][4];
+typedef ZnReal gtMatrix[4][4];
 
 enum Graphics_library_vendor_id
 {
@@ -151,7 +150,7 @@ Returns true if <matrix1> and <matrix2> are identical.
 ==============================================================================*/
 
 int gtMatrix_match_with_tolerance(gtMatrix *matrix1, gtMatrix *matrix2,
-	float tolerance);
+	GLfloat tolerance);
 /*******************************************************************************
 LAST MODIFIED : 5 December 2001
 
@@ -160,7 +159,7 @@ Returns true if <matrix1> and <matrix2> have no components different by
 more than <tolerance> times the largest absolute value in either matrix.
 ==============================================================================*/
 
-int gtMatrix_to_euler(gtMatrix matrix, float *euler_angles);
+int gtMatrix_to_euler(gtMatrix matrix, GLfloat *euler_angles);
 /*******************************************************************************
 LAST MODIFIED : 21 November 2002
 
@@ -169,7 +168,7 @@ Cleaned this up from view/coord_trans.c
 Returns <euler_angles> in radians.
 ==============================================================================*/
 
-int euler_to_gtMatrix(float *euler_angles, gtMatrix matrix);
+int euler_to_gtMatrix(GLfloat *euler_angles, gtMatrix matrix);
 /*******************************************************************************
 LAST MODIFIED : 21 November 2002
 
@@ -238,7 +237,7 @@ from the front buffer, otherwise they will be read from the back buffer in a
 double buffered context.
 ==============================================================================*/
 
-enum Graphics_library_vendor_id Graphics_library_get_vendor_id(void);
+enum Graphics_library_vendor_id ZINC_API Graphics_library_get_vendor_id(void);
 /*******************************************************************************
 LAST MODIFIED : 18 March 2008
 
@@ -247,7 +246,7 @@ Returns an enumeration which can be used to select for a particular vendor
 implementation which is valid for the current OpenGL context.
 ==============================================================================*/
 
-int Graphics_library_load_extension(const char *extension_name);
+int ZINC_API Graphics_library_load_extension(const char *extension_name);
 /*******************************************************************************
 LAST MODIFIED : 2 March 2007
 
@@ -262,7 +261,7 @@ so it returns GLEXTENSION_UNSURE, allowing the calling procedure to react
 appropriately.
 ==============================================================================*/
 
-int Graphics_library_load_extensions(char *extensions);
+int ZINC_API Graphics_library_load_extensions(char *extensions);
 /*******************************************************************************
 LAST MODIFIED : 20 February 2004
 

@@ -43,6 +43,9 @@ Global types and function prototypes for displaying messages.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (MESSAGE_H)
 #define MESSAGE_H
+
+#include "api/cmiss_shared_object.h"
+
 /*
 Global types
 ------------
@@ -72,7 +75,7 @@ The type of a function for displaying message strings.
 Global functions
 ----------------
 */
-int set_display_message_function(enum Message_type message_type,
+int ZINC_API set_display_message_function(enum Message_type message_type,
 	Display_message_function *display_message_function,void *data);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
@@ -89,7 +92,7 @@ a message of the specified <message_type>.
 int display_message_string(enum Message_type message_type,
 	const char *the_string);
 
-int display_message(enum Message_type message_type,const char *format, ... );
+int ZINC_API display_message(enum Message_type message_type,const char *format, ... );
 /*******************************************************************************
 LAST MODIFIED : 15 September 2008
 

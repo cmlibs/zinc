@@ -26,6 +26,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/render_wavefront.cpp
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
+	source/graphics/scene_viewer.cpp
 	source/graphics/selected_graphic.cpp
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
@@ -62,7 +63,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/material.h
 	source/graphics/material.hpp
 	source/graphics/mcubes.h
-	source/graphics/order_independent_transparency.h
+	source/graphics/order_independent_transparency.h 
 	source/graphics/quaternion.hpp
 	source/graphics/render_alias.h
 	source/graphics/render_binary_wavefront.h
@@ -71,6 +72,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_wavefront.h
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
+	source/graphics/scene_viewer.h
 	source/graphics/selected_graphic.h
 	source/graphics/selection.hpp
 	source/graphics/spectrum.h
@@ -95,7 +97,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
 		source/graphics/scene.cpp
-		source/graphics/scene_viewer.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
 		source/graphics/font.h
@@ -106,7 +107,5 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render_gl.h
 		source/graphics/scene.h
 		source/graphics/scene.hpp
-		source/graphics/scene_viewer.h
-		source/graphics/scene_viewer.hpp
 		source/graphics/tile_graphics_objects.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )

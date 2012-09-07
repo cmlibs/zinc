@@ -46,9 +46,8 @@ Function definitions for debugging.
 #include <stdlib.h>
 #include <string.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/message.h"
 #include "general/debug.h"
 
@@ -60,7 +59,6 @@ Function definitions for debugging.
 #include "graphics/mcubes.h"
 #include "graphics/volume_texture.h"
 #endif /* defined (USE_EXTERNAL_STRUCTS) */
-//-- }
 
 /*#define MEMORY_CHECKING*/
 

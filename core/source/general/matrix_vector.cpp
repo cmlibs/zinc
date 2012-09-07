@@ -63,11 +63,9 @@ graphics/matrix.c
 #include <math.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/message.h"
-//-- }
 
 #define TINY 1.0e-20
 
@@ -153,17 +151,7 @@ FE_value normalize_FE_value3(FE_value *v)
 {
 	FE_value length;
 	ENTER(normalize_FE_value3);
-#if defined (FE_VALUE_IS_DOUBLE)
 	length = normalize3(v);
-#else
-	/* FIXME: difference in normalize methods for float and double.
-	 * Some C compilers require type declarations before functions. */
-	{
-		int return_code;
-		return_code = normalize_float3(v);
-		length = (FE_value)return_code;
-	}
-#endif
 	LEAVE;
 	return(length);
 }
@@ -321,13 +309,34 @@ Copies the contents of m rows x n columns matrix <a> to <a_copy>.
 
 int identity_matrix_FE_value(int n, FE_value *a)
 {
-	int return_code;
+	FE_value *value;
+	int i, j, return_code;
 	ENTER(identity_matrix_FE_value);
-#if defined (FE_VALUE_IS_DOUBLE)
-	return_code = identity_matrix(n,a);
-#else
-	return_code = identity_matrix_float(n,a);
-#endif	
+	if ((0<n) && a)
+	{
+		value = a;
+		for (i = 0; i < n; i++)
+		{
+			for (j = 0; j < n; j++)
+			{
+				if (i == j)
+				{
+					*value = 1.0;
+				}
+				else
+				{
+					*value = 0.0;
+				}
+				value++;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "identity_matrix_FE_value.  Invalid argument(s)");
+		return_code = 0;
+	}
 	LEAVE;
 	return(return_code);
 }
@@ -460,14 +469,33 @@ Set matrix <a> to the <n> x <n> identity.
 int multiply_matrix_FE_value(int m,int s,int n,FE_value *a,FE_value *b,
 	FE_value *c)
 {
-	int return_code;
+	FE_value sum;
+	int i,j,k,return_code;
+
 	ENTER(multiply_matrix_FE_value);
-#if defined FE_VALUE_IS_DOUBLE
-	return_code = multiply_matrix(m,s,n,a,b,c);
-#else
-	return_code = multiply_matrix_float(m,s,n,a,b,c);
-#endif
+	if ((0<m)&&(0<s)&&(0<n)&&a&&b&&c)
+	{
+		for (i=0;i<m;i++)
+		{
+			for (j=0;j<n;j++)
+			{
+				sum=0.0;
+				for (k=0;k<s;k++)
+				{
+					sum += a[i*s+k] * b[k*n+j];
+				}
+				c[i*n+j]=sum;
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"multiply_matrix_FE_value.  Invalid argument(s)");
+		return_code=0;
+	}
 	LEAVE;
+
 	return(return_code);
 }
 

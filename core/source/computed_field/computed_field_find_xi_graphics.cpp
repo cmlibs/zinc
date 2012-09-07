@@ -42,40 +42,30 @@ lookup of the element.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <stdio.h>
 #include <math.h>
-//-- }
 
-//-- extern "C" {
+#include "api/cmiss_zinc_configure.h"
 #include "api/cmiss_element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_graphics.h"
-//-- }
 #include "computed_field/computed_field_find_xi_private.hpp"
-//-- extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
-#include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
-//-- }
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-//-- extern "C" {
 #if defined (USE_GLEW)
 #include <GL/glew.h>
 #else
 #include <GL/gl.h>
 #endif
-}
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
@@ -126,7 +116,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 {
 	enum FE_element_shape_type shape_type;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	float red, green, blue;
+	ZnReal red, green, blue;
 	int return_code;
 	struct CM_element_information cm_information;
 	struct FE_element_shape *shape;
@@ -214,7 +204,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, Cmiss_mesh_id search_mesh,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	float *hint_minimums, float *hint_maximums, float *hint_resolution)
+	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution)
 {
 	int return_code;
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
@@ -224,7 +214,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 #endif /* defined (DEBUG_CODE) */
 	unsigned char *block_ptr, colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE *4],
 		*next_colour;
-	float ditherx, dithery;
+	ZnReal ditherx, dithery;
 	struct Computed_field_find_element_xi_graphics_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;

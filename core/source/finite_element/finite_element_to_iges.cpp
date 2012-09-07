@@ -49,7 +49,6 @@ to file.
 #include <string.h>
 #include <time.h>
 
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -58,7 +57,6 @@ to file.
 #include "finite_element/finite_element_to_iges.h"
 #include "general/debug.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global functions
@@ -301,7 +299,7 @@ DESCRIPTION :
 						}
 						while (i<=3)
 						{
-							*destination=(float)0;
+							*destination=(ZnReal)0;
 							destination++;
 							k++;
 							i++;
@@ -309,7 +307,7 @@ DESCRIPTION :
 					}
 					while (k<16)
 					{
-						*destination=(float)0;
+						*destination=(ZnReal)0;
 						destination++;
 						k++;
 					}
@@ -334,7 +332,7 @@ DESCRIPTION :
 						}
 						while (i<=3)
 						{
-							*destination=(float)0;
+							*destination=(ZnReal)0;
 							destination++;
 							k++;
 							i++;
@@ -342,7 +340,7 @@ DESCRIPTION :
 					}
 					while (k<16)
 					{
-						*destination=(float)0;
+						*destination=(ZnReal)0;
 						destination++;
 						k++;
 					}
@@ -367,7 +365,7 @@ DESCRIPTION :
 						}
 						while (i<=3)
 						{
-							*destination=(float)0;
+							*destination=(ZnReal)0;
 							destination++;
 							k++;
 							i++;
@@ -375,7 +373,7 @@ DESCRIPTION :
 					}
 					while (k<16)
 					{
-						*destination=(float)0;
+						*destination=(ZnReal)0;
 						destination++;
 						k++;
 					}
@@ -867,8 +865,8 @@ basis type, however every element type will be converted to a cubic.
 			{
 				for (j = 0 ; return_code && (j < 4) ; j++)
 				{
-					xi[0] = (float)j / 3.0;
-					xi[1] = (float)i / 3.0;
+					xi[0] = (ZnReal)j / 3.0;
+					xi[1] = (ZnReal)i / 3.0;
 					if (Cmiss_field_cache_set_mesh_location(get_data->field_cache,
 							element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
 						Cmiss_field_evaluate_real(get_data->field,

@@ -45,12 +45,10 @@ cannot reside in finite element modules.
 #include <stdlib.h>
 #include <math.h>
 
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "node/node_operations.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global functions

@@ -53,7 +53,6 @@ translating and zooming with mouse button press and motion events.
 #define SCENE_VIEWER_H
 
 #include "api/cmiss_scene_viewer.h"
-#include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
 #include "general/image_utilities.h"
@@ -254,7 +253,7 @@ DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
 Global functions
 ----------------
 */
-struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+ZINC_API struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -270,7 +269,7 @@ DESCRIPTION :
 Creates a Scene_viewer_package.
 ==============================================================================*/
 
-int DESTROY(Cmiss_scene_viewer_package)(
+ZINC_API int DESTROY(Cmiss_scene_viewer_package)(
 	struct Cmiss_scene_viewer_package **scene_viewer_package_address);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -300,7 +299,7 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer_package>.
 ==============================================================================*/
 
-struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
+ZINC_API struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -308,7 +307,7 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 
-struct Scene *Cmiss_scene_viewer_package_get_default_scene(
+ZINC_API struct Scene *Cmiss_scene_viewer_package_get_default_scene(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -344,7 +343,7 @@ DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
 ==============================================================================*/
 
-struct Scene_viewer *create_Scene_viewer_from_package(
+ZINC_API struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	struct Scene *scene);
@@ -1596,4 +1595,8 @@ int Scene_viewer_set_background_image_field(
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	enum Cmiss_graphics_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection);
+
+Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
+	Scene_viewer_rendering_data *rendering_data);
+
 #endif /* !defined (SCENE_VIEWER_H) */

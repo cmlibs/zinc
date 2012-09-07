@@ -52,6 +52,8 @@ The public interface to the Cmiss_regions.
 #include "types/cmiss_stream_id.h"
 #include "types/cmiss_region_id.h"
 
+#include "cmiss_shared_object.h"
+
 /*
 Global functions
 ----------------
@@ -74,7 +76,7 @@ Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_destroy(Cmiss_region_id *region_address);
+ZINC_API int Cmiss_region_destroy(Cmiss_region_id *region_address);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for this region only. Call this

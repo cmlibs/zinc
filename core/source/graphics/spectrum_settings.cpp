@@ -47,11 +47,10 @@ appearance of spectrums.
 #include <math.h>
 #include <stdlib.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #include <stdio.h>
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -67,7 +66,6 @@ appearance of spectrums.
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_private.hpp"
 /*
 Global variables
@@ -93,7 +91,7 @@ Stores one group of settings for a single part of a spectrum rendition.
 	enum Spectrum_settings_type settings_type;
 	char settings_changed;	
 	/* These specify the range of values over which the settings operates */
-	float maximum, minimum;
+	ZnReal maximum, minimum;
 	/* These flags control whether the maximum, minumum values can be changed */
 	int fix_maximum,fix_minimum;
 	/* These flags control whether a settings is transparent (has no effect)
@@ -102,10 +100,10 @@ Stores one group of settings for a single part of a spectrum rendition.
 	/* These specify the limits of the converted value before it is rendered to
 		a colour, i.e. red varies from <min_value> red at the <minimum> to 
 		<max_value> red at the <maximum> */
-	float max_value, min_value;
+	ZnReal max_value, min_value;
 	int reverse;
 	enum Spectrum_settings_colour_mapping colour_mapping;
-	float exaggeration, step_value;
+	ZnReal exaggeration, step_value;
 	/* The number of bands in a banded contour and the proportion (out of 1000)
 		of the black bands */
 	int number_of_bands, black_band_proportion;
@@ -881,14 +879,15 @@ Spectrum_settings describe the same space.
 		{
 			switch (settings->settings_type)
 			{
+				case SPECTRUM_INVALID_TYPE:
+				case SPECTRUM_LINEAR:
+				case SPECTRUM_LOG:
+				case SPECTRUM_FIELD:
 				default:
 				{
 					display_message(WARNING_MESSAGE,
 						"Spectrum_settings_same_space.  Unknown element settings type");
 					return_code=1;
-					/*display_message(ERROR_MESSAGE,
-						"Spectrum_settings_same_space.  Unknown element settings type");
-					return_code=0;*/
 				} break;
 			}
 		}
@@ -1028,7 +1027,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				{
 					sprintf(temp_string," banded number_of_bands %d band_ratio %g",
 						settings->number_of_bands,
-						(float)(settings->black_band_proportion)/1000.0);
+						(ZnReal)(settings->black_band_proportion)/1000.0);
 					append_string(&settings_string,temp_string,&error);
 				} break;
 				case SPECTRUM_STEP:
@@ -1330,7 +1329,7 @@ Sets the colour mapping of the Spectrum_settings <settings>.
 	return (return_code);
 } /* Spectrum_settings_set_colour_mapping */
 
-float Spectrum_settings_get_exaggeration(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_exaggeration(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -1338,7 +1337,7 @@ DESCRIPTION :
 Returns the first type parameter of the Spectrum_settings <spectrum>.
 ==============================================================================*/
 {
-	float param1;
+	ZnReal param1;
 
 	ENTER(Spectrum_settings_get_exaggeration);
 
@@ -1358,7 +1357,7 @@ Returns the first type parameter of the Spectrum_settings <spectrum>.
 } /* Spectrum_settings_get_exaggeration */
 
 int Spectrum_settings_set_exaggeration(struct Spectrum_settings *settings,
-	float param1)
+	ZnReal param1)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -1498,7 +1497,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Spectrum_settings_set_black_band_proportion */
 
-float Spectrum_settings_get_step_value(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_step_value(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
 
@@ -1506,7 +1505,7 @@ DESCRIPTION :
 Returns the step value parameter of the Spectrum_settings <spectrum>.
 ==============================================================================*/
 {
-	float param1;
+	ZnReal param1;
 
 	ENTER(Spectrum_settings_get_step_value);
 
@@ -1526,7 +1525,7 @@ Returns the step value parameter of the Spectrum_settings <spectrum>.
 } /* Spectrum_settings_get_step_value */
 
 int Spectrum_settings_set_step_value(struct Spectrum_settings *settings,
-	float param1)
+	ZnReal param1)
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
 
@@ -1560,14 +1559,14 @@ Sets the step value of the Spectrum_settings <settings>.
 	return (return_code);
 } /* Spectrum_settings_set_step_value */
 
-float Spectrum_settings_get_range_minimum(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_range_minimum(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float value;
+	ZnReal value;
 
 	ENTER(Spectrum_settings_get_range_minimum);
 
@@ -1587,7 +1586,7 @@ DESCRIPTION :
 } /* Spectrum_settings_get_range_minimum */
 
 int Spectrum_settings_set_range_minimum(struct Spectrum_settings *settings,
-	float value)
+	ZnReal value)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2001
 
@@ -1624,14 +1623,14 @@ If <settings> ->fix_minimum is NOT set, set <settings> ->minimum to <value>
 	return (return_code);
 } /* Spectrum_settings_set_range_minimum */
 
-float Spectrum_settings_get_range_maximum(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_range_maximum(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float value;
+	ZnReal value;
 
 	ENTER(Spectrum_settings_get_range_max);
 
@@ -1651,7 +1650,7 @@ DESCRIPTION :
 } /* Spectrum_settings_get_range_maximum */
 
 int Spectrum_settings_set_range_maximum(struct Spectrum_settings *settings,
-	float value)
+	ZnReal value)
 /*******************************************************************************
 LAST MODIFIED : 15 January 20001
 
@@ -1917,14 +1916,14 @@ Sets the fix_maximum flag of the Spectrum_settings <settings>.
 	return (return_code);
 } /* Spectrum_settings_set_fix_maximum_flag */
 
-float Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float value;
+	ZnReal value;
 
 	ENTER(Spectrum_settings_get_colour_value_minimum);
 
@@ -1944,7 +1943,7 @@ DESCRIPTION :
 } /* Spectrum_settings_get_colour_value_minimum */
 
 int Spectrum_settings_set_colour_value_minimum(struct Spectrum_settings *settings,
-	float value)
+	ZnReal value)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
@@ -1976,14 +1975,14 @@ DESCRIPTION :
 	return (return_code);
 } /* Spectrum_settings_set_colour_value_minimum */
 
-float Spectrum_settings_get_colour_value_maximum(struct Spectrum_settings *settings)
+ZnReal Spectrum_settings_get_colour_value_maximum(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float value;
+	ZnReal value;
 
 	ENTER(Spectrum_settings_get_colour_value_max);
 
@@ -2003,7 +2002,7 @@ DESCRIPTION :
 } /* Spectrum_settings_get_colour_value_maximum */
 
 int Spectrum_settings_set_colour_value_maximum(struct Spectrum_settings *settings,
-	float value)
+	ZnReal value)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
@@ -2463,8 +2462,9 @@ passed in render data.
 ==============================================================================*/
 {
 	FE_value *values;
+	GLfloat value = 0.0;
 	int i, number_of_components, return_code,texels_per_band;
-	float data_component,value = 0.0,step_xi,total_texels;
+	ZnReal data_component,step_xi,total_texels;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_activate);
@@ -2487,7 +2487,7 @@ passed in render data.
 				if (settings->component_number > 0)
 				{
 					FE_value dataValue[1];
-					float* tmpPointer;
+					GLfloat* tmpPointer;
 					tmpPointer = render_data->data + settings->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
 					Cmiss_field_cache_set_field_real(field_cache, settings->input_field, /*number_of_values*/1, dataValue);
@@ -2526,55 +2526,55 @@ passed in render data.
 							render_data->rgba[3] = value;
 						} break;
 						case SPECTRUM_RAINBOW:
-						{
-              if (value<1.0/3.0)
-              {
-                  render_data->rgba[0]=1.0;
-                  render_data->rgba[2]=0.0;
-                  if (value<1.0/6.0)
-                  {
-                      render_data->rgba[1]=value*4.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
-                  }
-              }
-              else if (value<2.0/3.0)
-              {
-                  render_data->rgba[1]=1.0;
-                  if (value<0.5)
-                  {
-                      render_data->rgba[0] = 2.5 - 4.5*value;
-                      render_data->rgba[2] = 1.5*value - 0.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[0] = 1.0 - 1.5*value;
-                      render_data->rgba[2] = -2.0 + 4.5*value;
-                  }
-              }
-              else
-              {
-                  render_data->rgba[0]=0.0;
-                  render_data->rgba[2]=1.0;
-                  if (value<5.0/6.0)
-                  {
-                      render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
-                  }
-              }
-						} break;
+							{
+								if (value<1.0/3.0)
+								{
+									render_data->rgba[0]=1.0;
+									render_data->rgba[2]=0.0;
+									if (value<1.0/6.0)
+									{
+										render_data->rgba[1]=value*4.5;
+									}
+									else
+									{
+										render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
+									}
+								}
+								else if (value<2.0/3.0)
+								{
+									render_data->rgba[1]=1.0;
+									if (value<0.5)
+									{
+										render_data->rgba[0] = 2.5 - 4.5*value;
+										render_data->rgba[2] = 1.5*value - 0.5;
+									}
+									else
+									{
+										render_data->rgba[0] = 1.0 - 1.5*value;
+										render_data->rgba[2] = -2.0 + 4.5*value;
+									}
+								}
+								else
+								{
+									render_data->rgba[0]=0.0;
+									render_data->rgba[2]=1.0;
+									if (value<5.0/6.0)
+									{
+										render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
+									}
+									else
+									{
+										render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
+									}
+								}
+							} break;
 						case SPECTRUM_RED:
-						{
-							render_data->rgba[0]=value;
-						} break;
+							{
+								render_data->rgba[0]=value;
+							} break;
 						case SPECTRUM_GREEN:
-						{
-							render_data->rgba[1]=value;
+							{
+								render_data->rgba[1]=value;
 						} break;
 						case SPECTRUM_BLUE:
 						{
@@ -2711,7 +2711,7 @@ passed in render data.
 							if ((settings->number_of_bands)&&(settings->black_band_proportion))
 							{
 								texels_per_band=1021/(settings->number_of_bands);
-								total_texels=(float)(texels_per_band*settings->number_of_bands);
+								total_texels=(ZnReal)(texels_per_band*settings->number_of_bands);
 								if ((settings->black_band_proportion/settings->number_of_bands)%2)
 								{
 									value=((value*total_texels+1.5)/1024.0);

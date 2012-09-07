@@ -39,7 +39,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include <stdio.h>
 #include <math.h>
 #include "api/cmiss_field.h"
@@ -63,7 +62,6 @@
 #include "general/message.h"
 #include "general/mystring.h"
 #include "minimise/minimise.h"
-//-- }
 #include "general/enumerator_private.hpp"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_optimisation_method);

@@ -41,18 +41,14 @@ Wraps itk::MeanImageFilter
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_canny_edge_detection_filter.h"
-//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkCannyEdgeDetectionImageFilter.h"
@@ -255,8 +251,8 @@ and generate the outputImage.
 		
 		// check whether we need to scale these values from
 		// 0-1 to 0-255
-		filter->SetVariance( (float)(canny_edge_detection_image_filter->variance) );
-		filter->SetMaximumError( (float)(canny_edge_detection_image_filter->maximumError) );
+		filter->SetVariance( (ZnReal)(canny_edge_detection_image_filter->variance) );
+		filter->SetMaximumError( (ZnReal)(canny_edge_detection_image_filter->maximumError) );
 
 		// wrong currently!
 		upper = canny_edge_detection_image_filter->upperThreshold;

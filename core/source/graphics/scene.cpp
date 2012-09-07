@@ -48,10 +48,9 @@
 #include <set>
 #include <vector>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
-//-- extern "C" {
 #include "api/cmiss_scene.h"
 #include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_rendition.h"
@@ -63,10 +62,8 @@
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -85,7 +82,6 @@
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-//-- }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 #include "graphics/render_gl.h"
@@ -4400,7 +4396,7 @@ in the <scene> which point to this spectrum.
 } /* Scene_get_data_range_for_spectrum_iterator */
 
 int Scene_get_data_range_for_spectrum(struct Scene *scene,
-	struct Spectrum *spectrum, float *minimum, float *maximum,
+	struct Spectrum *spectrum, GLfloat *minimum, GLfloat *maximum,
 	int *range_set)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001

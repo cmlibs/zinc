@@ -40,12 +40,9 @@ Defines fields for looking up values at given locations.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -56,7 +53,6 @@ Defines fields for looking up values at given locations.
 #include "general/message.h"
 #include "computed_field/computed_field_lookup.h"
 #include "graphics/quaternion.hpp"
-//-- }
 
 class Computed_field_lookup_package : public Computed_field_type_package
 {

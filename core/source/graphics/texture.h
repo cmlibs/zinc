@@ -46,7 +46,7 @@ The data structures used for representing textures.
 
 #include <stdio.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 #include "general/enumerator.h"
 #include "general/object.h"
@@ -209,11 +209,11 @@ If defined it should be used to compile any graphics objects.
 	/* Array of size dimension recording the texel size of a single tile */
 	int *tile_size;
 	/* Array of size dimension recording the texture coordinate size of a single tile */
-	float *tile_coordinate_range;
+	ZnReal *tile_coordinate_range;
 	/* Array of size dimension recording the texture coordinate size of the entire texture */
-	float *image_coordinate_range;
+	ZnReal *image_coordinate_range;
 	/* Array of size dimension recording the scaling to be applied to each texture coordinate */
-	float *coordinate_scaling;
+	ZnReal *coordinate_scaling;
 	/* Recording the bound texture id for each tile */
 	unsigned int *texture_ids;
 	/* Overlap of duplicated pixels on boundaries of tiles to allow filtering */
@@ -285,7 +285,7 @@ DESCRIPTION :
 Returns the number of components used per texel for <storage> type.
 ==============================================================================*/
 
-int Texture_get_combine_alpha(struct Texture *texture,float *alpha);
+int Texture_get_combine_alpha(struct Texture *texture,ZnReal *alpha);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -293,7 +293,7 @@ DESCRIPTION :
 Returns the alpha value used for combining the texture.
 ==============================================================================*/
 
-int Texture_set_combine_alpha(struct Texture *texture,float alpha);
+int Texture_set_combine_alpha(struct Texture *texture,ZnReal alpha);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -342,7 +342,7 @@ Sets how the texture is combined with the material: blend, decal or modulate.
  * @param bias  Returns current bias value.
  * @return Returns 1 if successful.
  */
-int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias);
+int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,ZnReal *bias);
 
 /***************************************************************************//**
  * The mipmap_level_of_detail_bias adjusts the automatic OpenGL calculation for
@@ -352,7 +352,7 @@ int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias)
  * @param bias  New bias value.
  * @return Returns 1 if successful.
  */
-int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,float bias);
+int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,ZnReal bias);
 
 enum Texture_compression_mode Texture_get_compression_mode(struct Texture *texture);
 /*******************************************************************************
@@ -625,8 +625,8 @@ Returns the rendered texel sizes of the texture.  These indicate what sizes
 were actually loaded into OpenGL and until the texture is rendered will be
 zero.
 ==============================================================================*/
-int Texture_get_physical_size(struct Texture *texture,float *width,
-	float *height, float *depth);
+int Texture_get_physical_size(struct Texture *texture,ZnReal *width,
+	ZnReal *height, ZnReal *depth);
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -635,7 +635,7 @@ Returns the physical size in model coordinates of the original texture image.
 ==============================================================================*/
 
 int Texture_set_physical_size(struct Texture *texture,
-	float width, float height, float depth);
+	ZnReal width, ZnReal height, ZnReal depth);
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -646,7 +646,7 @@ real image data and not padding to make image sizes up to powers of 2.
 ==============================================================================*/
 
 int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture, 
-   unsigned int *dimension, double **texture_coordinate_sizes);
+   unsigned int *dimension, ZnReal **texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -660,7 +660,7 @@ the top right of the texture.
 ==============================================================================*/
 
 int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture, 
-   unsigned int dimension, double *texture_coordinate_sizes);
+   unsigned int dimension, ZnReal *texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -673,8 +673,8 @@ the top right of the texture.
 ==============================================================================*/
 
 int Texture_get_distortion_info(struct Texture *texture,
-	float *distortion_centre_x,float *distortion_centre_y,
-	float *distortion_factor_k1);
+	ZnReal *distortion_centre_x,ZnReal *distortion_centre_y,
+	ZnReal *distortion_factor_k1);
 /*******************************************************************************
 LAST MODIFIED : 28 September 1999
 
@@ -685,8 +685,8 @@ from (0.0,0.0) to (texture->width,texture->height).
 ==============================================================================*/
 
 int Texture_set_distortion_info(struct Texture *texture,
-	float distortion_centre_x,float distortion_centre_y,
-	float distortion_factor_k1);
+	ZnReal distortion_centre_x,ZnReal distortion_centre_y,
+	ZnReal distortion_factor_k1);
 /*******************************************************************************
 LAST MODIFIED : 28 September 1999
 
@@ -728,7 +728,7 @@ Sets how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 
 int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
-   const char *filename);
+	const char *filename);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2007
 
@@ -793,13 +793,13 @@ int Texture_clear_all_properties(struct Texture *texture);
 
 #if defined (OPENGL_API)
 /***************************************************************************//**
- * Create a float texture of the specified with and height.
+ * Create a GLfloat texture of the specified with and height.
  * 
  * @param width Width of texture to create
  * @param height Height of texture to create
  * @param buffer Optional data to initialise texture.
  * @param alpha Flag which specifies whether the texture format should include alpha or not.
- * @param fallback_to_shorts Flag which specifies whether if no float formats are
+ * @param fallback_to_shorts Flag which specifies whether if no GLfloat formats are
  *  available an integer texture should be created instead.
  * @return Returns texture object id if texture is created or 0 if not.
  */

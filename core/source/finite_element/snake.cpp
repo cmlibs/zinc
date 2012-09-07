@@ -45,7 +45,6 @@ data points.
 #include <math.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
@@ -56,7 +55,6 @@ data points.
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module Constants

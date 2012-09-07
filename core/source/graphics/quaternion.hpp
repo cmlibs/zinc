@@ -45,11 +45,9 @@ operations should be added into this class.
 #if !defined (QUATERNION_HPP)
 #define QUATERNION_HPP
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 class Quaternion
 {

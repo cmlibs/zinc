@@ -42,11 +42,10 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #if defined (WIN32_SYSTEM)
-//-- extern "C" {
 #if defined (_MSC_VER)
 	//#define WINDOWS_LEAN_AND_MEAN
 	#ifndef _CRTDBG_MAP_ALLOC
@@ -60,7 +59,6 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #include <windows.h>
 #include "general/time.h"
 #include "general/debug.h"
-//-- }
 
 /*
 int gettimeofday(struct timeval *time, void *timezone)

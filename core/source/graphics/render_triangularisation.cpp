@@ -38,14 +38,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/rendition.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
-//-- }
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
@@ -104,7 +102,7 @@ int draw_voltex_triangle_mesh(Triangle_mesh& trimesh,
 int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 	Triple *normalpts, Triple *texturepts, int npts1,int npts2,
 	enum GT_surface_type surface_type, gtPolygonType polygon_type,
-	int number_of_data_components, GTDATA *data,
+	int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material, struct Spectrum *spectrum)
 {
 	int return_code = 0;
@@ -264,9 +262,9 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 								centre[2] += (*temp_point)[i*npts2+2];
 								temp_point++;
 							}
-							centre[0] /= (float)npts2;
-							centre[1] /= (float)npts2;
-							centre[2] /= (float)npts2;
+							centre[0] /= (GLfloat)npts2;
+							centre[1] /= (GLfloat)npts2;
+							centre[2] /= (GLfloat)npts2;
 							for (j=0; j<npts2; j++)
 							{
 								trimesh.add_triangle_coordinates(point[j+i*npts2], point[(j+i*npts2+1) % npts2], centre);
@@ -310,9 +308,9 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
  * @param time time at which graphics are output
  * @return 1 on success, 0 on failure
  */
-int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, float time)
+int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, ZnReal time)
 {
-	float proportion = 0.0f, *times = NULL;
+	ZnReal proportion = 0.0f, *times = NULL;
 	int itime, number_of_times, return_code = 0;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 

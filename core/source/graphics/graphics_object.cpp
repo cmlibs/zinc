@@ -52,10 +52,9 @@ gtObject/gtWindow management routines.
 #include <stdio.h>
 #include <math.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
-//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
@@ -78,7 +77,6 @@ gtObject/gtWindow management routines.
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
-//-- }
 #include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
@@ -89,7 +87,7 @@ Global variables
 ----------------
 */
 /*???DB.  I'm not sure that this should be here */
-float global_line_width=1.,global_point_size=1.;
+ZnReal global_line_width=1.,global_point_size=1.;
 
 
 /*
@@ -154,60 +152,60 @@ DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(GT_object,name)
 class Graphics_vertex_array_internal
 {
 public:
-   Graphics_vertex_array_type type;
-   LIST(Graphics_vertex_buffer) *buffer_list;
+	Graphics_vertex_array_type type;
+	LIST(Graphics_vertex_buffer) *buffer_list;
 
-   Graphics_vertex_array_internal(Graphics_vertex_array_type type)
+	Graphics_vertex_array_internal(Graphics_vertex_array_type type)
 		: type(type)
-   {
-   	buffer_list = CREATE(LIST(Graphics_vertex_buffer))();
-   }
-   
-   ~Graphics_vertex_array_internal()
-   {
-   	DESTROY(LIST(Graphics_vertex_buffer))(&buffer_list);
-   }
-   
-   /** Gets the buffer appropriate for storing this vertex data or
-    * creates one in this array if it doesn't already exist.
-    * If it does exist but the value_per_vertex does not match then
-    * the method return NULL.
-    */
-   Graphics_vertex_buffer *get_or_create_vertex_buffer(
-   	Graphics_vertex_array_attribute_type vertex_type,
-   	unsigned int values_per_vertex);
+	{
+		buffer_list = CREATE(LIST(Graphics_vertex_buffer))();
+	}
 
-   /** Gets the buffer appropriate for storing this vertex data or
-    * returns NULL.
-    */
-   Graphics_vertex_buffer *get_vertex_buffer_for_attribute(
-   	Graphics_vertex_array_attribute_type vertex_type);
+	~Graphics_vertex_array_internal()
+	{
+		DESTROY(LIST(Graphics_vertex_buffer))(&buffer_list);
+	}
 
-   /** Gets the buffer of the specified type if it exists or
-    * returns NULL.
-    */
-   Graphics_vertex_buffer *get_vertex_buffer(
-   	Graphics_vertex_array_attribute_type vertex_buffer_type);
+	/** Gets the buffer appropriate for storing this vertex data or
+	* creates one in this array if it doesn't already exist.
+	* If it does exist but the value_per_vertex does not match then
+	* the method return NULL.
+	*/
+	Graphics_vertex_buffer *get_or_create_vertex_buffer(
+		Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int values_per_vertex);
+
+	/** Gets the buffer appropriate for storing this vertex data or
+	* returns NULL.
+	*/
+	Graphics_vertex_buffer *get_vertex_buffer_for_attribute(
+		Graphics_vertex_array_attribute_type vertex_type);
+
+	/** Gets the buffer of the specified type if it exists or
+	* returns NULL.
+	*/
+	Graphics_vertex_buffer *get_vertex_buffer(
+		Graphics_vertex_array_attribute_type vertex_buffer_type);
 
 	template <class value_type> int free_unused_buffer_memory( Graphics_vertex_array_attribute_type vertex_type, const value_type* dummy );
 
-   template <class value_type> int add_attribute(
-   	Graphics_vertex_array_attribute_type vertex_type,
-   	const unsigned int values_per_vertex, const unsigned int number_of_values, const value_type *values);
+	template <class value_type> int add_attribute(
+		Graphics_vertex_array_attribute_type vertex_type,
+		const unsigned int values_per_vertex, const unsigned int number_of_values, const value_type *values);
 
-   template <class value_type> int get_attribute(
-   	Graphics_vertex_array_attribute_type vertex_type,
-   	unsigned int vertex_index,
-   	unsigned int number_of_values, value_type *values);
+	template <class value_type> int get_attribute(
+		Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int vertex_index,
+		unsigned int number_of_values, value_type *values);
 
-   template <class value_type> int get_vertex_buffer(
-   		Graphics_vertex_array_attribute_type vertex_buffer_type,
-   		value_type **vertex_buffer, unsigned int *values_per_vertex, 
-   		unsigned int *vertex_count);
+	template <class value_type> int get_vertex_buffer(
+		Graphics_vertex_array_attribute_type vertex_buffer_type,
+		value_type **vertex_buffer, unsigned int *values_per_vertex, 
+		unsigned int *vertex_count);
 };
 
 static int GT_object_get_time_number(struct GT_object *graphics_object,
-	float time)
+	ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
@@ -218,7 +216,7 @@ starting with 1 for the first time, whereas 0 is returned if the time is not
 found or there is an error.
 ==============================================================================*/
 {
-	float *times;
+	ZnReal *times;
 	int time_number;
 
 	ENTER(GT_object_get_time_number);
@@ -260,7 +258,7 @@ found or there is an error.
 } /* GT_object_get_time_number */
 
 static int GT_object_get_less_than_or_equal_time_number(
-	struct GT_object *graphics_object,float time)
+	struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 7 July 1998
 
@@ -271,7 +269,7 @@ than or equal to <time>, starting with 1 for the first time. A value of 0 is
 returned if <time> is lower than any times in the array or an error occurs.
 ==============================================================================*/
 {
-	float *times;
+	ZnReal *times;
 	int time_number;
 
 	ENTER(GT_object_get_less_than_or_equal_time_number);
@@ -333,7 +331,7 @@ with each primitive plus the void *<user_data> supplied here. A true result \
 from the conditional_function causes the primitive to be removed. \
 ============================================================================*/ \
 { \
-	float *times; \
+	ZnReal *times; \
 	int i, return_code; \
 	struct primitive_type *last_primitive, *primitive, **primitive_ptr; \
 	union GT_primitive_list *primitive_list; \
@@ -388,7 +386,7 @@ from the conditional_function causes the primitive to be removed. \
 					if (0 == graphics_object->number_of_times) \
 					{ \
 						DEALLOCATE(graphics_object->times); \
-						graphics_object->times = (float *)NULL; \
+						graphics_object->times = (ZnReal *)NULL; \
 						DEALLOCATE(graphics_object->primitive_lists); \
 					} \
 				} \
@@ -437,7 +435,7 @@ both an <object_name> and an <auxiliary_object_name> that may satisfy the \
 conditional_function. \
 ============================================================================*/ \
 { \
-	float *times; \
+	ZnReal *times; \
 	int i, return_code; \
 	struct primitive_type *last_primitive, *primitive, **primitive_ptr; \
 	union GT_primitive_list *primitive_list; \
@@ -494,7 +492,7 @@ conditional_function. \
 					if (0 == graphics_object->number_of_times) \
 					{ \
 						DEALLOCATE(graphics_object->times); \
-						graphics_object->times = (float *)NULL; \
+						graphics_object->times = (ZnReal *)NULL; \
 						DEALLOCATE(graphics_object->primitive_lists); \
 					} \
 				} \
@@ -1122,7 +1120,7 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	return (return_code);
 } /* get_GT_surface_type_from_string */
 
-struct GT_glyph_set *morph_GT_glyph_set(float proportion,
+struct GT_glyph_set *morph_GT_glyph_set(ZnReal proportion,
 	struct GT_glyph_set *initial, struct GT_glyph_set *final)
 /*******************************************************************************
 LAST MODIFIED : 16 November 2000
@@ -1137,7 +1135,7 @@ this gets tricky when done on all axes consistently.
 ==============================================================================*/
 {
 	char **labels;
-	GTDATA *data;
+	GLfloat *data;
 	struct GT_glyph_set *glyph_set, *nearest_glyph_set;
 	int i, j, number_of_points, *names, return_code;
 	Triple *point_list, *axis1_list, *axis2_list, *axis3_list, *scale_list;
@@ -1162,7 +1160,7 @@ this gets tricky when done on all axes consistently.
 		axis2_list = (Triple *)NULL;
 		axis3_list = (Triple *)NULL;
 		scale_list = (Triple *)NULL;
-		data = (GTDATA *)NULL;
+		data = 0;
 		labels = (char **)NULL;
 		names = (int *)NULL;
 		if ((0 < number_of_points) &&
@@ -1191,7 +1189,7 @@ this gets tricky when done on all axes consistently.
 			/* check for and allocate any data */
 			if (initial->n_data_components)
 			{
-				if (ALLOCATE(data,GTDATA,number_of_points*initial->n_data_components))
+				if (ALLOCATE(data,GLfloat,number_of_points*initial->n_data_components))
 				{
 					for (i = 0; i < number_of_points*initial->n_data_components; i++)
 					{
@@ -1251,7 +1249,7 @@ this gets tricky when done on all axes consistently.
 				glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
 					initial->font, labels, initial->n_data_components, data,
-					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,
 					nearest_glyph_set->object_name, names);
 				if (glyph_set)
@@ -1313,7 +1311,7 @@ this gets tricky when done on all axes consistently.
 	return (glyph_set);
 } /* morph_GT_glyph_set */
 
-struct GT_pointset *morph_GT_pointset(float proportion,
+struct GT_pointset *morph_GT_pointset(ZnReal proportion,
 	struct GT_pointset *initial,struct GT_pointset *final)
 /*******************************************************************************
 LAST MODIFIED : 16 April 1999
@@ -1323,8 +1321,8 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 ==============================================================================*/
 {
 	char **source_text,**text;
-	float marker_size;
-	GTDATA *data;
+	ZnReal marker_size;
+	GLfloat *data;
 	struct GT_pointset *point_set = NULL;
 	int i,j,number_of_points,*names,*morph_names;
 	Triple *point;
@@ -1377,7 +1375,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 			/* check for and allocate any data */
 			if (initial->n_data_components)
 			{
-				if (ALLOCATE(data,GTDATA,number_of_points*initial->n_data_components))
+				if (ALLOCATE(data,GLfloat,number_of_points*initial->n_data_components))
 				{
 					for (i=0;i<number_of_points*initial->n_data_components;i++)
 					{
@@ -1394,7 +1392,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 			}
 			else
 			{
-				data=(GTDATA *)NULL;
+				data=0;
 			}
 			if (point&&source_text)
 			{
@@ -1494,7 +1492,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 	return (point_set);
 } /* morph_GT_pointset */
 
-struct GT_polyline *morph_GT_polyline(float proportion,
+struct GT_polyline *morph_GT_polyline(ZnReal proportion,
 	struct GT_polyline *initial,struct GT_polyline *final)
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
@@ -1503,7 +1501,7 @@ DESCRIPTION :
 Creates a new GT_polyline which is the interpolation of two GT_polylines.
 ==============================================================================*/
 {
-	GTDATA *data;
+	GLfloat *data;
 	struct GT_polyline *polyline = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point;
@@ -1571,7 +1569,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 				/* check for and allocate any data */
 				if (initial->n_data_components)
 				{
-					if (ALLOCATE(data,GTDATA,number_of_nodes*initial->n_data_components))
+					if (ALLOCATE(data,GLfloat,number_of_nodes*initial->n_data_components))
 					{
 						for (i=0;i<number_of_nodes*initial->n_data_components;i++)
 						{
@@ -1589,7 +1587,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 				}
 				else
 				{
-					data=(GTDATA *)NULL;
+					data=0;
 				}
 			}
 			if (point)
@@ -1646,7 +1644,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 	return (polyline);
 } /* morph_GT_polyline */
 
-struct GT_surface *morph_GT_surface(float proportion,
+struct GT_surface *morph_GT_surface(ZnReal proportion,
 	struct GT_surface *initial,struct GT_surface *final)
 /*******************************************************************************
 LAST MODIFIED : 28 November 2003
@@ -1655,7 +1653,7 @@ DESCRIPTION :
 Creates a new GT_surface which is the interpolation of two GT_surfaces.
 ==============================================================================*/
 {
-	GTDATA *data;
+	GLfloat *data;
 	struct GT_surface *surface = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point,*tangentlist,*texturelist;
@@ -1804,7 +1802,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				if (initial->n_data_components)
 				{
 					number_of_nodes=(initial->n_pts1)*(initial->n_pts2);
-					if (ALLOCATE(data,GTDATA,number_of_nodes*initial->n_data_components))
+					if (ALLOCATE(data,GLfloat,number_of_nodes*initial->n_data_components))
 					{
 						for (i=0;i<number_of_nodes*initial->n_data_components;i++)
 						{
@@ -1833,7 +1831,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				}
 				else
 				{
-					data=(GTDATA *)NULL;
+					data = 0;
 				}
 			}
 			if (point)
@@ -1898,7 +1896,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 	return (surface);
 } /* morph_GT_surface */
 
-gtObject *morph_gtObject(char *name,float proportion,gtObject *initial,
+gtObject *morph_gtObject(char *name,ZnReal proportion,gtObject *initial,
 	gtObject *final)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2003
@@ -1907,7 +1905,7 @@ DESCRIPTION :
 Creates a new gtObject which is the interpolation of two gtObjects.
 ==============================================================================*/
 {
-	float time;
+	ZnReal time;
 	gtObject *graphics_object;
 	int i, number_of_times, return_code;
 	struct GT_polyline *polyline, *polyline_final, *polyline_initial;
@@ -2061,7 +2059,7 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 } /* morph_gtObject */
 
 struct GT_surface *transform_GT_surface(struct GT_surface *initial,
-	float *transformation)
+	ZnReal *transformation)
 /*******************************************************************************
 LAST MODIFIED : 8 July 1999
 
@@ -2069,7 +2067,7 @@ DESCRIPTION :
 Creates a new GT_surface which is the interpolation of two GT_surfaces.
 ==============================================================================*/
 {
-	GTDATA *data = NULL;
+	GLfloat *data = 0;
 	struct GT_surface *surface = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point,*tangentlist,*texturelist;
@@ -2212,7 +2210,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			if (initial->n_data_components)
 			{
 				number_of_nodes=(initial->n_pts1)*(initial->n_pts2);
-				if (ALLOCATE(data,GTDATA,number_of_nodes*initial->n_data_components))
+				if (ALLOCATE(data,GLfloat,number_of_nodes*initial->n_data_components))
 				{
 					for (i=0;i<number_of_nodes*initial->n_data_components;i++)
 					{
@@ -2240,7 +2238,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			}
 			else
 			{
-				data=(GTDATA *)NULL;
+				data=0;
 			}
 		}
 		if (point)
@@ -2298,7 +2296,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 } /* transform_GT_surface */
 
 struct GT_object *transform_GT_object(struct GT_object *object,
-	float *transformation)
+	ZnReal *transformation)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2003
 
@@ -2401,8 +2399,8 @@ DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	struct Graphics_font *font, char **labels, int n_data_components, GTDATA *data,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphics_font *font, char **labels, int n_data_components, GLfloat *data,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names)
 {
 	struct GT_glyph_set *glyph_set;
@@ -2912,8 +2910,8 @@ texture coordinates.
 } /* GT_nurbs_set_texture_control_points */
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,
-	int object_name, GTDATA *data, struct Graphics_font *font)
+	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
+	int object_name, GLfloat *data, struct Graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -3031,7 +3029,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_point_set_integer_identifier */
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
+	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
 	int *names, struct Graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -3230,7 +3228,7 @@ current storage and the internal data, text and names arrays are messed up.
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
 	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
-	int n_data_components,GTDATA *data)
+	int n_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 22 April 2004
 
@@ -3378,7 +3376,7 @@ struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
 	enum Cmiss_graphics_render_type render_type, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
-	int n_data_components,GTDATA *data)
+	int n_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 31 May 1999
 
@@ -3801,7 +3799,7 @@ Allocates memory and assigns fields for a graphics object.
 			(object->name = duplicate_string(name)))
 		{
 			object->select_mode=GRAPHICS_NO_SELECT;
-			object->times = (float *)NULL;
+			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->update_callback_list =
 				(struct Graphics_object_callback_data *)NULL;
@@ -4331,7 +4329,7 @@ Removes a callback which was added previously
 	return (return_code);
 } /* GT_object_remove_callback */
 
-int GT_object_has_time(struct GT_object *graphics_object,float time)
+int GT_object_has_time(struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
 
@@ -4358,7 +4356,7 @@ Returns 1 if the time parameter is used by the graphics_object.
 } /* GT_object_has_time */
 
 int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
-	float time)
+	ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2003
 
@@ -4506,7 +4504,7 @@ Graphics_vertex_array *
 	return (set);
 } /* GT_object_get_vertex_set */
 
-float GT_object_get_time(struct GT_object *graphics_object,int time_number)
+ZnReal GT_object_get_time(struct GT_object *graphics_object,int time_number)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
@@ -4515,7 +4513,7 @@ Returns the time at <time_number> from the graphics_object.
 Note that time numbers range from 1 to number_of_times.
 ==============================================================================*/
 {
-	float return_time,*times;
+	ZnReal return_time,*times;
 
 	ENTER(GT_object_get_time);
 	if (graphics_object)
@@ -4555,7 +4553,7 @@ printf("GT_object_get_time.  Time number out of range in GT_object %s\n",
 	return (return_time);
 } /* GT_object_get_time */
 
-float GT_object_get_nearest_time(struct GT_object *graphics_object,float time)
+ZnReal GT_object_get_nearest_time(struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 7 July 1998
 
@@ -4568,7 +4566,7 @@ routines updated to use this, may be changed to get actual nearest time.
 ???RC need another version to handle morphing/proportions?
 ==============================================================================*/
 {
-	float return_time,*times;
+	ZnReal return_time,*times;
 	int time_number;
 
 	ENTER(GT_object_get_nearest_time);
@@ -4627,7 +4625,8 @@ will produce the range of all the graphics objects.
 ???RC this could be cleaned up by getting primitives to find their own range.
 ==============================================================================*/
 {
-	float temp,*maximum,*minimum;
+	ZnReal temp;
+	GLfloat *maximum,*minimum;
 	int *first, i, j, number_of_positions = 0, number_of_times = 0, position_offset = 0,
 		return_code;
 	struct Graphics_object_range_struct *graphics_object_range;
@@ -4643,8 +4642,8 @@ will produce the range of all the graphics objects.
 	ENTER(get_graphics_object_range);
 	if (graphics_object&&(graphics_object_range=
 		(struct Graphics_object_range_struct *)graphics_object_range_void)&&
-		(maximum=graphics_object_range->maximum)&&
-		(minimum=graphics_object_range->minimum)&&
+		(maximum = graphics_object_range->maximum)&&
+		(minimum = graphics_object_range->minimum)&&
 		(first=&(graphics_object_range->first)))
 	{
 		return_code = 1;
@@ -4944,7 +4943,7 @@ will produce the range of all the graphics objects.
 					} break;
 					case g_POLYLINE_VERTEX_BUFFERS:
 					{
-						float *vertex_buffer;
+						GLfloat *vertex_buffer;
 						unsigned int values_per_vertex, vertex_count;
 						if (graphics_object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
@@ -5185,10 +5184,10 @@ This routine still assumes on a single data value per vertex but this isn't
 valid.
 ==============================================================================*/
 {
-	float maximum,minimum;
+	ZnReal maximum,minimum;
 	int i, j, number_of_times, return_code, first;
 	struct Graphics_object_data_range_struct *graphics_object_data_range;
-	GTDATA *field_data;
+	GLfloat *field_data;
 	struct GT_glyph_set *glyph_set;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;
@@ -5218,26 +5217,27 @@ valid.
 						glyph_set = primitive_list->gt_glyph_set.first;
 						while (glyph_set)
 						{
-							field_data=glyph_set->data;
+							field_data = glyph_set->data;
 							if (field_data)
 							{
 								if (first)
 								{
-									minimum= *field_data;
+									minimum= static_cast<ZnReal>(*field_data);
 									maximum=minimum;
 									first=0;
 								}
 								for (i=glyph_set->number_of_points;i>0;i--)
 								{
-									if (*field_data<minimum)
+									ZnReal field_value = static_cast<ZnReal>(*field_data);
+									if (field_value<minimum)
 									{
-										minimum= *field_data;
+										minimum = field_value;
 									}
 									else
 									{
-										if (*field_data>maximum)
+										if (field_value>maximum)
 										{
-											maximum= *field_data;
+											maximum = field_value;
 										}
 									}
 									field_data++;
@@ -5256,21 +5256,22 @@ valid.
 							{
 								if (first)
 								{
-									minimum= *field_data;
+									minimum = static_cast<ZnReal>(*field_data);
 									maximum=minimum;
 									first=0;
 								}
 								for (i=pointset->n_pts;i>0;i--)
 								{
-									if (*field_data<minimum)
+									ZnReal field_value = static_cast<ZnReal>(*field_data);
+									if (field_value<minimum)
 									{
-										minimum= *field_data;
+										minimum = field_value;
 									}
 									else
 									{
-										if (*field_data>maximum)
+										if (field_value>maximum)
 										{
-											maximum= *field_data;
+											maximum = field_value;
 										}
 									}
 									field_data++;
@@ -5289,21 +5290,22 @@ valid.
 							{
 								if (first)
 								{
-									minimum= *field_data;
+									minimum = static_cast<ZnReal>(*field_data);
 									maximum=minimum;
 									first=0;
 								}
 								for (i=polyline->n_pts;i>0;i--)
 								{
-									if (*field_data<minimum)
+									ZnReal field_value = static_cast<ZnReal>(*field_data);
+									if (field_value<minimum)
 									{
-										minimum= *field_data;
+										minimum= field_value;
 									}
 									else
 									{
-										if (*field_data>maximum)
+										if (field_value>maximum)
 										{
-											maximum= *field_data;
+											maximum= field_value;
 										}
 									}
 									field_data++;
@@ -5314,7 +5316,7 @@ valid.
 					} break;
 					case g_POLYLINE_VERTEX_BUFFERS:
 					{
-						float *vertex_buffer = NULL;
+						GLfloat *vertex_buffer = NULL;
 						unsigned int values_per_vertex = 0, vertex_count = 0;
 						graphics_object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
@@ -5362,21 +5364,22 @@ valid.
 										{
 											if (first)
 											{
-												minimum= *field_data;
+												minimum= static_cast<ZnReal>(*field_data);
 												maximum=minimum;
 												first=0;
 											}
 											for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
 											{
-												if (*field_data<minimum)
+												ZnReal field_value = static_cast<ZnReal>(*field_data);
+												if (field_value<minimum)
 												{
-													minimum= *field_data;
+													minimum = field_value;
 												}
 												else
 												{
-													if (*field_data>maximum)
+													if (field_value>maximum)
 													{
-														maximum= *field_data;
+														maximum = field_value;
 													}
 												}
 												field_data++;
@@ -5394,7 +5397,7 @@ valid.
 										{
 											if (first)
 											{
-												minimum= *field_data;
+												minimum= static_cast<ZnReal>(*field_data);
 												maximum=minimum;
 												first=0;
 											}
@@ -5404,15 +5407,16 @@ valid.
 												{
 													for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
 													{
-														if (*field_data<minimum)
+														ZnReal field_value = static_cast<ZnReal>(*field_data);
+														if (field_value<minimum)
 														{
-															minimum= *field_data;
+															minimum = field_value;
 														}
 														else
 														{
-															if (*field_data>maximum)
+															if (field_value>maximum)
 															{
-																maximum= *field_data;
+																maximum = field_value;
 															}
 														}
 														field_data++;
@@ -5423,15 +5427,16 @@ valid.
 													for (i=(((surface->n_pts1)+1)*(surface->n_pts1))/2;i>0;
 															 i--)
 													{
-														if (*field_data<minimum)
+														ZnReal field_value = static_cast<ZnReal>(*field_data);
+														if (field_value<minimum)
 														{
-															minimum= *field_data;
+															minimum = field_value;
 														}
 														else
 														{
-															if (*field_data>maximum)
+															if (field_value>maximum)
 															{
-																maximum= *field_data;
+																maximum = field_value;
 															}
 														}
 														field_data++;
@@ -5518,7 +5523,7 @@ DESCRIPTION :
 Enlarges the minimum and maximum time range by that of the graphics_object.
 ==============================================================================*/
 {
-	float *times;
+	ZnReal *times;
 	int return_code;
 	struct Graphics_object_time_range_struct *graphics_object_time_range;
 
@@ -5584,7 +5589,7 @@ does not already exist. If the <primitive> is NULL an empty time is added if \
 there is not already one. <primitive> is a NULL-terminated linked-list. \
 ============================================================================*/ \
 { \
-	float *times; \
+	ZnReal *times; \
 	int return_code, time_number, i; \
 	union GT_primitive_list *primitive_list; \
 \
@@ -5601,7 +5606,7 @@ there is not already one. <primitive> is a NULL-terminated linked-list. \
 		else \
 		{ \
 			/* make a new time & primitive_list */ \
-			if (REALLOCATE(times, graphics_object->times, float, \
+			if (REALLOCATE(times, graphics_object->times, ZnReal, \
 				graphics_object->number_of_times + 1)) \
 			{ \
 				graphics_object->times = times; \
@@ -5691,7 +5696,7 @@ int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 	if (graphics_object && !graphics_object->primitive_lists)
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
-			ALLOCATE(graphics_object->times, float, 1))
+			ALLOCATE(graphics_object->times, ZnReal, 1))
 		{
 			graphics_object->primitive_lists->gt_polyline_vertex_buffers = primitive;
 			graphics_object->times[0] = 0.0;
@@ -5757,7 +5762,7 @@ DECLARE_GT_OBJECT_GET_FUNCTION(GT_polyline,g_POLYLINE,gt_polyline)
 DECLARE_GT_OBJECT_GET_FUNCTION(GT_surface,g_SURFACE,gt_surface)
 
 int GT_object_remove_primitives_at_time(
-	struct GT_object *graphics_object, float time,
+	struct GT_object *graphics_object, ZnReal time,
 	GT_object_primitive_object_name_conditional_function *conditional_function,
 	void *user_data)
 /*******************************************************************************
@@ -5830,7 +5835,7 @@ from the conditional_function causes the primitive to be removed.
 	primitive_type,gt_object_type,primitive_var) \
 static int GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type)( \
 	struct GT_object *destination, struct GT_object *source, \
-	int time_number, float time) \
+	int time_number, ZnReal time) \
 /***************************************************************************** \
 LAST MODIFIED : 18 March 2003 \
 \
@@ -5881,7 +5886,7 @@ DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex)
 
 int GT_object_transfer_primitives_at_time(struct GT_object *destination,
-	struct GT_object *source, float time)
+	struct GT_object *source, ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 18 March 2003
 
@@ -6093,7 +6098,7 @@ DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
  * are merged into one. Previous version had constant = 0.001.
  */
 static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
-	struct GT_voltex *voltex, float vertex_radius_tolerance)
+	struct GT_voltex *voltex, ZnReal vertex_radius_tolerance)
 {
 	int i, j, k, number_of_triangles, return_code, vertex_count;
 	struct Octree_object *neighbour, *octree_vertex;
@@ -6137,9 +6142,9 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 #if defined (DEBUG_CODE)
 			/* Move the points so that if they aren't using the same vertex from adjacent triangles
 				then they won't stay connected */
-			existing_voltex->vertex_list[vertex_count]->coordinates[0] += (float)vertex_count / 1000.0;
-			existing_voltex->vertex_list[vertex_count]->coordinates[1] += (float)vertex_count / 1000.0;
-			existing_voltex->vertex_list[vertex_count]->coordinates[2] += (float)vertex_count / 1000.0;
+			existing_voltex->vertex_list[vertex_count]->coordinates[0] += (ZnReal)vertex_count / 1000.0;
+			existing_voltex->vertex_list[vertex_count]->coordinates[1] += (ZnReal)vertex_count / 1000.0;
+			existing_voltex->vertex_list[vertex_count]->coordinates[2] += (ZnReal)vertex_count / 1000.0;
 #endif /* defined (DEBUG_CODE) */
 
 			Octree_object_set_user_data(octree_vertex, (void *)vertex);
@@ -6248,7 +6253,7 @@ any co-located vertices are merged, stitching the two voltexes together.
 				existing_voltex = graphics_object->primitive_lists[time_number - 1].
 					gt_voltex.first;
 				return_code = GT_voltex_merge_GT_voltex(existing_voltex,
- 					voltex, /*vertex_radius_tolerance*/0.001);
+ 					voltex, /*vertex_radius_tolerance*/0.001f);
 				DESTROY(GT_voltex)(&voltex);
 			}
 			else
@@ -6263,7 +6268,7 @@ any co-located vertices are merged, stitching the two voltexes together.
 			{
 				voltex->vertex_octree = CREATE(Octree)();
 				/* Merge the voltex with itself to match colocated vertices */
-				GT_voltex_merge_GT_voltex(voltex, voltex, /*vertex_radius_tolerance*/0.001);
+				GT_voltex_merge_GT_voltex(voltex, voltex, /*vertex_radius_tolerance*/0.001f);
 			}
 			return_code=GT_OBJECT_ADD(GT_voltex)(graphics_object, /*time*/0,
 				voltex);
@@ -6574,7 +6579,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 		Triple *normalpoints = NULL;
 		Triple *texturepoints = NULL;
 		Triple *tangentpoints = NULL;
-		GTDATA *datavalues = NULL;
+		GLfloat *datavalues = 0;
 		ALLOCATE(points, Triple, number_of_triangles*3);
 		ALLOCATE(normalpoints, Triple, number_of_triangles*3);
 		if (voltex->n_texture_coordinates)
@@ -6584,7 +6589,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 		int n_data_components = voltex->n_data_components;
 		if (n_data_components)
 		{
-			ALLOCATE(datavalues, GTDATA, number_of_triangles*3*n_data_components);
+			ALLOCATE(datavalues, GLfloat, number_of_triangles*3*n_data_components);
 		}
 		if ((NULL != points) && (NULL != normalpoints))
 		{
@@ -6643,7 +6648,7 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 	return_code = 0;
 	if (graphics_object && (g_SURFACE == graphics_object->object_type))
 	{
-		float time = 0.0;
+		ZnReal time = 0.0;
 		int time_number = GT_object_get_time_number(graphics_object, time);
 		if (0 < time_number)
 		{
@@ -6655,12 +6660,12 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 				range.minimum[0] = range.minimum[1] = range.minimum[2] = 0.0;
 				range.maximum[0] = range.maximum[1] = range.maximum[2] = 0.0;
 				get_graphics_object_range(graphics_object, (void *)&range);
-				float size[3];
+				ZnReal size[3];
 				size[0] = range.maximum[0] - range.minimum[0];
 				size[1] = range.maximum[1] - range.minimum[1];
 				size[2] = range.maximum[2] - range.minimum[2];
-				float mag = sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
-				float vertex_radius_tolerance = mag * 1.0e-5;
+				ZnReal mag = sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+				ZnReal vertex_radius_tolerance = mag * 1.0e-5;
 				if (0.1*threshold_distance < vertex_radius_tolerance)
 				{
 					vertex_radius_tolerance = 0.1*threshold_distance;
@@ -7303,7 +7308,7 @@ scale is negative for that axis.
 } /* resolve_glyph_axes */
 
 struct GT_object_compile_context *CREATE(GT_object_compile_context)(
-	float time, struct Graphics_buffer *graphics_buffer
+	ZnReal time, struct Graphics_buffer *graphics_buffer
 #if defined (OPENGL_API)
 	, unsigned int ndc_display_list, unsigned int end_ndc_display_list
 #endif /* defined (OPENGL_API) */
@@ -7651,14 +7656,14 @@ int Graphics_vertex_array::free_unused_buffer_memory(
 /*
 int Graphics_vertex_array::add_float_attribute(
 	Graphics_vertex_array_attribute_type vertex_type,
-	unsigned int values_per_vertex, unsigned int number_of_values, float *values)
+	unsigned int values_per_vertex, unsigned int number_of_values, ZnReal *values)
 {
 	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
 }
 */
 int Graphics_vertex_array::add_float_attribute(
 	Graphics_vertex_array_attribute_type vertex_type,
-	const unsigned int values_per_vertex, const unsigned int number_of_values, const float *values)
+	const unsigned int values_per_vertex, const unsigned int number_of_values, const GLfloat *values)
 {
 	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
 }
@@ -7666,7 +7671,7 @@ int Graphics_vertex_array::add_float_attribute(
 
 int Graphics_vertex_array::get_float_vertex_buffer(
 		Graphics_vertex_array_attribute_type vertex_buffer_type,
-		float **vertex_buffer, unsigned int *values_per_vertex, 
+		GLfloat **vertex_buffer, unsigned int *values_per_vertex, 
 		unsigned int *vertex_count)
 {
 	return internal->get_vertex_buffer(vertex_buffer_type,

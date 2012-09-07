@@ -43,13 +43,11 @@ Functions for exporting finite element data to a file.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/message.h"
 #include "finite_element/export_cm_files.h"
-//-- }
 
 /*
 Module types

@@ -199,12 +199,4 @@ Returns the equivalent direction cosine matrix of the passed euler values.
 Formulae are taken from the Polhemus manual, page 156.
 ==============================================================================*/
 
-void matrix_scalefactor(Gmatrix *matrix, Triple scale_factor);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2008
-
-DESCRIPTION :
-***Returns the equivalent scale factor of the matrix.
-==============================================================================*/
-
 #endif

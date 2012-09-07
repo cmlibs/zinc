@@ -40,7 +40,6 @@
  * ***** END LICENSE BLOCK ***** */
 #include <list>
 #include <map>
-//-- extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -51,10 +50,7 @@
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/volume_texture.h"
-//-- }
-//-- extern "C" {
 #include "general/message.h"
-//-- }
 
 /*
 Global types
@@ -1859,7 +1855,7 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			Triple *normalpoints = NULL;
 			Triple *texturepoints = NULL;
 			Triple *tangentpoints = NULL;
-			GTDATA *datavalues = NULL;
+			GLfloat *datavalues = NULL;
 			ALLOCATE(points, Triple, number_of_triangles*3);
 			ALLOCATE(normalpoints, Triple, number_of_triangles*3);
 			if (NULL != texture_coordinate_field)
@@ -1868,31 +1864,31 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			}
 			if (NULL != data_field)
 			{
-				ALLOCATE(datavalues, GTDATA, number_of_triangles*3*number_of_data_components);
+				ALLOCATE(datavalues, GLfloat, number_of_triangles*3*number_of_data_components);
 			}
 			if ((NULL != points) && (NULL != normalpoints))
 			{
 				Triple *point = points;
 				Triple *normal = normalpoints;
 				Triple *texture = texturepoints;
-				GTDATA *data = datavalues;
+				GLfloat *data = datavalues;
 				for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
 				{
 					const Iso_triangle *triangle = *triangle_iter;
 					const Iso_vertex* v1 = triangle->v1;
 					const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
 					const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
-					(*point)[0] = (float)v1->coordinates[0]; 
-					(*point)[1] = (float)v1->coordinates[1]; 
-					(*point)[2] = (float)v1->coordinates[2];
+					(*point)[0] = (ZnReal)v1->coordinates[0]; 
+					(*point)[1] = (ZnReal)v1->coordinates[1]; 
+					(*point)[2] = (ZnReal)v1->coordinates[2];
 					point++;
-					(*point)[0] = (float)v2->coordinates[0]; 
-					(*point)[1] = (float)v2->coordinates[1]; 
-					(*point)[2] = (float)v2->coordinates[2];
+					(*point)[0] = (ZnReal)v2->coordinates[0]; 
+					(*point)[1] = (ZnReal)v2->coordinates[1]; 
+					(*point)[2] = (ZnReal)v2->coordinates[2];
 					point++;
-					(*point)[0] = (float)v3->coordinates[0]; 
-					(*point)[1] = (float)v3->coordinates[1]; 
-					(*point)[2] = (float)v3->coordinates[2];
+					(*point)[0] = (ZnReal)v3->coordinates[0]; 
+					(*point)[1] = (ZnReal)v3->coordinates[1]; 
+					(*point)[2] = (ZnReal)v3->coordinates[2];
 					point++;
 					// calculate facet normal:
 					FE_value axis1[3], axis2[3], facet_normal[3];
@@ -1906,33 +1902,33 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					normalize_FE_value3(facet_normal);
 					for (int i = 0; i < 3; i++)
 					{
-						(*normal)[0] = (float)facet_normal[0];
-						(*normal)[1] = (float)facet_normal[1];
-						(*normal)[2] = (float)facet_normal[2];
+						(*normal)[0] = (ZnReal)facet_normal[0];
+						(*normal)[1] = (ZnReal)facet_normal[1];
+						(*normal)[2] = (ZnReal)facet_normal[2];
 						normal++;
 					}
 					if (NULL != texture)
 					{
-						(*texture)[0] = (float)v1->texture_coordinates[0]; 
-						(*texture)[1] = (float)v1->texture_coordinates[1]; 
-						(*texture)[2] = (float)v1->texture_coordinates[2];
+						(*texture)[0] = (ZnReal)v1->texture_coordinates[0]; 
+						(*texture)[1] = (ZnReal)v1->texture_coordinates[1]; 
+						(*texture)[2] = (ZnReal)v1->texture_coordinates[2];
 						texture++;
-						(*texture)[0] = (float)v2->texture_coordinates[0]; 
-						(*texture)[1] = (float)v2->texture_coordinates[1]; 
-						(*texture)[2] = (float)v2->texture_coordinates[2];
+						(*texture)[0] = (ZnReal)v2->texture_coordinates[0]; 
+						(*texture)[1] = (ZnReal)v2->texture_coordinates[1]; 
+						(*texture)[2] = (ZnReal)v2->texture_coordinates[2];
 						texture++;
-						(*texture)[0] = (float)v3->texture_coordinates[0]; 
-						(*texture)[1] = (float)v3->texture_coordinates[1]; 
-						(*texture)[2] = (float)v3->texture_coordinates[2];
+						(*texture)[0] = (ZnReal)v3->texture_coordinates[0]; 
+						(*texture)[1] = (ZnReal)v3->texture_coordinates[1]; 
+						(*texture)[2] = (ZnReal)v3->texture_coordinates[2];
 						texture++;
 					}
-					if (NULL != data)
+					if (0 != data)
 					{
 						for (int j = 0; j < number_of_data_components; j++)
 						{
-							data[                              j] = v1->data[j];
-							data[  number_of_data_components + j] = v2->data[j];
-							data[2*number_of_data_components + j] = v3->data[j];
+							data[                              j] = GLfloat(v1->data[j]);
+							data[  number_of_data_components + j] = GLfloat(v2->data[j]);
+							data[2*number_of_data_components + j] = GLfloat(v3->data[j]);
 						}
 						data += number_of_data_components*3;
 					}

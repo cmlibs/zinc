@@ -43,16 +43,13 @@ and the nodes for 1D elements.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -65,7 +62,6 @@ and the nodes for 1D elements.
 #include "general/list_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_integration.h"
-//-- }
 #include "mesh/cmiss_element_private.hpp"
 
 namespace {
@@ -385,7 +381,7 @@ private:
 		int magnitude_coordinates, Computed_field *coordinate_field,
 		LIST(Index_multi_range) **node_element_list,
 		LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
-		float time_step,
+		ZnReal time_step,
 		LIST(Computed_field_node_integration_mapping) *node_mapping);
 
 	int calculate_mapping(FE_value time);
@@ -521,7 +517,7 @@ int Computed_field_integration_calculate_mapping_update(
 	int face, Computed_field *integrand, Computed_field *coordinate_field,
 	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
 	Computed_field_element_integration_mapping *seed_mapping_item,
-	float time_step, float time)
+	ZnReal time_step, ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -663,7 +659,7 @@ int Computed_field_integration::add_neighbours(Cmiss_field_cache& workingCache,
 	int magnitude_coordinates, Computed_field *coordinate_field,
 	LIST(Index_multi_range) **node_element_list,
 	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
-	float time_step,
+	ZnReal time_step,
 	LIST(Computed_field_node_integration_mapping) *node_mapping)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -1827,7 +1823,7 @@ Returns allocated command string for reproducing field. Includes type.
 int Computed_field_update_integration_scheme(
 	FE_region *fe_region,
 	Computed_field *integrand, Computed_field *coordinate_field,
-	float time_step)
+	ZnReal time_step)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

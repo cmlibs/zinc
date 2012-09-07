@@ -58,8 +58,8 @@ Global functions
 int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	char *name,struct Spectrum *spectrum,int component_number,
 	Triple bar_centre,Triple bar_axis,
-	Triple side_axis,float bar_length,float bar_radius,float extend_length,
-	int tick_divisions,float tick_length,char *number_format,
+	Triple side_axis,GLfloat bar_length,GLfloat bar_radius,GLfloat extend_length,
+	int tick_divisions,GLfloat tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
 	struct Graphics_font *font)
@@ -94,12 +94,13 @@ graphics_objects that don't come from finite_elements?
 {
 #define NUMBER_STRLEN (100)
 	char **labels, number_string[NUMBER_STRLEN];
-	float cos_theta,extend_fraction,half_final_length,length_factor,magnitude,
+	ZnReal cos_theta,extend_fraction,half_final_length,length_factor,magnitude,
 		sin_theta,spectrum_factor,spectrum_minimum,spectrum_maximum,theta,time,
 		unit_factor;
 	int allocated_labels,i,j,number_of_ticks,points_along_bar,points_around_bar,
 		return_code;
-	GTDATA spectrum_value,*data,*datum;
+	ZnReal spectrum_value;
+	GLfloat *data,*datum;
 	struct GT_object *bar_graphics_object,*label_graphics_object = NULL,
 		*tick_graphics_object;
 	struct GT_pointset *pointset;
@@ -222,13 +223,13 @@ graphics_objects that don't come from finite_elements?
 		{
 			/* create the colour bar */
 			points=(Triple *)NULL;
-			data=(GTDATA *)NULL;
+			data=0;
 			surface=(struct GT_surface *)NULL;
 			points_along_bar = 109;
 			points_around_bar = 25;
 			if (ALLOCATE(points,Triple,points_along_bar*points_around_bar)&&
 				ALLOCATE(normalpoints,Triple,points_along_bar*points_around_bar)&&
-				ALLOCATE(data,GTDATA,(component_number + 1)
+				ALLOCATE(data,GLfloat,(component_number + 1)
 					*points_along_bar*points_around_bar))
 			{
 				extend_fraction=extend_length/bar_length;
@@ -247,7 +248,7 @@ graphics_objects that don't come from finite_elements?
 					datum=data+i;
 #endif /* defined (OLD_CODE) */
 					/* get factor ranging from 0.0 to 1.0 over extended length */
-					unit_factor=(float)i/(float)(points_along_bar-1);
+					unit_factor=(GLfloat)i/(GLfloat)(points_along_bar-1);
 					/* get factor ranging from -1 to +1 along bar */
 					length_factor=2.0*unit_factor-1.0;
 					/* get centre of bar for ith point */
@@ -258,11 +259,11 @@ graphics_objects that don't come from finite_elements?
 						 outside that range in the extend_length */
 					spectrum_factor=unit_factor*(1.0+2.0*extend_fraction)-extend_fraction;
 					/* interpolate to get spectrum value */
-					spectrum_value = (GTDATA)((1.0-spectrum_factor)*spectrum_minimum +
+					spectrum_value = (GLfloat)((1.0-spectrum_factor)*spectrum_minimum +
 						spectrum_factor*spectrum_maximum);
 					for (j=0;j<points_around_bar;j++)
 					{
-						theta=(float) j * 2.0 * PI / (float)(points_around_bar-1);
+						theta=(GLfloat) j * 2.0 * PI / (GLfloat)(points_around_bar-1);
 						cos_theta=cos(theta);
 						sin_theta=sin(theta);
 						scaled_side[0]=cos_theta*side_axis[0];
@@ -337,7 +338,7 @@ graphics_objects that don't come from finite_elements?
 				for (i=0;i<number_of_ticks;i++)
 				{
 					/* get factor ranging from 0.0 to 1.0 over bar_length */
-					unit_factor=(float)i/(float)(number_of_ticks-1);
+					unit_factor=(GLfloat)i/(GLfloat)(number_of_ticks-1);
 					(*point)[0]=base[0]+unit_factor*scaled_axis[0];
 					(*point)[1]=base[1]+unit_factor*scaled_axis[1];
 					(*point)[2]=base[2]+unit_factor*scaled_axis[2];
@@ -349,7 +350,7 @@ graphics_objects that don't come from finite_elements?
 				return_code=(
 					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
 						number_of_ticks,points,/*normalpoints*/(Triple *)NULL,
-						/*n_data_components*/0,(GTDATA *)NULL))&&
+						/*n_data_components*/0,(GLfloat *)NULL))&&
 					set_GT_object_default_material(tick_graphics_object,
 						tick_label_material) &&
 					GT_OBJECT_ADD(GT_polyline)(tick_graphics_object,time,polyline));
@@ -390,13 +391,13 @@ graphics_objects that don't come from finite_elements?
 				for (i=0;return_code&&(i<number_of_ticks);i++)
 				{
 					/* get factor ranging from 0.0 to 1.0 over bar_length */
-					unit_factor=(float)i/(float)(number_of_ticks-1);
+					unit_factor=(GLfloat)i/(GLfloat)(number_of_ticks-1);
 					(*point)[0]=base[0]+unit_factor*scaled_axis[0];
 					(*point)[1]=base[1]+unit_factor*scaled_axis[1];
 					(*point)[2]=base[2]+unit_factor*scaled_axis[2];
 					point++;
 					/* interpolate to get spectrum value */
-					spectrum_value=(GTDATA)((1.0-unit_factor)*spectrum_minimum +
+					spectrum_value=(GLfloat)((1.0-unit_factor)*spectrum_minimum +
 						unit_factor*spectrum_maximum);
 					if (sprintf(number_string, number_format,
 						spectrum_value) > (NUMBER_STRLEN - 2))
@@ -418,7 +419,7 @@ graphics_objects that don't come from finite_elements?
 				}
 				return_code=((pointset=
 					CREATE(GT_pointset)(number_of_ticks,points,labels,g_NO_MARKER,0.0,
-						/*n_data_components*/0,(GTDATA *)NULL,(int *)NULL, font)) &&
+						/*n_data_components*/0,(GLfloat *)NULL,(int *)NULL, font)) &&
 					set_GT_object_default_material(label_graphics_object,
 						tick_label_material) &&
 					GT_OBJECT_ADD(GT_pointset)(label_graphics_object,time,pointset));

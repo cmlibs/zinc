@@ -1,8 +1,12 @@
 
 
 #include <math.h>
+
+#include "api/cmiss_zinc_configure.h"
+
 #define NRANSI
 #include "graphics/complex.h"
+#undef NRANSI
 #include "graphics/laguer.h"
 
 #define EPSS 1.0e-7f
@@ -13,16 +17,16 @@
 #define EPS 2.0e-6
 #define MAXM 100
 
-static float maxarg1,maxarg2;
+static ZnReal maxarg1,maxarg2;
 #define FMAX(a,b) (maxarg1=(a),maxarg2=(b),(maxarg1) > (maxarg2) ?\
 				(maxarg1) : (maxarg2))
 
 void laguer(fcomplex a[], int m, fcomplex *x, int *its)
 {
 	int iter,j;
-	float abx,abp,abm,err;
+	ZnReal abx,abp,abm,err;
 	fcomplex dx,x1,b,d,f,g,h,sq,gp,gm,g2;
-	static float frac[MR+1] = {0.0f,0.5f,0.25f,0.75f,0.13f,0.38f,0.62f,0.88f,1.0f};
+	static ZnReal frac[MR+1] = {0.0f,0.5f,0.25f,0.75f,0.13f,0.38f,0.62f,0.88f,1.0f};
 
 	for (iter=1;iter<=MAXIT;iter++) {
 		*its=iter;
@@ -41,14 +45,14 @@ void laguer(fcomplex a[], int m, fcomplex *x, int *its)
 		g=Cdiv(d,b);
 		g2=Cmul(g,g);
 		h=Csub(g2,RCmul(2.0,Cdiv(f,b)));
-		sq=Csqrt(RCmul((float) (m-1),Csub(RCmul((float) m,h),g2)));
+		sq=Csqrt(RCmul((ZnReal) (m-1),Csub(RCmul((ZnReal) m,h),g2)));
 		gp=Cadd(g,sq);
 		gm=Csub(g,sq);
 		abp=Cabs(gp);
 		abm=Cabs(gm);
 		if (abp < abm) gp=gm;
-		dx=((FMAX(abp,abm) > 0.0 ? Cdiv(Complexr((float) m,0.0),gp)
-			: RCmul(exp(log(1+abx)),Complexr(cos((float)iter),sin((float)iter)))));
+		dx=((FMAX(abp,abm) > 0.0 ? Cdiv(Complexr((ZnReal) m,0.0),gp)
+			: RCmul(exp(log(1+abx)),Complexr(cos((ZnReal)iter),sin((ZnReal)iter)))));
 		x1=Csub(*x,dx);
 		if (x->r == x1.r && x->i == x1.i) return;
 		if (iter % MT) *x=x1;

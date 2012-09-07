@@ -43,7 +43,6 @@ Renders gtObjects to STL stereolithography file.
  * ***** END LICENSE BLOCK ***** */
 
 #include <stack>
-//-- extern "C" {
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -52,7 +51,6 @@ Renders gtObjects to STL stereolithography file.
 #include "graphics/render_stl.h"
 #include "graphics/scene.h"
 #include "general/message.h"
-//-- }
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
 
@@ -221,12 +219,12 @@ public:
 	void write_triangle(
 		const Triple& v1, const Triple& v2, const Triple& v3)
 	{
-		double tv1[3], tv2[3], tv3[3];
+		ZnReal tv1[3], tv2[3], tv3[3];
 		transform(v1, tv1);
 		transform(v2, tv2);
 		transform(v3, tv3);
 
-		double tangent1[3], tangent2[3], normal[3];
+		ZnReal tangent1[3], tangent2[3], normal[3];
 		tangent1[0] = tv2[0] - tv1[0];
 		tangent1[1] = tv2[1] - tv1[1];
 		tangent1[2] = tv2[2] - tv1[2];
@@ -236,11 +234,11 @@ public:
 		cross_product3(tangent1, tangent2, normal);
 		if (0.0 < normalize3(normal))
 		{
-			fprintf(stl_file, "facet normal %f %f %f\n", (float)normal[0], (float)normal[1], (float)normal[2]);
+			fprintf(stl_file, "facet normal %f %f %f\n", (ZnReal)normal[0], (ZnReal)normal[1], (ZnReal)normal[2]);
 			fprintf(stl_file, " outer loop\n");		
-			fprintf(stl_file, "  vertex %g %g %g\n", (float)tv1[0], (float)tv1[1], (float)tv1[2]);		
-			fprintf(stl_file, "  vertex %g %g %g\n", (float)tv2[0], (float)tv2[1], (float)tv2[2]);
-			fprintf(stl_file, "  vertex %g %g %g\n", (float)tv3[0], (float)tv3[1], (float)tv3[2]);
+			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv1[0], (ZnReal)tv1[1], (ZnReal)tv1[2]);		
+			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv2[0], (ZnReal)tv2[1], (ZnReal)tv2[2]);
+			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv3[0], (ZnReal)tv3[1], (ZnReal)tv3[2]);
 			fprintf(stl_file, " endloop\n");
 		 	fprintf(stl_file, "endfacet\n");
 		}
@@ -253,7 +251,7 @@ Module functions
 ----------------
 */
 
-int makestl(Stl_context& stl_context, gtObject *graphics_object, float time);
+int makestl(Stl_context& stl_context, gtObject *graphics_object, ZnReal time);
 
 /***************************************************************************//**
  * Writes a glyph set to STL file.
@@ -279,8 +277,8 @@ int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list,
 	struct GT_object *glyph,char **labels,
-	int number_of_data_components, GTDATA *data,
-	struct Graphical_material *material, struct Spectrum *spectrum, float time)
+	int number_of_data_components, GLfloat *data,
+	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time)
 {
 	int return_code;
 	struct GT_object *temp_glyph;
@@ -382,7 +380,7 @@ int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 	Triple *normalpts, Triple *texturepts, int npts1,int npts2,
 	enum GT_surface_type surface_type, gtPolygonType polygon_type,
-	int number_of_data_components, GTDATA *data,
+	int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material, struct Spectrum *spectrum)
 {
 	int i, j, return_code = 0;
@@ -505,9 +503,9 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 								centre[2] += (*temp_point)[2];
 								temp_point++;
 							}
-							centre[0] /= (float)npts2;
-							centre[1] /= (float)npts2;
-							centre[2] /= (float)npts2;
+							centre[0] /= (ZnReal)npts2;
+							centre[1] /= (ZnReal)npts2;
+							centre[2] /= (ZnReal)npts2;
 							for (j=0; j<npts2; j++)
 							{
 								stl_context.write_triangle(point[j], point[(j+1) % npts2], centre);
@@ -611,9 +609,9 @@ int draw_voltex_stl(Stl_context& stl_context,
  * @param time time at which graphics are output
  * @return 1 on success, 0 on failure
  */
-int makestl(Stl_context& stl_context, gtObject *object, float time)
+int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 {
-	float proportion = 0.0f, *times = NULL;
+	ZnReal proportion = 0.0f, *times = NULL;
 	int itime, number_of_times, return_code = 0;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 

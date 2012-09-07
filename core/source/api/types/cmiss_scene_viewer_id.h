@@ -39,6 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #if !defined (CMISS_SCENE_VIEWER_ID_H)
+#define CMISS_SCENE_VIEWER_ID_H
 
 	struct Cmiss_scene_viewer_package;
 	typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
@@ -56,7 +57,5 @@
 
 	typedef void (*Cmiss_scene_viewer_callback)(Cmiss_scene_viewer_id scene_viewer,
 		void *callback_data, void *user_data);
-
-	#define CMISS_SCENE_VIEWER_ID_H
 
 #endif /* CMISS_SCENE_VIEWER_ID_H */

@@ -46,6 +46,8 @@
 #include "types/cmiss_spectrum_id.h"
 #include "types/cmiss_tessellation_id.h"
 
+#include "cmiss_shared_object.h"
+
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
  *
@@ -54,7 +56,7 @@
  * @param name  The name of the material.
  * @return  Handle to the material with that name, or NULL if not found.
  */
-Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
@@ -64,7 +66,7 @@ Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
  * belong to.
  * @return  Handle to the newly created material if successful, otherwise NULL.
  */
-Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -74,7 +76,7 @@ Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
  * @param graphics_module  Existing handle to the graphics module.
  * @return  Additional handle to graphics module.
  */
-Cmiss_graphics_module_id Cmiss_graphics_module_access(
+ZINC_API Cmiss_graphics_module_id Cmiss_graphics_module_access(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -85,7 +87,7 @@ Cmiss_graphics_module_id Cmiss_graphics_module_access(
  * destroyed. 
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_module_destroy(
+ZINC_API int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
 
 /***************************************************************************//** 
@@ -95,7 +97,7 @@ int Cmiss_graphics_module_destroy(
  * @param graphics_module  The module to own the new scene.
  * @return  Reference to the newly created scene.
  */
-Cmiss_scene_id Cmiss_graphics_module_create_scene(
+ZINC_API Cmiss_scene_id Cmiss_graphics_module_create_scene(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -106,7 +108,7 @@ Cmiss_scene_id Cmiss_graphics_module_create_scene(
  * @param name  The name of the scene.
  * @return  Handle to the scene with the matching name, or NULL if not found.
  */
-Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
+ZINC_API Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
@@ -119,7 +121,7 @@ Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
  * @param region  The region at which the rendition is representing for.
  * @return  Reference to the rendition.
  */
-Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+ZINC_API Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 /***************************************************************************//**
@@ -131,7 +133,7 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
  * @param region  The region at which the rendition will be enabled for.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_module_enable_renditions(
+ZINC_API int Cmiss_graphics_module_enable_renditions(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 /***************************************************************************//**
@@ -142,7 +144,7 @@ int Cmiss_graphics_module_enable_renditions(
  * @param name  The name of the spectrum.
  * @return  Handle to the spectrum with that name, or NULL if not found.
  */
-Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
+ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
@@ -152,7 +154,7 @@ Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
  * belong to.
  * @return  Handle to the newly created spectrum if successful, otherwise NULL.
  */
-Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
+ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -163,7 +165,7 @@ Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
  * @param name  The name of the tessellation.
  * @return  Handle to the tessellation with that name, or NULL if not found.
  */
-Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
+ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
@@ -173,7 +175,7 @@ Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
  * belong to.
  * @return  Handle to the newly created tessellation if successful, otherwise NULL.
  */
-Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
+ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -184,7 +186,7 @@ Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
  * @return  Status CMISS_OK if successfully create a list of standard materials
  * into graphics module, any other value on failure.
  */
-int Cmiss_graphics_module_define_standard_materials(
+ZINC_API int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -196,7 +198,7 @@ int Cmiss_graphics_module_define_standard_materials(
  * @return  Handle to the graphics_filter with the provided name,
  * 		or NULL if not found.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

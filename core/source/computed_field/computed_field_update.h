@@ -54,10 +54,6 @@ Global types
 ------------
 */
 
-#ifdef __cplusplus
-//-- extern "C" {
-#endif /* __cplusplus */
-
 /*******************************************************************************
  * Assign values of source field to destination field for nodes in nodeset at
  * the given time. Ignores nodes where either source or destination field is
@@ -97,7 +93,4 @@ int Cmiss_mesh_assign_grid_field_from_source(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	FE_value time);
 
-#ifdef __cplusplus
-//-- }
-#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_UPDATE_H) */

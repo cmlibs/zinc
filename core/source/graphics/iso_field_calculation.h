@@ -124,7 +124,7 @@ identified in the type enum.
 
 int set_Iso_field_calculation_with_floats(
 	struct Iso_field_calculation_data *data,enum Iso_field_calculation_type type,
-	int number_of_components,float *coeffs);
+	int number_of_components,ZnReal *coeffs);
 /*******************************************************************************
 LAST MODIFIED : 24 September 1997
 

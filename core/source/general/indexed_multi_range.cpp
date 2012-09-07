@@ -48,7 +48,6 @@ to index_multi_range for pending/placed frames etc.
 #include <stdlib.h>
 #include <math.h>
 
-//-- extern "C" {
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -56,7 +55,6 @@ to index_multi_range for pending/placed frames etc.
 #include "general/multi_range.h"
 #include "general/object.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module variables

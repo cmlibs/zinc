@@ -52,6 +52,8 @@ scenes.
 #include "types/cmiss_scene_id.h"
 #include "types/cmiss_scene_viewer_id.h"
 
+#include "cmiss_shared_object.h"
+
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
 LAST MODIFIED : 13 March 2008
@@ -231,7 +233,7 @@ Global functions
 ----------------
 */
 
-int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
+ZINC_API int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
 
@@ -239,7 +241,7 @@ DESCRIPTION :
 Closes the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_id scene);
 
 int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
@@ -263,7 +265,7 @@ Sets the interaction mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_interact_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_lookat_parameters(
+ZINC_API int Cmiss_scene_viewer_get_lookat_parameters(
 	Cmiss_scene_viewer_id scene_viewer,
 	double *eyex,double *eyey,double *eyez,
 	double *lookatx,double *lookaty,double *lookatz,
@@ -275,7 +277,7 @@ DESCRIPTION :
 Gets the view direction and orientation of the Scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
+ZINC_API int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
 	Cmiss_scene_viewer_id scene_viewer,double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
 	double upx,double upy,double upz);
@@ -287,7 +289,7 @@ Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
 the up vector is orthogonal to the view direction - so projection is not skew.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -297,7 +299,7 @@ Gets the distance from the eye_point to the <near> clip plane and to the <far>
 clip plane in the <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double near_plane, double far_plane);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -307,7 +309,7 @@ Sets the distance from the eye_point to the <near> clip plane and to the <far>
 clip plane in the <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_viewport_mode *viewport_mode);
 /*******************************************************************************
 LAST MODIFIED : 04 February 2005
@@ -317,7 +319,7 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_viewport_mode viewport_mode);
 /*******************************************************************************
 LAST MODIFIED : 04 February 2005
@@ -327,7 +329,7 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_projection_mode *projection_mode);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -336,7 +338,7 @@ DESCRIPTION :
 Returns the projection mode - parallel/perspective - of the Scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_projection_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_projection_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_projection_mode projection_mode);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -345,7 +347,7 @@ DESCRIPTION :
 Sets the projection mode - parallel/perspective - of the Scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_transparency_mode *transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -355,7 +357,7 @@ Returns the transparency mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -365,7 +367,7 @@ Sets the transparency mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_blending_mode *blending_mode);
 /*******************************************************************************
 LAST MODIFIED : 7 November 2007
@@ -375,7 +377,7 @@ Returns the blending mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_blending_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_blending_mode blending_mode);
 /*******************************************************************************
 LAST MODIFIED : 7 November 2007
@@ -385,7 +387,7 @@ Sets the blending mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_blending_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
 	unsigned int *transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -396,7 +398,7 @@ transparency_mode.  See the definition of the
 Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
 	unsigned int layers);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -407,7 +409,7 @@ transparency_mode.  See the definition of the
 Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_view_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_view_angle(Cmiss_scene_viewer_id scene_viewer,
 	double *view_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2002
@@ -418,7 +420,7 @@ View angle is measured across the largest square which fits inside the viewing
 window.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_view_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_view_angle(Cmiss_scene_viewer_id scene_viewer,
 	double view_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2002
@@ -429,7 +431,7 @@ View angle is measured across the largest square which fits inside the viewing
 window.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
 	unsigned int *antialias);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -438,7 +440,7 @@ DESCRIPTION :
 Gets the number of jitter samples used to antialias the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
 	unsigned int antialias_mode);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -448,7 +450,7 @@ Sets the number of jitter samples used to antialias the scene_viewer.
 Zero turns antialiasing off.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
 	double *depth_of_field, double *focal_depth);
 /*******************************************************************************
 LAST MODIFIED : 18 December 2006
@@ -456,7 +458,7 @@ LAST MODIFIED : 18 December 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
 	double depth_of_field, double focal_depth);
 /*******************************************************************************
 LAST MODIFIED : 18 December 2006
@@ -471,7 +473,7 @@ and +1 at far plane.  At this <focal_depth> the image is in focus no matter
 how small the <depth_of_field>. 
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
 	int *perturb_lines);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -482,7 +484,7 @@ GL_EXT_polygon_offset extension is used to offset the lines from the surfaces
 in the z direction of the scene viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
 	int perturb_lines);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -494,7 +496,7 @@ Server.  This means that the lines appear solid rather than interfering with a
 surface in the same space.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_background_colour_r_g_b(
+ZINC_API int Cmiss_scene_viewer_get_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double *red, double *green, double *blue);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -503,7 +505,7 @@ DESCRIPTION :
 Returns the background_colour of the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_background_colour_r_g_b(
+ZINC_API int Cmiss_scene_viewer_set_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -512,7 +514,7 @@ DESCRIPTION :
 Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_scene_name(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_scene_name(Cmiss_scene_viewer_id scene_viewer,
 	char **scene_name);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -523,7 +525,7 @@ by the <scene_viewer>.  You should call Cmiss_deallocate with the returned
 pointer when it is no longer required.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
 	const char *scene_name);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -533,7 +535,7 @@ Sets the currently rendered scene in the scene_viewer if one that
 matches the <scene_name> exists.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
 	double bk_texture_left,double bk_texture_top,
 	double bk_texture_width,double bk_texture_height,
 	int bk_texture_undistort_on,double bk_texture_max_pixels_per_polygon);
@@ -549,7 +551,7 @@ texture is displayed. It does this by drawing it as a collection of polygons;
 the last parameter controls the size of polygons used to do this.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_view_all(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int Cmiss_scene_viewer_view_all(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 12 September 2002
 
@@ -560,7 +562,7 @@ near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_redraw_now(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int Cmiss_scene_viewer_redraw_now(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
@@ -568,7 +570,7 @@ DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_translation_rate(Cmiss_scene_viewer_id scene_viewer,
 	double *translation_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -577,7 +579,7 @@ DESCRIPTION :
 Gets the scene viewer translation rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_translation_rate(Cmiss_scene_viewer_id scene_viewer,
 	double translation_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -586,7 +588,7 @@ DESCRIPTION :
 Sets the scene viewer translation rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
 	double *tumble_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -595,7 +597,7 @@ DESCRIPTION :
 Gets the scene viewer tumble rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
 	double tumble_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -604,7 +606,7 @@ DESCRIPTION :
 Sets the scene viewer tumble rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
 	double *zoom_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -613,7 +615,7 @@ DESCRIPTION :
 Gets the scene viewer zoom rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
 	double zoom_rate);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -622,7 +624,7 @@ DESCRIPTION :
 Sets the scene viewer zoom rate.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
 	double *tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -631,7 +633,7 @@ DESCRIPTION :
 Returns the <scene_viewer> freespin tool tumble angle.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
 	double tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 17 February 2005
@@ -640,8 +642,8 @@ DESCRIPTION :
 Sets the <scene_viewer> freespin tool tumble angle.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_freespin_tumble_axis(Cmiss_scene_viewer_id scene_viewer,
-	float *tumble_axis);
+ZINC_API int Cmiss_scene_viewer_get_freespin_tumble_axis(Cmiss_scene_viewer_id scene_viewer,
+	double *tumble_axis);
 /*******************************************************************************
 LAST MODIFIED : 9 October 2003
 
@@ -650,8 +652,8 @@ Gets the <scene_viewer> tumble axis.  The <tumble_axis> is the vector
 about which the scene is turning relative to its lookat point.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_start_freespin(Cmiss_scene_viewer_id scene_viewer,
-	float *tumble_axis, double tumble_angle);
+ZINC_API int Cmiss_scene_viewer_start_freespin(Cmiss_scene_viewer_id scene_viewer,
+	double *tumble_axis, double tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 
@@ -661,7 +663,7 @@ about which the scene is turning relative to its lookat point and the
 <tumble_angle> controls how much it turns on each redraw.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_stop_animations(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int Cmiss_scene_viewer_stop_animations(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 29 September 2000
 
@@ -670,7 +672,7 @@ Tells the <scene_viewer> to stop all automatic informations that it produces,
 eg. automatic tumble.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width,
 	int preferred_height, int preferred_antialias, int preferred_transparency_layers);
 /*******************************************************************************
@@ -684,7 +686,7 @@ default values for just this write.  The width and height cannot be overridden
 when the <force_onscreen> flag is set.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
 	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height);
 /*******************************************************************************
 LAST MODIFIED : 15 November 2005
@@ -694,7 +696,7 @@ Gets the NDC information.
 ==============================================================================*/
 
 
-int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
 	double NDC_left,double NDC_top,double NDC_width,double NDC_height);
 /*******************************************************************************
 LAST MODIFIED : 15 November 2005
@@ -703,7 +705,7 @@ DESCRIPTION :
 Gets the NDC information.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
 	double *left,double *right,double *bottom,double *top,double *near_plane,
 	double *far_plane);
 /*******************************************************************************
@@ -713,7 +715,7 @@ DESCRIPTION :
 Gets the viewing volume of the Scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
 	double left,double right,double bottom,double top,double near_plane,double far_plane);
 /*******************************************************************************
 LAST MODIFIED : 15 December 1997
@@ -729,7 +731,7 @@ The viewing volume can be made unsymmetric to create special effects such as
 rendering a higher resolution image in parts.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
 	enum Cmiss_stream_information_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
@@ -746,7 +748,7 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 scene viewer on screen.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_add_transform_callback(
+ZINC_API int Cmiss_scene_viewer_add_transform_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
@@ -755,7 +757,7 @@ LAST MODIFIED : 28 August 2007
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_scene_viewer_remove_transform_callback(
+ZINC_API int Cmiss_scene_viewer_remove_transform_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
@@ -775,8 +777,8 @@ Removes the callback calling <function> with <user_data> from
  * @param scene_viewer  Handle to Cmiss_scene_viewer object.
  * @return  Handle to Cmiss_scene_viewer_input on success, or NULL on failure.
  */
-Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
-    Cmiss_scene_viewer_id scene_viewer);
+ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
+	Cmiss_scene_viewer_id scene_viewer);
 
 /*******************************************************************************
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
@@ -785,7 +787,7 @@ Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
+ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
 
 /***************************************************************************//**
  * Manually calls the scene viewer's list of input callbacks with the supplied
@@ -795,10 +797,10 @@ int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address)
  * @param input_data  Description of the input event.
  * @return  Status CMISS_OK on success, any other value if failed.
  */
-int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
-    Cmiss_scene_viewer_input_id input_data);
+ZINC_API int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_input_id input_data);
 
-int Cmiss_scene_viewer_add_input_callback(
+ZINC_API int Cmiss_scene_viewer_add_input_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_input_callback function,
 	void *user_data, int add_first);
@@ -815,7 +817,7 @@ callback function returns true, so to stop processing and not call any more
 of the callbacks registered after your handler then return false.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_remove_input_callback(
+ZINC_API int Cmiss_scene_viewer_remove_input_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_input_callback function,
 	void *user_data);
@@ -827,7 +829,7 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_event_type(
+ZINC_API int Cmiss_scene_viewer_input_get_event_type(
 	Cmiss_scene_viewer_input_id input_data,
 	enum Cmiss_scene_viewer_input_event_type *event_type);
 /*******************************************************************************
@@ -837,7 +839,7 @@ DESCRIPTION :
 Returns the type of event that <input_data> represents.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_event_type(
+ZINC_API int Cmiss_scene_viewer_input_set_event_type(
 	Cmiss_scene_viewer_input_id input_data,
 	enum Cmiss_scene_viewer_input_event_type event_type);
 /*******************************************************************************
@@ -847,7 +849,7 @@ DESCRIPTION :
 Sets the type of event that <input_data> represents.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_button_number(
+ZINC_API int Cmiss_scene_viewer_input_get_button_number(
 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -857,7 +859,7 @@ Returns the button number that generated the event.
 This will be 1 to 3 for a button event and 0 for a non button event.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_button_number(
+ZINC_API int Cmiss_scene_viewer_input_set_button_number(
 	Cmiss_scene_viewer_input_id input_data, int button_number);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -867,7 +869,7 @@ Sets the button number that the event represents.
 1 to 3 for a button event and 0 for a non button event.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_key_code(
+ZINC_API int Cmiss_scene_viewer_input_get_key_code(
 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -876,7 +878,7 @@ DESCRIPTION :
 Returns the key code that generated the event.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_key_code(
+ZINC_API int Cmiss_scene_viewer_input_set_key_code(
 	Cmiss_scene_viewer_input_id input_data, int key_code);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -885,7 +887,7 @@ DESCRIPTION :
 Sets the key code that the event represents.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_x_position(
+ZINC_API int Cmiss_scene_viewer_input_get_x_position(
 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -894,7 +896,7 @@ DESCRIPTION :
 Returns the x position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_x_position(
+ZINC_API int Cmiss_scene_viewer_input_set_x_position(
 	Cmiss_scene_viewer_input_id input_data, int x_position);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -903,7 +905,7 @@ DESCRIPTION :
 Sets the x position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_y_position(
+ZINC_API int Cmiss_scene_viewer_input_get_y_position(
 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -912,7 +914,7 @@ DESCRIPTION :
 Returns the y position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_y_position(
+ZINC_API int Cmiss_scene_viewer_input_set_y_position(
 	Cmiss_scene_viewer_input_id input_data, int y_position);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -921,7 +923,7 @@ DESCRIPTION :
 Sets the y position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_get_modifier_flags(
+ZINC_API int Cmiss_scene_viewer_input_get_modifier_flags(
 	Cmiss_scene_viewer_input_id input_data,
 	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags);
 /*******************************************************************************
@@ -932,7 +934,7 @@ Returns the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_input_set_modifier_flags(
+ZINC_API int Cmiss_scene_viewer_input_set_modifier_flags(
 	Cmiss_scene_viewer_input_id input_data,
 	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags);
 /*******************************************************************************
@@ -943,7 +945,7 @@ Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_add_repaint_required_callback(
+ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
@@ -954,7 +956,7 @@ This callback will be notified when a repaint is required by a windowless mode
 scene_viewer, so that the host application can do the redraw.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_remove_repaint_required_callback(
+ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
@@ -965,12 +967,20 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-unsigned int Cmiss_scene_viewer_get_frame_count(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API unsigned int Cmiss_scene_viewer_get_frame_count(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 24 April 2008
 
 DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
+
+ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
+	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+	void *parent_void,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth);
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

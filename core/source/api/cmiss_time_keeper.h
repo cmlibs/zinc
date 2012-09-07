@@ -47,6 +47,8 @@ rewind and fast forward.
 #include "types/cmiss_time_id.h"
 #include "types/cmiss_time_keeper_id.h"
 
+#include "cmiss_shared_object.h"
+
 /***************************************************************************//**
  * An enum type to define which direction the time keeper should go.
  */
@@ -195,7 +197,7 @@ char *Cmiss_time_keeper_attribute_enum_to_string(
  * @param time_keeper  handle to the "to be access" cmiss time_keeper.
  * @return  handle to time_keeper if successfully access time_keeper.
  */
-Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
+ZINC_API Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
  * Destroys this reference to the time keeper (and sets it to NULL).
@@ -205,7 +207,7 @@ Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
  * @return  Status CMISS_OK if successfully destroy the time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
+ZINC_API int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
 
 /***************************************************************************//**
  * Get a real value of an attribute of the time keeper.

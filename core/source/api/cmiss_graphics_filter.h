@@ -49,6 +49,8 @@
 #include "types/cmiss_graphics_module_id.h"
 #include "types/cmiss_region_id.h"
 
+#include "cmiss_shared_object.h"
+
 /***************************************************************************//**
  * Labels of graphics_filter attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -106,7 +108,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_access(Cmiss_graphics_filter_id f
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_address);
+ZINC_API int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_address);
 
 /*******************************************************************************
  * Evaluate either a Cmiss_graphic is shown or hidden with a graphics_filter.
@@ -147,7 +149,7 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
  * @param scene  Scene to add filter to.
  * @return  Handle to the new filter, or NULL on failure.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility_flags(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility_flags(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**

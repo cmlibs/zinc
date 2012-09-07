@@ -45,13 +45,11 @@ elements.
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
 #include "general/mystring.h"
-//-- }
 
 /*
 Module types

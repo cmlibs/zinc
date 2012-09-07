@@ -42,7 +42,6 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <cmath>
 #include <cstdlib>
-//-- extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "api/cmiss_element.h"
 #include "computed_field/computed_field.h"
@@ -55,9 +54,7 @@ The functions for creating graphical objects from finite elements.
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
-//-- }
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -69,7 +66,6 @@ The functions for creating graphical objects from finite elements.
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "general/message.h"
-//-- }
 #include "graphics/graphics_object.hpp"
 #include "mesh/cmiss_node_private.hpp"
 
@@ -91,9 +87,9 @@ Used with iterators for building glyph sets from nodes.
 {
 	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
-	float *label_bounds;
+	ZnReal *label_bounds;
 	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3], time;
-	GTDATA *data;
+	GLfloat *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field, 
@@ -225,22 +221,22 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					++(glyph_set_data->number_of_points);
 					for (j = 0; j < 3; j++)
 					{
-						(*scale)[j] = glyph_set_data->base_size[j] +
-							size[j]*glyph_set_data->scale_factors[j];
+						(*scale)[j] = static_cast<GLfloat>(glyph_set_data->base_size[j] +
+							size[j]*glyph_set_data->scale_factors[j]);
 					}
 					for (j = 0; j < number_of_variable_scale_components; j++)
 					{
-						(*scale)[j] *= variable_scale[j];
+						(*scale)[j] *= static_cast<GLfloat>(variable_scale[j]);
 					}
 					for (j = 0; j < 3; j++)
 					{
-						(*point)[j] = coordinates[j] +
+						(*point)[j] = static_cast<GLfloat>(coordinates[j] +
 							glyph_set_data->offset[0]*(*scale)[0]*a[j] +
 							glyph_set_data->offset[1]*(*scale)[1]*b[j] +
-							glyph_set_data->offset[2]*(*scale)[2]*c[j];
-						(*axis1)[j] = a[j];
-						(*axis2)[j] = b[j];
-						(*axis3)[j] = c[j];
+							glyph_set_data->offset[2]*(*scale)[2]*c[j]);
+						(*axis1)[j] = static_cast<GLfloat>(a[j]);
+						(*axis2)[j] = static_cast<GLfloat>(b[j]);
+						(*axis3)[j] = static_cast<GLfloat>(c[j]);
 					}
 					(glyph_set_data->point)++;
 					(glyph_set_data->axis1)++;
@@ -251,7 +247,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					if (glyph_set_data->data_field)
 					{
 						CAST_TO_OTHER(glyph_set_data->data, glyph_set_data->data_values,
-							GTDATA,glyph_set_data->n_data_components);
+							ZnReal,glyph_set_data->n_data_components);
 						glyph_set_data->data +=
 							glyph_set_data->n_data_components;
 					}
@@ -266,11 +262,11 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 						if (label_density_field)
 						{
 							(*(glyph_set_data->label_density))[0] =
-								(float)fe_value_label_density[0];
+								(GLfloat)fe_value_label_density[0];
 							(*(glyph_set_data->label_density))[1] =
-								(float)fe_value_label_density[1];
+								(GLfloat)fe_value_label_density[1];
 							(*(glyph_set_data->label_density))[2] =
-								(float)fe_value_label_density[2];
+								(GLfloat)fe_value_label_density[2];
 							(glyph_set_data->label_density)++;
 						}
 					}
@@ -337,7 +333,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 							if (return_code)
 							{
 								CAST_TO_OTHER(glyph_set_data->label_bounds,
-									fieldValues, float, nComponents);
+									fieldValues, ZnReal, nComponents);
 							}
 							else
 							{
@@ -484,7 +480,7 @@ zero vectors are either read or calculated from the <orientation_scale_values>,
 these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
 {
-	float magnitude;
+	double magnitude;
 	int return_code;
 
 	ENTER(make_glyph_orientation_scale_axes);
@@ -808,9 +804,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *group_field)
 {
 	char *glyph_name, **labels;
-	float *label_bounds;
+	ZnReal *label_bounds;
 	FE_value *label_bounds_vector = NULL;
-	GTDATA *data;
+	GLfloat *data;
 	int coordinate_dimension, i, *label_bounds_bit_pattern = NULL, label_bounds_components = 0,
 		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names;
 
@@ -872,16 +868,16 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 				Triple *label_density_list = (Triple *)NULL;
 				labels = (char **)NULL;
 				n_data_components = 0;
-				data = (GTDATA *)NULL;
+				data = 0;
 				FE_value *data_values = 0;
 				names = (int *)NULL;
 				label_bounds_dimension = 0;
-				label_bounds = (float *)NULL;
+				label_bounds = (ZnReal *)NULL;
 				if (data_field)
 				{
 					n_data_components =
 						Computed_field_get_number_of_components(data_field);
-					ALLOCATE(data, GTDATA, number_of_points*n_data_components);
+					ALLOCATE(data, GLfloat, number_of_points*n_data_components);
 					data_values = new FE_value[n_data_components];
 				}
 				if (label_field)
@@ -893,7 +889,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					label_bounds_dimension = coordinate_dimension;
 					label_bounds_values = 1 << label_bounds_dimension;
 					label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
-					ALLOCATE(label_bounds, float, number_of_points * label_bounds_values *
+					ALLOCATE(label_bounds, ZnReal, number_of_points * label_bounds_values *
 						label_bounds_components);
 					/* Temporary space for evaluating the label field */
 					ALLOCATE(label_bounds_vector, FE_value, label_bounds_dimension);
@@ -996,7 +992,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						}
 						if (data)
 						{
-							REALLOCATE(data, data, GTDATA, number_of_points*n_data_components);
+							REALLOCATE(data, data, GLfloat, number_of_points*n_data_components);
 						}
 						if (labels)
 						{
@@ -1046,122 +1042,6 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	return (glyph_set);
 } /* create_GT_glyph_set_from_nodeset */
 
-#if defined OLD_CODE
-/***************************************************************************//**
- * Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite
- * <element> using <number_of_segments> spaced equally in xi.
- * The optional <data_field> (currently only a scalar) is calculated as data
- * over the polyline, for later colouration by a spectrum.
- * The optional <top_level_element> may be provided as a clue to Computed_fields
- * to say which parent element they should be evaluated on as necessary.
- * If the <line_width> is non zero then it will override the default line width.
- * Notes:
- * - the coordinate field is assumed to be rectangular cartesian.
- */
-struct GT_polyline *create_GT_polyline_from_FE_element(
-	struct FE_element *element,struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,int number_of_segments,
-	struct FE_element *top_level_element, FE_value time,
-	int line_width);
-{
-	FE_value coordinates[3],distance,xi;
-	GTDATA *data;
-	int i,n_data_components;
-	struct CM_element_information cm;
-	struct GT_polyline *polyline;
-	Triple *point,*points;
-
-	ENTER(create_GT_polyline_from_FE_element);
-	if (element && (1 == get_FE_element_dimension(element)) &&
-		(0 < number_of_segments) && coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(coordinate_field)))
-	{
-		/* clear coordinates in case coordinate field is not 3 component */
-		coordinates[0]=0.0;
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-		polyline=(struct GT_polyline *)NULL;
-		points=(Triple *)NULL;
-		n_data_components=0;
-		data=(GTDATA *)NULL;
-		if (data_field)
-		{
-			n_data_components = Computed_field_get_number_of_components(data_field);
-			if (!ALLOCATE(data,GTDATA,(number_of_segments+1)*n_data_components))
-			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_polyline_from_FE_element.  Could allocate data");
-			}
-		}
-		if ((data||(!n_data_components))&&
-			ALLOCATE(points,Triple,number_of_segments+1)&&
-			(polyline=CREATE(GT_polyline)(g_PLAIN, line_width,
-			number_of_segments+1,points,/* normalpoints */NULL,n_data_components,data)))
-		{
-			/* for selective editing of GT_object primitives, record element ID */
-			get_FE_element_identifier(element, &cm);
-			GT_polyline_set_integer_identifier(polyline, cm.number);
-			point=points;
-			distance=(FE_value)number_of_segments;
-			i=0;
-			for (i=0;(i<=number_of_segments)&&polyline;i++)
-			{
-				xi=((FE_value)i)/distance;
-				/* evaluate the fields */
-				FE_value *feData = new FE_value[n_data_components];
-				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
-					time,top_level_element,coordinates,(FE_value *)NULL)&&
-					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,&xi,time,top_level_element,feData,
-					(FE_value *)NULL)))
-				{
-					(*point)[0]=coordinates[0];
-					(*point)[1]=coordinates[1];
-					(*point)[2]=coordinates[2];
-					point++;
-					if (data_field)
-					{
-						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
-						data+=n_data_components;
-					}
-				}
-				else
-				{
-					/* error evaluating fields */
-					DESTROY(GT_polyline)(&polyline);
-				}
-				delete[] feData;
-			}
-			/* clear Computed_field caches so elements not accessed */
-			Computed_field_clear_cache(coordinate_field);
-			if (data_field)
-			{
-				Computed_field_clear_cache(data_field);
-			}
-		}
-		else
-		{
-			DEALLOCATE(points);
-			DEALLOCATE(data);
-		}
-		if (!polyline)
-		{
-			display_message(ERROR_MESSAGE,
-				"create_GT_polyline_from_FE_element.  Failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_GT_polyline_from_FE_element.  Invalid argument(s)");
-		polyline=(struct GT_polyline *)NULL;
-	}
-	LEAVE;
-
-	return (polyline);
-} /* create_GT_polyline_from_FE_element */
-#endif // defined OLD_CODE
-
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	Cmiss_field_cache_id field_cache, struct Graphics_vertex_array *array,
 	Computed_field *coordinate_field, Computed_field *data_field,
@@ -1190,7 +1070,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 
-		float *floatData = data_field ? new float[number_of_data_values] : 0;
+		GLfloat *floatData = data_field ? new GLfloat[number_of_data_values] : 0;
 
 		FE_value texture_coordinates[3];
 		if (texture_coordinate_field)
@@ -1224,19 +1104,19 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 				((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field,
 					field_cache, texture_coordinate_dimension, texture_coordinates)))
 			{
-				float floatField[3];
-				CAST_TO_OTHER(floatField,coordinates,float,3);
+				GLfloat floatField[3];
+				CAST_TO_OTHER(floatField,coordinates,GLfloat,3);
 				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 					3, 1, floatField);
 				if (data_field)
 				{
-					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
+					CAST_TO_OTHER(floatData,data_buffer,GLfloat,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 						number_of_data_values, 1, floatData);
 				}
 				if (texture_coordinate_field)
 				{
-					CAST_TO_OTHER(floatField,texture_coordinates,float,3);
+					CAST_TO_OTHER(floatField,texture_coordinates,GLfloat,3);
 					array->add_float_attribute(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
 						3, 1, floatField);
@@ -1281,7 +1161,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	struct FE_element *element, Cmiss_field_cache_id field_cache,
 	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,
-	float constant_radius,float scale_factor,struct Computed_field *radius_field,
+	ZnReal constant_radius,ZnReal scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
@@ -1291,8 +1171,8 @@ struct GT_surface *create_cylinder_from_FE_element(
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
 		normal_3, *radius_array, radius_derivative, radius_value, sin_theta,
 		tex_coordinates[3], theta, theta_change, xi, x, y;
-	float texture_coordinate1;
-	GTDATA *data, *datum;
+	ZnReal texture_coordinate1;
+	GLfloat *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
 	struct CM_element_information cm;
 	struct GT_surface *surface;
@@ -1322,12 +1202,12 @@ struct GT_surface *create_cylinder_from_FE_element(
 		normalpoints=(Triple *)NULL;
 		texturepoints=(Triple *)NULL;
 		n_data_components=0;
-		data=(GTDATA *)NULL;
+		data=0;
 		number_of_points=(number_of_segments_along+1)*(number_of_segments_around+1);
 		if (data_field)
 		{
 			n_data_components = Computed_field_get_number_of_components(data_field);
-			if (!ALLOCATE(data,GTDATA,number_of_points*n_data_components))
+			if (!ALLOCATE(data,GLfloat,number_of_points*n_data_components))
 			{
 				display_message(ERROR_MESSAGE,
 					"create_cylinder_from_FE_element.  Could allocate data");
@@ -1353,7 +1233,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			FE_value *feData = new FE_value[n_data_components];
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
-				xi=(float)i/(float)number_of_segments_along;
+				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
 				/* evaluate the fields */
 				if (Cmiss_field_cache_set_mesh_location_with_parent(
 						field_cache, element, /*dimension*/1, &xi, top_level_element) &&
@@ -1370,9 +1250,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 						texture_coordinate_dimension, tex_coordinates)))
 				{
 					/* store the coordinates in the point */
-					(*point)[0]=coordinates[0];
-					(*point)[1]=coordinates[1];
-					(*point)[2]=coordinates[2];
+					(*point)[0]=(ZnReal)coordinates[0];
+					(*point)[1]=(ZnReal)coordinates[1];
+					(*point)[2]=(ZnReal)coordinates[2];
 					/* normalize the line direction (derivative) */
 					/* keep dS/dxi in the radius_array for converting derivatives later */
 					dS_dxi = sqrt(derivative_xi[0]*derivative_xi[0]+
@@ -1386,9 +1266,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 						derivative_xi[2] /= dS_dxi;
 					}
 					/* store the derivative in the normal */
-					(*derivative)[0]=derivative_xi[0];
-					(*derivative)[1]=derivative_xi[1];
-					(*derivative)[2]=derivative_xi[2];
+					(*derivative)[0]=(ZnReal)derivative_xi[0];
+					(*derivative)[1]=(ZnReal)derivative_xi[1];
+					(*derivative)[2]=(ZnReal)derivative_xi[2];
 					/* store the radius and derivative in the radius array */
 					if (radius_field)
 					{
@@ -1403,7 +1283,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 					/* store the data and then we are done with it */
 					if (data_field)
 					{
-						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
+						CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
 						datum=data;
 						for (j=number_of_segments_around;j>=0;j--)
 						{
@@ -1417,12 +1297,12 @@ struct GT_surface *create_cylinder_from_FE_element(
 					/* store the first texture coordinate */
 					if (texture_coordinate_field)
 					{
-						(*texture_coordinate)[0] = (float)(tex_coordinates[0]);
+						(*texture_coordinate)[0] = (ZnReal)(tex_coordinates[0]);
 					}
 					else
 					{
 						/* default is to use xi for the first texture coordinate */
-						(*texture_coordinate)[0] = (float)(xi);
+						(*texture_coordinate)[0] = (ZnReal)(xi);
 					}
 				}
 				else
@@ -1478,9 +1358,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 						}
 						/* put it back in the derivatives; we know it is a zero derivative
 							 from the stored dS_dxi */
-						(*derivative)[0] = derivative_xi[0];
-						(*derivative)[1] = derivative_xi[1];
-						(*derivative)[2] = derivative_xi[2];
+						(*derivative)[0] = (ZnReal)derivative_xi[0];
+						(*derivative)[1] = (ZnReal)derivative_xi[1];
+						(*derivative)[2] = (ZnReal)derivative_xi[2];
 					}
 					/* get any vector not aligned with derivative */
 					jacobian[0] = 0.0;
@@ -1520,16 +1400,16 @@ struct GT_surface *create_cylinder_from_FE_element(
 					jacobian[5] =
 						derivative_xi[0]*jacobian[1] - derivative_xi[1]*jacobian[0];
 					/* make normal into a unit vector */
-					if (0.0 < (length = (float)sqrt((double)(jacobian[3]*jacobian[3] +
+					if (0.0 < (length = (ZnReal)sqrt((double)(jacobian[3]*jacobian[3] +
 						jacobian[4]*jacobian[4] + jacobian[5]*jacobian[5]))))
 					{
 						jacobian[3] /= length;
 						jacobian[4] /= length;
 						jacobian[5] /= length;
 					}
-					(*normal)[0] = jacobian[3];
-					(*normal)[1] = jacobian[4];
-					(*normal)[2] = jacobian[5];
+					(*normal)[0] = (ZnReal)jacobian[3];
+					(*normal)[1] = (ZnReal)jacobian[4];
+					(*normal)[2] = (ZnReal)jacobian[5];
 				}
 				end_aligned_normal[0] = (*normal)[0];
 				end_aligned_normal[1] = (*normal)[1];
@@ -1568,16 +1448,16 @@ struct GT_surface *create_cylinder_from_FE_element(
 						jacobian[4] * (*derivative)[0];
 
 					/* Store this in the other normal space and normalise */
-					(*normal)[0] = jacobian[0];
-					(*normal)[1] = jacobian[1];
-					(*normal)[2] = jacobian[2];
+					(*normal)[0] = (ZnReal)jacobian[0];
+					(*normal)[1] = (ZnReal)jacobian[1];
+					(*normal)[2] = (ZnReal)jacobian[2];
 					if (0.0<(distance=
 						sqrt((*normal)[0]*(*normal)[0] + (*normal)[1]*(*normal)[1]+
 							(*normal)[2]*(*normal)[2])))
 					{
-						(*normal)[0]/=distance;
-						(*normal)[1]/=distance;
-						(*normal)[2]/=distance;
+						(*normal)[0]/=(ZnReal)distance;
+						(*normal)[1]/=(ZnReal)distance;
+						(*normal)[2]/=(ZnReal)distance;
 					}
 				}
 
@@ -1664,29 +1544,29 @@ struct GT_surface *create_cylinder_from_FE_element(
 					{
 						if (i < number_of_segments_along)
 						{
-							theta = theta_change * ((float) i)/ ((float)number_of_segments_along)
-								+ PI*2.0*((float)j)/((float)number_of_segments_around);
+							theta = theta_change * ((ZnReal) i)/ ((ZnReal)number_of_segments_along)
+								+ PI*2.0*((ZnReal)j)/((ZnReal)number_of_segments_around);
 						}
 						else
 						{
-							theta = PI*2.*((float)(j + facet_offset))/
-								((float)number_of_segments_around);
+							theta = PI*2.*((ZnReal)(j + facet_offset))/
+								((ZnReal)number_of_segments_around);
 						}
 						cos_theta=cos(theta);
 						sin_theta=sin(theta);
-						(normal[j])[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-						(normal[j])[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-						(normal[j])[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-						(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
-						(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
-						(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
+						(normal[j])[0]=ZnReal(cos_theta*jacobian[0]+sin_theta*jacobian[3]);
+						(normal[j])[1]=ZnReal(cos_theta*jacobian[1]+sin_theta*jacobian[4]);
+						(normal[j])[2]=ZnReal(cos_theta*jacobian[2]+sin_theta*jacobian[5]);
+						(point[j])[0]=(point[0])[0]+ZnReal(radius_value*(normal[j])[0]);
+						(point[j])[1]=(point[0])[1]+ZnReal(radius_value*(normal[j])[1]);
+						(point[j])[2]=(point[0])[2]+ZnReal(radius_value*(normal[j])[2]);
 						if (radius_field && (0.0 != radius_derivative))
 						{
 							if (0.0 < dS_dxi)
 							{
-								(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-								(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-								(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
+								(normal[j])[0] -= ZnReal((radius_derivative/dS_dxi)*derivative_xi[0]);
+								(normal[j])[1] -= ZnReal((radius_derivative/dS_dxi)*derivative_xi[1]);
+								(normal[j])[2] -= ZnReal((radius_derivative/dS_dxi)*derivative_xi[2]);
 							}
 							else
 							{
@@ -1694,15 +1574,15 @@ struct GT_surface *create_cylinder_from_FE_element(
 									 space. Hence, make normal aligned with derivative */
 								if (radius_derivative < 0.0)
 								{
-									(normal[j])[0] = derivative_xi[0];
-									(normal[j])[1] = derivative_xi[1];
-									(normal[j])[2] = derivative_xi[2];
+									(normal[j])[0] = ZnReal(derivative_xi[0]);
+									(normal[j])[1] = ZnReal(derivative_xi[1]);
+									(normal[j])[2] = ZnReal(derivative_xi[2]);
 								}
 								else
 								{
-									(normal[j])[0] = -derivative_xi[0];
-									(normal[j])[1] = -derivative_xi[1];
-									(normal[j])[2] = -derivative_xi[2];
+									(normal[j])[0] = -ZnReal(derivative_xi[0]);
+									(normal[j])[1] = -ZnReal(derivative_xi[1]);
+									(normal[j])[2] = -ZnReal(derivative_xi[2]);
 								}
 							}
 						}
@@ -1722,9 +1602,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 					if (0.0<(distance=
 						sqrt(normal_1*normal_1+normal_2*normal_2+normal_3*normal_3)))
 					{
-						(*normal)[0]=normal_1/distance;
-						(*normal)[1]=normal_2/distance;
-						(*normal)[2]=normal_3/distance;
+						(*normal)[0]=ZnReal(normal_1/distance);
+						(*normal)[1]=ZnReal(normal_2/distance);
+						(*normal)[2]=ZnReal(normal_3/distance);
 					}
 					normal++;
 				}
@@ -1740,7 +1620,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 					{
 						(*texture_coordinate)[0] = texture_coordinate1;
 						(*texture_coordinate)[1] =
-							(float)j / (float)number_of_segments_around;
+							(ZnReal)j / (ZnReal)number_of_segments_around;
 						(*texture_coordinate)[2] = 0.0;
 						texture_coordinate++;
 					}
@@ -2192,8 +2072,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	FE_value coordinates[3], derivative_xi1[3], derivative_xi2[3],
 		texture_values[3], texture_derivative_xi1[3], texture_derivative_xi2[3],
 		texture_determinant;
-	float distance;
-	GTDATA *data;
+	ZnReal distance;
+	GLfloat *data;
 	gtPolygonType polygon_type;
 	struct GT_surface *surface;
 	int calculate_tangent_points, i,j,n_data_components,number_of_points,
@@ -2249,11 +2129,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 		tangentpoints=(Triple *)NULL;
 		texturepoints=(Triple *)NULL;
 		n_data_components = 0;
-		data=(GTDATA *)NULL;
+		data=0L;
 		if (data_field)
 		{
 			n_data_components = Computed_field_get_number_of_components(data_field);
-			if (!ALLOCATE(data,GTDATA,number_of_points*n_data_components))
+			if (!ALLOCATE(data,GLfloat,number_of_points*n_data_components))
 			{
 				display_message(ERROR_MESSAGE,
 					"create_GT_surface_from_FE_element.  Could not allocate data");
@@ -2435,15 +2315,15 @@ struct GT_surface *create_GT_surface_from_FE_element(
 				}
 				if (return_code)
 				{
-					(*point)[0]=coordinates[0];
-					(*point)[1]=coordinates[1];
-					(*point)[2]=coordinates[2];
+					(*point)[0]=ZnReal(coordinates[0]);
+					(*point)[1]=ZnReal(coordinates[1]);
+					(*point)[2]=ZnReal(coordinates[2]);
 					point++;
 					/* calculate the normals */
 					/* calculate the normal=d/d_xi1 x d/d_xi2 */
-					(*normal)[0] = derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2];
-					(*normal)[1] = derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0];
-					(*normal)[2] = derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1];
+					(*normal)[0] = ZnReal(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]);
+					(*normal)[1] = ZnReal(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]);
+					(*normal)[2] = ZnReal(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]);
 					if (texture_coordinate_field)
 					{
 						if (calculate_tangent_points)
@@ -2455,18 +2335,18 @@ struct GT_surface *create_GT_surface_from_FE_element(
 								(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
 							{
 								/* Cannot invert the texture derivative so just use the first xi derivative */
-								(*tangent)[0] = derivative_xi1[0];
-								(*tangent)[1] = derivative_xi1[1];
-								(*tangent)[2] = derivative_xi1[2];
+								(*tangent)[0] = ZnReal(derivative_xi1[0]);
+								(*tangent)[1] = ZnReal(derivative_xi1[1]);
+								(*tangent)[2] = ZnReal(derivative_xi1[2]);
 							}
 							else
 							{
-								(*tangent)[0] = (derivative_xi1[0] * texture_derivative_xi1[0]
-									- derivative_xi2[0] * texture_derivative_xi1[1]) / texture_determinant;
-								(*tangent)[1] = (derivative_xi1[1] * texture_derivative_xi1[0]
-									- derivative_xi2[1] * texture_derivative_xi1[1]) / texture_determinant;
-								(*tangent)[2] = (derivative_xi1[2] * texture_derivative_xi1[0]
-									- derivative_xi2[2] * texture_derivative_xi1[1]) / texture_determinant;
+								(*tangent)[0] = ZnReal((derivative_xi1[0] * texture_derivative_xi1[0]
+									- derivative_xi2[0] * texture_derivative_xi1[1]) / texture_determinant);
+								(*tangent)[1] = ZnReal((derivative_xi1[1] * texture_derivative_xi1[0]
+									- derivative_xi2[1] * texture_derivative_xi1[1]) / texture_determinant);
+								(*tangent)[2] = ZnReal((derivative_xi1[2] * texture_derivative_xi1[0]
+									- derivative_xi2[2] * texture_derivative_xi1[1]) / texture_determinant);
 							}
 						}
 						else
@@ -2486,9 +2366,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi1[0];
-								(*normal)[1]=derivative_xi1[1];
-								(*normal)[2]=derivative_xi1[2];
+								(*normal)[0]=ZnReal(derivative_xi1[0]);
+								(*normal)[1]=ZnReal(derivative_xi1[1]);
+								(*normal)[2]=ZnReal(derivative_xi1[2]);
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_0==collapsed_element)
@@ -2497,9 +2377,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi2[0];
-								(*normal)[1]=derivative_xi2[1];
-								(*normal)[2]=derivative_xi2[2];
+								(*normal)[0]=ZnReal(derivative_xi2[0]);
+								(*normal)[1]=ZnReal(derivative_xi2[1]);
+								(*normal)[2]=ZnReal(derivative_xi2[2]);
 							}
 						}
 						else if (((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && (!reverse_winding)) ||
@@ -2509,9 +2389,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi1[0];
-								(*normal)[1]=derivative_xi1[1];
-								(*normal)[2]=derivative_xi1[2];
+								(*normal)[0]=ZnReal(derivative_xi1[0]);
+								(*normal)[1]=ZnReal(derivative_xi1[1]);
+								(*normal)[2]=ZnReal(derivative_xi1[2]);
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_1==collapsed_element)
@@ -2520,23 +2400,23 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi2[0];
-								(*normal)[1]=derivative_xi2[1];
-								(*normal)[2]=derivative_xi2[2];
+								(*normal)[0]=ZnReal(derivative_xi2[0]);
+								(*normal)[1]=ZnReal(derivative_xi2[1]);
+								(*normal)[2]=ZnReal(derivative_xi2[2]);
 							}
 						}
 					}
 					normal++;
 					if (data_field)
 					{
-						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
+						CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
 						data+=n_data_components;
 					}
 					if (texture_coordinate_field)
 					{
-						(*texture_coordinate)[0]=texture_values[0];
-						(*texture_coordinate)[1]=texture_values[1];
-						(*texture_coordinate)[2]=texture_values[2];
+						(*texture_coordinate)[0]=ZnReal(texture_values[0]);
+						(*texture_coordinate)[1]=ZnReal(texture_values[1]);
+						(*texture_coordinate)[2]=ZnReal(texture_values[2]);
 						texture_coordinate++;
 					}
 				}
@@ -2564,12 +2444,12 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							derivative_xi1[0]=(*normal)[0];
 							derivative_xi1[1]=(*normal)[1];
 							derivative_xi1[2]=(*normal)[2];
-							(*normal)[0] = special_normal_sign*(derivative_xi1[1]*derivative_xi2[2] -
-								derivative_xi2[1]*derivative_xi1[2]);
-							(*normal)[1] = special_normal_sign*(derivative_xi1[2]*derivative_xi2[0] -
-								derivative_xi2[2]*derivative_xi1[0]);
-							(*normal)[2] = special_normal_sign*(derivative_xi1[0]*derivative_xi2[1] -
-								derivative_xi2[0]*derivative_xi1[1]);
+							(*normal)[0] = ZnReal(special_normal_sign*(derivative_xi1[1]*derivative_xi2[2] -
+								derivative_xi2[1]*derivative_xi1[2]));
+							(*normal)[1] = ZnReal(special_normal_sign*(derivative_xi1[2]*derivative_xi2[0] -
+								derivative_xi2[2]*derivative_xi1[0]));
+							(*normal)[2] = ZnReal(special_normal_sign*(derivative_xi1[0]*derivative_xi2[1] -
+								derivative_xi2[0]*derivative_xi1[1]));
 							derivative_xi2[0]=derivative_xi1[0];
 							derivative_xi2[1]=derivative_xi1[1];
 							derivative_xi2[2]=derivative_xi1[2];
@@ -2589,11 +2469,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						derivative_xi2[0]=(*normal)[0];
 						derivative_xi2[1]=(*normal)[1];
 						derivative_xi2[2]=(*normal)[2];
-						temp_normal[0] = (float)(special_normal_sign*
+						temp_normal[0] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[1]*derivative_xi1[2] - derivative_xi1[1]*derivative_xi2[2]));
-						temp_normal[1] = (float)(special_normal_sign*
+						temp_normal[1] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[2]*derivative_xi1[0] - derivative_xi1[2]*derivative_xi2[0]));
-						temp_normal[2] = (float)(special_normal_sign*
+						temp_normal[2] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[0]*derivative_xi1[1] - derivative_xi1[0]*derivative_xi2[1]));
 						for (i=number_of_points_in_xi2;i>0;i--)
 						{
@@ -2614,11 +2494,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						derivative_xi2[0]=(*normal)[0];
 						derivative_xi2[1]=(*normal)[1];
 						derivative_xi2[2]=(*normal)[2];
-						temp_normal[0] = (float)(special_normal_sign*
+						temp_normal[0] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]));
-						temp_normal[1] = (float)(special_normal_sign*
+						temp_normal[1] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]));
-						temp_normal[2] = (float)(special_normal_sign*
+						temp_normal[2] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]));
 						for (i=number_of_points_in_xi1;i>0;i--)
 						{
@@ -2641,11 +2521,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						derivative_xi1[0]=(*normal)[0];
 						derivative_xi1[1]=(*normal)[1];
 						derivative_xi1[2]=(*normal)[2];
-						temp_normal[0] = (float)(special_normal_sign*
+						temp_normal[0] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[1]*derivative_xi1[2] - derivative_xi1[1]*derivative_xi2[2]));
-						temp_normal[1] = (float)(special_normal_sign*
+						temp_normal[1] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[2]*derivative_xi1[0] - derivative_xi1[2]*derivative_xi2[0]));
-						temp_normal[2] = (float)(special_normal_sign*
+						temp_normal[2] = (ZnReal)(special_normal_sign*
 							(derivative_xi2[0]*derivative_xi1[1] - derivative_xi1[0]*derivative_xi2[1]));
 						for (i=number_of_points_in_xi2;i>0;i--)
 						{
@@ -2668,11 +2548,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						derivative_xi1[0]=(*normal)[0];
 						derivative_xi1[1]=(*normal)[1];
 						derivative_xi1[2]=(*normal)[2];
-						temp_normal[0] = (float)(special_normal_sign*
+						temp_normal[0] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]));
-						temp_normal[1] = (float)(special_normal_sign*
+						temp_normal[1] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]));
-						temp_normal[2] = (float)(special_normal_sign*
+						temp_normal[2] = (ZnReal)(special_normal_sign*
 							(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]));
 						for (i=number_of_points_in_xi1;i>0;i--)
 						{
@@ -2781,9 +2661,9 @@ The <xi> are set to their local values within the returned <element>.
 	ENTER(Set_element_and_local_xi);
 	if (element_block&&n_xi&&xi&&element)
 	{
-		a=(int)(floor(((float)xi[0])));
-		b=(int)(floor(((float)xi[1])));
-		c=(int)(floor(((float)xi[2])));
+		a=(int)(floor(((ZnReal)xi[0])));
+		b=(int)(floor(((ZnReal)xi[1])));
+		c=(int)(floor(((ZnReal)xi[2])));
 		/* set any slight outliers to boundary of volume */
 		if (a>n_xi[0]-1)
 		{
@@ -3172,9 +3052,9 @@ faces.
 													Slit or hole => extrapolate from nearest element
 													e.g xi < 0.5 */
 												/* the element indices */
-												a=(int)(floor(((float)xi[0])));
-												b=(int)(floor(((float)xi[1])));
-												c=(int)(floor(((float)xi[2])));
+												a=(int)(floor(((ZnReal)xi[0])));
+												b=(int)(floor(((ZnReal)xi[1])));
+												c=(int)(floor(((ZnReal)xi[2])));
 												/* if a vertex is outside of the element block, then
 													do not deform it */
 												outside_block=0;
@@ -3309,7 +3189,7 @@ faces.
 															feTextureCoords,(FE_value *)NULL);
 														CAST_TO_OTHER(vertex_list[i+
 																n_vertices*v_count]->texture_coordinates,
-															feTextureCoords,float,3);
+															feTextureCoords,ZnReal,3);
 														if (tex_number_of_components < 3)
 														{
 															vertex_list[i+n_vertices*v_count]->texture_coordinates[2]
@@ -3350,7 +3230,7 @@ faces.
 															xi,time,(struct FE_element *)NULL,
 															feCoords,coordinate_field_derivatives);
 													CAST_TO_OTHER(vertex_list[index]->coordinates,
-														feCoords,float,3);
+														feCoords,ZnReal,3);
 
 													if (return_code)
 													{
@@ -3415,7 +3295,7 @@ faces.
 														if (data_field)
 														{
 															FE_value *feData = new FE_value[n_data_components];
-															if (!(ALLOCATE(vertex_list[index]->data, float, n_data_components) &&
+															if (!(ALLOCATE(vertex_list[index]->data, ZnReal, n_data_components) &&
 																Computed_field_evaluate_in_element(data_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 																xi,time,(struct FE_element *)NULL,
@@ -3428,7 +3308,7 @@ faces.
 															else
 															{
 																CAST_TO_OTHER(vertex_list[index]->data,feData,
-																	float,n_data_components);
+																	ZnReal,n_data_components);
 															}
 															delete[] feData;
 														}
@@ -3616,7 +3496,7 @@ Note:
 	char **label, **labels;
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
 		variable_scale[3], xi[3];
-	GTDATA *data;
+	GLfloat *data;
 	int draw_all, i, j, n_data_components, *name, *names,
 		number_of_orientation_scale_components, number_of_variable_scale_components,
 		point_number, point_selected,	points_to_draw;
@@ -3654,7 +3534,7 @@ Note:
 		scale_list = (Triple *)NULL;
 		labels = (char **)NULL;
 		n_data_components = 0;
-		data = (GTDATA *)NULL;
+		data = 0;
 		names = (int *)NULL;
 		if ((GRAPHICS_SELECT_ON == select_mode) ||
 			(GRAPHICS_NO_SELECT == select_mode) ||
@@ -3698,7 +3578,7 @@ Note:
 			if (data_field)
 			{
 				n_data_components = Computed_field_get_number_of_components(data_field);
-				ALLOCATE(data, GTDATA, points_to_draw*n_data_components);
+				ALLOCATE(data, GLfloat, points_to_draw*n_data_components);
 			}
 			FE_value *feData = new FE_value[n_data_components];
 			if (label_field)
@@ -3728,7 +3608,7 @@ Note:
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, glyph, font,
 					labels, n_data_components, data,
-					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,
 					cm.number, names)))
 			{
@@ -3790,21 +3670,21 @@ Note:
 						{
 							for (j = 0; j < 3; j++)
 							{
-								(*scale)[j] = base_size[j] + size[j]*scale_factors[j];
+								(*scale)[j] = ZnReal(base_size[j] + size[j]*scale_factors[j]);
 							}
 							for (j = 0; j < number_of_variable_scale_components; j++)
 							{
-								(*scale)[j] *= variable_scale[j];
+								(*scale)[j] *= ZnReal(variable_scale[j]);
 							}
 							for (j = 0; j < 3; j++)
 							{
-								(*point)[j] = coordinates[j] +
+								(*point)[j] = ZnReal(coordinates[j] +
 									offset[0]*(*scale)[0]*a[j] +
 									offset[1]*(*scale)[1]*b[j] +
-									offset[2]*(*scale)[2]*c[j];
-								(*axis1)[j] = a[j];
-								(*axis2)[j] = b[j];
-								(*axis3)[j] = c[j];
+									offset[2]*(*scale)[2]*c[j]);
+								(*axis1)[j] = ZnReal(a[j]);
+								(*axis2)[j] = ZnReal(b[j]);
+								(*axis3)[j] = ZnReal(c[j]);
 							}
 							point++;
 							axis1++;
@@ -3814,7 +3694,7 @@ Note:
 
 							if (data_field)
 							{
-								CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
+								CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
 								data += n_data_components;
 							}
 							if (names)
@@ -3967,9 +3847,9 @@ Interpolates xi points (triples in vector field) over the finite <element>
 							exists in.  Once the element is chosen, the xi value is
 							renormalized to lie within that element */
 							/* the element indices */
-							a=(int)(floor(((float)xi[0])));
-							b=(int)(floor(((float)xi[1])));
-							c=(int)(floor(((float)xi[2])));
+							a=(int)(floor(((ZnReal)xi[0])));
+							b=(int)(floor(((ZnReal)xi[1])));
+							c=(int)(floor(((ZnReal)xi[2])));
 							/* if a vertex is outside of the element block, then do not
 								deform it */
 							outside_block=0;
@@ -4514,11 +4394,11 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						return_code=1;
 						while (return_code&&(i<number_of_volume_texture_nodes))
 						{
-							xi[0] = (float)(i % (number_in_xi1+1)) / (float)number_in_xi1; 
-							xi[1] = (float)((i / (number_in_xi1+1)) % (number_in_xi2+1)) / (float)number_in_xi2; 
+							xi[0] = (ZnReal)(i % (number_in_xi1+1)) / (ZnReal)number_in_xi1; 
+							xi[1] = (ZnReal)((i / (number_in_xi1+1)) % (number_in_xi2+1)) / (ZnReal)number_in_xi2; 
 							/* We may start part way through, use number_in_xi2 as this is the total dimension */
-							xi[2] = (float)(((i / ((number_in_xi1+1) * (number_in_xi2+1))))
-								+ pass * xi3_step) / (float)number_in_xi[2];
+							xi[2] = (ZnReal)(((i / ((number_in_xi1+1) * (number_in_xi2+1))))
+								+ pass * xi3_step) / (ZnReal)number_in_xi[2];
 							if (Computed_field_evaluate_in_element(scalar_field,
 									 element,xi,time,/*top_level_element*/(struct FE_element *)NULL,
 									 &scalar_value,(FE_value *)NULL))
@@ -4583,8 +4463,8 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							(volume_texture->ximax)[0]=1;
 							(volume_texture->ximin)[1]=0;
 							(volume_texture->ximax)[1]=1;
-							(volume_texture->ximin)[2]=(float)(pass * xi3_step) / (float)number_in_xi[2];
-							(volume_texture->ximax)[2]=(float)((pass + 1) * xi3_step) / (float)number_in_xi[2];
+							(volume_texture->ximin)[2]=(ZnReal)(pass * xi3_step) / (ZnReal)number_in_xi[2];
+							(volume_texture->ximax)[2]=(ZnReal)((pass + 1) * xi3_step) / (ZnReal)number_in_xi[2];
 							if (volume_texture->ximax[2] > 1.0)
 							{
 								volume_texture->ximax[2] = 1.0;

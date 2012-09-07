@@ -43,12 +43,10 @@ DESCRIPTION :
 
 #include <math.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/octree.h"
 #include "general/list_private.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

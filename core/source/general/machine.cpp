@@ -41,7 +41,7 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #if defined (UNIX)
@@ -50,11 +50,9 @@ DESCRIPTION :
 #if defined (VMS)
 #include <stdlib.h>
 #endif /* defined (VMS) */
-//-- extern "C" {
 #include "general/machine.h"
 #include "general/debug.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global functions

@@ -44,13 +44,16 @@ Spectrum structures and support code.
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
+#include "api/cmiss_graphics_module.h"
 
+#if defined (USE_GLEW)
+#include <GL/glew.h>
+#endif /* USE_GLEW */
 #include "general/value.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "api/cmiss_graphics_module.h"
 
 struct Cmiss_graphics_material;
 struct Spectrum_settings;
@@ -210,7 +213,7 @@ DESCRIPTION :
 Returns the position of <settings> in <spectrum>.
 ==============================================================================*/
 
-int set_Spectrum_minimum(struct Spectrum *spectrum,float minimum);
+int set_Spectrum_minimum(struct Spectrum *spectrum,ZnReal minimum);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -218,7 +221,7 @@ DESCRIPTION :
 A function to set the spectrum minimum.
 ==============================================================================*/
 
-int set_Spectrum_maximum(struct Spectrum *spectrum,float maximum);
+int set_Spectrum_maximum(struct Spectrum *spectrum,ZnReal maximum);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -226,7 +229,7 @@ DESCRIPTION :
 A function to set the spectrum maximum.
 ==============================================================================*/
 
-float get_Spectrum_minimum(struct Spectrum *spectrum);
+ZnReal get_Spectrum_minimum(struct Spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
@@ -234,7 +237,7 @@ DESCRIPTION :
 Returns the value of the spectrum minimum.
 ==============================================================================*/
 
-float get_Spectrum_maximum(struct Spectrum *spectrum);
+ZnReal get_Spectrum_maximum(struct Spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
@@ -277,7 +280,7 @@ clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
 ==============================================================================*/
 
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
-	float minimum, float maximum);
+	ZnReal minimum, ZnReal maximum);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -325,7 +328,7 @@ Initialises the graphics state for rendering values on the current material.
 
 int spectrum_renderGL_value(struct Spectrum *spectrum,
 	struct Cmiss_graphics_material *material,struct Spectrum_render_data *render_data,
-	float *data);
+	GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 1 June 1999
 
@@ -346,7 +349,7 @@ Resets the graphics state after rendering values on current material.
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
 	struct Cmiss_graphics_material *material, int number_of_data_components,
-	float *data);
+	GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -356,7 +359,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 ==============================================================================*/
 
 int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
-	FE_value *data, float *rgba);
+	FE_value *data, ZnReal *rgba);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 

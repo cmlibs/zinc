@@ -42,7 +42,9 @@
 PROJECT( ZincCore )
 
 CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_zinc_configure.h.cmake
-	${PROJECT_BINARY_DIR}/source/configure/cmiss_zinc_configure.h )
+	${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h )
+CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_shared_object.h.cmake
+	${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
 	
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from 
@@ -86,16 +88,18 @@ PRINT_LIST_DUPLICATIONS( ZINC_LIB_SRCS )
 PRINT_LIST_DUPLICATIONS( ZINC_LIB_HDRS )
 
 SET( CONFIGURE_HDRS
-	${PROJECT_BINARY_DIR}/source/configure/cmiss_zinc_configure.h )
+	${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h
+	${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
 
 INCLUDE_DIRECTORIES( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
-	${INCLUDE_DIRS} )
+	${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS} )
 
 SET( TARGET_ZINC_LIB "zinc" )
 
 IF( MSVC_IDE )
 	# I want to group the source files by the directory layout for Visual Studio
 	GROUP_SOURCE_FILES(${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${CONFIGURE_HDRS})
+	ADD_DEFINITIONS( "/wd4244 /nologo" )
 ENDIF()
 
 IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
@@ -122,3 +126,5 @@ INSTALL( TARGETS ${TARGET_ZINC_LIB} EXPORT ${ZINC_LIB_GROUP}-targets
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION lib )
+
+SET( TARGET_ZINC_LIB ${TARGET_ZINC_LIB} PARENT_SCOPE )

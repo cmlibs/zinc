@@ -43,6 +43,9 @@ Definitions of machine specific stuff.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (MACHINE_H)
 #define MACHINE_H
+
+#include "api/cmiss_shared_object.h"
+
 #include "general/object.h"
 
 /*
@@ -81,7 +84,7 @@ Different types of machines supported.
 Global functions
 ----------------
 */
-struct Machine_information *CREATE(Machine_information)(void);
+ZINC_API struct Machine_information *CREATE(Machine_information)(void);
 /*******************************************************************************
 LAST MODIFIED : 20 December 1996
 
@@ -90,7 +93,7 @@ Creates a machine information structure.
 ???GMH.  Perhaps this could be extended to tell it a machine to interrogate?
 ==============================================================================*/
 
-int DESTROY(Machine_information)(
+ZINC_API int DESTROY(Machine_information)(
 	struct Machine_information **machine_information_address);
 /*******************************************************************************
 LAST MODIFIED : 20 December 1996

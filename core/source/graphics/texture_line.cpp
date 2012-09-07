@@ -477,12 +477,12 @@ translating to the origin and solving the minimum sum Q(t)*Q(t) =>
 		/* calculate coefficients of minimized polynomial */
 		for (i=0;i<3;i++)
 		{
-			coeff[0].r += (float)d[i]*g[i];
-			coeff[1].r += (float)c[i]*g[i]+d[i]*f[i];
-			coeff[2].r += (float)b[i]*g[i]+c[i]*f[i]+d[i]*e[i];
-			coeff[3].r += (float)a[i]*g[i]+b[i]*f[i]+c[i]*e[i];
-			coeff[4].r += (float)a[i]*f[i]+b[i]*e[i];
-			coeff[5].r += (float)a[i]*e[i];
+			coeff[0].r += (GLfloat)d[i]*g[i];
+			coeff[1].r += (GLfloat)c[i]*g[i]+d[i]*f[i];
+			coeff[2].r += (GLfloat)b[i]*g[i]+c[i]*f[i]+d[i]*e[i];
+			coeff[3].r += (GLfloat)a[i]*g[i]+b[i]*f[i]+c[i]*e[i];
+			coeff[4].r += (GLfloat)a[i]*f[i]+b[i]*e[i];
+			coeff[5].r += (GLfloat)a[i]*e[i];
 		}
 		/* find roots of polynomial */
 		/* the real root is the t parameter value of the curve pt nearest p */

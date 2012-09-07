@@ -42,11 +42,9 @@ Some additions/modifications to stdio.
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/myio.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global functions

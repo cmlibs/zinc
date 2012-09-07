@@ -58,8 +58,8 @@ reference graphical materials or spectrums.
 #define GLYPH_H
 #include "graphics/graphics_object.h"
 
-struct GT_object *make_glyph_arrow_line(const char *name,float head_length,
-	float half_head_width);
+struct GT_object *make_glyph_arrow_line(const char *name,ZnReal head_length,
+	ZnReal half_head_width);
 /*******************************************************************************
 LAST MODIFIED : 3 August 1999
 
@@ -70,8 +70,8 @@ from the shaft.
 ==============================================================================*/
 
 struct GT_object *make_glyph_arrow_solid(const char *name, int primary_axis,
-	int number_of_segments_around,float shaft_length,float shaft_radius,
-	float cone_radius);
+	int number_of_segments_around,ZnReal shaft_length,ZnReal shaft_radius,
+	ZnReal cone_radius);
 /*******************************************************************************
 LAST MODIFIED : 10 June 2004
 
@@ -84,8 +84,8 @@ are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
 the arrow points in.
 ==============================================================================*/
 
-struct GT_object *make_glyph_axes(const char *name, int make_solid, float head_length,
-	float half_head_width,const char **labels, float label_offset,
+struct GT_object *make_glyph_axes(const char *name, int make_solid, ZnReal head_length,
+	ZnReal half_head_width,const char **labels, ZnReal label_offset,
 	struct Graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -170,7 +170,7 @@ Makes a glyph with the given <name> that automatically mirrors the given
 ==============================================================================*/
 
 struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
-	float marker_size);
+	ZnReal marker_size);
 /*******************************************************************************
 LAST MODIFIED : 1 December 1998
 

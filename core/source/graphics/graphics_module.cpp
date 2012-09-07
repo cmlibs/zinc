@@ -37,7 +37,6 @@ FILE : graphics_module.cpp
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "api/cmiss_graphics_material.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -50,14 +49,11 @@ FILE : graphics_module.cpp
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/light_model.h"
-//-- }
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
-//-- extern "C" {
 #include "region/cmiss_region_private.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-//-- }
 #include <list>
 
 struct Startup_material_definition
@@ -487,7 +483,7 @@ struct Light *Cmiss_graphics_module_get_default_light(
 			graphics_module->default_light=CREATE(Light)("default");
 			if (graphics_module->default_light)
 			{
-				float default_light_direction[3]={0.0,-0.5,-1.0};
+				GLfloat default_light_direction[3]={0.0,-0.5,-1.0};
 				struct Colour default_colour;
 				set_Light_type(graphics_module->default_light,INFINITE_LIGHT);
 				default_colour.red=1.0;

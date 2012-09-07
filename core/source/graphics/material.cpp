@@ -60,9 +60,8 @@ return to direct rendering, as described with these routines.
 #include <string.h>
 #include <math.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_graphics_material.h"
 #include "computed_field/computed_field.h"
@@ -80,9 +79,8 @@ return to direct rendering, as described with these routines.
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "three_d_drawing/graphics_buffer.h"
+#include "three_d_drawing/abstract_graphics_buffer.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/material.hpp"
@@ -306,7 +304,7 @@ The properties of a material.
 		scaled similarly to how it is scaled into coordinate space,
 		we do not take account of rotations or any other distortions.
 		Four components as that is what ProgramEnvParameter4fvARB wants. */
-	float lit_volume_normal_scaling[4];
+	ZnReal lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
 	/* user defined uniforms used by the program */
@@ -741,7 +739,7 @@ be shared by multiple materials using the same program.
 				char *components_string, *fragment_program_string = NULL,
 						*vertex_program_string = NULL, *geometry_program_string = NULL;
 				enum Graphics_library_vendor_id vendor_id;
-				const char *colour_texture_string[] = {"float", "vec2", "vec3", "vec4"};
+				const char *colour_texture_string[] = {"double", "vec2", "vec3", "vec4"};
 				int colour_texture_dimension = 0, components_error, number_of_inputs,
 					error;
 
@@ -859,8 +857,8 @@ be shared by multiple materials using the same program.
 								 "void main()\n"
 								 "{\n"
 								 "  vec4 eyeVertex, finalCol;\n"
-								 "  float NdotHV;\n"
-								 "  float Len, attenuation;\n"
+								 "  double NdotHV;\n"
+								 "  double Len, attenuation;\n"
 								 "  eyeVertex = gl_ModelViewMatrix * gl_Vertex;\n"
 								 "  eyeNormal = normalize(gl_NormalMatrix * gl_Normal);\n"
 								 "  lightVec = gl_LightSource[0].position.xyz - eyeVertex.xyz;\n"
@@ -1095,9 +1093,9 @@ be shared by multiple materials using the same program.
 								 "\n"
 								 "void main()\n"
 								 "{\n"
-								 "  float perspective, texel, NdotL;\n"
+								 "  double perspective, texel, NdotL;\n"
 								 "  vec4 tex4coord, eyespaceCoord, finalCol;\n"
-								 "  perspective = float(1.0) / NewCoord.w;\n"
+								 "  perspective = double(1.0) / NewCoord.w;\n"
 								 "  eyespaceCoord = NewCoord;\n"
 								 "  eyespaceCoord = eyespaceCoord * perspective * 0.5 + 0.5;\n"
 								 "  NdotL = dot(normalize(eyeNormal),normalize(lightVec));\n"
@@ -1785,8 +1783,8 @@ be shared by multiple materials using the same program.
 								"{\n"
 								"  vec4 color;\n"
 								"  vec3 n, reflV, viewV, ldir;\n"
-								"  float NdotL, NdotHV, len;\n"
-								"  float att;\n"
+								"  double NdotL, NdotHV, len;\n"
+								"  double att;\n"
 								"\n"
 								, &error);
 					}
@@ -2097,7 +2095,7 @@ be shared by multiple materials using the same program.
 									 }
 									 else
 									 {
-											/* float type tex */
+											/* double type tex */
 											append_string(&fragment_program_string, 
 												 "  color.xyz = color.xyz * tex;\n"
 												 , &error);
@@ -2175,7 +2173,7 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										/* float type tex */
+										/* double type tex */
 										append_string(&fragment_program_string, 
 											 "  color.xyz = vec3(tex);\n"
 											 , &error);										
@@ -2297,7 +2295,7 @@ be shared by multiple materials using the same program.
 													 "  //starting at the middle of the first texel and finishing in the\n"
 													 "  //middle of the last texel\n"
 													 "  vec4  offsetcolour = color.%s * lookup_scales + lookup_offsets;\n"
-													 "  vec4  dependentlookup = texture1D(texture1, float(offsetcolour));\n",
+													 "  vec4  dependentlookup = texture1D(texture1, double(offsetcolour));\n",
 													 components_string);
 										 }
 										 else
@@ -2432,7 +2430,7 @@ be shared by multiple materials using the same program.
 									   "  //Offset and scale to counteract effect of linear interpolation\n"
 									   "  //starting at the middle of the first texel and finishing in the\n"
 									   "  //middle of the last texel\n"
-									   "  float  offsetcolour;\n"
+									   "  double  offsetcolour;\n"
 										 "  vec4  dependentlookup;\n", &error);
 									char lookup_one_component_string[] = 
 										 "  offsetcolour = color.%s * lookup_scales.x + lookup_offsets.x;\n"
@@ -2737,7 +2735,7 @@ be shared by multiple materials using the same program.
 									"  vec3 eyeNormal = gl_NormalMatrix * n;\n"
 									"  if (!gl_FrontFacing)\n"
 									"    eyeNormal.z = -1.0 * eyeNormal.z;\n"
-									"  float normalMag = dot (eyeNormal, eyeNormal);\n"
+									"  double normalMag = dot (eyeNormal, eyeNormal);\n"
 									"  eyeNormal = normalize(eyeNormal);\n"
 									"  len = length(vec3(gl_TexCoord[1]));\n"
 									"  att = 1.0 / (gl_LightSource[0].constantAttenuation +\n"
@@ -3183,10 +3181,10 @@ material results.
 	ENTER(direct_render_Graphical_material);
 	if (material)
 	{
-		values[0]=(material->diffuse).red;
-		values[1]=(material->diffuse).green;
-		values[2]=(material->diffuse).blue;
-		values[3]=material->alpha;
+		values[0]=static_cast<GLfloat>((material->diffuse).red);
+		values[1]=static_cast<GLfloat>((material->diffuse).green);
+		values[2]=static_cast<GLfloat>((material->diffuse).blue);
+		values[3]=static_cast<GLfloat>(material->alpha);
 		/* use diffuse colour for lines, which are unlit */
 		glColor4fv(values);
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,values);
@@ -3319,7 +3317,7 @@ material results.
 				 /* Adjust the scaling by the ratio from the original texel
 					size to the actually rendered texture size so that
 					we are independent of texture reduction. */
-				 float normal_scaling[4];
+				 GLfloat normal_scaling[4];
 				 unsigned int original_dimension, *original_sizes,
 						rendered_dimension, *rendered_sizes;
 				 if (Cmiss_texture_get_original_texel_sizes(material->image_texture.texture,
@@ -3330,8 +3328,8 @@ material results.
 						if ((original_dimension > 0) && (rendered_dimension > 0)
 							 && (original_sizes[0] > 0))
 						{
-							 normal_scaling[0] = (float)rendered_sizes[0] / 
-									(float)original_sizes[0] *
+							 normal_scaling[0] = (GLfloat)rendered_sizes[0] / 
+									(GLfloat)original_sizes[0] *
 									material->lit_volume_normal_scaling[0];
 						}
 						else
@@ -3341,8 +3339,8 @@ material results.
 						if ((original_dimension > 1) && (rendered_dimension > 1)
 							 && (original_sizes[1] > 0))
 						{
-							 normal_scaling[1] = (float)rendered_sizes[1] / 
-									(float)original_sizes[1] *
+							 normal_scaling[1] = (GLfloat)rendered_sizes[1] / 
+									(GLfloat)original_sizes[1] *
 									material->lit_volume_normal_scaling[1];
 						}
 						else
@@ -3352,8 +3350,8 @@ material results.
 						if ((original_dimension > 2) && (rendered_dimension > 2)
 							 && (original_sizes[2] > 0))
 						{
-							 normal_scaling[2] = (float)rendered_sizes[2] / 
-									(float)original_sizes[2] *
+							 normal_scaling[2] = (GLfloat)rendered_sizes[2] / 
+									(GLfloat)original_sizes[2] *
 									material->lit_volume_normal_scaling[2];
 						}
 						else
@@ -6201,34 +6199,34 @@ will work with order_independent_transparency.
 			if (material->program && 
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 			{
-				 if (material->image_texture.texture)
-				 {
-						Texture_execute_vertex_program_environment(material->image_texture.texture,
-							 0);
-				 }
+				if (material->image_texture.texture)
+				{
+					Texture_execute_vertex_program_environment(material->image_texture.texture,
+						0);
+				}
 			}
 			direct_render_Graphical_material(material,data->renderer);
 			if (material->program && 
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
 			{
-				 GLint loc1;
-				 if (data && data->renderer && data->renderer->graphics_buffer)
-				 {
-						if (glIsProgram(material->program->glsl_current_program))
+				GLint loc1;
+				if (data && data->renderer && data->renderer->graphics_buffer)
+				{
+					if (glIsProgram(material->program->glsl_current_program))
+					{
+						loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
+						if (loc1>-1)
 						{
-							 loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
-							 if (loc1>-1)
-							 {
-								 glUniform4f(loc1,Graphics_buffer_get_width(data->renderer->graphics_buffer),
-									 Graphics_buffer_get_height(data->renderer->graphics_buffer), 1.0, 1.0);
-							 }
-							 loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
-							 if (loc1 != (GLint)-1)
-							 {
-									glUniform1i(loc1, 3);
-							 }
+							glUniform4f(loc1,data->renderer->graphics_buffer->get_width(),
+								data->renderer->graphics_buffer->get_height(), 1.0, 1.0);
 						}
-				 }
+						loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
+						if (loc1 != (GLint)-1)
+						{
+							glUniform1i(loc1, 3);
+						}
+					}
+				}
 			}
 			glEndList();
 			material->program = unmodified_program;
@@ -6305,7 +6303,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
 		{
 			int i, lookup_dimensions, *lookup_sizes;
-			float values[4];
+			ZnReal values[4];
 
 			Spectrum_get_colour_lookup_sizes(material->spectrum,
 				&lookup_dimensions, &lookup_sizes);
@@ -6578,7 +6576,7 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material)
 double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute)
 {
-	float value = 0.0;
+	ZnReal value = 0.0;
 	if (material)
 	{
 		switch (attribute)
@@ -6680,9 +6678,9 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
 {
 	struct Colour colour;
 	int return_code = 0;
-	colour.red = (float)values[0];
-	colour.green = (float)values[1];
-	colour.blue = (float)values[2];
+	colour.red = (ZnReal)values[0];
+	colour.green = (ZnReal)values[1];
+	colour.blue = (ZnReal)values[2];
 	if (material)
 	{
 		return_code = 1;

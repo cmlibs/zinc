@@ -44,19 +44,15 @@ Essentially it is used to embed one mesh in the elements of another.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/computed_field_compose.h"
-//-- }
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_element_private.hpp"
 

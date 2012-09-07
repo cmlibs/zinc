@@ -42,7 +42,6 @@
 #include <set>
 #include <string>
 #include <vector>
-//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
@@ -58,7 +57,6 @@
 #include "general/message.h"
 #include "fieldml_api.h"
 #include "FieldmlIoApi.h"
-//-- }
 
 namespace {
 

@@ -89,36 +89,6 @@ Global functions
 ----------------
 */
 
-int normalized_cross_product(float vector_1[3],float vector_2[3],
-	float result[3]);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-
-int cross_product(double vector_1[3],double vector_2[3],
-	double result[3]);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Calculates the cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-
-#if defined (OLD_CODE)
-int load_mc_tables(void);
-/*******************************************************************************
-LAST MODIFIED : 25 November 1994
-
-DESCRIPTION :
-Loads the pntr & data tables
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 int marching_cubes(struct VT_scalar_field **scalar_field,int n_scalar_fields,
 	struct VT_vector_field *coordinate_field,
 	struct MC_iso_surface *mc_iso_surface,

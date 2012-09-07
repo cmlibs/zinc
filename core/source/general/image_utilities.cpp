@@ -49,9 +49,8 @@ Utilities for handling images.
 #include <sys/stat.h>
 
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
@@ -59,7 +58,6 @@ Utilities for handling images.
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_private.hpp"
 
 #if defined (USE_IMAGEMAGICK)
@@ -1367,7 +1365,7 @@ Writes an image in SGI rgb file format.
 int write_postscript_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
-	float pixel_aspect_ratio,
+	ZnReal pixel_aspect_ratio,
 	enum Image_orientation image_orientation,
 	long unsigned *image)
 /*******************************************************************************
@@ -1381,7 +1379,7 @@ since textures are required to be in powers of two.
 ==============================================================================*/
 {
 	FILE *output_file;
-	float image_height,image_width,printer_page_height,printer_page_width,
+	ZnReal image_height,image_width,printer_page_height,printer_page_width,
 		scale_mm_to_default;
 	int bounding_box_bottom,bounding_box_left,bounding_box_right,bounding_box_top,
 		count,i,j, page_bottom_margin_mm, page_height_mm, page_left_margin_mm,
@@ -1409,13 +1407,13 @@ since textures are required to be in powers of two.
 				{
 					case LANDSCAPE_ORIENTATION:
 					{
-						image_height=(float)number_of_columns*pixel_aspect_ratio;
-						image_width=(float)number_of_rows;
+						image_height=(ZnReal)number_of_columns*pixel_aspect_ratio;
+						image_width=(ZnReal)number_of_rows;
 					} break;
 					default:
 					{
-						image_height=(float)number_of_rows;
-						image_width=(float)number_of_columns*pixel_aspect_ratio;
+						image_height=(ZnReal)number_of_rows;
+						image_width=(ZnReal)number_of_columns*pixel_aspect_ratio;
 					} break;
 				}
 				/* following six constants used to be read in from defaults in
@@ -1432,31 +1430,31 @@ since textures are required to be in powers of two.
 				printer_page_width_mm = page_width_mm -
 					page_left_margin_mm - page_right_margin_mm;
 				/* the default postscript unit is a 72nd of an inch */
-				scale_mm_to_default = (float)(72./25.4);
-				if (image_height*(float)printer_page_width_mm <
-					image_width*(float)printer_page_height_mm)
+				scale_mm_to_default = (ZnReal)(72./25.4);
+				if (image_height*(ZnReal)printer_page_width_mm <
+					image_width*(ZnReal)printer_page_height_mm)
 				{
 					bounding_box_left = (int)(scale_mm_to_default*
-						(float)(page_left_margin_mm));
+						(ZnReal)(page_left_margin_mm));
 					bounding_box_right = (int)(scale_mm_to_default*
-						(float)(page_width_mm - page_right_margin_mm));
+						(ZnReal)(page_width_mm - page_right_margin_mm));
 					bounding_box_top = (int)(scale_mm_to_default*
-						(float)(page_height_mm - page_top_margin_mm));
+						(ZnReal)(page_height_mm - page_top_margin_mm));
 					bounding_box_bottom = (int)(scale_mm_to_default*
-						((float)(page_height_mm - page_top_margin_mm) -
+						((ZnReal)(page_height_mm - page_top_margin_mm) -
 							printer_page_width_mm*image_height/image_width));
 				}
 				else
 				{
 					bounding_box_left = (int)(scale_mm_to_default*
-						(float)(page_left_margin_mm));
+						(ZnReal)(page_left_margin_mm));
 					bounding_box_right = (int)(scale_mm_to_default*
-						((float)(page_left_margin_mm) +
+						((ZnReal)(page_left_margin_mm) +
 							printer_page_height_mm*image_width/image_height));
 					bounding_box_top = (int)(scale_mm_to_default*
-						(float)(page_height_mm - page_top_margin_mm));
+						(ZnReal)(page_height_mm - page_top_margin_mm));
 					bounding_box_bottom = (int)(scale_mm_to_default*
-						(float)(page_bottom_margin_mm));
+						(ZnReal)(page_bottom_margin_mm));
 				}
 				/* output encapsulated postscript header */
 				(void)fprintf(output_file,"%%!PS-Adobe-3.0 EPSF-3.0\n");
@@ -1467,8 +1465,8 @@ since textures are required to be in powers of two.
 				(void)fprintf(output_file,"%%%%Creator: cmgui\n");
 				(void)fprintf(output_file,"%%%%EndComments\n");
 				(void)fprintf(output_file,"%%\n");
-				printer_page_width=(float)(bounding_box_right-bounding_box_left);
-				printer_page_height=(float)(bounding_box_top-bounding_box_bottom);
+				printer_page_width=(ZnReal)(bounding_box_right-bounding_box_left);
+				printer_page_height=(ZnReal)(bounding_box_top-bounding_box_bottom);
 				switch (image_orientation)
 				{
 					case LANDSCAPE_ORIENTATION:
@@ -1489,20 +1487,20 @@ since textures are required to be in powers of two.
 							image_height*printer_page_height)
 						{
 							(void)fprintf(output_file,"%.5g %.5g scale\n",
-								printer_page_height/((float)number_of_rows*pixel_aspect_ratio),
-								printer_page_height/(float)number_of_rows);
+								printer_page_height/((ZnReal)number_of_rows*pixel_aspect_ratio),
+								printer_page_height/(ZnReal)number_of_rows);
 							(void)fprintf(output_file,"0 %.5g translate\n",
-								((printer_page_width*(float)number_of_rows)/printer_page_height-
-									(float)number_of_rows)/2);
+								((printer_page_width*(ZnReal)number_of_rows)/printer_page_height-
+									(ZnReal)number_of_rows)/2);
 						}
 						else
 						{
 							(void)fprintf(output_file,"%.5g %.5g scale\n",
-								printer_page_width/(float)number_of_columns,
-								printer_page_width/(float)number_of_columns*pixel_aspect_ratio);
+								printer_page_width/(ZnReal)number_of_columns,
+								printer_page_width/(ZnReal)number_of_columns*pixel_aspect_ratio);
 							(void)fprintf(output_file,"%.5g 0 translate\n",
-								((printer_page_height*(float)number_of_columns)/
-									printer_page_width-(float)number_of_columns)/2);
+								((printer_page_height*(ZnReal)number_of_columns)/
+									printer_page_width-(ZnReal)number_of_columns)/2);
 						}
 					} break;
 					default:
@@ -1519,20 +1517,20 @@ since textures are required to be in powers of two.
 							image_height*printer_page_width)
 						{
 							(void)fprintf(output_file,"%.5g %.5g scale\n",
-								printer_page_width/(float)number_of_columns,
-								printer_page_width/(float)number_of_columns*pixel_aspect_ratio);
+								printer_page_width/(ZnReal)number_of_columns,
+								printer_page_width/(ZnReal)number_of_columns*pixel_aspect_ratio);
 							(void)fprintf(output_file,"0 %.5g translate\n",
-								((printer_page_height*(float)number_of_columns)/
-									(printer_page_width*pixel_aspect_ratio)-(float)number_of_rows)/2);
+								((printer_page_height*(ZnReal)number_of_columns)/
+									(printer_page_width*pixel_aspect_ratio)-(ZnReal)number_of_rows)/2);
 						}
 						else
 						{
 							(void)fprintf(output_file,"%.5g %.5g scale\n",
-								printer_page_height/((float)number_of_rows*pixel_aspect_ratio),
-								printer_page_height/(float)number_of_rows);
+								printer_page_height/((ZnReal)number_of_rows*pixel_aspect_ratio),
+								printer_page_height/(ZnReal)number_of_rows);
 							(void)fprintf(output_file,"%.5g 0 translate\n",
-								((printer_page_width*(float)number_of_rows*pixel_aspect_ratio)/
-									printer_page_height-(float)number_of_columns)/2);
+								((printer_page_width*(ZnReal)number_of_rows*pixel_aspect_ratio)/
+									printer_page_height-(ZnReal)number_of_columns)/2);
 						}
 					} break;
 				}
@@ -3445,7 +3443,7 @@ the second the denominator.
 
 	ENTER(read_tiff_image_file);
 #if defined (DEBUG_CODE)
-	float x_resolution, y_resolution;
+	ZnReal x_resolution, y_resolution;
 	unsigned short planar_configuration;
 	/*???debug */
 	printf("enter read_tiff_image_file\n");
@@ -4011,8 +4009,8 @@ the second the denominator.
 												{
 #if defined (DEBUG_CODE)
 													x_resolution =
-														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
-														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
+														(ZnReal)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
+														(ZnReal)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
 													/*???debug */
 													printf("=%g\n",x_resolution);
 #endif /* defined (DEBUG_CODE) */
@@ -4039,8 +4037,8 @@ the second the denominator.
 												{
 #if defined (DEBUG_CODE)
 													y_resolution =
-														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
-														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
+														(ZnReal)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
+														(ZnReal)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
 													/*???debug */
 													printf("=%g\n",y_resolution);
 #endif /* defined (DEBUG_CODE) */

@@ -45,9 +45,7 @@ Colour structures and support code.
 #if !defined( COLOUR_H )
 #define COLOUR_H
 
-#define COLOUR_PRECISION float
-#define COLOUR_PRECISION_STRING "f"
-#define COLOUR_NUM_FORMAT "%6.4" COLOUR_PRECISION_STRING
+#include "api/cmiss_zinc_configure.h"
 
 #define COLOUR_VECTOR(colour_struct_ptr) \
 ((COLOUR_PRECISION *)colour_struct_ptr)

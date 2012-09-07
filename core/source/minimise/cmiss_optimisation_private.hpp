@@ -48,9 +48,7 @@
 
 #include <list>
 #include <sstream>
-//-- extern "C" {
-	#include "api/cmiss_optimisation.h"
-//-- }
+#include "api/cmiss_optimisation.h"
 #include "computed_field/field_module.hpp"
 
 typedef std::list<Cmiss_field_id> FieldList;

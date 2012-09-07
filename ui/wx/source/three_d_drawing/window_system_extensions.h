@@ -44,8 +44,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (WINDOW_SYSTEM_EXTENSIONS_H)
 #define WINDOW_SYSTEM_EXTENSIONS_H
 
-#if defined (WIN32_USER_INTERFACE)
-
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -222,7 +220,5 @@ PFNWGLDESTROYPBUFFERARBPROC WGLHANDLE(wglDestroyPbufferARB);
 PFNWGLQUERYPBUFFERARBPROC WGLHANDLE(wglQueryPbufferARB);
 #define wglQueryPbufferARB (WGLHANDLE(wglQueryPbufferARB))
 #endif /* defined (WGL_ARB_pbuffer) */
-
-#endif /* defined (WIN32_USER_INTERFACE) */
 
 #endif /* !defined (WINDOW_SYSTEM_EXTENSIONS_H) */

@@ -42,9 +42,8 @@ streams.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #if defined (GENERIC_PC) && defined (UNIX)
@@ -72,7 +71,6 @@ streams.
 #if !defined (HAVE_VFSCANF)
 #	include "general/alt_vfscanf.h"
 #endif /* !defined (HAVE_VFSCANF) */
-//-- }
 
 /* SAB 16 Sept 2004
 	Unfortunately sscanf does a strlen on the buffer.  If the buffer is large

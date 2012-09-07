@@ -45,7 +45,7 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #if defined (UNIX)
@@ -54,12 +54,10 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <sys/time.h>
 #include <fcntl.h>
 #endif /* defined (UNIX) */
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/message.h"
 #include "general/child_process.h"
-//-- }
 
 struct Child_process
 {

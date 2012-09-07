@@ -81,7 +81,7 @@ Used for displaying voltexes.
 ???RC Move to texture? volume_texture?
 ==============================================================================*/
 {
-	double scale;
+	FE_value scale;
 	int xi_direction;
 	struct Texture *texture;
 }; /* struct Displacement_map */
@@ -93,7 +93,7 @@ LAST MODIFIED : 21 December 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	float scale;
+	FE_value scale;
 	struct GT_pointset *surface_points;
 	struct Texture *texture;
 }; /* struct Surface_pointset */
@@ -286,7 +286,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	struct FE_element *element, Cmiss_field_cache_id field_cache,
 	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,
-	float constant_radius,float scale_factor,struct Computed_field *radius_field,
+	FE_value constant_radius,FE_value scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,

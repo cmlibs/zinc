@@ -43,7 +43,6 @@ Representing time in finite elements.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 
-//-- extern "C" {
 #include "api/cmiss_time_sequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
@@ -52,7 +51,6 @@ Representing time in finite elements.
 #include "general/list_private.h"
 #include "general/manager_private.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

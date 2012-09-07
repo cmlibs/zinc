@@ -52,7 +52,6 @@ quadratic Lagrange, cubic Lagrange.
 #include <stdlib.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "curve/curve.h"
 #include "general/object.h"
 #include "finite_element/export_finite_element.h"
@@ -64,7 +63,6 @@ quadratic Lagrange, cubic Lagrange.
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_private.hpp"
 
 /*

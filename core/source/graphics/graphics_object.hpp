@@ -16,7 +16,7 @@ class Render_graphics;
 enum Graphics_vertex_array_type
 {
 	/** Each type of vertex attribute is added to a buffer for vertices of just that type.
-	 * All attributes are stored as float values, except element indices which are
+	 * All attributes are stored as GLfloat values, except element indices which are
 	 * stored by recording the sizes of each array and the first index suitable for
 	 * using with draw arrays (thus indices for a given primitive must be consecutive). */
 	GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS
@@ -93,10 +93,10 @@ public:
 	*/
 /*	int add_float_attribute(
 			Graphics_vertex_array_attribute_type vertex_type,
-			unsigned int values_per_vertex, unsigned int number_of_values, float *values);
+			unsigned int values_per_vertex, unsigned int number_of_values, GLfloat *values);
 */
 	int add_float_attribute( Graphics_vertex_array_attribute_type vertex_type,
-		const unsigned int values_per_vertex, const unsigned int number_of_values, const float *values);
+		const unsigned int values_per_vertex, const unsigned int number_of_values, const GLfloat *values);
 
 	/*****************************************************************************//**
 	 * Retrieve pointer to value buffer from set.
@@ -109,13 +109,13 @@ public:
 	 * to the sets own memory and not a copy and so can not be used once the 
 	 * set is destroyed or modified and should not be freed.
 	 * @param values_per_vertex  Returns the number of values for each vertex.
-	 * @param vertex_count  Returns the total number of vertices.  The total number of float
+	 * @param vertex_count  Returns the total number of vertices.  The total number of GLfloat
 	 * values is the vertex_count * "values per vertex according to vertex type".
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int get_float_vertex_buffer(
 			Graphics_vertex_array_attribute_type vertex_buffer_type,
-			float **vertex_buffer, unsigned int *values_per_vertex,
+			GLfloat **vertex_buffer, unsigned int *values_per_vertex,
 			unsigned int *vertex_count);
 
 	/*****************************************************************************//**
@@ -154,7 +154,7 @@ public:
 	 * @param vertex_buffer  Returns a pointer to the vertex buffer.  It is a reference
 	 * to the sets own memory and not a copy and so can not be used once the 
 	 * set is destroyed or modified and should not be freed.
-	 * @param vertex_count  Returns the total number of vertices.  The total number of float
+	 * @param vertex_count  Returns the total number of vertices.  The total number of GLfloat
 	 * values is the vertex_count * "values per vertex according to vertex type".
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
@@ -214,7 +214,7 @@ public:
 };
 
 typedef int (*Graphics_object_glyph_labels_function)(Triple *coordinate_scaling,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer);

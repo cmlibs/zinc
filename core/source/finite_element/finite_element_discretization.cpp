@@ -45,14 +45,12 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include <math.h>
 #include <stdlib.h>
 
-//-- extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-//-- }
 #include "general/statistics.h"
 
 /*
@@ -263,7 +261,7 @@ comments for simplex and polygons shapes for more details.
 ==============================================================================*/
 {
 	enum FE_element_shape_category element_shape_category;
-	float xi_j, xi_k;
+	ZnReal xi_j, xi_k;
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
 		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
 		number_in_xi_simplex = 0, number_of_polygon_sides,
@@ -394,7 +392,7 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (i = 0; i < number_in_xi[0]; i++)
 						{
-							(*xi)[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+							(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 							(*xi)[1] = 0.0;
 							(*xi)[2] = 0.0;
 							xi++;
@@ -404,10 +402,10 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (j = 0; j < number_in_xi[1]; j++)
 						{
-							xi_j = ((float)j + 0.5)/(float)number_in_xi[1];
+							xi_j = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 							for (i = 0; i < number_in_xi[0]; i++)
 							{
-								(*xi)[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+								(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -432,11 +430,11 @@ comments for simplex and polygons shapes for more details.
 							 First add the centres of the upright triangles */
 						for (j = 0; j < number_in_xi_simplex; j++)
 						{
-							xi_j = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+							xi_j = ((FE_value)j + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi_simplex - j;
 							for (i = 0; i < number_in_xi0; i++)
 							{
-								(*xi)[0] = ((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+								(*xi)[0] = ((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -445,11 +443,11 @@ comments for simplex and polygons shapes for more details.
 						/* Then add points in centres of reversed triangles */
 						for (j = 1; j < number_in_xi_simplex; j++)
 						{
-							xi_j = ((float)j - (1.0/3.0))/(float)number_in_xi_simplex;
+							xi_j = ((FE_value)j - (1.0/3.0))/(FE_value)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi_simplex - j + 1;
 							for (i = 1; i < number_in_xi0; i++)
 							{
-								(*xi)[0] = ((float)i - (1.0/3.0))/(float)number_in_xi_simplex;
+								(*xi)[0] = ((FE_value)i - (1.0/3.0))/(FE_value)number_in_xi_simplex;
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -460,10 +458,10 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (j = 0; j < number_in_xi[1]; j++)
 						{
-							xi_j = ((float)j + 0.5)/(float)number_in_xi[1];
+							xi_j = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 							for (i = 0; i < number_in_xi_around_polygon; i++)
 							{
-								(*xi)[0] = ((float)i + 0.5)/(float)number_in_xi_around_polygon;
+								(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi_around_polygon;
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -474,13 +472,13 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (k = 0; k < number_in_xi[2]; k++)
 						{
-							xi_k = ((float)k + 0.5)/(float)number_in_xi[2];
+							xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[2];
 							for (j = 0; j < number_in_xi[1]; j++)
 							{
-								xi_j = ((float)j + 0.5)/(float)number_in_xi[1];
+								xi_j = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 								for (i = 0; i <number_in_xi[0]; i++)
 								{
-									(*xi)[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+									(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -510,15 +508,15 @@ comments for simplex and polygons shapes for more details.
 							 First add the centres of the sub-tetrahedra */
 						for (k = 0; k < number_in_xi_simplex; k++)
 						{
-							xi_k = ((float)k + 0.25)/(float)number_in_xi_simplex;
+							xi_k = ((FE_value)k + 0.25)/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k;
 							for (j = 0; j <= number_in_xi1; j++)
 							{
-								xi_j = ((float)j + 0.25)/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j + 0.25)/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j;
 								for (i = 0; i < number_in_xi0; i++)
 								{
-									(*xi)[0] = ((float)i + 0.25)/(float)number_in_xi_simplex;
+									(*xi)[0] = ((FE_value)i + 0.25)/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -529,15 +527,15 @@ comments for simplex and polygons shapes for more details.
 							 octahedra */
 						for (k = 1; k < number_in_xi_simplex; k++)
 						{
-							xi_k = ((float)k - 0.5)/(float)number_in_xi_simplex;
+							xi_k = ((FE_value)k - 0.5)/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k + 1;
 							for (j = 1; j < number_in_xi1; j++)
 							{
-								xi_j = ((float)j - 0.5)/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j - 0.5)/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j + 1;
 								for (i = 1; i < number_in_xi0; i++)
 								{
-									(*xi)[0] = ((float)i - 0.75)/(float)number_in_xi_simplex;
+									(*xi)[0] = ((FE_value)i - 0.75)/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -546,15 +544,15 @@ comments for simplex and polygons shapes for more details.
 						}
 						for (k = 1; k < number_in_xi_simplex; k++)
 						{
-							xi_k = ((float)k - 0.25)/(float)number_in_xi_simplex;
+							xi_k = ((FE_value)k - 0.25)/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k + 1;
 							for (j = 1; j < number_in_xi1; j++)
 							{
-								xi_j = ((float)j - 0.75)/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j - 0.75)/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j + 1;
 								for (i = 1; i < number_in_xi0; i++)
 								{
-									(*xi)[0] = ((float)i - 0.5)/(float)number_in_xi_simplex;
+									(*xi)[0] = ((FE_value)i - 0.5)/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -563,15 +561,15 @@ comments for simplex and polygons shapes for more details.
 						}
 						for (k = 1; k < number_in_xi_simplex; k++)
 						{
-							xi_k = ((float)k - 0.75)/(float)number_in_xi_simplex;
+							xi_k = ((FE_value)k - 0.75)/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k + 1;
 							for (j = 1; j < number_in_xi1; j++)
 							{
-								xi_j = ((float)j - 0.25)/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j - 0.25)/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j + 1;
 								for (i = 1; i < number_in_xi0; i++)
 								{
-									(*xi)[0] = ((float)i - 0.5)/(float)number_in_xi_simplex;
+									(*xi)[0] = ((FE_value)i - 0.5)/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -580,15 +578,15 @@ comments for simplex and polygons shapes for more details.
 						}
 						for (k = 1; k < number_in_xi_simplex; k++)
 						{
-							xi_k = ((float)k - 0.5)/(float)number_in_xi_simplex;
+							xi_k = ((FE_value)k - 0.5)/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k + 1;
 							for (j = 1; j < number_in_xi1; j++)
 							{
-								xi_j = ((float)j - 0.5)/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j - 0.5)/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j + 1;
 								for (i = 1; i < number_in_xi0; i++)
 								{
-									(*xi)[0] = ((float)i - 0.25)/(float)number_in_xi_simplex;
+									(*xi)[0] = ((FE_value)i - 0.25)/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -602,15 +600,15 @@ comments for simplex and polygons shapes for more details.
 							 of points in the line_direction */
 						for (k = 0; k < number_in_xi[line_direction]; k++)
 						{
-							xi_k = ((float)k + 0.5)/(float)number_in_xi[line_direction];
+							xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[line_direction];
 							for (j = 0; j < number_in_xi_simplex; j++)
 							{
-								xi_j = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi_simplex - j;
 								for (i = 0; i < number_in_xi0; i++)
 								{
 									(*xi)[linked_xi_directions[0]] =
-										((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+										((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 									(*xi)[linked_xi_directions[1]] = xi_j;
 									(*xi)[line_direction] = xi_k;
 									xi++;
@@ -619,12 +617,12 @@ comments for simplex and polygons shapes for more details.
 							/* Then add points in centres of reversed triangles */
 							for (j = 1; j < number_in_xi_simplex; j++)
 							{
-								xi_j = ((float)j - (1.0/3.0))/(float)number_in_xi_simplex;
+								xi_j = ((FE_value)j - (1.0/3.0))/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi_simplex - j + 1;
 								for (i = 1; i < number_in_xi0; i++)
 								{
 									(*xi)[linked_xi_directions[0]] =
-										((float)i - (1.0/3.0))/(float)number_in_xi_simplex;
+										((FE_value)i - (1.0/3.0))/(FE_value)number_in_xi_simplex;
 									(*xi)[linked_xi_directions[1]] = xi_j;
 									(*xi)[line_direction] = xi_k;
 									xi++;
@@ -636,15 +634,15 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (k = 0; k < number_in_xi[line_direction]; k++)
 						{
-							xi_k = ((float)k + 0.5)/(float)number_in_xi[line_direction];
+							xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[line_direction];
 							for (j = 0; j < number_in_xi[linked_xi_directions[1]]; j++)
 							{
 								xi_j =
-									((float)j + 0.5)/(float)number_in_xi[linked_xi_directions[1]];
+									((FE_value)j + 0.5)/(FE_value)number_in_xi[linked_xi_directions[1]];
 								for (i = 0; i < number_in_xi_around_polygon; i++)
 								{
 									(*xi)[linked_xi_directions[0]] =
-										((float)i + 0.5)/(float)number_in_xi_around_polygon;
+										((FE_value)i + 0.5)/(FE_value)number_in_xi_around_polygon;
 									(*xi)[linked_xi_directions[1]] = xi_j;
 									(*xi)[line_direction] = xi_k;
 									xi++;
@@ -706,7 +704,7 @@ comments for simplex and polygons shapes for more details.
 ==============================================================================*/
 {
 	enum FE_element_shape_category element_shape_category;
-	float xi_j, xi_k;
+	FE_value xi_j, xi_k;
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
 		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
 		number_in_xi_simplex = 0, number_of_polygon_sides, number_of_xi_points,
@@ -846,7 +844,7 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (i = 0; i <= number_in_xi[0]; i++)
 						{
-							(*xi)[0] = (float)i/(float)number_in_xi[0];
+							(*xi)[0] = (FE_value)i/(FE_value)number_in_xi[0];
 							(*xi)[1] = 0.0;
 							(*xi)[2] = 0.0;
 							xi++;
@@ -856,10 +854,10 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (j = 0; j <= number_in_xi[1]; j++)
 						{
-							xi_j = (float)j/(float)number_in_xi[1];
+							xi_j = (FE_value)j/(FE_value)number_in_xi[1];
 							for (i = 0; i <= number_in_xi[0]; i++)
 							{
-								(*xi)[0] = (float)i/(float)number_in_xi[0];
+								(*xi)[0] = (FE_value)i/(FE_value)number_in_xi[0];
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -870,11 +868,11 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (j = 0; j <= number_in_xi_simplex; j++)
 						{
-							xi_j = (float)j/(float)number_in_xi_simplex;
+							xi_j = (FE_value)j/(FE_value)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi_simplex - j;
 							for (i = 0; i <= number_in_xi0; i++)
 							{
-								(*xi)[0] = (float)i/(float)number_in_xi_simplex;
+								(*xi)[0] = (FE_value)i/(FE_value)number_in_xi_simplex;
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -885,10 +883,10 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (j = 0; j <= number_in_xi[1]; j++)
 						{
-							xi_j = (float)j/(float)number_in_xi[1];
+							xi_j = (FE_value)j/(FE_value)number_in_xi[1];
 							for (i = 0; i < number_in_xi_around_polygon; i++)
 							{
-								(*xi)[0] = (float)i/(float)number_in_xi_around_polygon;
+								(*xi)[0] = (FE_value)i/(FE_value)number_in_xi_around_polygon;
 								(*xi)[1] = xi_j;
 								(*xi)[2] = 0.0;
 								xi++;
@@ -899,13 +897,13 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (k = 0; k <= number_in_xi[2]; k++)
 						{
-							xi_k = (float)k/(float)number_in_xi[2];
+							xi_k = (FE_value)k/(FE_value)number_in_xi[2];
 							for (j = 0; j <= number_in_xi[1]; j++)
 							{
-								xi_j = (float)j/(float)number_in_xi[1];
+								xi_j = (FE_value)j/(FE_value)number_in_xi[1];
 								for (i = 0; i <= number_in_xi[0]; i++)
 								{
-									(*xi)[0] = (float)i/(float)number_in_xi[0];
+									(*xi)[0] = (FE_value)i/(FE_value)number_in_xi[0];
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -917,15 +915,15 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (k = 0; k <= number_in_xi_simplex; k++)
 						{
-							xi_k = (float)k/(float)number_in_xi_simplex;
+							xi_k = (FE_value)k/(FE_value)number_in_xi_simplex;
 							number_in_xi1 = number_in_xi_simplex - k;
 							for (j = 0; j <= number_in_xi1; j++)
 							{
-								xi_j = (float)j/(float)number_in_xi_simplex;
+								xi_j = (FE_value)j/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi1 - j;
 								for (i = 0; i <= number_in_xi0; i++)
 								{
-									(*xi)[0] = (float)i/(float)number_in_xi_simplex;
+									(*xi)[0] = (FE_value)i/(FE_value)number_in_xi_simplex;
 									(*xi)[1] = xi_j;
 									(*xi)[2] = xi_k;
 									xi++;
@@ -938,16 +936,16 @@ comments for simplex and polygons shapes for more details.
 						/*???debug*/int n = 0;
 						for (k = 0; k <= number_in_xi[line_direction]; k++)
 						{
-							xi_k = (float)k/(float)number_in_xi[line_direction];
+							xi_k = (FE_value)k/(FE_value)number_in_xi[line_direction];
 							for (j = 0; j <= number_in_xi_simplex; j++)
 							{
-								xi_j = (float)j/(float)number_in_xi_simplex;
+								xi_j = (FE_value)j/(FE_value)number_in_xi_simplex;
 								number_in_xi0 = number_in_xi_simplex - j;
 								for (i = 0; i <= number_in_xi0; i++)
 								{
 						/*???debug*/n++;
 									(*xi)[linked_xi_directions[0]] =
-										(float)i/(float)number_in_xi_simplex;
+										(FE_value)i/(FE_value)number_in_xi_simplex;
 									(*xi)[linked_xi_directions[1]] = xi_j;
 									(*xi)[line_direction] = xi_k;
 									xi++;
@@ -963,14 +961,14 @@ comments for simplex and polygons shapes for more details.
 					{
 						for (k = 0; k <= number_in_xi[line_direction]; k++)
 						{
-							xi_k = (float)k/(float)number_in_xi[line_direction];
+							xi_k = (FE_value)k/(FE_value)number_in_xi[line_direction];
 							for (j = 0; j <= number_in_xi[linked_xi_directions[1]]; j++)
 							{
-								xi_j = (float)j/(float)number_in_xi[linked_xi_directions[1]];
+								xi_j = (FE_value)j/(FE_value)number_in_xi[linked_xi_directions[1]];
 								for (i = 0; i < number_in_xi_around_polygon; i++)
 								{
 									(*xi)[linked_xi_directions[0]] =
-										(float)i/(float)number_in_xi_around_polygon;
+										(FE_value)i/(FE_value)number_in_xi_around_polygon;
 									(*xi)[linked_xi_directions[1]] = xi_j;
 									(*xi)[line_direction] = xi_k;
 									xi++;
@@ -1073,7 +1071,7 @@ Otherwise the routine returns 0.
 					for (i = 0 ; i < element_dimension ; i++)
 					{
 						indices[i] = (int)(number_in_xi[i] * xi[i] + 0.5);
-						if (!WITHIN_TOLERANCE((float)indices[i] / (float)number_in_xi[i], xi[i]))
+						if (!WITHIN_TOLERANCE((FE_value)indices[i] / (FE_value)number_in_xi[i], xi[i]))
 						{
 							return_code = 0;
 						}
@@ -1126,7 +1124,7 @@ array is enlarged if necessary and the new points added at random locations.
 <xi_points> array, to prevent too many allocations.
 ==============================================================================*/
 {
-	double a[3], length, expected_number;
+	ZnReal a[3], length, expected_number;
 	FE_value coordinates[3], density;
 	FE_value centre_xi1, dxi1, jacobian[3];
 	int j, number_of_coordinate_components, number_of_points_in_line,
@@ -1139,8 +1137,8 @@ array is enlarged if necessary and the new points added at random locations.
 			(!(xi_points) && !(number_of_xi_points_allocated))))
 	{
 		return_code = 1;
-		centre_xi1 = (float)xi_centre;
-		dxi1 = (float)delta_xi;
+		centre_xi1 = (FE_value)xi_centre;
+		dxi1 = (FE_value)delta_xi;
 		if (XI_DISCRETIZATION_CELL_RANDOM == xi_discretization_mode)
 		{
 			number_of_points_in_line = 1;
@@ -1160,13 +1158,13 @@ array is enlarged if necessary and the new points added at random locations.
 				Cmiss_field_evaluate_real(density_field, field_cache, 1, &density))
 			{
 				/* calculate the volume from the jacobian and dxi */
-				a[0] = (double)(jacobian[0]);
+				a[0] = (jacobian[0]);
 				if (1 < number_of_coordinate_components)
 				{
-					a[1] = (double)(jacobian[1]);
+					a[1] = (jacobian[1]);
 					if (2 < number_of_coordinate_components)
 					{
-						a[2] = (double)(jacobian[2]);
+						a[2] = (jacobian[2]);
 					}
 					else
 					{
@@ -1178,13 +1176,13 @@ array is enlarged if necessary and the new points added at random locations.
 					a[1] = 0.0;
 					a[2] = 0.0;
 				}
-				length = (double)dxi1*norm3(a);
-				expected_number = length*(double)density;
+				length = dxi1*norm3(a);
+				expected_number = length*density;
 				if (0.0 <= expected_number)
 				{
 					if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
 					{
-						number_of_points_in_line = (int)(expected_number + 0.5);
+						number_of_points_in_line = static_cast<int>(expected_number + 0.5);
 					}
 					else
 					{
@@ -1244,7 +1242,7 @@ array is enlarged if necessary and the new points added at random locations.
 					xi = *xi_points + (*number_of_xi_points);
 					for (j = 0; j < number_of_points_in_line; j++)
 					{
-						(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - 0.5);
+						(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(FE_value) - 0.5);
 						(*xi)[1] = 0.0;
 						(*xi)[2] = 0.0;
 #if defined (DEBUG_CODE)
@@ -1316,10 +1314,10 @@ array is enlarged if necessary and the new points added at random locations.
 			(!(xi_points) && !(number_of_xi_points_allocated))))
 	{
 		return_code = 1;
-		centre_xi1 = (float)centre_xi[0];
-		centre_xi2 = (float)centre_xi[1];
-		dxi1 = (float)dxi[0];
-		dxi2 = (float)dxi[1];
+		centre_xi1 = (FE_value)centre_xi[0];
+		centre_xi2 = (FE_value)centre_xi[1];
+		dxi1 = (FE_value)dxi[0];
+		dxi2 = (FE_value)dxi[1];
 		if (XI_DISCRETIZATION_CELL_RANDOM == xi_discretization_mode)
 		{
 			number_of_points_in_square = 1;
@@ -1423,8 +1421,8 @@ array is enlarged if necessary and the new points added at random locations.
 							xi = *xi_points + (*number_of_xi_points);
 							for (j = 0; j < number_of_points_in_square; j++)
 							{
-								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
-								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[0]);
+								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[1]);
 								(*xi)[2] = 0.0;
 #if defined (DEBUG_CODE)
 								/*???debug*/
@@ -1515,7 +1513,7 @@ array is enlarged if necessary and the new points added at random locations.
 <xi_points> array, to prevent too many allocations.
 ==============================================================================*/
 {
-	double a[3], b[3], c[3], expected_number, volume;
+	ZnReal a[3], b[3], c[3], expected_number, volume;
 	FE_value coordinates[3], density;
 	FE_value centre_xi1, centre_xi2, centre_xi3, dxi1, dxi2, dxi3, jacobian[9];
 	int j, number_of_points_in_cube, return_code;
@@ -1527,12 +1525,12 @@ array is enlarged if necessary and the new points added at random locations.
 			(!(xi_points) && !(number_of_xi_points_allocated))))
 	{
 		return_code = 1;
-		centre_xi1 = (float)centre_xi[0];
-		centre_xi2 = (float)centre_xi[1];
-		centre_xi3 = (float)centre_xi[2];
-		dxi1 = (float)dxi[0];
-		dxi2 = (float)dxi[1];
-		dxi3 = (float)dxi[2];
+		centre_xi1 = centre_xi[0];
+		centre_xi2 = centre_xi[1];
+		centre_xi3 = centre_xi[2];
+		dxi1 = dxi[0];
+		dxi2 = dxi[1];
+		dxi3 = dxi[2];
 		if (XI_DISCRETIZATION_CELL_RANDOM == xi_discretization_mode)
 		{
 			number_of_points_in_cube = 1;
@@ -1549,10 +1547,10 @@ array is enlarged if necessary and the new points added at random locations.
 				Cmiss_field_evaluate_real(density_field, field_cache, 1, &density))
 			{
 				/* calculate the volume from the jacobian and dxi */
-				a[0] = (double)(jacobian[0]);
-				a[1] = (double)(jacobian[3]);
-				a[2] = (double)(jacobian[6]);
-				b[0] = (double)(jacobian[1]);
+				a[0] = (jacobian[0]);
+				a[1] = (jacobian[3]);
+				a[2] = (jacobian[6]);
+				b[0] = (jacobian[1]);
 				b[1] = (double)(jacobian[4]);
 				b[2] = (double)(jacobian[7]);
 				c[0] = (double)(jacobian[2]);
@@ -1623,9 +1621,9 @@ array is enlarged if necessary and the new points added at random locations.
 							xi = *xi_points + (*number_of_xi_points);
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
-								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
-								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
+								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[0]);
+								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[1]);
+								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[2]);
 #if defined (DEBUG_CODE)
  								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
@@ -1834,7 +1832,7 @@ fields, required for DENSITY and POISSON modes.
 					delta_xi = 1.0 / (FE_value)number_in_xi[0];
 					for (i = 0; i < number_in_xi[0]; i++)
 					{
-						xi_centre = ((float)i + 0.5)/(float)number_in_xi[0];
+						xi_centre = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 						return_code = FE_element_add_xi_points_1d_line_cell_random(
 							element, xi_discretization_mode, xi_centre, delta_xi,
 							field_cache, coordinate_field, density_field,
@@ -1851,10 +1849,10 @@ fields, required for DENSITY and POISSON modes.
 					xi_offset[2] = (FE_value)0;
 					for (j = 0; j < number_in_xi[1]; j++)
 					{
-						centre_xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
+						centre_xi[1] = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 						for (i = 0; i < number_in_xi[0]; i++)
 						{
-							centre_xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+							centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
 								element, xi_discretization_mode, element_shape_category, 
 								centre_xi, dxi, field_cache, coordinate_field, density_field,
@@ -1879,11 +1877,11 @@ fields, required for DENSITY and POISSON modes.
 					xi_offset[2] = (FE_value)0;
 					for (j = 0; j < number_in_xi_simplex; j++)
 					{
-						centre_xi[1] = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+						centre_xi[1] = ((FE_value)j + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 						number_in_xi0 = number_in_xi_simplex - j;
 						for (i = 0; i < number_in_xi0; i++)
 						{
-							centre_xi[0] = ((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+							centre_xi[0] = ((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 							centre_xi[2] = 0.0;
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
 								element, xi_discretization_mode, element_shape_category, 
@@ -1910,13 +1908,13 @@ fields, required for DENSITY and POISSON modes.
 					dxi[2] = 1.0 / (FE_value)number_in_xi[2];
 					for (k = 0; (k < number_in_xi[2]) && return_code; k++)
 					{
-						centre_xi[2] = ((float)k + 0.5)/(float)number_in_xi[2];
+						centre_xi[2] = ((FE_value)k + 0.5)/(FE_value)number_in_xi[2];
 						for (j = 0; (j < number_in_xi[1]) && return_code; j++)
 						{
-							centre_xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
+							centre_xi[1] = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 							for (i = 0; (i <number_in_xi[0]) && return_code; i++)
 							{
-								centre_xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+								centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
@@ -1946,15 +1944,15 @@ fields, required for DENSITY and POISSON modes.
 					xi_offset[2] = (FE_value)0.25;
 					for (k = 0; k < number_in_xi_simplex; k++)
 					{
-						centre_xi[2] = ((float)k + 0.25)/(float)number_in_xi_simplex;
+						centre_xi[2] = ((FE_value)k + 0.25)/(FE_value)number_in_xi_simplex;
 						number_in_xi1 = number_in_xi_simplex - k;
 						for (j = 0; j <= number_in_xi1; j++)
 						{
-							centre_xi[1] = ((float)j + 0.25)/(float)number_in_xi_simplex;
+							centre_xi[1] = ((FE_value)j + 0.25)/(FE_value)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi1 - j;
 							for (i = 0; i < number_in_xi0; i++)
 							{
-								centre_xi[0] = ((float)i + 0.25)/(float)number_in_xi_simplex;
+								centre_xi[0] = ((FE_value)i + 0.25)/(FE_value)number_in_xi_simplex;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
 									element, xi_discretization_mode, element_shape_category, 
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
@@ -1972,8 +1970,8 @@ fields, required for DENSITY and POISSON modes.
 						number_in_xi_simplex = number_in_xi[linked_xi_directions[1]];
 					}
 
-					float xi_j, xi_k;
-					int	number_in_xi0 = 0;
+					double xi_j, xi_k;
+					int number_in_xi0 = 0;
 					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
 					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
 					dxi[2] = 1.0 / (FE_value)number_in_xi_simplex;
@@ -1983,15 +1981,15 @@ fields, required for DENSITY and POISSON modes.
 					{
 						xi_offset[linked_xi_directions[0]] = (FE_value)(1.0/3.0);
 						xi_offset[linked_xi_directions[1]] = (FE_value)(1.0/3.0);
-						xi_k = ((float)k + 0.5)/(float)number_in_xi[line_direction];
+						xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[line_direction];
 						for (j = 0; j < number_in_xi_simplex; j++)
 						{
-							xi_j = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+							xi_j = ((double)j + (1.0/3.0))/(double)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi_simplex - j;
 							for (i = 0; i < number_in_xi0; i++)
 							{
 								centre_xi[linked_xi_directions[0]] =
-									((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+									((double)i + (1.0/3.0))/(double)number_in_xi_simplex;
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
@@ -2005,12 +2003,12 @@ fields, required for DENSITY and POISSON modes.
 						xi_offset[linked_xi_directions[1]] = (FE_value)(-1.0/3.0);
 						for (j = 1; j < number_in_xi_simplex; j++)
 						{
-							xi_j = ((float)j - (1.0/3.0))/(float)number_in_xi_simplex;
+							xi_j = ((double)j - (1.0/3.0))/(double)number_in_xi_simplex;
 							number_in_xi0 = number_in_xi_simplex - j + 1;
 							for (i = 1; i < number_in_xi0; i++)
 							{
 								centre_xi[linked_xi_directions[0]] =
-									((float)i - (1.0/3.0))/(float)number_in_xi_simplex;
+									((double)i - (1.0/3.0))/(double)number_in_xi_simplex;
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
@@ -2332,7 +2330,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 							if ((0 <= xi_point_number) &&
 								(xi_point_number < number_of_xi_points))
 							{
-								xi[0] = ((float)xi_point_number + 0.5)/(float)number_in_xi[0];
+								xi[0] = ((FE_value)xi_point_number + 0.5)/(FE_value)number_in_xi[0];
 								xi[1] = 0.0;
 								xi[2] = 0.0;
 								default_behaviour = 0;
@@ -2354,8 +2352,8 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 							{
 								j = (xi_point_number / number_in_xi[0]);
 								i = (xi_point_number % number_in_xi[0]);
-								xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
-								xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
+								xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
+								xi[1] = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
 								xi[2] = 0.0;
 								default_behaviour = 0;
 							}
@@ -2380,9 +2378,9 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 								n = xi_point_number % m;
 								j = n / number_in_xi[0];
 								i = n % number_in_xi[0];
-								xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
-								xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
-								xi[2] = ((float)k + 0.5)/(float)number_in_xi[2];
+								xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
+								xi[1] = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
+								xi[2] = ((FE_value)k + 0.5)/(FE_value)number_in_xi[2];
 								default_behaviour = 0;
 							}
 							else
@@ -2413,7 +2411,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 							if ((0 <= xi_point_number) &&
 								(xi_point_number < number_of_xi_points))
 							{
-								xi[0] = (float)xi_point_number/(float)number_in_xi[0];
+								xi[0] = (FE_value)xi_point_number/(FE_value)number_in_xi[0];
 								xi[1] = 0.0;
 								xi[2] = 0.0;
 								default_behaviour = 0;
@@ -2435,8 +2433,8 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 							{
 								j = (xi_point_number / (number_in_xi[0]+1));
 								i = (xi_point_number % (number_in_xi[0]+1));
-								xi[0] = (float)i/(float)number_in_xi[0];
-								xi[1] = (float)j/(float)number_in_xi[1];
+								xi[0] = (FE_value)i/(FE_value)number_in_xi[0];
+								xi[1] = (FE_value)j/(FE_value)number_in_xi[1];
 								xi[2] = 0.0;
 								default_behaviour = 0;
 							}
@@ -2461,9 +2459,9 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 								n = xi_point_number % m;
 								j = n / (number_in_xi[0]+1);
 								i = n % (number_in_xi[0]+1);
-								xi[0] = (float)i/(float)number_in_xi[0];
-								xi[1] = (float)j/(float)number_in_xi[1];
-								xi[2] = (float)k/(float)number_in_xi[2];
+								xi[0] = (FE_value)i/(FE_value)number_in_xi[0];
+								xi[1] = (FE_value)j/(FE_value)number_in_xi[1];
+								xi[2] = (FE_value)k/(FE_value)number_in_xi[2];
 								default_behaviour = 0;
 							}
 							else
@@ -2584,7 +2582,7 @@ FE_element_get_top_level_element_conversion.)
 parent elements where necessary.
 ==============================================================================*/
 {
-	float final_xi_value;
+	FE_value final_xi_value;
 	int i,j,k,return_code,rowsize;
 	FE_value_triple *xi,xi_value;
 

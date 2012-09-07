@@ -42,18 +42,14 @@ Wraps itk::Statistics::ScalarImageToHistogramGenerator
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_histogram_image_filter.h"
-//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkScalarImageToHistogramGenerator.h"
@@ -683,28 +679,28 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new Computed_field_histogram_scalar_image_filter_Functor
-						< itk::Image< float, 1 > >
+						< itk::Image< ZnReal, 1 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 2>, 1 > >
+						< itk::Image< itk::Vector<ZnReal, 2>, 1 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 3>, 1 > >
+						< itk::Image< itk::Vector<ZnReal, 3>, 1 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 4>, 1 > >
+						< itk::Image< itk::Vector<ZnReal, 4>, 1 > >
 						(filter);
 					return_code = 1;
 				} break;
@@ -725,28 +721,28 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new Computed_field_histogram_scalar_image_filter_Functor
-						< itk::Image< float, 2 > >
+						< itk::Image< ZnReal, 2 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 2>, 2 > >
+						< itk::Image< itk::Vector<ZnReal, 2>, 2 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 3>, 2 > >
+						< itk::Image< itk::Vector<ZnReal, 3>, 2 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 4>, 2 > >
+						< itk::Image< itk::Vector<ZnReal, 4>, 2 > >
 						(filter);
 					return_code = 1;
 				} break;
@@ -767,28 +763,28 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new Computed_field_histogram_scalar_image_filter_Functor
-						< itk::Image< float, 3 > >
+						< itk::Image< ZnReal, 3 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 2>, 3 > >
+						< itk::Image< itk::Vector<ZnReal, 2>, 3 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 3>, 3 > >
+						< itk::Image< itk::Vector<ZnReal, 3>, 3 > >
 						(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new Computed_field_histogram_nonscalar_image_filter_Functor
-						< itk::Image< itk::Vector<float, 4>, 3 > >
+						< itk::Image< itk::Vector<ZnReal, 4>, 3 > >
 						(filter);
 					return_code = 1;
 				} break;

@@ -45,12 +45,10 @@ Simulation/animation parameters are controlled over time by these curves.
 #if !defined (CURVE_H)
 #define CURVE_H
 
-//-- extern "C" {
 #include "finite_element/finite_element.h"
 #include "general/io_stream.h"
 #include "general/list.h"
 #include "general/manager.h"
-//-- }
 
 /*
 Global types

@@ -38,13 +38,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <cstdio>
-//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "finite_element/finite_element.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 

@@ -39,7 +39,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <list>
-//-- extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -48,14 +47,13 @@
 #include "graphics/graphic.h"
 #include "graphics/graphics_module.h"
 #include "region/cmiss_region.h"
-//-- }
 #include "general/cmiss_set.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 
-class Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
+struct Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
 {
 protected:
 
@@ -448,7 +446,7 @@ namespace {
  * Frees the memory for the graphics_filter of <*graphics_filter_address>.
  * Sets *graphics_filter_address to NULL.
  */
-int DESTROY(Cmiss_graphics_filter)(class Cmiss_graphics_filter **graphics_filter_address)
+int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filter_address)
 {
 	int return_code;
 

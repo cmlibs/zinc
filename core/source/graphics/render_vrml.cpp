@@ -45,7 +45,6 @@ Renders gtObjects to VRML file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -63,7 +62,6 @@ Renders gtObjects to VRML file
 #include "graphics/texture.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-//-- }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 
@@ -86,7 +84,7 @@ PROTOtyping is very slow so has been phased out.
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
 	/* time only needed for graphics_object prototype */
-	float time;
+	ZnReal time;
 	int access_count;
 }; /* struct VRML_prototype */
 
@@ -143,7 +141,7 @@ Protects us from errors due to numbers being close but outside the range of
 static struct VRML_prototype *CREATE(VRML_prototype)(char *name,
 	struct Texture *texture,
 	struct Graphical_material *material,
-	struct GT_object *graphics_object,float time)
+	struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 9 May 1999
 
@@ -266,7 +264,7 @@ material is already in the list.
 
 /* Forward declaration of write_graphics_object_vrml function for glyph_set */
 static int write_graphics_object_vrml(FILE *vrml_file,
-	struct GT_object *gt_object,float time,
+	struct GT_object *gt_object,ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list,
 	int object_is_glyph,struct Graphical_material *default_material,
 	int gt_object_already_prototyped);
@@ -280,7 +278,7 @@ Writes VRML that defines the texture.
 ==============================================================================*/
 {
 	char *texture_name;
-	float width, height, depth;
+	ZnReal width, height, depth;
 	int width_texels, height_texels, depth_texels, return_code;
 
 	ENTER(write_texture_vrml);
@@ -483,7 +481,7 @@ Sets VRML file for rendering values on the current material.
 } /* spectrum_start_render_vrml */
 
 static int spectrum_render_vrml_value(FILE *vrml_file,struct Spectrum *spectrum,
-	struct Graphical_material *material,int number_of_data_components,float *data)
+	struct Graphical_material *material,int number_of_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
 
@@ -492,7 +490,7 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 ==============================================================================*/
 {
 	int return_code;
-	float rgba[4];
+	ZnReal rgba[4];
 
 	ENTER(spectrum_render_vrml_value);
 	if (spectrum&&material)
@@ -544,8 +542,8 @@ Resets the graphics state after rendering values on current material.
 	return (return_code);
 } /* spectrum_end_render_vrml */
 
-static int get_orthogonal_axes(float a1,float a2,float a3,
-	float *b1,float *b2,float *b3,float *c1,float *c2,float *c3)
+static int get_orthogonal_axes(ZnReal a1,ZnReal a2,ZnReal a3,
+	ZnReal *b1,ZnReal *b2,ZnReal *b3,ZnReal *c1,ZnReal *c2,ZnReal *c3)
 /*******************************************************************************
 LAST MODIFIED : 11 May 1999
 
@@ -554,7 +552,7 @@ Given unit vector axis a=(a1,a2,a3), returns a pair of unit vectors
 b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
 ==============================================================================*/
 {
-	float length;
+	ZnReal length;
 	int return_code;
 
 	ENTER(get_orthogonal_axes);
@@ -615,8 +613,8 @@ int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	Triple *point_list,Triple *axis1_list,
 	Triple *axis2_list,Triple *axis3_list,Triple *scale_list,
 	struct GT_object *glyph,char **labels,
-	int number_of_data_components, GTDATA *data,
-	struct Graphical_material *material, struct Spectrum *spectrum, float time,
+	int number_of_data_components, GLfloat *data,
+	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
 LAST MODIFIED : 16 January 2002
@@ -628,7 +626,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 ==============================================================================*/
 {
 	char **label, *label_token;
-	float a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
+	ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
 		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f, f0, f1, j1, j2, j3,
 		c_magnitude, s1, s2, s3, x, y, z;
 	int i, j, mirror_mode, number_of_glyphs, number_of_skew_glyph_axes,
@@ -1030,7 +1028,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 								a3 = 0.0;
 								if (0 > ax1)
 								{
-									a_angle = PI;
+									a_angle = (ZnReal)PI;
 								}
 								else
 								{
@@ -1083,7 +1081,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 								{
 									/* b_angle is close to +/- PI (have already checked that
 										b_angle isn't near 0 */
-									b_angle=PI;
+									b_angle = (ZnReal)PI;
 								}
 							}
 							fprintf(vrml_file,"Transform {\n");
@@ -1292,8 +1290,8 @@ points  given by the positions in <point_list> and oriented and scaled by
 } /* draw_glyph_set_vrml */
 
 static int draw_point_set_vrml(FILE *vrml_file,int n_pts,Triple *point_list,
-	char **text,gtMarkerType marker_type,float marker_size,int number_of_data_components,
-	GTDATA *data,struct Graphical_material *material,struct Spectrum *spectrum)
+	char **text,gtMarkerType marker_type,ZnReal marker_size,int number_of_data_components,
+	GLfloat *data,struct Graphical_material *material,struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 10 May 1999
 
@@ -1302,7 +1300,7 @@ Writes VRML code to the file handle which represents the given pointset.
 ==============================================================================*/
 {
 	char **text_string;
-	float delta, x, y, z;
+	ZnReal delta, x, y, z;
 	int i, offset, return_code;
 	Triple *point;
 	struct Graphical_material *material_copy;
@@ -1586,8 +1584,8 @@ Writes VRML code to the file handle which represents the given pointset.
 	return (return_code);
 } /* draw_point_set_vrml */
 
-static int draw_polyline_vrml(FILE *vrml_file,float *point_list,
-	int number_of_data_components,GTDATA *data,
+static int draw_polyline_vrml(FILE *vrml_file,GLfloat *point_list,
+	int number_of_data_components,GLfloat *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
 	enum GT_polyline_type polyline_type)
 /*******************************************************************************
@@ -1712,7 +1710,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 } /* draw_polyline_vrml */
 
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int number_of_data_components, GTDATA *data,
+	Triple *texturepts, int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
 	int npts2,enum GT_surface_type surface_type,enum Cmiss_graphics_render_type render_type,
 	gtPolygonType polygon_type,
@@ -2074,11 +2072,14 @@ DESCRIPTION :
 		if (spectrum && number_of_data_components)
 		{
 			spectrum_start_render_vrml(vrml_file, spectrum, default_material);
+			GLfloat *data = new GLfloat[number_of_data_components];
 			for (i = 0; i < number_of_vertices; i++)
 			{
+				CAST_TO_OTHER(data, vertex_list[i]->data, GLfloat, number_of_data_components);
 				spectrum_render_vrml_value(vrml_file, spectrum, default_material,
-					number_of_data_components, vertex_list[i]->data);
+					number_of_data_components, data);
 			}
+			delete[] data;
 			spectrum_end_render_vrml(vrml_file, spectrum);
 		}
 		fprintf(vrml_file,"    coordIndex [\n");
@@ -2099,7 +2100,7 @@ DESCRIPTION :
 	return (return_code);
 } /* draw_voltex_vrml */
 
-int makevrml(FILE *vrml_file,gtObject *object,float time,
+int makevrml(FILE *vrml_file,gtObject *object,ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
@@ -2110,7 +2111,7 @@ Only writes the geometry field.
 ???RC Crap
 ==============================================================================*/
 {
-	float proportion = 0.0, *times;
+	ZnReal proportion = 0.0, *times;
 	int group = 0, itime, number_of_times, return_code;
 	/* struct GT_nurbs *nurbs; */
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -2420,7 +2421,7 @@ Only writes the geometry field.
 							object->vertex_array->get_number_of_vertices(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
 
-						float *position_buffer, *data_buffer, *normal_buffer;
+						GLfloat *position_buffer, *data_buffer, *normal_buffer;
 						unsigned int position_values_per_vertex, position_vertex_count,
 						data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
 						normal_vertex_count;
@@ -2432,17 +2433,17 @@ Only writes the geometry field.
 							group = 1;
 						}
 
-						position_buffer = (float *)NULL;
+						position_buffer = 0;
 						object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 							&position_buffer, &position_values_per_vertex, &position_vertex_count);
 
-						data_buffer = (float *)NULL;
+						data_buffer = 0;
 						object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 							&data_buffer, &data_values_per_vertex, &data_vertex_count);
 						
-						normal_buffer = (float *)NULL;
+						normal_buffer = 0;
 						object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 							&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
@@ -2455,7 +2456,7 @@ Only writes the geometry field.
 								line_index, 1, &object_name);
 
 							unsigned int index_start, index_count;
-							float *position_vertex, *data_vertex;
+							GLfloat *position_vertex, *data_vertex;
 							
 							object->vertex_array->get_unsigned_integer_attribute(
 								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
@@ -2608,7 +2609,7 @@ Only writes the geometry field.
 } /* makevrml */
 
 static int write_graphics_object_vrml(FILE *vrml_file,
-	struct GT_object *gt_object,float time,
+	struct GT_object *gt_object,ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list,
 	int object_is_glyph,struct Graphical_material *default_material,
 	int gt_object_already_prototyped)

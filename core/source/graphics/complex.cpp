@@ -7,7 +7,10 @@
 
 #include <math.h>
 
-typedef struct FCOMPLEX {float r,i;} fcomplex;
+#include "api/cmiss_zinc_configure.h"
+#define NRANSI
+#include "graphics/complex.h"
+#undef NRANSI
 
 fcomplex Cadd(fcomplex a, fcomplex b)
 {
@@ -34,7 +37,7 @@ fcomplex Cmul(fcomplex a, fcomplex b)
 	return c;
 }
 
-fcomplex Complexr(float re, float im)
+fcomplex Complexr(ZnReal re, ZnReal im)
 {
 	static fcomplex c;
 	c.r=re;
@@ -53,7 +56,7 @@ fcomplex Conjg(fcomplex z)
 fcomplex Cdiv(fcomplex a, fcomplex b)
 {
 	static fcomplex c;
-	float r,den;
+	ZnReal r,den;
 	if (fabs(b.r) >= fabs(b.i)) {
 		r=b.i/b.r;
 		den=b.r+r*b.i;
@@ -68,9 +71,9 @@ fcomplex Cdiv(fcomplex a, fcomplex b)
 	return c;
 }
 
-float Cabs(fcomplex z)
+ZnReal Cabs(fcomplex z)
 {
-	static float x,y,ans,temp;
+	static ZnReal x,y,ans,temp;
 	x=fabs(z.r);
 	y=fabs(z.i);
 	if (x == 0.0)
@@ -90,7 +93,7 @@ float Cabs(fcomplex z)
 fcomplex Csqrt(fcomplex z)
 {
 	static fcomplex c;
-	float x,y,w,r;
+	ZnReal x,y,w,r;
 	if ((z.r == 0.0) && (z.i == 0.0)) {
 		c.r=0.0;
 		c.i=0.0;
@@ -116,7 +119,7 @@ fcomplex Csqrt(fcomplex z)
 	}
 }
 
-fcomplex RCmul(float x, fcomplex a)
+fcomplex RCmul(ZnReal x, fcomplex a)
 {
 	static fcomplex c;
 	c.r=x*a.r;

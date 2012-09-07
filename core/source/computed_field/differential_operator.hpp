@@ -42,10 +42,8 @@
 #if !defined (DIFFERENTIAL_OPERATOR_HPP)
 #define DIFFERENTIAL_OPERATOR_HPP
 
-//-- extern "C" {
 #include "api/cmiss_differential_operator.h"
 #include "finite_element/finite_element_region.h"
-//-- }
 
 /**
  * For now can only represent a differential differential_operator give first derivatives

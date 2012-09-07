@@ -42,7 +42,6 @@ Used, eg., to indicate which components have been modified in an editor.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include "computed_field/computed_field_value_index_ranges.h"
@@ -50,7 +49,6 @@ Used, eg., to indicate which components have been modified in an editor.
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

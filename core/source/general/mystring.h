@@ -149,7 +149,7 @@ without changing anything.  Otherwise the string is REALLOCATED and the suffix
 added to the end of the string.
 ==============================================================================*/
 
-char *duplicate_string(const char *source_string);
+ZINC_API char *duplicate_string(const char *source_string);
 /*******************************************************************************
 LAST MODIFIED : 2 December 1998
 

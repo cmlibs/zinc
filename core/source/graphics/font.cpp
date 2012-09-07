@@ -43,9 +43,8 @@ This provides a Cmgui interface to the font contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -53,7 +52,6 @@ This provides a Cmgui interface to the font contexts of many types.
 #include "general/manager_private.h"
 #include "graphics/font.h"
 #include "graphics/graphics_library.h"
-#include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
@@ -71,7 +69,6 @@ This provides a Cmgui interface to the font contexts of many types.
 #define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
-//-- }
 #if defined (WX_USER_INTERFACE)
 #include <wx/bitmap.h>
 #include <wx/image.h>
@@ -598,13 +595,13 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			font->display_list_offset = glGenLists (font->number_of_bitmaps);
 
 			/* Can have multiple types compiled in at the same time (X and gtk) */
-			switch (Graphics_buffer_get_type(buffer))
+			switch (0 /* //-- Graphics_buffer_get_type(buffer) */)
 			{
 #if defined (GTK_USER_INTERFACE)
 #  if defined GTK_USE_GTKGLAREA
 				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 				{
-		         /* Not implemented */
+					/* Not implemented */
 					display_message(WARNING_MESSAGE,"wrapperInitText.  "
 						"Text display is not implemented for Gtk prior to version 2 or for gtkglarea.");
 					return_code = 0;
@@ -642,8 +639,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WIN32_TYPE:
-			        case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
-			        case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
+				case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
+				case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 				{
 					if (!strcmp(font->font_string,"default"))
 					{
@@ -822,7 +819,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 				default:
 				{
 					display_message(ERROR_MESSAGE,"Graphics_font.  "
-						"Graphics_bufffer type unknown or not supported.");				
+						"Graphics_bufffer type unknown or not supported.");
 					return_code = 0;
 				} break;
 			}

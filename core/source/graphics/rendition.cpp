@@ -39,7 +39,6 @@ FILE : rendition.cpp
 
 #include <algorithm>
 #include <list>
-//-- extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -72,7 +71,6 @@ FILE : rendition.cpp
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "graphics/selection.hpp"
@@ -1272,7 +1270,7 @@ gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
 int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	struct Cmiss_scene *scene, struct Graphics_object_range_struct *graphics_object_range)
 {
-	float coordinates[4],transformed_coordinates[4];
+	double coordinates[4],transformed_coordinates[4];
 	gtMatrix *transformation = NULL;
 	int i,j,k,return_code;
 	struct Graphics_object_range_struct temp_graphics_object_range;

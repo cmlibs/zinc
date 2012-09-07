@@ -59,10 +59,9 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -72,7 +71,6 @@ return to direct rendering, as described with these routines.
 #include "graphics/graphics_library.h"
 #include "graphics/light_model.h"
 #include "general/message.h"
-//-- }
 #include "graphics/render_gl.h"
 
 /*

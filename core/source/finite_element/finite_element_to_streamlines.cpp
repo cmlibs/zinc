@@ -45,7 +45,6 @@ Functions for calculating streamlines in finite elements.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include <math.h>
-//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_region.h"
@@ -56,7 +55,6 @@ Functions for calculating streamlines in finite elements.
 #include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-//-- }
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
 	of a pointset. */
@@ -718,10 +716,10 @@ accurate if small), also ensuring that the element is updated.
 static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value *xi, Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,enum Streamline_data_type data_type,
+	ZnReal length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
-	GTDATA **stream_data, struct FE_region *fe_region)
+	GLfloat **stream_data, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
 
@@ -762,7 +760,7 @@ in that region.
 		previous_curl_component = 0.0,previous_total_stepped_A,
 		previous_total_stepped_B,sin_angle,step_size,stream_vector_values[9],
 		temp,total_stepped,vector[3],vector_magnitude;
-	GTDATA *stream_datum,*tmp_stream_data;
+	GLfloat *stream_datum,*tmp_stream_data;
 	int add_point,allocated_number_of_points,calculate_curl,element_dimension,
 		i,keep_tracking,number_of_coordinate_components,
 		number_of_stream_vector_components,return_code;
@@ -803,14 +801,14 @@ in that region.
 		*stream_points=(Triple *)NULL;
 		*stream_vectors=(Triple *)NULL;
 		*stream_normals=(Triple *)NULL;
-		*stream_data=(GTDATA *)NULL;
+		*stream_data=0;
 		*number_of_points=0;
 		allocated_number_of_points=100;
 		if (ALLOCATE(*stream_points,Triple,allocated_number_of_points)&&
 			ALLOCATE(*stream_vectors,Triple,allocated_number_of_points)&&
 			ALLOCATE(*stream_normals,Triple,allocated_number_of_points)&&
 			((STREAM_NO_DATA==data_type)||
-				ALLOCATE(*stream_data,GTDATA,allocated_number_of_points)))
+				ALLOCATE(*stream_data,GLfloat,allocated_number_of_points)))
 		{
 			stream_point= *stream_points;
 			stream_vector= *stream_vectors;
@@ -1214,21 +1212,21 @@ in that region.
 							} break;
 						}
 						/* set point, normal and data */
-						(*stream_point)[0] = coordinates[0];
-						(*stream_point)[1] = coordinates[1];
-						(*stream_point)[2] = coordinates[2];
+						(*stream_point)[0] = GLfloat(coordinates[0]);
+						(*stream_point)[1] = GLfloat(coordinates[1]);
+						(*stream_point)[2] = GLfloat(coordinates[2]);
 						stream_point++;
-						(*stream_vector)[0] = vector[0];
-						(*stream_vector)[1] = vector[1];
-						(*stream_vector)[2] = vector[2];
+						(*stream_vector)[0] = GLfloat(vector[0]);
+						(*stream_vector)[1] = GLfloat(vector[1]);
+						(*stream_vector)[2] = GLfloat(vector[2]);
 						stream_vector++;
-						(*stream_normal)[0] = normal2[0];
-						(*stream_normal)[1] = normal2[1];
-						(*stream_normal)[2] = normal2[2];
+						(*stream_normal)[0] = GLfloat(normal2[0]);
+						(*stream_normal)[1] = GLfloat(normal2[1]);
+						(*stream_normal)[2] = GLfloat(normal2[2]);
 						stream_normal++;
 						if (STREAM_NO_DATA != data_type)
 						{
-							*stream_datum = (GTDATA)data_value;
+							*stream_datum = (ZnReal)data_value;
 							stream_datum++;
 						}
 						i++;
@@ -1319,7 +1317,7 @@ in that region.
 						}
 						if (STREAM_NO_DATA != data_type)
 						{
-							if (REALLOCATE(tmp_stream_data,*stream_data,GTDATA,
+							if (REALLOCATE(tmp_stream_data,*stream_data,GLfloat,
 								allocated_number_of_points))
 							{
 								*stream_data=tmp_stream_data;
@@ -1393,11 +1391,11 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,enum Streamline_data_type data_type,
+	ZnReal length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region)
 {
 	gtDataType gt_data_type;
-	GTDATA *stream_data;
+	GLfloat *stream_data;
 	int element_dimension,number_of_stream_points,number_of_coordinate_components,
 		number_of_stream_vector_components;
 	struct GT_polyline *polyline;
@@ -1485,13 +1483,13 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,float width,enum Streamline_type type,
+	ZnReal length,ZnReal width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
 	struct FE_region *fe_region)
 {
-	float cosw,magnitude,sinw,thickness;
+	double cosw,magnitude,sinw,thickness;
 	gtDataType gt_data_type;
-	GTDATA *data,*datum,*stream_data,stream_datum= 0.0;
+	GLfloat *data,*datum,*stream_data,stream_datum= 0.0;
 	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
 		number_of_stream_vector_components,surface_points_per_step;
 	struct GT_surface *surface;
@@ -1523,7 +1521,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 			}
 			else
 			{
-				thickness = 0.2 * width;
+				thickness = 0.2f * width;
 			}
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,
@@ -1552,11 +1550,11 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 					}
 					/* now create a surface from the points */
 					points=(Triple *)NULL;
-					data=(GTDATA *)NULL;
+					data = 0;
 					if (STREAM_NO_DATA != data_type)
 					{
 						gt_data_type=g_SCALAR;
-						ALLOCATE(data,GTDATA,surface_points_per_step*number_of_stream_points);
+						ALLOCATE(data,GLfloat,surface_points_per_step*number_of_stream_points);
 					}
 					else
 					{
@@ -1594,9 +1592,9 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 									stream_vector[1]*stream_vector[1]+
 									stream_vector[2]*stream_vector[2])))
 								{
-									stream_unit_vector[0] = stream_vector[0] / magnitude;
-									stream_unit_vector[1] = stream_vector[1] / magnitude;
-									stream_unit_vector[2] = stream_vector[2] / magnitude;
+									stream_unit_vector[0] = stream_vector[0] / GLfloat(magnitude);
+									stream_unit_vector[1] = stream_vector[1] / GLfloat(magnitude);
+									stream_unit_vector[2] = stream_vector[2] / GLfloat(magnitude);
 								}
 								/* get stream_cross = stream_normal (x) stream_unit_vector */
 								stream_cross[0]=stream_normal[1]*stream_unit_vector[2]-
@@ -1605,12 +1603,12 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 									stream_normal[0]*stream_unit_vector[2];
 								stream_cross[2]=stream_normal[0]*stream_unit_vector[1]-
 									stream_normal[1]*stream_unit_vector[0];
-								cross_width[0] = stream_cross[0] * 0.5 * width;
-								cross_width[1] = stream_cross[1] * 0.5 * width;
-								cross_width[2] = stream_cross[2] * 0.5 * width;
-								cross_thickness[0] = stream_normal[0] * 0.5 * thickness;
-								cross_thickness[1] = stream_normal[1] * 0.5 * thickness;
-								cross_thickness[2] = stream_normal[2] * 0.5 * thickness;
+								cross_width[0] = stream_cross[0] * 0.5f * width;
+								cross_width[1] = stream_cross[1] * 0.5f * width;
+								cross_width[2] = stream_cross[2] * 0.5f * width;
+								cross_thickness[0] = stream_normal[0] * 0.5f * GLfloat(thickness);
+								cross_thickness[1] = stream_normal[1] * 0.5f * GLfloat(thickness);
+								cross_thickness[2] = stream_normal[2] * 0.5f * GLfloat(thickness);
 								switch (type)
 								{
 									case STREAM_RIBBON:
@@ -1652,27 +1650,27 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 												(double)(surface_points_per_step - 1));
 											cosw = cos( 2 * PI * (double)d /
 												(double)(surface_points_per_step - 1));
-											(*point)[0] = stream_point[0] + sinw * cross_width[0]
-											                                                   + cosw * cross_thickness[0];
-											(*point)[1] = stream_point[1] + sinw * cross_width[1]
-											                                                   + cosw * cross_thickness[1];
-											(*point)[2] = stream_point[2] + sinw * cross_width[2]
-											                                                   + cosw * cross_thickness[2];
+											(*point)[0] = stream_point[0] + GLfloat(sinw) * cross_width[0]
+												+ GLfloat(cosw) * cross_thickness[0];
+											(*point)[1] = stream_point[1] + GLfloat(sinw) * cross_width[1]
+												+ GLfloat(cosw) * cross_thickness[1];
+											(*point)[2] = stream_point[2] + GLfloat(sinw) * cross_width[2]
+												+ GLfloat(cosw) * cross_thickness[2];
 											point++;
-											(*normal)[0] = -sinw * stream_cross[0] * 0.5 * thickness -
-												cosw * stream_normal[0] * 0.5 * width;
-											(*normal)[1] = -sinw * stream_cross[1] * 0.5 * thickness -
-												cosw * stream_normal[1] * 0.5 * thickness;
-											(*normal)[2] = -sinw * stream_cross[2] * 0.5 * thickness -
-												cosw * stream_normal[2] * 0.5 * thickness;
+											(*normal)[0] = -GLfloat(sinw) * stream_cross[0] * 0.5f * GLfloat(thickness) -
+												GLfloat(cosw) * stream_normal[0] * 0.5f * width;
+											(*normal)[1] = -GLfloat(sinw) * stream_cross[1] * 0.5f * GLfloat(thickness) -
+												GLfloat(cosw) * stream_normal[1] * 0.5f * GLfloat(thickness);
+											(*normal)[2] = -GLfloat(sinw) * stream_cross[2] * 0.5f * GLfloat(thickness) -
+												GLfloat(cosw) * stream_normal[2] * 0.5f * GLfloat(thickness);
 											magnitude = sqrt((*normal)[0] * (*normal)[0]
-											                                          + (*normal)[1] * (*normal)[1]
-											                                                                     + (*normal)[2] * (*normal)[2]);
+												+ (*normal)[1] * (*normal)[1]
+												+ (*normal)[2] * (*normal)[2]);
 											if (0.0<magnitude)
 											{
-												(*normal)[0] /= magnitude;
-												(*normal)[1] /= magnitude;
-												(*normal)[2] /= magnitude;
+												(*normal)[0] /= GLfloat(magnitude);
+												(*normal)[1] /= GLfloat(magnitude);
+												(*normal)[2] /= GLfloat(magnitude);
 											}
 											normal++;
 											if (datum)
@@ -1873,74 +1871,6 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	return (surface);
 } /* create_GT_surface_streamribbon_FE_element */
 
-#if defined OLD_CODE
-struct GT_pointset *create_interactive_streampoint(struct FE_element *element,
-	Cmiss_field_cache_id field_cache,
-	struct Computed_field *coordinate_field,float length,FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
-==============================================================================*/
-{
-	FE_value coordinates[3];
-	float point_size;
-	struct GT_pointset *point_set;
-	Triple *point;
-
-	ENTER(create_interactive_streampoint);
-	point_size=length/100;
-	/* check the arguments */
-	if (element&&(3==get_FE_element_dimension(element))&&(length>0.0)&&
-		coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field)))
-	{
-		coordinates[0]=0.0;
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-		if (Cmiss_field_cache_set_mesh_location(field_cache, element, 3, xi) &&
-			Cmiss_field_evaluate_real(coordinate_field, field_cache, 3, coordinates))
-		{
-			if (ALLOCATE(point,Triple,1))
-			{
-				(*point)[0]=coordinates[0];
-				(*point)[1]=coordinates[1];
-				(*point)[2]=coordinates[2];
-				if (!(point_set=CREATE(GT_pointset)(1, point,(char **)NULL,
-					g_PLUS_MARKER,point_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,
-					(struct Graphics_font *)NULL)))
-				{
-					display_message(ERROR_MESSAGE,
-						"create_interactive_streampoint.  Unable to create pointset");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_interactive_streampoint.  Unable to allocate point space");
-				point_set=(struct GT_pointset *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_interactive_streampoint.  Error calculating coordinate field");
-			point_set=(struct GT_pointset *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_interactive_streampoint.  Invalid argument(s)");
-		point_set=(struct GT_pointset *)NULL;
-	}
-	LEAVE;
-
-	return(point_set);
-} /* create_interactive_streampoint */
-#endif // defined OLD_CODE
-
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
@@ -2032,9 +1962,9 @@ created with the given timestamp.
 		if (ALLOCATE(particle_positions,Triple,number_of_points))
 		{
 			if ((pointset=CREATE(GT_pointset)(number_of_points,particle_positions,
-				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,
+				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GLfloat *)NULL,(int *)NULL,
 				(struct Graphics_font *)NULL))&&
-				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,time,pointset))
+				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,ZnReal(time),pointset))
 			{
 				/* copy point positions and then point to new position space */
 				point2=point;
@@ -2085,9 +2015,9 @@ created with the given timestamp.
 				stream_vector_field,/*reverse_track*/0,(struct FE_region *)NULL,
 				&(point->element),point->xi,coordinates,&step_size,
 				&total_stepped,&keep_tracking);
-			(*((point->pointlist)[point->index]))[0]=coordinates[0];
-			(*((point->pointlist)[point->index]))[1]=coordinates[1];
-			(*((point->pointlist)[point->index]))[2]=coordinates[2];
+			(*((point->pointlist)[point->index]))[0]=GLfloat(coordinates[0]);
+			(*((point->pointlist)[point->index]))[1]=GLfloat(coordinates[1]);
+			(*((point->pointlist)[point->index]))[2]=GLfloat(coordinates[2]);
 		}
 		if (total_stepped)
 		{

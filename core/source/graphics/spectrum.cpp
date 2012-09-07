@@ -41,7 +41,6 @@ Spectrum functions and support code.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,7 +58,6 @@ Spectrum functions and support code.
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/spectrum.hpp"
@@ -77,7 +75,7 @@ DESCRIPTION :
 Spectrum type is private.
 ==============================================================================*/
 {
-	float maximum,minimum;
+	ZnReal maximum,minimum;
 	char *name;
 	int clear_colour_before_settings;
 	struct LIST(Spectrum_settings) *list_of_settings;
@@ -315,7 +313,7 @@ some predetermined simple types.
 {
 	struct LIST(Spectrum_settings) *spectrum_settings_list;
 	struct Spectrum_settings *settings, *second_settings;
-	float maximum, minimum;
+	ZnReal maximum, minimum;
 	int number_in_list, return_code;
 
 	ENTER(Spectrum_set_simple_type);
@@ -923,7 +921,7 @@ Returns the position of <settings> in <spectrum>.
 	return (position);
 } /* Spectrum_get_settings_position */
 
-int set_Spectrum_minimum(struct Spectrum *spectrum,float minimum)
+int set_Spectrum_minimum(struct Spectrum *spectrum,ZnReal minimum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -931,7 +929,7 @@ DESCRIPTION :
 A function to set the spectrum minimum.
 ==============================================================================*/
 {
-	float maximum;
+	ZnReal maximum;
 	int return_code;
 
 	ENTER(set_Spectrum_minimum);
@@ -959,7 +957,7 @@ A function to set the spectrum minimum.
 	return (return_code);
 } /* set_Spectrum_minimum */
 
-int set_Spectrum_maximum(struct Spectrum *spectrum,float maximum)
+int set_Spectrum_maximum(struct Spectrum *spectrum,ZnReal maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -967,7 +965,7 @@ DESCRIPTION :
 A function to set the spectrum maximum.
 ==============================================================================*/
 {
-	float minimum;
+	ZnReal minimum;
 	int return_code;
 
 	ENTER(set_Spectrum_maximum);
@@ -995,7 +993,7 @@ A function to set the spectrum maximum.
 	return (return_code);
 } /* set_Spectrum_maximum */
 
-float get_Spectrum_minimum(struct Spectrum *spectrum)
+ZnReal get_Spectrum_minimum(struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
@@ -1003,7 +1001,7 @@ DESCRIPTION :
 Returns the value of the spectrum minimum.
 ==============================================================================*/
 {
-	float minimum;
+	ZnReal minimum;
 	ENTER(get_Spectrum_minimum);
 
 	if (spectrum)
@@ -1021,7 +1019,7 @@ Returns the value of the spectrum minimum.
 	return (minimum);
 } /* get_Spectrum_minimum */
 
-float get_Spectrum_maximum(struct Spectrum *spectrum)
+ZnReal get_Spectrum_maximum(struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
@@ -1029,7 +1027,7 @@ DESCRIPTION :
 Returns the value of the spectrum maximum.
 ==============================================================================*/
 {
-	float maximum;
+	ZnReal maximum;
 
 	ENTER(get_Spectrum_maximum);
 	if (spectrum)
@@ -1201,7 +1199,7 @@ DESCRIPTION :
 Initialises the graphics state for rendering values on the current material.
 ==============================================================================*/
 {
-	float alpha;
+	ZnReal alpha;
 	struct Colour value;
 	struct Spectrum_render_data *render_data;
 
@@ -1264,7 +1262,7 @@ Initialises the graphics state for rendering values on the current material.
 
 int spectrum_renderGL_value(struct Spectrum *spectrum,
 	struct Graphical_material *material,struct Spectrum_render_data *render_data,
-	float *data)
+	GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 1 June 1999
 
@@ -1273,7 +1271,7 @@ Sets the graphics rendering state to represent the value 'data' in
 accordance with the spectrum.
 ==============================================================================*/
 {
-	float rgba[4];
+	GLfloat rgba[4];
 	int return_code = 1;
 
 	ENTER(spectrum_renderGL_value);
@@ -1342,8 +1340,8 @@ Resets the graphics state after rendering values on current material.
 struct Spectrum_calculate_range_iterator_data
 {
 	int first;
-	float min;
-	float max;
+	ZnReal min;
+	ZnReal max;
 };
 
 static int Spectrum_calculate_range_iterator(
@@ -1358,7 +1356,7 @@ it here means that the iterator data structure is local and these two interdepen
 functions are in one place and the iterator can have local scope.
 ==============================================================================*/
 {
-	float min, max;
+	ZnReal min, max;
 	int fixed_minimum, fixed_maximum, return_code;
 	struct Spectrum_calculate_range_iterator_data *data;
 
@@ -1456,7 +1454,7 @@ the minimum and maximum contained inside it.
 
 struct Spectrum_rerange_data
 {
-	float old_min, old_range, old_max, min, range, max;
+	ZnReal old_min, old_range, old_max, min, range, max;
 };
 static int Spectrum_rerange_iterator(
 	struct Spectrum_settings *settings, void *data_void)
@@ -1470,7 +1468,7 @@ it here means that the iterator data structure is local and these two interdepen
 functions are in one place and the iterator can have local scope.
 ==============================================================================*/
 {
-	float min, max;
+	ZnReal min, max;
 	int return_code;
 	struct Spectrum_rerange_data *data;
 
@@ -1576,7 +1574,7 @@ static int Spectrum_changed(struct Spectrum *spectrum)
 }
 
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
-	float minimum, float maximum)
+	ZnReal minimum, ZnReal maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -1625,7 +1623,7 @@ it contains.  The ratios of the different settings are preserved.
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
 	struct Graphical_material *material, int number_of_data_components,
-	float *data)
+	GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -1634,7 +1632,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 <data> values given.
 ==============================================================================*/
 {
-	float rgba[4];
+	GLfloat rgba[4];
 	int return_code;
 	struct Colour diffuse;
 	struct Spectrum_render_data render_data;
@@ -1652,10 +1650,12 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 		else
 		{
 			Graphical_material_get_diffuse(material, &diffuse);
-			rgba[0] = diffuse.red;
-			rgba[1] = diffuse.green;
-			rgba[2] = diffuse.blue;
-			Graphical_material_get_alpha(material, &rgba[3]);
+			rgba[0] = (GLfloat)diffuse.red;
+			rgba[1] = (GLfloat)diffuse.green;
+			rgba[2] = (GLfloat)diffuse.blue;
+			MATERIAL_PRECISION value;
+			Graphical_material_get_alpha(material, &value);
+			rgba[3] = (GLfloat)value;
 		}
 		render_data.rgba = rgba;
 		render_data.data = data;
@@ -1685,7 +1685,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 } /* Spectrum_render_value_on_material */
 
 int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
-	FE_value *data, float *rgba)
+	FE_value *data, ZnReal *rgba)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -1708,9 +1708,11 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			rgba[2] = 0.0;
 			rgba[3] = 1.0;
 		}
-		render_data.rgba = rgba;
-		float *fData = new float[number_of_data_components];
-		CAST_TO_OTHER(fData,data,float,number_of_data_components);
+		GLfloat *frgba = new GLfloat[number_of_data_components];
+		CAST_TO_OTHER(frgba,data,GLfloat,number_of_data_components);
+		render_data.rgba = frgba;
+		GLfloat *fData = new GLfloat[number_of_data_components];
+		CAST_TO_OTHER(fData,data,GLfloat,number_of_data_components);
 		render_data.data = fData;
 		render_data.number_of_data_components = number_of_data_components;
 		
@@ -1719,6 +1721,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			spectrum->list_of_settings);
 
 		delete[] fData;
+		delete[] frgba;
 	}
 	else
 	{
@@ -1986,7 +1989,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	enum Spectrum_colour_components colour_components;
 	int i, indices[3], number_of_data_components, number_of_texture_components,
 		number_of_values, return_code, table_size;
-	float data[3], rgba[4];
+	GLfloat data[3], rgba[4];
 	unsigned char *colour_table, *colour_table_ptr;
 	struct Spectrum_render_data render_data;
 	enum Texture_storage_type storage;
@@ -2103,7 +2106,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 
 				indices[0]++;
 				i = 0;
-				data[0] = (FE_value)indices[0] / (FE_value)(number_of_values - 1);
+				data[0] = (GLfloat)indices[0] / (GLfloat)(number_of_values - 1);
 				while ((i < number_of_data_components - 1) && 
 					(indices[i] == number_of_values))
 				{
@@ -2111,7 +2114,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					data[i] = 0.0;
 					i++;
 					indices[i]++;
-					data[i] = (FE_value)indices[i] / (FE_value)(number_of_values - 1);
+					data[i] = (GLfloat)indices[i] / (GLfloat)(number_of_values - 1);
 				}
 			}
 

@@ -45,13 +45,11 @@ At present, limited to int type, but could be converted to other number types.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

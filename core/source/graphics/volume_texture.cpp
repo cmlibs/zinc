@@ -2071,7 +2071,7 @@ DESCRIPTION :
 		}
 		vertex->number_of_triangles = 0;
 		vertex->triangles = (struct VT_iso_triangle **)NULL;
-		vertex->data = (float *)NULL;
+		vertex->data = (ZnReal *)NULL;
 		vertex->index = 0;
 	}
 	else
@@ -2120,8 +2120,8 @@ Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
 } /* DESTROY(VT_iso_vertex) */
 
 struct VT_iso_vertex *VT_iso_vertex_create_and_set(
-	float *coordinates, float *normal, float *texture_coordinates,
-	int n_data_components, float *data)
+	GLfloat *coordinates, GLfloat *normal, GLfloat *texture_coordinates,
+	int n_data_components, GLfloat *data)
 {
 	int i;
 	struct VT_iso_vertex *vertex;
@@ -2141,7 +2141,7 @@ struct VT_iso_vertex *VT_iso_vertex_create_and_set(
 		}
 		if (n_data_components)
 		{
-			ALLOCATE(vertex->data, float, n_data_components);
+			ALLOCATE(vertex->data, ZnReal, n_data_components);
 			if (vertex->data)
 			{
 				for (i = 0; i < n_data_components; i++)
@@ -2176,7 +2176,7 @@ Normalises the normal for the vertex.
 	ENTER(VT_iso_vertex_calculate_normal);
 	if (vertex)
 	{
-		normalize_float3(vertex->normal);
+		normalize3(vertex->normal);
 		return_code = 1;
 	}
 	else

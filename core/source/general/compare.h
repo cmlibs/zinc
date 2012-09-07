@@ -44,6 +44,8 @@ Functions used for managers and lists.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (COMPARE_H)
 
+#include "api/cmiss_shared_object.h"
+
 /*
 Global functions
 ----------------
@@ -56,7 +58,7 @@ DESCRIPTION :
 Returns -1 if int_1 < int_2, 0 if int_1 = int_2 and 1 if int_1 > int_2.
 ==============================================================================*/
 
-int compare_pointer(void *pointer_1,void *pointer_2);
+int ZINC_API compare_pointer(void *pointer_1,void *pointer_2);
 /*******************************************************************************
 LAST MODIFIED : 15 March 1999
 

@@ -51,6 +51,8 @@ The public interface to the Cmiss_rendition.
 #include "types/cmiss_rendition_id.h"
 #include "types/cmiss_selection_id.h"
 
+#include "cmiss_shared_object.h"
+
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -58,7 +60,7 @@ The public interface to the Cmiss_rendition.
  * @param rendition  The rendition to obtain a new reference to.
  * @return  New rendition reference with incremented reference count.
  */
-Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
+ZINC_API Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
 
 /*******************************************************************************
  * Destroys this reference to the rendition (and sets it to NULL).
@@ -68,7 +70,7 @@ Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
  * @return  status CMISS_OK if successfully remove rendition, any other value on
  * failure.
  */
-int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
+ZINC_API int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
 
 /***************************************************************************//**
  * Use this function with Cmiss_rendition_end_change.
@@ -82,7 +84,7 @@ int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
  * @param rendition  The handle to the rendition.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
+ZINC_API int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Create graphic representation for rendition. This graphical
@@ -97,7 +99,7 @@ int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
  * @return  the handle to the created graphic if successfully create graphic of
  * the specified type for rendition, otherwise NULL.
  */
-Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
+ZINC_API Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 	enum Cmiss_graphic_type graphic_type);
 
 /***************************************************************************//**
@@ -109,7 +111,7 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
  * @param rendition  Handle to a cmiss_rendition object.
  * @return  selection handler of this rendition if successful, otherwise NULL.
  */
-Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(
+ZINC_API Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(
 	Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
@@ -124,7 +126,7 @@ Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(
  * @param rendition  The handle to the rendition.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
+ZINC_API int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Returns the graphic of the specified name from the rendition. Beware that

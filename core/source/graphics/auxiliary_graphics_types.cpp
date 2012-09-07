@@ -49,13 +49,11 @@ represent curvesin three xi-directions;
 #include <stdlib.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/random.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "general/message.h"
 #include "general/mystring.h"
-//-- }
 #include "general/enumerator_private.hpp"
 
 /*

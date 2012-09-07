@@ -44,13 +44,11 @@ checking.
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/value.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

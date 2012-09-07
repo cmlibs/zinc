@@ -143,10 +143,6 @@ struct Cmiss_field_module;
 Global functions
 ----------------
 */
-#ifdef __cplusplus
-//-- extern "C" {
-#endif /* __cplusplus */
-
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
 /*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
@@ -764,7 +760,4 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
 int Cmiss_field_get_access_count(Cmiss_field_id field);
 #endif /* defined (DEBUG_CODE) */
 
-#ifdef __cplusplus
-//-- }
-#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_H) */

@@ -48,7 +48,7 @@ Used to be in graphics_object.h
 #include <stdio.h>
 #include <math.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 #include "general/debug.h"
@@ -84,9 +84,9 @@ DESCRIPTION :
 {
 	enum Userdef_type type;
 	int haircnt;
-	float hair[100][20][3];
+	GLfloat hair[100][20][3];
 	int hairtypearray[100];
-	float t;
+	GLfloat t;
 	int lod;
 }; /* struct Userdef_hair */
 
@@ -97,30 +97,30 @@ Module variables
 #if defined (GL_API) || defined (OPENGL_API)
 /*???DB.  For hair */
 double seed = 0.5;
-float eyecentre[3] = {0.75,2.75,-4.5};
-float eyebrownorm[] = {0,1,0};
-float eyelashdatahigh[] = {0,-.2,-.1,.3,0.7};
-float eyelashdatalow[] = {0,.05,-.05,-.3,-.7};
-float eyelashnormh[][3] = {
-	{0,.707,.707},
+GLfloat eyecentre[3] = {0.75f,2.75f,-4.5f};
+GLfloat eyebrownorm[] = {0,1,0};
+GLfloat eyelashdatahigh[] = {0,-.2f,-.1f,.3f,0.7f};
+GLfloat eyelashdatalow[] = {0,.05f,-.05f,-.3f,-.7f};
+GLfloat eyelashnormh[][3] = {
+	{0,.707f,.707f},
 	{0,1,0},
-	{0,.447,-.894},
-	{0,.707,-.707},
-	{0,.83,-.55}};
-float eyelashnorml[][3] = {
+	{0,.447f,-.894f},
+	{0,.707f,-.707f},
+	{0,.83f,-.55f}};
+GLfloat eyelashnorml[][3] = {
 	{0,0,1},
 	{0,0,1},
-	{0,.62,.78},
-	{0,.707,.707},
-	{0,.83,.55}};
-float eyebrowl[][3] = {
+	{0,.62f,.78f},
+	{0,.707f,.707f},
+	{0,.83f,.55f}};
+GLfloat eyebrowl[][3] = {
 	{0,0,0},
 	{1,2,1},
-	{3,2.5,-.5}};
-float eyebrowh[][3] = {
+	{3,2.5f,-.5f}};
+GLfloat eyebrowh[][3] = {
 	{0,0,0},
 	{1,-1,1},
-	{3,-1.5,-.5}};
+	{3,-1.5f,-.5f}};
 #endif
 
 /*
@@ -145,7 +145,7 @@ DESCRIPTION :
 	return (seed);
 } /* myrand */
 
-static void drawfibre(float point1[3],float r1,float point2[3],float r2)
+static void drawfibre(GLfloat point1[3],GLfloat r1,GLfloat point2[3],GLfloat r2)
 /*******************************************************************************
 LAST MODIFIED : 2 November 1995
 
@@ -153,8 +153,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int dis = 8 /* 10 */;
-	float vert[4][3];
-	float norm[3],vec1[3],vec2[3];
+	GLfloat vert[4][3];
+	GLfloat norm[3],vec1[3],vec2[3];
 	double a,ia;
 	int i,k;
 
@@ -213,7 +213,7 @@ DESCRIPTION :
 	}
 } /* drawfibre */
 
-static void draweyelash(float eyelashx[3],float eyelashy[3],float eyelashz[3],
+static void draweyelash(GLfloat eyelashx[3],GLfloat eyelashy[3],GLfloat eyelashz[3],
 	int lod)
 /*******************************************************************************
 LAST MODIFIED : 2 November 1995
@@ -221,8 +221,8 @@ LAST MODIFIED : 2 November 1995
 DESCRIPTION :
 ==============================================================================*/
 {
-	float t,tstep,hairx,hairy,hairz,ran1,ran2,ran3;
-	float r1=.1,r2=.1,R2 = .1,point1[3],point2[3];
+	GLfloat t,tstep,hairx,hairy,hairz,ran1,ran2,ran3;
+	GLfloat r1=.1f,r2=.1f,R2 = .1f,point1[3],point2[3];
 	int i,k;
 
 #if defined (GL_API)
@@ -231,7 +231,7 @@ DESCRIPTION :
 #if defined (OPENGL_API)
 	glColor3ub(0, 255, 0);
 #endif
-	tstep = 1.0/((float)lod);
+	tstep = 1.0/((GLfloat)lod);
 
 	for (i=1;i<3;i++)
 	{
@@ -281,14 +281,14 @@ Render a hair.
 	int return_code;
 #if defined (GL_API) || defined (OPENGL_API)
 	int s,j,k,hairnum,hairoff;
-	float eyelashx[3],eyelashy[3],eyelashz[3];
+	GLfloat eyelashx[3],eyelashy[3],eyelashz[3];
 	double t,tt,tstep,ttstep,bend,bend2;
-	float hairx = 0.0,hairy = 0.0,hairz = 0.0,browx,browy,browz,
+	GLfloat hairx = 0.0,hairy = 0.0,hairz = 0.0,browx,browy,browz,
 		hairxprev,hairyprev,hairzprev;
 #if defined (GL_API)
-	float dummynorm[3] = {0,1,0};
+	GLfloat dummynorm[3] = {0,1,0};
 #endif /* defined (GL_API) */
-	float vec1[3],vec2[3],vec3[3];
+	GLfloat vec1[3],vec2[3],vec3[3];
 	struct Userdef_hair *hair;
 #endif
 
@@ -808,7 +808,7 @@ Creates a 7 dof heart surgery robot.
 	struct GT_userdef *robot_7dof_object;
 #if defined (GL_API)
 	double a,b,cf,ia,ib;
-	float norm[3],r,sphere_norm[4][3],sphere_vert[4][3],vert[3];
+	GLfloat norm[3],r,sphere_norm[4][3],sphere_vert[4][3],vert[3];
 	int cone,cylinder,discretization=20,i,j,k,l,scalpel_1,scalpel_2,sphere,tool;
 	static int first_call=1;
 #endif

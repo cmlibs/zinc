@@ -64,7 +64,7 @@
  * @param id  The identifier given to the new context.
  * @return  a handle to a new Cmiss_context if successfully create, otherwise NULL.
  */
-Cmiss_context_id Cmiss_context_create(const char *id);
+ZINC_API Cmiss_context_id Cmiss_context_create(const char *id);
 
 /*******************************************************************************
  * Returns a new reference to the context with reference count incremented.
@@ -73,7 +73,7 @@ Cmiss_context_id Cmiss_context_create(const char *id);
  * @param context  The context to obtain a new reference to.
  * @return  New region reference with incremented reference count.
  */
-Cmiss_context_id Cmiss_context_access(Cmiss_context_id context);
+ZINC_API Cmiss_context_id Cmiss_context_access(Cmiss_context_id context);
 
 /***************************************************************************//**
  * Destroy a context.
@@ -82,7 +82,7 @@ Cmiss_context_id Cmiss_context_access(Cmiss_context_id context);
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_context_destroy(Cmiss_context_id *context_address);
+ZINC_API int Cmiss_context_destroy(Cmiss_context_id *context_address);
 
 /***************************************************************************//**
  * Returns a handle to the default graphics module.
@@ -91,7 +91,7 @@ int Cmiss_context_destroy(Cmiss_context_id *context_address);
  * @return  The handle to the default graphics module of the context if 
  *    successfully called, otherwise 0.
  */
-Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
+ZINC_API Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
 	Cmiss_context_id context);
 
 /***************************************************************************//**
@@ -100,7 +100,7 @@ Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
  * @param context  Handle to a cmiss_context object.
  * @return  A newly created graphics_module if successfully called, otherwise 0.
  */
-Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id context);
+ZINC_API Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id context);
 
 /***************************************************************************//**
  * Returns the default region in the context.
@@ -109,7 +109,7 @@ Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id c
  * @return  The handle to the default region of the context if successfully 
  *    called, otherwise 0.
  */
-Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
+ZINC_API Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
 
 /***************************************************************************//**
  * Create a new region and return a reference to it. Use this function to create
@@ -120,7 +120,7 @@ Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
  * @param context  Handle to a cmiss_context object.
  * @return  Reference to newly created region if successful, otherwise NULL.
  */
-Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
+ZINC_API Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application. 
@@ -141,7 +141,7 @@ int Cmiss_context_execute_command(Cmiss_context_id context,
  * @param context  Handle to a cmiss_context object.
  * @return  The time keeper if successfully called otherwise NULL.
  */
-Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
+ZINC_API Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_context_id context);
 
 /***************************************************************************//**
@@ -151,8 +151,10 @@ Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
  * @param context  Handle to a cmiss_context object.
  * @return The scene viewer package if successfully called otherwise NULL.
  */
-Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
+ZINC_API Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context);
+
+ZINC_API int Cmiss_context_enable_user_interface(Cmiss_context_id context, void *user_interface_instance);
 
 /***************************************************************************//**
  * Process idle event in cmgui. Use this function to update idle event in cmgui
@@ -162,5 +164,5 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
  * @param context  Handle to a cmiss_context object.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_context_process_idle_event(Cmiss_context_id context);
+ZINC_API int Cmiss_context_process_idle_event(Cmiss_context_id context);
 #endif /* __CMISS_CONTEXT_H__ */

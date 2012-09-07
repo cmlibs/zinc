@@ -44,10 +44,8 @@ managers and lists.
  * ***** END LICENSE BLOCK ***** */
 #include <stddef.h>
 
-//-- extern "C" {
 #include "general/compare.h"
 #include "general/debug.h"
-//-- }
 
 /*
 Global functions

@@ -45,7 +45,6 @@
 
 #include <cmath>
 #include <cstdlib>
-//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "api/cmiss_field_logical_operators.h"
 #include "api/cmiss_field_subobject_group.h"
@@ -55,7 +54,6 @@
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "general/message.h"
-//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 

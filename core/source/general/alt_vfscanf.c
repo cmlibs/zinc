@@ -57,8 +57,8 @@
 #define SIGNOK          0x40    /* +/- is (still) legal */
 #define NDIGITS         0x80    /* no digits detected */
 
-#define DPTOK           0x100   /* (float) decimal point is still legal */
-#define EXPOK           0x200   /* (float) exponent (e+3, etc) still legal */
+#define DPTOK           0x100   /* (ZnReal) decimal point is still legal */
+#define EXPOK           0x200   /* (ZnReal) exponent (e+3, etc) still legal */
 
 #define PFXOK           0x100   /* 0x prefix is (still) legal */
 #define NZDIGITS        0x200   /* no zero digits detected */

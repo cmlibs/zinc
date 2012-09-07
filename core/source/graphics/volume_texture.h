@@ -73,8 +73,6 @@ Module constants
 Module types
 ------------
 */
-typedef float VT_value;
-
 struct MC_vertex
 /*******************************************************************************
 LAST MODIFIED : 19 February 1998
@@ -87,7 +85,7 @@ MC_cells.
 	/* identifiers for creating array */
 	int vertex_index;
 	/* vertex position */
-	float coord[3];
+	ZnReal coord[3];
 	/* back pointers to triangles containing vertices */
 	int n_triangle_ptrs;
 	struct MC_triangle **triangle_ptrs;
@@ -173,8 +171,8 @@ LAST MODIFIED : 25 July 1995
 DESCRIPTION :
 ==============================================================================*/
 {
-	double (*function)(double *,double *);
-	double *parameters;
+	ZnReal (*function)(ZnReal *,ZnReal *);
+	ZnReal *parameters;
 }; /* struct Clipping */
 
 struct VT_scalar_field
@@ -185,7 +183,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int dimension[3];
-	double *scalar;
+	ZnReal *scalar;
 }; /* struct VT_scalar_field */
 
 struct VT_vector_field
@@ -199,7 +197,7 @@ DESCRIPTION :
 	int dimension[3];
 	/* the vectors are stord in a 1D array, hence component (n) of the vector at
 		grid point[i,j,k] is vector[3*(i + j*nx + k*nx*ny) + n ] */
-	double *vector;
+	ZnReal *vector;
 }; /* struct VT_vector_field */
 
 struct VT_iso_triangle;
@@ -211,14 +209,14 @@ LAST MODIFIED : 21 October 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	float coordinates[3];
-	float normal[3];
-	float texture_coordinates[3];
+	ZnReal coordinates[3];
+	ZnReal normal[3];
+	ZnReal texture_coordinates[3];
 
 	int number_of_triangles;
 	struct VT_iso_triangle **triangles;
 
-	float *data;
+	ZnReal *data;
 
 	/* Integer index indicating where this vertex is in the list, useful
 		for serialising */
@@ -246,14 +244,14 @@ DESCRIPTION :
 	/* a bezier curve segment for field generation purposes */
 	int index;
 	/* potential value at nodes */
-	double scalar_value[2];
+	ZnReal scalar_value[2];
 	/* the xi coordinates of each point defining the segment */
 	/* the line passes from p1 to p4, with p2 and p3 defining the
 	slope at each node in bezier fashion */
-	double point1[3];
-	double point2[3];
-	double point3[3];
-	double point4[3];
+	ZnReal point1[3];
+	ZnReal point2[3];
+	ZnReal point3[3];
+	ZnReal point4[3];
 	struct VT_texture_curve *ptrnext;
 }; /* struct VT_iso_surface */
 
@@ -266,17 +264,12 @@ DESCRIPTION :
 {
 	int index;
 
-#if defined (OLD_CODE)
-/*???DB.  Not used */
-	/* to begin with, this contains the xi1,2,3 coords */
-	VT_value *values;
-#endif /* defined (OLD_CODE) */
 	/* the isosurface value at the node */
-	double scalar_value;
+	ZnReal scalar_value;
 	/* the clipping function value */
-	double clipping_fn_value;
+	ZnReal clipping_fn_value;
 	/* the gradient of the scalar field at each node */
-	double scalar_gradient[3];
+	ZnReal scalar_gradient[3];
 	/* if active flag, use scalar value directly */
 	int active;
 	/* nodes may be used to represent FE nodes for mesh generation in this
@@ -300,7 +293,7 @@ DESCRIPTION :
 {
 	int index;
 	/* the scalar value for isosurface construction */
-	double scalar_value;
+	ZnReal scalar_value;
 }; /* struct VT_texture_cell */
 
 struct VT_node_group
@@ -336,17 +329,17 @@ DESCRIPTION :
 	/* the name of the file the volume texture was read from */
 	char *file_name;
 	/* xi range */
-	double ximin[3],ximax[3];
+	ZnReal ximin[3],ximax[3];
 	/* scales and offsets for the volume texture in the xi directions
 		SAB It is not clear that these are generally useful or exactly
 	   what effect they will have over multiple elements*/
-	double scale_xi[3], offset_xi[3];
+	ZnReal scale_xi[3], offset_xi[3];
 	/* discretization/resolution in xi1,2,3 directions */
 	int dimension[3];
 	/* grid spacing for irregular grids - consists of
 	a 1-D array [(dimension[0]+1)+(dimension[1]+1)+(dimension[2]+1)]
 	of normalized spacing values [0,1]). If NULL then regular spacing */
-	double *grid_spacing;
+	ZnReal *grid_spacing;
 	struct VT_texture_curve **texture_curve_list;
 	struct VT_texture_cell **texture_cell_list;
 	/* list of the global nodes of the texture */
@@ -370,19 +363,19 @@ DESCRIPTION :
 	textures for different faces */
 
 
-	double isovalue;
+	ZnReal isovalue;
 	int hollow_mode_on;
-	double hollow_isovalue;
+	ZnReal hollow_isovalue;
 	/* cutting field allows the value of the function to be calculated in
 		conjuction with the isoscalar.  It cannot be used in conjunction with the
 		cutting plane and uses the same cut_isovalue and VT_scalar_field
 		clip_field */
 	int clipping_field_on;
 	int cutting_plane_on;
-	double cut_isovalue;
-	double cutting_plane[4];
+	ZnReal cut_isovalue;
+	ZnReal cutting_plane[4];
 	int closed_surface;
-	double decimation_threshold;
+	ZnReal decimation_threshold;
 	/*???DB.  Added option for reading in nodal scalars rather than calculating
 		from cell values */
 	int calculate_nodal_values;
@@ -507,8 +500,8 @@ Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
  * @param return  Newly created and set VT_iso_vertex.
  */
 struct VT_iso_vertex *VT_iso_vertex_create_and_set(
-	float *coordinates, float *normal, float *texture_coordinates,
-	int n_data_components, float *data);
+	GLfloat *coordinates, GLfloat *normal, GLfloat *texture_coordinates,
+	int n_data_components, GLfloat *data);
 
 int VT_iso_vertex_normalise_normal(struct VT_iso_vertex *vertex);
 /*******************************************************************************

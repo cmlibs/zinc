@@ -75,9 +75,8 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_PRIVATE_H
 
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
@@ -86,7 +85,6 @@ Used to be gtypes.h
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
-//-- }
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 /*
@@ -121,9 +119,9 @@ the glyph_set to be identified in picking for node position/vector editing.
 	char **labels;
 	struct GT_object *glyph;
 	int n_data_components;
-	GTDATA *data;
+	GLfloat *data;
 	int label_bounds_dimension, label_bounds_components;
-	float *label_bounds;
+	ZnReal *label_bounds;
 	struct Graphics_font *font;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
@@ -153,24 +151,24 @@ DESCRIPTION :
 	int tknotcnt;
 	int maxs;
 	int maxt;
-	double *sknots;
-	double *tknots;
-	double *controlpts;
+	ZnReal *sknots;
+	ZnReal *tknots;
+	ZnReal *controlpts;
 	/* normals */
-	double *normal_control_points;
+	ZnReal *normal_control_points;
 	/* texture coordinates */
-	double *texture_control_points;
+	ZnReal *texture_control_points;
 
 	/* nurb trim curve */
 	int corder;
 	int cknotcnt;
 	int ccount;
-	double *cknots;
-	double *trimarray;
+	ZnReal *cknots;
+	ZnReal *trimarray;
 
 	/* piecewise linear trim curve */
 	int pwlcnt;
-	double *pwlarray;
+	ZnReal *pwlarray;
 
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
@@ -188,9 +186,9 @@ DESCRIPTION :
 	Triple *position;
 	char *text;
 	gtMarkerType marker_type;
-	float marker_size;
+	ZnReal marker_size;
 	int n_data_components;
-	GTDATA *data;
+	GLfloat *data;
 	struct Graphics_font *font;
 
 	/* store integer object_name eg. node number from which this object came */
@@ -211,9 +209,9 @@ DESCRIPTION :
 	Triple *pointlist;
 	char **text;
 	gtMarkerType marker_type;
-	float marker_size;
+	ZnReal marker_size;
 	int n_data_components;
-	GTDATA *data;
+	GLfloat *data;
 	struct Graphics_font *font;
 
 	/* store integer object_name eg. element number from which this object came */
@@ -239,7 +237,7 @@ DESCRIPTION :
 	int n_data_components;
 	Triple *pointlist;
 	Triple *normallist;
-	GTDATA *data;
+	GLfloat *data;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	struct GT_polyline *ptrnext;
@@ -273,7 +271,7 @@ DESCRIPTION :
 	Triple *normallist;
 	Triple *tangentlist;
 	Triple *texturelist;
-	GTDATA *data;
+	GLfloat *data;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	int tile_number;
@@ -406,7 +404,7 @@ Graphical object data structure.
 		<times>.  The <times> are in increasing order.  The object varies linearly
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
-	float *times;
+	ZnReal *times;
 
 	Graphics_vertex_array *vertex_array;
 
@@ -458,7 +456,7 @@ DESCRIPTION :
 Data used to control the compilation fo the GT_object.
 ==============================================================================*/
 { 
-	float time;
+	ZnReal time;
 	struct Graphics_buffer *graphics_buffer;
 	int draw_selected;
 

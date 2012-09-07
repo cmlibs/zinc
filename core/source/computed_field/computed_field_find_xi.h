@@ -57,10 +57,6 @@ DESCRIPTION :
 struct Computed_field_find_element_xi_cache is private.
 ==============================================================================*/
 
-#ifdef __cplusplus
-//-- extern "C" {
-#endif /* __cplusplus */
-
 /***************************************************************************//**
  * Find location in mesh or element where the field has same or nearest value to
  * the prescribed values. This routine is either called directly by
@@ -100,7 +96,4 @@ DESCRIPTION :
 Frees memory/deaccess cache at <*cache_address>.
 ==============================================================================*/
 
-#ifdef __cplusplus
-//-- }
-#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_H) */

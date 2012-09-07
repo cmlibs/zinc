@@ -37,10 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <map>
-//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "general/message.h"
-//-- }
 #include "computed_field/field_ensemble.hpp"
 
 namespace Cmiss

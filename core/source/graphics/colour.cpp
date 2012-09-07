@@ -45,11 +45,9 @@ Colour structures and support code.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/colour.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global functions

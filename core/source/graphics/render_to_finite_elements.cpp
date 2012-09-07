@@ -42,7 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_field_module.h"
@@ -53,9 +52,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
-//-- }
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
@@ -64,15 +61,12 @@
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
-//-- }
 #include "general/statistics.h"
 #include "graphics/scene.hpp"
-//-- extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "general/message.h"
 #include "graphics/render_to_finite_elements.h"
-//-- }
 #include "graphics/graphics_object_private.hpp"
 
 /*
@@ -84,7 +78,7 @@ struct Render_node
 {
 	struct FE_node *fe_node;
 	FE_value_triple coordinates;
-	float *data;
+	double *data;
 };
 
 struct Render_to_finite_elements_data
@@ -269,7 +263,7 @@ struct Render_to_finite_elements_data
 					sample_Poisson_distribution(expected_number);
 				for (j = 0; (j < number_of_points) && return_code; j++)
 				{
-					xi1 = CMGUI_RANDOM(float);
+					xi1 = CMGUI_RANDOM(ZnReal);
 					for (i = 0 ; i < 3 ; i++)
 					{
 						position[i] = node1->coordinates[i]
@@ -363,8 +357,8 @@ struct Render_to_finite_elements_data
 					sample_Poisson_distribution(expected_number);
 				for (j = 0; (j < number_of_points) && return_code; j++)
 				{
-					xi1 = CMGUI_RANDOM(float);
-					xi2 = CMGUI_RANDOM(float);
+					xi1 = CMGUI_RANDOM(ZnReal);
+					xi2 = CMGUI_RANDOM(ZnReal);
 					if(xi1 + xi2 > 1.0)
 					{
 						xi1 = 1.0 - xi1;
@@ -458,7 +452,7 @@ Module functions
 
 static int Render_node_create(struct Render_node *render_node,
 	struct Render_to_finite_elements_data *data,
-	FE_value *coordinates, int number_of_data_components, float *data_values)
+	FE_value *coordinates, int number_of_data_components, double *data_values)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -468,7 +462,7 @@ Generates a finite_element node at the specified location
 {
 	int return_code;
 	render_node->fe_node = (struct FE_node *)NULL;
-	render_node->data = (float *)NULL;
+	render_node->data = (double *)NULL;
 	return_code = 1;
 	if (data)
 	{
@@ -498,7 +492,7 @@ Generates a finite_element node at the specified location
 
 static int render_polyline_to_finite_elements(
 	struct Render_to_finite_elements_data *data, Triple *point_list,
-	int number_of_data_components,GTDATA *data_values,
+	int number_of_data_components,GLfloat *data_values,
 	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
 	enum GT_polyline_type polyline_type)
 /*******************************************************************************
@@ -509,7 +503,7 @@ Writes VRML code to the file handle which represents the given
 continuous polyline. If data or spectrum are NULL they are ignored.  
 ==============================================================================*/
 {
-	GTDATA *data_ptr;
+	ZnReal *data_ptr = 0;
 	int i,number_of_points,return_code;
 	struct Render_node *nodes;
 	FE_value_triple position;
@@ -540,9 +534,13 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 		}
 		if (return_code)
 		{
-			data_ptr = data_values;
+			if (number_of_data_components)
+			{
+				data_ptr = new ZnReal[number_of_data_components*number_of_points];
+			}
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
+				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
 					CAST_TO_FE_VALUE(position, point_list[i], 3);
@@ -559,6 +557,8 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 						data_ptr += number_of_data_components;
 					}
 				}
+				if (data_ptr)
+					delete[] data_ptr;
 			}
 			else
 			{
@@ -621,7 +621,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int render_surface_to_finite_elements(
 	struct Render_to_finite_elements_data *data,
 	Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int number_of_data_components, GTDATA *data_values,
+	Triple *texturepts, int number_of_data_components, GLfloat *data_values,
 	int npts1,
 	int npts2,enum GT_surface_type surface_type,gtPolygonType polygon_type)
 /*******************************************************************************
@@ -630,7 +630,7 @@ LAST MODIFIED : 8 December 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	GTDATA *data_ptr;
+	ZnReal *data_ptr = 0;
 	int i,j,return_code;
 	int index,index_1,index_2,number_of_points;
 	struct Render_node *nodes;
@@ -683,9 +683,13 @@ DESCRIPTION :
 		if (return_code)
 		{
 			nodes = (struct Render_node *)NULL;
-			data_ptr = data_values;
+			if (number_of_data_components)
+			{
+				data_ptr = new ZnReal[number_of_data_components*number_of_points];
+			}
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
+				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
 					CAST_TO_FE_VALUE(position, surfpts[i], 3);
@@ -702,6 +706,8 @@ DESCRIPTION :
 						data_ptr += number_of_data_components;
 					}
 				}
+				if (data_ptr)
+					delete[] data_ptr;
 			}
 			else
 			{
@@ -903,7 +909,7 @@ LAST MODIFIED : 8 December 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	float proportion= 0,*times;
+	ZnReal proportion= 0,*times;
 	int itime, number_of_times, return_code;
 #if defined (NEW_CODE)
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -989,122 +995,6 @@ DESCRIPTION :
 		{
 			switch (GT_object_get_type(object))
 			{
-#if defined (OLD_CODE)
-				case g_GLYPH_SET:
-				{
-					if (glyph_set = primitive_list1->gt_glyph_set.first)
-					{
-						if (proportion>0)
-						{
-							glyph_set_2 = primitive_list2->gt_glyph_set.first;
-							while (glyph_set&&glyph_set_2)
-							{
-								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2))
-								{
-									draw_glyph_set_vrml(vrml_file,
-										interpolate_glyph_set->number_of_points,
-										interpolate_glyph_set->point_list,
-										interpolate_glyph_set->axis1_list,
-										interpolate_glyph_set->axis2_list,
-										interpolate_glyph_set->axis3_list,
-										interpolate_glyph_set->scale_list,
-										interpolate_glyph_set->glyph,
-										interpolate_glyph_set->labels,
-										interpolate_glyph_set->n_data_components,
-										interpolate_glyph_set->data,
-										object->default_material,object->spectrum,
-										time,vrml_prototype_list);
-									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
-								}
-								glyph_set = glyph_set->ptrnext;
-								glyph_set_2 = glyph_set_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (glyph_set)
-							{
-								draw_glyph_set_vrml(vrml_file,
-									glyph_set->number_of_points,
-									glyph_set->point_list, glyph_set->axis1_list,
-									glyph_set->axis2_list, glyph_set->axis3_list,
-									glyph_set->scale_list, glyph_set->glyph,
-									glyph_set->labels,
-									glyph_set->n_data_components, glyph_set->data,
-									object->default_material, object->spectrum,
-									time, vrml_prototype_list);
-								glyph_set = glyph_set->ptrnext;
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing glyph_set");
-						return_code=0;
-					}
-				} break;
-				case g_POINT:
-				{
-					if (point = primitive_list1->gt_point.first)
-					{
-						draw_point_set_vrml(vrml_file,
-							1, point->position, &(point->text), point->marker_type,
-							point->marker_size,point->n_data_components,point->data,
-							object->default_material,object->spectrum);
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing point");
-						return_code=0;
-					}
-				} break;
-				case g_POINTSET:
-				{
-					if (point_set = primitive_list1->gt_pointset.first)
-					{
-						if (proportion>0)
-						{
-							point_set_2 = primitive_list2->gt_pointset.first;
-							while (point_set&&point_set_2)
-							{
-								if (interpolate_point_set=morph_GT_pointset(proportion,
-									point_set, point_set_2))
-								{
-									draw_point_set_vrml(vrml_file,
-										interpolate_point_set->n_pts,
-										interpolate_point_set->pointlist,
-										interpolate_point_set->text,
-										interpolate_point_set->marker_type,
-										interpolate_point_set->marker_size,
-										interpolate_point_set->n_data_components,
-										interpolate_point_set->data,
-										object->default_material,object->spectrum);
-									DESTROY(GT_pointset)(&interpolate_point_set);
-								}
-								point_set=point_set->ptrnext;
-								point_set_2=point_set_2->ptrnext;
-							}
-						}
-						else
-						{
-							draw_point_set_vrml(vrml_file, 
-								point_set->n_pts,point_set->pointlist,
-								point_set->text,point_set->marker_type,point_set->marker_size,
-								point_set->n_data_components,point_set->data,
-								object->default_material,object->spectrum);
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing point");
-						return_code=0;
-					}
-				} break;
-#endif /* defined (OLD_CODE) */
 				case g_POLYLINE:
 				{
 					line = primitive_list1->gt_polyline.first;

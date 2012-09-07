@@ -50,7 +50,7 @@ Implements computed fields that control the format_output behaviour.
  * 
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field values to be rendered to a string
- * @param format_string  The C style rendering string that converts the float values
+ * @param format_string  The C style rendering string that converts the ZnReal values
  * of the source_field to string.  Some checking of the format_string is done to ensure
  * it matches the number of values in the source field.
  * @return Newly created field

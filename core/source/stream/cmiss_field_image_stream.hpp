@@ -43,11 +43,9 @@
 #if !defined (CMISS_REGION_STREAM_HPP)
 #define CMISS_REGION_STREAM_HPP
 
-//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_image.h"
 #include "general/image_utilities.h"
-//-- }
 #include "stream/cmiss_stream_private.hpp"
 
 struct Cmiss_stream_information_image : Cmiss_stream_information

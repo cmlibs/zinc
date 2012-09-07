@@ -40,26 +40,22 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
+#include "api/cmiss_zinc_configure.h"
 #include "api/cmiss_stream.h"
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/image_utilities.h"
 #include "graphics/material.h"
-#include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "general/message.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
-//-- }
 #include <math.h>
 #include "general/enumerator_conversion.hpp"
 
@@ -849,7 +845,7 @@ int Computed_field_get_type_image(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field, 
 	struct Computed_field **source_field,
 	struct Texture **texture,
-	float *minimum, float *maximum, int *native_texture)
+	double *minimum, double *maximum, int *native_texture)
 /*******************************************************************************
 LAST MODIFIED : 5 September 2007
 
@@ -976,7 +972,7 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
 	enum Cmiss_field_image_attribute attribute)
 {
 	double return_value = 0.0;
-	float width = 0.0, height = 0.0, depth = 0.0;
+	ZnReal width = 0.0, height = 0.0, depth = 0.0;
 	if (image)
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
@@ -1009,7 +1005,7 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	enum Cmiss_field_image_attribute attribute, double value)
 {
 	int return_value = 1;
-	float width = 0.0, height = 0.0, depth = 0.0;
+	ZnReal width = 0.0, height = 0.0, depth = 0.0;
 	if (image)
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
@@ -1018,15 +1014,15 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 		{
 			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			{
-				Texture_set_physical_size(texture, (float)value, height, depth);
+				Texture_set_physical_size(texture, (ZnReal)value, height, depth);
 			} break;
 			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			{
-				Texture_set_physical_size(texture, width, (float)value, depth);
+				Texture_set_physical_size(texture, width, (ZnReal)value, depth);
 			} break;
 			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			{
-				Texture_set_physical_size(texture, width, height, (float)value);
+				Texture_set_physical_size(texture, width, height, (ZnReal)value);
 			} break;
 			default:
 			{
@@ -1096,7 +1092,7 @@ int Computed_field_is_image_type(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field;
 	struct Computed_field *source_field;
 	struct Texture *texture;
-	float minimum, maximum;
+	double minimum, maximum;
 	int native_texture;
 
 	ENTER(Computed_field_has_string_value_type);
@@ -1216,12 +1212,12 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	int dimension, i, image_width_bytes, j, k, l,
 		number_of_data_components, return_code = 1;
 	FE_value *data_values, values[3], xi[3];
-	float hint_minimums[3] = {0.0, 0.0, 0.0};
-	float hint_maximums[3];
-	float hint_resolution[3];
-	float multiplier;
+	ZnReal hint_minimums[3] = {0.0, 0.0, 0.0};
+	ZnReal hint_maximums[3];
+	ZnReal hint_resolution[3];
+	ZnReal multiplier;
 	struct Colour fail_colour = {0.0, 0.0, 0.0};
-	float	rgba[4], fail_alpha = 0.0, texture_depth, texture_height,
+	ZnReal rgba[4], fail_alpha = 0.0, texture_depth, texture_height,
 		texture_width;
 	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
@@ -1283,9 +1279,9 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	}
 	if ((image_plane || two_bytes_image_plane) && data_values)
 	{
-		hint_resolution[0] = image_width;
-		hint_resolution[1] = image_height;
-		hint_resolution[2] = image_depth;
+		hint_resolution[0] = (ZnReal)image_width;
+		hint_resolution[1] = (ZnReal)image_height;
+		hint_resolution[2] = (ZnReal)image_depth;
 		field_evaluate_error_count = 0;
 		find_element_xi_error_count = 0;
 		spectrum_render_error_count = 0;
@@ -1308,13 +1304,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 			{
 				 ptr = (unsigned char *)image_plane;
 			}
-			values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
+			values[2] = texture_depth * ((ZnReal)i + 0.5) / (ZnReal)image_depth;
 			for (j = 0; (j < image_height) && return_code; j++)
 			{
-				values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
+				values[1] = texture_height * ((ZnReal)j + 0.5) / (ZnReal)image_height;
 				for (k = 0; (k < image_width) && return_code; k++)
 				{
-					values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
+					values[0] = texture_width * ((ZnReal)k + 0.5) / (ZnReal)image_width;
 #if defined (DEBUG_CODE)
 					/*???debug*/
 					if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
@@ -1336,11 +1332,11 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 								rgba[3] = 0;
 								for (l=0; l<=number_of_data_components-1; l++)
 								{
-									rgba[l] = data_values[l];
+									rgba[l] = (ZnReal)data_values[l];
 								}
 							}
 							else if ((!Spectrum_value_to_rgba(spectrum,
-								number_of_data_components, data_values,	rgba)))
+								number_of_data_components, data_values, rgba)))
 							{
 								rgba[0] = fail_colour.red;
 								rgba[1] = fail_colour.green;
@@ -1391,7 +1387,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 									{
 										for (l=0; l<=number_of_data_components-1; l++)
 										{
-											rgba[l] = data_values[l];
+											rgba[l] = (ZnReal)data_values[l];
 										}
 									}
 									else if (!Spectrum_value_to_rgba(spectrum,
@@ -1421,7 +1417,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 #endif /* defined (DEBUG_CODE) */
 					if (number_of_bytes_per_component == 2)
 					{
-						 multiplier = pow(256.0,number_of_bytes_per_component) - 1.0;
+						 multiplier = static_cast<ZnReal>(pow(256.0,number_of_bytes_per_component) - 1.0);
 						 switch (specify_format)
 						 {
 								case TEXTURE_LUMINANCE:

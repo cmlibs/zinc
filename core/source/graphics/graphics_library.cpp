@@ -42,7 +42,7 @@ Functions for interfacing with the graphics library.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 #if defined (OPENGL_API)
 #if defined (USE_GLEW)
@@ -78,7 +78,6 @@ Functions for interfacing with the graphics library.
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
 #define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
@@ -231,7 +230,7 @@ Returns true if <matrix1> and <matrix2> are identical.
 	return (return_code);
 } /* gtMatrix_match */
 
-int gtMatrix_to_euler(gtMatrix matrix, float *euler_angles)
+int gtMatrix_to_euler(gtMatrix matrix, GLfloat *euler_angles)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2002
 
@@ -285,7 +284,7 @@ Returns <euler_angles> in radians.
 	return(return_code);
 } /* matrix_euler */
 
-int euler_to_gtMatrix(float *euler_angles, gtMatrix matrix)
+int euler_to_gtMatrix(GLfloat *euler_angles, gtMatrix matrix)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2002
 
@@ -336,7 +335,7 @@ Cleaned this up from view/coord_trans.c
 } /* euler_matrix */
 
 int gtMatrix_match_with_tolerance(gtMatrix *matrix1, gtMatrix *matrix2,
-	float tolerance)
+	GLfloat tolerance)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2001
 
@@ -430,7 +429,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int col,i,row;
-	static float vector[16];
+	static GLfloat vector[16];
 
 	ENTER(wrapperLoadCurrentMatrix);
 	i=0;
@@ -453,7 +452,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int col,i,row;
-	static float vector[16];
+	static GLfloat vector[16];
 
 	ENTER(wrapperMultiplyCurrentMatrix);
 	i=0;

@@ -43,13 +43,10 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "configure/cmiss_zinc_configure.h"
-//-- extern "C" {
+#include "api/cmiss_zinc_configure.h"
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
-//-- extern "C" {
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -57,7 +54,6 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/computed_field_derivatives.h"
-//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkDerivativeImageFilter.h"

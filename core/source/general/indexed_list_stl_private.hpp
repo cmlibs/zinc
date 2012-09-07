@@ -41,9 +41,7 @@
 #if !defined (INDEXED_LIST_STL_PRIVATE_HPP)
 #define INDEXED_LIST_STL_PRIVATE_HPP
 
-//-- extern "C" {
 #include "general/list.h"
-//-- }
 
 #define CMISS_SET( object_type )  Cmiss_set_ ## object_type
 

@@ -109,9 +109,9 @@ Used to pass information through iterator function to each setting when
 rendering.
 ==============================================================================*/
 {
-	float *rgba;
-	float material_rgba[4];
-	float *data;
+	GLfloat *rgba;
+	GLfloat material_rgba[4];
+	GLfloat *data;
 	int number_of_data_components;
 }; /* struct Spectrum_render_data */
 
@@ -144,7 +144,7 @@ Structure modified by spectrum modify routine.
 ==============================================================================*/
 {
 	int position;
-	float spectrum_minimum, spectrum_maximum;
+	ZnReal spectrum_minimum, spectrum_maximum;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum_settings *settings;
 }; /* struct Modify_spectrum_data */
@@ -429,7 +429,7 @@ DESCRIPTION :
 Sets the colour mapping of the Spectrum_settings <settings>.
 ==============================================================================*/
 
-float Spectrum_settings_get_exaggeration(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_exaggeration(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -438,7 +438,7 @@ Returns the first type parameter of the Spectrum_settings <spectrum>.
 ==============================================================================*/
 
 int Spectrum_settings_set_exaggeration(struct Spectrum_settings *settings,
-	float param1);
+	ZnReal param1);
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -476,7 +476,7 @@ LAST MODIFIED : 31 July 1998
 DESCRIPTION :
 ==============================================================================*/
 
-float Spectrum_settings_get_step_value(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_step_value(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
 
@@ -485,7 +485,7 @@ Returns the first type parameter of the Spectrum_settings <spectrum>.
 ==============================================================================*/
 
 int Spectrum_settings_set_step_value(struct Spectrum_settings *settings,
-	float param1);
+	ZnReal param1);
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
 
@@ -493,7 +493,7 @@ DESCRIPTION :
 Sets the first type parameter of the Spectrum_settings <settings>.
 ==============================================================================*/
 
-float Spectrum_settings_get_range_minimum(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_range_minimum(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -501,7 +501,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Spectrum_settings_set_range_minimum(struct Spectrum_settings *settings,
-	float value);
+	ZnReal value);
 /*******************************************************************************
 LAST MODIFIED : 15 January 2001
 
@@ -509,7 +509,7 @@ DESCRIPTION :
 If <settings> ->fix_minimum is NOT set, set <settings> ->minimum to <value>
 ==============================================================================*/
 
-float Spectrum_settings_get_range_maximum(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_range_maximum(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -517,7 +517,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Spectrum_settings_set_range_maximum(struct Spectrum_settings *settings,
-	float value);
+	ZnReal value);
 /*******************************************************************************
 LAST MODIFIED : 15 January 20001
 
@@ -593,7 +593,7 @@ DESCRIPTION :
 Sets the fix_maximum flag of the Spectrum_settings <settings>.
 ==============================================================================*/
 
-float Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
@@ -601,14 +601,14 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Spectrum_settings_set_colour_value_minimum(struct Spectrum_settings *settings,
-	float value);
+	ZnReal value);
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
 DESCRIPTION :
 ==============================================================================*/
 
-float Spectrum_settings_get_colour_value_maximum(struct Spectrum_settings *settings);
+ZnReal Spectrum_settings_get_colour_value_maximum(struct Spectrum_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 
@@ -616,7 +616,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Spectrum_settings_set_colour_value_maximum(struct Spectrum_settings *settings,
-	float value);
+	ZnReal value);
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
 

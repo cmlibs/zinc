@@ -46,13 +46,11 @@ format specified in general/matrix_vector.h.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "general/matrix_vector.h"
 #include "general/photogrammetry.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module functions

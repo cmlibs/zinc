@@ -44,14 +44,12 @@ indexed_multi_range.
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/indexed_multi_range.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

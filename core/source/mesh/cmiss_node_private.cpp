@@ -40,7 +40,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include <stdarg.h>
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_node.h"
@@ -51,7 +50,6 @@
 #include "computed_field/computed_field_finite_element.h"
 #include "node/node_operations.h"
 #include "general/message.h"
-//-- }
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_node_private.hpp"

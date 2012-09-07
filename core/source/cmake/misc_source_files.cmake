@@ -16,11 +16,6 @@ SET( EMOTER_SRCS
 SET( EMOTER_HDRS 
 	source/emoter/em_cmgui.h )
 
-SET( USER_INTERFACE_SRCS
-	source/user_interface/event_dispatcher.cpp )
-SET( USER_INTERFACE_HDRS
-	source/user_interface/event_dispatcher.h )
-
 SET( INTERACTION_SRCS
 	source/interaction/interaction_graphics.cpp
 	source/interaction/interaction_volume.cpp
@@ -33,14 +28,12 @@ SET( INTERACTION_HDRS
 
 SET( IO_DEVICES_SRCS
 	source/io_devices/conversion.cpp
-	source/io_devices/io_device.cpp
-	source/io_devices/matrix.cpp )
+	source/io_devices/io_device.cpp )
 SET( IO_DEVICES_HDRS
 	source/io_devices/conversion.h
 	source/io_devices/gst_scene.h
 	source/io_devices/gst_transform.h
-	source/io_devices/io_device.h
-	source/io_devices/matrix.h )
+	source/io_devices/io_device.h )
 
 SET( FIELD_IO_SRCS
 	source/field_io/read_fieldml.cpp )
@@ -69,15 +62,6 @@ SET( SELECTION_SRCS source/selection/any_object_selection.cpp
 SET( SELECTION_HDRS source/selection/any_object_selection.h
 	source/selection/element_point_ranges_selection.h )
 
-IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	SET( THREE_D_DRAWING_SRCS
-		source/three_d_drawing/graphics_buffer.cpp
-		source/three_d_drawing/window_system_extensions.cpp )
-	SET( THREE_D_DRAWING_HDRS
-		source/three_d_drawing/graphics_buffer.h
-		source/three_d_drawing/window_system_extensions.h )
-ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-
 SET( TIME_SRCS
 	source/time/time.cpp
 	source/time/time_keeper.cpp )
@@ -86,3 +70,9 @@ SET( TIME_HDRS
 	source/time/time_keeper.h
 	source/time/time_private.h )
 
+IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+	#SET( THREE_D_DRAWING_SRCS ${THREE_D_DRAWING_SRCS} source/general/photogrammetry.cpp )
+	SET( THREE_D_DRAWING_HDRS ${THREE_D_DRAWING_HDRS} source/three_d_drawing/abstract_graphics_buffer.h )
+ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+
+SET( USER_INTERFACE_HDRS source/user_interface/event_dispatcher.h )

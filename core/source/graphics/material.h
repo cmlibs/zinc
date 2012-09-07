@@ -44,22 +44,21 @@ The data structures used for representing graphical materials.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
-#include "general/list.h"
+
+#include "api/cmiss_zinc_configure.h"
 #include "api/cmiss_field.h"
+#include "api/cmiss_graphics_module.h"
+#include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "api/cmiss_graphics_module.h"
 
 /*
 Global constants
 ----------------
 */
-/*???DB.  Make consistent with finite_element.h ? */
-#define MATERIAL_PRECISION float
-#define MATERIAL_PRECISION_STRING "f"
 #define Graphical_material Cmiss_graphics_material
 
 /*
@@ -455,7 +454,7 @@ will work with order_independent_transparency.
  * @return 1 on success, 0 on failure
  */
 int Material_set_program_uniform_qualifier_variable_value(
-	struct Graphical_material* material, const char *uniform_name, float value);
+	struct Graphical_material* material, const char *uniform_name, ZnReal value);
 
 /***************************************************************************//**
  * Sets the Graphics_module object which will own this manager.

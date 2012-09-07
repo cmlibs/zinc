@@ -42,11 +42,6 @@ Functions for opening and closing the user interface.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
-
-extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 /*???debug */
@@ -58,11 +53,8 @@ extern "C" {
 #if __GLIBC__ >= 2
 #include <gnu/libc-version.h>
 #endif
-#include "general/debug.h"
-#include "general/myio.h"
-}
+
 #if defined (GTK_USER_INTERFACE)
-extern "C" {
 #include <gtk/gtk.h>
 #include <glib.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -70,16 +62,19 @@ extern "C" {
 #else
 #include <gtk/gtkgl.h>
 #endif
-}
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 #include <carbon/carbon.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
-extern "C" {
+
+#include "api/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_ui_configure.h"
+
+#include "general/debug.h"
+#include "general/myio.h"
+#include "general/message.h"
 #include "user_interface/event_dispatcher.h"
-#include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-}
 
 /*
 Module types
@@ -384,11 +379,7 @@ those processed by the event dispatcher.
 
 	return (return_code);
 } /* User_interface_gtk_query_callback */
-#endif /* ! defined (USE_GTK_MAIN_STEP) */
-#endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (GTK_USER_INTERFACE)
-#if ! defined (USE_GTK_MAIN_STEP)
 static int User_interface_gtk_check_callback(
 	struct Event_dispatcher_descriptor_set *descriptor_set,
 	void *user_interface_void)
@@ -476,11 +467,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* User_interface_gtk_check_callback */
-#endif /* ! defined (USE_GTK_MAIN_STEP) */
-#endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (GTK_USER_INTERFACE)
-#if ! defined (USE_GTK_MAIN_STEP)
 static int User_interface_gtk_dispatch_callback(void *user_interface_void)
 /*******************************************************************************
 LAST MODIFIED : 13 November 2002
@@ -825,33 +812,6 @@ DESCRIPTION :
 	return (return_code);
 } /* DESTROY(User_interface) */
 
-int User_interface_end_application_loop(struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 7 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(User_interface_end_application_loop);
-	if (user_interface)
-	{
-		Event_dispatcher_end_main_loop(user_interface->event_dispatcher);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"User_interface_end_application_loop.  "
-			"Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* User_interface_end_application_loop */
-
-
 #if defined (WIN32_USER_INTERFACE)
 int User_interface_get_widget_spacing(struct User_interface *user_interface)
 /*******************************************************************************
@@ -1012,86 +972,3 @@ Returns the application shell widget
 	return (event_dispatcher);
 } /* User_interface_get_event_dispatcher */
 
-int application_main_step(struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 25 July 1998
-
-DESCRIPTION :
-Performs one step of the application_main_step update allowing the programmer
-to execute the same main loop elsewhere under special conditions (i.e. waiting
-for a response from a modal dialog).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(application_main_step);
-	Event_dispatcher_do_one_event(user_interface->event_dispatcher);
-	return_code=1;
-	LEAVE;
-
-	return (return_code);
-} /* application_main_step */
-
-int
-#if defined (WIN32_USER_INTERFACE)
-	WINAPI
-#endif /* defined (WIN32_USER_INTERFACE) */
-	application_main_loop(struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-???DB.  Does the main window need to be passed to this ?
-???DB.  Should we have our own "WINAPI" (size specifier) ?
-==============================================================================*/
-{
-	int return_code = 0;
-#if defined (WIN32_USER_INTERFACE)
-	MSG message;
-#endif /* defined (WIN32_USER_INTERFACE) */
-
-	ENTER(application_main_loop);
-	/* check arguments */
-	if (user_interface)
-	{
-#if defined (WIN32_USER_INTERFACE)
-		while (TRUE==GetMessage(&message,NULL,0,0))
-		{
-#if defined (OLD_CODE)
-			/*???DB.  Glen had this.  IsDialogMessage checks if the message is for the
-				specified dialog and if it is, processes the message.  The reason for
-				doing it was that, if you don't keystrokes such as up arrow and tab get
-				translated into change of focus messages rather than being left as
-				keystroke messages.  There should be another way of doing this,
-				otherwise we're going to have to have similar code for other dialogs
-				here */
-			/*???DB.  Find out more about TranslateAccelerator */
-			/*???DB.  Find out more about dialogs */
-			/*???DB.  IsDialogMessage translates arrow keys and tabs into selections,
-				but checks to make sure the application wants this via a WM_GETDLGCODE
-				message.  Shouldn't this mean that the translations are not done if
-				IsDialogMessage is not called ? */
-			/*???DB.  Should the command window be a dialog ? */
-			if (!global_Command_window||
-				(TRUE!=IsDialogMessage(global_Command_window->dialog,&message)))
-			{
-#endif /* defined (OLD_CODE) */
-				TranslateMessage(&message);
-				DispatchMessage(&message);
-#if defined (OLD_CODE)
-			}
-#endif /* defined (OLD_CODE) */
-		}
-		return_code=message.wParam;
-#endif /* defined (WIN32_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"application_main_loop.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* application_main_loop */

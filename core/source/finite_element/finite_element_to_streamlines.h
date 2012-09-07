@@ -55,20 +55,6 @@ Global types
 ----------------
 */
 
-#if defined (OLD_CODE)
-struct Interactive_streamline;
-/*******************************************************************************
-LAST MODIFIED : 18 October 1997
-
-DESCRIPTION :
-Interactive_streamline type is private.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Interactive_streamline);
-
-DECLARE_MANAGER_TYPES(Interactive_streamline);
-#endif /* defined (OLD_CODE) */
-
 struct Streampoint;
 /*******************************************************************************
 LAST MODIFIED : 11 November 1997
@@ -101,82 +87,11 @@ Global functions
 ----------------
 */
 
-#if defined (OLD_CODE)
-PROTOTYPE_OBJECT_FUNCTIONS(Interactive_streamline);
-
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Interactive_streamline);
-
-PROTOTYPE_COPY_OBJECT_FUNCTION(Interactive_streamline);
-
-PROTOTYPE_LIST_FUNCTIONS(Interactive_streamline);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_streamline,name,
-	const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Interactive_streamline,name,const char *);
-
-PROTOTYPE_MANAGER_FUNCTIONS(Interactive_streamline);
-
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_streamline,name,const char *);
-
-void interactive_streamline_callback(Widget caller,XtPointer window_void,
-	XtPointer caller_data);
-/*******************************************************************************
-LAST MODIFIED : 28 October 1997
-
-DESCRIPTION :
-Handles the mouse events which may affect interactive streamlines.
-==============================================================================*/
-
-int interactive_streamline_set_changed(
-	struct Interactive_streamline *streamline);
-/*******************************************************************************
-LAST MODIFIED : 29 October 1997
-
-DESCRIPTION :
-Sets the graphics object status as uncreated so that they get regenrated when
-window is updated.
-==============================================================================*/
-
-struct Interactive_streamline *CREATE(Interactive_streamline)(char *name,
-	enum Streamline_type type,struct FE_element *element,FE_value *xi,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,float width,enum Streamline_data_type data_type,
-	struct Computed_field *data_field,struct GT_object *graphics_object,
-	struct GT_object *streamline_graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Allocates memory and assigns fields for a Interactive_streamline object.
-==============================================================================*/
-
-int DESTROY(Interactive_streamline)(
-	struct Interactive_streamline **streamline_ptr);
-/*******************************************************************************
-LAST MODIFIED : 24 October 1997
-
-DESCRIPTION :
-Frees the memory for the fields of <**Interactive_streamline>, frees the memory
-for <**Interactive_streamline> and sets <*Interactive_streamline> to NULL.
-==============================================================================*/
-
-int get_streamline_gt_object(struct Interactive_streamline *streamline,
-	struct GT_object **gt_object);
-/*******************************************************************************
-LAST MODIFIED : 28 October 1997
-
-DESCRIPTION :
-Returns the GT_object which represents the streamline.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,enum Streamline_data_type data_type,
+	ZnReal length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
@@ -196,7 +111,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,float width,enum Streamline_type type,
+	ZnReal length,ZnReal width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
 	struct FE_region *fe_region);
 /*******************************************************************************

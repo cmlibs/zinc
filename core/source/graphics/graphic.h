@@ -595,8 +595,8 @@ int Cmiss_graphic_set_iso_surface_parameters(
  *For graphic_type CMISS_GRAPHIC_CYLINDERS only.
  */
 int Cmiss_graphic_get_radius_parameters(
-	struct Cmiss_graphic *graphic,float *constant_radius,
-	float *radius_scale_factor,struct Computed_field **radius_scalar_field);
+	struct Cmiss_graphic *graphic,GLfloat *constant_radius,
+	GLfloat *radius_scale_factor,struct Computed_field **radius_scalar_field);
 
 /***************************************************************************//**
  * Sets the current radius parameters which are used in the expression:
@@ -609,8 +609,8 @@ int Cmiss_graphic_get_radius_parameters(
  * @return If succesfully set the radius parameters returns 1, else 0
  */
 int Cmiss_graphic_set_radius_parameters(
-	struct Cmiss_graphic *graphic,float constant_radius,
-	float radius_scale_factor,struct Computed_field *radius_scalar_field);
+	struct Cmiss_graphic *graphic,GLfloat constant_radius,
+	GLfloat radius_scale_factor,struct Computed_field *radius_scalar_field);
 
 /***************************************************************************//**
  * For graphic starting in a particular element.
@@ -644,7 +644,7 @@ int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width);
 int Cmiss_graphic_get_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
 	struct Computed_field **stream_vector_field,int *reverse_track,
-	float *streamline_length,float *streamline_width);
+	GLfloat *streamline_length,GLfloat *streamline_width);
 
 /***************************************************************************//**
  * For graphic_type CMISS_RENDITION_STREAMLINES only.
@@ -652,7 +652,7 @@ int Cmiss_graphic_get_streamline_parameters(
 int Cmiss_graphic_set_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float streamline_length,float streamline_width);
+	GLfloat streamline_length,GLfloat streamline_width);
 
 /***************************************************************************//**
  * Sets the type of elements used by the graphic.

@@ -48,9 +48,17 @@ represent curves in three xi-directions;
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
 #define AUXILIARY_GRAPHICS_TYPES_H
 
+#include "api/cmiss_zinc_configure.h"
 #include "api/types/cmiss_graphics_render_type.h"
-#include "general/enumerator.h"
 
+#include "general/enumerator.h"
+//#if defined (WIN32_SYSTEM)
+//#define NOMINMAX
+//#include <windows.h>
+//#endif /* defined (WIN32_SYSTEM) || defined (CYGWIN) */
+#if defined (USE_GLEW)
+#include <GL/glew.h>
+#endif
 /*
 Global types
 ------------
@@ -68,7 +76,7 @@ Controls quality of curve rendition.
 	int number_in_xi1,number_in_xi2,number_in_xi3;
 }; /* struct Element_discretization */
 
-typedef float Triple[3];
+typedef GLfloat Triple[3];
 
 enum Graphics_compile_status
 /*******************************************************************************

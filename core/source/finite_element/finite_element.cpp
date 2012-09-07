@@ -59,7 +59,6 @@ Functions for manipulating finite element structures.
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"
-//-- extern "C" {
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
@@ -67,9 +66,7 @@ Functions for manipulating finite element structures.
 #include "general/change_log_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-//-- }
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/matrix_vector.h"
@@ -78,7 +75,6 @@ Functions for manipulating finite element structures.
 #include "general/object.h"
 #include "general/value.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module Constants
@@ -1496,36 +1492,36 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (float **)(dest+sizeof(int));
 						*array_address = dest_array;
-					}				
+					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
-					}		
-				}	
+					}
+				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (float **)(dest+sizeof(int));
-					*array_address = (float *)NULL;		
+					*array_address = (float *)NULL;
 				}	
 			} break;
-			case SHORT_ARRAY_VALUE:		
+			case SHORT_ARRAY_VALUE:
 			{
-				short *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				short *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (short **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(short))*(number_of_array_values);
@@ -1950,7 +1946,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					return_code = 0;
 				}
 			} break;
-			case FLT_VALUE:		
+			case FLT_VALUE:
 			{
 				float *dest_array,**array_address;
 				/* allocate the dest array */
@@ -2367,7 +2363,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 						dest++;
 						src++;
 					}
-				} break;	
+				} break;
 				case SHORT_VALUE:
 				{
 					display_message(ERROR_MESSAGE,"copy_value_storage_array.  "
@@ -2646,7 +2642,7 @@ Sets data in this memory to 0, pointers to NULL.
 						temp_values_storage += size;	
 					}
 				} break;
-				case FLT_ARRAY_VALUE:			
+				case FLT_ARRAY_VALUE:
 				{
 					float **array_address;
 
@@ -5447,7 +5443,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 										*((FE_value *)(field->values_storage+
 											  count*sizeof(FE_value))));
 									if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-										(0==((count+1)%DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+										(0==((count+1)%FE_VALUE_MAX_OUTPUT_COLUMNS)))
 									{
 										display_message(INFORMATION_MESSAGE,"\n");
 									}
@@ -5494,40 +5490,6 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							{
 								display_message(INFORMATION_MESSAGE,"%s=",
 									ENUMERATOR_STRING(FE_nodal_value_type)(*type));
-#if defined (NEW_CODE)
-								/*???JW.ot sure how we're going to display these yet */
-								/* display field time information*/
-								if (field->number_of_times)
-								{
-									int count;
-
-									display_message(INFORMATION_MESSAGE,"times: ");
-									switch (field->time_value_type)
-									{
-										case FE_VALUE_VALUE:
-										{
-											display_message(INFORMATION_MESSAGE,"\n");
-											/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-											for (count=0;count<field->number_of_times;count++)
-											{
-												display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
-													*((FE_value*)(field->times + count*sizeof(FE_value)) ));
-												if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-													(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
-												{
-													display_message(INFORMATION_MESSAGE,"\n");
-												}
-											}
-										} break;
-										default:
-										{
-											display_message(INFORMATION_MESSAGE,"list_FE_node_field.  "
-												"Can't display that time_value_type yet.  "
-												"Write the code!");
-										} break;
-									}
-								}
-#endif /* defined (NEW_CODE) */
 								/* display node based field information */
 								if (field->number_of_times)
 								{
@@ -7803,7 +7765,7 @@ Outputs the information contained in <field>.
 							display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
 								*((FE_value*)(field->values_storage + count*sizeof(FE_value))));
 							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-								(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+								(0==((count+1) % FE_VALUE_MAX_OUTPUT_COLUMNS)))
 							{
 								display_message(INFORMATION_MESSAGE,"\n");
 							}
@@ -11537,7 +11499,7 @@ Defines a field at a node (does not assign values)
 											} break;
 											case FLT_ARRAY_VALUE:
 											{
-												float *array = (float *)NULL;
+												float *array = 0;
 												float **array_address;
 												int zero = 0;
 												*((int *)new_value) = zero;

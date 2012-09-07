@@ -50,13 +50,11 @@ Function definitions for some general purpose string functions.
 #include <string.h>
 #include <ctype.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 /*???DB.  Would like to move memory management out of Greg's debug.h */
 /*#include "mymemory.h"*/
 #include "general/message.h"
-//-- }
 
 /*
 Functions

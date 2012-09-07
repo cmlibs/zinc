@@ -41,12 +41,10 @@ Macro definition for lists of callbacks between objects.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "general/callback.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

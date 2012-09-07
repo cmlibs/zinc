@@ -42,11 +42,26 @@
 #if !defined (CONTEXT_H)
 #define CONTEXT_H
 
-#define Context Cmiss_context
-struct Context;
-
 #include "api/cmiss_context.h"
 #include "general/manager.h"
+
+#define Context Cmiss_context
+struct Context
+{
+	int access_count;
+	const char *id;
+	struct Cmiss_region *root_region;
+	/* Always want the entry for graphics_buffer_package even if it will
+		not be available on this implementation */
+	struct Cmiss_graphics_module *graphics_module;
+	struct User_interface_module *UI_module;
+	struct Any_object_selection *any_object_selection;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct Event_dispatcher *event_dispatcher;
+	struct IO_stream_package *io_stream_package;
+	struct MANAGER(Curve) *curve_manager;
+};
+
 
 /***************************************************************************//**
  * Return the any object selection in context.

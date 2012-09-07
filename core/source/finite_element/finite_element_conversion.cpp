@@ -42,7 +42,6 @@ Functions for converting one finite_element representation to another.
  *
  * ***** END LICENSE BLOCK ***** */
 /* for IGES */
-//-- extern "C" {
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
@@ -58,13 +57,10 @@ Functions for converting one finite_element representation to another.
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"
 #include "general/octree.h"
-//-- }
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "region/cmiss_region.h"
 #include "general/message.h"
 #include "general/mystring.h"
-//-- }
 
 /*
 Module types

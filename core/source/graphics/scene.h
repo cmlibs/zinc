@@ -44,7 +44,8 @@
 #if !defined (SCENE_H)
 #define SCENE_H
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
+#include "api/cmiss_shared_object.h"
 
 #include "api/cmiss_scene.h"
 #include "general/any_object.h"
@@ -246,7 +247,7 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Scene,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Scene);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Scene,name,const char *);
 
-float Scene_time(struct Scene *scene);
+GLfloat Scene_time(struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 8 December 1997
 
@@ -254,7 +255,7 @@ DESCRIPTION :
 Returns the current time from <scene>.
 ==============================================================================*/
 
-int Scene_set_time(struct Scene *scene, float time);
+int Scene_set_time(struct Scene *scene, GLfloat time);
 /*******************************************************************************
 LAST MODIFIED : 19 February 1998
 
@@ -262,7 +263,7 @@ DESCRIPTION :
 Sets the current time in <scene>.
 ==============================================================================*/
 
-int Scene_for_each_material(struct Scene *scene,
+int ZINC_API Scene_for_each_material(struct Scene *scene,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
 	void *user_data);
 /*******************************************************************************
@@ -757,7 +758,7 @@ int for_each_graphics_object_in_scene(struct Scene *scene,
 	void *user_data);
 
 int Scene_get_data_range_for_spectrum(struct Scene *scene,
-	struct Spectrum *spectrum, float *minimum, float *maximum,
+	struct Spectrum *spectrum, GLfloat *minimum, GLfloat *maximum,
 	int *range_set);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998

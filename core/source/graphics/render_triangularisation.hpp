@@ -56,7 +56,7 @@ public:
 	Triangle_mesh *trimesh;
 
 public:
-	Render_graphics_triangularisation(Graphics_buffer *graphics_buffer, float tolerance) :
+	Render_graphics_triangularisation(Graphics_buffer *graphics_buffer, GLfloat tolerance) :
 		graphics_buffer(graphics_buffer), trimesh(new Triangle_mesh(tolerance))
 	{
 	}

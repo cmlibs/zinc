@@ -67,7 +67,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 
 /* #define DEBUG_CODE */
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 
 
@@ -77,7 +77,6 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #  endif
 #endif /* defined (DEBUG_CODE) */
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/indexed_list_private.h"
@@ -87,7 +86,6 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include "graphics/laguer.h"
 #include "graphics/texture_line.h"
 #include "general/message.h"
-//-- }
 
 /* module data */
 
@@ -734,8 +732,8 @@ if (vertex_index > mc_iso_surface->n_vertices || vertex_index < 0)
 	return (triangle_index);
 } /* compile_mc_vertex_triangle_lists */
 
-#if defined (USE_PARAMETER_ON)
-static struct MC_vertex *check_mc_vertex(struct MC_cell *mc_cell,float v[3],
+#if defined (USE_PARAMETER_ON) // ==++
+static struct MC_vertex *check_mc_vertex(struct MC_cell *mc_cell,ZnReal v[3],
 	int a)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
@@ -785,7 +783,7 @@ Compare vertices. If found return mc_vertex else return NULL.
 #endif /* defined (USE_PARAMETER_ON) */
 
 static void add_mc_triangle(int i,int j,int k,
-	struct MC_iso_surface *mc_iso_surface,int a,float mc_vertices[3][3],int x_min,
+	struct MC_iso_surface *mc_iso_surface,int a,ZnReal mc_vertices[3][3],int x_min,
 	int x_max,int y_min,int y_max,int z_min,int z_max,int mcnx,int mcny,int mcnz,
 	int n_scalar_fields)
 /*******************************************************************************
@@ -804,14 +802,14 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 	struct MC_cell *mc_cell;
 
 	ENTER(add_mc_triangle);
-  USE_PARAMETER(x_min);
-  USE_PARAMETER(x_max);
-  USE_PARAMETER(y_min);
-  USE_PARAMETER(y_max);
-  USE_PARAMETER(z_min);
-  USE_PARAMETER(z_max);
-  USE_PARAMETER(mcnz);
-  USE_PARAMETER(n_scalar_fields);
+	USE_PARAMETER(x_min);
+	USE_PARAMETER(x_max);
+	USE_PARAMETER(y_min);
+	USE_PARAMETER(y_max);
+	USE_PARAMETER(z_min);
+	USE_PARAMETER(z_max);
+	USE_PARAMETER(mcnz);
+	USE_PARAMETER(n_scalar_fields);
 	/* step through each vertex */
 	for (n=0;n<3;n++)
 	{
@@ -1900,7 +1898,7 @@ intersections with the boundary.
 
 	/* centre of projection for mapped textures */
 	struct MC_cell *mc_cell;
-	float mc_vertices[3][3];
+	ZnReal mc_vertices[3][3];
 
 	ENTER(marching_cubes);
 #if defined (DEBUG_CODE)
@@ -2765,7 +2763,7 @@ intersections with the boundary.
 													v_out2[a][m][2-n][nn]=minc[nn];
 												}
 											}
-											mc_vertices[n][nn]=(float) v_out2[a][m][2-n][nn];
+											mc_vertices[n][nn]=(ZnReal) v_out2[a][m][2-n][nn];
 										}
 									}
 									if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]==NULL)

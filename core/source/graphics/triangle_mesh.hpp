@@ -46,14 +46,13 @@
 #include <list>
 #include <set>
 
-//-- extern "C" {
 #include "general/octree.h"
-//-- }
+#include "graphics/auxiliary_graphics_types.h"
 
 class Triangle_vertex
 {
 private:
-	float coordinates[3];
+	ZnReal coordinates[3];
 	int identifier;
 
 	friend class Triangle_vertex_compare;
@@ -61,7 +60,7 @@ private:
 	friend class Triangle_mesh;
 
 public:
-	Triangle_vertex(const float *in_coordinates) :
+	Triangle_vertex(const ZnReal *in_coordinates) :
 		identifier(0)
 	{
 		coordinates[0] = in_coordinates[0];
@@ -73,7 +72,7 @@ public:
 	{
 	}
 
-	void get_coordinates(float *coord1, float *coord2, float *coord3) const;
+	void get_coordinates(ZnReal *coord1, ZnReal *coord2, ZnReal *coord3) const;
 
 	void set_identifier(int in_identifier)
 	{
@@ -95,10 +94,10 @@ public:
 class Triangle_vertex_compare
 {
 private:
-	float tolerance;
+	ZnReal tolerance;
 
 public:
-	Triangle_vertex_compare(float in_tolerance) :
+	Triangle_vertex_compare(ZnReal in_tolerance) :
 		tolerance(in_tolerance)
 	{	
 	}
@@ -144,7 +143,7 @@ private:
 	struct LIST(Octree_object) *nearby_vertex;
 	
 public:
-	Triangle_mesh(float tolerance) :
+	Triangle_mesh(ZnReal tolerance) :
 		compare(tolerance),
 		vertex_set(compare),
 		triangle_list(),
@@ -159,11 +158,11 @@ public:
 	 * Either finds an existing vertex within the tolerance of the supplied
 	 * coordinates, or creates one.
 	 *
-	 * @param coordinates  Pointer to 3 float values giving x, y, z coordinates. 
+	 * @param coordinates  Pointer to 3 GLfloat values giving x, y, z coordinates. 
 	 * @return  Pointer to const vertex with supplied coordinates or within mesh
 	 * tolerance thereof.
 	 */
-	const Triangle_vertex *add_vertex(const float *coordinates);
+	const Triangle_vertex *add_vertex(const Triple coordinates);
 
 	/***************************************************************************//**
 	 * Adds a triangle to the mesh. Degenerate triangles - with repeared vertices
@@ -179,7 +178,7 @@ public:
 	const Mesh_triangle *add_triangle(const Triangle_vertex *v1,
 		const Triangle_vertex *v2, const Triangle_vertex *v3);
 	
-	void add_triangle_coordinates(const float *c1, const float *c2, const float *c3)
+	void add_triangle_coordinates(const Triple c1, const Triple c2, const Triple c3)
 	{
 		add_triangle(add_vertex(c1), add_vertex(c2), add_vertex(c3));
 	}
@@ -197,8 +196,8 @@ public:
 	void add_quadrilateral(const Triangle_vertex *v1, const Triangle_vertex *v2,
 		const Triangle_vertex *v3, const Triangle_vertex *v4);
 
-	void add_quadrilateral_coordinates(const float *c1, const float *c2,
-		const float *c3, const float *c4)
+	void add_quadrilateral_coordinates(const Triple c1, const Triple c2,
+		const Triple c3, const Triple c4)
 	{
 		add_quadrilateral(add_vertex(c1), add_vertex(c2), add_vertex(c3), add_vertex(c4));
 	}

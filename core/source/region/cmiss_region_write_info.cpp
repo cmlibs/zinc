@@ -43,7 +43,6 @@ Data structure shared by several region export modules.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"
@@ -53,7 +52,6 @@ Data structure shared by several region export modules.
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_write_info.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

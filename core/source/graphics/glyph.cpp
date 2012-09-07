@@ -58,7 +58,6 @@ reference graphical materials or spectrums.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/glyph.h"
@@ -66,7 +65,6 @@ reference graphical materials or spectrums.
 #include "graphics/defined_graphics_objects.h"
 #include "general/message.h"
 #include "graphics/spectrum.h"
-//-- }
 #include "graphics/graphics_object.hpp"
 #include "graphics/render_gl.h"
 
@@ -75,8 +73,8 @@ Module functions
 ----------------
 */
 
-static int construct_tube(int number_of_segments_around,float x1,float r1,
-	float x2,float r2,float cy,float cz,int primary_axis,Triple *vertex_list,
+static int construct_tube(int number_of_segments_around,ZnReal x1,ZnReal r1,
+	ZnReal x2,ZnReal r2,ZnReal cy,ZnReal cz,int primary_axis,Triple *vertex_list,
 	Triple *normal_list)
 /*******************************************************************************
 LAST MODIFIED : 17 July 1998
@@ -91,7 +89,7 @@ The vertices and normals are added to create a single quadrilateral strip
 suitable for using with GT_surfaces of type g_SH_DISCONTINUOUS_STRIP.
 ==============================================================================*/
 {
-	float longitudinal_normal,normal_angle,radial_normal,theta,y,z;
+	ZnReal longitudinal_normal,normal_angle,radial_normal,theta,y,z;
 	int j,ix,iy,iz,return_code;
 	Triple *normal,*vertex;
 
@@ -129,7 +127,7 @@ suitable for using with GT_surfaces of type g_SH_DISCONTINUOUS_STRIP.
 		longitudinal_normal=-sin(normal_angle);
 		for (j=0;j <= number_of_segments_around;j++)
 		{
-			theta=2.0*PI*(float)j/(float)number_of_segments_around;
+			theta=2.0*PI*(ZnReal)j/(ZnReal)number_of_segments_around;
 			y = sin(theta);
 			z = cos(theta);
 			(*vertex)[ix] = x1;
@@ -235,11 +233,11 @@ Copied from the control curve editor.
 } /* tick_mark_get_grid_spacing */
 
 static int draw_glyph_axes_general(Triple *coordinate_scaling, 
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	int primary_axis_number, int label_bounds_component,
-	float major_cross_min, float major_cross_max,
-	float minor_cross_min, float minor_cross_max, FE_value minor_grid_size,
+	ZnReal major_cross_min, ZnReal major_cross_max,
+	ZnReal minor_cross_min, ZnReal minor_cross_max, FE_value minor_grid_size,
 	int minor_grids_per_major, FE_value min_minor_grid, FE_value min_major_grid,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer)
@@ -255,7 +253,7 @@ Renders the label_bounds as lines and labels.
 	FE_value grid_scale;
 	int first, j, label_bounds_offset, last, number_of_major_lines, 
 		number_of_minor_lines, number_of_labels, number_of_ticks, return_code;
-	float axis_position, fabs_length, length, log_scale;
+	ZnReal axis_position, fabs_length, length, log_scale;
 	struct GT_object *graphics_object;
 	struct GT_pointset *label_set;
 	struct GT_polyline *polyline;
@@ -352,7 +350,7 @@ Renders the label_bounds as lines and labels.
 			{
 				if (number_of_ticks > 1)
 				{
-					axis_position = ((float)j * minor_grid_size - label_bounds[label_bounds_component]) / length;
+					axis_position = ((ZnReal)j * minor_grid_size - label_bounds[label_bounds_component]) / length;
 				}
 				else
 				{
@@ -415,7 +413,7 @@ Renders the label_bounds as lines and labels.
 					if (ALLOCATE(label_strings[number_of_labels], char, 50))
 					{
 						sprintf(label_strings[number_of_labels], "%1g",
-							(float)j * minor_grid_size);
+							(ZnReal)j * minor_grid_size);
 					}
 					number_of_labels++;
 				}
@@ -463,7 +461,7 @@ Renders the label_bounds as lines and labels.
 				}
 			}
 			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 			if (polyline)
 			{
 				graphics_object=CREATE(GT_object)(name,g_POLYLINE,
@@ -489,7 +487,7 @@ Renders the label_bounds as lines and labels.
 			}
 			label_set = CREATE(GT_pointset)(number_of_labels, label_string_locations,
 				label_strings, g_NO_MARKER, /*marker_size*/0, /*n_data_components*/0,
-				(GTDATA *)NULL, /*names*/(int *)NULL, font);
+				(GLfloat *)NULL, /*names*/(int *)NULL, font);
 			if (label_set)
 			{
 				graphics_object=CREATE(GT_object)(name, g_POINTSET, material);
@@ -517,7 +515,7 @@ Renders the label_bounds as lines and labels.
 				DEALLOCATE(label_strings);
 			}
 			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 			if (polyline)
 			{
 				graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material);
@@ -552,7 +550,7 @@ Renders the label_bounds as lines and labels.
 } /* draw_glyph_axes_general */
 
 static int draw_glyph_axes_ticks(Triple *coordinate_scaling, 
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer)
@@ -592,7 +590,7 @@ so only the first component of the label_bounds is drawn.
 } /* draw_glyph_axes_ticks */
 
 static int draw_glyph_grid_lines(Triple *coordinate_scaling, 
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer)
@@ -646,8 +644,8 @@ Global functions
 ----------------
 */
 
-struct GT_object *make_glyph_arrow_line(const char *name,float head_length,
-	float half_head_width)
+struct GT_object *make_glyph_arrow_line(const char *name,ZnReal head_length,
+	ZnReal half_head_width)
 /*******************************************************************************
 LAST MODIFIED : 3 August 1999
 
@@ -692,7 +690,7 @@ from the shaft.
 			points[ 9][0]=1.0-head_length;
 			points[ 9][2]=-half_head_width;
 			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				5,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				5,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -734,8 +732,8 @@ from the shaft.
 } /* make_glyph_arrow_line */
 
 struct GT_object *make_glyph_arrow_solid(const char *name, int primary_axis,
-	int number_of_segments_around,float shaft_length,float shaft_radius,
-	float cone_radius)
+	int number_of_segments_around,ZnReal shaft_length,ZnReal shaft_radius,
+	ZnReal cone_radius)
 /*******************************************************************************
 LAST MODIFIED : 10 June 2004
 
@@ -748,7 +746,7 @@ are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
 the arrow points in.
 ==============================================================================*/
 {
-	float r1 = 0.0, r2 = 0.0, x1 = 0.0, x2 = 0.0;
+	ZnReal r1 = 0.0, r2 = 0.0, x1 = 0.0, x2 = 0.0;
 	int i;
 	struct GT_object *glyph;
 	struct GT_surface *surface;
@@ -811,7 +809,7 @@ the arrow points in.
 				if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
 					CMISS_GRAPHICS_RENDER_TYPE_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
 					points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-					/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+					/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 				{
 					if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 					{
@@ -844,8 +842,8 @@ the arrow points in.
 	return (glyph);
 } /* make_glyph_arrow_solid */
 
-struct GT_object *make_glyph_axes(const char *name, int make_solid, float head_length,
-	float half_head_width,const char **labels, float label_offset,
+struct GT_object *make_glyph_axes(const char *name, int make_solid, ZnReal head_length,
+	ZnReal half_head_width,const char **labels, ZnReal label_offset,
 	struct Graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -975,7 +973,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				points[29][2]=1.0-head_length;
 				points[29][1]=-half_head_width;
 				polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-					15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+					15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 				if (polyline)
 				{
 					glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
@@ -1015,7 +1013,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				points[2][2]=1.0+label_offset;
 				strcpy(text[2],labels[2]);
 				pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
-					g_NO_DATA,(GTDATA *)NULL,(int *)NULL, font);
+					g_NO_DATA,(GLfloat *)NULL,(int *)NULL, font);
 				if (pointset)
 				{
 					labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
@@ -1079,7 +1077,7 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GTDATA *)NULL)))
+				g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1146,7 +1144,7 @@ solid base.
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GTDATA *)NULL)))
+							g_NO_DATA,(GLfloat *)NULL)))
 				{
 					DEALLOCATE(points);
 					DEALLOCATE(normalpoints);
@@ -1173,7 +1171,7 @@ solid base.
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GTDATA *)NULL)))
+							g_NO_DATA,(GLfloat *)NULL)))
 				{
 					DEALLOCATE(points);
 					DEALLOCATE(normalpoints);
@@ -1251,7 +1249,7 @@ from <0,0,-0.5> to <0,0,+0.5>
 			points[5][1]=0.0;
 			points[5][2]=+0.5;
 			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				3,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				3,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1299,7 +1297,7 @@ Creates a graphics object named <name> consisting of a unit-sized GT_surface
 cube centred at <0,0,0>.
 ==============================================================================*/
 {
-	float factor;
+	ZnReal factor;
 	int a, b, c, i;
 	struct GT_object *glyph;
 	struct GT_surface *surface;
@@ -1365,7 +1363,7 @@ cube centred at <0,0,0>.
 			}
 			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,6,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1459,7 +1457,7 @@ wireframe cube centred at <0,0,0>.
 				}
 			}
 			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				12,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				12,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1527,7 +1525,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GTDATA *)NULL)))
+				g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1595,7 +1593,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GTDATA *)NULL)))
+							g_NO_DATA,(GLfloat *)NULL)))
 				{
 					DEALLOCATE(points);
 					DEALLOCATE(normalpoints);
@@ -1622,7 +1620,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GTDATA *)NULL)))
+							g_NO_DATA,(GLfloat *)NULL)))
 				{
 					DEALLOCATE(points);
 					DEALLOCATE(normalpoints);
@@ -1648,7 +1646,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GTDATA *)NULL)))
+							g_NO_DATA,(GLfloat *)NULL)))
 				{
 					DEALLOCATE(points);
 					DEALLOCATE(normalpoints);
@@ -1709,7 +1707,7 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 			points[1][1]=0.0;
 			points[1][2]=0.0;
 			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				1,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				1,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1781,7 +1779,7 @@ Makes a glyph with the given <name> that automatically mirrors the given
 } /* make_glyph_mirror */
 
 struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
-	float marker_size)
+	ZnReal marker_size)
 /*******************************************************************************
 LAST MODIFIED : 1 December 1998
 
@@ -1804,7 +1802,7 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 			(*points)[1]=0.0;
 			(*points)[2]=0.0;
 			if (!(pointset=CREATE(GT_pointset)(1,points,(char **)NULL,marker_type,
-				marker_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL, (struct Graphics_font *)NULL)))
+				marker_size,g_NO_DATA,(GLfloat *)NULL,(int *)NULL, (struct Graphics_font *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1925,7 +1923,7 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 			}
 			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,1,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				texturepoints,g_NO_DATA,(GTDATA *)NULL)))
+				texturepoints,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -2003,7 +2001,7 @@ into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
 twice <number_of_segments_down> look remotely spherical.
 ==============================================================================*/
 {
-	float longitudinal_normal,phi,radial_normal,theta,x,y,z;
+	ZnReal longitudinal_normal,phi,radial_normal,theta,x,y,z;
 	int i,j;
 	struct GT_object *glyph;
 	struct GT_surface *surface;
@@ -2022,7 +2020,7 @@ twice <number_of_segments_down> look remotely spherical.
 				normal=points+(number_of_segments_down+1)*(number_of_segments_around+1);*/
 			for (i=0;i <= number_of_segments_down;i++)
 			{
-				phi=PI*(float)i/(float)number_of_segments_down;
+				phi=PI*(ZnReal)i/(ZnReal)number_of_segments_down;
 				x=-0.5*cos(phi);
 				radial_normal=sin(phi);
 				longitudinal_normal=2*x;
@@ -2031,7 +2029,7 @@ twice <number_of_segments_down> look remotely spherical.
 				normal=normalpoints+i;
 				for (j=0;j <= number_of_segments_around;j++)
 				{
-					theta=2.0*PI*(float)j/(float)number_of_segments_around;
+					theta=2.0*PI*(ZnReal)j/(ZnReal)number_of_segments_around;
 					y = radial_normal*sin(theta);
 					z = radial_normal*cos(theta);
 					(*vertex)[0] = x;
@@ -2047,7 +2045,7 @@ twice <number_of_segments_down> look remotely spherical.
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,number_of_segments_down+1,number_of_segments_around+1,
 				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-            /*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);

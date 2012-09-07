@@ -72,7 +72,7 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_H
 
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 #include "api/cmiss_graphic.h"
 #include "general/geometry.h"
@@ -84,9 +84,7 @@ Used to be gtypes.h
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
-////-- extern "C" {
 #include "api/cmiss_field_cad.h"
-//}
 #endif /* defined (USE_OPENCASCADE) */
 
 /*
@@ -283,8 +281,6 @@ DESCRIPTION :
 	g_VECTOR4
 } gtDataType;
 
-typedef float GTDATA;
-
 typedef enum
 /*******************************************************************************
 LAST MODIFIED : 23 February 1998
@@ -354,7 +350,7 @@ for combining several spectrums.
 ==============================================================================*/
 {
 	int first;
-	float minimum,maximum;
+	ZnReal minimum,maximum;
 }; /* Graphics_object_data_range_struct */
 
 struct Graphics_object_time_range_struct
@@ -368,7 +364,7 @@ the time range valid.
 ==============================================================================*/
 {
 	int first;
-	float minimum,maximum;
+	ZnReal minimum,maximum;
 }; /* Graphics_object_time_range_struct */
 
 /*
@@ -376,7 +372,7 @@ Global variables
 ----------------
 */
 /*???DB.  I'm not sure that this should be here */
-extern float global_line_width,global_point_size;
+extern ZnReal global_line_width,global_point_size;
 
 /*
 Global functions
@@ -477,7 +473,7 @@ get_GT_surface_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 
-struct GT_glyph_set *morph_GT_glyph_set(float proportion,
+struct GT_glyph_set *morph_GT_glyph_set(ZnReal proportion,
 	struct GT_glyph_set *initial,struct GT_glyph_set *final);
 /*******************************************************************************
 LAST MODIFIED : 7 July 1998
@@ -487,7 +483,7 @@ Creates a new GT_glyph_set which is the interpolation of two GT_glyph_sets.
 The two glyph_sets must have the same glyph and data_type.
 ==============================================================================*/
 
-struct GT_pointset *morph_GT_pointset(float proportion,
+struct GT_pointset *morph_GT_pointset(ZnReal proportion,
 	struct GT_pointset *initial,struct GT_pointset *final);
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
@@ -496,7 +492,7 @@ DESCRIPTION :
 Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 ==============================================================================*/
 
-struct GT_polyline *morph_GT_polyline(float proportion,
+struct GT_polyline *morph_GT_polyline(ZnReal proportion,
 	struct GT_polyline *initial,struct GT_polyline *final);
 /*******************************************************************************
 LAST MODIFIED : 6 February 1996
@@ -505,7 +501,7 @@ DESCRIPTION :
 Creates a new GT_polyline which is the interpolation of two GT_polylines.
 ==============================================================================*/
 
-struct GT_surface *morph_GT_surface(float proportion,
+struct GT_surface *morph_GT_surface(ZnReal proportion,
 	struct GT_surface *initial,struct GT_surface *final);
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
@@ -514,7 +510,7 @@ DESCRIPTION :
 Creates a new GT_surface which is the interpolation of two GT_surfaces.
 ==============================================================================*/
 
-gtObject *morph_gtObject(char *name,float proportion,gtObject *initial,
+gtObject *morph_gtObject(char *name,ZnReal proportion,gtObject *initial,
 	gtObject *final);
 /*******************************************************************************
 LAST MODIFIED : 27 December 1995
@@ -524,7 +520,7 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 ==============================================================================*/
 
 struct GT_object *transform_GT_object(struct GT_object *object,
-	float *transformation);
+	ZnReal *transformation);
 /*******************************************************************************
 LAST MODIFIED : 8 July 1999
 
@@ -561,8 +557,8 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	struct Graphics_font *font, char **labels, int n_data_components, GTDATA *data,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphics_font *font, char **labels, int n_data_components, GLfloat *data,
+	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names);
 /*******************************************************************************
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -637,8 +633,8 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 int GT_nurbs_set_surface(struct GT_nurbs *nurbs,
 	int sorder, int torder, int sknotcount, int tknotcount,
-	double *sknots, double *tknots, 
-	int scontrolcount, int tcontrolcount, double *control_points);
+	ZnReal *sknots, ZnReal *tknots, 
+	int scontrolcount, int tcontrolcount, ZnReal *control_points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
 
@@ -651,8 +647,8 @@ The arrays are assigned directly to the object and not copied.
 ==============================================================================*/
 
 int GT_nurbs_set_nurb_trim_curve(struct GT_nurbs *nurbs,
-	int order, int knotcount, double *knots,
-	int control_count, double *control_points);
+	int order, int knotcount, ZnReal *knots,
+	int control_count, ZnReal *control_points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
 
@@ -662,7 +658,7 @@ The arrays are assigned directly to the object and not copied.
 ==============================================================================*/
 
 int GT_nurbs_set_piecewise_linear_trim_curve(struct GT_nurbs *nurbs,
-	int number_of_points, double *points);
+	int number_of_points, ZnReal *points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
 
@@ -672,7 +668,7 @@ The array is assigned directly to the object and not copied.
 ==============================================================================*/
 
 int GT_nurbs_set_normal_control_points(struct GT_nurbs *nurbs,
-	double *normal_control_points);
+	ZnReal *normal_control_points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
 
@@ -683,7 +679,7 @@ points specified in set surface.  Each normal is assumed to have three component
 ==============================================================================*/
 
 int GT_nurbs_set_texture_control_points(struct GT_nurbs *nurbs,
-	double *texture_control_points);
+	ZnReal *texture_control_points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
 
@@ -695,8 +691,8 @@ texture coordinates.
 ==============================================================================*/
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,
-	int object_name, GTDATA *data, struct Graphics_font *font);
+	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
+	int object_name, GLfloat *data, struct Graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -726,7 +722,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
+	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
 	int *names, struct Graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -782,7 +778,7 @@ current storage and the internal data, text and names arrays are messed up.
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
 	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
-	int n_data_components,GTDATA *data);
+	int n_data_components,GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 22 April 2004
 
@@ -817,7 +813,7 @@ struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
 	enum Cmiss_graphics_render_type render_type, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
-	int n_data_components,GTDATA *data);
+	int n_data_components,GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 28 November 2003
 
@@ -1010,7 +1006,7 @@ DESCRIPTION :
 Removes a callback which was added previously
 ==============================================================================*/
 
-int GT_object_has_time(struct GT_object *graphics_object,float time);
+int GT_object_has_time(struct GT_object *graphics_object,ZnReal time);
 /*******************************************************************************
 LAST MODIFIED : 26 June 1997
 
@@ -1019,7 +1015,7 @@ Returns 1 if the time parameter is used by the graphics_object.
 ==============================================================================*/
 
 int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
-	float time);
+	ZnReal time);
 /*******************************************************************************
 LAST MODIFIED : 17 March 2003
 
@@ -1040,7 +1036,7 @@ DESCRIPTION :
 Returns the number of times/primitive lists in the graphics_object.
 ==============================================================================*/
 
-float GT_object_get_time(struct GT_object *graphics_object,int time_no);
+ZnReal GT_object_get_time(struct GT_object *graphics_object,int time_no);
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
@@ -1049,7 +1045,7 @@ Returns the time at <time_no> from the graphics_object.
 Note that time numbers range from 1 to number_of_times.
 ==============================================================================*/
 
-float GT_object_get_nearest_time(struct GT_object *graphics_object,float time);
+ZnReal GT_object_get_nearest_time(struct GT_object *graphics_object,ZnReal time);
 /*******************************************************************************
 LAST MODIFIED : 7 August 1997
 
@@ -1104,7 +1100,7 @@ Enlarges the minimum and maximum time range by that of the graphics_object.
 #define PROTOTYPE_GT_OBJECT_ADD_FUNCTION(primitive_type) \
 int GT_OBJECT_ADD(primitive_type)( \
 	struct GT_object *graphics_object, \
-	float time,struct primitive_type *primitive) \
+	ZnReal time,struct primitive_type *primitive) \
 /***************************************************************************** \
 LAST MODIFIED : 17 March 2003 \
 \
@@ -1139,7 +1135,7 @@ int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 
 #define PROTOTYPE_GT_OBJECT_GET_FUNCTION(primitive_type) \
 struct primitive_type *GT_OBJECT_GET(primitive_type)( \
-	struct GT_object *graphics_object,float time) \
+	struct GT_object *graphics_object,ZnReal time) \
 /***************************************************************************** \
 LAST MODIFIED : 19 June 1997 \
 \
@@ -1156,7 +1152,7 @@ typedef int (GT_object_primitive_object_name_conditional_function) \
 	(int object_name, void *user_data);
 
 int GT_object_remove_primitives_at_time(
-	struct GT_object *graphics_object, float time,
+	struct GT_object *graphics_object, ZnReal time,
 	GT_object_primitive_object_name_conditional_function *conditional_function,
 	void *user_data);
 /*******************************************************************************
@@ -1171,7 +1167,7 @@ from the conditional_function causes the primitive to be removed.
 ==============================================================================*/
 
 int GT_object_transfer_primitives_at_time(struct GT_object *destination,
-	struct GT_object *source, float time);
+	struct GT_object *source, ZnReal time);
 /*******************************************************************************
 LAST MODIFIED : 18 March 2003
 
@@ -1196,7 +1192,7 @@ Primitives are added after any in <destination> at <time>.
 	primitive_type) \
 struct primitive_type *GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME( \
 	primitive_type)(struct GT_object *graphics_object, \
-	float time, int object_name) \
+	ZnReal time, int object_name) \
 /***************************************************************************** \
 LAST MODIFIED : 18 March 2003 \
 \
@@ -1409,7 +1405,7 @@ scale is negative for that axis.
 ==============================================================================*/
 
 struct GT_object_compile_context *CREATE(GT_object_compile_context)(
-	float time, struct Graphics_buffer *graphics_buffer
+	ZnReal time, struct Graphics_buffer *graphics_buffer
 #if defined (OPENGL_API)
 	, unsigned int ndc_display_list, unsigned int end_ndc_display_list
 #endif /* defined (OPENGL_API) */

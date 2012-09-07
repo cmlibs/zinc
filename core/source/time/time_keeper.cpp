@@ -46,17 +46,14 @@ This is intended to be multithreaded......
 #include <math.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/time.h"
-#include "user_interface/event_dispatcher.h"
 #include "general/message.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
-//-- }
 #include "time/time_private.h"
 #include "general/enumerator_conversion.hpp"
 
@@ -256,8 +253,8 @@ Normally use Time_keeper_stop
 	{
 		if(time_keeper->timeout_callback_id)
 		{
-			Event_dispatcher_remove_timeout_callback(time_keeper->event_dispatcher,
-				time_keeper->timeout_callback_id);
+			//-- Event_dispatcher_remove_timeout_callback(time_keeper->event_dispatcher,
+			//-- 	time_keeper->timeout_callback_id);
 			time_keeper->timeout_callback_id = (struct Event_dispatcher_timeout_callback *)NULL;
 		}
 		return_code = 1;
@@ -1060,9 +1057,9 @@ DESCRIPTION :
 									processed before the events from this next callback occur */
 								sleep_ns = 3000000;
 							}
-							time_keeper->timeout_callback_id = Event_dispatcher_add_timeout_callback(
-								time_keeper->event_dispatcher, (unsigned long)sleep_s, sleep_ns, 
-								Time_keeper_timer_event_handler, (void *)time_keeper);
+							time_keeper->timeout_callback_id = 0; //-- Event_dispatcher_add_timeout_callback(
+								//-- time_keeper->event_dispatcher, (unsigned long)sleep_s, sleep_ns, 
+								//-- Time_keeper_timer_event_handler, (void *)time_keeper);
 							return_code=1;
 						}
 						else
@@ -1162,9 +1159,9 @@ DESCRIPTION :
 									processed before the events from this next callback occur */
 								sleep_ns = 3000000;
 							}
-							time_keeper->timeout_callback_id = Event_dispatcher_add_timeout_callback(
-								time_keeper->event_dispatcher, sleep_s, sleep_ns, 
-								Time_keeper_timer_event_handler, (void *)time_keeper);
+							time_keeper->timeout_callback_id = 0; //-- Event_dispatcher_add_timeout_callback(
+								//-- time_keeper->event_dispatcher, sleep_s, sleep_ns, 
+								//-- Time_keeper_timer_event_handler, (void *)time_keeper);
 							return_code=1;
 						}
 						else

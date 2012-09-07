@@ -44,7 +44,6 @@ fibre_axes out of a fibre field.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
@@ -52,7 +51,6 @@ fibre_axes out of a fibre field.
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "general/message.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 
 struct Computed_field *Computed_field_begin_wrap_coordinate_field(

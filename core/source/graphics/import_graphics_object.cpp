@@ -47,6 +47,8 @@ Functions for reading graphics object data from a file.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "api/cmiss_graphics_material.h"
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"
@@ -54,7 +56,6 @@ Functions for reading graphics object data from a file.
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/import_graphics_object.h"
-#include "api/cmiss_graphics_material.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #include "general/message.h"
@@ -63,8 +64,6 @@ Functions for reading graphics object data from a file.
 Module functions
 ----------------
 */
-#define FLOAT_ZERO_TOLERANCE (1e-8)
-
 static int file_read_GT_object_type(struct IO_stream *file,
 	enum GT_object_type *object_type)
 /*******************************************************************************
@@ -206,12 +205,12 @@ DESCRIPTION :
 	Triple *pointlist,*normallist,*texturelist;
 	enum GT_surface_type surface_type;
 	enum GT_polyline_type polyline_type;
-	GTDATA *data;
+	GLfloat *data;
 	int sorder,torder,corder;
 	int sknotcnt,tknotcnt,cknotcnt,pwlcnt,ccount;
 	int maxs,maxt;
-	double *sknots,*tknots,*cknots;
-	double *controlpts,*trimarray,*pwlarray;
+	ZnReal *sknots,*tknots,*cknots;
+	ZnReal *controlpts,*trimarray,*pwlarray;
 	enum GT_object_type object_type;
 	gtMatrix transform;
 	gtTransformType transtype;
@@ -224,7 +223,7 @@ DESCRIPTION :
 	struct GT_userdef *userdef;
 	struct IO_stream *stream;
 	int version;
-	float time;
+	ZnReal time;
 
 	ENTER(file_read_graphics_objects);
 #if defined (DEBUG_CODE)
@@ -366,7 +365,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
 									g_PLUS_MARKER,global_point_size,g_NO_DATA,
-									/*object_name*/0,(GTDATA *)NULL, (struct Graphics_font *)NULL);
+									/*object_name*/0,(GLfloat *)NULL, (struct Graphics_font *)NULL);
 								GT_OBJECT_ADD(GT_point)(obj,time,point);
 							} break;
 							case g_POINTSET:
@@ -388,7 +387,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								pointset = CREATE(GT_pointset)(npts1,pointlist,
 									(char **)NULL,g_PLUS_MARKER,global_point_size,g_NO_DATA,
-									(GTDATA *)NULL,(int *)NULL, (struct Graphics_font *)NULL);
+									(GLfloat *)NULL,(int *)NULL, (struct Graphics_font *)NULL);
 								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
 #if defined (DEBUG_CODE)
 								/*???debug */
@@ -414,7 +413,7 @@ DESCRIPTION :
 										 CREATE(GT_surface) unless specifically allocated */
 									pointlist=(Triple *)NULL;
 									normallist = (Triple *)NULL;
-									data=(GTDATA *)NULL;
+									data = 0;
 									switch (polyline_type)
 									{
 										case g_PLAIN:
@@ -477,7 +476,7 @@ DESCRIPTION :
 									}
 									polyline = CREATE(GT_polyline)(polyline_type,
 										/*line_width=default*/0,npts1,
-										pointlist, normallist, g_NO_DATA, (GTDATA *)NULL);
+										pointlist, normallist, g_NO_DATA, (GLfloat *)NULL);
 									GT_OBJECT_ADD(GT_polyline)(obj,time,polyline);
 								}
 								else
@@ -513,7 +512,7 @@ DESCRIPTION :
 									pointlist=(Triple *)NULL;
 									normallist=(Triple *)NULL;
 									texturelist=(Triple *)NULL;
-									data=(GTDATA *)NULL;
+									data=0;
 									/* Note: A Discontinuous surface is set up differently from
 										the more economical continuous surface in which points and
 										normals are shared between adjacent polys in an array
@@ -546,7 +545,7 @@ DESCRIPTION :
 											}
 											if (n_data_components)
 											{
-												ALLOCATE(data,GTDATA,n_data_components*npts1*npts2);
+												ALLOCATE(data,GLfloat,n_data_components*npts1*npts2);
 												for (i=0;i<npts1;i++)
 												{
 													for (j=0;j<npts2;j++)
@@ -585,7 +584,7 @@ DESCRIPTION :
 											}
 											if (n_data_components)
 											{
-												ALLOCATE(data,GTDATA,n_data_components*npts1*npts2);
+												ALLOCATE(data,GLfloat,n_data_components*npts1*npts2);
 												for (i=0;i<npts1;i++)
 												{
 													for (j=0;j<npts2;j++)
@@ -801,7 +800,7 @@ DESCRIPTION :
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Cmiss_graphics_render_type render_type,
-	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
+	ZnReal time, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(GT_object) *object_list)
 /*******************************************************************************
 LAST MODIFIED : 23 November 2005
@@ -813,7 +812,7 @@ DESCRIPTION :
 	enum GT_voltex_type voltex_type;
 	FE_value rmag, result[3], vector1[3], vector2[3], vectorsum[3], vertex0[3],
 		vertex1[3], vertex2[3];
-	float *new_coordinate_vertices, *coordinate_vertices,
+	ZnReal *new_coordinate_vertices, *coordinate_vertices,
 		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
 	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number, 
 		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
@@ -911,9 +910,9 @@ DESCRIPTION :
 				n_texture_coordinates = 0;  /* The number of texture coordinates per vertex */
 				vertex_list = (struct VT_iso_vertex **)NULL;
 				triangle_list = (struct VT_iso_triangle **)NULL;
-				coordinate_vertices = (float *)NULL;
-				texture_vertices = (float *)NULL;
-				normal_vertices = (float *)NULL;
+				coordinate_vertices = (ZnReal *)NULL;
+				texture_vertices = (ZnReal *)NULL;
+				normal_vertices = (ZnReal *)NULL;
 				vertex_reindex = (int *)NULL;
 
 				while ((!IO_stream_end_of_stream(file))&&
@@ -1031,7 +1030,7 @@ DESCRIPTION :
 						else if (0==strcmp(word, "v"))
 						{
 							/* process vertices */
-							if(REALLOCATE(new_coordinate_vertices, coordinate_vertices, float, 
+							if(REALLOCATE(new_coordinate_vertices, coordinate_vertices, ZnReal, 
 									3 * (n_obj_coordinate_vertices + 1)) &&
 								REALLOCATE(vertex_reindex, vertex_reindex, int, 
 									(n_obj_coordinate_vertices + 1)))
@@ -1057,7 +1056,7 @@ DESCRIPTION :
 						else if (0==strcmp(word,"vt"))
 						{
 							/* process texture vertices */
-							if(REALLOCATE(new_texture_vertices, texture_vertices, float, 
+							if(REALLOCATE(new_texture_vertices, texture_vertices, ZnReal, 
 									3 * (n_obj_texture_vertices + 1)))
 							{
 								texture_vertices = new_texture_vertices;
@@ -1080,7 +1079,7 @@ DESCRIPTION :
 						else if (0==strcmp(word,"vn"))
 						{
 							/* process vertex normals */
-							if(REALLOCATE(new_normal_vertices, normal_vertices, float, 
+							if(REALLOCATE(new_normal_vertices, normal_vertices, ZnReal, 
 									3 * (n_obj_normal_vertices + 1)))
 							{
 								normal_vertices = new_normal_vertices;

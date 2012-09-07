@@ -50,10 +50,6 @@ lookup of the element.
 
 struct Graphics_buffer_package;
 
-#ifdef __cplusplus
-//-- extern "C" {
-#endif /* __cplusplus */
-
 /***************************************************************************//**
  * This function implements the reverse of some certain computed_fields
  * (Computed_field_is_find_element_xi_capable) so that it tries to find an
@@ -80,9 +76,6 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, Cmiss_mesh_id search_mesh,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	float *hint_minimums, float *hint_maximums, float *hint_resolution);
+	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution);
 
-#ifdef __cplusplus
-//-- }
-#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_GRAPHICS_H) */

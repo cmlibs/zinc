@@ -59,9 +59,8 @@ problem.
 #include <stdlib.h>
 #include <string.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -70,7 +69,6 @@ problem.
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_private.hpp"
 
 /*
@@ -92,17 +90,17 @@ The properties of a light.
 	enum Light_type type;
 	struct Colour colour;
 	/* position for point and spot lights */
-	float position[3];
+	GLfloat position[3];
 	/* direction for infinite (directional) and spot lights */
-	float direction[3];
+	GLfloat direction[3];
 	/* attenuation parameters control light falloff with distance according to
 	   1/(c + l*d + q*d*d) where d=distance, c=constant, l=linear, q=quadratic */
-	float constant_attenuation, linear_attenuation, quadratic_attenuation;
+	GLfloat constant_attenuation, linear_attenuation, quadratic_attenuation;
 	/* the angle, in degrees, between the direction of the spotlight and the ray
 		along the edge of the light cone (between 0 and 90 inclusive) */
-	float spot_cutoff;
+	GLfloat spot_cutoff;
 	/* spot_exponent controls concentration of light near its axis; 0 = none */
-	float spot_exponent;
+	GLfloat spot_exponent;
 	/* include display list stuff although cannot use at present */
 	GLuint display_list;
 	int display_list_current;
@@ -518,8 +516,8 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *,manager)
 
-int get_Light_attenuation(struct Light *light, float *constant_attenuation,
-	float *linear_attenuation, float *quadratic_attenuation)
+int get_Light_attenuation(struct Light *light, GLfloat *constant_attenuation,
+	GLfloat *linear_attenuation, GLfloat *quadratic_attenuation)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -553,8 +551,8 @@ Infinite/directional lights are not affected by these values.
 	return (return_code);
 } /* get_Light_attenuation */
 
-int set_Light_attenuation(struct Light *light, float constant_attenuation,
-	float linear_attenuation, float quadratic_attenuation)
+int set_Light_attenuation(struct Light *light, GLfloat constant_attenuation,
+	GLfloat linear_attenuation, GLfloat quadratic_attenuation)
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
 
@@ -650,7 +648,7 @@ Sets the colour of the light.
 	return (return_code);
 } /* set_Light_colour */
 
-int get_Light_direction(struct Light *light,float direction[3])
+int get_Light_direction(struct Light *light,GLfloat direction[3])
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -679,7 +677,7 @@ Returns the direction of the light, relevent for infinite and spot lights.
 	return (return_code);
 } /* get_Light_direction */
 
-int set_Light_direction(struct Light *light,float direction[3])
+int set_Light_direction(struct Light *light,GLfloat direction[3])
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -710,7 +708,7 @@ Sets the direction of the light, relevent for infinite and spot lights.
 	return (return_code);
 } /* set_Light_direction */
 
-int get_Light_position(struct Light *light,float position[3])
+int get_Light_position(struct Light *light,GLfloat position[3])
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -739,7 +737,7 @@ Returns the position of the light, relevent for point and spot lights.
 	return (return_code);
 } /* get_Light_position */
 
-int set_Light_position(struct Light *light,float position[3])
+int set_Light_position(struct Light *light,GLfloat position[3])
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -770,7 +768,7 @@ Sets the position of the light, relevent for point and spot lights.
 	return (return_code);
 } /* set_Light_position */
 
-int get_Light_spot_cutoff(struct Light *light, float *spot_cutoff)
+int get_Light_spot_cutoff(struct Light *light, GLfloat *spot_cutoff)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -797,7 +795,7 @@ Returns the spotlight cutoff angle in degrees from 0 to 90.
 	return (return_code);
 } /* get_Light_spot_cutoff */
 
-int set_Light_spot_cutoff(struct Light *light, float spot_cutoff)
+int set_Light_spot_cutoff(struct Light *light, GLfloat spot_cutoff)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -826,7 +824,7 @@ Sets the spotlight cutoff angle in degrees from 0 to 90.
 	return (return_code);
 } /* set_Light_spot_cutoff */
 
-int get_Light_spot_exponent(struct Light *light, float *spot_exponent)
+int get_Light_spot_exponent(struct Light *light, GLfloat *spot_exponent)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -855,7 +853,7 @@ throughout the cutoff angle.
 	return (return_code);
 } /* get_Light_spot_exponent */
 
-int set_Light_spot_exponent(struct Light *light, float spot_exponent)
+int set_Light_spot_exponent(struct Light *light, GLfloat spot_exponent)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -1160,7 +1158,7 @@ Activates the <light> as part of the rendering loop.
 {
 	int return_code;
 #if defined (GL_API)
-	float values[21];
+	GLfloat values[21];
 	short number_of_values;
 #endif
 #if defined (OPENGL_API)

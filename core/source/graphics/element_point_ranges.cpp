@@ -43,7 +43,6 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 
-//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -53,7 +52,6 @@ DESCRIPTION :
 #include "general/indexed_list_private.h"
 #include "graphics/element_point_ranges.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

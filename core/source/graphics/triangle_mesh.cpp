@@ -40,13 +40,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/message.h"
-//-- }
+#include "graphics/auxiliary_graphics_types.h"
 #include "triangle_mesh.hpp"
 
-void Triangle_vertex::get_coordinates(float *coord1, float *coord2, float *coord3) const
+void Triangle_vertex::get_coordinates(ZnReal *coord1, ZnReal *coord2, ZnReal *coord3) const
 {
 	*coord1 = coordinates[0];
 	*coord2 = coordinates[1];
@@ -125,20 +124,20 @@ Triangle_mesh::~Triangle_mesh()
 	DESTROY(Octree)(&octree);
 }
 
-const Triangle_vertex *Triangle_mesh::add_vertex(const float *coordinates)
+const Triangle_vertex *Triangle_mesh::add_vertex(const Triple coordinates)
 {
 	Triangle_vertex *vertex_in_set = NULL;
-	FE_value coordiantes_FEValue[3];
-	coordiantes_FEValue[0] = (FE_value)coordinates[0];
-	coordiantes_FEValue[1] = (FE_value)coordinates[1];
-	coordiantes_FEValue[2] = (FE_value)coordinates[2];
+	FE_value coordinates_FEValue[3];
+	coordinates_FEValue[0] = (FE_value)coordinates[0];
+	coordinates_FEValue[1] = (FE_value)coordinates[1];
+	coordinates_FEValue[2] = (FE_value)coordinates[2];
 	Octree_add_objects_near_coordinate_to_list(octree,
-		/*dimension*/3, coordiantes_FEValue, /*tolerance*/ 0.000001, nearby_vertex);
+		/*dimension*/3, coordinates_FEValue, /*tolerance*/ 0.000001, nearby_vertex);
 	if (0 == NUMBER_IN_LIST(Octree_object)(nearby_vertex))
 	{
-		vertex_in_set = new Triangle_vertex(coordinates);
+		vertex_in_set = new Triangle_vertex(coordinates_FEValue);
 		vertex_in_set->set_identifier(vertex_set.size()+1);
-		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordiantes_FEValue);
+		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordinates_FEValue);
 		Octree_object_set_user_data(octree_vertex, (void *)vertex_in_set);
 		Octree_add_object(octree, octree_vertex);
 		vertex_set.insert(vertex_in_set);
@@ -146,7 +145,7 @@ const Triangle_vertex *Triangle_mesh::add_vertex(const float *coordinates)
 	else
 	{
 		struct Octree_object *nearest_octree_object =
-			Octree_object_list_get_nearest(nearby_vertex, coordiantes_FEValue);
+			Octree_object_list_get_nearest(nearby_vertex, coordinates_FEValue);
 		REMOVE_ALL_OBJECTS_FROM_LIST(Octree_object)(nearby_vertex);
 		vertex_in_set = (Triangle_vertex *)Octree_object_get_user_data(nearest_octree_object);
 	}
@@ -171,7 +170,7 @@ const Mesh_triangle *Triangle_mesh::add_triangle(const Triangle_vertex *vertex1,
 void Triangle_mesh::add_quadrilateral(const Triangle_vertex *v1, const Triangle_vertex *v2,
 	const Triangle_vertex *v3, const Triangle_vertex *v4)
 {
-	float centre[3];
+	GLfloat centre[3];
 	centre[0] = 0.25*(v1->coordinates[0] + v2->coordinates[0] + v3->coordinates[0] + v4->coordinates[0]);
 	centre[1] = 0.25*(v1->coordinates[1] + v2->coordinates[1] + v3->coordinates[1] + v4->coordinates[1]);
 	centre[2] = 0.25*(v1->coordinates[2] + v2->coordinates[2] + v3->coordinates[2] + v4->coordinates[2]);

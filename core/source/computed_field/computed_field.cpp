@@ -145,20 +145,15 @@ like the number of components.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "api/cmiss_status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_composite.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "general/indexed_list_stl_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
-//-- }
 #include "computed_field/differential_operator.hpp"
 #include "computed_field/field_cache.hpp"
-//-- extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
@@ -175,7 +170,6 @@ like the number of components.
 #include "general/value.h"
 #include "region/cmiss_region_private.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>
 

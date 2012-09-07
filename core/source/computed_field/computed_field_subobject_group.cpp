@@ -38,7 +38,6 @@
 * the terms of any one of the MPL, the GPL or the LGPL.
 *
 * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <stdlib.h>
 #include "api/cmiss_element.h"
 #include "api/cmiss_node.h"
@@ -48,19 +47,16 @@
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
-//-- }
 
 #include "computed_field/computed_field_subobject_group_internal.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-//-- extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-//-- }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #if defined (USE_OPENCASCADE)

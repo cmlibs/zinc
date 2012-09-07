@@ -50,11 +50,9 @@ longjmp .
 #include <setjmp.h>
 
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include "general/error_handler.h"
-//-- }
 
 /*
 Global variables

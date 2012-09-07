@@ -51,7 +51,6 @@ which the macros are declared.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "general/any_object.h"
 #include "general/any_object_private.h"
 #include "general/compare.h"
@@ -59,7 +58,6 @@ which the macros are declared.
 #include "general/indexed_list_private.h"
 #include "general/object.h"
 #include "general/message.h"
-//-- }
 
 /*
 Global types

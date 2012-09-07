@@ -46,12 +46,10 @@ Structure describing an interactive event containing:
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/scene.h"
 #include "interaction/interactive_event.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

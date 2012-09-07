@@ -41,7 +41,7 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 #if defined (SELECT_DESCRIPTORS)
 #include <unistd.h>
@@ -343,7 +343,7 @@ between the start and end detection are assumed to belong to the <device>.
 						/* Only select sockets */
 						if ((-1 != fstat(i, &buffer)) &&
 							S_ISSOCK(buffer.st_mode))
-				      {
+						{
 							printf ("Adding Io_device callback %d flags 0%o\n", i, result);
 							if (!device->fdio_list)
 							{
@@ -356,7 +356,7 @@ between the start and end detection are assumed to belong to the <device>.
 							Fdio_set_read_callback(new_fdio,
 								Io_device_descriptor_callback,
 								(void *)device);
-				      }
+						}
 					}
 				}
 			}

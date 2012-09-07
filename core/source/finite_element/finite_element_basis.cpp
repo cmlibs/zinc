@@ -44,7 +44,6 @@
 
 #include <cstdio>
 #include <cmath>
-//-- extern "C" {
 #include "finite_element/finite_element_basis.h"
 #include "general/debug.h"
 #include "general/heapsort.h"
@@ -52,7 +51,6 @@
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

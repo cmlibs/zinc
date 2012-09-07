@@ -46,11 +46,9 @@
 #include <list>
 #include <stdio.h>
 #include <string.h>
-//-- extern "C" {
 #include "api/cmiss_stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-//-- }
 
 struct Cmiss_stream_memory_block
 {

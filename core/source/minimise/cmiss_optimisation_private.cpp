@@ -43,7 +43,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <cstdio>
-//-- extern "C" {
 	#include "api/cmiss_field.h"
 	#include "api/cmiss_region.h"
 	#include "computed_field/computed_field.h"
@@ -51,7 +50,6 @@
 	#include "computed_field/computed_field_finite_element.h"
 	#include "general/mystring.h"
 	#include "general/debug.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"

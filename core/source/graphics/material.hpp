@@ -53,7 +53,7 @@ Data for compiling materials specially for order independent transparency.
 ==============================================================================*/
 {
 	int layer;
-   Render_graphics_opengl *renderer;
+	Render_graphics_opengl *renderer;
 }; /* struct Material_order_independent_transparency */
 
 int Material_render_opengl(struct Graphical_material *material,

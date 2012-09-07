@@ -45,7 +45,6 @@ Renders gtObjects to Wavefront OBJ file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -53,12 +52,9 @@ Renders gtObjects to Wavefront OBJ file
 #include "graphics/material.h"
 #include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
-//-- }
 #include "graphics/scene.hpp"
-//-- extern "C" {
 #include "graphics/spectrum.h"
 #include "general/message.h"
-//-- }
 #include "graphics/graphics_object_private.hpp"
 
 
@@ -74,9 +70,9 @@ LAST MODIFIED : 8 July 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	float x;
-	float y;
-	float z;
+	ZnReal x;
+	ZnReal y;
+	ZnReal z;
 }; /* struct Wavefront_vertex_position */
 
 struct Wavefront_vertex
@@ -113,7 +109,7 @@ small tolerance and 1 if location_1 > location_2.  X is considered first, then
 Y and the Z.
 ==============================================================================*/
 {
-	const float tolerance = 1e-3;
+	const ZnReal tolerance = 1e-3f;
 	int return_code;
 
 	ENTER(compare_vertex_location);
@@ -166,7 +162,7 @@ Y and the Z.
 } /* compare_position */
 
 struct Wavefront_vertex *CREATE(Wavefront_vertex)
-	(int index, float x, float y, float z)
+	(int index, ZnReal x, ZnReal y, ZnReal z)
 /*******************************************************************************
 LAST MODIFIED : 7 July 1999
 
@@ -292,13 +288,13 @@ Writes Wavefront object file that defines the material
 } /* activate_material_wavefront */
 
 static int makewavefront(FILE *wavefront_file, int full_comments,
-	gtObject *object, float time);
+	gtObject *object, ZnReal time);
 
 int draw_glyph_set_wavefront(FILE *wavefront_file, int number_of_points,
 	Triple *point_list,Triple *axis1_list,
 	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
-	int number_of_data_components,GTDATA *data,struct Graphical_material *material,
-	struct Spectrum *spectrum,float time)
+	int number_of_data_components,GLfloat *data,struct Graphical_material *material,
+	struct Spectrum *spectrum,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 11 May 1999
 
@@ -308,7 +304,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 <axis1_list>, <axis2_list> and <axis3_list>. 
 ==============================================================================*/
 {
-	float transformation[16];
+	ZnReal transformation[16];
 	int i,return_code;
 	struct GT_object *transformed_object;
 	Triple *point,*axis1,*axis2,*axis3;
@@ -404,7 +400,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 
 static int draw_surface_wavefront(FILE *file, Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int npts1,int npts2, gtPolygonType polygon_type,
-	int number_of_data_components, GTDATA *data,
+	int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material, struct Spectrum *spectrum,
 	struct LIST(Wavefront_vertex) *vertex_list,
 	struct Graphical_material **current_material)
@@ -869,7 +865,7 @@ DESCRIPTION :
 } /* drawnurbsGL */
 
 static int makewavefront(FILE *wavefront_file, int full_comments,
-	gtObject *object, float time)
+	gtObject *object, ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
 
@@ -877,7 +873,7 @@ DESCRIPTION :
 Convert graphical object into Wavefront object file.
 ==============================================================================*/
 {
-	float proportion = 0.0,*times;
+	ZnReal proportion = 0.0,*times;
 	int itime, number_of_times, return_code;
 	struct Graphical_material *current_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -988,7 +984,7 @@ Convert graphical object into Wavefront object file.
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
 										object->default_material,object->spectrum,
-									   time);
+										time);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;

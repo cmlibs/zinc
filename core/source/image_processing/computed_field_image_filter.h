@@ -46,16 +46,12 @@ equivalent to the scene_viewer assigned to it.
 #if !defined (computed_field_image_filter_H)
 #define computed_field_image_filter_H
 
-//-- extern "C" {
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkImageRegionIteratorWithIndex.h"
@@ -149,7 +145,7 @@ public:
 	inline void assign_field_values( RealFieldValueCache& valueCache, PixelType pixel );
 
 	template < class PixelType >
-	inline void setPixelValues( PixelType& pixel, float *values );
+	inline void setPixelValues( PixelType& pixel, ZnReal *values );
 
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
@@ -227,25 +223,25 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 1 > >(filter);
+						< itk::Image< ZnReal, 1 > >(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 2>, 1 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 2>, 1 > >(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 3>, 1 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 3>, 1 > >(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 4>, 1 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 4>, 1 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -265,25 +261,25 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 2 > >(filter);
+						< itk::Image< ZnReal, 2 > >(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 2>, 2 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 2>, 2 > >(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 3>, 2 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 3>, 2 > >(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 4>, 2 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 4>, 2 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -303,25 +299,25 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 3 > >(filter);
+						< itk::Image< ZnReal, 3 > >(filter);
 					return_code = 1;
 				} break;
 				case 2:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 2>, 3 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 2>, 3 > >(filter);
 					return_code = 1;
 				} break;
 				case 3:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 3>, 3 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 3>, 3 > >(filter);
 					return_code = 1;
 				} break;
 				case 4:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< itk::Vector<float, 4>, 3 > >(filter);
+						< itk::Image< itk::Vector<ZnReal, 4>, 3 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -372,7 +368,7 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 1 > >(filter);
+						< itk::Image< ZnReal, 1 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -392,7 +388,7 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 2 > >(filter);
+						< itk::Image< ZnReal, 2 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -412,7 +408,7 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 3 > >(filter);
+						< itk::Image< ZnReal, 3 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -463,7 +459,7 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 2 > >(filter);
+						< itk::Image< ZnReal, 2 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -483,7 +479,7 @@ Evaluate the fields cache at the location
 				case 1:
 				{
 					functor = new ComputedFieldImageFunctor
-						< itk::Image< float, 3 > >(filter);
+						< itk::Image< ZnReal, 3 > >(filter);
 					return_code = 1;
 				} break;
 				default:
@@ -533,25 +529,25 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 1 > >(filter); \
+						< itk::Image< ZnReal, 1 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 2: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 2>, 1 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 2>, 1 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 3: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 3>, 1 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 3>, 1 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 4: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 4>, 1 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 4>, 1 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -571,25 +567,25 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 2 > >(filter); \
+						< itk::Image< ZnReal, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 2: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 2>, 2 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 2>, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 3: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 3>, 2 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 3>, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 4: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 4>, 2 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 4>, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -609,25 +605,25 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 3 > >(filter); \
+						< itk::Image< ZnReal, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 2: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 2>, 3 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 2>, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 3: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 3>, 3 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 3>, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				case 4: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< itk::Vector<float, 4>, 3 > >(filter); \
+						< itk::Image< itk::Vector<ZnReal, 4>, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -674,7 +670,7 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 1 > >(filter); \
+						< itk::Image< ZnReal, 1 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -694,7 +690,7 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 2 > >(filter); \
+						< itk::Image< ZnReal, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -714,7 +710,7 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 3 > >(filter); \
+						< itk::Image< ZnReal, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -763,7 +759,7 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 2 > >(filter); \
+						< itk::Image< ZnReal, 2 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -783,7 +779,7 @@ Evaluate the fields cache at the location \
 				case 1: \
 				{ \
 					functor = new ComputedFieldImageFunctor \
-						< itk::Image< float, 3 > >(filter); \
+						< itk::Image< ZnReal, 3 > >(filter); \
 					return_code = 1; \
 				} break; \
 				default: \
@@ -811,20 +807,20 @@ Evaluate the fields cache at the location \
 #endif /* ! defined (DONOTUSE_TEMPLATETEMPLATES) */
 
 template < >
-inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, float pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, ZnReal pixel )
 {
 	valueCache.values[0] = pixel;
 }
 
 template < >
-inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 2 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< ZnReal, 2 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
 }
 
 template < >
-inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 3 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< ZnReal, 3 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
@@ -832,7 +828,7 @@ inline void computed_field_image_filter::assign_field_values( RealFieldValueCach
 }
 
 template < >
-inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< float, 4 > pixel )
+inline void computed_field_image_filter::assign_field_values( RealFieldValueCache& valueCache, itk::Vector< ZnReal, 4 > pixel )
 {
 	valueCache.values[0] = pixel[0];
 	valueCache.values[1] = pixel[1];
@@ -953,20 +949,20 @@ location.
 };
 
 template < >
-inline void computed_field_image_filter::setPixelValues( float& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( ZnReal& pixel, ZnReal *values )
 {
 	pixel = values[0];
 }
 
 template < >
-inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 2 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< ZnReal, 2 >& pixel, ZnReal *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
 }
 
 template < >
-inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 3 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< ZnReal, 3 >& pixel, ZnReal *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
@@ -974,7 +970,7 @@ inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 3 >
 }
 
 template < >
-inline void computed_field_image_filter::setPixelValues( itk::Vector< float, 4 >& pixel, float *values )
+inline void computed_field_image_filter::setPixelValues( itk::Vector< ZnReal, 4 >& pixel, ZnReal *values )
 {
 	pixel[0] = values[0];
 	pixel[1] = values[1];
@@ -1074,7 +1070,7 @@ for subsequent operations.
 						/* Find element xi for idx, assuming xi field for now. */
 						for (i = 0 ; i < dimension ; i++)
 						{
-							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+							pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 						}
 
 						field_cache->setMeshLocation(element, pixel_xi);
@@ -1107,7 +1103,7 @@ for subsequent operations.
 						/* Find element xi for idx, assuming xi field for now. */
 						for (i = 0 ; i < dimension ; i++)
 						{
-							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+							pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 						}
 
 						field_cache->setFieldReal(reference_field, dimension, pixel_xi);
@@ -1158,11 +1154,11 @@ for subsequent operations.
 				typename ImageType::PixelType * localBuffer =
 					new typename ImageType::PixelType[ totalSize ];
 			
-				float pixel_xi[3];
+				ZnReal pixel_xi[3];
 				
 				for (i = 0 ; i < dimension ; i++)
 				{
-					pixel_xi[i] = 0.5 / (float)sizes[i];
+					pixel_xi[i] = 0.5 / (ZnReal)sizes[i];
 				}
 				for ( ; i < 3 ; i++)
 				{
@@ -1185,7 +1181,7 @@ for subsequent operations.
 					/* Find element xi for idx, assuming xi field for now. */
 					for (i = 0 ; i < dimension ; i++)
 					{
-						pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 					}
 					while (count < totalSize)
 					{
@@ -1201,13 +1197,13 @@ for subsequent operations.
 						buffer_ptr++;
 						count++;
 						idx[0]++;
-						pixel_xi[0] = ((float)idx[0] + 0.5) / (float)sizes[0];
+						pixel_xi[0] = ((ZnReal)idx[0] + 0.5) / (ZnReal)sizes[0];
 						for (i = 1 ; (i < dimension) && (idx[i-1] >= sizes[i-1]) ; i++)
 						{
 							idx[i-1] = 0;
-							pixel_xi[i-1] = ((float)idx[i-1] + 0.5) / (float)sizes[i-1];
+							pixel_xi[i-1] = ((ZnReal)idx[i-1] + 0.5) / (ZnReal)sizes[i-1];
 							idx[i]++;
-							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+							pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 						}
 					}
 				}
@@ -1224,7 +1220,7 @@ for subsequent operations.
 					/* Find element xi for idx, assuming xi field for now. */
 					for (i = 0 ; i < dimension ; i++)
 					{
-						pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 					}
 					while (count < totalSize)
 					{
@@ -1239,13 +1235,13 @@ for subsequent operations.
 						buffer_ptr++;
 						count++;
 						idx[0]++;
-						pixel_xi[0] = ((float)idx[0] + 0.5) / (float)sizes[0];
+						pixel_xi[0] = ((ZnReal)idx[0] + 0.5) / (ZnReal)sizes[0];
 						for (i = 1 ; (i < dimension) && (idx[i-1] >= sizes[i-1]) ; i++)
 						{
 							idx[i-1] = 0;
-							pixel_xi[i-1] = ((float)idx[i-1] + 0.5) / (float)sizes[i-1];
+							pixel_xi[i-1] = ((ZnReal)idx[i-1] + 0.5) / (ZnReal)sizes[i-1];
 							idx[i]++;
-							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+							pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 						}
 					}
 

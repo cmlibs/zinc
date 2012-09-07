@@ -45,15 +45,13 @@ and Texture_tiling boundaries.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
-//-- extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
 #include "graphics/tile_graphics_objects.h"
-//-- }
 #include "graphics/graphics_object_private.hpp"
 
-const float small_tolerance = 1e-5;
+const GLfloat small_tolerance = 1e-5f;
 
 static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_surface,
 	int size, int tile_number, int polygon_size)
@@ -119,7 +117,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		}
 		if (original_surface->data)
 		{
-			if (!ALLOCATE(current_surface->data, GTDATA,
+			if (!ALLOCATE(current_surface->data, GLfloat,
 					original_surface->n_data_components * size))
 			{
 				return_code = 0;
@@ -127,7 +125,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		}
 		else
 		{
-			current_surface->data = (GTDATA *)NULL;
+			current_surface->data = 0;
 		}
 		if (return_code)
 		{
@@ -135,7 +133,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		}
 		else
 		{
-			current_surface = (struct GT_surface *)NULL;
+			current_surface = 0;
 		}
 	}
 	else
@@ -179,7 +177,7 @@ static int tile_reallocate_GT_surface(struct GT_surface *surface,
 	}
 	if (surface->data)
 	{
-		if (!REALLOCATE(surface->data, surface->data, GTDATA,
+		if (!REALLOCATE(surface->data, surface->data, GLfloat,
 				surface->n_data_components * size))
 		{
 			return_code = 0;
@@ -199,12 +197,12 @@ static int tile_reallocate_GT_surface(struct GT_surface *surface,
 static int tile_interpolate_triangle(struct GT_surface *new_surface,
 	int index_new, struct GT_surface *surface, int index,
 	int vertexstart, int vertexi, int vertexj,
-	float xi0, float xii, float xij, int stepindex)
+	GLfloat xi0, GLfloat xii, GLfloat xij, int stepindex)
 {
 	int k2, return_code;
 	Triple *texturetri, *newtexturetri, *pointtri, *newpointtri,
 		*normaltri, *newnormaltri, *tangenttri, *newtangenttri;
-	GTDATA *datatri, *newdatatri;
+	GLfloat *datatri, *newdatatri;
 
 	return_code = 1;
 	if (index_new + 2 >= new_surface->allocated_size)
@@ -355,12 +353,12 @@ static int tile_interpolate_triangle(struct GT_surface *new_surface,
 static int tile_interpolate_quad(struct GT_surface *new_surface,
 	int index_new, struct GT_surface *surface, int index,
 	int vertexstart, int vertexi, int vertexj, int vertexk,
-	float xi0, float xi)
+	GLfloat xi0, GLfloat xi)
 {
 	int k2, return_code;
 	Triple *texturetri, *newtexturetri, *pointtri, *newpointtri,
 		*normaltri, *newnormaltri, *tangenttri, *newtangenttri;
-	GTDATA *datatri, *newdatatri;
+	GLfloat *datatri, *newdatatri;
 
 	return_code = 1;
 	if (index_new + 2 >= new_surface->allocated_size)
@@ -483,7 +481,7 @@ static int tile_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 	struct Texture_tiling *texture_tiling)
 {
 	int npts1 = surface->n_pts1;
-	float overlap_range, texture_offset, texture_scaling;
+	GLfloat overlap_range, texture_offset, texture_scaling;
 	Triple *texturepoints = surface->texturelist;
 	int k, texture_tile;
 
@@ -521,9 +519,9 @@ static int tile_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 	{
 		if (k < 0)
 		{
-			overlap_range = 2.0 * (float)texture_tiling->overlap * 
+			overlap_range = 2.0 * (GLfloat)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[k] /
-				(float)texture_tiling->tile_size[k];
+				(GLfloat)texture_tiling->tile_size[k];
 			texture_tile = (int)floor((texturepoints[i+npts1*j][k]) /
 				(texture_tiling->tile_coordinate_range[k] - overlap_range));
 			/* Need to handle the boundaries specially */
@@ -648,7 +646,7 @@ static int tile_copy_polygon(struct GT_surface *new_surface,
 	int i, k2;
 	Triple *texturetri, *newtexturetri, *pointtri, *newpointtri,
 		*normaltri, *newnormaltri, *tangenttri, *newtangenttri;
-	GTDATA *datatri, *newdatatri;
+	GLfloat *datatri, *newdatatri;
 
 	int local_index, local_index_new;
 
@@ -756,7 +754,7 @@ static struct GT_surface *tile_create_or_get_tile_bin(
 static int scale_texture_coordinates(struct GT_surface *surface,
 	struct Texture_tiling *texture_tiling)
 {
-	float overlap_range, texture_average, texture_offset, texture_scaling;
+	GLfloat overlap_range, texture_average, texture_offset, texture_scaling;
 	int i, j, k, texture_tile;
 	Triple *texturepoints = surface->texturelist;
 
@@ -773,10 +771,10 @@ static int scale_texture_coordinates(struct GT_surface *surface,
 			{
 				texture_average += texturepoints[j][k];
 			}
-			texture_average /= (float)surface->n_pts2;
-			overlap_range = 2.0 * (float)texture_tiling->overlap * 
+			texture_average /= (GLfloat)surface->n_pts2;
+			overlap_range = 2.0 * (GLfloat)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[k] /
-				(float)texture_tiling->tile_size[k];
+				(GLfloat)texture_tiling->tile_size[k];
 			texture_tile = (int)floor((texture_average) /
 				(texture_tiling->tile_coordinate_range[k] - overlap_range));
 
@@ -791,12 +789,12 @@ static int scale_texture_coordinates(struct GT_surface *surface,
 			{
 				texturepoints[j][k] = (texturepoints[j][k] - texture_offset)
 					* texture_scaling;
-				float texture_min = 0.0;		
+				GLfloat texture_min = 0.0;		
 				if (texturepoints[j][k] < texture_min + small_tolerance)
 				{
 					texturepoints[j][k] = texture_min;
 				}
-				float texture_max = texture_scaling * (texture_tiling->tile_coordinate_range[k]);
+				GLfloat texture_max = texture_scaling * (texture_tiling->tile_coordinate_range[k]);
 				if (texturepoints[j][k] > texture_max - small_tolerance)
 				{
 					texturepoints[j][k] = texture_max - small_tolerance;
@@ -988,14 +986,14 @@ static int tile_select_tile_bin(Triple texture_point,
  */
 static int tile_and_bin_GT_surface_quads(struct GT_surface *surface, 
 	struct Texture_tiling *texture_tiling, struct GT_surface **quad_tiles,
-	float *overlap_range, int size, int number_of_tiles)
+	GLfloat *overlap_range, int size, int number_of_tiles)
 {
-	float nextcut, xi0, xi;
+	GLfloat nextcut, xi0, xi;
 	int finished, index, k, l, index_new, return_code, 
 		vertex1, vertexstart, vertexi, vertexj, othervertex;
 	struct GT_surface *current_surface, *new_surface;
 	Triple texture_centre, *texturetri;
-	float vertexk[4];
+	GLfloat vertexk[4];
 
 	ENTER(tile_GT_surface);
 
@@ -1217,9 +1215,9 @@ static int tile_and_bin_GT_surface_quads(struct GT_surface *surface,
 static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface, 
 	struct Texture_tiling *texture_tiling,
 	struct GT_surface **triangle_tiles,
-	float *overlap_range, int size, int number_of_tiles)
+	GLfloat *overlap_range, int size, int number_of_tiles)
 {
-	float nextcuti, nextcutj, xi0, xii, xij;
+	GLfloat nextcuti, nextcutj, xi0, xii, xij;
 	int finished, index, k, l, index_new, return_code, stepindex, 
 		vertex1, vertexstart, vertexi, vertexj;
 	struct GT_surface *current_surface, *new_surface;
@@ -1336,7 +1334,7 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 						}
 	
 #if defined (DEBUG_CODE)
-						float lastcut;
+						GLfloat lastcut;
 						if (stepindex == 0)
 						{
 							lastcut = vertexk[vertexstart] +
@@ -1536,7 +1534,7 @@ static int write_GT_surface(struct GT_surface *surface)
 		Triple *normal = current_surface->normallist;
 		Triple *tangent = current_surface->tangentlist;
 		Triple *texture = current_surface->texturelist;
-		GTDATA *data = current_surface->data;
+		GLfloat *data = current_surface->data;
 		for (i = 0 ; i < current_surface->n_pts1 ; i++)
 		{
 			for (j = 0 ; j < current_surface->n_pts2 ; j++)
@@ -1625,22 +1623,22 @@ tiles.
 		npts1 = surface->n_pts1;
 		npts2 = surface->n_pts2;
 		number_of_tiles = texture_tiling->texture_tiles[0];
-		overlap_range[0] = 2.0 * (float)texture_tiling->overlap * 
+		overlap_range[0] = 2.0 * (GLfloat)texture_tiling->overlap * 
 			texture_tiling->tile_coordinate_range[0] /
-			(float)texture_tiling->tile_size[0];
+			(GLfloat)texture_tiling->tile_size[0];
 		if (texture_tiling->dimension > 1)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[1];
-			overlap_range[1] = 2.0 * (float)texture_tiling->overlap * 
+			overlap_range[1] = 2.0 * (GLfloat)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[1] /
-				(float)texture_tiling->tile_size[1];
+				(GLfloat)texture_tiling->tile_size[1];
 		}
 		if (texture_tiling->dimension > 2)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[2];
-			overlap_range[2] = 2.0 * (float)texture_tiling->overlap * 
+			overlap_range[2] = 2.0 * (GLfloat)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[2] /
-				(float)texture_tiling->tile_size[2];
+				(GLfloat)texture_tiling->tile_size[2];
 		}
 		ALLOCATE(surface_tiles, struct GT_surface *, number_of_tiles);
 		for (i = 0 ; i < number_of_tiles ; i++)

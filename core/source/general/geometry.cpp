@@ -46,13 +46,11 @@ Functions for performing coordinate transformations.
 #include <stdio.h>
 #include <string.h>
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 #if defined (OLD_CODE)
 /*
@@ -590,8 +588,8 @@ coordinates.
 	if (k>0)
 	{
 		k=1/sqrt(k);
-		*x=(float)(-k*a2*sin(a3));
-		*y=(float)(k*sin(a1));
+		*x=(ZnReal)(-k*a2*sin(a3));
+		*y=(ZnReal)(k*sin(a1));
 		return_code=1;
 	}
 	else

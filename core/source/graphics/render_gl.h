@@ -40,9 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 #if !defined (RENDERGL_HPP)
 #define RENDERGL_HPP
-//-- extern "C" {
 #include "graphics/graphics_object.h"
-//-- }
 #include "graphics/render.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 

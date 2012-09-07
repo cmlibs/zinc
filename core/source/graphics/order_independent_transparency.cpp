@@ -56,16 +56,13 @@ HISTORY :
 #include <stdio.h>
 #include <stdlib.h>
 
-//-- extern "C" {
 #include "general/debug.h"
+#include "general/message.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
-#include "general/message.h"
-//-- }
 #include "graphics/material.hpp"
-#include "graphics/scene_viewer.hpp"
 
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
@@ -122,7 +119,7 @@ The private user data for this order independent transparency rendering pass.
 	struct Scene_viewer *scene_viewer;
 };
 
-static void set_texgen_planes(GLenum plane_type, float matrix[16])
+static void set_texgen_planes(GLenum plane_type, GLfloat matrix[16])
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -142,7 +139,7 @@ the planes in the <matrix>.
 	LEAVE;
 } /* set_texgen_planes */
 
-void eye_linear_texgen(float matrix[16])
+void eye_linear_texgen(GLfloat matrix[16])
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -162,7 +159,7 @@ the planes in the <matrix>.
 	LEAVE;
 } /* eye_linear_texgen */
 
-void obj_linear_texgen(float matrix[16])
+void obj_linear_texgen(GLfloat matrix[16])
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -257,110 +254,16 @@ DESCRIPTION :
 Draws one peeled layer of the scene.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
-#define MAX_PROGRAM (20000)
-	char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
- 	const GLubyte *error_msg;
-	static GLuint vertex_program = 0, fragment_program = 0;
-#endif /* defined (OLD_CODE) */
-
 	ENTER(render_scene_from_camera_view);
 	USE_PARAMETER(modelview_matrix);
 	USE_PARAMETER(projection_matrix);
 
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-
-#if defined (OLD_CODE)
-	{
-		FILE *program_file;
-		int count;
-		char *vertex_program_filename, first_peel_vertex[] = "first_peel.vp",
-			peel_vertex[] = "peel.vp";
-		char *fragment_program_filename, first_peel_fragment[] = "first_peel.fp",
-			peel_fragment[] = "peel.fp";
-		
-		if (layer > 0)
-		{
-			vertex_program_filename = peel_vertex;
-			fragment_program_filename = peel_fragment;
-		}
-		else
-		{
-			vertex_program_filename = first_peel_vertex;
-			fragment_program_filename = first_peel_fragment;
-		}
-
-		if (program_file = fopen(vertex_program_filename, "r"))
-		{
-			count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
-			vertex_program_string[count] = 0;
-			if (count > MAX_PROGRAM - 2)
-			{
-				display_message(ERROR_MESSAGE, "Material_program_compile.  "
-					"Short read on test.vp, need to increase MAX_PROGRAM.");
-			}
-			fclose (program_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Material_program_compile.  "
-				"Unable to open file test.vp.");
-		}
-
-		if (program_file = fopen(fragment_program_filename, "r"))
-		{
-			count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
-			fragment_program_string[count] = 0;
-			if (count > MAX_PROGRAM - 2)
-			{
-				display_message(ERROR_MESSAGE, "Material_program_compile.  "
-					"Short read on test.fp, need to increase MAX_PROGRAM.");
-			}
-			fclose (program_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Material_program_compile.  "
-				"Unable to open file test.fp.");
-		}
-	}
-
-	if (!vertex_program)
-	{
-		glGenProgramsARB(1, &vertex_program);
-	}
-		
-	glBindProgramARB(GL_VERTEX_PROGRAM_ARB, vertex_program);
-	glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-		strlen(vertex_program_string), vertex_program_string);
-	error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-
-	
-	if (!fragment_program)
-	{
-		glGenProgramsARB(1, &fragment_program);
-	}
-	
-	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, fragment_program);
-	glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-		strlen(fragment_program_string), fragment_program_string);
-	error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-	
-	glEnable(GL_VERTEX_PROGRAM_ARB);
-	glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-		vertex_program);
-
-	
-	glEnable(GL_FRAGMENT_PROGRAM_ARB);
-	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-		fragment_program);
-
-#endif /* defined (OLD_CODE) */
 	if ((Graphics_library_check_extension(GL_ARB_fragment_program)))
 	{
 		 glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-				data->viewport_width, data->viewport_height, 1.0, 1.0);
+				static_cast<GLfloat>(data->viewport_width), static_cast<GLfloat>(data->viewport_height), 1.0, 1.0);
 	}
 	if(layer > 0)
 	{
@@ -532,12 +435,12 @@ Draw a textured quad for each layer and blend them all together correctly.
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0);
 		glVertex2f(0, 0);
-		glTexCoord2f(0, data->viewport_height);
-		glVertex2f(0, data->viewport_height);
-		glTexCoord2f(data->viewport_width, data->viewport_height);
-		glVertex2f(data->viewport_width, data->viewport_height);
-		glTexCoord2f(data->viewport_width, 0);
-		glVertex2f(data->viewport_width, 0);
+		glTexCoord2f(0, static_cast<GLfloat>(data->viewport_height));
+		glVertex2f(0, static_cast<GLfloat>(data->viewport_height));
+		glTexCoord2f(static_cast<GLfloat>(data->viewport_width), static_cast<GLfloat>(data->viewport_height));
+		glVertex2f(static_cast<GLfloat>(data->viewport_width), static_cast<GLfloat>(data->viewport_height));
+		glTexCoord2f(static_cast<GLfloat>(data->viewport_width), 0);
+		glVertex2f(static_cast<GLfloat>(data->viewport_width), 0);
 		glEnd();
 	}
 

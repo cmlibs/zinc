@@ -119,7 +119,11 @@ DESCRIPTION :
 Frees the memory for the light model and sets <*light_model_address> to NULL.
 ==============================================================================*/
 
-PROTOTYPE_OBJECT_FUNCTIONS(Light_model);
+//PROTOTYPE_OBJECT_FUNCTIONS(Light_model);
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(Light_model);
+ZINC_API PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Light_model);
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Light_model);
+
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Light_model);
 
 PROTOTYPE_LIST_FUNCTIONS(Light_model);

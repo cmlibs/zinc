@@ -51,23 +51,17 @@ can be used in three different ways.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include "computed_field/computed_field.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
-//-- }
 /* cannot use enumerator_private.h with c++ compiler, use cpp version instead
 	eventually should replace enumerator macros with a template */ 
 #include "general/enumerator_private.hpp"  
-//-- extern "C" {
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_threshold_image_filter.h"
-//-- }
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkThresholdImageFilter.h"

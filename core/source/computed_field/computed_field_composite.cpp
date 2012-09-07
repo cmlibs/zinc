@@ -42,19 +42,15 @@ and real values in any order into a single vector field.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-//-- extern "C" {
 #include <stdlib.h>
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
-//-- }
 #include "computed_field/computed_field_private.hpp"
-//-- extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

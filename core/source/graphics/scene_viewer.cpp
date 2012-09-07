@@ -55,7 +55,6 @@ November 97 Created from rendering part of Drawing.
 #include <cmath>
 #include <cstdio>
 #include <map>
-//-- extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 //#include "api/cmiss_graphic.h"
@@ -65,10 +64,8 @@ November 97 Created from rendering part of Drawing.
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
-//-- }
 //#include "computed_field/field_module.hpp"
 #include "general/enumerator_private.hpp"
-//-- extern "C" {
 #include "general/geometry.h"
 #include "general/image_utilities.h"
 #include "general/list.h"
@@ -85,13 +82,11 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
-#include "three_d_drawing/graphics_buffer.h"
+#include "three_d_drawing/abstract_graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
 #include "interaction/interactive_event.h"
-//-- }
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
-#include "graphics/scene_viewer.hpp"
 
 #define USE_LAYERZ
 #if defined (USE_LAYERZ)
@@ -264,7 +259,7 @@ DESCRIPTION :
 	struct MANAGER(Scene) *scene_manager;
 	void *scene_manager_callback_id;
 	/* For interpreting mouse events */
-        enum Scene_viewer_interact_mode interact_mode;
+	enum Scene_viewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
 	int previous_pointer_x, previous_pointer_y;
 	/* interaction */
@@ -272,7 +267,7 @@ DESCRIPTION :
 		 owning it to clear it if it is destroyed. This is usually ensured by having
 		 a tool chooser in the parent dialog */
 	struct Interactive_tool *interactive_tool;
- 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	/* kept tumble axis and angle for spinning scene viewer */
 	double tumble_axis[3], tumble_angle;
 	int tumble_active;
@@ -327,8 +322,8 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	int return_code = 1;
 	if (scene_viewer)
 	{
-		double viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		double viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		double viewport_width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		double viewport_height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		switch (coordinate_system)
 		{
 			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
@@ -621,11 +616,11 @@ LAST MODIFIED : 11 February 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	double corner_x[4],corner_y[4],corr_x1,corr_x2,corr_y1,corr_y2,
+	ZnReal corner_x[4],corner_y[4],corr_x1,corr_x2,corr_y1,corr_y2,
 		distortion_centre_x,distortion_centre_y,distortion_factor_k1,
 		dist_x,dist_y1,dist_y2,min_x,max_x,min_y,max_y,tex_ratio_x,tex_ratio_y,
 		viewport_texture_height,viewport_texture_width;
-	float centre_x,centre_y,factor_k1,texture_width,texture_height,texture_depth;
+	ZnReal centre_x,centre_y,factor_k1,texture_width,texture_height,texture_depth;
 	GLdouble viewport_left,viewport_right,viewport_bottom,viewport_top;
 	int depth_texels, height_texels,i,j,k,min_i,max_i,min_j,max_j,return_code,
 		texels_per_polygon_x,texels_per_polygon_y,width_texels;
@@ -645,11 +640,11 @@ DESCRIPTION :
 			 We want them in terms of user viewport coordinates */
 		Texture_get_distortion_info(scene_viewer->image_texture.texture,
 			&centre_x,&centre_y,&factor_k1);
-		distortion_centre_x=(double)centre_x;
-		distortion_centre_y=(double)centre_y;
+		distortion_centre_x=centre_x;
+		distortion_centre_y=centre_y;
 		if (scene_viewer->bk_texture_undistort_on)
 		{
-			distortion_factor_k1=(double)factor_k1;
+			distortion_factor_k1=factor_k1;
 		}
 		else
 		{
@@ -1706,24 +1701,24 @@ Render the scene multiple times perturbing the viewing frustrum to antialias
 the entire scene.
 ==============================================================================*/
 {
-	double pixel_offset_x = 0.0, pixel_offset_y = 0.0;
+	ZnReal pixel_offset_x = 0.0, pixel_offset_y = 0.0;
 	GLdouble temp_matrix[16];
 	int accumulation_count, antialias, return_code;
 	GLint framebuffer_flag = 0;
 
-	float j2[2][2]=
+	ZnReal j2[2][2]=
 		{
 			{0.25,0.75},
 			{0.75,0.25}
 		};
-	float j4[4][2]=
+	ZnReal j4[4][2]=
 		{
 			{0.375,0.25},
 			{0.125,0.75},
 			{0.875,0.25},
 			{0.625,0.75}
 		};
-	float j8[8][2]=
+	ZnReal j8[8][2]=
 		{
 			{0.5625,0.4375},
 			{0.0625,0.9375},
@@ -1828,11 +1823,11 @@ the entire scene.
 			{	
 				if (0==accumulation_count)
 				{
-					glAccum(GL_LOAD,1.0f/((GLfloat)antialias));
+					glAccum(GL_LOAD,1.0f/((ZnReal)antialias));
 				}
 				else
 				{
-					glAccum(GL_ACCUM,1.0f/((GLfloat)antialias));
+					glAccum(GL_ACCUM,1.0f/((ZnReal)antialias));
 				}
 			
 			} /* for (antialias_count) */
@@ -1868,7 +1863,7 @@ depth of field effect.
 	GLdouble temp_matrix[16];
 	int accumulation_count, return_code;
 	GLint framebuffer_flag = 0;
-	float j8[8][2]=
+	GLfloat j8[8][2]=
 		{
 			{0.5625,0.4375},
 			{0.0625,0.9375},
@@ -2222,10 +2217,10 @@ access this function.
 		return_code=1;
 		if ((!left) && (!bottom) && (!right) && (!top))
 		{
-			rendering_data.viewport_left = Graphics_buffer_get_origin_x(scene_viewer->graphics_buffer);
-			rendering_data.viewport_bottom = Graphics_buffer_get_origin_y(scene_viewer->graphics_buffer);
-			rendering_data.viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			rendering_data.viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			rendering_data.viewport_left = scene_viewer->graphics_buffer->get_origin_x();//-- Graphics_buffer_get_origin_x(scene_viewer->graphics_buffer);
+			rendering_data.viewport_bottom = scene_viewer->graphics_buffer->get_origin_y();//-- Graphics_buffer_get_origin_y(scene_viewer->graphics_buffer);
+			rendering_data.viewport_width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			rendering_data.viewport_height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		}
 		else
 		{
@@ -2268,7 +2263,7 @@ access this function.
 		/* only redraw if the drawing widget has area and neither it nor any of its
 			 parents are unmanaged */
 		do_render=(0<rendering_data.viewport_width)&&(0<rendering_data.viewport_height)&&
-			Graphics_buffer_is_visible(scene_viewer->graphics_buffer);
+			scene_viewer->graphics_buffer->is_visible();//--Graphics_buffer_is_visible(scene_viewer->graphics_buffer);
 		if (do_render)
 		{
 			/* Calculate the transformations before doing the callback list */
@@ -2875,7 +2870,7 @@ DESCRIPTION :
 	ENTER(Scene_viewer_initialise_callback);
 	if (graphics_buffer != 0)
 	{
-		Graphics_buffer_make_current(graphics_buffer);
+		graphics_buffer->make_current();//-- Graphics_buffer_make_current(graphics_buffer);
 		/* initialise graphics library to load XFont */
 		initialize_graphics_library();
 	}
@@ -3172,7 +3167,7 @@ Converts mouse button-press and motion events into viewing transformations in
 		{
 			case GRAPHICS_BUFFER_BUTTON_PRESS:
 			{
-				Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+				scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 				pointer_x=input->position_x;
 				pointer_y=input->position_y;
 				/* printf("button %d press at %d %d\n",input->button,
@@ -3271,8 +3266,8 @@ Converts mouse button-press and motion events into viewing transformations in
 								As the distance from line you drag along to the centre of the
 								window increases, the tumbling increasingly turns to twisting
 								about the view direction. */
-							width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-							height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+							width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+							height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
  							if ((0<width)&&(0<height))
 							{
 								/* get the radius of the ball */
@@ -3420,11 +3415,11 @@ Converts mouse button-press and motion events into viewing transformations in
 					{
 						display_message(ERROR_MESSAGE,
 							"Scene_viewer_input_transform.  Cannot add idle update callback");
-						//scene_viewer->idle_update_callback_id = 
-						//	Event_dispatcher_add_idle_callback(
-						//		User_interface_get_event_dispatcher(scene_viewer->user_interface),
-						//		Scene_viewer_idle_update_callback, (void *)scene_viewer,
-						//		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+						//-- scene_viewer->idle_update_callback_id = 
+						//-- 	Event_dispatcher_add_idle_callback(
+						//-- 		User_interface_get_event_dispatcher(scene_viewer->user_interface),
+						//-- 		Scene_viewer_idle_update_callback, (void *)scene_viewer,
+						//-- 		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 					}
 				}
 #if defined (DEBUG_CODE)
@@ -3494,7 +3489,7 @@ transformations.
 		{
 			case GRAPHICS_BUFFER_BUTTON_PRESS:
 			{
-				Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+				scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 				pointer_x=input->position_x;
 				pointer_y=input->position_y;
 				switch (input->button_number)
@@ -3636,7 +3631,7 @@ returned to the scene.
 	USE_PARAMETER(dummy_void);
 	if (scene_viewer)
 	{
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		switch (scene_viewer->input_mode)
 		{
 			case SCENE_VIEWER_NO_INPUT_OR_DRAW:
@@ -3982,8 +3977,8 @@ Creates a Cmiss_scene_viewer_package.
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 
 	ENTER(CREATE(Scene_viewer_package));
-	if (graphics_buffer_package&&background_colour&&default_light_model&&scene&&
-		user_interface&&graphics_buffer_package&&interactive_tool_manager)
+	if (graphics_buffer_package && background_colour && default_light_model && 
+		scene && user_interface )//-- && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(scene_viewer_package,struct Cmiss_scene_viewer_package,1))
@@ -4259,18 +4254,19 @@ of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
 ==============================================================================*/
 {
- 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
- 	enum Scene_viewer_buffering_mode buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
+	enum Scene_viewer_buffering_mode buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
 	enum Scene_viewer_stereo_mode stereo_mode;
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(CREATE(Scene_viewer));
 	if (graphics_buffer&&background_colour&&default_light_model&&scene&&
-		user_interface&&Graphics_buffer_get_buffering_mode(graphics_buffer,
-		&graphics_buffer_buffering_mode)&&Graphics_buffer_get_stereo_mode(
-		graphics_buffer,&graphics_buffer_stereo_mode))
+		user_interface&&graphics_buffer->get_buffering_mode(&graphics_buffer_buffering_mode)//-- Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode)
+		&& graphics_buffer->get_stereo_mode(&graphics_buffer_stereo_mode))
+		//-- Graphics_buffer_get_stereo_mode(
+		//-- graphics_buffer,&graphics_buffer_stereo_mode))
 	{
 		return_code=1;
 		switch(graphics_buffer_buffering_mode)
@@ -4314,7 +4310,7 @@ performed in idle time so that multiple redraws are avoided.
 			if (scene_viewer &&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
-				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
+				scene_viewer->graphics_buffer=graphics_buffer->access();//-- ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
@@ -4382,8 +4378,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
 				/* Currently only set when created from a Cmiss_scene_viewer_package
 					to avoid changing the interface */
-				scene_viewer->interactive_tool_manager=
-					(struct MANAGER(Interactive_tool) *)NULL;
+				scene_viewer->interactive_tool_manager = 0;
 				scene_viewer->order_independent_transparency_data = 
 					(struct Scene_viewer_order_independent_transparency_data *)NULL;
 
@@ -4463,18 +4458,21 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->frame_count = 0;
 				
 				/* add callbacks to the graphics buffer */
-				Graphics_buffer_add_initialise_callback(graphics_buffer,
-					Scene_viewer_initialise_callback, scene_viewer);
-				Graphics_buffer_add_resize_callback(graphics_buffer,
-					Scene_viewer_resize_callback, scene_viewer);
-				Graphics_buffer_add_expose_callback(graphics_buffer,
-					Scene_viewer_expose_callback, scene_viewer);
-
-				Graphics_buffer_add_input_callback(graphics_buffer,
-					Scene_viewer_graphics_buffer_input_callback, scene_viewer);
+				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
+				//-- 	Scene_viewer_initialise_callback, scene_viewer);
+				//-- Graphics_buffer_add_resize_callback(graphics_buffer,
+				//-- 	Scene_viewer_resize_callback, scene_viewer);
+				//-- Graphics_buffer_add_expose_callback(graphics_buffer,
+				//-- 	Scene_viewer_expose_callback, scene_viewer);
+				//-- Graphics_buffer_add_input_callback(graphics_buffer,
+				//-- 	Scene_viewer_graphics_buffer_input_callback, scene_viewer);
+				graphics_buffer->add_initialise_callback(Scene_viewer_initialise_callback, scene_viewer);
+				graphics_buffer->add_resize_callback(Scene_viewer_resize_callback, scene_viewer);
+				graphics_buffer->add_expose_callback(Scene_viewer_expose_callback, scene_viewer);
+				graphics_buffer->add_input_callback(Scene_viewer_graphics_buffer_input_callback, scene_viewer);
 
 				Scene_viewer_awaken(scene_viewer);
-				Graphics_buffer_awaken(scene_viewer->graphics_buffer);
+				scene_viewer->graphics_buffer->buffer_awaken();//-- Graphics_buffer_awaken(scene_viewer->graphics_buffer);
 			}
 			else
 			{
@@ -4557,7 +4555,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		//--}
 
 		/* must destroy the widget */
-		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
+		scene_viewer->graphics_buffer->deaccess();//-- DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);
 		if (scene_viewer->pixel_data)
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
@@ -4635,17 +4633,20 @@ DESCRIPTION :
 		//--Scene_viewer_set_interactive_tool(scene_viewer,
 		//--	FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)
 		//--	("transform_tool", new_interactive_tool_manager));
-		scene_viewer->interactive_tool_manager = new_interactive_tool_manager;
+		if (scene_viewer)
+		{
+			scene_viewer->interactive_tool_manager = new_interactive_tool_manager;
 
-		/* Add this scene_viewer to the package list */
-		ADD_OBJECT_TO_LIST(Scene_viewer)(scene_viewer,
-			cmiss_scene_viewer_package->scene_viewer_list);
+			/* Add this scene_viewer to the package list */
+			ADD_OBJECT_TO_LIST(Scene_viewer)(scene_viewer,
+				cmiss_scene_viewer_package->scene_viewer_list);
 
-		/* Register a callback so that if the scene_viewer is destroyed
-			then it is removed from the list */
-		Scene_viewer_add_destroy_callback(scene_viewer,
-			Scene_viewer_destroy_remove_from_package, 
-			cmiss_scene_viewer_package);
+			/* Register a callback so that if the scene_viewer is destroyed
+				then it is removed from the list */
+			Scene_viewer_add_destroy_callback(scene_viewer,
+				Scene_viewer_destroy_remove_from_package, 
+				cmiss_scene_viewer_package);
+		}
 	}
 	else
 	{
@@ -4826,10 +4827,10 @@ about which the scene is turning relative to its lookat point and the
 		/* Repost the idle callback */
 		if(!scene_viewer->idle_update_callback_id)
 		{
-			//scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-			//	User_interface_get_event_dispatcher(scene_viewer->user_interface),
-			//	Scene_viewer_idle_update_callback, (void *)scene_viewer,
-			//	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+			//-- scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+			//-- 	User_interface_get_event_dispatcher(scene_viewer->user_interface),
+			//-- 	Scene_viewer_idle_update_callback, (void *)scene_viewer,
+			//-- 	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 		}
 		return_code=1;
 	}
@@ -4891,10 +4892,10 @@ Must call this in DESTROY function.
 	{
 		if (scene_viewer->idle_update_callback_id)
 		{
-			//Event_dispatcher_remove_idle_callback(
-			//	User_interface_get_event_dispatcher(scene_viewer->user_interface),
-			//	scene_viewer->idle_update_callback_id);
-			//scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
+			//-- Event_dispatcher_remove_idle_callback(
+			//-- 	User_interface_get_event_dispatcher(scene_viewer->user_interface),
+			//-- 	scene_viewer->idle_update_callback_id);
+			//-- scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -7362,8 +7363,8 @@ Returns the width and height of the Scene_viewers drawing area.
 	ENTER(Scene_viewer_get_viewport_size);
 	if (scene_viewer&&width&&height)
 	{
-		*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		*width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		*height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		return_code=1;
 	}
 	else
@@ -7391,8 +7392,8 @@ Sets the width and height of the Scene_viewers drawing area.
 	ENTER(Scene_viewer_set_viewport_size);
 	if (scene_viewer&&(0<width)&&(0<height))
 	{
-		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
-		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
+		scene_viewer->graphics_buffer->set_width(width);//-- Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
+		scene_viewer->graphics_buffer->set_height(height);//-- Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
 		Scene_viewer_set_transform_flag(scene_viewer);
 		return_code=1;
 	}
@@ -7425,7 +7426,7 @@ so should not be modified or deallocated.
 	ENTER(Scene_viewer_get_opengl_information);
 	if (scene_viewer)
 	{
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		*opengl_version=(char *)glGetString(GL_VERSION);
 		*opengl_vendor=(char *)glGetString(GL_VENDOR);
 		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
@@ -7434,13 +7435,18 @@ so should not be modified or deallocated.
 		printf("%s\n", *opengl_extensions);
 #endif /* defined (DEBUG_CODE) */
 
-		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
-		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
-			colour_buffer_depth);
-		Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
-			depth_buffer_depth);
-		Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
-			accumulation_buffer_depth);
+		//-- Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
+		//-- Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
+		//-- 	colour_buffer_depth);
+		//-- Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
+		//-- 	depth_buffer_depth);
+		//-- Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
+		//-- 	accumulation_buffer_depth);
+		*visual_id = scene_viewer->graphics_buffer->get_visual_id();
+		*colour_buffer_depth = scene_viewer->graphics_buffer->get_colour_buffer_depth();
+		*depth_buffer_depth = scene_viewer->graphics_buffer->get_depth_buffer_depth();
+		*accumulation_buffer_depth = scene_viewer->graphics_buffer->get_accumulation_buffer_depth();
+
 		return_code=1;
 	}
 	else
@@ -7648,8 +7654,8 @@ Requests a full redraw immediately.
 			//scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
-			Event_dispatcher_remove_idle_callback(
-				event_dispatcher, scene_viewer->idle_update_callback_id);
+			//-- Event_dispatcher_remove_idle_callback(
+			//-- 	event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 		}
 		if (scene_viewer->tumble_active)
@@ -7657,18 +7663,18 @@ Requests a full redraw immediately.
 			Scene_viewer_automatic_tumble(scene_viewer);
 			if(!scene_viewer->idle_update_callback_id)
 			{
-				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-					event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+				scene_viewer->idle_update_callback_id = 0;//-- Event_dispatcher_add_idle_callback(
+					//-- event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					//-- EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 			}
 		}
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene(scene_viewer);
 		if (scene_viewer->swap_buffers)
 		{
-			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
+			scene_viewer->graphics_buffer->swap_buffers();//-- Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
@@ -7705,8 +7711,8 @@ and <transparency_layers> are used for just this render.
 			//scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
-			Event_dispatcher_remove_idle_callback(
-				event_dispatcher, scene_viewer->idle_update_callback_id);
+			//-- Event_dispatcher_remove_idle_callback(
+			//-- 	event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 		}
 		if (scene_viewer->tumble_active)
@@ -7714,12 +7720,12 @@ and <transparency_layers> are used for just this render.
 			Scene_viewer_automatic_tumble(scene_viewer);
 			if(!scene_viewer->idle_update_callback_id)
 			{
-				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-					event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+				scene_viewer->idle_update_callback_id = 0;//-- Event_dispatcher_add_idle_callback(
+					//-- event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					//-- EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 			}
 		}
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene_in_viewport_with_overrides(
@@ -7727,7 +7733,7 @@ and <transparency_layers> are used for just this render.
 			antialias, transparency_layers, /*drawing_offscreen*/0);
 		if (scene_viewer->swap_buffers)
 		{
-			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
+			scene_viewer->graphics_buffer->swap_buffers();//-- Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
 	}
 	else
@@ -7757,7 +7763,7 @@ extensions can get the updated frame from the backbuffer.
 	ENTER(Scene_viewer_redraw_now_without_swapbuffers);
 	if (scene_viewer)
 	{
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene(scene_viewer);
@@ -7842,8 +7848,8 @@ scene viewer on screen.
 		{
 #endif /* defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
-			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			*width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			*height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
 				preferred_antialias, preferred_transparency_layers,
@@ -8115,8 +8121,8 @@ Scales of the absolute image while keeping the same centre point.
 		scene_viewer->user_viewport_pixels_per_unit_x *= zoom_ratio;
 		scene_viewer->user_viewport_pixels_per_unit_y *= zoom_ratio;
 		/* adjust top,left so that zoom comes from centre of viewport */
-		width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		scene_viewer->user_viewport_left += 0.5*(zoom_ratio-1.0)*
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
@@ -8966,80 +8972,6 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 
 	return return_code;
 }
-
-#if defined (WX_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_wx(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	void *parent_void,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth)
-{
-	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
-	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
-	struct Graphics_buffer *graphics_buffer;
-	struct Cmiss_scene_viewer *scene_viewer;
-	wxPanel *parent;
-
-	ENTER(create_Cmiss_scene_viewer_wx);
-	parent = (wxPanel *)parent_void;
-	if (cmiss_scene_viewer_package)
-	{
-		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
-		}
-		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-		}
-		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY;
-		}
-		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND;
-		}
-		else
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-		}
-		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
-		}
-		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
-		}
-		else
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
-		}
-		graphics_buffer = create_Graphics_buffer_wx(
-			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
-			parent,
-			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
-			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-			minimum_accumulation_buffer_depth, NULL);
-		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
-			cmiss_scene_viewer_package,
-			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_wx.  "
-			"The Cmiss_scene_viewer data must be initialised before any scene "
-			"viewers can be created.");
-		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
-	}
-	LEAVE;
-
-	return (scene_viewer);
-} /* create_Cmiss_scene_viewer_wx */
-#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 Cmiss_scene_viewer_id Cmiss_scene_viewer_create_gtk(

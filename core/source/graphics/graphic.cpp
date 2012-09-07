@@ -42,9 +42,8 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 #include <string>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
-//-- extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -79,7 +78,6 @@ DESCRIPTION :
 #include "graphics/scene.h"
 #include "graphics/graphic.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
@@ -124,7 +122,7 @@ finite element group rendition.
 	struct Computed_field *texture_coordinate_field;
 	/* for cylinders only */
 	/* use radius = constant_radius + scale_factor*radius_scalar_field */
-	float constant_radius,radius_scale_factor;
+	GLfloat constant_radius,radius_scale_factor;
 	struct Computed_field *radius_scalar_field;
 	/* for iso_surfaces only */
 	struct Computed_field *iso_scalar_field;
@@ -166,7 +164,7 @@ finite element group rendition.
 	enum Streamline_type streamline_type;
 	struct Computed_field *stream_vector_field;
 	int reverse_track;
-	float streamline_length, streamline_width;
+	GLfloat streamline_length, streamline_width;
 	enum Streamline_data_type streamline_data_type;
 	/* streamline seed nodeset and field giving mesh location */
 	Cmiss_nodeset_id seed_nodeset;
@@ -823,7 +821,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
 {
 	FE_value base_size[3], offset[3], initial_xi[3], scale_factors[3];
-	float time;
+	GLfloat time;
 	int element_dimension = 1, element_graphics_name,
 		element_selected, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
@@ -2969,7 +2967,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 int Cmiss_graphic_to_point_object_at_time(
 	struct Cmiss_graphic *graphic, Cmiss_field_cache_id field_cache, FE_value time,
-	float graphics_object_primitive_time)
+	GLfloat graphics_object_primitive_time)
 {
 	FE_value base_size[3], offset[3], scale_factors[3];
 	int return_code = 1;
@@ -3009,25 +3007,25 @@ int Cmiss_graphic_to_point_object_at_time(
 			ALLOCATE(scale_list, Triple, 1);
 			glyph_set = CREATE(GT_glyph_set)(1,
 				point_list, axis1_list, axis2_list, axis3_list, scale_list, graphic->glyph, graphic->font,
-				labels, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
-				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+				labels, /*n_data_components*/0, /*data*/(GLfloat *)NULL,
+				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
 			/* NOT an error if no glyph_set produced == empty group */
-			(*point_list)[0] = (float)offset[0];
-			(*point_list)[1] = (float)offset[1];
-			(*point_list)[2] = (float)offset[2];
-			(*axis1_list)[0] = (float)base_size[0];
+			(*point_list)[0] = (GLfloat)offset[0];
+			(*point_list)[1] = (GLfloat)offset[1];
+			(*point_list)[2] = (GLfloat)offset[2];
+			(*axis1_list)[0] = (GLfloat)base_size[0];
 			(*axis1_list)[1] = 0.0;
 			(*axis1_list)[2] = 0.0;
 			(*axis2_list)[0] = 0.0;
-			(*axis2_list)[1] = (float)base_size[1];
+			(*axis2_list)[1] = (GLfloat)base_size[1];
 			(*axis2_list)[2] = 0.0;
 			(*axis3_list)[0] = 0.0;
 			(*axis3_list)[1] = 0.0;
-			(*axis3_list)[2] = (float)base_size[2];
-			(*scale_list)[0] = (float)scale_factors[0];
-			(*scale_list)[1] = (float)scale_factors[1];
-			(*scale_list)[2] = (float)scale_factors[2];
+			(*axis3_list)[2] = (GLfloat)base_size[2];
+			(*scale_list)[0] = (GLfloat)scale_factors[0];
+			(*scale_list)[1] = (GLfloat)scale_factors[1];
+			(*scale_list)[2] = (GLfloat)scale_factors[2];
 			if (glyph_set)
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
@@ -3063,7 +3061,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
 {
 	int return_code = 0;
-	float time = 0.0;
+	GLfloat time = 0.0;
 	struct Cmiss_graphic *graphic = graphic_to_object_data->graphic;
 	Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field);
 
@@ -3498,7 +3496,7 @@ int Cmiss_graphic_to_graphics_object(
 {
 	char *existing_name, *graphic_string;
 	FE_value base_size[3], offset[3], scale_factors[3];
-	float time;
+	GLfloat time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
 	struct FE_region *fe_region;
@@ -4849,8 +4847,8 @@ int Cmiss_graphic_set_iso_surface_parameters(
 } /* Cmiss_graphic_set_iso_surface_parameters */
 
 int Cmiss_graphic_set_radius_parameters(
-	struct Cmiss_graphic *graphic,float constant_radius,
-	float radius_scale_factor,struct Computed_field *radius_scalar_field)
+	struct Cmiss_graphic *graphic,GLfloat constant_radius,
+	GLfloat radius_scale_factor,struct Computed_field *radius_scalar_field)
 {
 	int return_code;
 
@@ -4879,7 +4877,7 @@ int Cmiss_graphic_set_radius_parameters(
 int Cmiss_graphic_get_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
 	struct Computed_field **stream_vector_field,int *reverse_track,
-	float *streamline_length,float *streamline_width)
+	GLfloat *streamline_length,GLfloat *streamline_width)
 {
 	int return_code;
 
@@ -4909,7 +4907,7 @@ int Cmiss_graphic_get_streamline_parameters(
 int Cmiss_graphic_set_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	float streamline_length,float streamline_width)
+	GLfloat streamline_length,GLfloat streamline_width)
 {
 	int return_code;
 
@@ -5410,7 +5408,7 @@ int Cmiss_graphic_FE_region_change(
 							data->element_type = Cmiss_graphic_get_dimension(graphic, data->fe_region);
 							/* partial rebuild for few node/element field changes */
 							GT_object_remove_primitives_at_time(graphic->graphics_object,
-								(float)data->time, FE_element_as_graphics_name_is_removed_or_modified,
+								(GLfloat)data->time, FE_element_as_graphics_name_is_removed_or_modified,
 								data_void);
 							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD);
 						}
@@ -6128,8 +6126,8 @@ int Cmiss_graphic_get_data_spectrum_parameters(
 } /* Cmiss_graphic_get_data_spectrum_parameters */
 
 int Cmiss_graphic_get_radius_parameters(
-	struct Cmiss_graphic *graphic,float *constant_radius,
-	float *radius_scale_factor,struct Computed_field **radius_scalar_field)
+	struct Cmiss_graphic *graphic,GLfloat *constant_radius,
+	GLfloat *radius_scale_factor,struct Computed_field **radius_scalar_field)
 {
 	int return_code;
 

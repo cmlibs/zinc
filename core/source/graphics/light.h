@@ -117,7 +117,10 @@ DESCRIPTION :
 Frees the memory for the light and sets <*light_address> to NULL.
 ==============================================================================*/
 
-PROTOTYPE_OBJECT_FUNCTIONS(Light);
+//PROTOTYPE_OBJECT_FUNCTIONS(Light);
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(Light);
+ZINC_API PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Light);
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Light);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Light);
 
 PROTOTYPE_LIST_FUNCTIONS(Light);
@@ -127,8 +130,8 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Light);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *);
 
-int get_Light_attenuation(struct Light *light, float *constant_attenuation,
-	float *linear_attenuation, float *quadratic_attenuation);
+int get_Light_attenuation(struct Light *light, GLfloat *constant_attenuation,
+	GLfloat *linear_attenuation, GLfloat *quadratic_attenuation);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -140,8 +143,8 @@ Values 1 0 0 (ie. only constant attenuation of 1) gives no attenuation.
 Infinite/directional lights are not affected by these values.
 ==============================================================================*/
 
-int set_Light_attenuation(struct Light *light, float constant_attenuation,
-	float linear_attenuation, float quadratic_attenuation);
+int set_Light_attenuation(struct Light *light, GLfloat constant_attenuation,
+	GLfloat linear_attenuation, GLfloat quadratic_attenuation);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -169,7 +172,7 @@ DESCRIPTION :
 Sets the colour of the light.
 ==============================================================================*/
 
-int get_Light_direction(struct Light *light,float direction[3]);
+int get_Light_direction(struct Light *light,GLfloat direction[3]);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -177,7 +180,7 @@ DESCRIPTION :
 Returns the direction of the light, relevent for infinite and spot lights.
 ==============================================================================*/
 
-int set_Light_direction(struct Light *light,float direction[3]);
+int set_Light_direction(struct Light *light,GLfloat direction[3]);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -185,7 +188,7 @@ DESCRIPTION :
 Sets the direction of the light, relevent for infinite and spot lights.
 ==============================================================================*/
 
-int get_Light_position(struct Light *light,float position[3]);
+int get_Light_position(struct Light *light,GLfloat position[3]);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -193,7 +196,7 @@ DESCRIPTION :
 Returns the position of the light, relevent for point and spot lights.
 ==============================================================================*/
 
-int set_Light_position(struct Light *light,float position[3]);
+int set_Light_position(struct Light *light,GLfloat position[3]);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -201,7 +204,7 @@ DESCRIPTION :
 Sets the position of the light, relevent for point and spot lights.
 ==============================================================================*/
 
-int get_Light_spot_cutoff(struct Light *light, float *spot_cutoff);
+int get_Light_spot_cutoff(struct Light *light, GLfloat *spot_cutoff);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -209,7 +212,7 @@ DESCRIPTION :
 Returns the spotlight cutoff angle in degrees from 0 to 90.
 ==============================================================================*/
 
-int set_Light_spot_cutoff(struct Light *light, float spot_cutoff);
+int set_Light_spot_cutoff(struct Light *light, GLfloat spot_cutoff);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -217,7 +220,7 @@ DESCRIPTION :
 Sets the spotlight cutoff angle in degrees from 0 to 90.
 ==============================================================================*/
 
-int get_Light_spot_exponent(struct Light *light, float *spot_exponent);
+int get_Light_spot_exponent(struct Light *light, GLfloat *spot_exponent);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -227,7 +230,7 @@ becomes as one approaches its axis. A value of 0.0 gives even illumination
 throughout the cutoff angle.
 ==============================================================================*/
 
-int set_Light_spot_exponent(struct Light *light, float spot_exponent);
+int set_Light_spot_exponent(struct Light *light, GLfloat spot_exponent);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 

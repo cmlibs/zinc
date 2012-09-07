@@ -52,8 +52,8 @@ Global Functions
 int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	char *name,struct Spectrum *spectrum, int component_number, 
 	Triple bar_centre,Triple bar_axis,
-	Triple side_axis,float bar_length,float bar_radius,float extend_length,
-	int tick_divisions,float tick_length,char *number_format,
+	Triple side_axis,GLfloat bar_length,GLfloat bar_radius,GLfloat extend_length,
+	int tick_divisions,GLfloat tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
 	struct Graphics_font *font);

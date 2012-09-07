@@ -49,6 +49,8 @@
 #include "types/cmiss_region_id.h"
 #include "types/cmiss_scene_id.h"
 
+#include "cmiss_shared_object.h"
+
 /***************************************************************************//**
  * Labels of scene attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -124,7 +126,7 @@ Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
 * @return  Status CMISS_OK if scene is successfully destroyed, any other value
 * on failure.
 */
-int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
+ZINC_API int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
 
 /***************************************************************************//** 
  * Set the top region of the scene. Rendition from this top region and its child
@@ -134,7 +136,7 @@ int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
  * @param root_region Handle to the region to be set in the scene.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
+ZINC_API int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
 
 /***************************************************************************//**
  * Return the name of the scene. 
@@ -170,6 +172,6 @@ Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
  * @param filter  Filter to be set for scene.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
+ZINC_API int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
 
 #endif /*__CMISS_SCENE_H__*/

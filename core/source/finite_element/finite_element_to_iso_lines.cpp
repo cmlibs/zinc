@@ -45,7 +45,6 @@ value over 2-D elements.
 
 #include <math.h>
 
-//-- extern "C" {
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_iso_lines.h"
@@ -55,7 +54,6 @@ value over 2-D elements.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "general/message.h"
-//-- }
 
 #define CONTOUR_POLYLINE_REALLOCATE_SIZE 25
 
@@ -68,7 +66,7 @@ struct Contour_polyline
 {
 	int number_of_points;
 	Triple *point_list;
-	GTDATA *data;
+	ZnReal *data;
 };
 
 struct Contour_lines
@@ -153,7 +151,7 @@ DESCRIPTION :
 } /* DESTROY(Contour_lines) */
 
 int Contour_lines_add_segment(struct Contour_lines *contour_lines,
-	Triple point1,GTDATA *data1,Triple point2,GTDATA *data2)
+	Triple point1,ZnReal *data1,Triple point2,ZnReal *data2)
 /*******************************************************************************
 LAST MODIFIED : 25 January 2000
 
@@ -193,10 +191,10 @@ of components are expected to be supplied in <data1> and <data2>.
 			polyline= &(contour_lines->polylines[contour_lines->number_of_polylines]);
 			polyline->number_of_points=2;
 			polyline->point_list=(Triple *)NULL;
-			polyline->data=(GTDATA *)NULL;
+			polyline->data=(ZnReal *)NULL;
 			if (ALLOCATE(polyline->point_list,Triple,2)&&
 				((0==contour_lines->number_of_data_components)||
-					ALLOCATE(polyline->data,GTDATA,
+					ALLOCATE(polyline->data,ZnReal,
 						2*contour_lines->number_of_data_components)))
 			{
 				for (i=0;i<3;i++)
@@ -235,7 +233,7 @@ of components are expected to be supplied in <data1> and <data2>.
 } /* Contour_lines_add_segment */
 
 int Contour_lines_add_to_graphics_object(struct Contour_lines *contour_lines,
-	struct GT_object *graphics_object,float time,int line_width,int object_name)
+	struct GT_object *graphics_object,ZnReal time,int line_width,int object_name)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
 
@@ -244,7 +242,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 <graphics_object> at <time>.
 ==============================================================================*/
 {
-	GTDATA *data;
+	GLfloat *data;
 	int i,return_code;
 	struct Contour_polyline *polyline;
 	struct GT_polyline *gt_polyline;
@@ -258,10 +256,10 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 		{
 			polyline= &(contour_lines->polylines[i]);
 			point_list=(Triple *)NULL;
-			data=(GTDATA *)NULL;
+			data=0;
 			if (ALLOCATE(point_list,Triple,polyline->number_of_points)&&
 				((0==contour_lines->number_of_data_components)||
-					ALLOCATE(data,GTDATA,contour_lines->number_of_data_components*
+					ALLOCATE(data,GLfloat,contour_lines->number_of_data_components*
 						polyline->number_of_points)))
 			{
 				memcpy(point_list,polyline->point_list,
@@ -269,7 +267,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				if (0<contour_lines->number_of_data_components)
 				{
 					memcpy(data,polyline->data,polyline->number_of_points*
-						sizeof(GTDATA)*contour_lines->number_of_data_components);
+						sizeof(ZnReal)*contour_lines->number_of_data_components);
 				}
 				if (NULL != (gt_polyline=CREATE(GT_polyline)(g_PLAIN,line_width,
 					polyline->number_of_points,point_list,(Triple *)NULL,
@@ -337,7 +335,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 	FE_value a,b,c,d,r,r1,r2,q;
 	int i,intersect_1_4,number_of_intersections,return_code;
 	Triple *point,points[4];
-	GTDATA *data,*datum;
+	ZnReal *data,*datum;
 
 	ENTER(Contour_lines_add_lines_in_square);
 	if (contour_lines&&corner1&&corner2&&corner3&&corner4&&
@@ -346,9 +344,9 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 	{
 		return_code=1;
 		number_of_intersections=0;
-		data=(GTDATA *)NULL;
+		data=(ZnReal *)NULL;
 		if ((0==contour_lines->number_of_data_components)||
-			ALLOCATE(data,GTDATA,4*contour_lines->number_of_data_components))
+			ALLOCATE(data,ZnReal,4*contour_lines->number_of_data_components))
 		{
 			datum=data;
 			/* intersection on 1-2 line */
@@ -360,13 +358,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner1[i] + r*corner2[i];
+					(*point)[i] = GLfloat(q)*corner1[i] + GLfloat(r)*corner2[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data1[i] + r*data2[i];
+						*datum = ZnReal(q*data1[i] + r*data2[i]);
 						datum++;
 					}
 				}
@@ -382,13 +380,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner3[i] + r*corner4[i];
+					(*point)[i] = GLfloat(q)*corner3[i] + GLfloat(r)*corner4[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data3[i] + r*data4[i];
+						*datum = ZnReal(q*data3[i] + r*data4[i]);
 						datum++;
 					}
 				}
@@ -404,13 +402,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner1[i] + r*corner3[i];
+					(*point)[i] = GLfloat(q)*corner1[i] + GLfloat(r)*corner3[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data1[i] + r*data3[i];
+						*datum = ZnReal(q*data1[i] + r*data3[i]);
 						datum++;
 					}
 				}
@@ -426,13 +424,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner2[i] + r*corner4[i];
+					(*point)[i] = GLfloat(q)*corner2[i] + GLfloat(r)*corner4[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data2[i] + r*data4[i];
+						*datum = ZnReal(q*data2[i] + r*data4[i]);
 						datum++;
 					}
 				}
@@ -552,7 +550,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 	FE_value r,q;
 	int i,number_of_intersections,return_code;
 	Triple *point,points[3];
-	GTDATA *data,*datum;
+	ZnReal *data,*datum;
 
 	ENTER(Contour_lines_add_lines_in_triangle);
 	if (contour_lines&&corner1&&corner2&&corner3&&
@@ -561,9 +559,9 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 	{
 		return_code=1;
 		number_of_intersections=0;
-		data=(GTDATA *)NULL;
+		data=(ZnReal *)NULL;
 		if ((0==contour_lines->number_of_data_components)||
-			ALLOCATE(data,GTDATA,3*contour_lines->number_of_data_components))
+			ALLOCATE(data,ZnReal,3*contour_lines->number_of_data_components))
 		{
 			datum=data;
 			/* intersection on 1-2 line */
@@ -575,13 +573,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner1[i] + r*corner2[i];
+					(*point)[i] = GLfloat(q)*corner1[i] + GLfloat(r)*corner2[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data1[i] + r*data2[i];
+						*datum = ZnReal(q*data1[i] + r*data2[i]);
 						datum++;
 					}
 				}
@@ -597,13 +595,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner2[i] + r*corner3[i];
+					(*point)[i] = GLfloat(q)*corner2[i] + GLfloat(r)*corner3[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data2[i] + r*data3[i];
+						*datum = ZnReal(q*data2[i] + r*data3[i]);
 						datum++;
 					}
 				}
@@ -619,13 +617,13 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				q = 1.0 - r;
 				for (i=0;i<3;i++)
 				{
-					(*point)[i] = q*corner1[i] + r*corner3[i];
+					(*point)[i] = GLfloat(q)*corner1[i] + GLfloat(r)*corner3[i];
 				}
 				if (data)
 				{
 					for (i=0;i<contour_lines->number_of_data_components;i++)
 					{
-						*datum = q*data1[i] + r*data3[i];
+						*datum = ZnReal(q*data1[i] + r*data3[i]);
 						datum++;
 					}
 				}
@@ -667,7 +665,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 } /* Contour_lines_add_lines_in_triangle */
 
 int points_and_data_match(Triple point1,Triple point2,
-	int number_of_data_components,GTDATA *data1,GTDATA *data2)
+	int number_of_data_components,ZnReal *data1,ZnReal *data2)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
 
@@ -716,7 +714,7 @@ data values for more efficient storage and smoother rendering.
 {
 	int i,j,k,links_made,m,match11,match21,match22,
 		number_of_data_components,return_code;
-	GTDATA *data,*data_i1,*data_i2,*data_j1,*data_j2;
+	ZnReal *data,*data_i1,*data_i2,*data_j1,*data_j2;
 	struct Contour_polyline *polyline_i,*polyline_j;
 	Triple *point_i1,*point_i2,*point_j1,*point_j2,*point_list;
 
@@ -763,11 +761,11 @@ data values for more efficient storage and smoother rendering.
 									number_of_data_components,data_i2,data_j2)))
 							{
 								point_list=(Triple *)NULL;
-								data=(GTDATA *)NULL;
+								data=(ZnReal *)NULL;
 								if (ALLOCATE(point_list,Triple,
 									polyline_i->number_of_points+polyline_j->number_of_points-1)&&
 									((0==number_of_data_components)||
-										ALLOCATE(data,GTDATA,(polyline_i->number_of_points+
+										ALLOCATE(data,ZnReal,(polyline_i->number_of_points+
 											polyline_j->number_of_points-1)*
 											number_of_data_components)))
 								{
@@ -978,9 +976,9 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 						Cmiss_field_evaluate_real(scalar_field, field_cache, 1, scalar) &&
 						((!data_field) || Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, datum)))
 					{
-						(*point)[0]=coordinates[0];
-						(*point)[1]=coordinates[1];
-						(*point)[2]=coordinates[2];
+						(*point)[0]=GLfloat(coordinates[0]);
+						(*point)[1]=GLfloat(coordinates[1]);
+						(*point)[2]=GLfloat(coordinates[2]);
 						point++;
 						scalar++;
 						datum += n_data_components;

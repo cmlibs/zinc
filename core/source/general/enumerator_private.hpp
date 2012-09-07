@@ -56,9 +56,7 @@ of these functions yourself.
 #if !defined (ENUMERATOR_PRIVATE_H)
 #define ENUMERATOR_PRIVATE_H
 
-//-- extern "C" {
 #include "general/enumerator.h"
-//-- }
 
 /*
 Macros

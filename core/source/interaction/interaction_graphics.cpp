@@ -63,9 +63,9 @@ enclosing the <interaction volume>, used for rubber-banding. Lines are put at
 time 0 in the graphics object; any other primitives at that time are cleared.
 ==============================================================================*/
 {
-	double model_vertex[8][3];
+	ZnReal model_vertex[8][3];
 	/* use 0.999999 to avoid clipping problems for frustums */
-	static double normalised_vertex[8][3]=
+	static ZnReal normalised_vertex[8][3]=
 	{
 		{-0.9999,-0.9999,-0.9999},
 		{-0.9999,-0.9999, 0.9999},
@@ -76,7 +76,7 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 		{ 0.9999, 0.9999,-0.9999},
 		{ 0.9999, 0.9999, 0.9999}
 	};
-	float time;
+	ZnReal time;
 	int i,return_code;
 	struct GT_polyline *polyline;
 	Triple *point,*points;
@@ -97,47 +97,47 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 			/* make a polyline big enough for the 12 line segment edges of the box */
 			if (ALLOCATE(points,Triple,24)&&
 				(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-					12,points,/*normalpoints*/NULL,0,(GTDATA *)NULL)))
+					12,points,/*normalpoints*/NULL,0,(GLfloat *)NULL)))
 			{
 				point=points;
 				/* lines spanning axis 1 */
 				for (i=0;i<4;i++)
 				{
-					(*point)[0]=(float)model_vertex[i][0];
-					(*point)[1]=(float)model_vertex[i][1];
-					(*point)[2]=(float)model_vertex[i][2];
+					(*point)[0]=(GLfloat)model_vertex[i][0];
+					(*point)[1]=(GLfloat)model_vertex[i][1];
+					(*point)[2]=(GLfloat)model_vertex[i][2];
 					point++;
-					(*point)[0]=(float)model_vertex[i+4][0];
-					(*point)[1]=(float)model_vertex[i+4][1];
-					(*point)[2]=(float)model_vertex[i+4][2];
+					(*point)[0]=(GLfloat)model_vertex[i+4][0];
+					(*point)[1]=(GLfloat)model_vertex[i+4][1];
+					(*point)[2]=(GLfloat)model_vertex[i+4][2];
 					point++;
 				}
 				/* lines spanning axis 2 */
 				for (i=0;i<2;i++)
 				{
-					(*point)[0]=(float)model_vertex[i*4][0];
-					(*point)[1]=(float)model_vertex[i*4][1];
-					(*point)[2]=(float)model_vertex[i*4][2];
+					(*point)[0]=(GLfloat)model_vertex[i*4][0];
+					(*point)[1]=(GLfloat)model_vertex[i*4][1];
+					(*point)[2]=(GLfloat)model_vertex[i*4][2];
 					point++;
-					(*point)[0]=(float)model_vertex[i*4+2][0];
-					(*point)[1]=(float)model_vertex[i*4+2][1];
-					(*point)[2]=(float)model_vertex[i*4+2][2];
+					(*point)[0]=(GLfloat)model_vertex[i*4+2][0];
+					(*point)[1]=(GLfloat)model_vertex[i*4+2][1];
+					(*point)[2]=(GLfloat)model_vertex[i*4+2][2];
 					point++;
-					(*point)[0]=(float)model_vertex[i*4+1][0];
-					(*point)[1]=(float)model_vertex[i*4+1][1];
-					(*point)[2]=(float)model_vertex[i*4+1][2];
+					(*point)[0]=(GLfloat)model_vertex[i*4+1][0];
+					(*point)[1]=(GLfloat)model_vertex[i*4+1][1];
+					(*point)[2]=(GLfloat)model_vertex[i*4+1][2];
 					point++;
-					(*point)[0]=(float)model_vertex[i*4+3][0];
-					(*point)[1]=(float)model_vertex[i*4+3][1];
-					(*point)[2]=(float)model_vertex[i*4+3][2];
+					(*point)[0]=(GLfloat)model_vertex[i*4+3][0];
+					(*point)[1]=(GLfloat)model_vertex[i*4+3][1];
+					(*point)[2]=(GLfloat)model_vertex[i*4+3][2];
 					point++;
 				}
 				/* lines spanning axis 3 */
 				for (i=0;i<8;i++)
 				{
-					(*point)[0]=(float)model_vertex[i][0];
-					(*point)[1]=(float)model_vertex[i][1];
-					(*point)[2]=(float)model_vertex[i][2];
+					(*point)[0]=(GLfloat)model_vertex[i][0];
+					(*point)[1]=(GLfloat)model_vertex[i][1];
+					(*point)[2]=(GLfloat)model_vertex[i][2];
 					point++;
 				}
 				/* put all graphics in at time 0 */

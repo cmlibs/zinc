@@ -45,7 +45,7 @@ The functions for manipulating graphical textures.
 #include <stdlib.h>
 #include <string.h>
 
-#include "configure/cmiss_zinc_configure.h"
+#include "api/cmiss_zinc_configure.h"
 
 #if defined (WIN32_SYSTEM)
 #define _USE_MATH_DEFINES
@@ -53,29 +53,26 @@ The functions for manipulating graphical textures.
 #include <math.h>
 #if defined (WIN32_SYSTEM)
 // Visual Studio/cl doesn't implement this yet.
-double log2(double value)
-{  
-    return log(value) / M_LN2;  
+double log2(ZnReal value)
+{
+	return log(value) / M_LN2;  
 }
-long lround(double d)
+long lround(ZnReal d)
 {
 	return (long)(d>0 ? d+0.5 : ceil(d-0.5));
 }
 #endif // defined (WIN32_SYSTEM)
-//-- extern "C" {
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "three_d_drawing/graphics_buffer.h"
 #include "graphics/light.h"
 #include "graphics/graphics_library.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/texture.h"
 #include "general/message.h"
-//-- }
 #include "general/enumerator_private.hpp"
 #include "graphics/texture.hpp"
 #include "graphics/render_gl.h"
@@ -142,13 +139,13 @@ The properties of a graphical texture.
 		 ie. 2 if it has one texel depth, 1 if it has one texel height */
 	int dimension;
 	/* the range of texture coordinates in model units */
-	float depth, height, width;
+	GLfloat depth, height, width;
 	/* image distortion parameters in the physical size of the image, where 0,0
 		 refers to the left, bottom corner and width, height is the right, top.
 		 Only pure radial distortion in physical space is supported. Note that these
 		 are just a convenient storage space for these values: the texture display
 		 list does not need to be updated if these change. */
-	float distortion_centre_x,distortion_centre_y,distortion_factor_k1;
+	GLfloat distortion_centre_x,distortion_centre_y,distortion_factor_k1;
 	/* the name of the file the image was read from */
 		/*???DB.  May get rid of this when able to "draw" the image in response to
 			a list texture command */
@@ -181,8 +178,8 @@ The properties of a graphical texture.
 	enum Texture_filter_mode filter_mode;
 	enum Texture_wrap_mode wrap_mode;
 	struct Colour combine_colour;
-	float combine_alpha;
-	float mipmap_level_of_detail_bias;
+	GLfloat combine_alpha;
+	GLfloat mipmap_level_of_detail_bias;
 	/* following controls how a texture is downsampled to fit texture hardware */
 	enum Texture_resize_filter_mode resize_filter_mode;
 
@@ -357,11 +354,11 @@ DESCRIPTION :
 	if (ALLOCATE(texture_tiling, struct Texture_tiling, 1) &&
 		ALLOCATE(texture_tiling->texture_tiles, int, dimension) &&
 		ALLOCATE(texture_tiling->tile_size, int, dimension) &&
-		ALLOCATE(texture_tiling->tile_coordinate_range, float,
+		ALLOCATE(texture_tiling->tile_coordinate_range, ZnReal,
 			dimension) &&
-		ALLOCATE(texture_tiling->image_coordinate_range, float,
+		ALLOCATE(texture_tiling->image_coordinate_range, ZnReal,
 			dimension) &&
-		ALLOCATE(texture_tiling->coordinate_scaling, float,
+		ALLOCATE(texture_tiling->coordinate_scaling, ZnReal,
 			dimension))
 	{
 		texture_tiling->total_tiles = 0;
@@ -1409,14 +1406,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[0] = 
 						texture->width_texels/(*texture_tiling)->texture_tiles[0];
  					(*texture_tiling)->tile_coordinate_range[0] = 
-						texture->width /(float)(*texture_tiling)->texture_tiles[0]
-						* ((float)texture->width_texels /
-						(float)texture->original_width_texels);
+						texture->width /(GLfloat)(*texture_tiling)->texture_tiles[0]
+						* ((GLfloat)texture->width_texels /
+						(GLfloat)texture->original_width_texels);
 					(*texture_tiling)->coordinate_scaling[0] = 
 						(*texture_tiling)->texture_tiles[0];
 					while (((*texture_tiling)->texture_tiles[0] > 1) &&
-						(ceil((float)texture->width_texels/
-						(float)((*texture_tiling)->tile_size[0] - 2 * (*texture_tiling)->overlap))
+						(ceil((GLfloat)texture->width_texels/
+						(GLfloat)((*texture_tiling)->tile_size[0] - 2 * (*texture_tiling)->overlap))
 						> (*texture_tiling)->texture_tiles[0]))
 					{
 						(*texture_tiling)->texture_tiles[0]++;
@@ -1429,14 +1426,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[1] = 
 						texture->height_texels/(*texture_tiling)->texture_tiles[1];
 					(*texture_tiling)->tile_coordinate_range[1] =
-						texture->height/(float)(*texture_tiling)->texture_tiles[1]
-						* ((float)texture->height_texels /
-						(float)texture->original_height_texels);
+						texture->height/(GLfloat)(*texture_tiling)->texture_tiles[1]
+						* ((GLfloat)texture->height_texels /
+						(GLfloat)texture->original_height_texels);
 					(*texture_tiling)->coordinate_scaling[1] = 
 						(*texture_tiling)->texture_tiles[1];
 					while (((*texture_tiling)->texture_tiles[1] > 1) &&
-						(ceil((float)texture->height_texels/
-						(float)((*texture_tiling)->tile_size[1] - 2 * (*texture_tiling)->overlap))
+						(ceil((GLfloat)texture->height_texels/
+						(GLfloat)((*texture_tiling)->tile_size[1] - 2 * (*texture_tiling)->overlap))
 						> (*texture_tiling)->texture_tiles[1]))
 					{
 						(*texture_tiling)->texture_tiles[1]++;
@@ -1449,14 +1446,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[2] = 
 						texture->depth_texels/(*texture_tiling)->texture_tiles[2];
 					(*texture_tiling)->tile_coordinate_range[2] =
-						texture->depth/(float)(*texture_tiling)->texture_tiles[2]
-						* ((float)texture->depth_texels /
-						(float)texture->original_depth_texels);
+						texture->depth/(GLfloat)(*texture_tiling)->texture_tiles[2]
+						* ((GLfloat)texture->depth_texels /
+						(GLfloat)texture->original_depth_texels);
 					(*texture_tiling)->coordinate_scaling[2] = 
 						(*texture_tiling)->texture_tiles[2];
 					while (((*texture_tiling)->texture_tiles[2] > 1) &&
-						(ceil((float)texture->depth_texels/
-						(float)((*texture_tiling)->tile_size[2] - 2 * (*texture_tiling)->overlap))
+						(ceil((GLfloat)texture->depth_texels/
+						(GLfloat)((*texture_tiling)->tile_size[2] - 2 * (*texture_tiling)->overlap))
 						>= (*texture_tiling)->texture_tiles[2]))
 					{
 						(*texture_tiling)->texture_tiles[2]++;
@@ -1525,7 +1522,7 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 {
 	double accumulator, width_reduction, height_reduction, depth_reduction, number_of_accumulated_pixels;
 	unsigned char *destination, *i_base, *image, *j_base, *source, *source2;
-	float i_factor, j_factor, k_factor;
+	GLfloat i_factor, j_factor, k_factor;
 	int a, b, bytes_per_pixel, c,
 		destination_row_width_bytes, i, j, k, n, number_of_bytes_per_component, number_of_components,
 		padding_bytes, return_code, source_row_width_bytes;
@@ -3716,7 +3713,7 @@ int Texture_copy_without_identifier(struct Texture *source, struct Texture *dest
 	return (return_code);
 } /* Texture_copy_without_identifier */
 
-int Texture_get_combine_alpha(struct Texture *texture,float *alpha)
+int Texture_get_combine_alpha(struct Texture *texture,ZnReal *alpha)
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -3743,7 +3740,7 @@ Returns the alpha value used for combining the texture.
 	return (return_code);
 } /* Texture_get_combine_alpha */
 
-int Texture_set_combine_alpha(struct Texture *texture,float alpha)
+int Texture_set_combine_alpha(struct Texture *texture,ZnReal alpha)
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -3934,7 +3931,7 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 	return (return_code);
 } /* Texture_set_combine_mode */
 
-int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias)
+int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,ZnReal *bias)
 {
 	int return_code;
 
@@ -3955,7 +3952,7 @@ int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias)
 	return (return_code);
 } /* Texture_get_mipmap_level_of_detail_bias */
 
-int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,float bias)
+int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,ZnReal bias)
 {
 	int return_code;
 
@@ -5059,7 +5056,7 @@ Returns the byte values in the texture at x,y,z.
 } /* Texture_get_raw_pixel_values */
 
 int Texture_get_pixel_values(struct Texture *texture,
-	double x, double y, double z, double *values)
+	ZnReal x, ZnReal y, ZnReal z, ZnReal *values)
 /*******************************************************************************
 LAST MODIFIED : 28 August 2002
 
@@ -5071,7 +5068,7 @@ interpolated or not.  When closer than half a texel to a boundary the colour
 is constant from the half texel location to the edge. 
 ==============================================================================*/
 {
-	double local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
+	ZnReal local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
 	int bytes_per_pixel, component_max, dimension, i, in_border, j, k,
 		max_i, max_j, max_k, n, number_of_bytes_per_component,
 		number_of_components, original_size[3], return_code, row_width_bytes,
@@ -5112,7 +5109,7 @@ is constant from the half texel location to the edge.
 				}
 				else
 				{
-					x *= ((double)texture->original_width_texels / texture->width);
+					x *= ((ZnReal)texture->original_width_texels / texture->width);
 				}
 
 				if ((y < 0.0) || (0.0 == texture->height))
@@ -5125,7 +5122,7 @@ is constant from the half texel location to the edge.
 				}
 				else
 				{
-					y *= ((double)texture->original_height_texels / texture->height);
+					y *= ((ZnReal)texture->original_height_texels / texture->height);
 				}
 
 				if ((z < 0.0) || (0.0 == texture->depth))
@@ -5138,7 +5135,7 @@ is constant from the half texel location to the edge.
 				}
 				else
 				{
-					z *= ((double)texture->original_depth_texels / texture->depth);
+					z *= ((ZnReal)texture->original_depth_texels / texture->depth);
 				}
 			} break;
 			case TEXTURE_CLAMP_BORDER_WRAP:
@@ -5887,8 +5884,8 @@ read. May differ from the dimensions of the texture which is in powers of 2.
 	return (return_code);
 } /* Texture_get_original_size */
 
-int Texture_get_physical_size(struct Texture *texture,float *width,
-	float *height, float *depth)
+int Texture_get_physical_size(struct Texture *texture,ZnReal *width,
+	ZnReal *height, ZnReal *depth)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -5918,7 +5915,7 @@ Returns the physical size in model coordinates of the original texture image.
 } /* Texture_get_physical_size */
 
 int Texture_set_physical_size(struct Texture *texture,
-	float width, float height, float depth)
+	ZnReal width, ZnReal height, ZnReal depth)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -5956,7 +5953,7 @@ real image data and not padding to make image sizes up to powers of 2.
 } /* Texture_set_physical_size */
 
 int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture,
-   unsigned int *dimension, double **sizes)
+   unsigned int *dimension, ZnReal **sizes)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
 
@@ -6008,7 +6005,7 @@ the top right of the texture.
 } /* Texture_get_texture_coordinate_sizes */
 
 int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture,
-   unsigned int dimension, double *sizes)
+   unsigned int dimension, ZnReal *sizes)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
 
@@ -6064,8 +6061,8 @@ the top right of the texture.
 } /* Texture_set_texture_coordinate_sizes */
 
 int Texture_get_distortion_info(struct Texture *texture,
-	float *distortion_centre_x,float *distortion_centre_y,
-	float *distortion_factor_k1)
+	ZnReal *distortion_centre_x,ZnReal *distortion_centre_y,
+	ZnReal *distortion_factor_k1)
 /*******************************************************************************
 LAST MODIFIED : 28 September 1999
 
@@ -6097,8 +6094,8 @@ from (0.0,0.0) to (texture->width,texture->height).
 } /* Texture_get_distortion_info */
 
 int Texture_set_distortion_info(struct Texture *texture,
-	float distortion_centre_x,float distortion_centre_y,
-	float distortion_factor_k1)
+	ZnReal distortion_centre_x,ZnReal distortion_centre_y,
+	ZnReal distortion_factor_k1)
 /*******************************************************************************
 LAST MODIFIED : 28 September 1999
 
@@ -6751,77 +6748,12 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 					case TEXTURE_DMBUFFER:
 					{
 						/* If copied by reference we don't need to do anything */
-#if defined (OLD_DEBUG)
-						Graphics_buffer_make_read_current(texture->graphics_buffer);
-						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-						glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
-						glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
-							256, 256, 0);
-						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-							texture->original_width_texels, texture->original_height_texels);
-						Texture_get_type_and_format_from_storage_type(texture->storage,
-							&type, &format);
-						glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-							GL_RGBA8_EXT,
-							(GLint)(texture->width_texels),
-							(GLint)(texture->height_texels),(GLint)0,
-							format,type, NULL);
-						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-							256, 256);
-						{
-							unsigned char test_pixels[262144];
-							
-							glReadPixels(0, 0, 256, 256,
-								GL_RGBA, GL_UNSIGNED_BYTE,
-								(void*)test_pixels);
-							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-								256, 256,
-								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-						}
-						glRasterPos3i(1,1,1);
-						glCopyPixels(0,0, 256,256, GL_COLOR);
-						{
-							static int counter = 100;
-							unsigned char test_pixels[262144];
-
-							counter += 7;
-							memset(test_pixels, counter % 255, 262144);
-							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-								256, 256,
-								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-						}
-						X3dThreeDDrawingRemakeCurrent();
-#endif /* defined (DEBUG_CODE) */
 					} break;
 					case TEXTURE_PBUFFER:
 					{
-#if defined (SGI_DIGITAL_MEDIA)
-						glPushAttrib(GL_PIXEL_MODE_BIT);
-						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-						Graphics_buffer_make_read_current(texture->graphics_buffer);
-						glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
-																				cause the OCTANE seems to return alpha of zero from render
-																				to buffer */
-						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-							texture->width_texels, texture->height_texels);
-						{
-							/* This code is should be totally unnecessary but
-								it seems that the texture stuff is broken */
-							unsigned char test_pixels[262144];
-							
-							glReadPixels(0, 0, 256, 256,
-								GL_RGBA, GL_UNSIGNED_BYTE,
-								(void*)test_pixels);
-							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-								256, 256,
-								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-						}
-						glPopAttrib();
-#else /* defined (SGI_DIGITAL_MEDIA) */
 						display_message(ERROR_MESSAGE,
 							"Texture_execute_opengl_texture_object.  PBUFFER not supported");
 						return_code=0;								
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 					} break;
 					default:
 					{
@@ -6848,7 +6780,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 				if(texture->storage==TEXTURE_DMBUFFER || 
 					texture->storage==TEXTURE_PBUFFER)
 				{
-					Graphics_buffer_make_read_current(texture->graphics_buffer);				
+					//-- Graphics_buffer_make_read_current(texture->graphics_buffer);
 					direct_render_Texture(texture, renderer);
 					/* X3dThreeDDrawingRemakeCurrent(); */
 				}
@@ -7002,27 +6934,6 @@ int Texture_execute_opengl_display_list(struct Texture *texture,
 		{
 #if defined (OPENGL_API)
 			glCallList(texture->display_list);
-#if defined (OLD_CODE)
-			/* SAB There seems to be some problem with losing a bound texture,
-				this tries to correct this */
-			/* If using texture_objects then we need to check that the texture
-				is still resident */
-			glAreTexturesResident(1, &texture->texture_id, &resident);
-			if (GL_TRUE != resident)
-			{
-				/* Reload the texture */
-				if(texture->storage==TEXTURE_DMBUFFER || 
-					texture->storage==TEXTURE_PBUFFER)
-				{
-					Graphics_buffer_make_read_current(texture->graphics_buffer);				
-					direct_render_Texture(texture);
-				}
-				else
-				{
-					direct_render_Texture(texture);
-				}
-			}
-#endif /* defined (OLD_CODE) */
 			return_code=1;
 #else /* defined (OPENGL_API) */
 			display_message(ERROR_MESSAGE,
@@ -7374,7 +7285,7 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 #endif /* defined (GL_ATI_texture_float) */
 	if (fallback_to_shorts)
 	{
-		/* Fall back to shorts if no float format available */
+		/* Fall back to shorts if no GLfloat format available */
 		if (alpha)
 		{
 			format = GL_RGBA16;

@@ -40,7 +40,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//-- extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_field_module.h"
@@ -50,7 +49,6 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
-//-- }
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"

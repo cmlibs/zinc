@@ -87,10 +87,6 @@ Global functions
 ----------------
 */
 
-#ifdef __cplusplus
-//-- extern "C" {
-#endif /* __cplusplus */
-
 /***************************************************************************//**
  * Return the field from the manager with the given name. If none is found with
  * that name, try to find the field component as fieldname.componentname, i.e.
@@ -104,7 +100,4 @@ Cmiss_field_id Computed_field_manager_get_field_or_component(
 	struct MANAGER(Computed_field) *computed_field_manager, const char *name,
 	int *component_number_address);
 
-#ifdef __cplusplus
-//-- }
-#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_SET_H) */

@@ -12,45 +12,58 @@
 # Gtk fourth
 
 # All
-SET( API_INTERFACE_SRCS )
 SET( API_INTERFACE_HDRS 
 	source/api/cmiss_idle.h )
 
 SET( USER_INTERFACE_SRCS
-	#source/ui/confirmation.cpp
-	#source/user_interface/event_dispatcher.cpp
+	source/user_interface/event_dispatcher.cpp
+	source/user_interface/idle.cpp
 	#source/user_interface/filedir.cpp
 	#source/ui/message.c
-	#source/user_interface/user_interface.cpp
-	source/user_interface/idle.c 
-	)
+	source/user_interface/user_interface.cpp )
 SET( USER_INTERFACE_HDRS
-	#source/ui/confirmation.h
-	#source/user_interface/event_dispatcher.h
+	source/user_interface/event_dispatcher.h
 	#source/user_interface/filedir.h
 	source/user_interface/idle.h
 	#source/ui/message.h
 	#source/user_interface/process_list_or_write_command.hpp
-	#source/user_interface/user_interface.h 
-	)
+	source/user_interface/user_interface.h )
 
-# Most
-IF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
-	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
-	SET( API_INTERFACE_SRCS )
-
-	SET( COMPUTED_FIELD_INTERFACE_SRCS )
-		#source/user_interface/computed_field_scene_viewer_projection.cpp )
-ENDIF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
-	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
+IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+	SET( GRAPHICS_INTERFACE_SRCS  
+		source/graphics/scene_viewer.cpp )
+	SET( GRAPHICS_INTERFACE_HDRS )
+ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
 # Wx
 IF( WX_USER_INTERFACE )
+	SET( API_INTERFACE_HDRS ${API_INTERFACE_HDRS}
+		source/api/cmiss_scene_viewer_ui.h )
+	SET( THREE_D_DRAWING_INTERFACE_SRCS
+		source/three_d_drawing/graphics_buffer.cpp )
+	SET( THREE_D_DRAWING_INTERFACE_HDRS
+		source/three_d_drawing/graphics_buffer.h )
+	SET( CONTEXT_SRCS
+		source/context/user_interface_module.cpp
+		source/context/context.cpp )
+	SET( CONTEXT_HDRS
+		source/context/user_interface_module.h )
 ENDIF( WX_USER_INTERFACE )
 
 # Gtk
 IF( GTK_USER_INTERFACE )
 ENDIF( GTK_USER_INTERFACE )
 
+IF( WIN32_USER_INTERFACE )
+	IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+		SET( THREE_D_DRAWING_INTERFACE_SRCS ${THREE_D_DRAWING_INTERFACE_SRCS}
+			source/three_d_drawing/window_system_extensions.cpp )
+		SET( THREE_D_DRAWING_INTERFACE_HDRS ${THREE_D_DRAWING_INTERFACE_HDRS}
+			source/three_d_drawing/window_system_extensions.h )
+	ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+ENDIF( WIN32_USER_INTERFACE )
+
+	
+	
 
 
