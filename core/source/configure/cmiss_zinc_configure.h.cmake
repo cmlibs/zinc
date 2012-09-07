@@ -38,10 +38,6 @@
 #cmakedefine MEMORY_CHECKING
 #cmakedefine ZINC_NO_STDOUT
 
-// Shared object export defines
-#cmakedefine ZINC_SHARED_OBJECT
-#cmakedefine ZINC_EXPORTS
-
 #if defined _WIN32 || defined __CYGWIN__
   #define ZINC_DLL_IMPORT __declspec(dllimport)
   #define ZINC_DLL_EXPORT __declspec(dllexport)

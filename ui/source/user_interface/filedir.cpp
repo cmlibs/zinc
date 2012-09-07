@@ -43,21 +43,18 @@ the default button.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/zinc_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
-
-extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "configure/cmiss_zinc_configure.h"
+
+extern "C" {
 #include "general/debug.h"
-#include "user_interface/filedir.h"
-#include "user_interface/message.h"
-#include "user_interface/user_interface.h"
+#include "general/message.h"
 #include "general/mystring.h"
-#include "command/command.h"
+#include "user_interface/filedir.h"
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
@@ -85,7 +82,7 @@ struct File_open_data *create_File_open_data(const char *filter_extension,
 #if defined(WX_USER_INTERFACE)
 	 , struct Execute_command *execute_command
 #endif /* defined (WX_USER_INTERFACE) */
-																						 )
+	 )
 /*******************************************************************************
 LAST MODIFIED : 3 June 1999
 

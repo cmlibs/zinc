@@ -5,7 +5,6 @@ SET( API_HDRS
 	source/api/cmiss_context.h
 	source/api/cmiss_core.h
 	source/api/cmiss_element.h
-	source/api/cmiss_fdio.h
 	source/api/cmiss_field.h
 	source/api/cmiss_field_alias.h
 	source/api/cmiss_field_arithmetic_operators.h
@@ -28,7 +27,6 @@ SET( API_HDRS
 	source/api/cmiss_graphics_filter.h
 	source/api/cmiss_graphics_material.h
 	source/api/cmiss_graphics_module.h
-	source/api/cmiss_idle.h
 	source/api/cmiss_interactive_tool.h
 	source/api/cmiss_optimisation.h
 	source/api/cmiss_node.h

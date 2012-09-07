@@ -85,8 +85,6 @@ Functions and structures for interfacing with the graphics library.
 #	define GL_GLEXT_PROTOTYPES
 #endif /* (WX_USER_INTERFACE) */
 
-struct User_interface;
-
 /*
 Global types
 ------------
@@ -131,7 +129,7 @@ DESCRIPTION :
 Function to close the PHIGS graphics library.
 ==============================================================================*/
 
-int initialize_graphics_library(struct User_interface *user_interface);
+int initialize_graphics_library();
 /*******************************************************************************
 LAST MODIFIED : 14 November 1996
 

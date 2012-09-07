@@ -12,29 +12,35 @@
 # Gtk fourth
 
 # All
+SET( API_INTERFACE_SRCS )
+SET( API_INTERFACE_HDRS 
+	source/api/cmiss_idle.h )
+
 SET( USER_INTERFACE_SRCS
 	#source/ui/confirmation.cpp
-	source/user_interface/event_dispatcher.cpp
-	source/user_interface/filedir.cpp
+	#source/user_interface/event_dispatcher.cpp
+	#source/user_interface/filedir.cpp
 	#source/ui/message.c
-	source/user_interface/user_interface.cpp
-	source/user_interface/idle.c )
+	#source/user_interface/user_interface.cpp
+	source/user_interface/idle.c 
+	)
 SET( USER_INTERFACE_HDRS
-#	source/ui/confirmation.h
-	source/user_interface/event_dispatcher.h
-	source/user_interface/filedir.h
+	#source/ui/confirmation.h
+	#source/user_interface/event_dispatcher.h
+	#source/user_interface/filedir.h
 	source/user_interface/idle.h
-#	source/ui/message.h
-	source/user_interface/process_list_or_write_command.hpp
-	source/user_interface/user_interface.h )
+	#source/ui/message.h
+	#source/user_interface/process_list_or_write_command.hpp
+	#source/user_interface/user_interface.h 
+	)
 
 # Most
 IF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
 	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
 	SET( API_INTERFACE_SRCS )
 
-	SET( COMPUTED_FIELD_INTERFACE_SRCS
-		source/user_interface/computed_field_scene_viewer_projection.cpp )
+	SET( COMPUTED_FIELD_INTERFACE_SRCS )
+		#source/user_interface/computed_field_scene_viewer_projection.cpp )
 ENDIF( WX_USER_INTERFACE OR GTK_USER_INTERFACE OR
 	CARBON_USER_INTERFACE OR WIN32_USER_INTERFACE )
 

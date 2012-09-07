@@ -89,7 +89,7 @@ Global functions
 ----------------
 */
 
-int initialize_graphics_library(struct User_interface *user_interface)
+int initialize_graphics_library()
 /*******************************************************************************
 LAST MODIFIED : 23 February 2004
 
@@ -97,21 +97,15 @@ DESCRIPTION :
 Sets up the default light, material and light model for the graphics library.
 ==============================================================================*/
 {
-#if defined(GLX_ARB_get_proc_address)
-#endif /* defined(GLX_ARB_get_proc_address) */
-	int return_code;
+	int return_code = 1;
 	static int initialized=0;
 
 	ENTER(initialize_graphics_library);
 
-	return_code=1;
-	USE_PARAMETER(user_interface);
 	if (!initialized)
 	{
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
-#if defined(GLX_ARB_get_proc_address)
-#endif /* defined(GLX_ARB_get_proc_address) */
 #endif
 		initialized=1;
 	}

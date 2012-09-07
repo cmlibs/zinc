@@ -44,6 +44,8 @@ The public interface to idle callbacks
 #ifndef __API_CMISS_IDLE_H__
 #define __API_CMISS_IDLE_H__
 
+#include "cmiss_zinc_configure.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -72,7 +74,7 @@ DESCRIPTION :
 The type used for idle callback data.
 ==============================================================================*/
 
-Cmiss_idle_callback_id Cmiss_idle_package_add_callback(Cmiss_idle_package_id pkg,
+Cmiss_idle_callback_id ZINC_API Cmiss_idle_package_add_callback(Cmiss_idle_package_id pkg,
  Cmiss_idle_callback_function *callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 21 March 2005
@@ -81,7 +83,7 @@ DESCRIPTION :
 Sets an idle callback.
 ==============================================================================*/
 
-int Cmiss_idle_callback_destroy(Cmiss_idle_package_id pkg,
+int ZINC_API Cmiss_idle_callback_destroy(Cmiss_idle_package_id pkg,
 	Cmiss_idle_callback_id *callback);
 /*******************************************************************************
 LAST MODIFIED : 21 March 2005
@@ -90,7 +92,7 @@ DESCRIPTION :
 Destroys an idle callback, causing it to not be called any longer.
 ==============================================================================*/
 
-int Cmiss_idle_package_destroy(Cmiss_idle_package_id *pkg);
+int ZINC_API Cmiss_idle_package_destroy(Cmiss_idle_package_id *pkg);
 /*******************************************************************************
 LAST MODIFIED : 21 March 2005
 
