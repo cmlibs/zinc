@@ -44,7 +44,6 @@ Functions for selecting computed fields from the commands line.
 #if !defined (COMPUTED_FIELD_SET_H)
 #define COMPUTED_FIELD_SET_H
 
-#include "command/parser.h"
 #include "computed_field/computed_field.h"
 
 /*

@@ -54,12 +54,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "io_devices/io_device.h"
-#include "user_interface/event_dispatcher.h"
 #include "general/message.h"
-#include "user_interface/user_interface.h"
-#if defined (USE_PERL_INTERPRETER)
-#include "perl_interpreter.h"
-#endif /* defined (USE_PERL_INTERPRETER) */
 
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001

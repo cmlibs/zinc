@@ -46,7 +46,7 @@ for performing coordinate transformations.
 #if !defined (GEOMETRY_H)
 #define GEOMETRY_H
 
-
+#include "general/value.h"
 #include "general/enumerator.h"
 #include "general/object.h"
 
@@ -91,11 +91,11 @@ LAST MODIFIED : 24 August 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-  enum Coordinate_system_type type;
-  union
-  {
-    FE_value focus;
-  } parameters;
+	enum Coordinate_system_type type;
+	union
+	{
+		FE_value focus;
+	} parameters;
 }; /* struct Coordinate_system */
 
 enum Projection_type

@@ -167,6 +167,32 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 <input_string> where they appear in match_string.
 ==============================================================================*/
 
+int fuzzy_string_compare(const char *first,const char *second);
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+This is a case insensitive compare disregarding certain characters (whitespace,
+dashes and underscores).  For example, "Ambient Colour" matches the following:
+
+"AMBIENT_COLOUR", "ambient_colour", "ambientColour", "Ambient_Colour",
+"ambient-colour", "AmBiEnTcOlOuR", "Ambient-- Colour"
+
+and a large set of even louder versions. The strings are compared up to the
+length of the shortest of first and second.
+
+Returns 1 if the strings match, 0 if they do not.
+==============================================================================*/
+
+int fuzzy_string_compare_same_length(const char *first,const char *second);
+/*******************************************************************************
+LAST MODIFIED : 14 August 1998
+
+DESCRIPTION :
+Same as fuzzy_string_compare except that the two reduced strings must be the
+same length.
+==============================================================================*/
+
 int is_standard_object_name(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 29 April 2003

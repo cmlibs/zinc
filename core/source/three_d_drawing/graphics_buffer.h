@@ -50,7 +50,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 
 #include "general/callback.h"
 #include "general/object.h"
-#include "user_interface/user_interface.h"
 
 #if defined (GTK_USER_INTERFACE)
 /* #define GTK_USE_GTKGLAREA */

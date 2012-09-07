@@ -772,6 +772,193 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 	return (return_code);
 } /* string_matches_without_whitespace */
 
+static int reduce_fuzzy_string(char *reduced_string,const char *string)
+/*******************************************************************************
+LAST MODIFIED : 16 September 1998
+
+DESCRIPTION :
+Copies <string> to <reduced_string> converting to upper case and removing
+whitespace, -'s and _'s.
+???RC Removed filtering of dash and underline.
+==============================================================================*/
+{
+	char *destination;
+	const char *source;
+	int return_code;
+
+	ENTER(reduce_fuzzy_string);
+	if ((source=string)&&(destination=reduced_string))
+	{
+		while (*source)
+		{
+			/* remove whitespace, -'s and _'s */
+			/*???RC don't know why you want to exclude - and _. I had a case where
+				I typed gfx create fibre_ (short for fibre_field) and it thought it was
+				ambiguous since there is also a gfx create fibres commands. */
+			if (!isspace(*source)/*&&(*source!='-')&&(*source!='_')*/)
+			{
+				*destination=toupper(*source);
+				destination++;
+			}
+			source++;
+		}
+		/* terminate the string */
+		*destination='\0';
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"reduce_fuzzy_string.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* reduce_fuzzy_string */
+
+int fuzzy_string_compare(const char *first,const char *second)
+/*******************************************************************************
+LAST MODIFIED : 30 August 2000
+
+DESCRIPTION :
+This is a case insensitive compare disregarding certain characters (whitespace,
+dashes and underscores).  For example, "Ambient Colour" matches the following:
+
+"AMBIENT_COLOUR", "ambient_colour", "ambientColour", "Ambient_Colour",
+"ambient-colour", "AmBiEnTcOlOuR", "Ambient-- Colour"
+
+and a large set of even louder versions.
+
+Both strings are first reduced, which removes whitespace and converts to upper
+case. Returns 1 iff the reduced second string is at least as long as the
+reduced first string and starts with the characters in the first.
+==============================================================================*/
+{
+	char *first_reduced,*second_reduced;
+	int compare_length,first_length,return_code,second_length;
+
+	ENTER(fuzzy_string_compare);
+	if (first&&second)
+	{
+		/*???Edouard.  Malloc()ing and free()ing space for every string compare is
+			perhaps going to eat a few too many cycles in the final analysis. I think
+			that the best idea would be to at some point in the future recode the
+			following to compare the strings 'live' by reducing and skipping the chars
+			one by one. I've done this before, but it's generally not all that
+			clean-looking, so I'm trying to write a simple one first off */
+		/* allocate memory */
+		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
+			ALLOCATE(second_reduced,char,strlen(second)+1))
+		{
+			/* reduce strings */
+			if (reduce_fuzzy_string(first_reduced,first)&&
+				reduce_fuzzy_string(second_reduced,second))
+			{
+				first_length=strlen(first_reduced);
+				second_length=strlen(second_reduced);
+				/* first reduced string must not be longer than second */
+				if (first_length <= second_length)
+				{
+					compare_length=first_length;
+					if (strncmp(first_reduced,second_reduced,compare_length))
+					{
+						return_code=0;
+					}
+					else
+					{
+						return_code=1;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Error reducing");
+				return_code=0;
+			}
+			DEALLOCATE(first_reduced);
+			DEALLOCATE(second_reduced);
+		}
+		else
+		{
+			DEALLOCATE(first_reduced);
+			display_message(ERROR_MESSAGE,
+				"fuzzy_string_compare.  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* fuzzy_string_compare */
+
+int fuzzy_string_compare_same_length(const char *first,const char *second)
+/*******************************************************************************
+LAST MODIFIED : 14 August 1998
+
+DESCRIPTION :
+Same as fuzzy_string_compare except that the two reduced strings must be the
+same length.
+==============================================================================*/
+{
+	char *first_reduced,*second_reduced;
+	int return_code;
+
+	ENTER(fuzzy_string_compare_same_length);
+	if (first&&second)
+	{
+		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
+			ALLOCATE(second_reduced,char,strlen(second)+1))
+		{
+			/* reduce strings */
+			if (reduce_fuzzy_string(first_reduced,first)&&
+				reduce_fuzzy_string(second_reduced,second))
+			{
+				if (0==strcmp(first_reduced,second_reduced))
+				{
+					return_code=1;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"fuzzy_string_compare_same_length.  Error reducing");
+				return_code=0;
+			}
+			DEALLOCATE(first_reduced);
+			DEALLOCATE(second_reduced);
+		}
+		else
+		{
+			DEALLOCATE(first_reduced);
+			display_message(ERROR_MESSAGE,
+				"fuzzy_string_compare_same_length.  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fuzzy_string_compare_same_length.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* fuzzy_string_compare_same_length */
+
 int is_standard_object_name(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 12 May 2003

@@ -82,7 +82,6 @@ Functions for interfacing with the graphics library.
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
-#include "user_interface/user_interface.h"
 
 
 /*

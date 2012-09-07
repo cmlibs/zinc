@@ -529,8 +529,7 @@ be either the minimum or maximum value as appropriate.
 			if (last_time>first_time)
 			{
 				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-				fe_value_index+=0.5;/*round float to nearest int */
-				array_index=floor(fe_value_index);
+				array_index=fe_value_index+0.5;/*round float to nearest int */;
 			}
 			else
 			{

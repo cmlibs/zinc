@@ -46,10 +46,10 @@ Spectrum structures and support code.
 
 #include "configure/cmiss_zinc_configure.h"
 
+#include "general/value.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "command/parser.h"
 #include "api/cmiss_graphics_module.h"
 
 struct Cmiss_graphics_material;

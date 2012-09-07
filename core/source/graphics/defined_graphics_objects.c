@@ -48,7 +48,6 @@ Routines which construct graphics objects. (but do not depend on finite elements
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "general/message.h"
-#include "user_interface/user_interface.h"
 #include "graphics/defined_graphics_objects.h"
 
 /*
