@@ -21,9 +21,9 @@ SET( GRAPHICS_SRCS
 	source/graphics/mcubes.c
 	source/graphics/order_independent_transparency.cpp
 	source/graphics/render_to_finite_elements.cpp
-	source/graphics/renderstl.cpp
-	source/graphics/rendervrml.cpp
-	source/graphics/renderwavefront.cpp
+	source/graphics/render_stl.cpp
+	source/graphics/render_vrml.cpp
+	source/graphics/render_wavefront.cpp
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
 	source/graphics/selected_graphic.c
@@ -33,7 +33,6 @@ SET( GRAPHICS_SRCS
 	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
 	source/graphics/texture_line.c
-	source/graphics/transform_tool.cpp
 	source/graphics/triangle_mesh.cpp
 	source/graphics/userdef_objects.c
 	source/graphics/volume_texture.c )
@@ -65,11 +64,11 @@ SET( GRAPHICS_HDRS
 	source/graphics/mcubes.h
 	source/graphics/order_independent_transparency.h
 	source/graphics/quaternion.hpp
-	source/graphics/renderalias.h
-	source/graphics/renderbinarywavefront.h
-	source/graphics/renderstl.h
-	source/graphics/rendervrml.h
-	source/graphics/renderwavefront.h
+	source/graphics/render_alias.h
+	source/graphics/render_binary_wavefront.h
+	source/graphics/render_stl.h
+	source/graphics/render_vrml.h
+	source/graphics/render_wavefront.h
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
 	source/graphics/selected_graphic.h
@@ -82,7 +81,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/texture.hpp
 	source/graphics/texturemap.h
 	source/graphics/texture_line.h
-	source/graphics/transform_tool.h
 	source/graphics/triangle_mesh.hpp
 	source/graphics/userdef_objects.h
 	source/graphics/volume_texture.h )
@@ -96,7 +94,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/light.c
 		source/graphics/light_model.cpp
 		source/graphics/render.cpp
-		source/graphics/rendergl.cpp
+		source/graphics/render_gl.cpp
 		source/graphics/scene.cpp
 		source/graphics/scene_viewer.cpp
 		source/graphics/tile_graphics_objects.cpp )
@@ -106,23 +104,10 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/light.h
 		source/graphics/light_model.h
 		source/graphics/render.hpp
-		source/graphics/rendergl.hpp
+		source/graphics/render_gl.h
 		source/graphics/scene.h
 		source/graphics/scene.hpp
 		source/graphics/scene_viewer.h
 		source/graphics/scene_viewer.hpp
 		source/graphics/tile_graphics_objects.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	
-IF( WX_USER_INTERFACE )
-	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
-		source/dialog/tessellation_dialog.cpp
-		source/graphics/region_tree_viewer_wx.cpp
-		source/graphics/spectrum_editor_wx.cpp
-		source/graphics/spectrum_editor_dialog_wx.cpp )
-	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
-		source/dialog/tessellation_dialog.hpp
-		source/graphics/region_tree_viewer_wx.h
-		source/graphics/spectrum_editor_wx.h
-		source/graphics/spectrum_editor_dialog_wx.h )
-ENDIF( WX_USER_INTERFACE )

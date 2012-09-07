@@ -10,39 +10,23 @@ SET( CURVE_SRCS source/curve/curve.c )
 SET( CURVE_HDRS source/curve/curve.h )
 
 SET( ELEMENT_SRCS
-	source/element/element_operations.cpp
-	source/element/element_point_tool.cpp
-	source/element/element_tool.cpp )
+	source/element/element_operations.cpp )
 SET( ELEMENT_HDRS
-	source/element/element_operations.h
-	source/element/element_point_tool.h
-	source/element/element_tool.h )
-
-IF( WX_USER_INTERFACE )
-	SET( ELEMENT_SRCS ${ELEMENT_SRCS}
-		source/element/element_point_viewer_wx.cpp )
-	SET( ELEMENT_HDRS ${ELEMENT_HDRS}
-		source/element/element_point_viewer_wx.h )
-ENDIF( WX_USER_INTERFACE )
+	source/element/element_operations.h )
 
 SET( EMOTER_SRCS
-	source/emoter/em_cmgui.c
-	source/emoter/emoter_dialog.cpp )
-SET( EMOTER_HDRS
-	source/emoter/emoter_dialog.h 
+	source/emoter/em_cmgui.c )
+SET( EMOTER_HDRS 
 	source/emoter/em_cmgui.h )
 
 SET( INTERACTION_SRCS
 	source/interaction/interaction_graphics.c
 	source/interaction/interaction_volume.c
-	source/interaction/interactive_event.cpp
-	source/interaction/interactive_tool.c )
+	source/interaction/interactive_event.cpp )
 SET( INTERACTION_HDRS
 	source/interaction/interaction_graphics.h
 	source/interaction/interaction_volume.h
-	source/interaction/interactive_event.h
-	source/interaction/interactive_tool.h
-	source/interaction/interactive_tool_private.h )
+	source/interaction/interactive_event.h )
 
 
 SET( IO_DEVICES_SRCS
@@ -51,8 +35,8 @@ SET( IO_DEVICES_SRCS
 	source/io_devices/matrix.c )
 SET( IO_DEVICES_HDRS
 	source/io_devices/conversion.h
-	source/io_devices/gstScene.h
-	source/io_devices/gstTransform.h
+	source/io_devices/gst_scene.h
+	source/io_devices/gst_transform.h
 	source/io_devices/io_device.h
 	source/io_devices/matrix.h )
 
@@ -69,10 +53,8 @@ SET( MESH_SRCS
 SET( MESH_HDRS 
 	source/mesh/cmiss_element_private.hpp )
 
-SET( NODE_SRCS source/node/node_operations.c
-	source/node/node_tool.cpp )
-SET( NODE_HDRS source/node/node_operations.h
-	source/node/node_tool.h )
+SET( NODE_SRCS source/node/node_operations.c )
+SET( NODE_HDRS source/node/node_operations.h )
 
 SET( REGION_SRCS source/region/cmiss_region.cpp
 	source/stream/cmiss_region_stream.cpp
