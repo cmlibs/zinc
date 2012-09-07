@@ -40,63 +40,18 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.1 FATAL_ERROR ) 
 
 # This is the project name and shows up in ides
-PROJECT( ZincLibrary )
-
-# If you want to look at the debug messages uncomment the next line or define
-# it on the command line
-#SET( CMAKE_DEBUG TRUE )
-
-FILE( TO_CMAKE_PATH "${CMISS_INSTALL_PREFIX}" CMISS_INSTALL_PREFIX )
-FILE( TO_CMAKE_PATH "${CMISS_MODULE_DIR}" CMISS_MODULE_DIR )
-FILE( TO_CMAKE_PATH "${CMISS_ROOT}" CMISS_ROOT )
-
-# We need a path to our own CMake modules.  This has the MacroDefinitions.cmake file
-# that contains common macro defintions that are shared between projects.
-SET( FOUND_MACRODEFINITIONS_MODULE NO )
-IF( CMISS_INSTALL_PREFIX OR CMISS_MODULE_DIR )
-	IF( NOT EXISTS "${CMISS_MODULE_DIR}/MacroDefinitions.cmake" )
-		SET( CMISS_MODULE_DIR "${CMISS_INSTALL_PREFIX}/share/cmake/Modules" )
-	ENDIF()
-	IF( EXISTS "${CMISS_MODULE_DIR}/MacroDefinitions.cmake" )
-		SET( FOUND_MACRODEFINITIONS_MODULE YES )
-		IF( NOT CMISS_INSTALL_PREFIX )
-			# Check the install path on all operating systems
-			SET( CMISS_INSTALL_PREFIX "/usr/local" )
-		ENDIF()
-	ENDIF()
-ELSEIF( CMISS_ROOT )
-	IF( NOT EXISTS "${CMISS_MODULE_DIR}/MacroDefinitions.cmake" )
-		SET( CMISS_MODULE_DIR "${CMISS_ROOT}/cmake/Modules" )
-	ENDIF()
-	IF( EXISTS "${CMISS_MODULE_DIR}/MacroDefinitions.cmake" )
-		SET( FOUND_MACRODEFINITIONS_MODULE YES )
-		SET( CMISS_INSTALL_PREFIX "${CMISS_ROOT}/local" )
-	ENDIF()
-ELSEIF( EXISTS "$ENV{CMISS_ROOT}/cmake/Modules/MacroDefinitions.cmake" )
-	SET( FOUND_MACRODEFINITIONS_MODULE YES )
-	FILE( TO_CMAKE_PATH "$ENV{CMISS_ROOT}/cmake/Modules" CMISS_MODULE_DIR )
-	FILE( TO_CMAKE_PATH "$ENV{CMISS_ROOT}/local" CMISS_INSTALL_PREFIX )
-ENDIF()
-
-IF( NOT FOUND_MACRODEFINITIONS_MODULE )
-	#UNSET( CMISS_INSTALL_PREFIX CACHE )
-	#UNSET( CMISS_MODULE_DIR CACHE )
-	SET( CMISS_MODULE_DIR "" CACHE PATH "some text" )
-	SET( CMISS_INSTALL_PREFIX "" CACHE PATH "some insightful text" )
-	SET( CMAKE_INSTALL_PREFIX "empty" CACHE INTERNAL "Internalise CMAKE_INSTALL_PREFIX, manipulate via ZINC_INSTALL_PREFIX" FORCE )
-	SET( CMAKE_BUILD_TYPE "empty" CACHE INTERNAL "Internalise CMAKE_BUILD_TYPE, manipulate via ZINC_BUILD_TYPE" FORCE )
-	MESSAGE( FATAL_ERROR "Dude! I have not been able to find a path to the CMISS CMake modules.  Try setting CMISS_INSTALL_PREFIX, CMISS_MODULE_DIR or CMISS_ROOT." )
-ENDIF()
+PROJECT( ZincLibraries )
 
 SET( CMAKE_MODULE_PATH "${CMISS_MODULE_DIR}" )
 
-INCLUDE( MacroDefinitions )
-INCLUDE( FunctionDefinitions )
+INCLUDE( cmake/MacroDefinitions )
+INCLUDE( cmake/FunctionDefinitions )
 
+SET( CMISS_DEBUG TRUE )
 MACRO( DBG_MSG MSG_CONTENT )
-	IF( DEFINED CMAKE_DEBUG )
+	IF( DEFINED CMISS_DEBUG )
 		MESSAGE( STATUS "${MSG_CONTENT}" )
-	ENDIF( DEFINED CMAKE_DEBUG )
+	ENDIF( DEFINED CMISS_DEBUG )
 ENDMACRO( DBG_MSG MSG_CONTENT )
 
 SET( ZINC_MAJOR_VERSION "3" )
@@ -106,30 +61,8 @@ SET( ZINC_PATCH_VERSION "0" )
 SET( PRODUCT_PATH ${CMISS_INSTALL_PREFIX}/zinc )
 SET( PRODUCT_SOURCE ${PRODUCT_PATH}/source )
 
-DEFINE_ARCHITECTURE_DIR( )
 TEST_FOR_VFSCANF( HAVE_VFSCANF )
 
-# Option setting, the following manipulates the build
-OPTION_WITH_DEFAULT( ZINC_USE_ARCHITECTURE_DIR "Set true if cross-compiling or colocating libraries from different systems." OFF )
-SET( ZINC_INSTALL_PREFIX_TEMP ${CMISS_INSTALL_PREFIX} )
-
-# Set build type and install location
-IF( ZINC_USE_ARCHITECTURE_DIR )
-	STRING( FIND "${ZINC_INSTALL_PREFIX_TEMP}"
-		"/${ARCHITECTURE_DIR}" CONTAINS )
-	IF( ${CONTAINS} LESS 0 )
-		SET( ZINC_INSTALL_PREFIX_TEMP
-			"${ZINC_INSTALL_PREFIX_TEMP}/${ARCHITECTURE_DIR}" )
-	ELSE( ${CONTAINS} LESS 0 )
-		SET( ZINC_INSTALL_PREFIX
-			"${ZINC_INSTALL_PREFIX_TEMP}" )
-	ENDIF( ${CONTAINS} LESS 0 )
-ELSE( ZINC_USE_ARCHITECTURE_DIR )
-	STRING( REGEX REPLACE "/${ARCHITECTURE_DIR}" ""
-		ZINC_INSTALL_PREFIX_TEMP ${ZINC_INSTALL_PREFIX_TEMP} )
-ENDIF( ZINC_USE_ARCHITECTURE_DIR )
-
-UNSET( ZINC_INSTALL_PREFIX CACHE )
 CACHE_VAR_WITH_DEFAULT( ZINC_INSTALL_PREFIX "${ZINC_INSTALL_PREFIX_TEMP}"
 	PATH "Where do you want your Zinc libraries installed?" )
 SET( CMAKE_INSTALL_PREFIX ${ZINC_INSTALL_PREFIX} CACHE INTERNAL "Internalise CMAKE_INSTALL_PREFIX, manipulate via ZINC_INSTALL_PREFIX" FORCE )
@@ -138,23 +71,12 @@ CACHE_VAR_WITH_DEFAULT( ZINC_BUILD_TYPE "Release"
 	STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
 SET( CMAKE_BUILD_TYPE ${ZINC_BUILD_TYPE} CACHE INTERNAL "Internalise CMAKE_BUILD_TYPE, manipulate via ZINC_BUILD_TYPE" FORCE )
 
-# Set name option
-CACHE_VAR_WITH_DEFAULT( ZINC_TARGET_NAME_FORMAT "Verbose"
-	STRING "Do you want a 'Basic' or 'Verbose' target name" )
+CACHE_VAR_WITH_DEFAULT( ZINC_BUILD_LIBRARY_TYPE "SHARED" CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" )
 
 # Set user interface
 CACHE_VAR_WITH_DEFAULT( ZINC_USER_INTERFACE "wx" STRING "What type of user interface is required" )
 SET_USER_INTERFACE_DEFINES( )
-SET( CAN_USE_USER_INTERFACE FALSE )
 
-# Dependent library location options
-IF( WIN32 )
-	CACHE_VAR_WITH_DEFAULT( wxWidgets_DIR "${ZINC_INSTALL_PREFIX}/lib/cmake"
-		PATH "Where is the wxWidgets config file installed?" )
-ELSE( WIN32 )
-	CACHE_VAR_WITH_DEFAULT( wxWidgets_DIR "${ZINC_INSTALL_PREFIX}"
-		PATH "Where is wxWidgets installed?" )
-ENDIF( WIN32 )
 CACHE_VAR_WITH_DEFAULT( ImageMagick_DIR "${ZINC_INSTALL_PREFIX}/lib/cmake"
 	PATH "Where is Image magick installed?" )
 CACHE_VAR_WITH_DEFAULT( OCE_DIR "${ZINC_INSTALL_PREFIX}/lib/cmake"
@@ -174,9 +96,6 @@ CACHE_VAR_WITH_DEFAULT( PNG_DIR "${ZINC_INSTALL_PREFIX}/lib/cmake"
 # Locate dependent libraries
 # I think I can get away with just this set
 SET( CMAKE_PREFIX_PATH ${ZINC_INSTALL_PREFIX} )
-# This is my back up plan if libxml2 is not found
-#SET( CMAKE_INCLUDE_PATH ${ZINC_INSTALL_PREFIX}/include/libxml2 )
-#SET( CMAKE_LIBRARY_PATH ${ZINC_INSTALL_PREFIX}/lib )
 # Must have dependencies
 #FIND_PACKAGE( LibXml2 REQUIRED ) <-- pulled in by fieldml
 FIND_PACKAGE( fieldml REQUIRED HINTS ${ZINC_INSTALL_PREFIX}/lib/cmake )
@@ -200,9 +119,7 @@ FIND_PACKAGE( PNG QUIET NO_MODULE )
 FIND_PACKAGE( TIFF QUIET )
 FIND_PACKAGE( perl_interpreter QUIET HINTS ${ZINC_INSTALL_PREFIX}/lib/cmake )
 FIND_PACKAGE( PCRE QUIET HINTS ${ZINC_INSTALL_PREFIX}/lib/cmake )
-MESSAGE(STATUS  "wxWidgets DIR: ${wxWidgets_DIR}" )
 IF( WX_USER_INTERFACE )
-	MESSAGE(STATUS  "wxWidgets DIR: ${wxWidgets_DIR}" )
 	SET( CMAKE_PREFIX_PATH ${wxWidgets_DIR} )
 	FIND_PACKAGE( wxWidgets QUIET COMPONENTS xrc adv html gl xml core base )
 	SET( CAN_USE_USER_INTERFACE ${wxWidgets_FOUND} )
@@ -219,15 +136,7 @@ SET( CMAKE_PREFIX_PATH )
 SET( CMAKE_LIBRARY_PATH )
 SET( CMAKE_INCLUDE_PATH )
 
-# Build options
-SET( LIBRARY_TYPE_STRING "STATIC" )
-IF( DEFINED ZINC_BUILD_LIBRARY_TYPE )
-	SET( LIBRARY_TYPE_STRING ${ZINC_BUILD_LIBRARY_TYPE} )
-ENDIF( DEFINED ZINC_BUILD_LIBRARY_TYPE )
-SET( ZINC_BUILD_LIBRARY_TYPE ${LIBRARY_TYPE_STRING} CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" )
-
 # Define variables to false that need to be at least defined for passsing to option_with_default macro.
-SET_FALSE_IF_NOT_DEFINED( PERL_INTERPRETER_FOUND )
 SET_FALSE_IF_NOT_DEFINED( ITK_FOUND )
 SET_FALSE_IF_NOT_DEFINED( ImageMagick_FOUND )
 SET_FALSE_IF_NOT_DEFINED( NETGEN_FOUND )
@@ -243,15 +152,11 @@ SET_FALSE_IF_NOT_DEFINED( PCRE_FOUND )
 IF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
 	OPTION_WITH_DEFAULT( ZINC_BUILD_MEMORYCHECK "Do you want to build a memory check version" OFF )
 ENDIF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
-OPTION_WITH_DEFAULT( ZINC_BUILD_ABI "Do you want to build an ABI version" FALSE )
-OPTION_WITH_DEFAULT( ZINC_FE_VALUE_IS_DOUBLE "Double or floats for FE_value?" TRUE )
 # Dependent library options
 # Must have dependent library options, so not really options just here for visiblity
 # OPTION_WITH_DEFAULT( ZINC_USE_FIELDML "DO you want to use fieldml?" ON )
 # OPTION_WITH_DEFAULT( ZINC_USE_LIBXML2 "Do you want to use xml2?" ${LIBXML2_FOUND} )
 # Should have dependent library options
-OPTION_WITH_DEFAULT( ZINC_USE_PERL_INTERPRETER "Do you want to use the perl interpreter?"
-	${PERL_INTERPRETER_FOUND} )
 OPTION_WITH_DEFAULT( ZINC_USE_NETGEN "Do you want to use netgen?" ${NETGEN_FOUND} )
 OPTION_WITH_DEFAULT( ZINC_USE_GLEW "Do you want to use glew?" ${GLEW_FOUND} )
 OPTION_WITH_DEFAULT( ZINC_USE_ZLIB "Do you want to use zlib?" ${ZLIB_FOUND} )
@@ -276,12 +181,8 @@ OPTION_WITH_DEFAULT( ZINC_USE_PNG "Do you want to use png?" ${PNG_AND_TIFF_REQUI
 OPTION_WITH_DEFAULT( ZINC_USE_TIFF "Do you want to use tiff?" ${PNG_AND_TIFF_REQUIRED} )
 OPTION_WITH_DEFAULT( ZINC_PRINT_CONFIG_SUMMARY "Do you want a configuration summary printed?" TRUE )
 
-# Mark some options as advanced to declutter the CMake GUI interface
-MARK_AS_ADVANCED( ZINC_USE_LINK_CMISS )
-MARK_AS_ADVANCED( ZINC_USE_GTKMAIN )
-MARK_AS_ADVANCED( ZINC_FE_VALUE_IS_DOUBLE )
 # Set this for the configure header file
-SET( FE_VALUE_IS_DOUBLE ${ZINC_FE_VALUE_IS_DOUBLE} )
+SET( FE_VALUE_IS_DOUBLE TRUE )
 
 # Set general variables that manipulate the build
 # Set graphics
@@ -329,7 +230,6 @@ IF( APPLE )
 ENDIF( APPLE )
 
 # Set Target name and global defines
-DEFINE_TARGET_NAME( )
 SET_PLATFORM_DEFINES( )
 SET_OPERATING_SYSTEM_DEFINES( ) # <-- mostly set automatically by cmake just adding WIN32_SYSTEM to be used instead of WIN32
 SET_GRAPHICS_DEFINES( )
@@ -631,72 +531,11 @@ IF( GTK_USER_INTERFACE )
 	ENDIF( GTK2_FOUND )
 ENDIF( GTK_USER_INTERFACE )
 
-#IF( ZINC_USE_GDCM )
-#	IF( GDCM_FOUND )
-#		DBG_MSG( "WARNING: GDCM Issues see below" )
-#		DBG_MSG( "GDCM use file: ${GDCM_USE_FILE}" )
-#		MESSAGE( "GDCM_LIBRARIES currently: ${GDCM_LIBRARIES}" )
-#		DBG_MSG( "Hard coding to gdcmCWRAPPER gdcmDSED gdcmMSFF gdcmDIST" )
-#		#SET( GDCM_LIBRARIES gdcmCWRAPPER gdcmDSED gdcmMSFF gdcmDICT )
-#		SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${LIBGDCM_LIBRARIES} )
-#		SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${LIBGDCM_INCLUDE_DIRS} )
-#		SET( USE_GDCM TRUE )
-#	ELSE( GDCM_FOUND )
-#		MESSAGE( FATAL_ERROR "GDCM was requested but not found." )
-#	ENDIF( GDCM_FOUND )
-#ENDIF( ZINC_USE_GDCM )
-
-# Load in source files, each source file list may contain several
-# CMake variables see comments for a list of _SRCS included from 
-# a particular file (similarly that file defines a _HDRS variable).
-# Defines API_SRCS
-INCLUDE( source/cmake/api_source_files.cmake )
-
-# Defines COMMAND_SRCS, CONTEXT_SRCS
-INCLUDE( source/cmake/command_source_files.cmake )
-
-# Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS,
-# COMPUTED_FIELD_SRCS (contains previous two)
-INCLUDE( source/cmake/computed_field_source_files.cmake )
-
-# Defines FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS, 
-# FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS 
-# (group definition which includes the previous three)
-INCLUDE( source/cmake/finite_element_source_files.cmake )
-
-# Defines GENERAL_SRCS
-INCLUDE( source/cmake/general_source_files.cmake )
-
-# Defines GRAPHICS_SRCS
-INCLUDE( source/cmake/graphics_source_files.cmake )
-
-# Defines IMAGE_PROCESSING_SRCS
-INCLUDE( source/cmake/image_processing_source_files.cmake )
-
-# Defines API_INTERFACE_SRCS, CHOOSE_INTERFACE_SRCS, COMFILE_INTERFACE_SRCS,
-# COLOUR_INTERFACE_SRCS, COMMAND_INTERFACE_SRCS,
-# COMPUTED_FIELD_INTERFACE_SRCS, CURVE_INTERFACE_SRCS, FINITE_ELEMENT_INTERFACE_SRCS,
-# GENERAL_INTERFACE_SRCS, GRAPHICS_INTERFACE_SRCS,
-# INTERACTION_INTERFACE_SRCS, IO_DEVICES_INTERFACE_SRCS, LINK_INTERFACE_SRCS, MATERIAL_INTERFACE_SRCS,
-# NODE_INTERFACE_SRCS, REGION_INTERFACE_SRCS,
-# SELECT_INTERFACE_SRCS, TRANSFORMATION_INTERFACE_SRCS,
-# THREE_D_DRAWING_INTERFACE_SRCS, TIME_INTERFACE_SRCS,
-# USER_INTERFACE_SRCS, USER_INTERFACE_INTERFACE_SRCS, VIEW_INTERFACE_SRCS
-INCLUDE( source/cmake/interfaces_source_files.cmake )
-
-# Defines COMFILE_SRCS, CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS
-# FIELD_IO_SRCS, INTERACTION_SRCS, IO_DEVICES_SRCS, MESH_SRCS, NODE_SRCS,
-# REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
-INCLUDE( source/cmake/misc_source_files.cmake )
-
-# Defines OPENCASCADE_SRCS
-INCLUDE( source/cmake/opencascade_source_files.cmake )
-
 IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 	#SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W -Wall -Werror" )
 	#SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Werror" )
-	SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -Wall -Wl,--as-needed" )
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -Wl,--as-needed" )
+	SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
+	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
 	SET( CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --as-needed" )
 	IF( ${CMAKE_BUILD_TYPE} MATCHES [Rr]elease )
 		SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter" )
@@ -710,48 +549,22 @@ INCLUDE_DIRECTORIES( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
 	${INCLUDE_DIRS} )
 
 # TODO: Is this still required????
-LINK_DIRECTORIES( ${ITK_LIBRARY_DIRS} ${GDCM_LIBRARY_DIRS} )
+#LINK_DIRECTORIES( ${ITK_LIBRARY_DIRS} ${GDCM_LIBRARY_DIRS} )
 
 IF( DEFINED MSVC )
 	SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _CRTDBG_MAP_ALLOC )
 	#DBG_MSG( "extra compiler definitions: ${EXTRA_COMPIILER_DEFINITIONS}" )
 ENDIF( DEFINED MSVC )
 
-FOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} BUILD_WITH_CMAKE )
+FOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} )
 	ADD_DEFINITIONS( -D${DEF} )
-ENDFOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} BUILD_WITH_CMAKE )
-
-CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/zinc_configure.h.cmake
-	${PROJECT_BINARY_DIR}/source/configure/zinc_configure.h )
+ENDFOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} )
 
 # Used in the generate version string cmake script at compile time.
 SET( ZINC_SVN_REPOSITORY_DIR "${CMAKE_SOURCE_DIR}" )
 Subversion_GET_REVISION( "${ZINC_SVN_REPOSITORY_DIR}" ZINC_REVISION )
 DBG_MSG(STATUS "Revision is ${ZINC_REVISION}")
 
-# Define PASS_THROUGH_LIB_SRCS, PASS_THROUGH_LIB_HDRS
-SET( PASS_THROUGH_LIB_SRCS "source/command/pass_through_interpreter.c" )
-SET( PASS_THROUGH_LIB_HDRS "source/command/pass_through_interpreter.h;source/general/debug.h" )
-
-# Defines ZINC_LIB_SRCS, ZINC_LIB_HDRS
-INCLUDE( source/cmake/zinc_lib_source_files.cmake )
-
-# Defines ZINC_INTERFACE_LIB_SRCS, ZINC_INTERFACE_LIB_HDRS
-INCLUDE( source/cmake/zinc_interface_lib_source_files.cmake )
-
-PRINT_LIST_DUPLICATIONS( ZINC_LIB_SRCS )
-PRINT_LIST_DUPLICATIONS( ZINC_LIB_HDRS )
-
-PRINT_LIST_DUPLICATIONS( ZINC_INTERFACE_LIB_SRCS )
-PRINT_LIST_DUPLICATIONS( ZINC_INTERFACE_LIB_HDRS )
-
-SET( CONFIGURE_HDRS
-	${PROJECT_BINARY_DIR}/source/configure/zinc_configure.h )
-SOURCE_GROUP( "Header Files\\configure" FILES ${CONFIGURE_HDRS} )
-
-SET( TARGET_ZINC_LIB "zinc" )
-SET( TARGET_ZINC_INTERFACE_LIB "zinc-${ZINC_USER_INTERFACE}" )
-SET( TARGET_ZINC_PASS_THROUGH_LIB "zinc_pass_through" )
 SET( INSTALL_LIBRARY_TYPE "ARCHIVE" )
 IF( ${ZINC_BUILD_LIBRARY_TYPE} MATCHES "SHARED" )
 	SET( INSTALL_LIBRARY_TYPE "LIBRARY" )
@@ -759,30 +572,8 @@ ELSEIF( ${ZINC_BUILD_LIBRARY_TYPE} MATCHES "MODULE" )
 	SET( INSTALL_LIBRARY_TYPE "LIBRARY" )
 ENDIF( ${ZINC_BUILD_LIBRARY_TYPE} MATCHES "SHARED" )
 
-IF(MSVC_IDE)
-	# I want to group the source files by the directory layout for Visual Studio
-	GROUP_SOURCE_FILES(${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${CONFIGURE_HDRS})
-	GROUP_SOURCE_FILES(${ZINC_INTERFACE_LIB_SRCS} ${ZINC_INTERFACE_LIB_HDRS})
-	GROUP_SOURCE_FILES(${PASS_THROUGH_LIB_SRCS} ${PASS_THROUGH_LIB_HDRS} ${CONFIGURE_HDRS})
-ENDIF()
-
-ADD_LIBRARY( ${TARGET_ZINC_LIB} ${ZINC_BUILD_LIBRARY_TYPE} ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${CONFIGURE_HDRS} )
-ADD_LIBRARY( ${TARGET_ZINC_INTERFACE_LIB} ${ZINC_BUILD_LIBRARY_TYPE} ${ZINC_INTERFACE_LIB_SRCS} ${ZINC_INTERFACE_LIB_HDRS} )
-# ADD_LIBRARY( ${TARGET_ZINC_PASS_THROUGH_LIB} ${ZINC_BUILD_LIBRARY_TYPE} ${PASS_THROUGH_LIB_SRCS} ${PASS_THROUGH_LIB_HDRS} ${CONFIGURE_HDRS} )
-
-TARGET_LINK_LIBRARIES( ${TARGET_ZINC_LIB} ${DEPENDENT_LIBS} )
-#TARGET_LINK_LIBRARIES( ${TARGET_ZINC_INTERFACE_LIB} ${??} )
-# TARGET_LINK_LIBRARIES( ${TARGET_ZINC_PASS_THROUGH_LIB} ${PCRE_LIBRARIES} )
-
-SET_TARGET_PROPERTIES( ${TARGET_ZINC_LIB} PROPERTIES DEBUG_POSTFIX "d"
-	VERSION "${ZINC_MAJOR_VERSION}.${ZINC_MINOR_VERSION}.${ZINC_PATCH_VERSION}"
-	SOVERSION ${ZINC_MAJOR_VERSION} )
-SET_TARGET_PROPERTIES( ${TARGET_ZINC_INTERFACE_LIB} PROPERTIES DEBUG_POSTFIX "d"
-	VERSION "${ZINC_MAJOR_VERSION}.${ZINC_MINOR_VERSION}.${ZINC_PATCH_VERSION}"
-	SOVERSION ${ZINC_MAJOR_VERSION} )
-# SET_TARGET_PROPERTIES( ${TARGET_ZINC_PASS_THROUGH_LIB} PROPERTIES DEBUG_POSTFIX "d"
-	# VERSION "${ZINC_MAJOR_VERSION}.${ZINC_MINOR_VERSION}.${ZINC_PATCH_VERSION}"
-	# SOVERSION ${ZINC_MAJOR_VERSION} )
+ADD_SUBDIRECTORY(core)
+ADD_SUBDIRECTORY(ui)
 
 SET( ZINC_LIB_GROUP zinc )
 LIST( REMOVE_DUPLICATES INCLUDE_DIRS )
@@ -823,10 +614,6 @@ INSTALL( TARGETS ${TARGET_ZINC_LIB} ${TARGET_ZINC_INTERFACE_LIB} EXPORT ${ZINC_L
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION lib )
-# INSTALL( TARGETS ${TARGET_ZINC_PASS_THROUGH_LIB} EXPORT ${ZINC_LIB_GROUP}-targets
-	# ARCHIVE DESTINATION lib
-	# LIBRARY DESTINATION lib
-	# RUNTIME DESTINATION lib )
 
 INSTALL( EXPORT ${ZINC_LIB_GROUP}-targets DESTINATION lib/cmake )
 
@@ -834,98 +621,94 @@ INSTALL( FILES ${CONFIG_FILE_NAME} DESTINATION lib/cmake )
 
 # Install headers for Zinc
 SET( ZINC_LIB_API_INSTALL_HDRS
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_context.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_differential_operator.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_element.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_fdio.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_alias.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_arithmetic_operators.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_composite.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_conditional.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_finite_element.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_group.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image_processing.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_logical_operators.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_matrix_operators.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_nodeset_operators.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_scene_viewer_projection.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_time.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_vector_operators.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_filter.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_material.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_module.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_idle.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_interactive_tool.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_node.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_optimisation.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_region.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_rendition.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_selection.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_status.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_stream.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_sequence.h )
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_context.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_core.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_differential_operator.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_element.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_fdio.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_alias.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_arithmetic_operators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_composite.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_conditional.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_finite_element.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_group.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_image.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_image_processing.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_logical_operators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_matrix_operators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_module.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_nodeset_operators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_scene_viewer_projection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_subobject_group.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_time.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_trigonometry.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_vector_operators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphic.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_filter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_material.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_module.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_idle.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_interactive_tool.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_node.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_optimisation.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_region.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_rendition.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_scene.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_scene_viewer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_selection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_spectrum.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_status.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_stream.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_tessellation.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time_keeper.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time_sequence.h )
 IF( USE_OPENCASCADE )
 	SET( ZINC_LIB_API_INSTALL_HDRS ${ZINC_LIB_API_INSTALL_HDRS}
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_cad.h )
 ENDIF( USE_OPENCASCADE )
 
 SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_c_inline.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_context_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_differential_operator_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_element_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_alias_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_finite_element_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_group_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_processing_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_module_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_subobject_group_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphic_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_coordinate_system.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_filter_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_material_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_module_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_render_type.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_interactive_tool_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_node_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_optimisation_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_region_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_rendition_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_viewer_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_selection_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_spectrum_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_stream_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_tessellation_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_keeper_id.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_sequence_id.h )
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_c_inline.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_context_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_differential_operator_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_element_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_alias_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_finite_element_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_group_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_image_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_image_processing_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_module_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_subobject_group_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphic_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_coordinate_system.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_filter_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_material_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_module_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_render_type.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_interactive_tool_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_node_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_optimisation_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_region_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_rendition_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_scene_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_scene_viewer_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_selection_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_spectrum_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_stream_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_tessellation_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_keeper_id.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_sequence_id.h )
 IF( USE_OPENCASCADE )
 	SET( ZINC_LIB_API_TYPES_INSTALL_HDRS ${ZINC_LIB_API_TYPES_INSTALL_HDRS}
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_cad_id.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_cad_id.h )
 ENDIF( USE_OPENCASCADE )
 
-# Install headers for pass_through_interpreter
-SET( PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS
-	${CMAKE_CURRENT_SOURCE_DIR}/source/command/pass_through_interpreter.h )
-
 # Files that always need to be installed
-INSTALL( FILES ${PROJECT_BINARY_DIR}/source/configure/zinc_configure.h
+INSTALL( FILES ${PROJECT_BINARY_DIR}/core/source/configure/cmiss_zinc_configure.h
 	DESTINATION include/zn/ )
 
 # Api directory installs
@@ -960,6 +743,7 @@ IF( ZINC_PRINT_CONFIG_SUMMARY )
 			SET( ${OUTPUT_STRING} "n/a" )
 		ENDIF( USE_${LIBRARY_NAME} )
 	ENDMACRO( LIBRARY_SUMMARY_STRING LIBRARY_NAME OUTPUT_STRING )
+	
 	LIBRARY_SUMMARY_STRING( BZIP2 BZIP2_LIB_STRING )
 	LIBRARY_SUMMARY_STRING( FIELDML FIELDML_LIB_STRING )
 #	LIBRARY_SUMMARY_STRING( GDCM GDCM_LIB_STRING )
