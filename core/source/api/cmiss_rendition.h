@@ -127,22 +127,6 @@ Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(
 int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui application however this execute
- * command function will apply to the rendition being passed into this function
- * only. It takes the same string of command as gfx modify g_element <region_name>
- * does. User can use this to quickly create and modify graphics in rendition.
- *
- * NOTE: This function may be removed in the future once more API functions are
- * made available to the users.
- *
- * @param rendition  Handle to a cmiss_rendition object.
- * @param command  Command to be executed.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
-	const char *command_string);
-
-/***************************************************************************//**
  * Returns the graphic of the specified name from the rendition. Beware that
  * graphics in the same rendition may have the same name and this function will
  * only return the first graphic found with the specified name;

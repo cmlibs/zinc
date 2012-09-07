@@ -62,7 +62,7 @@ extern "C" {
 }
 /* cannot use enumerator_private.h with c++ compiler, use cpp version instead
 	eventually should replace enumerator macros with a template */ 
-#include "general/enumerator_private_cpp.hpp"  
+#include "general/enumerator_private.hpp"  
 extern "C" {
 #include "general/mystring.h"
 #include "general/message.h"

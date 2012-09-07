@@ -192,13 +192,13 @@ This version assumes the object identifier is "char *name". \
 		if (ALLOCATE(*name_ptr,char,strlen(object->name)+1)) \
 		{ \
 			strcpy(*name_ptr,object->name); \
-      return_code=1; \
+			return_code=1; \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"GET_NAME(" #object_type ").  Could not allocate space for name"); \
-      return_code=0; \
+			return_code=0; \
 		} \
 	} \
 	else \
@@ -208,7 +208,7 @@ This version assumes the object identifier is "char *name". \
 		return_code=0; \
 	} \
 	LEAVE; \
-\
+	\
 	return (return_code); \
 } /* GET_NAME(object_type) */
 

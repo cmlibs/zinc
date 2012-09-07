@@ -59,7 +59,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/octree.h"
 }
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "region/cmiss_region.h"
 #include "general/message.h"

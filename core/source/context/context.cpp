@@ -42,7 +42,6 @@
 extern "C" {
 #include "api/cmiss_field_group.h"
 #include "api/cmiss_graphics_module.h"
-#include "command/cmiss.h"
 #include "context/context.h"
 #include "curve/curve.h"
 #include "general/debug.h"
@@ -66,8 +65,7 @@ struct Context
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct Cmiss_graphics_module *graphics_module;
-	struct Cmiss_command_data  *default_command_data;
- 	struct User_interface_module *UI_module;
+	struct User_interface_module *UI_module;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Event_dispatcher *event_dispatcher;
@@ -83,7 +81,6 @@ struct Context *Cmiss_context_create(const char *id)
 		context->graphics_module = NULL;
 		context->root_region = NULL;
 		context->id = duplicate_string(id);
-		context->default_command_data = NULL;
 		context->UI_module = NULL;
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
@@ -108,8 +105,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 		{
 			if (context->id)
 				DEALLOCATE(context->id);
-			if (context->default_command_data)
-				Cmiss_command_data_destroy(&context->default_command_data);
 			//if (context->UI_module)
 			//	User_interface_module_destroy(&context->UI_module);
 			if (context->graphics_module)
@@ -166,7 +161,7 @@ struct Context *Cmiss_context_access(struct Context *context)
 {
 	if (context)
 	{
-	  context->access_count++;
+		context->access_count++;
 	}
 	else
 	{

@@ -65,7 +65,7 @@ extern "C" {
 #include "general/debug.h"
 }
 #include "general/enumerator_conversion.hpp"
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"

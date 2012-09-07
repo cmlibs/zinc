@@ -68,7 +68,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include "computed_field/field_module.hpp"
 #include <iostream>

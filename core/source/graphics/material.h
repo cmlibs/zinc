@@ -435,27 +435,6 @@ pixel_lighting_flag of the material_to_be_modified to be the same as
 the one in material, it is used for setting up the GUI.
 ==============================================================================*/
 
-#if defined (WX_USER_INTERFACE)
-int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
-/****************************************************************************** 
-LAST MODIFIED : 4 Dec 2007
-
-DESCRIPTION : This function is to allow the material editor to
-deaccess the material program from the material.
-==============================================================================*/
-#endif /*(WX_USER_INTERFACE)*/
-
-
-#if defined (OLD_CODE)
-int activate_Graphical_material(struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 17 November 1994
-
-DESCRIPTION :
-Activates the <material> as part of the rendering loop.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 int compile_Graphical_material_for_order_independent_transparency(
 	struct Graphical_material *material, 
 	void *material_order_independent_data_void);

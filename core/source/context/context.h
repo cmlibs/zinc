@@ -49,15 +49,6 @@ struct Context;
 #include "general/manager.h"
 
 /***************************************************************************//**
- * Return the default command data object in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the default command data if successfully, otherwise NULL.
- */
-struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(
-	struct Context *context);
-
-/***************************************************************************//**
  * Return the any object selection in context.
  *
  * @param context  Pointer to a cmiss_context object.

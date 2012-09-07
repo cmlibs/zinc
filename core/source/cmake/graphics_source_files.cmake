@@ -29,7 +29,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/selected_graphic.c
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
-	source/graphics/spectrum_settings.c
+	source/graphics/spectrum_settings.cpp
 	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
 	source/graphics/texture_line.c

@@ -56,7 +56,7 @@ extern "C" {
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
 }
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "general/geometry.h"
 #include "general/matrix_vector.h"

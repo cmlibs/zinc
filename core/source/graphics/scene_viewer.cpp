@@ -59,15 +59,15 @@ extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 #include "api/cmiss_graphic.h"
-#include "computed_field/computed_field.h"
-#include "computed_field/computed_field_composite.h"
+//#include "computed_field/computed_field.h"
+//#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 }
-#include "computed_field/field_module.hpp"
-#include "general/enumerator_private_cpp.hpp"
+//#include "computed_field/field_module.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "general/geometry.h"
 #include "general/image_utilities.h"
@@ -76,16 +76,16 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/matrix_vector.h"
 #include "general/object.h"
+#include "general/message.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/rendition.h"
 #include "graphics/scene.h"
-#include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
+#include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "general/message.h"
 #include "user_interface/event_dispatcher.h"
 }
 #include "graphics/graphics_coordinate_system.hpp"
@@ -2864,27 +2864,24 @@ void Scene_viewer_set_transform_flag(struct Scene_viewer *scene_viewer)
 }
 
 static void Scene_viewer_initialise_callback(struct Graphics_buffer *graphics_buffer,
-	void *dummy_void, void *scene_viewer_void)
+	void * /* dummy_void */, void * /* scene_viewer_void */)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
-
 	ENTER(Scene_viewer_initialise_callback);
-	USE_PARAMETER(dummy_void);
-	if (scene_viewer != 0)
+	if (graphics_buffer != 0)
 	{
 		Graphics_buffer_make_current(graphics_buffer);
 		/* initialise graphics library to load XFont */
-		initialize_graphics_library(scene_viewer->user_interface);
+		initialize_graphics_library();
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_initialise_callback.  Missing scene_viewer");
+			"Scene_viewer_initialise_callback.  Missing graphics_buffer");
 	}
 	LEAVE;
 } /* Scene_viewer_initialise_callback */
@@ -3212,20 +3209,20 @@ Converts mouse button-press and motion events into viewing transformations in
 						{
 							switch (scene_viewer->interact_mode)
 							{
-							       case SCENE_VIEWER_INTERACT_STANDARD:
-							       {
-							               if (0.0 != scene_viewer->translate_rate)
-							               {
-							                       scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
-								       }
-							       }break;
-							       case SCENE_VIEWER_INTERACT_2D:
-							       {
-							               if (0.0 != scene_viewer->tumble_rate)
-							               {
-							                       scene_viewer->drag_mode=SV_DRAG_TUMBLE;
-								       }
-							       }break;
+							case SCENE_VIEWER_INTERACT_STANDARD:
+								{
+									if (0.0 != scene_viewer->translate_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+									}
+								}break;
+							case SCENE_VIEWER_INTERACT_2D:
+								{
+									if (0.0 != scene_viewer->tumble_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+									}
+								}break;
 							}
 						} break;
 						case 3:

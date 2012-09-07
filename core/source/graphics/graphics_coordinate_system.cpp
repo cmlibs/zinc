@@ -44,7 +44,7 @@ extern "C" {
 #include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 #include "graphics/graphics_coordinate_system.hpp"
 
 class Cmiss_graphics_coordinate_system_conversion

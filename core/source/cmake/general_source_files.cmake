@@ -43,7 +43,7 @@ SET( GENERAL_HDRS
 	source/general/enumerator.h
 	source/general/enumerator_conversion.hpp
 	source/general/enumerator_private.h
-	source/general/enumerator_private_cpp.hpp
+	source/general/enumerator_private.hpp
 	source/general/error_handler.h
 	source/general/geometry.h
 	source/general/heapsort.h

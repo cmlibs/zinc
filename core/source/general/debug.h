@@ -6,12 +6,6 @@ LAST MODIFIED : 10 October 2003
 DESCRIPTION :
 Function definitions for debugging.
 
-Optimised ASSERT_IF expands to nothing.  This means that there should be no
-assignments in the ASSERT_IF expression.
-
-???DB.  Could implement __FUNCTION_NAME__ macro using ENTER and LEAVE.  Make
-	so that has call tree?
-???DB.  Should there be levels of ASSERT_IF
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -53,9 +47,7 @@ assignments in the ASSERT_IF expression.
 
 #include <stdarg.h>
 
-
 #include "configure/cmiss_zinc_configure.h"
-
 
 /*
 Macros
@@ -95,15 +87,6 @@ Macros
 #define REALLOCATE( final , initial , type , number ) \
 ( final = ( type *) reallocate( (char *)( initial ) , \
 	( number ) * sizeof( type ) , __FILE__ , __LINE__, #type ))
-
-#define ASSERT_IF( expression , return_code , error_value ) \
-if (!(expression)) \
-{ \
-	display_message(ERROR_MESSAGE,"file: " __FILE__ ", line: %d.  ASSERT_IF(" \
-		#expression ") failed",__LINE__); \
-	return_code=error_value; \
-} \
-else
 
 #endif /* defined (OPTIMISED) */
 

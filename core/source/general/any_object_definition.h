@@ -152,7 +152,7 @@ Removes <object> from the <any_object_list>. \
 	ENTER(REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(object_type))); \
 	if (object&&any_object_list) \
 	{ \
-		if (NULL != (any_object=																										\
+		if (NULL != (any_object= \
 				IS_OBJECT_IN_LIST(ANY_OBJECT(object_type))(object,any_object_list))) \
 		{ \
 			if (REMOVE_OBJECT_FROM_LIST(Any_object)(any_object,any_object_list)) \
@@ -267,9 +267,9 @@ user_data. \
 	struct ANY_OBJECT_ITERATOR_DATA(object_type) *iterator_data; \
 \
 	ENTER(ANY_OBJECT_ITERATOR(object_type)); \
-	if (any_object&& (NULL != (iterator_data=															\
+	if (any_object&& (NULL != (iterator_data= \
 				(struct ANY_OBJECT_ITERATOR_DATA(object_type) *)iterator_data_void)) && \
-		iterator_data->iterator_function)																		\
+		iterator_data->iterator_function) \
 	{ \
 		if (ANY_OBJECT_TYPE_STRING(object_type) == any_object->type_string) \
 		{ \
@@ -370,7 +370,7 @@ given user_data. \
 	struct ANY_OBJECT_CONDITIONAL_DATA(object_type) *conditional_data; \
 \
 	ENTER(ANY_OBJECT_CONDITIONAL(object_type)); \
-	if (any_object&& (NULL != (conditional_data=													\
+	if (any_object&& (NULL != (conditional_data= \
 				(struct ANY_OBJECT_CONDITIONAL_DATA(object_type) *)conditional_data_void))) \
 	{ \
 		if ((ANY_OBJECT_TYPE_STRING(object_type) == any_object->type_string) && \
@@ -417,9 +417,9 @@ object of <object_type> if <conditional_function> is NULL. \
 	{ \
 		conditional_data.conditional_function = conditional_function; \
 		conditional_data.user_data = user_data; \
-		if (NULL != (any_object=FIRST_OBJECT_IN_LIST_THAT(Any_object)(					 \
+		if (NULL != (any_object=FIRST_OBJECT_IN_LIST_THAT(Any_object)( \
 			ANY_OBJECT_CONDITIONAL(object_type),(void *)&conditional_data, \
-			any_object_list)))																			 \
+			any_object_list))) \
 		{ \
 			object = (struct object_type *)any_object->subobject; \
 		} \

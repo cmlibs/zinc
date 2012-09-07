@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : spectrum_settings.c
+FILE : spectrum_settings.cpp
 
 Largely pillaged from graphics/element_group_settings.c
 
@@ -51,9 +51,9 @@ appearance of spectrums.
 
 
 #include <stdio.h>
+extern "C" {
 #include "api/cmiss_field_module.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
 #include "general/indexed_list_private.h"
 #include "general/list.h"
 #include "general/compare.h"
@@ -67,6 +67,8 @@ appearance of spectrums.
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "general/message.h"
+}
+#include "general/enumerator_private.hpp"
 /*
 Global variables
 ----------------
@@ -127,9 +129,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum_settings);
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum_settings,position,int, \
-	compare_int)
-
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum_settings,position,int,compare_int)
 
 static int Spectrum_settings_set_changed(struct Spectrum_settings *settings,
 	void *dummy_void)
@@ -228,7 +228,8 @@ If the settings are of type settings_type, sets settings->settings_changed to 1.
 	ENTER(Spectrum_settings_changed_if_type);
 	if (settings)
 	{
-		if ((enum Spectrum_settings_type)settings_type_void ==
+		int *tmp = reinterpret_cast<int *>(settings_type_void);
+		if (static_cast<Spectrum_settings_type>(*tmp) ==
 			settings->settings_type)
 		{
 			settings->settings_changed=1;
@@ -573,13 +574,14 @@ DESCRIPTION :
 Returns 1 if the settings are of the specified settings_type.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code, *tmp;
 
 	ENTER(Spectrum_settings_type_matches);
 	if (settings)
 	{
+		tmp = reinterpret_cast<int *>(settings_type_void);
 		return_code=(settings->settings_type ==
-			(enum Spectrum_settings_type)settings_type_void);
+			static_cast<Spectrum_settings_type>(*tmp));
 	}
 	else
 	{
@@ -1059,11 +1061,13 @@ Writes out the settings as a text string.
 ==============================================================================*/
 {
 	int return_code;
+	int *tmp;
 	char *settings_string,line[40];
 	enum Spectrum_settings_string_details settings_detail;
 
 	ENTER(Spectrum_settings_show);
-	settings_detail=(enum Spectrum_settings_string_details)settings_detail_void;
+	tmp = reinterpret_cast<int *>(settings_detail_void);
+	settings_detail=static_cast<Spectrum_settings_string_details>(*tmp);
 	if (settings&&(
 		(SPECTRUM_SETTINGS_STRING_SPACE_ONLY==settings_detail)||
 		(SPECTRUM_SETTINGS_STRING_COMPLETE==settings_detail)||
@@ -2130,21 +2134,27 @@ in the value pointed to by <colour_components_void>.
 					(settings->output_field);
 			if (2 == number_of_components)
 			{
-				*colour_components |= (SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					| SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_BLUE
 					| SPECTRUM_COMPONENT_ALPHA);
 				done = 1;
 			}
 			else if (3 == number_of_components)
 			{
-				*colour_components |= (SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE);
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					| SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_BLUE);
 				done = 1;
 			} 
 			else if (4 <= number_of_components)
 			{
-				*colour_components |= (SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					| SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_BLUE
 					| SPECTRUM_COMPONENT_ALPHA);
 				done = 1;
 			} 
@@ -2156,40 +2166,39 @@ in the value pointed to by <colour_components_void>.
 				case SPECTRUM_RAINBOW:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
+				case SPECTRUM_BANDED:
+				case SPECTRUM_STEP:
 				{
-					*colour_components |= (SPECTRUM_COMPONENT_RED
-						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE);
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					| SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_BLUE);
 				} break;
 				case SPECTRUM_RED:
 				{
-					*colour_components |= SPECTRUM_COMPONENT_RED;
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+						| SPECTRUM_COMPONENT_RED);
 				} break;
 				case SPECTRUM_GREEN:
 				{
-					*colour_components |= SPECTRUM_COMPONENT_GREEN;
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+						| SPECTRUM_COMPONENT_GREEN);
 				} break;
 				case SPECTRUM_BLUE:
 				{
-					*colour_components |= SPECTRUM_COMPONENT_BLUE;
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+						| SPECTRUM_COMPONENT_BLUE);
 				} break;
 				case SPECTRUM_ALPHA:
 				{
-					*colour_components |= SPECTRUM_COMPONENT_ALPHA;
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+						| SPECTRUM_COMPONENT_ALPHA);
 				} break;
 				case SPECTRUM_MONOCHROME:
 				{
-					*colour_components |= SPECTRUM_COMPONENT_MONOCHROME;
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+						| SPECTRUM_COMPONENT_MONOCHROME);
 				} break;
-				case SPECTRUM_BANDED:
-				{
-					*colour_components |= SPECTRUM_COMPONENT_RED
-						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
-				} break;
-				case SPECTRUM_STEP:
-				{
-					*colour_components |= SPECTRUM_COMPONENT_RED
-						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
-				} break;	
 			}
 		}
 		return_code=1;

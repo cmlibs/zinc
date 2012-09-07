@@ -5466,38 +5466,6 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 	return return_code;
 }
 
-#if defined (WX_USER_INTERFACE)
-int material_deaccess_material_program(struct Graphical_material *material_to_be_modified)
-/******************************************************************************
-LAST MODIFIED : 4 Dec 2007
-
-DESCRIPTION : This function is to allow the material editor to
-deaccess the material program from the material.
-==============================================================================*/
-{
-	 int return_code;
-	 ENTER(material_deaccess_material_program);
-
-	 if (material_to_be_modified->program)
-	 {
-			DEACCESS(Material_program)(&material_to_be_modified->program);
-			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
-			material_to_be_modified->per_pixel_lighting_flag = 0;
-			material_to_be_modified->bump_mapping_flag = 0;
-			return_code = 1;
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "material_deaccess_material_program.  Missing material_program");
-			return_code = 0;
-	 }
-	 LEAVE;
-
-	 return return_code;
-}
-#endif /* (WX_USER_INTERFACE) */
-
 int list_Graphical_material(struct Graphical_material *material,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1999

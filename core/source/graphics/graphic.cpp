@@ -54,7 +54,7 @@ extern "C" {
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_node.h"
 #include "general/debug.h"
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 #include "general/indexed_list_private.h"
 #include "general/compare.h"
 #include "general/multi_range.h"

@@ -81,9 +81,6 @@ Functions and structures for interfacing with the graphics library.
 #	include <OpenGL/gl.h>
 #	include <OpenGL/glu.h>
 #endif /* defined UNIX && defined (DARWIN) */
-#if defined (WX_USER_INTERFACE)
-#	define GL_GLEXT_PROTOTYPES
-#endif /* (WX_USER_INTERFACE) */
 
 /*
 Global types

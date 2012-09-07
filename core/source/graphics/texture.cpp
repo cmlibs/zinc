@@ -76,7 +76,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "general/message.h"
 }
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 #include "graphics/texture.hpp"
 #include "graphics/render_gl.h"
 

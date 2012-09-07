@@ -16,7 +16,7 @@ This is intended to be multithreaded......
 #define Time_keeper Cmiss_time_keeper
 #define Time_object Cmiss_time_notifier
 
-#define Time_keeper_stop 	Cmiss_time_keeper_stop
+#define Time_keeper_stop Cmiss_time_keeper_stop
 #define Time_keeper_request_new_time Cmiss_time_keeper_set_time
 #define Time_keeper_is_playing Cmiss_time_keeper_is_playing
 #define Time_keeper_add_time_object Cmiss_time_keeper_add_time_notifier

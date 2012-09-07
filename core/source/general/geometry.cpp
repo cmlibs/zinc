@@ -45,7 +45,7 @@ Functions for performing coordinate transformations.
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "general/debug.h"
 #include "general/geometry.h"

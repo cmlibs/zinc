@@ -54,7 +54,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
 }
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 extern "C" {
 #include "general/list.h"
 #include "general/list_private.h"

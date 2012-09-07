@@ -1080,7 +1080,7 @@ Returns the number_of_components used by the spectrum.
 } /* Spectrum_get_number_of_components */
 
 enum Spectrum_colour_components 
-Spectrum_get_colour_components(struct Spectrum *spectrum)
+	Spectrum_get_colour_components(struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 

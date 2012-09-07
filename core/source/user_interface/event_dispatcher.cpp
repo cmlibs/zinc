@@ -47,7 +47,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 extern "C" {
 #include <math.h>
 #include <stdio.h>
-#include <general/time.h>
+#include "general/time.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"
@@ -58,11 +58,7 @@ extern "C" {
 }
 
 /* After the event_dispatcher.h has set up these variables */
-#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-extern "C" {
-#include <Xm/Xm.h>
-}
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <wx/wx.h>
 #include <wx/apptrait.h>
 extern "C" {
@@ -132,9 +128,6 @@ Contains all information necessary for a file descriptor callback.
 	unsigned long timeout_ns;
 	Event_dispatcher_timeout_function *timeout_function;
 	void *user_data;
-#if defined (USE_XTAPP_CONTEXT)
-	XtIntervalId xt_timeout_id;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (CARBON_USER_INTERFACE)
 	EventLoopTimerRef carbon_timer_ref;
 #endif /* defined (CARBON_USER_INTERFACE) */
@@ -168,9 +161,6 @@ Contains all information necessary for a file descriptor callback.
 	enum Event_dispatcher_idle_priority priority;
 	Event_dispatcher_idle_function *idle_function;
 	void *user_data;
-#if defined (USE_XTAPP_CONTEXT)
-	XtWorkProcId xt_idle_id;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (USE_GTK_MAIN_STEP)
 	guint gtk_idle_id;
 #endif /* defined (USE_GTK_MAIN_STEP) */
@@ -198,16 +188,8 @@ DESCRIPTION :
 #endif
 	struct LIST(Event_dispatcher_timeout_callback) *timeout_list;
 	struct LIST(Event_dispatcher_idle_callback) *idle_list;
-#if defined (USE_XTAPP_CONTEXT)
-/* This implements nearly the same interface as the normal implementation
-	but uses the Xt Application Context instead, thereby allowing us to test
-	the Xt behaviour easily if required */
-	XtAppContext application_context;
-#else /* defined (USE_XTAPP_CONTEXT) */
-/* This is the default system */
 	int special_idle_callback_pending;
 	struct Event_dispatcher_idle_callback *special_idle_callback;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (WIN32_USER_INTERFACE)
 	HWND networkWindowHandle;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -550,9 +532,6 @@ Create a single object that belongs to a specific file descriptor.
 		timeout_callback->timeout_ns = timeout_ns;
 		timeout_callback->timeout_function = timeout_function;
 		timeout_callback->user_data = user_data;
-#if defined (USE_XTAPP_CONTEXT)
-		timeout_callback->xt_timeout_id = (XtIntervalId)NULL;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (CARBON_USER_INTERFACE)
 		timeout_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
 #endif /* defined (CARBON_USER_INTERFACE) */
@@ -702,9 +681,6 @@ Create a single object that belongs to a specific file descriptor.
 		idle_callback->user_data = user_data;
 		idle_callback->access_count = 0;
 
-#if defined (USE_XTAPP_CONTEXT)
-		idle_callback->xt_idle_id = (XtWorkProcId)NULL;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (USE_GTK_MAIN_STEP)
 		idle_callback->gtk_idle_id = 0;
 #endif /* defined (USE_GTK_MAIN_STEP) */
@@ -848,67 +824,6 @@ DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_idle_callback)
 DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_idle_callback)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_idle_callback, \
 	self,struct Event_dispatcher_idle_callback *,Event_dispatcher_idle_callback_compare)
-
-#if defined (USE_XTAPP_CONTEXT)
-void Event_dispatcher_xt_timeout_callback(
-	XtPointer timeout_callback_void, XtIntervalId *id)
-/*******************************************************************************
-LAST MODIFIED : 4 June 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Event_dispatcher_timeout_callback *timeout_callback;
-
-	ENTER(Event_dispatcher_xt_timeout_callback);
-	USE_PARAMETER(id);
-	if (timeout_callback = (struct Event_dispatcher_timeout_callback *)timeout_callback_void)
-	{
-		(*timeout_callback->timeout_function)(timeout_callback->user_data);		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_xt_timeout_callback.  Invalid arguments.");
-	}
-	LEAVE;
-} /* Event_dispatcher_xt_timeout_callback */
-#endif /* defined (USE_XTAPP_CONTEXT) */
-
-#if defined (USE_XTAPP_CONTEXT)
-Boolean Event_dispatcher_xt_idle_callback(
-	XtPointer idle_callback_void)
-/*******************************************************************************
-LAST MODIFIED : 4 June 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	Boolean return_code;
-	struct Event_dispatcher_idle_callback *idle_callback;
-
-	ENTER(Event_dispatcher_xt_idle_callback);
-	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
-	{
-		if ((*idle_callback->idle_function)(idle_callback->user_data))
-		{
-			return_code = False;
-		}
-		else
-		{
-			return_code = True;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_xt_idle_callback.  Invalid arguments.");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_xt_idle_callback */
-#endif /* defined (USE_XTAPP_CONTEXT) */
 
 #if defined (USE_GTK_MAIN_STEP)
 gboolean Event_dispatcher_gtk_idle_callback(
@@ -1086,18 +1001,6 @@ DESCRIPTION :
 	return (return_code);
 } /* Event_dispatcher_do_idle_event */
 
-#if defined (UNIX) && !defined (DARWIN)
-void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a)
-/*******************************************************************************
-LAST MODIFIED : 25 July 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	USE_PARAMETER(a);
-}
-#endif /* defined (UNIX)  && !defined (DARWIN) */
-
 #endif /* defined (WX_USER_INTERFACE) */
 
 /*
@@ -1132,13 +1035,9 @@ Creates a connection to a event_dispatcher of the specified type.
 			CREATE(LIST(Event_dispatcher_timeout_callback))();
 		event_dispatcher->idle_list = 
 			CREATE(LIST(Event_dispatcher_idle_callback))();
-#if defined (USE_XTAPP_CONTEXT)
-		event_dispatcher->application_context = (XtAppContext)NULL;
-#else /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->special_idle_callback_pending = 0;
 		event_dispatcher->special_idle_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->continue_flag = 1;
 	}
 	else
@@ -1195,13 +1094,11 @@ Destroys a Event_dispatcher object
 			DESTROY(LIST(Event_dispatcher_idle_callback))
 				(&event_dispatcher->idle_list);
 		}
-#if ! defined (USE_XTAPP_CONTEXT)
 		if (event_dispatcher->special_idle_callback)
 		{
 			DEACCESS(Event_dispatcher_idle_callback)(
 				&event_dispatcher->special_idle_callback);
 		}
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
 
 		DEALLOCATE(*event_dispatcher_address);
 		*event_dispatcher_address = (struct Event_dispatcher *)NULL;
@@ -1295,110 +1192,6 @@ DESCRIPTION :
 } /* Event_dispatcher_remove_descriptor_callback */
 
 #endif /* defined(USE_GENERIC_EVENT_DISPATCHER) */
-
-#if defined (USE_XTAPP_CONTEXT)
-struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
-	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
-	Event_dispatcher_timeout_function *timeout_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	long interval_ms;
-	struct Event_dispatcher_timeout_callback *timeout_callback;
-
-	ENTER(Event_dispatcher_register_descriptor_callback);
-
-	if (event_dispatcher && timeout_function)
-	{
-		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
-			timeout_s, timeout_ns, timeout_function, user_data))
-		{
-			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_timeout_callback)(
-				timeout_callback, event_dispatcher->timeout_list)))
-			{
-				DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
-				timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
-			}
-			else
-			{
-				if (event_dispatcher->application_context)
-				{
-					interval_ms = 
-						timeout_ns / 1000000 + timeout_s * 1000;
-					timeout_callback->xt_timeout_id = XtAppAddTimeOut(
-						event_dispatcher->application_context,  interval_ms,
-						Event_dispatcher_xt_timeout_callback, timeout_callback);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Event_dispatcher_add_timeout_callback.  "
-						"Missing application context.");
-					timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_add_timeout_callback.  "
-				"Could not create timeout_callback object.");
-			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_add_timeout_callback.  Invalid arguments.");
-		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
-	}
-	LEAVE;
-
-	return (timeout_callback);
-} /* Event_dispatcher_add_timeout_callback */
-
-struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
-	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
-	Event_dispatcher_timeout_function *timeout_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct timeval timeofday;
-	struct timezone timeofdayzone;	
-	struct Event_dispatcher_timeout_callback *timeout_callback;
-
-	ENTER(Event_dispatcher_add_timeout_callback_at_time);
-
-	if (event_dispatcher && timeout_function)
-	{
-		gettimeofday(&timeofday, &timeofdayzone);
-		while (timeout_s && (timeout_ns > 1000*(unsigned long)timeofday.tv_usec))
-		{
-			timeout_s--;
-			timeout_ns += 1000000000 - 1000*timeofday.tv_usec;
-		}
-		timeout_callback = Event_dispatcher_add_timeout_callback(
-			event_dispatcher, timeout_s - (unsigned long)timeofday.tv_sec, 
-			timeout_ns - 1000*(unsigned long)timeofday.tv_usec, 
-			timeout_function, user_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
-		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
-	}
-	LEAVE;
-
-	return (timeout_callback);
-} /* Event_dispatcher_add_timeout_callback_at_time */
-#else /* defined (USE_XTAPP_CONTEXT) */
 
 #if defined (WIN32_USER_INTERFACE)
 
@@ -1819,7 +1612,6 @@ DESCRIPTION :
 
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback */
-#endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_remove_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, 
@@ -1890,46 +1682,7 @@ DESCRIPTION :
 				DESTROY(Event_dispatcher_idle_callback)(&idle_callback);
 				idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
 			}
-#if defined (USE_XTAPP_CONTEXT)
-			else
-			{
-				if (event_dispatcher->application_context)
-				{
-					idle_callback->xt_idle_id = XtAppAddWorkProc(event_dispatcher->application_context, 
-						Event_dispatcher_xt_idle_callback, idle_callback);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Event_dispatcher_add_idle_callback.  "
-						"Missing application context.");
-					idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
-				}
-			}
-#elif defined (USE_GTK_MAIN_STEP)
-			else
-			{
-				idle_callback->gtk_idle_id = gtk_idle_add(
-					Event_dispatcher_gtk_idle_callback, idle_callback);
-			}
-#elif defined (CARBON_USER_INTERFACE)
-			else
-			{
-				EventLoopRef main_loop = GetMainEventLoop();
-				EventLoopIdleTimerUPP idle_timer_function = 
-					NewEventLoopIdleTimerUPP(Event_dispatcher_Carbon_idle_callback);
-
-				InstallEventLoopIdleTimer(main_loop,
-					/*FireDelay*/0, /*Interval*/10,
-					idle_timer_function, idle_callback,
-					&idle_callback->carbon_timer_ref);
-			}
-#elif defined (WX_USER_INTERFACE)
-			else
-			{
-				::wxWakeUpIdle();
-			}
-#elif defined (WIN32_SYSTEM)
+#if defined (WIN32_SYSTEM)
 			else
 			{
 				//Event_dispatcher_ensure_network_window(event_dispatcher);
@@ -1946,7 +1699,7 @@ DESCRIPTION :
 				//	ACCESS(Event_dispatcher_idle_callback)(idle_callback);
 				//}
 			}
-#endif /* defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (WIN32_SYSTEM) */
 		}
 		else
 		{
@@ -1981,15 +1734,8 @@ DESCRIPTION :
 
 	ENTER(Event_dispatcher_set_special_idle_callback);
 
-#if defined (USE_XTAPP_CONTEXT)
-	USE_PARAMETER(user_data);
-	USE_PARAMETER(priority);
-#endif /* defined (USE_XTAPP_CONTEXT) */
 	if (event_dispatcher && idle_function)
 	{
-#if defined (USE_XTAPP_CONTEXT)
-		idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
-#else /* defined (USE_XTAPP_CONTEXT) */
 		idle_callback = CREATE(Event_dispatcher_idle_callback)(
 			idle_function, user_data, priority);
 		if (idle_callback != NULL) 
@@ -2005,7 +1751,6 @@ DESCRIPTION :
 				"Could not create idle_callback object.");
 			idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
 		}
-#endif /* defined (USE_XTAPP_CONTEXT) */
 	}
 	else
 	{
@@ -2033,14 +1778,12 @@ DESCRIPTION :
 
 	if (event_dispatcher && event_dispatcher->timeout_list && callback_id)
 	{
-#if defined (USE_XTAPP_CONTEXT)
-		XtRemoveWorkProc(callback_id->xt_idle_id);
-#elif defined (USE_GTK_MAIN_STEP)
+#if defined (USE_GTK_MAIN_STEP)
 		gtk_idle_remove(callback_id->gtk_idle_id);
 #elif defined (CARBON_USER_INTERFACE)
 		RemoveEventLoopTimer(callback_id->carbon_timer_ref);
 		callback_id->carbon_timer_ref = (EventLoopTimerRef)NULL;
-#endif /* defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (USE_GTK_MAIN_STEP) */
 		callback_id->idle_function = NULL;
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
 			(callback_id, event_dispatcher->idle_list);
@@ -2055,371 +1798,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Event_dispatcher_remove_idle_callback */
-
-int Event_dispatcher_do_one_event(struct Event_dispatcher *event_dispatcher)
-/*******************************************************************************
-LAST MODIFIED : 24 October 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code = 0;
-#if defined (USE_GENERIC_EVENT_DISPATCHER)
-	int callback_code, select_code;
-	struct Event_dispatcher_descriptor_set descriptor_set;
-	struct timeval timeofday, timeout, *timeout_ptr;
-	struct tms times_buffer;
-	struct Event_dispatcher_descriptor_callback *descriptor_callback;
-	struct Event_dispatcher_idle_callback *idle_callback;
-	struct Event_dispatcher_timeout_callback *timeout_callback;
-#endif /*  defined (USE_GENERIC_EVENT_DISPATCHER) */
-
-	ENTER(Event_dispatcher_do_one_event);
-
-	if (event_dispatcher)
-	{
-#if defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-		{
-			MSG message;
-			if (TRUE==GetMessage(&message,NULL,0,0))
-			{
-				TranslateMessage(&message);
-				DispatchMessage(&message);
-			}
-			return_code=1;
-		}
-#elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
-		gtk_main_iteration();
-		return_code = 1;
-#elif defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-		XtAppProcessEvent(event_dispatcher->application_context, XtIMAll);
-		return_code = 1;
-#elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
-		return_code = 1;
-#elif defined (USE_GENERIC_EVENT_DISPATCHER) /* switch (USER_INTERFACE) */
-		return_code=1;
-		FD_ZERO(&(descriptor_set.read_set));
-		FD_ZERO(&(descriptor_set.write_set));
-		FD_ZERO(&(descriptor_set.error_set));
- 		descriptor_set.max_timeout_ns = -1;
-		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
-			(Event_dispatcher_descriptor_do_query_callback,
-			&descriptor_set, event_dispatcher->descriptor_list);
-		timeout_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_timeout_callback)
-			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_timeout_callback) *)NULL,
-			(void *)NULL, event_dispatcher->timeout_list);
-		if (event_dispatcher->special_idle_callback_pending && event_dispatcher->special_idle_callback)
-		{
-			timeout.tv_sec = 0;
-			timeout.tv_usec = 0;
-			timeout_ptr = &timeout;
-		}
-		else
-		{
-			idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
-				((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
-					(void *)NULL, event_dispatcher->idle_list);
-			if (idle_callback)
-			{
-				timeout.tv_sec = 0;
-				timeout.tv_usec = 0;
-				timeout_ptr = &timeout;
-			}
-			else
-			{
-				/* Till the first timeout */
-				if (timeout_callback)
-				{
-					gettimeofday(&timeofday, NULL);
-					if ((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
-						((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
-							(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec)))
-					{
-						timeout.tv_sec = 0;
-						timeout.tv_usec = 0;
-						timeout_ptr = &timeout;
-					}
-					else
-					{
-						timeout.tv_sec = (long)timeout_callback->timeout_s - timeofday.tv_sec;
-						if (timeout_callback->timeout_ns/1000.0 > timeofday.tv_usec)
-						{
-							timeout.tv_usec = ((long)timeout_callback->timeout_ns)/1000 - timeofday.tv_usec;
-						}
-						else
-						{
-							timeout.tv_sec--;
-							timeout.tv_usec = 1000000 + ((long)timeout_callback->timeout_ns)/1000
-								- timeofday.tv_usec;
-						}
-						timeout_ptr = &timeout;
-					}
-				}
-				else
-				{
-					if (descriptor_set.max_timeout_ns >= 0)
-					{
-						timeout.tv_sec = 0;
-						timeout.tv_usec = descriptor_set.max_timeout_ns / 1000;
-						timeout_ptr = &timeout;
-					}
-					else
-					{
-						/* Indefinite */
-						timeout_ptr = (struct timeval *)NULL;
-					}
-				}
-			}
-		}
-		select_code = 0;
-		if (!(descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
-			(Event_dispatcher_descriptor_callback_is_pending,
-			(void *)NULL, event_dispatcher->descriptor_list)))
-		{
-			if (-1 < (select_code = select(100, &(descriptor_set.read_set),
-				&(descriptor_set.write_set), &(descriptor_set.error_set),
-				timeout_ptr)))
-			{
-				/* The select leaves only those descriptors that are pending in the read set,
-					we set the pending flag and then work through them one by one.  This makes sure
-					that each file callback that is waiting gets an equal chance and we don't just
-					call them directly from the iterator as any of the events could modify the list */
-				/* For Gtk I need to call check so long as there wasn't an error,
-					even if no file_descriptors selected at this level, Gtk will then
-					change its maximum priority and ask for a new select */
-				FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
-					(Event_dispatcher_descriptor_do_check_callback,
-					&descriptor_set, event_dispatcher->descriptor_list);
-				descriptor_callback =
-					FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
-					(Event_dispatcher_descriptor_callback_is_pending,
-					(void *)NULL, event_dispatcher->descriptor_list);
-			}
-		}
-		if (descriptor_callback)
-		{
-			if (event_dispatcher->special_idle_callback)
-			{
-				event_dispatcher->special_idle_callback_pending = 1;
-			}
-			/* Call the descriptor dispatch callback then */
-			descriptor_callback->pending = 0;
-			(*descriptor_callback->dispatch_callback)(descriptor_callback->user_data);
-		}
-		else
-		{
-			if (select_code == 0)
-			{
-				/* Look for ready timer callbacks first */
-				gettimeofday(&timeofday, NULL);
-				if (timeout_callback &&
-					((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
-					((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
-					(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec))))
-				{
-					if (event_dispatcher->special_idle_callback)
-					{
-						event_dispatcher->special_idle_callback_pending = 1;
-					}
-					/* Do it now */
-					callback_code = (*timeout_callback->timeout_function)(
-						timeout_callback->user_data);
-					REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
-						(timeout_callback, event_dispatcher->timeout_list);
-				}
-				else
-				{
-					if (event_dispatcher->special_idle_callback_pending && 
-						event_dispatcher->special_idle_callback)
-					{
-						callback_code = (*event_dispatcher->special_idle_callback->idle_function)
-							(event_dispatcher->special_idle_callback->user_data);
-						if (callback_code == 0)
-						{
-							event_dispatcher->special_idle_callback_pending = 0;
-						}
-					}
-					else
-					{
-						/* Now do idle callbacks */
-						if (idle_callback)
-						{
-							ACCESS(Event_dispatcher_idle_callback)(idle_callback);
-							callback_code = (*idle_callback->idle_function)(idle_callback->user_data);
-							if (event_dispatcher->special_idle_callback)
-							{
-								event_dispatcher->special_idle_callback_pending = 1;
-							}
-							if (IS_OBJECT_IN_LIST(Event_dispatcher_idle_callback)
-								(idle_callback, event_dispatcher->idle_list))
-							{
-								REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
-									(idle_callback, event_dispatcher->idle_list);
-								if (callback_code != 0)
-								{
-									/* Not finished so add it back in, this is done rather
-										than just leaving the old event in so that it gets
-										a new timestamp and therefore a different idle event
-										goes next.  It can't be done while it is in the list
-										as the timestamp is part of the list identifier */
-									//--idle_callback->timestamp = (long)times(&times_buffer);
-									ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
-										(idle_callback, event_dispatcher->idle_list);
-								}
-							}
-							DEACCESS(Event_dispatcher_idle_callback)(&idle_callback);
-						}
-					}
-				}
-			}
-			else if (select_code == -1)
-			{
-				display_message(ERROR_MESSAGE,
-					"Event_dispatcher_do_one_event.  "
-					"Error on file descriptors.");
-				return_code=0;
-			}
-		}
-#endif /* switch (USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_register_do_one_event.  Invalid arguments.");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_do_one_event */
-
-int Event_dispatcher_main_loop(struct Event_dispatcher *event_dispatcher)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Event_dispatcher_main_loop);
-	if (event_dispatcher)
-	{
-		return_code=1;
-#if ! defined (WX_USER_INTERFACE)
-#  if ! defined (CARBON_USER_INTERFACE)
-		while(event_dispatcher->continue_flag)
-		{
-			Event_dispatcher_do_one_event(event_dispatcher);
-		}
-#  else /* ! defined (CARBON_USER_INTERFACE) */
-		RunApplicationEventLoop(); // Process events until time to quit
-#  endif /* ! defined (CARBON_USER_INTERFACE) */
-#else /* ! defined (WX_USER_INTERFACE) */
-
-		if (wxTheApp)
-			wxTheApp->OnRun();
-		return_code = 1;
-
-#endif /* ! defined (WX_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_main_loop.  Invalid arguments.");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_main_loop */
-
-int Event_dispatcher_end_main_loop(struct Event_dispatcher *event_dispatcher)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Event_dispatcher_end_main_loop);
-
-	if (event_dispatcher)
-	{
-		return_code=1;
-#if ! defined (WX_USER_INTERFACE)
-		event_dispatcher->continue_flag = 0;
-#else /* ! defined (WX_USER_INTERFACE) */
-		if (wxTheApp)
-			wxTheApp->ExitMainLoop();
-		return_code = 1;
-#endif /* ! defined (WX_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_end_main_loop.  Invalid arguments.");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_end_main_loop */
-
-
-#if defined (WX_USER_INTERFACE)
-int Event_dispatcher_set_wx_instance(struct Event_dispatcher *event_dispatcher,
-	void *user_instance)
-{
-	ENTER(Event_dispatcher_initialise_wx_app);
-	wxApp *external_app = (wxApp *)user_instance;
-	if (event_dispatcher && external_app)
-	{
-		if (wxTheApp)
-		{
-			wxTheApp->SetInstance(external_app);
-			return 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_set_wx_instance.  Invalid arguments.");
-	}
-	return 0;
-}
-#endif
-
-#if defined (USE_XTAPP_CONTEXT)
-int Event_dispatcher_set_application_context(
-	struct Event_dispatcher *event_dispatcher,XtAppContext application_context)
-/*******************************************************************************
-LAST MODIFIED : 4 June 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Event_dispatcher_set_application_context);
-
-	if (event_dispatcher)
-	{
-		return_code=1;
-		event_dispatcher->application_context = application_context;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_end_main_loop.  Invalid arguments.");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_end_main_loop */
-#endif /* defined (USE_XTAPP_CONTEXT) */
 
 /* This implementation is so dependent on USE_GENERIC_EVENT_DISPATCHER that it is
  * easier to write the whole thing again for each option than to put
@@ -3288,188 +2666,8 @@ previously set will be cancelled.
 
 	return (1);
 } /* Fdio_set_write_callback (glib version) */
-#elif defined(USE_XTAPP_CONTEXT)
-
-Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
-	Cmiss_native_socket_t descriptor)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Creates a new Fdio, given an event dispatcher and a descriptor.
-==============================================================================*/
-{
-	struct Fdio *io;
-
-	ENTER(Event_dispatcher_create_fdio);
-	ALLOCATE(io, struct Fdio, 1);
-	if (io)
-	{
-		memset(io, 0, sizeof(*io));
-		io->event_dispatcher = dispatcher;
-		io->descriptor = descriptor;
-		io->access_count = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Event_dispatcher_create_fdio.  "
-			"Unable to allocate structure");
-	}
-
-	io->read_input = NULL;
-	io->write_input = NULL;
-
-	LEAVE;
-
-	return (io);
-} /* Event_dispatcher_create_fdio (Xt) */
-
-int DESTROY(Fdio)(Fdio_id *io)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Destroys the IO object. This causes cmgui to forget about the descriptor, but the
-descriptor itself must still be closed. This should be called as soon as the
-application is notified by the operating system of a closure event.
-==============================================================================*/
-{
-	if ((*io)->read_data.function)
-	{
-		Fdio_set_read_callback(*io, NULL, NULL);
-	}
-	else if ((*io)->write_data.function)
-	{
-		Fdio_set_write_callback(*io, NULL, NULL);
-	}
-
-	if ((*io)->read_input)
-	{
-		XtRemoveInput((*io)->read_input);
-	}
-
-	if ((*io)->write_input)
-	{
-		XtRemoveInput((*io)->write_input);
-	}
-
-	DEALLOCATE((*io));
-	*io = NULL;
-	return (1);
-} /* DESTROY(Fdio) (Xt) */
-
-static void Fdio_Xt_io_callback(XtPointer user_data, int* sourcefd,
-	XtInputId *input)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Called from Xt whenever a socket is ready to read/write.
-==============================================================================*/
-{
-	Fdio_id fdio = (Fdio_id)user_data;
-
-	if (input == io->read_input &&
-		fdio->read_data.function)
-		fdio->read_data.function(fdio, fdio->read_data.app_user_data);
-	else if (input == io->write_input &&
-		fdio->write_data.function)
-		fdio->write_data.function(fdio, fdio->write_data.app_user_data);
-}
-
-int Fdio_set_read_callback(Fdio_id handle, Fdio_callback callback,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Sets a read callback on the specified IO handle. This callback is called at
-least once after a read function indicates it would block. An application
-should not rely upon it being called more than once without attempting a
-read between the calls. This read should occur after fdio_set_read_callback
-is called. The callback will also be called if the underlying descriptor is
-closed by the peer. The callback is not one-shot, and the callback remains in
-effect until it is explicitly cancelled.
-
-There may be at most one read callback set per I/O handle at any one time. If
-this function is passed NULL as the callback parameter, the read callback
-previously set will be cancelled.
-==============================================================================*/
-{
-	ENTER(Fdio_set_read_callback);
-
-	if (callback == NULL)
-	{
-		handle->read_data.function = NULL;
-		if (handle->read_input)
-		{
-			XtRemoveInput(handle->read_input);
-			handle->read_input = NULL;
-		}
-	}
-	else
-	{
-		handle->read_data.function = callback;
-		handle->read_data.app_user_data = user_data;
-		if (handle->read_input == 0)
-			handle->read_input = XtAppAddInput(handle->event_dispatcher
-				->application_context, handle->descriptor,
-				(XtPointer)(XtInputReadMask),
-				Fdio_Xt_io_callback, handle);
-	}
-
-	LEAVE;
-
-	return (1);
-} /* Fdio_set_read_callback (Xt version) */
-
-int Fdio_set_write_callback(Fdio_id handle, Fdio_callback callback,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2005
-
-DESCRIPTION :
-Sets a write callback on the specified IO handle. This callback is called at
-least once after a write function indicates it would block. An application
-should not rely upon it being called more than once without attempting a
-write between the calls. This write should occur after Fdio_set_write_callback
-is called. The callback is not one-shot, and the callback remains in
-effect until it is explicitly cancelled.
-
-There may be at most one write callback set per I/O handle at any one time. If
-this function is passed NULL as the callback parameter, the write callback
-previously set will be cancelled.
-==============================================================================*/
-{
-	ENTER(Fdio_set_read_callback);
-
-	if (callback == NULL)
-	{
-		handle->write_data.function = NULL;
-		if (handle->write_input)
-		{
-			XtRemoveInput(handle->write_input);
-			handle->write_input = NULL;
-		}
-	}
-	else
-	{
-		handle->write_data.function = callback;
-		handle->write_data.app_user_data = user_data;
-		if (handle->write_input == 0)
-			handle->write_input = XtAppAddInput(handle->event_dispatcher
-				->application_context, handle->descriptor,
-				(XtPointer)(XtInputWriteMask),
-				Fdio_Xt_io_callback, handle);
-	}
-
-	LEAVE;
-
-	return (1);
-} /* Fdio_set_write_callback (Xt version) */
-
 #else
-#error You are not using GENERIC_EVENT_DISPATCHER, WIN32_USER_INTERFACE, or USE_GTK_MAIN_STEP. Implement your platform in event_dispatcher.c
+#error You are not using GENERIC_EVENT_DISPATCHER, WIN32_USER_INTERFACE, or USE_GTK_MAIN_STEP. Implement your platform in event_dispatcher.cpp
 #endif /* defined(USE_GENERIC_EVENT_DISPATCHER) elif (WIN32_USER_INTERFACE|USE_GTK_MAIN_STEP) */
 
 int Event_dispatcher_process_idle_event(struct Event_dispatcher *event_dispatcher)

@@ -64,7 +64,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "minimise/minimise.h"
 }
-#include "general/enumerator_private_cpp.hpp"
+#include "general/enumerator_private.hpp"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_optimisation_method);
 

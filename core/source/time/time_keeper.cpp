@@ -1877,22 +1877,22 @@ int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 class Cmiss_time_keeper_play_direction_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_time_keeper_play_direction direction)
-    {
-    	const char *enum_string = 0;
-    	switch (direction)
-    	{
-    		case CMISS_TIME_KEEPER_PLAY_FORWARD:
-    			enum_string = "FORWARD";
-    			break;
-    		case CMISS_TIME_KEEPER_PLAY_BACKWARD:
-    			enum_string = "BACKWARD";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_time_keeper_play_direction direction)
+	{
+		const char *enum_string = 0;
+		switch (direction)
+		{
+		case CMISS_TIME_KEEPER_PLAY_FORWARD:
+			enum_string = "FORWARD";
+			break;
+		case CMISS_TIME_KEEPER_PLAY_BACKWARD:
+			enum_string = "BACKWARD";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_time_keeper_play_direction

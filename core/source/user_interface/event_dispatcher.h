@@ -51,9 +51,7 @@ registered file descriptors to the correct callbacks.
 
 #include "general/object.h"
 #include "general/list.h"
-#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-#include <Xm/Xm.h>
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 //#define WINDOWS_LEAN_AND_MEAN
 #if !defined (NOMINMAX)
@@ -66,7 +64,7 @@ registered file descriptors to the correct callbacks.
 /* This is the default code, it is an event dispatcher designed to run 
 	without any particular user interface, I define a preprocess value here to
 	make it easy to switch through the code */
-#include <general/time.h>
+#include "general/time.h"
 #define USE_GENERIC_EVENT_DISPATCHER
 #endif /* switch (USER_INTERFACE) */
 
@@ -168,15 +166,6 @@ Global functions
 PROTOTYPE_OBJECT_FUNCTIONS(Fdio);
 PROTOTYPE_LIST_FUNCTIONS(Fdio);
 
-#if defined (WX_USER_INTERFACE) && defined (UNIX)  && !defined (DARWIN)
-void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a);
-/*******************************************************************************
-LAST MODIFIED : 25 Jul 2007
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (WX_USER_INTERFACE) */
-
 struct Event_dispatcher *CREATE(Event_dispatcher)(void);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -275,42 +264,6 @@ LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
-
-int Event_dispatcher_do_one_event(struct Event_dispatcher *event_dispatcher); 
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-int Event_dispatcher_main_loop(struct Event_dispatcher *event_dispatcher); 
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-int Event_dispatcher_end_main_loop(struct Event_dispatcher *event_dispatcher);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-#if defined (WX_USER_INTERFACE)
-int Event_dispatcher_set_wx_instance(struct Event_dispatcher *event_dispatcher,
-	void *user_instance);
-#endif
-
-#if defined (USE_XTAPP_CONTEXT)
-int Event_dispatcher_set_application_context(struct Event_dispatcher *event_dispatcher,
-	XtAppContext application_context);
-/*******************************************************************************
-LAST MODIFIED : 4 June 2002
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_process_idle_event(struct Event_dispatcher *event_dispatcher);
 

@@ -916,8 +916,6 @@ DESCRIPTION :
 				wxGLCanvas *test_canvas;
 				int *attribute_ptr, number_of_visual_attributes, selection_level;
 				visual_attributes = NULL;
-				number_of_visual_attributes = 0;
-				Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
 				number_of_visual_attributes = 20;
 				return_code = 0;
 				/* test either there are visual attributes stored in the current
