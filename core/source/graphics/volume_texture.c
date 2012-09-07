@@ -50,7 +50,6 @@ xi2, xi3 space.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "command/command.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/io_stream.h"

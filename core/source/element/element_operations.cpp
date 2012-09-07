@@ -47,7 +47,6 @@
 #include <cstdlib>
 extern "C"
 {
-#include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "api/cmiss_field_logical_operators.h"
 #include "api/cmiss_field_subobject_group.h"
