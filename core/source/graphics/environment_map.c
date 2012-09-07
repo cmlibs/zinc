@@ -52,7 +52,7 @@ The functions for manipulating environment maps.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/environment_map.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

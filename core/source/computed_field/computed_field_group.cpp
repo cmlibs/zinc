@@ -60,7 +60,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "mesh/cmiss_node_private.hpp"
 #include "mesh/cmiss_element_private.hpp"

@@ -51,7 +51,7 @@ extern "C" {
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 #if defined (OLD_CODE)

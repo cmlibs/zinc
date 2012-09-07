@@ -52,7 +52,7 @@ extern "C" {
 #include "general/object.h"
 #include "general/time.h"
 #include "user_interface/event_dispatcher.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 #include "time/time.h"
 #include "time/time_private.h"

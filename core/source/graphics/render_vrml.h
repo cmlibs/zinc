@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : rendervrml.c
+FILE : render_vrml.c
 
 LAST MODIFIED : 5 January 1998
 
@@ -41,8 +41,8 @@ Renders gtObjects to VRML file
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERVRML_H)
-#define RENDERVRML_H
+#if !defined (render_vrml_H)
+#define render_vrml_H
 
 /*
 Global functions
@@ -55,4 +55,4 @@ LAST MODIFIED : 5 January 1998
 DESCRIPTION :
 Renders the visible objects to a VRML file.
 ==============================================================================*/
-#endif /* !defined (RENDERVRML_H) */
+#endif /* !defined (render_vrml_H) */

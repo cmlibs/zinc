@@ -57,7 +57,7 @@ Functions for reading graphics object data from a file.
 #include "api/cmiss_graphics_material.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module functions

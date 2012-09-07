@@ -46,7 +46,7 @@ highlighting.
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "selection/element_point_ranges_selection.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

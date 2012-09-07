@@ -42,7 +42,7 @@
 
 extern "C" {
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "triangle_mesh.hpp"
 

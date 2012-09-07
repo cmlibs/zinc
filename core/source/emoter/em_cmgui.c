@@ -46,7 +46,7 @@ EM stuff for DB and cmgui.
 #include <string.h>
 #include "general/debug.h"
 #include "general/io_stream.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "emoter/em_cmgui.h"
 
 const char magic[] = "em basis data";

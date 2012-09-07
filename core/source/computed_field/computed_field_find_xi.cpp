@@ -61,7 +61,7 @@ extern "C" {
 extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 #define MAX_FIND_XI_ITERATIONS 50

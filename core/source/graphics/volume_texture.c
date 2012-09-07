@@ -64,7 +64,7 @@ xi2, xi3 space.
 #include "graphics/mcubes.h"
 #include "graphics/texture_line.h"
 #include "graphics/volume_texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 #define MAX_OBJ_VERTICES 100
 #define OBJ_V_EPSILON 0.0000001

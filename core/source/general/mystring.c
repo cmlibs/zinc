@@ -53,7 +53,7 @@ Function definitions for some general purpose string functions.
 #include "general/mystring.h"
 /*???DB.  Would like to move memory management out of Greg's debug.h */
 /*#include "mymemory.h"*/
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Functions

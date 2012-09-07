@@ -49,7 +49,7 @@ extern "C" {
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 namespace CMISS {

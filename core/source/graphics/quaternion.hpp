@@ -48,7 +48,7 @@ operations should be added into this class.
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 class Quaternion

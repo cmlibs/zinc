@@ -64,7 +64,7 @@ extern "C" {
 	#include "general/indexed_list_private.h"
 	#include "general/object.h"
 	#include "time/time_keeper.h"
-	#include "user_interface/message.h"
+	#include "general/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"

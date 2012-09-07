@@ -63,7 +63,7 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/indexed_multi_range.h"
 #include "general/list_private.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_integration.h"
 }
 #include "mesh/cmiss_element_private.hpp"

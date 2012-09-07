@@ -50,8 +50,8 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
-#include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
+#include "general/message.h"
+#include "image_processing/computed_field_canny_edge_detection_filter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"
@@ -334,7 +334,7 @@ int Cmiss_field_get_type_canny_edge_detection_image_filter(struct Computed_field
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field
+If the field is of type computed_field_canny_edge_detection_filter, the source_field
 used by it is returned - otherwise an error is reported.
 ==============================================================================*/
 {
@@ -369,7 +369,7 @@ int define_Computed_field_type_canny_edge_detection_image_filter(struct Parse_st
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER (if it is not 
+Converts <field> into type computed_field_canny_edge_detection_filter (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {

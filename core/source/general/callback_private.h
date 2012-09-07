@@ -44,7 +44,7 @@ Macro definition for lists of callbacks between objects.
 #include "general/callback.h"
 #include "general/debug.h"
 #include "general/list_private.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

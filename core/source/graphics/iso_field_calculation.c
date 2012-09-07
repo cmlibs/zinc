@@ -47,7 +47,7 @@ Functions/types for creating iso-surfaces (other than using FE_fields).
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "graphics/iso_field_calculation.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

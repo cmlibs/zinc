@@ -49,7 +49,7 @@ extern "C" {
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_format_output.h"
 #include "computed_field/computed_field_set.h"
 }

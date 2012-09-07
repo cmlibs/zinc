@@ -41,7 +41,7 @@ extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private_cpp.hpp"

@@ -62,7 +62,7 @@ extern "C" {
 #include "general/enumerator_private_cpp.hpp"
 extern "C" {
 #include "region/cmiss_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 /*

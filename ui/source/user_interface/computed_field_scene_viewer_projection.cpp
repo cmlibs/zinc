@@ -59,7 +59,7 @@ extern "C" {
 #include "graphics/graphics_window.h"
 #include "graphics/rendition.h"
 #include "graphics/scene_viewer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"
 }
 #include "graphics/graphics_coordinate_system.hpp"

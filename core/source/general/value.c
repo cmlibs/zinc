@@ -47,7 +47,7 @@ checking.
 #include "command/parser.h"
 #include "general/object.h"
 #include "general/value.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

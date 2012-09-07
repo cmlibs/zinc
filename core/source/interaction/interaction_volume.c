@@ -47,7 +47,7 @@ devices, and used by scenes for picking graphics.
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "interaction/interaction_volume.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

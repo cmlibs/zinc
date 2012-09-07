@@ -56,7 +56,7 @@ This provides an object which interfaces between a child_process and Cmgui
 #endif /* defined (UNIX) */
 #include "general/debug.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "general/child_process.h"
 
 struct Child_process

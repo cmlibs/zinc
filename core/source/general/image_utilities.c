@@ -60,7 +60,7 @@ Utilities for handling images.
 #include "general/io_stream.h"
 #include "general/myio.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #if defined (USE_IMAGEMAGICK)
 #  if defined _MSC_VER
    /* When using the gcc compiled headers from msvc we need to replace inline */

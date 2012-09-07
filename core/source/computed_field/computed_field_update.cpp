@@ -52,7 +52,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"

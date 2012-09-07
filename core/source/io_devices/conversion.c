@@ -61,7 +61,7 @@ value and get the answer in CYL_POLAR, just call
 #include <string.h>
 #include "general/debug.h"
 #include "io_devices/conversion.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global variables

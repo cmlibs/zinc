@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_derivativeImageFilter.h
+FILE : computed_field_derivative_image_filter.h
 
 LAST MODIFIED : 31 May 2001
 
@@ -41,8 +41,8 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H)
-#define COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H
+#if !defined (computed_field_derivative_image_filter_H)
+#define computed_field_derivative_image_filter_H
 
 #include "api/cmiss_field.h"
 
@@ -73,4 +73,4 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H) */
+#endif /* !defined (computed_field_derivative_image_filter_H) */

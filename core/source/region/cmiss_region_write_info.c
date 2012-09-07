@@ -50,7 +50,7 @@ Data structure shared by several region export modules.
 #include "general/object.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_write_info.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

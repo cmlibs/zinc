@@ -54,7 +54,7 @@ represent curvesin three xi-directions;
 #include "general/random.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "user_interface/user_interface.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global functions

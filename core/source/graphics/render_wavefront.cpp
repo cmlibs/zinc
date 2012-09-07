@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : renderwavefront.cpp
+FILE : render_wavefront.cpp
 
 LAST MODIFIED : 20 March 2003
 
@@ -51,13 +51,13 @@ extern "C" {
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/renderwavefront.h"
+#include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
 }
 #include "graphics/scene.hpp"
 extern "C" {
 #include "graphics/spectrum.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/graphics_object_private.hpp"
 

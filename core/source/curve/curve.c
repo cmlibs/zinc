@@ -62,7 +62,7 @@ quadratic Lagrange, cubic Lagrange.
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global curves

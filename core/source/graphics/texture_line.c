@@ -51,7 +51,7 @@ DESCRIPTION :
 #include "graphics/laguer.h"
 #include "graphics/texture_line.h"
 #include "graphics/volume_texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module constants

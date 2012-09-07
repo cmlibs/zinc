@@ -52,7 +52,7 @@ extern "C" {
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 /*

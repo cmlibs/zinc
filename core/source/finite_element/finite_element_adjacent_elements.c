@@ -49,7 +49,7 @@ indexed_multi_range.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

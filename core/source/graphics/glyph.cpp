@@ -64,7 +64,7 @@ extern "C" {
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/defined_graphics_objects.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "graphics/spectrum.h"
 }
 #include "graphics/graphics_object.hpp"

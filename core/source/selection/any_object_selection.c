@@ -45,7 +45,7 @@ Global store of selected any_objects for group actions and highlighting.
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "selection/any_object_selection.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

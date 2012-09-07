@@ -78,7 +78,7 @@ extern "C" {
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/graphics_coordinate_system.hpp"

@@ -44,7 +44,7 @@ Functions for building graphics assisting interaction, eg. rubber-band effect.
 #include <stdio.h>
 #include "general/debug.h"
 #include "interaction/interaction_graphics.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module functions

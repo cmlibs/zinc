@@ -47,7 +47,7 @@ Functions for updating values of one computed field from those of another.
 #include "finite_element/finite_element.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global types

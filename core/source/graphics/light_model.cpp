@@ -72,7 +72,7 @@ extern "C" {
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
 #include "graphics/light_model.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/rendergl.hpp"
 

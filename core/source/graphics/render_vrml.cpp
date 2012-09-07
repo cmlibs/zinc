@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : rendervrml.cpp
+FILE : render_vrml.cpp
 
 LAST MODIFIED : 20 March 2003
 
@@ -57,12 +57,12 @@ extern "C" {
 #include "graphics/light_model.h"
 #endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
-#include "graphics/rendervrml.h"
+#include "graphics/render_vrml.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "region/cmiss_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
@@ -453,7 +453,7 @@ DESCRIPTION :
 	return (return_code);
 } /* activate_material_vrml */
 
-static int spectrum_start_rendervrml(FILE *vrml_file,struct Spectrum *spectrum,
+static int spectrum_start_render_vrml(FILE *vrml_file,struct Spectrum *spectrum,
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
@@ -464,7 +464,7 @@ Sets VRML file for rendering values on the current material.
 {
 	int return_code;
 
-	ENTER(spectrum_start_rendervrml);
+	ENTER(spectrum_start_render_vrml);
 	if (spectrum && material)
 	{
 		fprintf(vrml_file,"color Color{\n");
@@ -474,15 +474,15 @@ Sets VRML file for rendering values on the current material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_start_rendervrml.  Invalid argument(s)");
+			"spectrum_start_render_vrml.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_start_rendervrml */
+} /* spectrum_start_render_vrml */
 
-static int spectrum_rendervrml_value(FILE *vrml_file,struct Spectrum *spectrum,
+static int spectrum_render_vrml_value(FILE *vrml_file,struct Spectrum *spectrum,
 	struct Graphical_material *material,int number_of_data_components,float *data)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
@@ -494,7 +494,7 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 	int return_code;
 	float rgba[4];
 
-	ENTER(spectrum_rendervrml_value);
+	ENTER(spectrum_render_vrml_value);
 	if (spectrum&&material)
 	{
 		FE_value *feData = new FE_value[number_of_data_components];
@@ -507,15 +507,15 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_rendervrml_value.  Invalid arguments given.");
+			"spectrum_render_vrml_value.  Invalid arguments given.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_rendervrml_value */
+} /* spectrum_render_vrml_value */
 
-static int spectrum_end_rendervrml(FILE *vrml_file,struct Spectrum *spectrum)
+static int spectrum_end_render_vrml(FILE *vrml_file,struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
 
@@ -525,7 +525,7 @@ Resets the graphics state after rendering values on current material.
 {
 	int return_code;
 
-	ENTER(spectrum_end_rendervrml);
+	ENTER(spectrum_end_render_vrml);
 	if (spectrum)
 	{
 		Spectrum_end_value_to_rgba(spectrum);
@@ -536,13 +536,13 @@ Resets the graphics state after rendering values on current material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_end_rendervrml.  Invalid spectrum object");
+			"spectrum_end_render_vrml.  Invalid spectrum object");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_end_rendervrml */
+} /* spectrum_end_render_vrml */
 
 static int get_orthogonal_axes(float a1,float a2,float a3,
 	float *b1,float *b2,float *b3,float *c1,float *c2,float *c3)
@@ -693,13 +693,13 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"    }\n");
 				if (number_of_data_components && data && spectrum)
 				{
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<number_of_points;i++)
 					{
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"  } #Pointset\n");
 				fprintf(vrml_file,"} #Shape\n");
@@ -754,13 +754,13 @@ points  given by the positions in <point_list> and oriented and scaled by
 				if (data&&spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<number_of_points;i++)
 					{
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"    coordIndex [\n");
 				for (i=0;i<number_of_points;i++)
@@ -834,16 +834,16 @@ points  given by the positions in <point_list> and oriented and scaled by
 				if (data&&spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<number_of_points;i++)
 					{
 						for (j=0;j<3;j++)
 						{
-							spectrum_rendervrml_value(vrml_file,spectrum,material,
+							spectrum_render_vrml_value(vrml_file,spectrum,material,
 								number_of_data_components,data+i*number_of_data_components);
 						}
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"    coordIndex [\n");
 				for (i=0;i<number_of_points;i++)
@@ -859,7 +859,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 			{
 				if (number_of_data_components && data && material && spectrum)
 				{
-					material_copy = CREATE(Graphical_material)("rendervrml_copy");
+					material_copy = CREATE(Graphical_material)("render_vrml_copy");
 				}
 				else
 				{
@@ -1189,7 +1189,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				point=point_list;
 				if (number_of_data_components && data && material && spectrum)
 				{
-					material_copy = CREATE(Graphical_material)("rendervrml_copy");
+					material_copy = CREATE(Graphical_material)("render_vrml_copy");
 				}
 				else
 				{
@@ -1348,13 +1348,13 @@ Writes VRML code to the file handle which represents the given pointset.
 				fprintf(vrml_file,"    }\n");
 				if (number_of_data_components && data && spectrum)
 				{
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<n_pts;i++)
 					{
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"  } #PointSet\n");
 				fprintf(vrml_file,"} #Shape\n");
@@ -1407,17 +1407,17 @@ Writes VRML code to the file handle which represents the given pointset.
 				if (number_of_data_components && data && spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<n_pts;i++)
 					{
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 				fprintf(vrml_file,"} #Shape\n");
@@ -1471,13 +1471,13 @@ Writes VRML code to the file handle which represents the given pointset.
 				if (number_of_data_components && data && spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_rendervrml(vrml_file,spectrum,material);
+					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<n_pts;i++)
 					{
-						spectrum_rendervrml_value(vrml_file,spectrum,material,
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
 							number_of_data_components,data+i*number_of_data_components);
 					}
-					spectrum_end_rendervrml(vrml_file, spectrum);
+					spectrum_end_render_vrml(vrml_file, spectrum);
 				}
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 				fprintf(vrml_file,"} #Shape\n");
@@ -1502,7 +1502,7 @@ Writes VRML code to the file handle which represents the given pointset.
 			point=point_list;
 			if (number_of_data_components && data && material && spectrum)
 			{
-				material_copy = CREATE(Graphical_material)("rendervrml_copy");
+				material_copy = CREATE(Graphical_material)("render_vrml_copy");
 			}
 			else
 			{
@@ -1653,13 +1653,13 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 			if (data&&spectrum)
 			{
 				fprintf(vrml_file,"    colorPerVertex TRUE\n");
-				spectrum_start_rendervrml(vrml_file,spectrum,material);
+				spectrum_start_render_vrml(vrml_file,spectrum,material);
 				for (i=0;i<number_of_points;i++)
 				{
-					spectrum_rendervrml_value(vrml_file,spectrum,material,
+					spectrum_render_vrml_value(vrml_file,spectrum,material,
 						number_of_data_components,data+i*number_of_data_components);
 				}
-				spectrum_end_rendervrml(vrml_file, spectrum);
+				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			if (material&&Graphical_material_get_texture(material))
 			{
@@ -1827,13 +1827,13 @@ DESCRIPTION :
 			}
 			if (g_NO_DATA!=number_of_data_components)
 			{
-				spectrum_start_rendervrml(vrml_file,spectrum,material);
+				spectrum_start_render_vrml(vrml_file,spectrum,material);
 				for (i=0;i<number_of_points;i++)
 				{
-					spectrum_rendervrml_value(vrml_file,spectrum,material,
+					spectrum_render_vrml_value(vrml_file,spectrum,material,
 						number_of_data_components,data+number_of_data_components*i);
 				}
-				spectrum_end_rendervrml(vrml_file, spectrum);
+				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
 			if (CMISS_GRAPHICS_RENDER_TYPE_SHADED == render_type)
@@ -2073,13 +2073,13 @@ DESCRIPTION :
 		fprintf(vrml_file,"    }\n");
 		if (spectrum && number_of_data_components)
 		{
-			spectrum_start_rendervrml(vrml_file, spectrum, default_material);
+			spectrum_start_render_vrml(vrml_file, spectrum, default_material);
 			for (i = 0; i < number_of_vertices; i++)
 			{
-				spectrum_rendervrml_value(vrml_file, spectrum, default_material,
+				spectrum_render_vrml_value(vrml_file, spectrum, default_material,
 					number_of_data_components, vertex_list[i]->data);
 			}
-			spectrum_end_rendervrml(vrml_file, spectrum);
+			spectrum_end_render_vrml(vrml_file, spectrum);
 		}
 		fprintf(vrml_file,"    coordIndex [\n");
 		for (i = 0; i < number_of_triangles; i++)

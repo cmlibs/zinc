@@ -73,13 +73,13 @@ extern "C" {
 #if defined (USE_ITK)
 #include "image_processing/computed_field_threshold_image_filter.h"
 #include "image_processing/computed_field_binary_threshold_image_filter.h"
-#include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
-#include "image_processing/computed_field_meanImageFilter.h"
-#include "image_processing/computed_field_sigmoidImageFilter.h"
+#include "image_processing/computed_field_canny_edge_detection_filter.h"
+#include "image_processing/computed_field_mean_image_filter.h"
+#include "image_processing/computed_field_sigmoid_image_filter.h"
 #include "image_processing/computed_field_discrete_gaussian_image_filter.h"
-#include "image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h"
-#include "image_processing/computed_field_derivativeImageFilter.h"
-#include "image_processing/computed_field_rescaleIntensityImageFilter.h"
+#include "image_processing/computed_field_curvature_anisotropic_diffusion_image_filter.h"
+#include "image_processing/computed_field_derivative_image_filter.h"
+#include "image_processing/computed_field_rescale_intensity_image_filter.h"
 #include "image_processing/computed_field_connected_threshold_image_filter.h"
 #include "image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h"
 #include "image_processing/computed_field_histogram_image_filter.h"
@@ -88,7 +88,7 @@ extern "C" {
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif
 #include "region/cmiss_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"

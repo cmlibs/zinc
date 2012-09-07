@@ -40,9 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-
 #include "configure/cmiss_zinc_configure.h"
-
 
 #include <stddef.h>
 #include <stdio.h>
@@ -55,6 +53,7 @@
 #endif /* !defined (WIN32_SYSTEM) */
 #include <math.h>
 #include <time.h>
+
 extern "C" {
 #include "api/cmiss_context.h"
 #include "api/cmiss_element.h"
@@ -66,12 +65,7 @@ extern "C" {
 #include "api/cmiss_scene.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_stream.h"
-#include "comfile/comfile.h"
-#if defined (WX_USER_INTERFACE)
-#include "comfile/comfile_window_wx.h"
-#endif /* defined (WX_USER_INTERFACE) */
 #include "command/console.h"
-#include "command/command_window.h"
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -110,11 +104,6 @@ extern "C" {
 #include "computed_field/computed_field_wrappers.h"
 #include "context/context.h"
 #include "element/element_operations.h"
-#include "element/element_point_tool.h"
-#if defined (WX_USER_INTERFACE)
-#include "element/element_point_viewer_wx.h"
-#endif /* defined (WX_USER_INTERFACE) */
-#include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_cm_files.h"
@@ -140,12 +129,12 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
+#include "general/message.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/defined_graphics_objects.h"
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
-#include "graphics/graphics_window.h"
 #include "graphics/import_graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
@@ -155,9 +144,9 @@ extern "C" {
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
 #include "graphics/render_to_finite_elements.h"
-#include "graphics/renderstl.h"
-#include "graphics/rendervrml.h"
-#include "graphics/renderwavefront.h"
+#include "graphics/render_stl.h"
+#include "graphics/render_vrml.h"
+#include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
 #include "finite_element/finite_element_helper.h"
 }
@@ -167,33 +156,22 @@ extern "C" {
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
-#if defined (WX_USER_INTERFACE)
-#include "graphics/region_tree_viewer_wx.h"
-#endif /* switch(USER_INTERFACE)*/
 #include "graphics/spectrum.h"
-#if defined (WX_USER_INTERFACE)
-#include "graphics/spectrum_editor_wx.h"
-#include "graphics/spectrum_editor_dialog_wx.h"
-#endif /* defined (WX_USER_INTERFACE) */
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
-#include "graphics/transform_tool.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
-#if defined (GTK_USER_INTERFACE)
-#include "gtk/gtk_cmiss_scene_viewer.h"
-#endif /* defined (GTK_USER_INTERFACE) */
 #include "image_processing/computed_field_image_resample.h"
 #if defined (USE_ITK)
 #include "image_processing/computed_field_threshold_image_filter.h"
 #include "image_processing/computed_field_binary_threshold_image_filter.h"
-#include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
-#include "image_processing/computed_field_meanImageFilter.h"
-#include "image_processing/computed_field_sigmoidImageFilter.h"
+#include "image_processing/computed_field_canny_edge_detection_filter.h"
+#include "image_processing/computed_field_mean_image_filter.h"
+#include "image_processing/computed_field_sigmoid_image_filter.h"
 #include "image_processing/computed_field_discrete_gaussian_image_filter.h"
-#include "image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h"
-#include "image_processing/computed_field_derivativeImageFilter.h"
-#include "image_processing/computed_field_rescaleIntensityImageFilter.h"
+#include "image_processing/computed_field_curvature_anisotropic_diffusion_image_filter.h"
+#include "image_processing/computed_field_derivative_image_filter.h"
+#include "image_processing/computed_field_rescale_intensity_image_filter.h"
 #include "image_processing/computed_field_connected_threshold_image_filter.h"
 #include "image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h"
 #include "image_processing/computed_field_histogram_image_filter.h"
@@ -204,30 +182,14 @@ extern "C" {
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
 #endif /* !defined (SELECT_DESCRIPTORS) */
-#if defined (WX_USER_INTERFACE)
-#include "material/material_editor_wx.h"
-#endif /* defined (SWITCH_USER_INTERFACE) */
 #include "minimise/minimise.h"
 #include "node/node_operations.h"
-#include "node/node_tool.h"
-#if defined (WX_USER_INTERFACE)
-#include "node/node_viewer_wx.h"
-#endif /* defined (WX_USER_INTERFACE) */
 #include "region/cmiss_region.h"
 #include "selection/any_object_selection.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "graphics/font.h"
 #include "time/time_keeper.h"
-#include "user_interface/filedir.h"
-#include "user_interface/confirmation.h"
-#include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 #include "curve/curve.h"
-#if defined (USE_PERL_INTERPRETER)
-#include "perl_interpreter.h"
-#endif /* defined (USE_PERL_INTERPRETER) */
-#include "user_interface/fd_io.h"
-#include "user_interface/idle.h"
 #include "command/cmiss.h"
 }
 #include "mesh/cmiss_element_private.hpp"
@@ -237,10 +199,9 @@ extern "C" {
 #include "cad/point.h"
 #include "cad/curve.h"
 #include "cad/surface.h"
-#include "cad/geometricshape.h"
+#include "cad/geometric_shape.h"
 #include "graphics/graphics_object.hpp"
-#include "cad/opencascadeimporter.h"
-#include "cad/cad_tool.h"
+#include "cad/opencascade_importer.h"
 #include "cad/computed_field_cad_topology.h"
 #endif /* defined (USE_OPENCASCADE) */
 
@@ -259,33 +220,15 @@ DESCRIPTION :
 {
 	int access_count;
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
-		*examples_directory,*example_comfile,
-		*example_requirements,*help_directory,*help_url;
-	struct Console *command_console;
-#if defined (USE_CMGUI_COMMAND_WINDOW)
-	struct Command_window *command_window;
-#endif /* USE_CMGUI_COMMAND_WINDOW */
+		*examples_directory,*example_requirements,*help_directory,*help_url;
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
-	struct Element_point_tool *element_point_tool;
-	struct Element_tool *element_tool;
-#if defined (USE_OPENCASCADE)
-	struct Cad_tool *cad_tool;
-#endif /* defined (USE_OPENCASCADE) */
 	struct Event_dispatcher *event_dispatcher;
-	struct Node_tool *data_tool,*node_tool;
-	struct Interactive_tool *transform_tool;
-#if defined (USE_PERL_INTERPRETER)
-	struct Interpreter *interpreter;
-#endif /* defined (USE_PERL_INTERPRETER) */
 #if defined (SELECT_DESCRIPTORS)
 	struct LIST(Io_device) *device_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct MANAGER(GT_object) *glyph_manager;
-#if defined (WX_USER_INTERFACE)
-	struct MANAGER(Comfile_window) *comfile_window_manager;
-#endif /* defined (WX_USER_INTERFACE)*/
 	struct Cmiss_region *root_region;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
@@ -296,10 +239,6 @@ DESCRIPTION :
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 	struct Graphics_font_package *graphics_font_package;
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
@@ -320,15 +259,6 @@ DESCRIPTION :
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 	struct Emoter_dialog *emoter_slider_dialog;
-#if defined (WX_USER_INTERFACE)
-	struct Node_viewer *data_viewer,*node_viewer;
-	struct Element_point_viewer *element_point_viewer;
-#endif /* defined (WX_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-	struct Material_editor *material_editor;
-	struct Region_tree_viewer *region_tree_viewer;
-	struct Spectrum_editor_dialog *spectrum_editor_dialog;
-#endif /* defined (WX_USER_INTERFACE) */
 	struct Cmiss_graphics_module *graphics_module;
 }; /* struct Cmiss_command_data */
 

@@ -55,7 +55,7 @@ DESCRIPTION :
 #include "general/indexed_list_private.h"
 #include "io_devices/io_device.h"
 #include "user_interface/event_dispatcher.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 #if defined (USE_PERL_INTERPRETER)
 #include "perl_interpreter.h"

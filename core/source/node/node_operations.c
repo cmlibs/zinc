@@ -47,7 +47,7 @@ cannot reside in finite element modules.
 #include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "node/node_operations.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global functions

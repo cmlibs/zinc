@@ -62,7 +62,7 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/material.hpp"
 #include "graphics/scene_viewer.hpp"

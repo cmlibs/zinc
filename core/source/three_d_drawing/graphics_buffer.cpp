@@ -101,7 +101,7 @@ extern "C" {
 #if defined (UNIX) && !defined (DARWIN)
 #include "user_interface/event_dispatcher.h"
 #endif /* defined (UNIX) && !defined (DARWIN) */
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 
 #include "three_d_drawing/window_system_extensions.h"

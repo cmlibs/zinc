@@ -48,7 +48,7 @@ of subobject numbers if required.
 #include "general/indexed_list_private.h"
 #include "general/object.h"
 #include "graphics/selected_graphic.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

@@ -49,7 +49,7 @@ At present, limited to int type, but could be converted to other number types.
 #include "general/object.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

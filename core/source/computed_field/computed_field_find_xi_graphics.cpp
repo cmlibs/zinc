@@ -65,7 +65,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)

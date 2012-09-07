@@ -55,7 +55,7 @@ extern "C" {
 #include "general/math.h"
 #include "general/io_stream.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 #include <ctype.h>

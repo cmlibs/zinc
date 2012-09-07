@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_cannyEdgeDetectionFilter.h
+FILE : computed_field_canny_edge_detection_filter.h
 
 LAST MODIFIED : 9 September 2006
 
@@ -40,8 +40,8 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H)
-#define COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H
+#if !defined (computed_field_canny_edge_detection_filter_H)
+#define computed_field_canny_edge_detection_filter_H
 
 #include "api/cmiss_field.h"
 
@@ -69,8 +69,8 @@ int Cmiss_field_get_type_canny_edge_detection_image_filter(struct Computed_field
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and canny_edge_detection_image_filter
+If the field is of type computed_field_canny_edge_detection_filter, the source_field and canny_edge_detection_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H) */
+#endif /* !defined (computed_field_canny_edge_detection_filter_H) */

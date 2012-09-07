@@ -55,7 +55,7 @@ extern "C" {
 #include "field_io/read_fieldml.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "fieldml_api.h"
 #include "FieldmlIoApi.h"
 }

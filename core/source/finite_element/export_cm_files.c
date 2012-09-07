@@ -45,7 +45,7 @@ Functions for exporting finite element data to a file.
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "finite_element/export_cm_files.h"
 
 /*

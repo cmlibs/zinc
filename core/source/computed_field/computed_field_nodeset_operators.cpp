@@ -51,7 +51,7 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "finite_element/finite_element_region.h"
 }
 using namespace std;

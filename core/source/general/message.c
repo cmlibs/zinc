@@ -53,7 +53,7 @@ Declaration of functions for displaying messages.
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module variables

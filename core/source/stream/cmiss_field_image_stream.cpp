@@ -47,7 +47,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/image_utilities.h"
 #include "graphics/texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "stream/cmiss_field_image_stream.hpp"

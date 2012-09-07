@@ -54,7 +54,7 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 #define CONTOUR_POLYLINE_REALLOCATE_SIZE 25

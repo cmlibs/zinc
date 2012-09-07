@@ -85,7 +85,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 }
 #include "graphics/scene.hpp"
@@ -1945,7 +1945,7 @@ LAST MODIFIED : 23 December 1997
 
 DESCRIPTION :
 Allows clients of the <scene> to perform functions with the scene_objects in
-it. For example, rendervrml.c needs to output all the window objects in a scene.
+it. For example, render_vrml.c needs to output all the window objects in a scene.
 ==============================================================================*/
 {
 	int return_code;

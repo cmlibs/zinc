@@ -52,7 +52,7 @@ DESCRIPTION :
 #endif /* defined (VMS) */
 #include "general/machine.h"
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global functions

@@ -55,7 +55,7 @@ to file.
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global functions

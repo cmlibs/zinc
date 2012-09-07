@@ -49,7 +49,7 @@ extern "C" {
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 extern "C" {
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 static void  Cmiss_selection_handler_callback(

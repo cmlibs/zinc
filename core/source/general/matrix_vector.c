@@ -64,7 +64,7 @@ graphics/matrix.c
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/matrix_vector.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 #define TINY 1.0e-20
 

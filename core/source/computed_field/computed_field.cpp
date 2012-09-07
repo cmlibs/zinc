@@ -174,7 +174,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/value.h"
 #include "region/cmiss_region_private.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>

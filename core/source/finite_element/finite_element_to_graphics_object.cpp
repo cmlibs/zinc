@@ -69,7 +69,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/graphics_object.hpp"
 #include "mesh/cmiss_node_private.hpp"

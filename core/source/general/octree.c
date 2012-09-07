@@ -45,7 +45,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/octree.h"
 #include "general/list_private.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

@@ -50,7 +50,7 @@ extern "C" {
 #include "general/debug.h"
 #include "graphics/scene.h"
 #include "interaction/interactive_event.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 /*

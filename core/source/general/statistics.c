@@ -47,7 +47,7 @@ Statistical functions, eg. sampling from distributions, used by CMGUI.
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/random.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Global functions

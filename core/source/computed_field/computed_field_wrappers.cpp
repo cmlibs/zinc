@@ -51,7 +51,7 @@ extern "C" {
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
 

@@ -49,7 +49,7 @@ format specified in general/matrix_vector.h.
 #include "graphics/graphics_library.h"
 #include "general/matrix_vector.h"
 #include "general/photogrammetry.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module functions

@@ -53,7 +53,7 @@ extern "C" {
 #include "graphics/volume_texture.h"
 }
 extern "C" {
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 /*

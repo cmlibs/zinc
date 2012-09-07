@@ -45,7 +45,7 @@ This provides an object which supplies a concept of time to Cmgui
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
 

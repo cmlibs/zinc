@@ -73,7 +73,7 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 struct Cmiss_region;
 

@@ -60,7 +60,7 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/graphics_object_private.hpp"
 

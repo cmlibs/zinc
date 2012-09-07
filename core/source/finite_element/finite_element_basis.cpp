@@ -51,7 +51,7 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 /*

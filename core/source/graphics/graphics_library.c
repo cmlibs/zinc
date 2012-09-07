@@ -44,7 +44,6 @@ Functions for interfacing with the graphics library.
 
 #include "configure/cmiss_zinc_configure.h"
 
-
 #if defined (OPENGL_API)
 #if defined (USE_GLEW)
 #		include <GL/glew.h>
@@ -82,7 +81,7 @@ Functions for interfacing with the graphics library.
 #define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 
 

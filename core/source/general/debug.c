@@ -49,7 +49,7 @@ Function definitions for debugging.
 #include "configure/cmiss_zinc_configure.h"
 
 
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "general/debug.h"
 
 /*#define USE_EXTERNAL_STRUCTS*/

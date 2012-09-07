@@ -75,7 +75,7 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */

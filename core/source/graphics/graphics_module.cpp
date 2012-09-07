@@ -54,7 +54,7 @@ extern "C" {
 extern "C" {
 #include "region/cmiss_region_private.h"
 #include "time/time_keeper.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include <list>
 

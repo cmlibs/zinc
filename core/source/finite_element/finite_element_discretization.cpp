@@ -51,7 +51,7 @@ extern "C" {
 #include "general/random.h"
 #include "general/statistics.h"
 #include "graphics/graphics_object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 /*
 Module types

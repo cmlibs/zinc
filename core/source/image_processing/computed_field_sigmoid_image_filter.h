@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_sigmoidImageFilter.h
+FILE : computed_field_sigmoid_image_filter.h
 
 LAST MODIFIED : 31 May 2001
 
@@ -41,8 +41,8 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H)
-#define COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H
+#if !defined (computed_field_sigmoid_image_filter_H)
+#define computed_field_sigmoid_image_filter_H
 
 #include "api/cmiss_field.h"
 
@@ -69,8 +69,8 @@ int Cmiss_field_get_type_sigmoid_image_filter(struct Computed_field *field,
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, the source_field and sigmoid_image_filter
+If the field is of type computed_field_sigmoid_image_filter, the source_field and sigmoid_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H) */
+#endif /* !defined (computed_field_sigmoid_image_filter_H) */

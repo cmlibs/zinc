@@ -87,7 +87,7 @@ extern "C" {
 #include "graphics/transform_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 }
 #include "graphics/graphics_coordinate_system.hpp"

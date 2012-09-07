@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_sigmoidImageFilter.c
+FILE : computed_field_sigmoid_image_filter.c
 
 LAST MODIFIED : 9 September 2006
 
@@ -51,8 +51,8 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
-#include "image_processing/computed_field_sigmoidImageFilter.h"
+#include "general/message.h"
+#include "image_processing/computed_field_sigmoid_image_filter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"
@@ -323,7 +323,7 @@ int Cmiss_field_get_type_sigmoid_image_filter(struct Computed_field *field,
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, the source_field and sigmoid_image_filter
+If the field is of type computed_field_sigmoid_image_filter, the source_field and sigmoid_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 {
@@ -358,7 +358,7 @@ int define_Computed_field_type_sigmoid_image_filter(struct Parse_state *state,
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_SIGMOIDIMAGEFILTER (if it is not 
+Converts <field> into type computed_field_sigmoid_image_filter (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {

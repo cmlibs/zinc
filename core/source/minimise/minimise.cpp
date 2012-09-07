@@ -61,7 +61,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "minimise/minimise.h"
 }
 #include "general/enumerator_private_cpp.hpp"

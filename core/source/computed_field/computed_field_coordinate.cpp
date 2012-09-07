@@ -53,7 +53,7 @@ extern "C" {
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 
 class Computed_field_coordinate_package : public Computed_field_type_package

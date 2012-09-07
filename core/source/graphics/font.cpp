@@ -54,7 +54,7 @@ extern "C" {
 #include "graphics/font.h"
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)

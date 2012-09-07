@@ -70,7 +70,7 @@ extern "C" {
 extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "graphics/render_to_finite_elements.h"
 }
 #include "graphics/graphics_object_private.hpp"

@@ -48,7 +48,7 @@ and Texture_tiling boundaries.
 extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "graphics/tile_graphics_objects.h"
 }
 #include "graphics/graphics_object_private.hpp"

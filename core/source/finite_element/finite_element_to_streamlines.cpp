@@ -55,7 +55,7 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/random.h"
 #include "graphics/graphics_object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts

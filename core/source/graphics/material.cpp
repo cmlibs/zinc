@@ -82,7 +82,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/rendergl.hpp"

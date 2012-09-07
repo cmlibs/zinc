@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : renderwavefront.h
+FILE : render_wavefront.h
 
 LAST MODIFIED : 20 October 1998
 
@@ -41,8 +41,8 @@ Renders gtObjects to WAVEFRONT file
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERWAVEFRONT_H)
-#define RENDERWAVEFRONT_H
+#if !defined (render_wavefront_H)
+#define render_wavefront_H
 
 struct Cmiss_scene;
 #define Scene Cmiss_scene // GRC temporary
@@ -59,4 +59,4 @@ LAST MODIFIED : 19 October 1998
 DESCRIPTION :
 Renders the visible objects to Wavefront object files.
 ==============================================================================*/
-#endif /* !defined (RENDERWAVEFRONT_H) */
+#endif /* !defined (render_wavefront_H) */

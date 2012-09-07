@@ -52,7 +52,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "time/time.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_time.h"
 }
 

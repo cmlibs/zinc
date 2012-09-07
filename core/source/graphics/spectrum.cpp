@@ -59,7 +59,7 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "graphics/rendergl.hpp"

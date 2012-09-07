@@ -49,7 +49,7 @@ Representing time in finite elements.
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

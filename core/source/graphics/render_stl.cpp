@@ -49,9 +49,9 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
-#include "graphics/renderstl.h"
+#include "graphics/render_stl.h"
 #include "graphics/scene.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"

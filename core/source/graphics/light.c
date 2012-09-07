@@ -71,7 +71,7 @@ problem.
 #include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

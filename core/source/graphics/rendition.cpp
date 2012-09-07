@@ -71,7 +71,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"

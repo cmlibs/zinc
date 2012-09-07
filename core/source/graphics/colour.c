@@ -47,7 +47,7 @@ Colour structures and support code.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "graphics/colour.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 
 /*

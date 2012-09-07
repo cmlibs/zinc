@@ -59,4 +59,4 @@ LAST MODIFIED : 8 June 1999
 DESCRIPTION :
 Renders the visible objects to binary Wavefront object files.
 ==============================================================================*/
-#endif /* !defined (RENDERWAVEFRONT_H) */
+#endif /* !defined (render_wavefront_H) */

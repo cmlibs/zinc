@@ -85,7 +85,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include "graphics/complex.h"
 #include "graphics/laguer.h"
 #include "graphics/texture_line.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /* module data */
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_curvatureAnisotropicDiffusionImageFilter.c
+FILE : computed_field_curvature_anisotropic_diffusion_image_filter.c
 
 LAST MODIFIED : 15 Dec 2006
 
@@ -51,8 +51,8 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
-#include "image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h"
+#include "general/message.h"
+#include "image_processing/computed_field_curvature_anisotropic_diffusion_image_filter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"

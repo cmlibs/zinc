@@ -53,7 +53,7 @@ to index_multi_range for pending/placed frames etc.
 #include "general/indexed_multi_range.h"
 #include "general/multi_range.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module variables

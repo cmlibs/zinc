@@ -55,7 +55,7 @@ extern "C" {
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"

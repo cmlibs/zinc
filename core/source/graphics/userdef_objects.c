@@ -57,7 +57,7 @@ Used to be in graphics_object.h
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/userdef_objects.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module types

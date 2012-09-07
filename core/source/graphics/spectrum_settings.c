@@ -66,7 +66,7 @@ appearance of spectrums.
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 /*
 Global variables
 ----------------

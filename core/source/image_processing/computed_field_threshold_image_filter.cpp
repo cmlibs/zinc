@@ -65,7 +65,7 @@ extern "C" {
 #include "general/enumerator_private_cpp.hpp"  
 extern "C" {
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "image_processing/computed_field_threshold_image_filter.h"
 }
 #include "itkImage.h"

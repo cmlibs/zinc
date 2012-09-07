@@ -50,7 +50,7 @@
 #include "general/object.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_write_info.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
 
 /*

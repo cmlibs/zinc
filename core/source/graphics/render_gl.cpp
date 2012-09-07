@@ -56,7 +56,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 }
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/graphics_object_private.hpp"

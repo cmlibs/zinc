@@ -53,7 +53,7 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "computed_field/computed_field_lookup.h"
 #include "graphics/quaternion.hpp"
 }

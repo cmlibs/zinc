@@ -53,7 +53,7 @@ data points.
 #include "finite_element/snake.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 
 /*
 Module Constants
