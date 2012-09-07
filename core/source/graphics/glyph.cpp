@@ -68,7 +68,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 }
 #include "graphics/graphics_object.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 
 /*
 Module functions

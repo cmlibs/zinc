@@ -170,11 +170,6 @@ int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
 	const char *command_prefix, const char *command_suffix);
 
 /***************************************************************************//**
- * Lists the general graphic defined for <rendition>.
- */
-int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
  * Private method for informing rendition of material manager changes.
  * Should only be called by Cmiss_graphics_module.
  */

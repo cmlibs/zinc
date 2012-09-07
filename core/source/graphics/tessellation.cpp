@@ -784,68 +784,28 @@ int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, vo
 
 } // anonymous namespace
 
-int Option_table_add_divisions_entry(struct Option_table *option_table,
-	const char *token, int **divisions_address, int *size_address)
-{
-	int return_code;
-	if (option_table && token && divisions_address && size_address)
-	{
-		return_code = Option_table_add_entry(option_table, token,
-			(void *)divisions_address, (void *)size_address, set_divisions);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_divisions_entry.  Invalid argument(s)");
-		return_code=0;
-	}
-	return (return_code);
-}
-
-int Option_table_add_Cmiss_tessellation_entry(struct Option_table *option_table,
-	const char *token, struct Cmiss_graphics_module *graphics_module,
-	struct Cmiss_tessellation **tessellation_address)
-{
-	int return_code;
-	if (option_table && token && graphics_module && tessellation_address)
-	{
-		return_code = Option_table_add_entry(option_table, token,
-			(void *)tessellation_address, (void *)graphics_module,
-			set_Cmiss_tessellation);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_Cmiss_tessellation_entry.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 class Cmiss_tessellation_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_tessellation_attribute attribute)
-    {
-    	const char *enum_string = 0;
-    	switch (attribute)
-    	{
-    		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
-    			enum_string = "IS_MANAGED";
-    			break;
-    		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
-    			enum_string = "MINIMUM_DIVISIONS_SIZE";
-    			break;
-    		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
-    			enum_string = "REFINEMENT_FACTORS_SIZE";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_tessellation_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
+			enum_string = "IS_MANAGED";
+			break;
+		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
+			enum_string = "MINIMUM_DIVISIONS_SIZE";
+			break;
+		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
+			enum_string = "REFINEMENT_FACTORS_SIZE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_tessellation_attribute

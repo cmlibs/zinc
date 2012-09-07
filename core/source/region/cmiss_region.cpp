@@ -632,58 +632,6 @@ void Cmiss_region_remove_field_cache(Cmiss_region_id region,
 		region->field_caches->remove(cache);
 }
 
-int Option_table_add_set_Cmiss_region(struct Option_table *option_table,
-	const char *token, struct Cmiss_region *root_region,
-	struct Cmiss_region **region_address)
-{
-	int return_code;
-
-	ENTER(Option_table_add_set_Cmiss_region);
-	if (option_table && root_region && region_address)
-	{
-		return_code = Option_table_add_entry(option_table, token,
-			(void *)region_address, (void *)root_region, set_Cmiss_region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_set_Cmiss_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Option_table_add_set_Cmiss_region_path(struct Option_table *option_table, 
-	const char *entry_string, struct Cmiss_region *root_region, char **path_address)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Adds an entry to the <option_table> with name <entry_name> that returns a 
-region path in <path_address> relative to the <root_region>.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Option_table_add_set_Cmiss_region_path);
-	if (option_table && entry_string && root_region && path_address)
-	{
-		return_code = Option_table_add_entry(option_table, entry_string,
-			(void *)path_address, (void *)root_region,
-			set_Cmiss_region_path);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_set_Cmiss_region_path.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Option_table_add_set_Cmiss_region_path */
-
 int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module)
 {
 	return Cmiss_region_fields_begin_change(Cmiss_field_module_get_region_internal(field_module));
@@ -1370,45 +1318,6 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 
 	return (return_code);
 } /* Cmiss_region_get_partial_region_path */
-
-int Option_table_add_region_path_and_or_field_name_entry(
-	struct Option_table *option_table, char *token,
-	struct Cmiss_region_path_and_name *region_path_and_name,
-	struct Cmiss_region *root_region)
-{
-	int return_code;
-
-	ENTER(Option_table_add_region_path_and_or_field_name_entry);
-	if (option_table && region_path_and_name && root_region)
-	{
-		return_code = Option_table_add_entry(option_table, token,
-			(void *)region_path_and_name, (void *)root_region,
-			set_region_path_and_or_field_name);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_region_path_and_or_field_name_entry.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Option_table_add_region_path_and_or_field_name_entry */
-
-int Option_table_add_region_or_group_entry(struct Option_table *option_table,
-	const char *token, Cmiss_region_id *region_address,
-	Cmiss_field_group_id *group_address)
-{
-	if (!(option_table && region_address && *region_address && group_address))
-	{
-		display_message(ERROR_MESSAGE, "Option_table_add_region_or_group_entry.  Invalid argument(s)");
-		return 0;
-	}
-	return Option_table_add_entry(option_table, token,
-		(void *)region_address, (void *)group_address, set_Cmiss_region_or_group);
-}
 
 int Cmiss_region_list(struct Cmiss_region *region,
 	int indent, int indent_increment)

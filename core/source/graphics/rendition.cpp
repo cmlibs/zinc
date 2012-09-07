@@ -57,6 +57,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphic.h"
 #include "graphics/graphics_module.h"
+#include "graphics/scene.h"
 #include "graphics/rendition.h"
 #include "general/any_object_private.h"
 #include "general/any_object_definition.h"
@@ -67,7 +68,6 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
@@ -77,9 +77,8 @@ extern "C" {
 #include "computed_field/computed_field_group_base.hpp"
 #include "graphics/selection.hpp"
 #include "graphics/rendition.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/tessellation.hpp"
-#include "user_interface/process_list_or_write_command.hpp"
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_transformation, \
 	struct Cmiss_rendition *, gtMatrix *);
@@ -2012,204 +2011,6 @@ int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
 	return return_code;
 }
 
-struct Cmiss_rendition_process_temp_data
-{
-	 class Process_list_or_write_command_class *process_message;
-	 struct Cmiss_graphic_list_data *list_data;
-};
-
-/***************************************************************************//**
- * Writes out the <graphic> as a text string in the command window with the
- * <graphic_string_detail>, <line_prefix> and <line_suffix> given in the
- * <list_data>.
- */
-int Cmiss_rendition_process_Cmiss_graphic_list_contents(
-	 struct Cmiss_graphic *graphic,	void *process_temp_data_void)
-{
-	int return_code;
-	char *graphic_string; /*,line[40];*/
-	struct Cmiss_graphic_list_data *list_data;
-	class Process_list_or_write_command_class *process_message;
-	struct Cmiss_rendition_process_temp_data *process_temp_data;
-
-	ENTER(Cmiss_rendition_process_Cmiss_graphic_list_contents);
-	if (graphic&&
-		 (process_temp_data=(struct Cmiss_rendition_process_temp_data *)process_temp_data_void))
-	{
-		 if (NULL != (process_message = process_temp_data->process_message) && 
-			 NULL != (list_data = process_temp_data->list_data))
-		 {
-			 if (NULL != (graphic_string=Cmiss_graphic_string(graphic,
-						 list_data->graphic_string_detail)))
-				{
-					 if (list_data->line_prefix)
-					 {
-							process_message->process_command(INFORMATION_MESSAGE,list_data->line_prefix);
-					 }
-					 process_message->process_command(INFORMATION_MESSAGE,graphic_string);
-					 if (list_data->line_suffix)
-					 {
-							process_message->process_command(INFORMATION_MESSAGE,list_data->line_suffix);
-					 }
-					 process_message->process_command(INFORMATION_MESSAGE,"\n");
-					 DEALLOCATE(graphic_string);
-					 return_code=1;
-				}
-			 return_code= 1;
-		 }
-		 else
-		 {
-				return_code=0;
-		 }
-	}
-	else
-	{
-		 display_message(ERROR_MESSAGE,
-				"Cmiss_rendition_process_Cmiss_graphic_list_contents.  Invalid argument(s)");
-		 return_code=0;
-	}
-	LEAVE;
-	
-	return (return_code);
-}
-
-/***************************************************************************//**
- * Will write commands to comfile or list commands to the command windows
- * depending on the class.
- */
-int Cmiss_rendition_process_list_or_write_window_commands(struct Cmiss_rendition *rendition,
-	 const char *command_prefix, const char *command_suffix, class Process_list_or_write_command_class *process_message)
-{
-	int return_code;
-	struct Cmiss_graphic_list_data list_data;
-
-	ENTER(Cmiss_rendition_process_list_or_write_window_command);
-	if (rendition && command_prefix)
-	{
-		process_message->process_command(INFORMATION_MESSAGE,command_prefix);
-		process_message->process_command(INFORMATION_MESSAGE,"general clear");
-		if (command_suffix)
-		{
-			process_message->process_command(INFORMATION_MESSAGE,command_suffix);
-		}
-		process_message->process_command(INFORMATION_MESSAGE,"\n");
-		list_data.graphic_string_detail=GRAPHIC_STRING_COMPLETE;
-		list_data.line_prefix=command_prefix;
-		list_data.line_suffix=command_suffix;
-		struct Cmiss_rendition_process_temp_data *process_temp_data;
-		if (ALLOCATE(process_temp_data,struct Cmiss_rendition_process_temp_data,1))
-		{
-			 process_temp_data->process_message = process_message;
-			 process_temp_data->list_data = &list_data;
-			 return_code=FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-					Cmiss_rendition_process_Cmiss_graphic_list_contents,(void *)process_temp_data,
-					rendition->list_of_graphics);
-			 DEALLOCATE(process_temp_data);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_list_commands.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_process_list_or_write_window_command*/
-
-int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
-	 const char *command_prefix, const char *command_suffix)
-{
-	 int return_code = 0;
-
-	 ENTER(Cmiss_rendition_list_commands);
-	 Process_list_command_class *list_message =
-			new Process_list_command_class();
-	 if (list_message)
-	 {
-			return_code = Cmiss_rendition_process_list_or_write_window_commands(
-				rendition, command_prefix, command_suffix, list_message);
-			delete list_message;
-	 }
-	 LEAVE;
-
-	 return (return_code);
-}
-
-int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition)
-{
-	char *name = 0;
-	int return_code;
-	struct Cmiss_graphic_list_data list_data;
-
-	ENTER(Cmiss_rendition_list_contents);
-	if (rendition)
-	{
-		if (rendition->circle_discretization)
-		{
-			display_message(INFORMATION_MESSAGE,"  Legacy circle discretization: %d\n",
-				rendition->circle_discretization);
-		}
-		if (rendition->default_coordinate_field)
-		{
-			if (GET_NAME(Computed_field)(rendition->default_coordinate_field,
-				&name))
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  Legacy default coordinate field: %s\n",name);
-				DEALLOCATE(name);
-			}
-		}
-		if (rendition->element_divisions)
-		{
-			display_message(INFORMATION_MESSAGE, "  Legacy element discretization: \"");
-			for (int i = 0; i < rendition->element_divisions_size; i++)
-			{
-				if (i)
-					display_message(INFORMATION_MESSAGE, "*");
-				display_message(INFORMATION_MESSAGE, "%d", rendition->element_divisions[i]);
-			}
-			display_message(INFORMATION_MESSAGE, "\"\n");
-		}
-		if (rendition->native_discretization_field)
-		{
-			if (GET_NAME(FE_field)(rendition->native_discretization_field,
-				&name))
-			{
-				display_message(INFORMATION_MESSAGE,"  Legacy native discretization field: %s\n",name);
-				DEALLOCATE(name);
-			}
-		}
-		if (0 < NUMBER_IN_LIST(Cmiss_graphic)(
-			rendition->list_of_graphics))
-		{
-			display_message(INFORMATION_MESSAGE,"  graphics objects defined:\n");
-			list_data.graphic_string_detail=GRAPHIC_STRING_COMPLETE_PLUS;
-			list_data.line_prefix="  ";
-			list_data.line_suffix="";
-			return_code=FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-				Cmiss_graphic_list_contents,(void *)&list_data,
-				rendition->list_of_graphics);
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"  no graphics graphic defined\n");
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_list_contents.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_list_contents */
-
 int for_each_rendition_in_Cmiss_rendition(
 	struct Cmiss_rendition *rendition,
 	int (*cmiss_rendition_tree_iterator_function)(struct Cmiss_rendition *rendition,
@@ -2561,7 +2362,7 @@ int Cmiss_rendition_set_visibility_flag(struct Cmiss_rendition *rendition,
 {
 	if (rendition)
 	{
-		bool bool_visibility_flag = visibility_flag;
+		bool bool_visibility_flag = visibility_flag == 1;
 		if (rendition->visibility_flag != bool_visibility_flag)
 		{
 			rendition->visibility_flag = bool_visibility_flag;

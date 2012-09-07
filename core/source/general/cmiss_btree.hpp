@@ -1038,11 +1038,13 @@ private:
 		index(0),
 		count(0),
 		access_count(1),
-		next(this),
-		prev(this),
+		next(0),
+		prev(0),
 		temp_removed_object(0),
 		active_iterators(0)
 	{
+		next = this;
+		prev = this;
 	}
 
 	/** copy constructor */

@@ -61,11 +61,13 @@ private:
 	int access_count;
 
 	Cmiss_set() :
-		next(this),
-		prev(this),
+		next(0),
+		prev(0),
 		temp_removed_object(0),
 		access_count(1)
 	{
+		next = this;
+		prev = this;
 	}
 
 	/** copy constructor */

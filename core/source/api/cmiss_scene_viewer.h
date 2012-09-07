@@ -512,27 +512,6 @@ DESCRIPTION :
 Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_interactive_tool_name(
-	Cmiss_scene_viewer_id scene_viewer, char **tool_name);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Returns an allocated string which specifies the name of the current
-interactive_tool.  You should call Cmiss_deallocate with the returned
-pointer when it is no longer required.
-==============================================================================*/
-
-int Cmiss_scene_viewer_set_interactive_tool_by_name(
-	Cmiss_scene_viewer_id scene_viewer, const char *tool_name);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Sets the currently active interactive tool for the scene_viewer if one that
-matches the <tool_name> exists.
-==============================================================================*/
-
 int Cmiss_scene_viewer_get_scene_name(Cmiss_scene_viewer_id scene_viewer,
 	char **scene_name);
 /*******************************************************************************
@@ -993,15 +972,5 @@ LAST MODIFIED : 24 April 2008
 DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Get a handle to the currently active interactive tool of scene viewer.
- *
- * @param scene_viewer  handle to Cmiss_scene_viewer object.
- * @return  Handle to current interactive_tool on success, or NULL if none or
- * invalid argument.
- */
-Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
-	Cmiss_scene_viewer_id scene_viewer);
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

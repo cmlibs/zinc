@@ -79,7 +79,7 @@ extern "C" {
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 }
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"

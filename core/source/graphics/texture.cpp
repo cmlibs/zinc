@@ -78,7 +78,7 @@ extern "C" {
 }
 #include "general/enumerator_private_cpp.hpp"
 #include "graphics/texture.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 
 /*
 Module types

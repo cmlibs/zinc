@@ -194,15 +194,6 @@ DESCRIPTION :
 Returns the io_stream_package structure from the <command_data>
 ==============================================================================*/
 
-struct Cmiss_fdio_package* Cmiss_command_data_get_fdio_package(
-	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2005
-
-DESCRIPTION :
-Gets an Fdio_package for this <command_data>
-==============================================================================*/
-
 struct User_interface *Cmiss_command_data_get_user_interface(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************

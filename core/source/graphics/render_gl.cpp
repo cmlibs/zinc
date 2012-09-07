@@ -62,7 +62,7 @@ extern "C" {
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/scene.hpp"
-#include "graphics/rendergl.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/rendition.hpp"
 #include "graphics/texture.hpp"
 

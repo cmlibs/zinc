@@ -84,7 +84,7 @@ extern "C" {
 #include "general/message.h"
 }
 #include "general/enumerator_conversion.hpp"
-#include "graphics/render_gl.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
 
@@ -6468,36 +6468,6 @@ direct_render_Graphical_material.
 	return (return_code);
 } /* execute_Graphical_material */
 #endif /* defined (OPENGL_API) */
-
-int Option_table_add_set_Material_entry(
-	struct Option_table *option_table, const char *token,
-	struct Graphical_material **material, struct Material_package *material_package)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Adds the given <token> to the <option_table>.  The <material> is selected from
-the <material_package> by name.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Option_table_add_double_vector_with_help_entry);
-	if (option_table && token)
-	{
-		return_code = Option_table_add_entry(option_table, token, (void *)material,
-			(void *)material_package->material_manager, set_Graphical_material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_double_vector_with_help_entry.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Option_table_add_double_vector_with_help_entry */
 
 int Cmiss_graphics_material_set_texture(
 	Graphical_material *material, Texture *texture)

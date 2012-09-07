@@ -86,6 +86,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
+#include "user_interface/event_dispatcher.h"
 }
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
@@ -2799,9 +2800,9 @@ Rotates the scene_viewer when the tumble is active.
 					/*button_number*/-1,/*input_modifier*/0,interaction_volume,
 					scene_viewer->scene);
 				ACCESS(Interactive_event)(interactive_event);
-				Interactive_tool_handle_interactive_event(
-					scene_viewer->interactive_tool,(void *)scene_viewer,
-					interactive_event, scene_viewer->graphics_buffer);
+				//--Interactive_tool_handle_interactive_event(
+				//--	scene_viewer->interactive_tool,(void *)scene_viewer,
+				//--	interactive_event, scene_viewer->graphics_buffer);
 				DEACCESS(Interactive_event)(&interactive_event);
 				DEACCESS(Interaction_volume)(&interaction_volume);
 			}
@@ -2831,52 +2832,7 @@ DESCRIPTION :
 Updates the scene_viewer.
 ==============================================================================*/
 {
-	int repeat_idle;
-	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
-
-	ENTER(Scene_viewer_idle_update_callback);
-	if (scene_viewer != 0)
-	{
-		/* set workproc no longer pending */
-		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		if (scene_viewer->tumble_active &&
-				(!Interactive_tool_is_Transform_tool(scene_viewer->interactive_tool) ||
-				Interactive_tool_transform_get_free_spin(scene_viewer->interactive_tool)))
-		{
-			scene_viewer->fast_changing = 0;
-			Scene_viewer_automatic_tumble(scene_viewer);
-			/* Repost the idle callback */
-			if(!scene_viewer->idle_update_callback_id)
-			{
-				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-					User_interface_get_event_dispatcher(scene_viewer->user_interface),
-					Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
-			}
-		}
-		else
-		{
-			scene_viewer->tumble_angle = 0.0;
-		}
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
-		Scene_viewer_render_scene(scene_viewer);
-		if (scene_viewer->swap_buffers)
-		{
-			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
-		}
-		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-		/* We don't want the idle callback to repeat so we return 0 */
-		repeat_idle = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_idle_update_callback.  Missing scene_viewer");
-		/* We don't want the idle callback to repeat so we return 0 */
-		repeat_idle = 0;
-	}
-	LEAVE;
+	int repeat_idle = 0;
 
 	return (repeat_idle);
 } /* Scene_viewer_idle_update_callback */
@@ -2893,28 +2849,7 @@ scene_viewer is changed again before it is updated, a new WorkProc will not be
 put in the queue, but the old one will update the window to the new state.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Scene_viewer_redraw_in_idle_time);
-	if (scene_viewer)
-	{
-		if (!scene_viewer->idle_update_callback_id)
-		{
-			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				Scene_viewer_idle_update_callback, (void *)scene_viewer,
-				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_redraw_in_idle_time.  Missing scene_viewer");
-		return_code=0;
-	}
-	LEAVE;
-
+	int return_code = 0;
 	return (return_code);
 } /* Scene_viewer_redraw_in_idle_time */
 
@@ -3196,9 +3131,9 @@ scene_viewer.
 			interactive_event=CREATE(Interactive_event)(interactive_event_type,
 				button_number,input_modifier,interaction_volume,scene_viewer->scene);
 			ACCESS(Interactive_event)(interactive_event);
-			return_code=Interactive_tool_handle_interactive_event(
-				scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event,
-				scene_viewer->graphics_buffer);
+			//--return_code=Interactive_tool_handle_interactive_event(
+			//--	scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event,
+			//--	scene_viewer->graphics_buffer);
 			DEACCESS(Interactive_event)(&interactive_event);
 			DEACCESS(Interaction_volume)(&interaction_volume);
 		}
@@ -3257,20 +3192,20 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->tumble_active = 0;
 							switch (scene_viewer->interact_mode)
 							{
-							       case SCENE_VIEWER_INTERACT_STANDARD:
-							       {
-							               if (0.0 != scene_viewer->tumble_rate)
-							               {
-								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
-							               }
-							       }break;
-							       case SCENE_VIEWER_INTERACT_2D:
-							       {
-							               if (0.0 != scene_viewer->translate_rate)
-							               {
-								               scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
-                                                                       }
-							       }break;
+							case SCENE_VIEWER_INTERACT_STANDARD:
+								{
+									if (0.0 != scene_viewer->tumble_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+									}
+								}break;
+							case SCENE_VIEWER_INTERACT_2D:
+								{
+									if (0.0 != scene_viewer->translate_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+									}
+								}break;
 							}
 						} break;
 						case 2:
@@ -3396,24 +3331,8 @@ Converts mouse button-press and motion events into viewing transformations in
 									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
 										-angle))
 									{
-										if (Interactive_tool_is_Transform_tool(
-											scene_viewer->interactive_tool) &&
-											Interactive_tool_transform_get_free_spin(
-												scene_viewer->interactive_tool))
-										{
-											/* Store axis and angle so that we can make the
-												 scene viewer spin if left alone. */
-											scene_viewer->tumble_axis[0] = axis[0];
-											scene_viewer->tumble_axis[1] = axis[1];
-											scene_viewer->tumble_axis[2] = axis[2];
-											scene_viewer->tumble_angle = -angle;
-											scene_viewer->tumble_active = 0;
-										}
-										else
-										{
-											scene_viewer->tumble_angle = 0;
-											scene_viewer->tumble_active = 0;											
-										}
+										scene_viewer->tumble_angle = 0;
+										scene_viewer->tumble_active = 0;
 										view_changed=1;
 									}
 								}
@@ -3501,11 +3420,13 @@ Converts mouse button-press and motion events into viewing transformations in
 					scene_viewer->tumble_active = 1;
 					if (!scene_viewer->idle_update_callback_id)
 					{
-						scene_viewer->idle_update_callback_id = 
-							Event_dispatcher_add_idle_callback(
-								User_interface_get_event_dispatcher(scene_viewer->user_interface),
-								Scene_viewer_idle_update_callback, (void *)scene_viewer,
-								EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+						display_message(ERROR_MESSAGE,
+							"Scene_viewer_input_transform.  Cannot add idle update callback");
+						//scene_viewer->idle_update_callback_id = 
+						//	Event_dispatcher_add_idle_callback(
+						//		User_interface_get_event_dispatcher(scene_viewer->user_interface),
+						//		Scene_viewer_idle_update_callback, (void *)scene_viewer,
+						//		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 					}
 				}
 #if defined (DEBUG_CODE)
@@ -4321,72 +4242,6 @@ DESCRIPTION :
 	return (default_scene);
 } /* Scene_viewer_get_default_scene */
 
-static int Scene_viewer_update_Interactive_tool(
-	struct Scene_viewer *scene_viewer, void *interactive_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 26 April 2007
-
-DESCRIPTION :
-Updates the interactive_tool that matches the type of <interactive_tool_void>
-to have the same settings as <interactive_tool_void> overwriting the 
-settings the individual tool has.  Used to provide compatibility with the old
-global tools.  The scene_viewers in a graphics_window are updated separately
-from this.
-==============================================================================*/
-{
-	char *tool_name;
-	int return_code;
-	struct Interactive_tool *global_interactive_tool;
-	struct Interactive_tool *scene_viewer_interactive_tool;
-	global_interactive_tool = (struct Interactive_tool *)interactive_tool_void;
-	
-	if (GET_NAME(Interactive_tool)(global_interactive_tool,&tool_name)
-		&& (scene_viewer_interactive_tool=
-		FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-		(char *)tool_name,scene_viewer->interactive_tool_manager)))
-	{
-		Interactive_tool_copy(scene_viewer_interactive_tool,
-			global_interactive_tool, (struct MANAGER(Interactive_tool) *)NULL);
-	}
-	return_code = 1;
-	DEALLOCATE(tool_name);
-	return (return_code);
-}
-
-int Cmiss_scene_viewer_package_update_Interactive_tool(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	struct Interactive_tool *interactive_tool)
-/*******************************************************************************
-LAST MODIFIED : 26 April 2007
-
-DESCRIPTION :
-Updates the interactive tools in each of the scene_viewers created with the
-<cmiss_scene_viewer_package> to have the same settings as the <interactive_tool>.
-This enables the old global commands to continue to work for all scene_viewers,
-however new code should probably modify the particular tools for the 
-particular scene_viewer intended.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_package_update_Interactive_tool);
-	if (cmiss_scene_viewer_package)
-	{
-		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-			Scene_viewer_update_Interactive_tool, (void *)interactive_tool,
-			cmiss_scene_viewer_package->scene_viewer_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_package_update_Interactive_tool.  Missing scene_viewer");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_package_update_Interactive_tool */
-
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -4698,10 +4553,10 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 			order_independent_finalise(
 				&scene_viewer->order_independent_transparency_data);
 		}
-		if (scene_viewer->interactive_tool_manager)
-		{
-			DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);
-		}
+		//--if (scene_viewer->interactive_tool_manager)
+		//--{
+		//--	DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);
+		//--}
 
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
@@ -4774,14 +4629,14 @@ DESCRIPTION :
 			scene,
 			cmiss_scene_viewer_package->user_interface);
 		
-		new_interactive_tool_manager = CREATE(MANAGER(Interactive_tool))();
-		FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
-			Interactive_tool_create_copy_iterator, new_interactive_tool_manager,
-			cmiss_scene_viewer_package->interactive_tool_manager);
+		new_interactive_tool_manager = 0;//--CREATE(MANAGER(Interactive_tool))();
+		//--FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+		//--	Interactive_tool_create_copy_iterator, new_interactive_tool_manager,
+		//--	cmiss_scene_viewer_package->interactive_tool_manager);
 
-		Scene_viewer_set_interactive_tool(scene_viewer,
-			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)
-			("transform_tool", new_interactive_tool_manager));
+		//--Scene_viewer_set_interactive_tool(scene_viewer,
+		//--	FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)
+		//--	("transform_tool", new_interactive_tool_manager));
 		scene_viewer->interactive_tool_manager = new_interactive_tool_manager;
 
 		/* Add this scene_viewer to the package list */
@@ -4973,10 +4828,10 @@ about which the scene is turning relative to its lookat point and the
 		/* Repost the idle callback */
 		if(!scene_viewer->idle_update_callback_id)
 		{
-			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				Scene_viewer_idle_update_callback, (void *)scene_viewer,
-				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+			//scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+			//	User_interface_get_event_dispatcher(scene_viewer->user_interface),
+			//	Scene_viewer_idle_update_callback, (void *)scene_viewer,
+			//	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 		}
 		return_code=1;
 	}
@@ -5038,10 +4893,10 @@ Must call this in DESTROY function.
 	{
 		if (scene_viewer->idle_update_callback_id)
 		{
-			Event_dispatcher_remove_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				scene_viewer->idle_update_callback_id);
-			scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
+			//Event_dispatcher_remove_idle_callback(
+			//	User_interface_get_event_dispatcher(scene_viewer->user_interface),
+			//	scene_viewer->idle_update_callback_id);
+			//scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -7791,8 +7646,8 @@ Requests a full redraw immediately.
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		event_dispatcher = User_interface_get_event_dispatcher(
-			scene_viewer->user_interface);
+		event_dispatcher = 0;//User_interface_get_event_dispatcher(
+			//scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
 			Event_dispatcher_remove_idle_callback(
@@ -7848,8 +7703,8 @@ and <transparency_layers> are used for just this render.
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		event_dispatcher = User_interface_get_event_dispatcher(
-			scene_viewer->user_interface);
+		event_dispatcher = 0;//User_interface_get_event_dispatcher(
+			//scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
 			Event_dispatcher_remove_idle_callback(
@@ -8328,7 +8183,7 @@ SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 		if (scene_viewer->interactive_tool &&
 			(scene_viewer->interactive_tool != interactive_tool))
 		{
-			Interactive_tool_reset(scene_viewer->interactive_tool);
+			//--Interactive_tool_reset(scene_viewer->interactive_tool);
 		}
 		scene_viewer->interactive_tool=interactive_tool;
 		return_code=1;
@@ -8343,55 +8198,6 @@ SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 
 	return (return_code);
 } /* Scene_viewer_set_interactive_tool */
-
-int Scene_viewer_set_interactive_tool_by_name(
-	struct Scene_viewer *scene_viewer, const char *tool_name)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Interactive_tool *interactive_tool;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_interactive_tool_by_name);
-	if (scene_viewer && scene_viewer->interactive_tool_manager)
-	{
-		interactive_tool=
-			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-				(char *)tool_name,scene_viewer->interactive_tool_manager);
-		if (interactive_tool != 0)
-		{
-			if (Interactive_tool_is_Transform_tool(interactive_tool))
-			{
-				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_TRANSFORM);
-			}
-			else
-			{
-				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_SELECT);
-			}
-			return_code = Scene_viewer_set_interactive_tool(scene_viewer,
-				interactive_tool);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
-				"Unable to find an interactive tool named %s.", tool_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
-			"The Cmiss_scene_viewer data must be initialised before using "
-			"the scene_viewer api.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_interactive_tool_by_name */
 
 int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
@@ -9162,22 +8968,6 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 
 	return return_code;
 }
-
-Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
-	Cmiss_scene_viewer_id scene_viewer)
-{
-	Cmiss_interactive_tool_id interactive_tool = NULL;
-	if (scene_viewer)
-	{
-		if (scene_viewer->interactive_tool)
-		{
-			interactive_tool = scene_viewer->interactive_tool;
-			ACCESS(Interactive_tool)(scene_viewer->interactive_tool);
-		}
-	}
-	return interactive_tool;
-}
-
 
 #if defined (WX_USER_INTERFACE)
 Cmiss_scene_viewer_id Cmiss_scene_viewer_create_wx(
@@ -9961,46 +9751,6 @@ Sets the background_colour of the scene_viewer.
 
 	return (return_code);
 } /* Cmiss_scene_viewer_set_background_colour_rgb */
-
-int Cmiss_scene_viewer_get_interactive_tool_name(
-	Cmiss_scene_viewer_id scene_viewer, char **tool_name)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Returns an ALLOCATED string which specifies the name of the current
-interactive_tool.  You should call Cmiss_deallocate with the returned
-pointer when it is no longer required.
-==============================================================================*/
-{
-	struct Interactive_tool *interactive_tool;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_get_interactive_tool_name);
-	if (scene_viewer)
-	{
-		if ((interactive_tool = Scene_viewer_get_interactive_tool(scene_viewer))
-			&&(GET_NAME(Interactive_tool)(interactive_tool, tool_name)))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_interactive_tool_name.  "
-				"Failed to get the tool or tool name.");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_background_colour_rgb.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_get_interactive_tool_name */
 
 int Cmiss_scene_viewer_get_scene_name(
 	Cmiss_scene_viewer_id scene_viewer, char **scene_name)

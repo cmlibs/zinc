@@ -37,6 +37,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <string.h>
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"

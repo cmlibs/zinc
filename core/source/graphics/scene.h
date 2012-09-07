@@ -44,9 +44,7 @@
 #if !defined (SCENE_H)
 #define SCENE_H
 
-
 #include "configure/cmiss_zinc_configure.h"
-
 
 #include "api/cmiss_scene.h"
 #include "general/any_object.h"

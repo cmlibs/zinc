@@ -44,7 +44,6 @@ DESCRIPTION :
 #define TEXTUREMAP_H
 
 #include "finite_element/finite_element.h"
-#include "graphics/graphics_window.h"
 
 /*
 Global types

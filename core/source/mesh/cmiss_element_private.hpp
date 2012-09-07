@@ -49,7 +49,6 @@ extern "C" {
 }
 
 struct FE_region;
-struct Option_table;
 
 /***************************************************************************//**
  * Ensures all faces of the supplied element are in this mesh_group.
@@ -97,17 +96,5 @@ Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh);
  * @return non-accessed master region for this mesh.
  */
 Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh);
-
-/***************************************************************************//**
- * Adds token to the option table for setting a mesh from a region.
- *
- * @param option_table  Table to add token to
- * @param token  Token to be matched. Can be NULL for final, default entry.
- * @param region  Pointer to region owning mesh.
- * @param mesh_address  Address of mesh to set. Must be initialised to 0 or
- * existing accessed pointer to mesh. Caller is responsible for deaccessing.
- */
-int Option_table_add_mesh_entry(struct Option_table *option_table,
-	const char *token, Cmiss_region_id region, Cmiss_mesh_id *mesh_address);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

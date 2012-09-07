@@ -467,17 +467,6 @@ Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency. 
 ==============================================================================*/
 
-int Option_table_add_set_Material_entry(
-	struct Option_table *option_table, const char *token,
-	struct Graphical_material **material, struct Material_package *material_package);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Adds the given <token> to the <option_table>.  The <material> is selected from
-the <material_package> by name.
-==============================================================================*/
-
 /***************************************************************************//**
  * Set a value to the uniform qualified variable used in an arbitrary shader.
  *

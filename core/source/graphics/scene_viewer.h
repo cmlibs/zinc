@@ -135,7 +135,6 @@ and the functions given their public names.
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
 #define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
-#define Scene_viewer_set_interactive_tool_by_name Cmiss_scene_viewer_set_interactive_tool_by_name
 #define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
 #define Scene_viewer_win32_set_window_size Cmiss_scene_viewer_win32_set_window_size
 #define Scene_viewer_add_transform_callback Cmiss_scene_viewer_add_transform_callback
@@ -316,20 +315,6 @@ struct Scene *Cmiss_scene_viewer_package_get_default_scene(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-==============================================================================*/
-
-int Cmiss_scene_viewer_package_update_Interactive_tool(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	struct Interactive_tool *interactive_tool);
-/*******************************************************************************
-LAST MODIFIED : 26 April 2007
-
-DESCRIPTION :
-Updates the interactive tools in each of the scene_viewers created with the
-<cmiss_scene_viewer_package> to have the same settings as the <interactive_tool>.
-This enables the old global commands to continue to work for all scene_viewers,
-however new code should probably modify the particular tools for the 
-particular scene_viewer intended.
 ==============================================================================*/
 
 struct Scene_viewer *CREATE(Scene_viewer)(

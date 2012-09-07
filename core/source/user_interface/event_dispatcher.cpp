@@ -53,7 +53,7 @@ extern "C" {
 #include "general/list.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/event_dispatcher.h"
 }
 
@@ -212,55 +212,6 @@ DESCRIPTION :
 	HWND networkWindowHandle;
 #endif /* defined (WIN32_USER_INTERFACE) */
 };
-
-struct Fdio_callback_data
-/*******************************************************************************
-LAST MODIFIED : 28 February, 2005
-
-DESCRIPTION :
-Contains data for a callback function in the I/O callback API.
-==============================================================================*/
-{
-	Fdio_callback function;
-	void *app_user_data;
-};
-
-struct Fdio
-/*******************************************************************************
-LAST MODIFIED : 17 January 2006
-
-DESCRIPTION :
-This structure is equivalent to a filedescriptor/socket, and holds all the
-state we need to perform callbacks when the descriptor is ready to be
-read from or written to.
-==============================================================================*/
-{
-	struct Event_dispatcher *event_dispatcher;
-	Cmiss_native_socket_t descriptor;
-	struct Fdio_callback_data read_data;
-	struct Fdio_callback_data write_data;
-#if defined(USE_GENERIC_EVENT_DISPATCHER)
-	int is_reentrant, signal_to_destroy;
-	struct Event_dispatcher_descriptor_callback *callback;
-	int ready_to_read, ready_to_write;
-#elif defined(WIN32_USER_INTERFACE)
-	int wantevents;
-#elif defined(USE_GTK_MAIN_STEP)
-	GIOChannel* iochannel;
-	guint read_source_tag, write_source_tag;
-#elif defined(XTAPP_CONTEXT)
-	XtInputId read_input, write_input;
-#endif /* defined(USE_GENERIC_EVENT_DISPATCHER) */
-	int access_count;
-};
-
-DECLARE_OBJECT_FUNCTIONS(Fdio)
-FULL_DECLARE_INDEXED_LIST_TYPE(Fdio);
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Fdio,
-	descriptor,Cmiss_native_socket_t,compare_int)
-DECLARE_INDEXED_LIST_FUNCTIONS(Fdio)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Fdio,
-	descriptor,Cmiss_native_socket_t,compare_int)
 
 /*
 Module functions
@@ -1981,19 +1932,19 @@ DESCRIPTION :
 #elif defined (WIN32_SYSTEM)
 			else
 			{
-				Event_dispatcher_ensure_network_window(event_dispatcher);
-				if(!(PostMessage(event_dispatcher->networkWindowHandle,
-						UWM_IDLE, 0, (LPARAM)idle_callback)))
-				{
-					display_message(ERROR_MESSAGE,
-						"Event_dispatcher_add_idle_event_callback.  "
-						"Could not post idle_callback message.");
-					idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
-				}
-				else
-				{
-					ACCESS(Event_dispatcher_idle_callback)(idle_callback);
-				}
+				//Event_dispatcher_ensure_network_window(event_dispatcher);
+				//if(!(PostMessage(event_dispatcher->networkWindowHandle,
+				//		UWM_IDLE, 0, (LPARAM)idle_callback)))
+				//{
+				//	display_message(ERROR_MESSAGE,
+				//		"Event_dispatcher_add_idle_event_callback.  "
+				//		"Could not post idle_callback message.");
+				//	idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
+				//}
+				//else
+				//{
+				//	ACCESS(Event_dispatcher_idle_callback)(idle_callback);
+				//}
 			}
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		}
@@ -2310,8 +2261,8 @@ DESCRIPTION :
 										than just leaving the old event in so that it gets
 										a new timestamp and therefore a different idle event
 										goes next.  It can't be done while it is in the list
-									   as the timestamp is part of the list identifier */
-									idle_callback->timestamp = (long)times(&times_buffer);
+										as the timestamp is part of the list identifier */
+									//--idle_callback->timestamp = (long)times(&times_buffer);
 									ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
 										(idle_callback, event_dispatcher->idle_list);
 								}
@@ -2470,335 +2421,11 @@ DESCRIPTION :
 } /* Event_dispatcher_end_main_loop */
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
-Fdio_package_id CREATE(Fdio_package)(
-	struct Event_dispatcher *event_dispatcher)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Creates a new Fdio_package, given an event dispatcher.
-==============================================================================*/
-{
-	ENTER(CREATE(Fdio_package));
-	LEAVE;
-
-	return (Fdio_package_id)(event_dispatcher);
-} /* CREATE(Fdio_package) */
-
-int DESTROY(Fdio_package)(Fdio_package_id *pkg)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Destroys the Fdio package object. This causes cmgui to forget about the descriptor,
-but the descriptor itself must still be closed. This should be called as soon as
-the application is notified by the operating system of a closure event.
-==============================================================================*/
-{
-	ENTER(DESTROY(Fdio_package));
-	*pkg = NULL;
-	LEAVE;
-
-	return (1);
-}
-
-Fdio_id Fdio_package_create_Fdio(Fdio_package_id package,
-	Cmiss_native_socket_t descriptor)
-/*******************************************************************************
-LAST MODIFIED : 16 May, 2005
-
-DESCRIPTION :
-This function creates an Fdio object, given a Fdio_package and a descriptor.
-==============================================================================*/
-{
-	Fdio_id ret;
-
-	ENTER(Fdio_package_create_Fdio);
-	ret = Event_dispatcher_create_Fdio((struct Event_dispatcher*)package,
-		descriptor);
-
-	LEAVE;
-
-	return (ret);
-}
-
 /* This implementation is so dependent on USE_GENERIC_EVENT_DISPATCHER that it is
  * easier to write the whole thing again for each option than to put
  * preprocessor conditionals in every single function.
 */
 #if defined(USE_GENERIC_EVENT_DISPATCHER)
-static int Fdio_event_dispatcher_query_function(
-	struct Event_dispatcher_descriptor_set *descriptor_set,
-	void *user_data
-	);
-/*******************************************************************************
-LAST MODIFIED : 28 February, 2005
-
-DESCRIPTION :
-This function is the "query" callback function whenever we need to call FD_SET
-etc... on a socket using this API.
-==============================================================================*/
-
-static int Fdio_event_dispatcher_check_function(
-	struct Event_dispatcher_descriptor_set *descriptor_set,
-	void *user_data
-	);
-/*******************************************************************************
-LAST MODIFIED : 28 February, 2005
-
-DESCRIPTION :
-This function is called whenever we need to call FD_ISSET etc... on a socket
-using this API.
-==============================================================================*/
-
-static int Fdio_event_dispatcher_dispatch_function(
-	void *user_data
-	);
-/*******************************************************************************
-LAST MODIFIED : 28 February, 2005
-
-DESCRIPTION :
-This function is called whenever we need to dispatch callbacks out to the
-application.
-==============================================================================*/
-
-static int Fdio_set_callback(struct Fdio_callback_data *callback_data,
-	Fdio_callback callback,
-	void *app_user_data);
-/*******************************************************************************
-LAST MODIFIED : 28 February, 2005
-
-DESCRIPTION :
-This function sets the callback and user data for a given callback_data structure.
-==============================================================================*/
-
-Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
-	Cmiss_native_socket_t descriptor)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Creates a new Fdio, given an event dispatcher.
-==============================================================================*/
-{
-	struct Cmiss_fdio *io;
-
-	ENTER(CREATE(Event_dispatcher_create_fdio));
-
-	if (ALLOCATE(io, struct Fdio, 1))
-	{
-		memset(io, 0, sizeof(*io));
-		io->event_dispatcher = dispatcher;
-		io->descriptor = descriptor;
-		io->access_count = 0;
-		if (!(io->callback = Event_dispatcher_add_descriptor_callback(
-			io->event_dispatcher,
-			Fdio_event_dispatcher_query_function,
-			Fdio_event_dispatcher_check_function,
-			Fdio_event_dispatcher_dispatch_function,
-			io
-			)))
-		{
-			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_create_fdio.  "
-				"Event_dispatcher_add_descriptor_callback failed.");
-			DEALLOCATE(io);
-			io = (Fdio_id)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "CREATE(Fdio).  "
-			"Unable to allocate structure");
-	}
-	LEAVE;
-
-	return (io);
-} /* Event_dispatcher_create_fdio */
-
-int DESTROY(Fdio)(Fdio_id *io)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Destroys the IO object. This causes cmgui to forget about the descriptor, but the
-descriptor itself must still be closed. This should be called as soon as the
-application is notified by the operating system of a closure event.
-==============================================================================*/
-{
-	ENTER(DESTROY(Fdio));
-	if ((*io)->is_reentrant)
-		(*io)->signal_to_destroy = 1;
-	else
-	{
-		Event_dispatcher_remove_descriptor_callback((*io)->event_dispatcher,
-			(*io)->callback);
-		DEALLOCATE(*io);
-	}
-
-	*io = NULL;
-
-	LEAVE;
-
-	return (1);
-} /* DESTROY(Fdio) */
-
-int Fdio_set_read_callback(Fdio_id handle,
-	Fdio_callback callback,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Sets a read callback on the specified IO handle. This callback is called at
-least once after a read function indicates it would block. An application
-should not rely upon it being called more than once without attempting a
-read between the calls. This read should occur after Fdio_set_read_callback
-is called. The callback will also be called if the underlying descriptor is
-closed by the peer. The callback is not one-shot, and the callback remains in
-effect until it is explicitly cancelled.
-
-There may be at most one read callback set per I/O handle at any one time. If
-this function is passed NULL as the callback parameter, the read callback
-previously set will be cancelled.
-==============================================================================*/
-{
-	ENTER(Fdio_set_read_callback);
-	Fdio_set_callback(&handle->read_data, callback, user_data);
-	LEAVE;
-
-	return (1);
-} /* Fdio_set_read_callback */
-
-int Fdio_set_write_callback(Fdio_id handle,
-	Fdio_callback callback,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-Sets a write callback on the specified Fdio handle. This callback is called at
-least once after a write function indicates it would block. An application
-should not rely upon it being called more than once without attempting a
-write between the calls. This write should occur after Fdio_set_write_callback
-is called. The callback is not one-shot, and the callback remains in
-effect until it is explicitly cancelled.
-
-There may be at most one write callback set per I/O handle at any one time. If
-this function is passed NULL as the callback parameter, the write callback
-previously set will be cancelled.
-==============================================================================*/
-{
-	ENTER(Fdio_set_write_callback);
-	Fdio_set_callback(&handle->read_data, callback, user_data);
-	LEAVE;
-
-	return (1);
-} /* Fdio_set_write_callback */
-
-static int Fdio_event_dispatcher_query_function(
-	struct Event_dispatcher_descriptor_set *descriptor_set,
-	void *user_data
-	)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-This function is the "query" callback function whenever we need to call FD_SET
-etc... on a socket using this API.
-==============================================================================*/
-{
-	Fdio_id io;
-
-	ENTER(Fdio_event_dispatcher_query_function);
-	io = (Fdio_id)user_data;
-
-	if (io->read_data.function)
-		FD_SET(io->descriptor, &descriptor_set->read_set);
-
-	if (io->write_data.function)
-		FD_SET(io->descriptor, &descriptor_set->write_set);
-
-	LEAVE;
-
-	return (1);
-} /* Fdio_event_dispatcher_query_function */
-
-
-static int Fdio_event_dispatcher_check_function(
-	struct Event_dispatcher_descriptor_set *descriptor_set,
-	void *user_data
-	)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-This function is called whenever we need to call FD_ISSET etc... on a socket
-using this API.
-==============================================================================*/
-{
-	Fdio_id io;
-
-	ENTER(Fdio_event_dispatcher_check_function);
-	io = (Fdio_id)user_data;
-
-	io->ready_to_read = FD_ISSET(io->descriptor, &descriptor_set->read_set);
-	io->ready_to_write = FD_ISSET(io->descriptor, &descriptor_set->write_set);
-
-	LEAVE;
-
-	return (io->ready_to_read || io->ready_to_write);
-} /* Fdio_event_dispatcher_check_function */
-
-static int Fdio_event_dispatcher_dispatch_function(
-	void *user_data
-	)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-This function is called whenever we need to dispatch callbacks out to the
-application.
-==============================================================================*/
-{
-	Fdio_id io;
-
-	ENTER(Fdio_event_dispatcher_dispatch_function);
-	io = (Fdio_id)user_data;
-
-	io->is_reentrant = 1;
-	if (io->read_data.function && io->ready_to_read)
-		io->read_data.function(io, io->read_data.app_user_data);
-	if (io->write_data.function &&
-		io->ready_to_write &&
-		!io->signal_to_destroy)
-		io->write_data.function(io, io->write_data.app_user_data);
-	io->is_reentrant = 0;
-	if (io->signal_to_destroy)
-		DESTROY(Fdio)(&io);
-	LEAVE;
-
-	return (1);
-} /* Fdio_event_dispatcher_dispatch_function */
-
-static int Fdio_set_callback(struct Fdio_callback_data *callback_data,
-	Fdio_callback callback,
-	void *app_user_data)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2005
-
-DESCRIPTION :
-This function sets the callback and user data for a given callback_data structure.
-==============================================================================*/
-{
-	ENTER(Fdio_set_callback);
-	callback_data->function = callback;
-	callback_data->app_user_data = app_user_data;
-	LEAVE;
-
-	return (1);
-} /* Fdio_set_callback */
-
 #elif defined(WIN32_USER_INTERFACE)
 Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
 	Cmiss_native_socket_t descriptor)

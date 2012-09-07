@@ -1552,14 +1552,3 @@ char *Cmiss_basis_function_type_enum_to_string(enum Cmiss_basis_function_type ty
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
-int Option_table_add_mesh_entry(struct Option_table *option_table,
-	const char *token, Cmiss_region_id region, Cmiss_mesh_id *mesh_address)
-{
-	if (!(option_table && token && region && mesh_address))
-	{
-		display_message(ERROR_MESSAGE, "Option_table_add_mesh_entry.  Invalid argument(s)");
-		return 0;
-	}
-	return Option_table_add_entry(option_table, token,
-		(void *)region, (void *)mesh_address, set_Cmiss_mesh);
-}

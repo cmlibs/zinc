@@ -262,31 +262,6 @@ struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
 	return region;
 }
 
-struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct Context *context)
-{
-	struct Cmiss_command_data *command_data = NULL;
-
-	if (context && context->UI_module) 
-	{
-		if (!context->default_command_data)
-		{
-			context->default_command_data = CREATE(Cmiss_command_data)(context, context->UI_module);
-		}
-		if (context->default_command_data)
-		{
-			command_data = Cmiss_command_data_access(context->default_command_data);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_command_interpreter.  Missing context "
-			"or user interface has not been enable yet.");
-	}
-
-	return command_data;
-}
-
 struct Any_object_selection *Cmiss_context_get_any_object_selection(
 	struct Context *context)
 {
@@ -366,27 +341,6 @@ struct Event_dispatcher *Cmiss_context_get_default_event_dispatcher(struct Conte
 			"Cmiss_context_get_default_event_dispatcher.  Missing context.");
 	}
 	return event_dispatcher;
-}
-
-int Cmiss_context_execute_command(Cmiss_context_id context, 
-	const char *command)
-{
-	int return_code = 0;
-	if (context && context->UI_module && command)
-	{
-		struct Cmiss_command_data *command_data = 
-			Cmiss_context_get_default_command_interpreter(context);
-		return_code = cmiss_execute_command(command, (void *)command_data);
-		Cmiss_command_data_destroy(&command_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_execute_command.  Missing context or user interface or"
-			"command is empty.");
-	}
-
-	return return_code;
 }
 
 Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(

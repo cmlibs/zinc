@@ -63,6 +63,7 @@ extern "C" {
 extern "C" {
 #include "region/cmiss_region.h"
 #include "general/message.h"
+#include "general/mystring.h"
 }
 
 /*

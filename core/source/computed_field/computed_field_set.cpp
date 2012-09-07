@@ -106,33 +106,3 @@ Cmiss_field_id Computed_field_manager_get_field_or_component(
 	return field;
 }
 
-int Option_table_add_Computed_field_conditional_entry(
-	struct Option_table *option_table, const char *token,
-	struct Computed_field **field_address, 
-	struct Set_Computed_field_conditional_data *set_field_data)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Adds the given <token> to the <option_table>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Option_table_add_Computed_field_conditional_entry);
-	if (option_table && token && field_address && set_field_data)
-	{
-		return_code = Option_table_add_entry(option_table, token, (void *)field_address, 
-			(void *)set_field_data, set_Computed_field_conditional);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_Computed_field_conditional_entry.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Option_table_add_Computed_field_conditional_entry */
-

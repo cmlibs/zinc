@@ -41,6 +41,7 @@ extern "C" {
 #include "api/cmiss_graphics_material.h"
 #include "general/debug.h"
 #include "general/object.h"
+#include "general/mystring.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
@@ -48,6 +49,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
+#include "graphics/light_model.h"
 }
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"

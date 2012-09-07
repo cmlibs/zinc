@@ -104,17 +104,6 @@ Cmiss_field_id Computed_field_manager_get_field_or_component(
 	struct MANAGER(Computed_field) *computed_field_manager, const char *name,
 	int *component_number_address);
 
-int Option_table_add_Computed_field_conditional_entry(
-	struct Option_table *option_table, const char *token,
-	struct Computed_field **field_address, 
-	struct Set_Computed_field_conditional_data *set_field_data);
-/*******************************************************************************
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Adds the given <token> to the <option_table>.
-==============================================================================*/
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

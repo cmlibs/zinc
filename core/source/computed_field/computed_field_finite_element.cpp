@@ -80,7 +80,7 @@ Module types
 ------------
 */
 
-class Computed_field_finite_element_package : public Computed_field_type_package
+struct Computed_field_finite_element_package : public Computed_field_type_package
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -345,7 +345,7 @@ private:
 
 	virtual bool is_non_linear() const
 	{
-		return FE_field_uses_non_linear_basis(fe_field);
+		return FE_field_uses_non_linear_basis(fe_field) == 1;
 	}
 
 	virtual int set_name(const char *name)
@@ -2101,7 +2101,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(Cmiss_field_cache& 
 					{
 						result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
 						int int_value=(int)floor(valueCache.values[i]+0.5);
-						return_code=set_FE_nodal_float_value(node,fe_field,/*component_number*/i,
+						return_code=set_FE_nodal_int_value(node,fe_field,/*component_number*/i,
 							version_number,nodal_value_type,time,int_value);
 					} break;
 					default:

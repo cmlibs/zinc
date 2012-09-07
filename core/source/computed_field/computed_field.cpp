@@ -178,29 +178,8 @@ extern "C" {
 }
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>
-#include "user_interface/process_list_or_write_command.hpp"
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region, struct Cmiss_field_change_detail *);
-
-struct Computed_field_type_data
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Stores information defining a type of computed field so that it can be 
-accessed by the rest of the program.
-==============================================================================*/
-{
-	const char *name;
-	Define_Computed_field_type_function define_Computed_field_type_function;
-	Computed_field_type_package *define_type_user_data;
-	int access_count;
-};
-
-PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_data);
-
-DECLARE_LIST_TYPES(Computed_field_type_data);
-PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
 
 struct Computed_field_package
 /*******************************************************************************
@@ -214,7 +193,6 @@ from the appropriate Cmiss_region.
 ==============================================================================*/
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct LIST(Computed_field_type_data) *computed_field_type_list;
 	Computed_field_simple_package *simple_package;
 }; /* struct Computed_field_package */
 
@@ -349,96 +327,6 @@ DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Computed_field)
 
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Computed_field)
 
-
-struct Computed_field_type_data *CREATE(Computed_field_type_data)
-   (const char *name, Define_Computed_field_type_function 
-	define_Computed_field_type_function, 
-	Computed_field_type_package *define_type_user_data)
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Creates a structure representing a type of computed field.  The <name> should
-point to a static string which is used as the identifier of that type
-throughout the program.  The <define_Computed_field_type_function> is added to
-the define_computed_field option table when needed.
-==============================================================================*/
-{
-	struct Computed_field_type_data *type_data;
-
-	ENTER(CREATE(Computed_field_type_data));
-	
-	if (name && define_Computed_field_type_function)
-	{
-		if (ALLOCATE(type_data,struct Computed_field_type_data,1))
-		{
-			type_data->name = name;
-			type_data->define_Computed_field_type_function = 
-				define_Computed_field_type_function;
-			type_data->define_type_user_data = define_type_user_data;
-			type_data->access_count = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field_type_data).  Not enough memory");
-			type_data = (struct Computed_field_type_data *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_type_data).  Invalid arguments");
-		type_data = (struct Computed_field_type_data *)NULL;
-	}
-	LEAVE;
-
-	return (type_data);
-} /* CREATE(Computed_field_type_data) */
-
-int DESTROY(Computed_field_type_data)
-	(struct Computed_field_type_data **data_address)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Frees memory/deaccess data at <*data_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Computed_field_type_data));
-	if (data_address&&*data_address)
-	{
-		if (0 >= (*data_address)->access_count)
-		{
-			DEALLOCATE(*data_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Computed_field_type_data).  Positive access_count");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_type_data).  Missing mapping");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Computed_field_type_data) */
-
-DECLARE_OBJECT_FUNCTIONS(Computed_field_type_data)
-FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field_type_data);
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_type_data,
-  name, const char *, strcmp)
-DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
-
 static int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -509,23 +397,6 @@ int Computed_field_set_coordinate_system_from_sources(
 			coordinate_system_ptr = 
 				Computed_field_get_coordinate_system(field->source_fields[0]);
 			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-#ifdef OLD_CODE
-			int i = 1;
-			while (i < field->number_of_source_fields && 
-				Coordinate_systems_match(coordinate_system_ptr,
-					Computed_field_get_coordinate_system(field->source_fields[1])))
-			{
-				i++;
-			}
-			if (i < field->number_of_source_fields)
-			{
-				display_message(WARNING_MESSAGE,
-					"Computed_field_set_coordinate_system_from_sources."
-					"  Source fields differ in coordinate system\n"
-					"     Defaulting to coordinate system from first source field.");
-				return_code = 0;
-			}
-#endif // OLD_CODE
 		}
 	}
 	else
@@ -2735,46 +2606,6 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capable */
 
-struct Add_type_to_option_table_data
-{
-	struct Option_table *option_table;
-	Computed_field_modify_data *field_modify;
-	void *computed_field_package_void;
-};
-
-static int Computed_field_add_type_to_option_table(struct Computed_field_type_data *type,
-	void *add_type_to_option_table_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Adds <type> to the <option_table> so it is available to the commands.
-==============================================================================*/
-{
-	int return_code;
-	struct Add_type_to_option_table_data *data;
-
-	ENTER(Computed_field_add_type_to_option_table);
-	if (type&&(data=(struct Add_type_to_option_table_data *)
-		add_type_to_option_table_data_void))
-	{
-		Option_table_add_entry(data->option_table,type->name,
-			(void *)data->field_modify,
-			type->define_type_user_data,
-			type->define_Computed_field_type_function);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_add_type_to_option_table.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_add_type_to_option_table */
-
 int equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
 /*******************************************************************************
@@ -2885,222 +2716,6 @@ Writes the properties of the <field> to the command window.
 
 	return (return_code);
 } /* list_Computed_field */
-
-int process_list_or_write_Computed_field_commands(struct Computed_field *field,
-	 void *command_prefix_void, Process_list_or_write_command_class *process_message)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Writes the commands needed to reproduce <field> to the command window.
-==============================================================================*/
-{
-	int return_code;
-	char *command_prefix = reinterpret_cast<char *>(command_prefix_void);
-	if (field && command_prefix)
-	{
-		char *command_string = field->core->get_command_string();
-		if (command_string)
-		{
-			char *field_name = duplicate_string(field->name);
-			make_valid_token(&field_name);
-			char *coordinate_system_string = Coordinate_system_string(&field->coordinate_system);
-			process_message->process_command(INFORMATION_MESSAGE,
-				"%s%s coordinate_system %s %s;\n",
-				command_prefix, field_name, coordinate_system_string, command_string);
-			DEALLOCATE(field_name);
-			DEALLOCATE(coordinate_system_string);
-			DEALLOCATE(command_string);
-		}
-		else
-		{
-			process_message->process_command(INFORMATION_MESSAGE, "# field %s created by other commands\n", field->name);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"process_list_or_write_Computed_field_commands.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-int list_Computed_field_commands(struct Computed_field *field,
-	void *command_prefix_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Writes the commands needed to reproduce <field> to the command window.
-==============================================================================*/
-{
-	 int return_code = 0;
-
-	 ENTER(list_Computed_field_commands);
-	 Process_list_command_class *list_message =
-			new Process_list_command_class();
-	 if (list_message != 0)
-	 {
-			return_code = process_list_or_write_Computed_field_commands(
-				 field, command_prefix_void, list_message);
-			delete list_message;
-	 }
-	 LEAVE;
-
-	 return (return_code);
-}
-
-int list_Computed_field_commands_if_managed_source_fields_in_list(
-	struct Computed_field *field, void *list_commands_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Calls list_Computed_field_commands if the field is not already in the list,
-has no source fields, or all its source fields are either not managed or
-already in the list. If the field is listed, it is added to the list.
-Ensures field command list comes out in the order they need to be created.
-Note, must be cycled through as many times as it takes till listed_fields -> 0.
-Second argument is a struct List_Computed_field_commands_data.
-==============================================================================*/
-{
-	int i, list_field, return_code;
-	struct List_Computed_field_commands_data *list_commands_data;
-
-	ENTER(list_Computed_field_commands_if_managed_source_fields_in_list);
-	if (field && (list_commands_data =
-		(struct List_Computed_field_commands_data *)list_commands_data_void))
-	{
-		return_code = 1;
-		/* is the field not listed yet? */
-		if (!IS_OBJECT_IN_LIST(Computed_field)(field,
-			list_commands_data->computed_field_list))
-		{
-			list_field = 1;
-			for (i = 0; list_field && (i < field->number_of_source_fields); i++)
-			{
-				if ((!IS_OBJECT_IN_LIST(Computed_field)(
-					field->source_fields[i], list_commands_data->computed_field_list)) &&
-					IS_MANAGED(Computed_field)(field->source_fields[i],
-						list_commands_data->computed_field_manager))
-				{
-					list_field = 0;
-				}
-			}
-			if (list_field)
-			{
-				/* do not list commands for read-only computed fields created
-					 automatically by cmgui */
-				return_code =
-					list_Computed_field_commands(field,
-						(void *)list_commands_data->command_prefix) &&
-					ADD_OBJECT_TO_LIST(Computed_field)(field,
-						list_commands_data->computed_field_list);
-				list_commands_data->listed_fields++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_commands_if_managed_source_fields_in_list.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_commands_if_managed_source_fields_in_list */
-
-int write_Computed_field_commands_to_comfile(struct Computed_field *field,
-	 void *command_prefix_void)
-/*******************************************************************************
-LAST MODIFIED : 10 August 2007
-
-DESCRIPTION :
-Writes the commands needed to reproduce <field> to the com file.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(write_Computed_field_commands_to_comfile);
-	Process_write_command_class *write_message =
-		 new Process_write_command_class();
-	if (write_message)
-	{
-		 return_code = process_list_or_write_Computed_field_commands(
-				field,  command_prefix_void, write_message);
-		 delete write_message;
-	}
-	return (return_code);
-	LEAVE;
-
-	return (return_code);
-} /* write_Computed_field_commands_to_comfile */
-
-int write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile(
-	 struct Computed_field *field, void *list_commands_data_void)
-/*******************************************************************************
-LAST MODIFIED : 10 August 2007
-
-DESCRIPTION :
-Calls list_Computed_field_commands if the field is not already in the list,
-has no source fields, or all its source fields are either not managed or
-already in the list. If the field is listed, it is added to the list.
-Ensures field command list comes out in the order they need to be created.
-Note, must be cycled through as many times as it takes till listed_fields -> 0.
-Second argument is a struct List_Computed_field_commands_data.
-==============================================================================*/
-{
-	int i, list_field, return_code;
-	struct List_Computed_field_commands_data *list_commands_data;
-
-	ENTER(write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile);
-	if (field && (list_commands_data =
-		(struct List_Computed_field_commands_data *)list_commands_data_void))
-	{
-		return_code = 1;
-		/* is the field not listed yet? */
-		if (!IS_OBJECT_IN_LIST(Computed_field)(field,
-			list_commands_data->computed_field_list))
-		{
-			list_field = 1;
-			for (i = 0; list_field && (i < field->number_of_source_fields); i++)
-			{
-				if ((!IS_OBJECT_IN_LIST(Computed_field)(
-					field->source_fields[i], list_commands_data->computed_field_list)) &&
-					IS_MANAGED(Computed_field)(field->source_fields[i],
-						list_commands_data->computed_field_manager))
-				{
-					list_field = 0;
-				}
-			}
-			if (list_field)
-			{
-				/* do not list commands for read-only computed fields created
-					 automatically by cmgui */
-				return_code =
-					write_Computed_field_commands_to_comfile(field,
-						 (void *)list_commands_data->command_prefix) &&
-					ADD_OBJECT_TO_LIST(Computed_field)(field,
-						list_commands_data->computed_field_list);
-				list_commands_data->listed_fields++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_commands_if_managed_source_fields_in_list.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile */
 
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
@@ -3383,8 +2998,6 @@ manager from the respective Cmiss_region.
 		if (ALLOCATE(computed_field_package,struct Computed_field_package,1))
 		{
 			computed_field_package->computed_field_manager=computed_field_manager;
-			computed_field_package->computed_field_type_list =
-				CREATE(LIST(Computed_field_type_data))();
 			computed_field_package->simple_package =
 				new Computed_field_simple_package();
 			computed_field_package->simple_package->addref();
@@ -3422,8 +3035,6 @@ Cancels any further messages from managers.
 	if (package_address&&(computed_field_package= *package_address))
 	{
 		/* not destroying field manager as not owned by package */
-		DESTROY(LIST(Computed_field_type_data))(
-			&computed_field_package->computed_field_type_list);
 		computed_field_package->simple_package->removeref();
 		DEALLOCATE(*package_address);
 		return_code = 1;
@@ -3468,42 +3079,6 @@ allow interfacing to the choose_object widgets.
 
 	return (computed_field_manager);
 } /* Computed_field_package_get_computed_field_manager */
-
-int Computed_field_package_remove_types(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Unregisters each of the computed field types added.
-==============================================================================*/
-{
-	int return_code = 0;
-	struct Computed_field_type_data *data;
-
-	ENTER(Computed_field_package_remove_types);
-	if (computed_field_package)
-	{
-		while(NULL != (data = FIRST_OBJECT_IN_LIST_THAT(Computed_field_type_data)(
-			(LIST_CONDITIONAL_FUNCTION(Computed_field_type_data) *)NULL, (void *)NULL,
-			computed_field_package->computed_field_type_list)))
-		{
-			data->define_type_user_data->removeref();
-
-			REMOVE_OBJECT_FROM_LIST(Computed_field_type_data)(data,
-				computed_field_package->computed_field_type_list);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_package_add_type.  Invalid arguments");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_package_add_type */
 
 Computed_field_simple_package *Computed_field_package_get_simple_package(
 	struct Computed_field_package *computed_field_package)

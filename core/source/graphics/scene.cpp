@@ -74,13 +74,13 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/scene.h"
 #include "graphics/rendition.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/light.h"
-#include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
@@ -88,7 +88,7 @@ extern "C" {
 }
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
-#include "graphics/render_gl.hpp"
+#include "graphics/render_gl.h"
 
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"

@@ -2455,43 +2455,6 @@ Returns the number of FE_fields in <fe_region>.
 	return (number_of_fields);
 } /* FE_region_get_number_of_FE_fields */
 
-int Option_table_add_set_FE_field_from_FE_region(
-	struct Option_table *option_table, const char *entry_string,
-	struct FE_field **fe_field_address, struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 11 March 2003
-
-DESCRIPTION :
-Adds an entry for selecting an FE_field.
-==============================================================================*/
-{
-	int return_code = 0;
-	struct FE_region *master_fe_region;
-
-	ENTER(Option_table_add_set_FE_field_from_FE_region);
-	if (option_table && entry_string && fe_field_address && fe_region)
-	{
-		/* get the ultimate master FE_region; only it has field info */
-		master_fe_region = fe_region;
-		while (master_fe_region->master_fe_region)
-		{
-			master_fe_region = master_fe_region->master_fe_region;
-		}
-		Option_table_add_entry(option_table, entry_string,
-			(void *)fe_field_address, master_fe_region->fe_field_list,
-			set_FE_field);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Option_table_add_set_FE_field_from_FE_region.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Option_table_add_set_FE_field_from_FE_region */
-
 int FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
 	struct FE_field *fe_field)
 /*******************************************************************************

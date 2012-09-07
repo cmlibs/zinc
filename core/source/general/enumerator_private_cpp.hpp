@@ -199,9 +199,6 @@ Default version assumes all valid enumerator values are sequential from 0. \
 
 #define set_enumerator_macro(enumerator_type) set_enumerator ## enumerator_type
 
-#define Option_table_add_enumerator_macro(enumerator_type) \
-	Option_table_add_enumerator ## enumerator_type
-
 #define DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( enumerator_type ) \
 DEFINE_DEFAULT_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type) \
 DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type)

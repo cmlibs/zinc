@@ -61,6 +61,7 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/object.h"
 #include "general/message.h"
+#include "general/mystring.h"
 #include "minimise/minimise.h"
 }
 #include "general/enumerator_private_cpp.hpp"
