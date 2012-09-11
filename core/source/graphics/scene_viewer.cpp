@@ -137,7 +137,7 @@ The default data used to create Cmiss_scene_viewers.
 {
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour *background_colour;
- 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
@@ -412,7 +412,7 @@ struct Scene_viewer_rendering_data
 LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
-Temporary data that only lasts for a single rendering.  Used by all the 
+Temporary data that only lasts for a single rendering.  Used by all the
 rendering functions.
 ==============================================================================*/
 {
@@ -436,7 +436,7 @@ rendering functions.
 	int rendering_double_buffered;
 	/* Stencil buffer depth */
 	GLint stencil_depth;
-	
+
 	Render_graphics_opengl *renderer;
 }; /* struct Scene_viewer_rendering_data */
 
@@ -449,7 +449,7 @@ typedef int (Scene_viewer_render_function)(
 LAST MODIFIED : 14 April 2003
 
 DESCRIPTION :
-A rendering function that exists in the rendering callstack.  See the 
+A rendering function that exists in the rendering callstack.  See the
 struct Scene_viewer_render_object.
 ==============================================================================*/
 
@@ -467,7 +467,7 @@ functions may have their own user data.
 ==============================================================================*/
 {
 	Scene_viewer_render_function *render_function;
-	/* A flag used when descending down the call stack to indicate which 
+	/* A flag used when descending down the call stack to indicate which
 		items have already been processed */
 	int already_processed;
 	int access_count;
@@ -505,7 +505,7 @@ Scene_viewer_call_next_renderer to execute the rest of the renderer.
 	{
 		if (ALLOCATE(render_object,struct Scene_viewer_render_object,1))
 		{
- 			render_object->render_function = render_function;
+			render_object->render_function = render_function;
 			render_object->already_processed = 0;
 			render_object->access_count = 0;
 		}
@@ -536,7 +536,7 @@ Returns NOT the state of the already_processed flag.
 ==============================================================================*/
 {
 	int return_code;
-  
+
 	ENTER(Scene_viewer_render_object_has_not_been_processed);
 	USE_PARAMETER(dummy_void);
 	if (render_object)
@@ -572,7 +572,7 @@ Frees the memory for the render_object and sets <*render_object_address> to NULL
 		}
 		else
 		{
-			*render_object_address = 
+			*render_object_address =
 				(struct Scene_viewer_render_object *)NULL;
 		}
 		return_code = 1;
@@ -1059,7 +1059,7 @@ handles the flags that mark render_objects as processed.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_call_next_renderer */
 
 /***************************************************************************//**
@@ -1108,7 +1108,7 @@ scene.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_execute_scene_non_fastchanging */
 
 static int Scene_viewer_apply_projection_matrix(
@@ -1131,7 +1131,7 @@ DESCRIPTION :
 		glPushMatrix();
 
 		glMultMatrixd(rendering_data->scene_viewer->window_projection_matrix);
-		
+
 		Scene_viewer_call_next_renderer(rendering_data);
 
 		glMatrixMode(GL_PROJECTION);
@@ -1144,7 +1144,7 @@ DESCRIPTION :
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_apply_projection_matrix */
 
 static int Scene_viewer_use_pixel_buffer(
@@ -1154,7 +1154,7 @@ LAST MODIFIED : 8 April 2003
 
 DESCRIPTION :
 Keeps a copy of the scene in a pixel buffer and only updates that image
-when the scene_viewer->update_pixel_image flag is set.  This is used by the 
+when the scene_viewer->update_pixel_image flag is set.  This is used by the
 emoter to make icons representing the current scene.
 ==============================================================================*/
 {
@@ -1240,7 +1240,7 @@ emoter to make icons representing the current scene.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_use_pixel_buffer */
 
 static int Scene_viewer_initialise_matrices_and_swap_buffers(
@@ -1262,7 +1262,7 @@ DESCRIPTION :
 		/* load identity matrix for rendering normal scene */
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-							
+
 		Scene_viewer_call_next_renderer(rendering_data);
 
 		if (rendering_data->rendering_double_buffered)
@@ -1274,8 +1274,8 @@ DESCRIPTION :
 			scene_viewer->swap_buffers=0;
 		}
 
-		/* SAB  Reapply the projection matrix which was cleared by the 
-			last glPopMatrix (Apply projection is further down the stack) 
+		/* SAB  Reapply the projection matrix which was cleared by the
+			last glPopMatrix (Apply projection is further down the stack)
 			so that unproject gets the full transformation */
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -1290,7 +1290,7 @@ DESCRIPTION :
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_initialise_matrices_and_swap_buffers */
 
 static int Scene_viewer_apply_modelview_lights_and_clip_planes(
@@ -1318,7 +1318,7 @@ DESCRIPTION :
 			ie. headlamps */
 		FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
 			scene_viewer->list_of_lights);
-		
+
 		glMultMatrixd(scene_viewer->modelview_matrix);
 		/* turn on lights that are part of the Scene and fixed relative
 			to it. Note the scene will have compiled them already. */
@@ -1413,7 +1413,7 @@ DESCRIPTION :
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_apply_modelview_lights_and_clip_planes */
 
 static int Scene_viewer_handle_fastchanging(
@@ -1519,7 +1519,7 @@ update the fastchanging objects.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_handle_fastchanging */
 
 static int Scene_viewer_render_background(
@@ -1596,7 +1596,7 @@ Renders the background into the scene.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_render_background */
 
 static int Scene_viewer_slow_transparency(
@@ -1636,7 +1636,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_slow_transparency */
 
 static int Scene_viewer_layered_transparency(
@@ -1663,7 +1663,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 		/* Draw each layer separately to help transparency */
 		layers = rendering_data->override_transparency_layers;
 		for (layer = 0 ; layer < layers ; layer++)
-		{		
+		{
 			glMatrixMode(GL_PROJECTION);
 
 			glLoadIdentity();
@@ -1795,12 +1795,12 @@ the entire scene.
 			temp_matrix[1] = 0.0;
 			temp_matrix[2] = 0.0;
 			temp_matrix[3] = 0.0;
-		
+
 			temp_matrix[4] = 0.0;
 			temp_matrix[5] = 1.0;
 			temp_matrix[6] = 0.0;
 			temp_matrix[7] = 0.0;
-		
+
 			temp_matrix[8] = 0.0;
 			temp_matrix[9] = 0.0;
 			temp_matrix[10] = 1.0;
@@ -1814,13 +1814,13 @@ the entire scene.
 			temp_matrix[13] = 2.0*pixel_offset_y/rendering_data->viewport_height;
 			temp_matrix[14] = 0.0;
 			temp_matrix[15] = 1.0;
-			
+
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
-	
+
 			if (framebuffer_flag == (GLint)0)
-			{	
+			{
 				if (0==accumulation_count)
 				{
 					glAccum(GL_LOAD,1.0f/((ZnReal)antialias));
@@ -1829,13 +1829,13 @@ the entire scene.
 				{
 					glAccum(GL_ACCUM,1.0f/((ZnReal)antialias));
 				}
-			
+
 			} /* for (antialias_count) */
 		}
 		/* We want to ensure that we return white when we accumulate a white
 			background */
 		if (framebuffer_flag == (GLint)0)
-		{	
+		{
 			glAccum(GL_RETURN,1.001f);
 		}
 		glFlush();
@@ -1846,7 +1846,7 @@ the entire scene.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_antialias */
 
 static int Scene_viewer_depth_of_field(
@@ -1915,12 +1915,12 @@ depth of field effect.
 			temp_matrix[1] = 0.0;
 			temp_matrix[2] = 0.0;
 			temp_matrix[3] = 0.0;
-		
+
 			temp_matrix[4] = 0.0;
 			temp_matrix[5] = 1.0;
 			temp_matrix[6] = 0.0;
 			temp_matrix[7] = 0.0;
-		
+
 			temp_matrix[8] = dx / (1.0 - focal_depth);
 			temp_matrix[9] = dy / (1.0 - focal_depth);
 			temp_matrix[10] = 1.0;
@@ -1934,7 +1934,7 @@ depth of field effect.
 			temp_matrix[13] = -dy * focal_depth;
 			temp_matrix[14] = 0.0;
 			temp_matrix[15] = 1.0;
-			
+
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
@@ -1970,7 +1970,7 @@ depth of field effect.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_depth_of_field */
 
 static int Scene_viewer_stereo(
@@ -1992,7 +1992,7 @@ a stereo perspective.
 	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
 	{
 		return_code = 1;
-		
+
 		/* Calculate the angle */
 		view[0] = scene_viewer->eyex - scene_viewer->lookatx;
 		view[1] = scene_viewer->eyey - scene_viewer->lookaty;
@@ -2005,7 +2005,7 @@ a stereo perspective.
 		stereo_cos = cos(stereo_angle);
 
 		glMatrixMode(GL_PROJECTION);
-			
+
 		glPushMatrix();
 
 		if (rendering_data->rendering_double_buffered)
@@ -2085,7 +2085,7 @@ a stereo perspective.
 		stereo_matrix[13] = 0.0;
 		stereo_matrix[14] = 0.0;
 		stereo_matrix[15] = 1.0;
-			
+
 		glMultMatrixd(stereo_matrix);
 
 		Scene_viewer_call_next_renderer(rendering_data);
@@ -2095,8 +2095,8 @@ a stereo perspective.
 		return_code = 0;
 	}
 	LEAVE;
-	
-	return (return_code);	
+
+	return (return_code);
 } /* Scene_viewer_stereo */
 
 static int Scene_viewer_initialise_order_independent_transparency(
@@ -2117,7 +2117,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 	{
 		if (!scene_viewer->order_independent_transparency_data)
 		{
-			scene_viewer->order_independent_transparency_data = 
+			scene_viewer->order_independent_transparency_data =
 				order_independent_initialise(scene_viewer);
 		}
 
@@ -2133,7 +2133,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 		{
 			return_code = 0;
 		}
-		
+
 	}
 	else
 	{
@@ -2141,7 +2141,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_initialise_order_independent_transparency */
 
 static int Scene_viewer_order_independent_transparency(
@@ -2164,11 +2164,11 @@ and then again with only semi transparent objects not changing the depth buffer.
 
 		if (scene_viewer->order_independent_transparency_data)
 		{
-			order_independent_display(rendering_data, 
+			order_independent_display(rendering_data,
 				scene_viewer->order_independent_transparency_data,
 				scene_viewer->window_projection_matrix,
 				scene_viewer->modelview_matrix, scene_viewer->blending_mode);
-			
+
 			if (rendering_data->rendering_double_buffered)
 			{
 				scene_viewer->swap_buffers=1;
@@ -2185,7 +2185,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 } /* Scene_viewer_order_independent_transparency */
 
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
@@ -2199,7 +2199,7 @@ Called to redraw the Scene_viewer scene after changes in the display lists or
 viewing transformations.
 <left>, <right>, <top> and <bottom> define the viewport to draw into, if they
 are all zero then the scene_viewer->widget size is used instead.
-If <override_antialias> or <override_transparency_layers> are non zero 
+If <override_antialias> or <override_transparency_layers> are non zero
 then they override the default values for just this call.
 There are convienience functions, Scene_viewer_render_scene,
 Scene_viewer_render_scene_with_picking, Scene_viewer_render_scene_in_viewport to
@@ -2238,7 +2238,7 @@ access this function.
 
 
 		rendering_data.scene_viewer = scene_viewer;
-		rendering_data.render_callstack = 
+		rendering_data.render_callstack =
 			(struct LIST(Scene_viewer_render_object) *)NULL;
 		if (override_antialias > 0)
 		{
@@ -2255,11 +2255,11 @@ access this function.
 		else
 		{
 			rendering_data.override_transparency_layers = scene_viewer->transparency_layers;
-		}		
+		}
 		/* Set further down */
 		rendering_data.rendering_double_buffered = 0;
 		rendering_data.stencil_depth = 0;
-		
+
 		/* only redraw if the drawing widget has area and neither it nor any of its
 			 parents are unmanaged */
 		do_render=(0<rendering_data.viewport_width)&&(0<rendering_data.viewport_height)&&
@@ -2275,7 +2275,7 @@ access this function.
 
 			/* work out if the rendering is double buffered. Do not just look at
 				the buffer_mode flag as it is overridden in cases such as printing
-				the window. */				
+				the window. */
 			glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
 			/* Make this visible to the rendering routines */
 			rendering_data.rendering_double_buffered = double_buffer;
@@ -2341,13 +2341,13 @@ access this function.
 			{
 				if (Graphics_library_check_extension(GL_display_lists))
 				{
-					rendering_data.renderer = 
+					rendering_data.renderer =
 						Render_graphics_opengl_create_glbeginend_display_list_renderer(
 						scene_viewer->graphics_buffer);
 				}
 				else
 				{
-					rendering_data.renderer = 
+					rendering_data.renderer =
 						Render_graphics_opengl_create_glbeginend_renderer(
 					 scene_viewer->graphics_buffer);
 				}
@@ -2359,7 +2359,7 @@ access this function.
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
 			/* Add functionality to the render callstack */
-			
+
 			if (SCENE_VIEWER_NO_INPUT_OR_DRAW==scene_viewer->input_mode)
 			{
 				glClearColor(0.6f,0.6f,0.6f,0.0);
@@ -2376,7 +2376,7 @@ access this function.
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
-	
+
 				if (rendering_data.rendering_double_buffered)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
@@ -2455,7 +2455,7 @@ access this function.
 						render_object = CREATE(Scene_viewer_render_object)(
 							Scene_viewer_order_independent_transparency);
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);						
+							rendering_data.render_callstack);
 					}
 					case CMISS_SCENE_VIEWER_TRANSPARENCY_FAST:
 					{
@@ -2520,7 +2520,7 @@ access this function.
 							/* Multipass rendering types need to have the correct read buffer */
 							glReadBuffer(GL_BACK);
 						}
-						else	
+						else
 						{
 							glDrawBuffer(GL_FRONT);
 							/* Multipass rendering types need to have the correct read buffer */
@@ -2559,7 +2559,7 @@ access this function.
 #if defined GL_VERSION_1_4
 					case SCENE_VIEWER_BLEND_TRUE_ALPHA:
 					{
-						/* This function is protected at runtime by testing in the set 
+						/* This function is protected at runtime by testing in the set
 							blending mode function */
 						glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
 							GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -2638,8 +2638,8 @@ viewing transformations.
 	ENTER(Scene_viewer_render_scene);
 	if (scene_viewer)
 	{
-		return_code=Scene_viewer_render_scene_private(scene_viewer, 
-			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0, /*override_antialias*/0, 
+		return_code=Scene_viewer_render_scene_private(scene_viewer,
+			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0, /*override_antialias*/0,
 			/*override_transparency_layers*/0);
 	}
 	else
@@ -2670,7 +2670,7 @@ all the dimensions are zero).
 	if (scene_viewer)
 	{
 		return_code=Scene_viewer_render_scene_private(scene_viewer,
-			left, bottom, right, top, /*override_antialias*/0, 
+			left, bottom, right, top, /*override_antialias*/0,
 			/*override_transparency_layers*/0);
 	}
 	else
@@ -2770,11 +2770,11 @@ Rotates the scene_viewer when the tumble is active.
 
 				size_x = SCENE_VIEWER_PICK_SIZE;
 				size_y = SCENE_VIEWER_PICK_SIZE;
-				
+
 				centre_x=(double)(scene_viewer->previous_pointer_x);
 				/* flip y as x event has y=0 at top of window, increasing down */
 				centre_y=viewport_height-(double)(scene_viewer->previous_pointer_y)-1.0;
-				
+
 				/* Update the interaction volume */
 				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
 				for (i=0;i<4;i++)
@@ -2820,7 +2820,7 @@ Rotates the scene_viewer when the tumble is active.
 	return (return_code);
 } /* Scene_viewer_automatic_tumble */
 
-static int Scene_viewer_idle_update_callback(void *scene_viewer_void)
+static int Scene_viewer_idle_update_callback(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -2829,6 +2829,46 @@ Updates the scene_viewer.
 ==============================================================================*/
 {
 	int repeat_idle = 0;
+	if (scene_viewer != 0)
+	{
+		/* set workproc no longer pending */
+		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+		if (scene_viewer->tumble_active )//-- &&
+				//-- (!Interactive_tool_is_Transform_tool(scene_viewer->interactive_tool) ||
+				//-- Interactive_tool_transform_get_free_spin(scene_viewer->interactive_tool)))
+		{
+			scene_viewer->fast_changing = 0;
+			Scene_viewer_automatic_tumble(scene_viewer);
+			/* Repost the idle callback */
+			if(!scene_viewer->idle_update_callback_id)
+			{
+				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+					User_interface_get_event_dispatcher(scene_viewer->user_interface),
+					Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+			}
+		}
+		else
+		{
+			scene_viewer->tumble_angle = 0.0;
+		}
+		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		Scene_viewer_render_scene(scene_viewer);
+		if (scene_viewer->swap_buffers)
+		{
+			scene_viewer->graphics_buffer->swap_buffers();//-- Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
+		}
+		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		/* We don't want the idle callback to repeat so we return 0 */
+		repeat_idle = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_idle_update_callback.  Missing scene_viewer");
+		/* We don't want the idle callback to repeat so we return 0 */
+	}
 
 	return (repeat_idle);
 } /* Scene_viewer_idle_update_callback */
@@ -2846,6 +2886,23 @@ put in the queue, but the old one will update the window to the new state.
 ==============================================================================*/
 {
 	int return_code = 0;
+	if (scene_viewer)
+	{
+		if (!scene_viewer->idle_update_callback_id)
+		{
+			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				Scene_viewer_idle_update_callback, (void *)scene_viewer,
+				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_redraw_in_idle_time.  Missing scene_viewer");
+		return_code=0;
+	}
 	return (return_code);
 } /* Scene_viewer_redraw_in_idle_time */
 
@@ -3268,7 +3325,7 @@ Converts mouse button-press and motion events into viewing transformations in
 								about the view direction. */
 							width = scene_viewer->graphics_buffer->get_width();//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 							height = scene_viewer->graphics_buffer->get_height();//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
- 							if ((0<width)&&(0<height))
+							if ((0<width)&&(0<height))
 							{
 								/* get the radius of the ball */
 								radius=0.25*(width+height);
@@ -3415,11 +3472,11 @@ Converts mouse button-press and motion events into viewing transformations in
 					{
 						display_message(ERROR_MESSAGE,
 							"Scene_viewer_input_transform.  Cannot add idle update callback");
-						//-- scene_viewer->idle_update_callback_id = 
+						//-- scene_viewer->idle_update_callback_id =
 						//-- 	Event_dispatcher_add_idle_callback(
 						//-- 		User_interface_get_event_dispatcher(scene_viewer->user_interface),
 						//-- 		Scene_viewer_idle_update_callback, (void *)scene_viewer,
-						//-- 		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+						//-- 		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 					}
 				}
 #if defined (DEBUG_CODE)
@@ -3500,9 +3557,9 @@ transformations.
 						{
 							case SCENE_VIEWER_INTERACT_STANDARD:
 							{
-							        scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+									scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							}break;
-						        case SCENE_VIEWER_INTERACT_2D:
+								case SCENE_VIEWER_INTERACT_2D:
 							{
 							  scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 							}break;
@@ -3514,9 +3571,9 @@ transformations.
 						{
 							case SCENE_VIEWER_INTERACT_STANDARD:
 							{
-							        scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+									scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 							}break;
-						        case SCENE_VIEWER_INTERACT_2D:
+								case SCENE_VIEWER_INTERACT_2D:
 							{
 							  scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							}break;
@@ -3977,7 +4034,7 @@ Creates a Cmiss_scene_viewer_package.
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 
 	ENTER(CREATE(Scene_viewer_package));
-	if (graphics_buffer_package && background_colour && default_light_model && 
+	if (graphics_buffer_package && background_colour && default_light_model &&
 		scene && user_interface )//-- && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
@@ -4195,7 +4252,7 @@ DESCRIPTION :
 	ENTER(Scene_viewer_get_graphics_buffer_package);
 	if (cmiss_scene_viewer_package)
 	{
-		graphics_buffer_package = 
+		graphics_buffer_package =
 			cmiss_scene_viewer_package->graphics_buffer_package;
 	}
 	else
@@ -4379,7 +4436,7 @@ performed in idle time so that multiple redraws are avoided.
 				/* Currently only set when created from a Cmiss_scene_viewer_package
 					to avoid changing the interface */
 				scene_viewer->interactive_tool_manager = 0;
-				scene_viewer->order_independent_transparency_data = 
+				scene_viewer->order_independent_transparency_data =
 					(struct Scene_viewer_order_independent_transparency_data *)NULL;
 
 				/* set projection matrices to identity */
@@ -4456,7 +4513,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->clear_twice_flag = 1;
 #endif /* defined (WIN32_SYSTEM) */
 				scene_viewer->frame_count = 0;
-				
+
 				/* add callbacks to the graphics buffer */
 				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
 				//-- 	Scene_viewer_initialise_callback, scene_viewer);
@@ -4624,7 +4681,7 @@ DESCRIPTION :
 			cmiss_scene_viewer_package->scene_manager,
 			scene,
 			cmiss_scene_viewer_package->user_interface);
-		
+
 		new_interactive_tool_manager = 0;//--CREATE(MANAGER(Interactive_tool))();
 		//--FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
 		//--	Interactive_tool_create_copy_iterator, new_interactive_tool_manager,
@@ -4644,7 +4701,7 @@ DESCRIPTION :
 			/* Register a callback so that if the scene_viewer is destroyed
 				then it is removed from the list */
 			Scene_viewer_add_destroy_callback(scene_viewer,
-				Scene_viewer_destroy_remove_from_package, 
+				Scene_viewer_destroy_remove_from_package,
 				cmiss_scene_viewer_package);
 		}
 	}
@@ -4830,7 +4887,7 @@ about which the scene is turning relative to its lookat point and the
 			//-- scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
 			//-- 	User_interface_get_event_dispatcher(scene_viewer->user_interface),
 			//-- 	Scene_viewer_idle_update_callback, (void *)scene_viewer,
-			//-- 	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+			//-- 	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 		}
 		return_code=1;
 	}
@@ -5458,7 +5515,7 @@ int Scene_viewer_get_interact_mode(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 2 November 2006
 
 DESCRIPTION :
-Get the mouse and keyboard interaction configuration 
+Get the mouse and keyboard interaction configuration
 ==============================================================================*/
 {
 	int return_code;
@@ -5486,7 +5543,7 @@ int Scene_viewer_set_interact_mode(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 2 November 2006
 
 DESCRIPTION :
-Set the mouse and keyboard interaction configuration 
+Set the mouse and keyboard interaction configuration
 ==============================================================================*/
 {
 	int return_code;
@@ -6478,7 +6535,7 @@ LAST MODIFIED : 17 September 2002
 DESCRIPTION :
 When the transparency_mode of the Scene_viewer is layered_transparency then
 the z depth is divided into <layers> slices.  From back to front for each layer
-the clip planes are set to clip all other layers and then the entire scene is 
+the clip planes are set to clip all other layers and then the entire scene is
 drawn.  This is very expensive but can get great results for transparent
 surfaces.  Best use of the slices is made if the near and far clip planes are
 tight around the objects in the scene.
@@ -6766,7 +6823,7 @@ Gets the viewing volume of the Scene_viewer.
 } /* Scene_viewer_get_viewing_volume */
 
 int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer *scene_viewer,
-	int target_width, int target_height, int source_width, int source_height, double *left, 
+	int target_width, int target_height, int source_width, int source_height, double *left,
 	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height)
 {
 	int return_code = 0;
@@ -6780,7 +6837,7 @@ int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer
 		*top=scene_viewer->top;
 		*scaled_NDC_width = scene_viewer->NDC_width;
 		*scaled_NDC_height = scene_viewer->NDC_height;
-		
+
 		double ratio = (double)1.0, centre_x, centre_y, x_size, y_size, source_ratio = (double)1.0,
 			rescaled_ratio = (double)1.0;
 		const double tolerance = 0.000001;
@@ -6795,7 +6852,7 @@ int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer
 		}
 
 		/* rescaled ratio is an ratio used to determine how much
-			 the shorter side needs to be expanded by and ratio 
+			 the shorter side needs to be expanded by and ratio
 			 is the ratio of how much the longer side need to be
 		   expanded by*/
 		if (source_ratio > 1.0 && ratio > 1.0)
@@ -7650,8 +7707,8 @@ Requests a full redraw immediately.
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		event_dispatcher = 0;//User_interface_get_event_dispatcher(
-			//scene_viewer->user_interface);
+		event_dispatcher = 0;//-- User_interface_get_event_dispatcher(
+			//-- scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
 			//-- Event_dispatcher_remove_idle_callback(
@@ -7663,9 +7720,9 @@ Requests a full redraw immediately.
 			Scene_viewer_automatic_tumble(scene_viewer);
 			if(!scene_viewer->idle_update_callback_id)
 			{
-				scene_viewer->idle_update_callback_id = 0;//-- Event_dispatcher_add_idle_callback(
-					//-- event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					//-- EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+				scene_viewer->idle_update_callback_id =  Event_dispatcher_add_idle_callback(
+					event_dispatcher, Scene_viewer_idle_update_callback, scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 			}
 		}
 		scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
@@ -8072,7 +8129,7 @@ with commands for setting these.
 
 	ENTER(Scene_viewer_view_all);
 	if (scene_viewer)
-	{	
+	{
 		Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
 			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z);
 		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
@@ -8081,16 +8138,16 @@ with commands for setting these.
 			radius = 0.5*(scene_viewer->right - scene_viewer->left);
 		}
 		else
-		{		
+		{
 			/* enlarge radius to keep image within edge of window */
 			/*???RC width_factor should be read in from defaults file */
 			width_factor = 1.05;
 			radius *= width_factor;
 		}
 		/*???RC clip_factor should be read in from defaults file: */
-		clip_factor = 10.0;		
+		clip_factor = 10.0;
 		return_code = Scene_viewer_set_view_simple(scene_viewer, centre_x, centre_y,
-			centre_z, radius, 40, clip_factor*radius);		
+			centre_z, radius, 40, clip_factor*radius);
 	}
 	else
 	{
@@ -8210,9 +8267,9 @@ int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
-Adds callback that will be activated each time input is received by the 
+Adds callback that will be activated each time input is received by the
 scene_viewer.
-If <add_first> is true (non zero) then this callback will be added to the 
+If <add_first> is true (non zero) then this callback will be added to the
 front of the list.
 When a callback event is generated the list is processed as long as each
 callback function returns true, so to stop processing and not call any more
@@ -8226,13 +8283,13 @@ of the callbacks registered after your handler then return false.
 	{
 		if (add_first)
 		{
-			return_code = 
+			return_code =
 				CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(Scene_viewer_input_callback)(
 				scene_viewer->input_callback_list,function,user_data);
 		}
 		else
 		{
-			return_code = 
+			return_code =
 				CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_input_callback)(
 				scene_viewer->input_callback_list,function,user_data);
 		}
@@ -8532,7 +8589,7 @@ scene_viewer, so that the host application can do the redraw.
 	ENTER(Scene_viewer_add_repaint_required_callback);
 	if (scene_viewer&&function)
 	{
-		return_code = 
+		return_code =
 			CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list,function,user_data);
 	}
@@ -8883,7 +8940,7 @@ int Scene_viewer_win32_set_window_size(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 14 September 2007
 
 DESCRIPTION :
-Sets the maximum extent of the graphics window within which individual paints 
+Sets the maximum extent of the graphics window within which individual paints
 will be requested with handle_windows_event.
 ==============================================================================*/
 {
@@ -9889,7 +9946,7 @@ int Cmiss_scene_viewer_input_destroy(
  * @return  Status CMISS_OK on success, any other value if failed.
  */
 int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
-    Cmiss_scene_viewer_input_id input_data)
+	Cmiss_scene_viewer_input_id input_data)
 {
 	return Scene_viewer_default_input_callback(scene_viewer, input_data,
 		/*dummy_void*/NULL);

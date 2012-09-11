@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * context.cpp
- * 
+ *
  * The main root structure of cmgui.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -51,7 +51,7 @@
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
-//#include "user_interface/event_dispatcher.h"
+//-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for Cmiss_region  */
 #include "region/cmiss_region_private.h"
 
@@ -66,7 +66,7 @@ struct Context *Cmiss_context_create(const char *id)
 		context->UI_module = NULL;
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
-		context->event_dispatcher = NULL;
+		//-- context->event_dispatcher = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
 		context->access_count = 1;
@@ -172,7 +172,7 @@ struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
 		display_message(ERROR_MESSAGE,
 			"Cmiss_context_get_default_region.  Missing context");
 	}
-	
+
 	return root_region;
 }
 

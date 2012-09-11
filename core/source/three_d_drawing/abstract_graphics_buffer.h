@@ -48,6 +48,8 @@ Global types
 ------------
 */
 
+#include <vector>
+
 enum Graphics_buffer_type
 {
 	GRAPHICS_BUFFER_INVALID_TYPE,
@@ -123,6 +125,22 @@ struct Graphics_buffer_expose_data
 	int top;
 };
 
+typedef void callback_function_Graphics_buffer_callback(struct Graphics_buffer *,void *,void *);
+struct callback_item_Graphics_buffer_callback
+{
+	callback_function_Graphics_buffer_callback *function;
+	void *user_data;
+	int access_count;
+};
+
+typedef void callback_function_Graphics_buffer_input_callback(struct Graphics_buffer *, struct Cmiss_scene_viewer_input *,void *);
+struct callback_item_Graphics_buffer_input_callback
+{
+	callback_function_Graphics_buffer_input_callback *function;
+	void *user_data;
+	int access_count;
+};
+
 struct Graphics_buffer
 {
 	enum Graphics_buffer_type type;
@@ -131,20 +149,24 @@ struct Graphics_buffer
 
 	virtual ~Graphics_buffer() {}
 
-	struct LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback))
-		  *initialise_callback_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback))
-		  *resize_callback_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback))
-		  *expose_callback_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback))
-		  *input_callback_list;
+	std::vector<callback_item_Graphics_buffer_callback> initialise_callback_list_;
 
+	struct list_callback_item_Graphics_buffer_callback
+		*initialise_callback_list;
+	struct list_callback_item_Graphics_buffer_callback
+		*resize_callback_list;
+	struct list_callback_item_Graphics_buffer_callback
+		*expose_callback_list;
+	struct list_callback_item_Graphics_buffer_input_callback
+		*input_callback_list;
+
+/*
 	DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
 		struct Graphics_buffer *, void *, void);
 
 	DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_input_callback, \
 		struct Graphics_buffer *, struct Graphics_buffer_input *, void);
+*/
 
 	Graphics_buffer *access() { access_count++; return this;}
 	int deaccess() {access_count--; if (access_count == 0) delete this; return 1;}
@@ -156,13 +178,13 @@ struct Graphics_buffer
 	virtual int make_current() { return 0; }
 	virtual int get_buffering_mode(enum Graphics_buffer_buffering_mode *graphics_buffer_buffering_mode) const { return 0; }
 	virtual int get_stereo_mode(enum Graphics_buffer_stereo_mode *graphics_buffer_stereo_mode) const { return 0; }
-	virtual int add_initialise_callback(CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data) { return 0; }
-	virtual int add_resize_callback(CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) resize_callback, void *user_data) const { return 0; }
-	virtual int add_expose_callback(CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) expose_callback, void *user_data) const { return 0; }
-	virtual int add_input_callback(CMISS_CALLBACK_FUNCTION(Graphics_buffer_input_callback) input_callback, void *user_data) const { return 0; }
+	virtual int add_initialise_callback(callback_function_Graphics_buffer_callback initialise_callback, void *user_data) { return 0; }
+	virtual int add_resize_callback(callback_function_Graphics_buffer_callback resize_callback, void *user_data) const { return 0; }
+	virtual int add_expose_callback(callback_function_Graphics_buffer_callback expose_callback, void *user_data) const { return 0; }
+	virtual int add_input_callback(callback_function_Graphics_buffer_input_callback input_callback, void *user_data) const { return 0; }
 	virtual int awaken() const { return 0; }
-	virtual int set_width(int width) { return 0; }
-	virtual int set_height(int height) { return 0; }
+	virtual int set_width(int /* width */) { return 0; }
+	virtual int set_height(int /* height */) { return 0; }
 	virtual int get_visual_id() const { return 0; }
 	virtual int get_colour_buffer_depth() const { return 0; }
 	virtual int get_depth_buffer_depth() const { return 0; }

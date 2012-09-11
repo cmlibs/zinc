@@ -56,8 +56,8 @@ typedef int (*Time_keeper_callback)(struct Time_keeper *time_keeper,
 PROTOTYPE_OBJECT_FUNCTIONS(Time_keeper);
 
 ZINC_API struct Time_keeper *CREATE(Time_keeper)(const char *name,
-	struct Event_dispatcher *event_dispatcher,
-	struct User_interface *user_interface);
+	struct Event_dispatcher *event_dispatcher);
+
 /*******************************************************************************
 LAST MODIFIED : 15 March 2002
 

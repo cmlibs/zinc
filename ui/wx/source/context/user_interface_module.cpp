@@ -119,15 +119,14 @@ struct User_interface_module *User_interface_module_create(
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 		UI_module->default_time_keeper=Cmiss_time_keeper_access(
-			CREATE(Time_keeper)("default", UI_module->event_dispatcher,
-				UI_module->user_interface));
+			CREATE(Time_keeper)("default", UI_module->event_dispatcher));
 		if (UI_module->user_interface)
 		{
 			if (graphics_module)
 			{
-				struct Light *default_light = 
+				struct Light *default_light =
 					Cmiss_graphics_module_get_default_light(graphics_module);
-				struct Light_model *default_light_model = 
+				struct Light_model *default_light_model =
 					Cmiss_graphics_module_get_default_light_model(graphics_module);
 				struct Scene *default_scene =
 					Cmiss_graphics_module_get_default_scene(graphics_module);
@@ -186,7 +185,7 @@ int User_interface_module_destroy(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (UI_module->scene_viewer_package)
 			{
-				DESTROY(Cmiss_scene_viewer_package)(&UI_module->scene_viewer_package);		
+				DESTROY(Cmiss_scene_viewer_package)(&UI_module->scene_viewer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 			/* Must destroy the graphics_buffer_package after the windows which use it */
@@ -231,6 +230,6 @@ int User_interface_module_destroy(
 				"User_interface_module_destroy.  Missing user interface module address");
 		return_code = 0;
 	}
-		
+
 	return return_code;
 }

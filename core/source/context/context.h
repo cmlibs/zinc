@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * context.cpp
- * 
+ *
  * The main root structure of cmgui.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -57,7 +57,7 @@ struct Context
 	struct User_interface_module *UI_module;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct Event_dispatcher *event_dispatcher;
+	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Curve) *curve_manager;
 };

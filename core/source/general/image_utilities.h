@@ -171,7 +171,7 @@ Called to finialise the use of the image environment
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Image_file_format);
 
-char *Image_file_format_extension(enum Image_file_format image_file_format);
+const char *Image_file_format_extension(enum Image_file_format image_file_format);
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
 
@@ -350,7 +350,7 @@ int Cmgui_image_information_set_width(
 	struct Cmgui_image_information *cmgui_image_information, int width);
 
 /***************************************************************************//**
- * Sets the specific type of binary data compression to be used when 
+ * Sets the specific type of binary data compression to be used when
  * associated with the cmgui_image_information.
  */
 int Cmgui_image_information_set_storage_compression(
@@ -374,7 +374,7 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 /*****************************************************************************//**
 Sets the quality for lossy compression in cmgui_image_information.
 @param cmgui_image_information  The information object.
-@param quality 0.0 is the least quality with greatest lossy compression and 
+@param quality 0.0 is the least quality with greatest lossy compression and
 1.0 is the greatest quality which is the minimum lossy compression.
 */
 int Cmgui_image_information_set_quality(
@@ -384,7 +384,7 @@ int Cmgui_image_information_set_quality(
 /*****************************************************************************//**
  * Specifies that this storage_information will read from a memory_block
  * instead of reading from a file.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param memory_block  A pointer to memory_block information.
  * @param memory_block_length  The length of this memory_block.
@@ -398,7 +398,7 @@ int Cmgui_image_information_add_memory_block(
  * Specifies that this storage_information will write to a memory_block
  * instead of writing to file.  Once read the new memory block can be
  * retrieved with #Cmgui_image_information_get_memory_block.
- * 
+ *
  * @param storage_information  The storage information object.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
@@ -408,7 +408,7 @@ int Cmgui_image_information_set_write_to_memory_block(
 /*****************************************************************************//**
  * Retrieve a memory block that has been written to when the storage_information
  * specified #Cmgui_image_information_set_write_to_memory_block.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param memory_block_reference  Will be set to point to the allocated
  * memory block.  When no longer required the memory block should be
@@ -470,7 +470,7 @@ The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
 output and must be wholly within its bounds.
 Image data is ordered from the bottom row to the top, and within each row from
 the left to the right.
-If <components> is > 0, the specified components are output at each pixel, 
+If <components> is > 0, the specified components are output at each pixel,
 otherwise all the number_of_components components of the image are output at each pixel.
 Pixel values relate to components by:
   1 -> I    = Intensity;
@@ -546,7 +546,7 @@ int Cmgui_image_convert_format(struct Cmgui_image *cmgui_image, enum Cmgui_image
 LAST MODIFIED : 31 October 2006
 
 DESCRIPTION :
-Sets the magick image type and updates the cmgui_image to the format specified by 
+Sets the magick image type and updates the cmgui_image to the format specified by
 the <format>
 ==============================================================================*/
 
@@ -586,7 +586,7 @@ char *Cmgui_image_get_property(struct Cmgui_image *cmgui_image,
 LAST MODIFIED : 24 October 2007
 
 DESCRIPTION :
-If the <property> is set for <cmgui_image> then this returns an allocated 
+If the <property> is set for <cmgui_image> then this returns an allocated
 string containing it's value.  Otherwise returns NULL.
 ==============================================================================*/
 

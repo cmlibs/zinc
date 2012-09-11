@@ -596,7 +596,8 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Material_program_uniform)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program_uniform, name,
 	char *, strcmp)
 
-/* Misusing the double array here as the vector parser function gives us an 
+/*
+ * Misusing the double array here as the vector parser function gives us an
  * array of doubles and I don't see the need to copy and pass floats.
  * It isn't called double_vector then because we are going to use it with Uniform?f
  */
@@ -768,7 +769,7 @@ be shared by multiple materials using the same program.
 							{
 								display_message(ERROR_MESSAGE,
 									"Program_string is written with ARB shading program\n"
-									"but ARB shading program is not supported.\n");	
+									"but ARB shading program is not supported.\n");
 								vertex_program_string = NULL;
 								fragment_program_string = NULL;
 								geometry_program_string = NULL;
@@ -810,9 +811,9 @@ be shared by multiple materials using the same program.
 #endif  /* defined DEBUG_CODE */
 
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
-				{	
+				{
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
-					 {	 
+					 {
 							vertex_program_string = duplicate_string("//GOURAUDSHADING_VERTEX_SHADER\n"
 								 "\n"
 								 "varying vec4 NewCoord;\n"
@@ -837,8 +838,8 @@ be shared by multiple materials using the same program.
 							& material_program->type)
 					 {
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
-							{	
-								 append_string(&vertex_program_string, 
+							{
+								 append_string(&vertex_program_string,
 										"PARAM texture_scaling = program.env[0];\n"
 										, &error);
 							}
@@ -849,7 +850,7 @@ be shared by multiple materials using the same program.
 										, &error);
 							}
 					 }
-					 
+
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
@@ -867,7 +868,7 @@ be shared by multiple materials using the same program.
 								 "  attenuation = 1.0 / (gl_LightSource[0].quadraticAttenuation * Len * Len + \n"
 								 "    gl_LightSource[0].constantAttenuation +\n"
 								 "    Len *  gl_LightSource[0].linearAttenuation);\n"
-								 "  //NdotL = abs(dot(eyeNormal,lightVec));\n" 
+								 "  //NdotL = abs(dot(eyeNormal,lightVec));\n"
 								 "  diffuse = vec3(gl_LightSource[0].diffuse * gl_Color *attenuation);\n"
 								 "  NdotHV = abs(dot(eyeNormal, gl_LightSource[0].halfVector.xyz));\n"
 								 "  finalCol = gl_FrontLightProduct[0].ambient\n"
@@ -880,7 +881,7 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "TEMP eyeVertex;\n"
 								 "TEMP eyeNormal;\n"
 								 "TEMP temp_col;\n"
@@ -963,24 +964,24 @@ be shared by multiple materials using the same program.
 								 "\n"
 								 , &error);
 					 }
-					
+
 					 if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
 							& material_program->type)
 					 {
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
-							{	
-								 append_string(&vertex_program_string, 
+							{
+								 append_string(&vertex_program_string,
 										"MUL result.texcoord[0], texture_scaling, vertex.texcoord[0];\n"
 										, &error);
 							}
 							else
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"gl_TexCoord[0] = texture_scaling * gl_MultiTexCoord0;\n"
 										, &error);
 							}
 					 }
-					
+
 					 if(material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
@@ -993,7 +994,7 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "DP4 result.texcoord[1].x, c0[0], position;\n"
 								 "DP4 result.texcoord[1].y, c0[1], position;\n"
 								 "DP4 result.texcoord[1].z, c0[2], position;\n"
@@ -1025,7 +1026,7 @@ be shared by multiple materials using the same program.
 								 else
 								 {
 										colour_texture_dimension = 1;
-								 }								
+								 }
 							}
 							else
 							{
@@ -1045,7 +1046,7 @@ be shared by multiple materials using the same program.
 					 {
 							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										"#extension GL_ARB_texture_rectangle : enable\n"
 										"uniform vec4 texturesize;\n"
 										, &error);
@@ -1066,17 +1067,17 @@ be shared by multiple materials using the same program.
 							{
 								 if (Graphics_library_vendor_mesa != vendor_id)
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "OPTION ARB_fragment_program_shadow;\n"
 											 , &error);
 								 }
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										"PARAM texturesize = program.env[1];\n"
 										"TEMP tex4, kill, tex4coord;\n"
 										, &error);
 							}
 					 }
-					 
+
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
 							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
@@ -1084,10 +1085,10 @@ be shared by multiple materials using the same program.
 								 char temp_string[100];
 								 sprintf(temp_string,
 										"uniform sampler%dD texture0;\n", colour_texture_dimension);
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										temp_string, &error);
 							}
-							append_string(&fragment_program_string, 
+							append_string(&fragment_program_string,
 								 "varying vec4 NewCoord;\n"
 								 "varying vec3 eyeNormal, lightVec, diffuse;\n"
 								 "\n"
@@ -1107,10 +1108,10 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							append_string(&fragment_program_string, 
+							append_string(&fragment_program_string,
 								 "TEMP eyespaceCoord, perspective;\n"
 								 "PARAM point_five = {0.5, 0.5, 0.5, 0.5};\n"
-								 
+
 								 "MOV      eyespaceCoord, fragment.texcoord[1];\n"
 								 "RCP      perspective.w, eyespaceCoord.w;\n"
 								 "MUL      eyespaceCoord, eyespaceCoord, perspective.w;\n"
@@ -1182,7 +1183,7 @@ be shared by multiple materials using the same program.
 													"MUL      tex4coord, tex4coord, texturesize;\n"
 													"\n"
 													"MOV     tex4coord.z, fragment.position.z;\n"
-													"ADD     tex4coord.z, tex4coord.z, -0.0001;\n" 
+													"ADD     tex4coord.z, tex4coord.z, -0.0001;\n"
 													, &error);
 										}
 										else
@@ -1213,7 +1214,7 @@ be shared by multiple materials using the same program.
 										"TEMP		tex;\n"
 										"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
 										colour_texture_dimension);
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										tex_string, &error);
 							}
 							else
@@ -1225,7 +1226,7 @@ be shared by multiple materials using the same program.
 											 "  vec4 tex = texture%dD(texture0, %s(gl_TexCoord[0]));\n",
 											 colour_texture_dimension, colour_texture_string[colour_texture_dimension - 1]);
 								 }
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										tex_string, &error);
 							}
 					 }
@@ -1233,7 +1234,7 @@ be shared by multiple materials using the same program.
 					 {
 							colour_texture_dimension = 0;
 					 }
-					 
+
 					 if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type))
 					 {
 							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
@@ -1245,7 +1246,7 @@ be shared by multiple materials using the same program.
 							else
 							{
 								 /* Normal lighting, just use the fragment colour */
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										"MOV      result.color.xyzw, fragment.color.rgba;\n"
 										, &error);
 							}
@@ -1262,14 +1263,14 @@ be shared by multiple materials using the same program.
 											 /* RGB texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color, tex;\n"
 														 "MOV	  result.color.w, fragment.color.w;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "  gl_FragColor.rgb = vec3(finalCol * tex);\n"
 														 "  gl_FragColor.a = finalCol.a;\n"
 														 , &error);
@@ -1280,17 +1281,17 @@ be shared by multiple materials using the same program.
 											 /* grayscale texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
 														 "MOV	  result.color.w, fragment.color.w;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "  gl_FragColor.rgb = finalCol.rgb * tex.x;\n"
 														 "  gl_FragColor.a = finalCol.a;\n"
-														 , &error);	
+														 , &error);
 											 }
 										}
 								 }
@@ -1301,14 +1302,14 @@ be shared by multiple materials using the same program.
 											 /* grayscale alpha texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
 														 "MUL		result.color.w, fragment.color.w, tex.y;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "  gl_FragColor.rgb = finalCol.xyz * tex.x;\n"
 														 "  gl_FragColor.a = finalCol.a * tex.y;\n"
 														 , &error);
@@ -1319,13 +1320,13 @@ be shared by multiple materials using the same program.
 											 /* RGBA texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MUL		result.color, fragment.color, tex;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "  gl_FragColor = finalCol * tex;\n"
 														 , &error);
 											 }
@@ -1341,13 +1342,13 @@ be shared by multiple materials using the same program.
 											 /* RGB texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "	gl_FragColor.rgb = tex.xyz;\n"
 														 , &error);
 											 }
@@ -1357,26 +1358,26 @@ be shared by multiple materials using the same program.
 											 /* grayscale texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex.x;\n"
 														 , &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "	gl_FragColor.rgb = tex.xxx;\n"
 														 , &error);
 											 }
 										}
 										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 										{
-											 append_string(&fragment_program_string, 
+											 append_string(&fragment_program_string,
 													"MOV		result.color.w, state.material.diffuse.w;\n"
 													, &error);
 										}
 										else
 										{
-											 append_string(&fragment_program_string, 
+											 append_string(&fragment_program_string,
 													"  gl_FragColor.a = gl_FrontMaterial.diffuse.w;\n"
 													, &error);
 										}
@@ -1388,7 +1389,7 @@ be shared by multiple materials using the same program.
 											 /* grayscale alpha texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex.x;\n"
 														 "MOV		result.color.w, tex.y;\n"
 														 , &error);
@@ -1398,7 +1399,7 @@ be shared by multiple materials using the same program.
 													append_string(&fragment_program_string,
 														 "  gl_FragColor.xyz = tex.x;\n"
 														 "  gl_FragColor.w = tex.y;\n"
-														 , &error);													
+														 , &error);
 											 }
 										}
 										else
@@ -1406,13 +1407,13 @@ be shared by multiple materials using the same program.
 											 /* RGBA texture */
 											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "MOV		result.color, tex;\n"
 													, &error);
 											 }
 											 else
 											 {
-													append_string(&fragment_program_string, 
+													append_string(&fragment_program_string,
 														 "  gl_FragColor = tex;\n"
 													, &error);
 											 }
@@ -1422,7 +1423,7 @@ be shared by multiple materials using the same program.
 					 }
 					 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
-							append_string(&fragment_program_string, 
+							append_string(&fragment_program_string,
 								 "MOV		 result.depth.z, eyespaceCoord.z;\n"
 								 "\n"
 								 "END\n"
@@ -1441,7 +1442,7 @@ be shared by multiple materials using the same program.
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
 							vertex_program_string = duplicate_string("//Vertex Shader\n"
-																											 "#version 110\n");				
+																											 "#version 110\n");
 							append_string(&vertex_program_string,
 								 "varying vec4 diffuse, ambientGlobal, ambient;\n"
 								 , &error);
@@ -1449,7 +1450,7 @@ be shared by multiple materials using the same program.
 					 else
 					 {
 							vertex_program_string = duplicate_string("!!ARBvp1.0\n");
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "ATTRIB normal = vertex.normal;\n"
 								 "ATTRIB position = vertex.position;\n"
 								 , &error);
@@ -1459,29 +1460,29 @@ be shared by multiple materials using the same program.
 					 {
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"PARAM texture_scaling = program.env[0];\n"
 										, &error);
 							}
 							else
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 								 "uniform vec4 texture_scaling;\n"
 								 , &error);
-							} 
+							}
 					 }
 					 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
 					 {
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"ATTRIB tangent = vertex.texcoord[1];\n"
 										, &error);
 							}
 					 }
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "\nvoid main()\n"
 								 "{\n"
 								 "  vec3 pos;\n"
@@ -1489,12 +1490,12 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "PARAM c0[4] = { state.matrix.mvp };\n"
 								 "PARAM c1[4] = { state.matrix.modelview };\n"
 								 "PARAM eyeCameraPos = {0, 0, 0, 0};\n"
 								 "PARAM eyeLightPos = state.light[0].position;\n"
-								 
+
 								 "TEMP eyeVertex;\n"
 								 "TEMP viewVec;\n"
 								 , &error);
@@ -1503,7 +1504,7 @@ be shared by multiple materials using the same program.
 					 {
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
 										"TEMP lightVec;\n"
 										"TEMP objectLight;\n"
@@ -1518,13 +1519,13 @@ be shared by multiple materials using the same program.
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
 										"TEMP eyeNormal;\n"
 										, &error);
 							}
 					 }
-					 
+
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
@@ -1537,28 +1538,28 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							append_string(&vertex_program_string, 
+							append_string(&vertex_program_string,
 								 "#Vertex position in eyespace\n"
 								 "DP4 eyeVertex.x, c1[0], position;\n"
 								 "DP4 eyeVertex.y, c1[1], position;\n"
 								 "DP4 eyeVertex.z, c1[2], position;\n"
-								 , &error);		
-					 }						
+								 , &error);
+					 }
 
 					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
 						& material_program->type)
 					{
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"MUL result.texcoord[0], texture_scaling, vertex.texcoord[0];\n"
 										, &error);
 							}
 							else
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"  gl_TexCoord[0] = texture_scaling * gl_MultiTexCoord0;\n"
-										, &error);								 
+										, &error);
 							}
 					}
 
@@ -1566,25 +1567,25 @@ be shared by multiple materials using the same program.
 					{
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
 										"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
-										
+
 										"SUB lightVec, eyeLightPos, eyeVertex;\n"
-										
+
 										"DP3 objectLight.x, c3[0], lightVec;\n"
 										"DP3 objectLight.y, c3[1], lightVec;\n"
 										"DP3 objectLight.z, c3[2], lightVec;\n"
-										
+
 										"DP3 result.texcoord[1].x, tangent, objectLight;\n"
 										"DP3 result.texcoord[1].y, binormal, objectLight;\n"
 										"DP3 result.texcoord[1].z, normal, objectLight;\n"
-										
+
 										"SUB cameraVec, eyeCameraPos, eyeVertex;\n"
 										"DP3 objectCamera.x, c3[0], cameraVec;\n"
 										"DP3 objectCamera.y, c3[1], cameraVec;\n"
 										"DP3 objectCamera.z, c3[2], cameraVec;\n"
-										
+
 										"DP3 result.texcoord[2].x, tangent, objectCamera;\n"
 										"DP3 result.texcoord[2].y, binormal, objectCamera;\n"
 										"DP3 result.texcoord[2].z, normal, objectCamera;\n"
@@ -1607,7 +1608,7 @@ be shared by multiple materials using the same program.
 					{
 							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"  gl_TexCoord[3].xyz = normalize(gl_NormalMatrix * gl_Normal);\n"
 										"  gl_TexCoord[2].xyz = vec3(normalize(-ecPos));\n"
 										"  gl_TexCoord[1].xyz = aux;\n"
@@ -1615,29 +1616,29 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 append_string(&vertex_program_string, 
+								 append_string(&vertex_program_string,
 										"DP4 eyeNormal.x, c2[0], normal;\n"
 										"DP4 eyeNormal.y, c2[1], normal;\n"
 										"DP4 eyeNormal.z, c2[2], normal;\n"
 										"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
 										"RSQ eyeNormal.w, eyeNormal.w;\n"
 										"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
-										
+
 										"SUB viewVec, eyeCameraPos, eyeVertex;\n"
 										"DP3 viewVec.w, viewVec, viewVec;\n"
 										"RSQ viewVec.w, viewVec.w;\n"
 										"MUL viewVec.xyz, viewVec.w, viewVec;\n"
-										
+
 										"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
 										"MOV result.texcoord[2], viewVec;\n"
 										"MOV result.texcoord[3], eyeNormal;\n"
 										, &error);
 							}
 					}
-							
+
 					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					{
-						 append_string(&vertex_program_string, 
+						 append_string(&vertex_program_string,
 								"  gl_FrontColor = gl_Color;\n"
 								"  gl_BackColor = gl_Color;\n"
 							  "  gl_FrontSecondaryColor = vec4(1.0);\n"
@@ -1651,7 +1652,7 @@ be shared by multiple materials using the same program.
 					}
 					else
 					{
-						 append_string(&vertex_program_string, 
+						 append_string(&vertex_program_string,
 								"MOV result.color, vertex.color;\n"
 								"MOV result.color.back, vertex.color;\n"
 								"MOV result.color.secondary,  {1, 1, 1, 1};\n"
@@ -1681,15 +1682,15 @@ be shared by multiple materials using the same program.
 									 {
 											append_string(&fragment_program_string,
 												 "uniform sampler1D texture0;\n"
-												 , &error);											
+												 , &error);
 									 }
 								}
 								else
 								{
 											append_string(&fragment_program_string,
 												 "uniform sampler2D texture0;\n"
-												 , &error);									 
-								}	
+												 , &error);
+								}
 						 }
 
 						 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE & material_program->type)
@@ -1701,20 +1702,20 @@ be shared by multiple materials using the same program.
 									 {
 											append_string(&fragment_program_string,
 												 "uniform sampler3D texture1;\n"
-												 , &error);		 
+												 , &error);
 									 }
 									 else
 									 {
 											append_string(&fragment_program_string,
 												 "uniform sampler1D texture1;\n"
-												 , &error);	
-									 }								
+												 , &error);
+									 }
 								}
 								else
 								{
 											append_string(&fragment_program_string,
 												 "uniform sampler2D texture1;\n"
-												 , &error);	
+												 , &error);
 								}
 						 }
 
@@ -1723,15 +1724,15 @@ be shared by multiple materials using the same program.
 							 append_string(&fragment_program_string,
 								 "uniform sampler1D texture1;\n"
 								 , &error);
-						 }	 
-							 
+						 }
 
-						 if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
-									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+
+						 if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
 									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 						 {
-								if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR | 
+								if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 											MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & material_program->type)
 								{									 number_of_inputs = 0;
 									 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
@@ -1791,21 +1792,21 @@ be shared by multiple materials using the same program.
 					else
 					{
 						 fragment_program_string = duplicate_string("!!ARBfp1.0\n");
-						 append_string(&fragment_program_string, 
+						 append_string(&fragment_program_string,
 								"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
 								"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 								"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
 								, &error);
 					}
 
-					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
 							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 					{
 						 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 						 {
-								append_string(&fragment_program_string, 	
+								append_string(&fragment_program_string,
 									 "PARAM lookup_offsets = program.env[1];\n"
 									 "PARAM lookup_scales = program.env[2];\n"
 									 , &error);
@@ -1820,7 +1821,7 @@ be shared by multiple materials using the same program.
 					}
 					else
 					{
-						 append_string(&fragment_program_string, 	
+						 append_string(&fragment_program_string,
 								"#Set up reverse vector based on secondary colour\n"
 								"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
 								, &error);
@@ -1867,7 +1868,7 @@ be shared by multiple materials using the same program.
 							else
 							{
 								colour_texture_dimension = 1;
-							}								
+							}
 
 						}
 						else
@@ -1878,19 +1879,19 @@ be shared by multiple materials using the same program.
 						if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 						{
 							 sprintf(tex_string,
-									"  %s tex = %s(texture%dD(texture0, %s(gl_TexCoord[0])));\n", 
+									"  %s tex = %s(texture%dD(texture0, %s(gl_TexCoord[0])));\n",
 									colour_texture_string[colour_texture_string_index],
 									colour_texture_string[colour_texture_string_index],
 								  colour_texture_dimension,
-									colour_texture_string[colour_texture_dimension - 1]);	
+									colour_texture_string[colour_texture_dimension - 1]);
 						}
 						else
-						{	
- 							 sprintf(tex_string,
+						{
+							 sprintf(tex_string,
 									"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
 									colour_texture_dimension);
 						}
-						append_string(&fragment_program_string, 
+						append_string(&fragment_program_string,
 							 tex_string, &error);
 					}
 					else
@@ -1907,13 +1908,13 @@ be shared by multiple materials using the same program.
 							{
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "TEX		tex2, fragment.texcoord[0], texture[1], 3D;\n"
 											 , &error);
 								 }
 								 else
 								 {
-										append_string(&fragment_program_string, 	
+										append_string(&fragment_program_string,
 											 "  vec3 tex2 = texture3D(texture1, gl_TexCoord[0].xyz).rgb;\n"
 											 , &error);
 								 }
@@ -1922,32 +1923,32 @@ be shared by multiple materials using the same program.
 							{
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "TEX		tex2, fragment.texcoord[0], texture[1], 1D;\n"
 											 , &error);
 								 }
 								 else
 								 {
-										append_string(&fragment_program_string, 	
+										append_string(&fragment_program_string,
 											 "  vec3 tex2 = texture1D(texture1, gl_TexCoord[0].x).rgb;\n"
 											 , &error);
 								 }
-							}								
+							}
 						}
 						else
 						{
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
 										 , &error);
 							 }
 							 else
 							 {
-									append_string(&fragment_program_string, 	
+									append_string(&fragment_program_string,
 										 "  vec3 tex2 = texture2D(texture1, gl_TexCoord[0].xy).rgb;\n"
 										 , &error);
-							 }				
+							 }
 						}
 					}
 					if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
@@ -1956,19 +1957,19 @@ be shared by multiple materials using the same program.
 						{
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "#Expand the range of the normal texture\n"
 										 "MAD      normal, two, tex2, m_one;\n"
-										 
+
 										 "#Reverse the texture normal direction component if required\n"
 										 "MUL      normal.z, reverse.z, normal.z;\n"
 										 , &error);
 							 }
 							 else
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "//Expand the range of the normal texture\n"
-										 "  n = 2.0 * tex2 - 1.0;\n"		
+										 "  n = 2.0 * tex2 - 1.0;\n"
 										 "  n = normalize(n);\n"
 										 "//Reverse the texture normal direction component if required\n"
 										 " if (!gl_FrontFacing)\n"
@@ -1981,12 +1982,12 @@ be shared by multiple materials using the same program.
 							/* Normal is stored in texcoord[3] */
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "#Normalize the normal.\n"
 										 "DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
 										 "RSQ		normal.w, normal.w;\n"
 										 "MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
-										 
+
 										 "#Reverse the normal if required\n"
 										 "MUL      normal, reverse, normal;\n"
 										 , &error);
@@ -2016,22 +2017,22 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							 append_string(&fragment_program_string, 
+							 append_string(&fragment_program_string,
 									"#Normalize lightvec and viewvec.\n"
 									"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
 									"RSQ		lightVec.w, Len.w;\n"
 									"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
-									
+
 									"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
 									"RSQ		viewVec.w, viewVec.w;\n"
 									"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
-									
+
 									"#Calculate attenuation.\n"
 									"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
 									"RCP		Len, lightVec.w;\n"
 									"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
 									"RCP		attenuation.x, attenuation.x;\n"
-									
+
 									"#Diffuse\n"
 									"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
 									"\n"
@@ -2042,19 +2043,19 @@ be shared by multiple materials using the same program.
 									"MAD		reflVec, reflVec, normal, -lightVec;\n"
 									"\n"
 									"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
-									
+
 									"MOV		lightContrib.w, state.material.shininess.x;\n"
-									
+
 									"#Accelerates lighting computations\n"
 									"LIT	lightContrib, lightContrib;\n"
-									
+
 									"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
 									"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
 									"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-									
+
 									"#Ambient lighting contribution;\n"
 									"MAD		finalCol, fragment.color, state.lightmodel.ambient, finalCol;\n"
-									
+
 									"#Alpha value;\n"
 									"MOV		finalCol.w, state.material.diffuse.w;\n"
 									, &error);
@@ -2073,7 +2074,7 @@ be shared by multiple materials using the same program.
 									/* RGB texture */
 									 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 									 {
-											append_string(&fragment_program_string, 
+											append_string(&fragment_program_string,
 												 "MUL		finalCol.xyz, finalCol, tex;\n"
 												 , &error);
 									 }
@@ -2089,14 +2090,14 @@ be shared by multiple materials using the same program.
 									 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 									 {
 											/* grayscale texture */
-											append_string(&fragment_program_string, 
+											append_string(&fragment_program_string,
 												 "MUL		finalCol.xyz, finalCol.xyz, tex.x;\n"
 												 , &error);
 									 }
 									 else
 									 {
 											/* double type tex */
-											append_string(&fragment_program_string, 
+											append_string(&fragment_program_string,
 												 "  color.xyz = color.xyz * tex;\n"
 												 , &error);
 									 }
@@ -2109,7 +2110,7 @@ be shared by multiple materials using the same program.
 										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 										{
 											 /* grayscale alpha texture */
-											 append_string(&fragment_program_string, 
+											 append_string(&fragment_program_string,
 													"MUL		finalCol.xyz, finalCol.xyz, tex.x;\n"
 													"MUL		finalCol.w, finalCol.w, tex.y;\n"
 													, &error);
@@ -2127,7 +2128,7 @@ be shared by multiple materials using the same program.
 										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 										{
 											 /* RGBA texture */
-											 append_string(&fragment_program_string, 
+											 append_string(&fragment_program_string,
 													"MUL		finalCol, finalCol, tex;\n"
 													, &error);
 										}
@@ -2151,15 +2152,15 @@ be shared by multiple materials using the same program.
 								/* RGB texture */
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "MOV		finalCol.xyz, tex;\n"
 											 , &error);
 								 }
 								 else
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "  color.xyz = tex.xyz;\n"
-											 , &error);										
+											 , &error);
 								 }
 							}
 							else
@@ -2167,27 +2168,27 @@ be shared by multiple materials using the same program.
 								/* grayscale texture */
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "MOV		finalCol.xyz, tex.x;\n"
 											 , &error);
 								 }
 								 else
 								 {
 										/* double type tex */
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "  color.xyz = vec3(tex);\n"
-											 , &error);										
+											 , &error);
 								 }
 							}
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										"MOV		finalCol.w, state.material.diffuse.w;\n"
 										, &error);
 							}
 							else
 							{
-								 append_string(&fragment_program_string, 
+								 append_string(&fragment_program_string,
 										"  color.w = gl_FrontMaterial.diffuse.w;\n"
 										, &error);
 							}
@@ -2199,17 +2200,17 @@ be shared by multiple materials using the same program.
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
 										/* grayscale alpha texture */
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "MOV		finalCol.xyz, tex.x;\n"
 											 "MOV		finalCol.w, tex.y;\n"
 											 , &error);
 								 }
 								 else
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "  color.xyz = tex.xxx;\n"
 											 "  color.w = tex.y;\n"
-											 , &error);																				
+											 , &error);
 								 }
 							}
 							else
@@ -2217,31 +2218,31 @@ be shared by multiple materials using the same program.
 								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 								 {
 										/* RGBA texture */
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "MOV		finalCol, tex;\n"
 											 , &error);
 								 }
 								 else
 								 {
-										append_string(&fragment_program_string, 
+										append_string(&fragment_program_string,
 											 "  color = tex;\n"
 											 , &error);
 								 }
 							}
 						}
 					}
-					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
 							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 					{
-						if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR | 
+						if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 
 							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & material_program->type)
 						{
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 	
+									append_string(&fragment_program_string,
 										 "TEMP dependentlookup;\n"
 										 "TEMP offsetcolour;\n"
 										 , &error);
@@ -2320,7 +2321,7 @@ be shared by multiple materials using the same program.
 							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							{
 								 switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
+											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
 										& material_program->type)
 								 {
 										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
@@ -2348,7 +2349,7 @@ be shared by multiple materials using the same program.
 							else
 							{
 								 switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
+											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
 										& material_program->type)
 								 {
 										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
@@ -2371,7 +2372,7 @@ be shared by multiple materials using the same program.
 														 "  color = dependentlookup;\n"
 														 , &error);
 											 } break;
-											 
+
 								 }
 							}
 						}
@@ -2380,14 +2381,14 @@ be shared by multiple materials using the same program.
 							 char tex_string[1000];
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									char lookup_one_component_string[] = 
+									char lookup_one_component_string[] =
 										 "#Offset and scale to counteract effect of linear interpolation\n"
 										 "#starting at the middle of the first texel and finishing in the\n"
 										 "#middle of the last texel\n"
 										 "MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
 										 "TEX		dependentlookup, offsetcolour, texture[1], 1D;\n"
 										 "MOV		finalCol.%s, dependentlookup.r;\n";
-									append_string(&fragment_program_string, 	
+									append_string(&fragment_program_string,
 										 "TEMP dependentlookup;\n"
 										 "TEMP offsetcolour;\n"
 										 , &error);
@@ -2432,7 +2433,7 @@ be shared by multiple materials using the same program.
 									   "  //middle of the last texel\n"
 									   "  double  offsetcolour;\n"
 										 "  vec4  dependentlookup;\n", &error);
-									char lookup_one_component_string[] = 
+									char lookup_one_component_string[] =
 										 "  offsetcolour = color.%s * lookup_scales.x + lookup_offsets.x;\n"
 										 "  dependentlookup = texture1D(texture1, offsetcolour);\n"
 										 "  color.%s = dependentlookup.r;\n";
@@ -2482,16 +2483,16 @@ be shared by multiple materials using the same program.
 							then do this lighting too. */
 						 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 						 {
-								append_string(&fragment_program_string, 
+								append_string(&fragment_program_string,
 									 "TEMP unlitColour;\n"
 									 "MOV     unlitColour, finalCol;\n"
 									 , &error);
 						 }
 						 else
 						 {
-								append_string(&fragment_program_string, 
+								append_string(&fragment_program_string,
 									 "  vec4 unlitColour = color;\n"
-									 , &error);		
+									 , &error);
 						 }
 
 						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
@@ -2500,8 +2501,8 @@ be shared by multiple materials using the same program.
 							 /* Normal comes from the texture */
 
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
-							 {									
-									append_string(&fragment_program_string, 
+							 {
+									append_string(&fragment_program_string,
 										 "#Expand the range of the normal texture\n"
 										 /* We are assuming the normal is in .gba */
 										 "MAD     normal, two, tex.gbaa, m_one;\n"
@@ -2509,7 +2510,7 @@ be shared by multiple materials using the same program.
 							 }
 							 else
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "  n = 2 * tex.gbaa - 1.0;\n"
 										 , &error);
 							 }
@@ -2539,7 +2540,7 @@ be shared by multiple materials using the same program.
 										"  vec4 position_up, position_down, tex_up, tex_down;\n"
 										, &error);
 							}
-					
+
 							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
 							{
 								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
@@ -2549,7 +2550,7 @@ be shared by multiple materials using the same program.
 								else
 								{
 									colour_texture_dimension = 1;
-								}								
+								}
 
 							}
 							else
@@ -2570,15 +2571,15 @@ be shared by multiple materials using the same program.
 											 "TEX		tex_down, position_down, texture[0], %dD;\n",
 											 component_labels[i],
 											 (i==0),(i==1),(i==2),0,
-											 component_labels[i], 
+											 component_labels[i],
 											 colour_texture_dimension,
 											 component_labels[i],
 											 -(i==0),-(i==1),-(i==2),0,
-											 component_labels[i], 
+											 component_labels[i],
 											 colour_texture_dimension);
 										append_string(&fragment_program_string,
 											 tex_string, &error);
-										
+
 										switch ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
 													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & material_program->type)
 										{
@@ -2620,18 +2621,18 @@ be shared by multiple materials using the same program.
 											 "  tex_down =  texture%dD(texture0, vec%d(position_down));\n",
 											 component_labels[i],
 											 (i==0),(i==1),(i==2),0,
-											 component_labels[i], 
+											 component_labels[i],
 											 colour_texture_dimension,
 											 colour_texture_dimension,
 											 component_labels[i],
 											 -(i==0),-(i==1),-(i==2),0,
-											 component_labels[i], 
+											 component_labels[i],
 											 colour_texture_dimension,
 											 colour_texture_dimension);
 
 										append_string(&fragment_program_string,
 											 tex_string, &error);
-										
+
 										switch ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
 													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & material_program->type)
 										{
@@ -2752,20 +2753,20 @@ be shared by multiple materials using the same program.
 									"    pow(NdotHV, gl_FrontMaterial.shininess);\n"
 									, &error);
 						}
-						
+
 						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA &
 							material_program->type)
 						{
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "#Alpha value;\n"
 										 "MUL		finalCol.w, unlitColour.w, normalMag.w;\n"
 										 , &error);
 							 }
 							 else
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "  //Alpha value;\n"
 										 "  color.w = unlitColour.w * normalMag;\n"
 										 , &error);
@@ -2775,17 +2776,17 @@ be shared by multiple materials using the same program.
 						{
 							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "#Alpha value;\n"
 										 "MOV		finalCol.w, unlitColour.w;\n"
 										 , &error);
 							 }
 							 else
 							 {
-									append_string(&fragment_program_string, 
+									append_string(&fragment_program_string,
 										 "//Alpha value;\n"
 										 "	color.w = unlitColour.w;\n"
-										 , &error);	
+										 , &error);
 							 }
 						}
 					}
@@ -2801,7 +2802,7 @@ be shared by multiple materials using the same program.
 
 
 					{
-						 append_string(&fragment_program_string, 
+						 append_string(&fragment_program_string,
 								"MOV		result.color, finalCol;\n"
 								"END"
 								, &error);
@@ -2878,7 +2879,7 @@ be shared by multiple materials using the same program.
 						{
 							fprintf(program_file, "%s", fragment_program_string);
 							fclose (program_file);
-						}				
+						}
 #endif /* defined (WRITE_STRING) */
 						DEALLOCATE(fragment_program_string);
 					}
@@ -2888,7 +2889,7 @@ be shared by multiple materials using the same program.
 					{
 						FILE *program_file;
 						int count;
-						
+
 						if (program_file = fopen("test.vp", "r"))
 						{
 							count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
@@ -2905,7 +2906,7 @@ be shared by multiple materials using the same program.
 							display_message(ERROR_MESSAGE, "Material_program_compile.  "
 								"Unable to open file test.vp.");
 						}
-						
+
 						if (program_file = fopen("test.fp", "r"))
 						{
 							count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
@@ -2932,7 +2933,7 @@ be shared by multiple materials using the same program.
 						{
 							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
 						}
-#endif /* defined (GL_VERSION_2_0) */		 
+#endif /* defined (GL_VERSION_2_0) */
 					}
 					else
 					{
@@ -2940,7 +2941,7 @@ be shared by multiple materials using the same program.
 						{
 							glGenProgramsARB(1, &material_program->vertex_program);
 						}
-						
+
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
@@ -2949,12 +2950,12 @@ be shared by multiple materials using the same program.
 						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  test.vp Vertex Result: %s", error_msg);
 #endif /* defined (DEBUG_CODE) */
-						
+
 						if (!material_program->fragment_program)
 						{
 							glGenProgramsARB(1, &material_program->fragment_program);
 						}
-						
+
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(fragment_program_string), fragment_program_string);
@@ -2965,13 +2966,13 @@ be shared by multiple materials using the same program.
 #endif /* defined (DEBUG_CODE) */
 					}
 					material_program->compiled = 1;
-#endif /* ! defined (TESTING_PROGRAM_STRINGS) */			
+#endif /* ! defined (TESTING_PROGRAM_STRINGS) */
 					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					{
 						GLint vertexShaderCompiled, fragmentShaderCompiled, geometryShaderCompiled;
-						
+
 						material_program->glsl_current_program = glCreateProgram();
-						
+
 						vv = vertex_program_string;
 						glShaderSource(material_program->vertex_program,1, &vv, NULL);
 						glCompileShader(material_program->vertex_program);
@@ -3035,13 +3036,13 @@ be shared by multiple materials using the same program.
 							if (infologLength > 0)
 							{
 								infoLog = (char *)malloc(infologLength);
-								glGetShaderInfoLog(material_program->fragment_program, 
+								glGetShaderInfoLog(material_program->fragment_program,
 									infologLength, &charsWritten, infoLog);
 								display_message(INFORMATION_MESSAGE,"Fragment program info:\n%s\n",infoLog);
 								free(infoLog);
 							}
 						}
-						
+
 						if (!material_program->display_list)
 						{
 							material_program->display_list = glGenLists(1);
@@ -3058,19 +3059,19 @@ be shared by multiple materials using the same program.
 						{
 							material_program->display_list = glGenLists(/*number_of_lists*/1);
 						}
-						
+
 						glNewList(material_program->display_list, GL_COMPILE);
-						
+
 						glEnable(GL_VERTEX_PROGRAM_ARB);
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
 							material_program->vertex_program);
-						
+
 						glEnable(GL_FRAGMENT_PROGRAM_ARB);
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
 							material_program->fragment_program);
-						
+
 						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-						
+
 						glEndList();
 					}
 				}
@@ -3285,7 +3286,7 @@ material results.
 						 {
 								Texture_execute_vertex_program_environment(material->second_image_texture.texture,
 									 material->program->glsl_current_program);
-								
+
 						 }
 						 if (material->third_image_texture.texture)
 						 {
@@ -3328,7 +3329,7 @@ material results.
 						if ((original_dimension > 0) && (rendered_dimension > 0)
 							 && (original_sizes[0] > 0))
 						{
-							 normal_scaling[0] = (GLfloat)rendered_sizes[0] / 
+							 normal_scaling[0] = (GLfloat)rendered_sizes[0] /
 									(GLfloat)original_sizes[0] *
 									material->lit_volume_normal_scaling[0];
 						}
@@ -3339,7 +3340,7 @@ material results.
 						if ((original_dimension > 1) && (rendered_dimension > 1)
 							 && (original_sizes[1] > 0))
 						{
-							 normal_scaling[1] = (GLfloat)rendered_sizes[1] / 
+							 normal_scaling[1] = (GLfloat)rendered_sizes[1] /
 									(GLfloat)original_sizes[1] *
 									material->lit_volume_normal_scaling[1];
 						}
@@ -3350,7 +3351,7 @@ material results.
 						if ((original_dimension > 2) && (rendered_dimension > 2)
 							 && (original_sizes[2] > 0))
 						{
-							 normal_scaling[2] = (GLfloat)rendered_sizes[2] / 
+							 normal_scaling[2] = (GLfloat)rendered_sizes[2] /
 									(GLfloat)original_sizes[2] *
 									material->lit_volume_normal_scaling[2];
 						}
@@ -3578,7 +3579,7 @@ package after it has been destroyed.
 	}
 	else
 	{
- 		display_message(ERROR_MESSAGE,
+		display_message(ERROR_MESSAGE,
 			"Graphical_material_remove_package_if_matching.  Invalid argument(s)");
 		return_code = 0;
 	}
@@ -3676,7 +3677,7 @@ DESCRIPTION :
 	}
 	else
 	{
- 		display_message(ERROR_MESSAGE,
+		display_message(ERROR_MESSAGE,
 			"Material_package_manage_material.  Invalid argument(s)");
 		return_code=0;
 	}
@@ -5503,7 +5504,7 @@ Writes the properties of the <material> to the command window.
 		{
 			display_message(INFORMATION_MESSAGE,"  Standard Gouraud Shading\n");
 		}
- 		display_message(INFORMATION_MESSAGE,line);
+		display_message(INFORMATION_MESSAGE,line);
 		sprintf(line,"  diffuse  red = %.3g, green = %.3g, blue = %.3g\n",
 			(material->diffuse).red,(material->diffuse).green,
 			(material->diffuse).blue);
@@ -6165,7 +6166,7 @@ will work with order_independent_transparency.
 			/*
 			else
 			{
-			      Reset the material to its original state.  Could
+				  Reset the material to its original state.  Could
 					try to avoid this compile if we are about to render
 					with order_independent_transparency again but need more
 					compilation states then.
@@ -6196,7 +6197,7 @@ will work with order_independent_transparency.
 			}
 
 			glNewList(material->display_list,GL_COMPILE);
-			if (material->program && 
+			if (material->program &&
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 			{
 				if (material->image_texture.texture)
@@ -6206,7 +6207,7 @@ will work with order_independent_transparency.
 				}
 			}
 			direct_render_Graphical_material(material,data->renderer);
-			if (material->program && 
+			if (material->program &&
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
 			{
 				GLint loc1;
@@ -6716,37 +6717,37 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
 class Cmiss_graphics_material_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphics_material_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
-        		enum_string = "IS_MANAGED";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
-        		enum_string = "ALPHA";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
-        		enum_string = "AMBIENT";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
-        		enum_string = "DIFFUSE";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
-        		enum_string = "EMISSION";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
-        		enum_string = "SHININESS";
-        		break;
-        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
-        		enum_string = "SPECULAR";
-        		break;
-        	default:
-        		break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphics_material_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
+				enum_string = "IS_MANAGED";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+				enum_string = "ALPHA";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+				enum_string = "AMBIENT";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+				enum_string = "DIFFUSE";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+				enum_string = "EMISSION";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+				enum_string = "SHININESS";
+				break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+				enum_string = "SPECULAR";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphics_material_attribute Cmiss_graphics_material_attribute_enum_from_string(

@@ -50,9 +50,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 //#	define WINDOWS_LEAN_AND_MEAN
 #	define NOMINMAX
 #	include <windows.h>
-#	if defined (USE_GLEW)
-#		include <GL/glew.h>
-#	endif
+#endif
+#if defined (USE_GLEW)
+#	include <GL/glew.h>
 #endif
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
@@ -63,15 +63,15 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "general/indexed_list_private.h"
 #include "general/object.h"
 #include "general/message.h"
-#define GL_GLEXT_PROTOTYPES
-#define GRAPHICS_LIBRARY_C
-#include "graphics/graphics_library.h"
+//#define GL_GLEXT_PROTOTYPES
+//#define GRAPHICS_LIBRARY_C
+//#include "graphics/graphics_library.h"
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
 #if defined (UNIX) && !defined (DARWIN)
 #include "user_interface/event_dispatcher.h"
 #endif /* defined (UNIX) && !defined (DARWIN) */
-#include "three_d_drawing/window_system_extensions.h"
+//#include "three_d_drawing/window_system_extensions.h"
 
 /* #define DEBUG_CODE */
 #if defined DEBUG_CODE || defined (WIN32_USER_INTERFACE)
@@ -275,6 +275,8 @@ contained in the this module only.
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
 
+static const wxString canvas_name;
+
 class wxGraphicsBuffer : public wxGLCanvas
 {
 	Graphics_buffer_wx *graphics_buffer;
@@ -286,7 +288,7 @@ public:
 		Graphics_buffer_wx *graphics_buffer
 		, int *attrib_list)
 		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
-			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
+			wxFULL_REPAINT_ON_RESIZE, canvas_name
 			, attrib_list)
 		, graphics_buffer(graphics_buffer)
 		, parent(parent)
@@ -323,7 +325,45 @@ public:
 
 		/* must always be here */
 		wxPaintDC dc(this);
+		SetCurrent();
 
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glFrustum(-0.5f, 0.5f, -0.5f, 0.5f, 1.0f, 3.0f);
+			glMatrixMode(GL_MODELVIEW);
+
+			/* clear color and depth buffers */
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			/* draw six faces of a cube */
+			glBegin(GL_QUADS);
+			glNormal3f( 0.0f, 0.0f, 1.0f);
+			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
+			glVertex3f(-0.5f,-0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
+
+			glNormal3f( 0.0f, 0.0f,-1.0f);
+			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
+			glVertex3f( 0.5f, 0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
+
+			glNormal3f( 0.0f, 1.0f, 0.0f);
+			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
+			glVertex3f(-0.5f, 0.5f,-0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
+
+			glNormal3f( 0.0f,-1.0f, 0.0f);
+			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
+			glVertex3f( 0.5f,-0.5f, 0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
+
+			glNormal3f( 1.0f, 0.0f, 0.0f);
+			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
+			glVertex3f( 0.5f,-0.5f,-0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
+
+			glNormal3f(-1.0f, 0.0f, 0.0f);
+			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
+			glVertex3f(-0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
+			glEnd();
+
+			glFlush();
+			SwapBuffers();
 		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 		//-- 	graphics_buffer->expose_callback_list, graphics_buffer, NULL);
 	}
@@ -516,12 +556,12 @@ public:
 };
 
 BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
-    EVT_SIZE(wxGraphicsBuffer::OnSize)
-    EVT_PAINT(wxGraphicsBuffer::OnPaint)
-    EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
-    EVT_KEY_UP(wxGraphicsBuffer::OnKeyUp)
-    EVT_KEY_DOWN(wxGraphicsBuffer::OnKeyDown)
-    EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
+	EVT_SIZE(wxGraphicsBuffer::OnSize)
+	EVT_PAINT(wxGraphicsBuffer::OnPaint)
+	EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
+	EVT_KEY_UP(wxGraphicsBuffer::OnKeyUp)
+	EVT_KEY_DOWN(wxGraphicsBuffer::OnKeyDown)
+	EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
 END_EVENT_TABLE()
 
 class wxTestingBuffer : public wxGLCanvas
@@ -533,7 +573,7 @@ class wxTestingBuffer : public wxGLCanvas
 public:
 	wxTestingBuffer(wxPanel *parent, Graphics_buffer_wx *graphics_buffer, wxGLContext* sharedContext, int *attrib_array)
 		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
-			wxFULL_REPAINT_ON_RESIZE, "GLCanvas", attrib_array)
+			wxFULL_REPAINT_ON_RESIZE, canvas_name, attrib_array)
 		, parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
 	 {
 	 };
@@ -588,11 +628,11 @@ DESCRIPTION :
 						framebuffer_width, framebuffer_height);
 					glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
 						GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, img, 0);
-					glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, 
+					glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
 						GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, depthbuffer);
 					GLenum status;
 					status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-					switch(status) 
+					switch(status)
 					{
 						case GL_FRAMEBUFFER_COMPLETE_EXT:
 						{
@@ -605,12 +645,12 @@ DESCRIPTION :
 								"Graphics_buffer_make_current."
 								"Framebuffer object format not supported.\n");
 							return_code = 0;
-						} 
+						}
 						break;
 						default:
 						{
-							display_message(ERROR_MESSAGE, 
-								"Graphics_buffer_make_current." 
+							display_message(ERROR_MESSAGE,
+								"Graphics_buffer_make_current."
 								"Framebuffer object not supported.\n");
 							return_code = 0;
 						}
@@ -743,7 +783,7 @@ static void Graphics_buffer_create_buffer_wx(
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth,
-	int width, int height, struct Graphics_buffer  *buffer_to_match)
+	int width, int height, struct Graphics_buffer_wx  *buffer_to_match)
 /*******************************************************************************
 LAST MODIFIED : 16 October  2007
 
@@ -825,7 +865,7 @@ DESCRIPTION :
 				{
 					 /* if not, test, create a new visual attribute list and create a
 							new canvas, else use the current visual attribute list*/
-					 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
+					 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
 							graphics_buffer_package->wxSharedContext,
 							visual_attributes);
 					 if (ALLOCATE(visual_attributes, int, number_of_visual_attributes))
@@ -941,7 +981,7 @@ DESCRIPTION :
 							 {
 									delete test_canvas;
 							 }
-							 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
+							 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
 									graphics_buffer_package->wxSharedContext,
 									visual_attributes);
 							 selection_level--;
@@ -1042,7 +1082,7 @@ DESCRIPTION :
 #endif /* defined (UNIX) */
 				if (!buffer->package->wxSharedContext)
 				{
-					wxFrame *frame = new wxFrame();//-- 0, -1, "temporary");
+					wxFrame *frame = new wxFrame(parent, -1, wxString::FromAscii("temporary"));
 					wxPanel *temp = new wxPanel(frame);
 					wxTestingBuffer *testingbuffer;
 					struct Graphics_buffer_wx *temp_buffer;
@@ -1061,7 +1101,7 @@ DESCRIPTION :
 					graphics_buffer_package->wxSharedContext,
 					buffer, buffer->attrib_list);
 				wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-				topsizer->Add(buffer->canvas, wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
+				topsizer->Add(buffer->canvas, 1, wxEXPAND);//wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
 				parent->SetSizer(topsizer);
 		 }
 	}
@@ -1278,7 +1318,7 @@ DESCRIPTION :
 	buffer = CREATE(Graphics_buffer_wx)(buffer_to_match->package);
 	if (buffer != NULL)
 	{
- 		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
+		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
 #if defined (OPENGL_API) && (GL_EXT_framebuffer_object)
 		if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
 		{
@@ -1350,7 +1390,7 @@ LAST MODIFIED : 2 July 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-  	int return_code = 0;
+	int return_code = 0;
 
 	ENTER(Graphics_buffer_make_current);
 
@@ -1390,11 +1430,11 @@ DESCRIPTION :
 							buffer->framebuffer_width, buffer->framebuffer_height);
 						glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
 							GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, buffer->img, 0);
-						glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, 
+						glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
 							GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
 						GLenum status;
 						status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-						switch(status) 
+						switch(status)
 						{
 							case GL_FRAMEBUFFER_COMPLETE_EXT:
 							{
@@ -1407,12 +1447,12 @@ DESCRIPTION :
 									"Graphics_buffer_make_current."
 									"Framebuffer object format not supported.\n");
 								return_code = 0;
-							} 
+							}
 							break;
 							default:
 							{
-								display_message(ERROR_MESSAGE, 
-									"Graphics_buffer_make_current." 
+								display_message(ERROR_MESSAGE,
+									"Graphics_buffer_make_current."
 									"Framebuffer object not supported.\n");
 								return_code = 0;
 							}
@@ -1444,7 +1484,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
-int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer, int *visual_id)
+int Graphics_buffer_get_visual_id(struct Graphics_buffer_wx *buffer, int *visual_id)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 

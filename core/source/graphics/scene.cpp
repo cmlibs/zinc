@@ -276,8 +276,8 @@ display hierarchy.
 	/* the number of this picking event */
 	int hit_no;
 	/* path of scene objects to picked graphic in display hierarchy */
- 	int number_of_renditions;
- 	struct Cmiss_rendition **renditions;
+	int number_of_renditions;
+	struct Cmiss_rendition **renditions;
 	/* integer names identifying parts of picked graphic, eg. node numbers */
 	int number_of_subobjects;
 	int *subobjects; /*???RC unsigned int instead? */
@@ -343,7 +343,7 @@ MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
 	ENTER(Scene_refresh);
 	if (scene)
 	{
-		return_code = 1;	
+		return_code = 1;
 		/* send no messages if caching is enabled or no changes */
 		if ((0 == scene->cache) && (SCENE_NO_CHANGE != scene->change_status))
 		{
@@ -1302,7 +1302,7 @@ void *Scene_picked_object_list_get_picked_region_sorted_nodes(
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Returns the list of all nodes in the <scene_picked_object_list>. 
+Returns the list of all nodes in the <scene_picked_object_list>.
 The <use_data> flag indicates that we are searching for data points instead of
 nodes, needed since different settings type used for each.
 ==============================================================================*/
@@ -1311,7 +1311,7 @@ nodes, needed since different settings type used for each.
 
 	ENTER(Scene_picked_object_list_get_picked_nodes);
 	if (scene_picked_object_list)
-	{	
+	{
 		picked_nodes_data.use_data=use_data;
 		picked_nodes_data.node_list=new Region_node_map();
 		if (picked_nodes_data.node_list)
@@ -1469,30 +1469,6 @@ from the default versions of these functions.
 		scene->list_of_rendition = NULL;
 		scene->manager_change_status = MANAGER_CHANGE_NONE(Scene);
 		scene->is_managed_flag = false;
-#if defined (OLD_CODE)
-		/*???RC temporary; have root_region and data_root_region until Scenes are
-			incorporated into the regions themselves */
-		scene->root_region = (struct Cmiss_region *)NULL;
-		/* defaults to not adding GFEs - besides, need managers anyway */
-		scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
-		/* global stores of selected objects */
-		scene->element_point_ranges_selection=
-			(struct Element_point_ranges_selection *)NULL;
-		scene->node_selection=(struct FE_node_selection *)NULL;
-		scene->data_selection=(struct FE_node_selection *)NULL;
-		/* attributes: */
-		scene->glyph_manager=(struct MANAGER(GT_object) *)NULL;
-		scene->graphical_material_manager=
-			(struct MANAGER(Graphical_material) *)NULL;
-		scene->graphical_material_manager_callback_id=(void *)NULL;
-		scene->default_material=(struct Graphical_material *)NULL;
-		scene->default_font = (struct Graphics_font *)NULL;
-		scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-		scene->spectrum_manager_callback_id=(void *)NULL;
-		scene->default_spectrum=(struct Spectrum *)NULL;
-		scene->default_time_keeper=(struct Time_keeper *)NULL;
-		scene->user_interface=(struct User_interface *)NULL;
-#endif /* defined (OLD_CODE) */
 		scene->filter = NULL;;
 		scene->cache = 0;
 		scene->build = 1;
@@ -1533,18 +1509,6 @@ Closes the scene and disposes of the scene data structure.
 			}
 			/* mark the cache as on so no messages go out again */
 			(scene->cache)++;
-#if defined (OLD_CODE)
-			Scene_disable_time_behaviour(scene);
-			Scene_set_graphical_element_mode(scene,
-				GRAPHICAL_ELEMENT_NONE,
-				(struct Cmiss_region *)NULL,
-				(struct Element_point_ranges_selection *)NULL,
-				(struct FE_element_selection *)NULL,
-				(struct FE_node_selection *)NULL,
-				(struct FE_node_selection *)NULL,
-				(struct User_interface *)NULL);
-			Scene_disable_graphics(scene);
-#endif /* defined (OLD_CODE) */
 			DEALLOCATE(scene->name);
 
 			Cmiss_scene_detach_from_renditions(scene);
@@ -1574,7 +1538,7 @@ Closes the scene and disposes of the scene data structure.
 			}
 			if (scene->region)
 			{
-			  DEACCESS(Cmiss_region)(&scene->region);		  
+			  DEACCESS(Cmiss_region)(&scene->region);
 			}
 #if defined (USE_SCENE_OBJECT)
 			DESTROY(LIST(Scene_object))(&(scene->scene_object_list));
@@ -1814,25 +1778,6 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
 	{
-#if defined (OLD_CODE)
-		Scene_disable_graphics(destination);
-		if (source->graphical_material_manager)
-		{
-			Scene_enable_graphics(destination,source->glyph_manager,
-				source->graphical_material_manager,source->default_material,source->default_font,
-				source->light_manager,source->spectrum_manager,source->default_spectrum,
-				source->texture_manager);
-		}
-		if (source->default_time_keeper)
-		{
-			Scene_enable_time_behaviour(destination,
-				source->default_time_keeper);
-		}
-		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
-			source->root_region, source->element_point_ranges_selection,
-			source->element_selection,source->node_selection,source->data_selection,
-			source->user_interface);
-#endif /* defined (OLD_CODE) */
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
 #if defined (USE_SCENE_OBJECT)
@@ -1978,7 +1923,7 @@ Iterates through every material used by the scene.
 #if defined (OLD_CODE)
 	if (scene && iterator_function && scene->graphical_material_manager)
 	{
-		/* Could be smarter if there was a reduced number used by the 
+		/* Could be smarter if there was a reduced number used by the
 			scene, however for now just do every material in the manager */
 		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
 			iterator_function, user_data,scene->graphical_material_manager);
@@ -1992,7 +1937,7 @@ Iterates through every material used by the scene.
 #else
 	if (scene && iterator_function && scene->region)
 	{
-		/* Could be smarter if there was a reduced number used by the 
+		/* Could be smarter if there was a reduced number used by the
 			scene, however for now just do every material in the manager */
 		struct Cmiss_rendition *rendition =
 			Cmiss_region_get_rendition_internal(scene->region);
@@ -2741,14 +2686,14 @@ struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
 LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
-Returns the list of all any_objects in the <scene_picked_object_list>. 
+Returns the list of all any_objects in the <scene_picked_object_list>.
 ==============================================================================*/
 {
 	struct LIST(Any_object) *any_object_list;
 
 	ENTER(Scene_picked_object_list_get_picked_any_objects);
 	if (scene_picked_object_list)
-	{	
+	{
 		any_object_list=CREATE(LIST(Any_object))();
 		if (any_object_list != 0)
 		{
@@ -3319,7 +3264,7 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 
 	ENTER(Scene_picked_object_list_get_picked_element_points);
 	if (scene_picked_object_list)
-	{	
+	{
 		picked_element_points_list=CREATE(LIST(Element_point_ranges))();
 		if (picked_element_points_list != 0)
 		{
@@ -3488,7 +3433,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 	struct Scene_input_callback_data scene_input_data;
 	struct Scene_picked_object *scene_picked_object;
 #if defined (USE_SCENE_OBJECT)
- 	struct Scene_object *scene_object;
+	struct Scene_object *scene_object;
 #endif /* defined (USE_SCENE_OBJECT) */
 
 	ENTER(Scene_input);
@@ -3631,7 +3576,7 @@ Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int positi
 
 	if (scene)
 	{
-		if (scene->list_of_rendition && 
+		if (scene->list_of_rendition &&
 			!scene->list_of_rendition->empty())
 		{
 			Rendition_set::iterator pos =
@@ -3689,7 +3634,7 @@ understood for the type of <interaction_volume> passed.
 		scene_picked_object_list=CREATE(LIST(Scene_picked_object))();
 		if (scene_picked_object_list != 0)
 		{
-			Render_graphics_opengl *renderer = 
+			Render_graphics_opengl *renderer =
 				Render_graphics_opengl_create_glbeginend_renderer(graphics_buffer);
 			renderer->picking = 1;
 			if (renderer->Scene_compile(scene))
@@ -3766,7 +3711,7 @@ understood for the type of <interaction_volume> passed.
 									rendition_no=(int)(*select_buffer_ptr);
 									select_buffer_ptr++;
 									number_of_names--;
-									if (NULL != (rendition = 
+									if (NULL != (rendition =
 											Scene_get_rendition_of_position(scene, rendition_no)))
 									{
 											return_code = Scene_picked_object_add_rendition(
@@ -4040,7 +3985,7 @@ int build_Scene(struct Scene *scene)
 		if (scene->build)
 		{
 			Render_graphics_build_objects renderer;
-			
+
 			scene->build = 0;
 			return_code = renderer.Scene_compile(scene);
 #if defined (OLD_CODE)
@@ -4148,7 +4093,7 @@ Returns 0 without error if scene is empty.
 		build_Scene(scene);
 		/* get range of visible graphics_objects in scene */
 		graphics_object_range.first = 1;
-		if (scene->list_of_rendition && 
+		if (scene->list_of_rendition &&
 			!scene->list_of_rendition->empty())
 		{
 			Rendition_set::iterator pos =
@@ -4258,18 +4203,18 @@ static int Scene_graphics_objects_in_Cmiss_graphic_iterator(
 	int return_code;
 	struct GT_object *graphics_object;
 	struct Scene_graphics_object_iterator_data *data;
- 
+
 	ENTER(Scene_graphics_objects_in_Cmiss_graphic_iterator);
 	if (graphic && (data = (struct Scene_graphics_object_iterator_data *)data_void))
 	{
-		if (!data->graphic_name || 
+		if (!data->graphic_name ||
 			Cmiss_graphic_has_name(graphic, (void *)data->graphic_name))
 		{
 			if (Cmiss_graphics_filter_evaluate_graphic(data->scene->filter, graphic) &&
 				(graphics_object = Cmiss_graphic_get_graphics_object(
 					 graphic)))
 			{
-				(data->iterator_function)(graphics_object, 0.0, data->user_data);			
+				(data->iterator_function)(graphics_object, 0.0, data->user_data);
 			}
 		}
 		return_code = 1;
@@ -4370,7 +4315,7 @@ in the <scene> which point to this spectrum.
 {
 	int return_code;
 	struct Scene_get_data_range_for_spectrum_data *data;
-	
+
 	ENTER(Scene_get_data_range_for_spectrum_iterator);
 	USE_PARAMETER(time);
 	if (graphics_object &&
@@ -4462,7 +4407,7 @@ char *Cmiss_scene_get_name(struct Scene *scene)
 int Cmiss_scene_set_name(struct Scene *scene, const char *name)
 {
 	int return_code;
-	
+
 	ENTER(Cmiss_scene_set_name);
 	if (scene && name)
 	{
@@ -4618,7 +4563,7 @@ int Scene_rendition_changed(
 	{
 		return_code = 0;
 		/* mark scene as needing a build */
-		if (scene->list_of_rendition &&	
+		if (scene->list_of_rendition &&
 			(scene->list_of_rendition->find(rendition)!=scene->list_of_rendition->end()))
 		{
 			scene->build = 1;
@@ -4713,9 +4658,9 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 {
 	int return_code = 0;
 	struct Scene_graphics_object_iterator_data data;
-	
+
 	ENTER(Scene_export_region_graphics_object);
-	
+
 	if (scene && region && iterator_function && user_data)
 	{
 		data.iterator_function = iterator_function;
@@ -4756,7 +4701,7 @@ int Scene_add_graphics_object(struct Scene *scene,
 	ENTER(Scene_add_graphics_object);
 	if (scene && graphics_object)
 	{
-		if (scene->region && 
+		if (scene->region &&
 			(NULL != (rendition = Cmiss_region_get_rendition_internal(scene->region))))
 		{
 			if (!cmiss_graphic_name)
@@ -4764,7 +4709,7 @@ int Scene_add_graphics_object(struct Scene *scene,
 				GET_NAME(GT_object)(graphics_object, &graphics_object_name);
 				cmiss_graphic_name = graphics_object_name;
 			}
-			return_code = Cmiss_rendition_add_glyph(rendition, graphics_object, 
+			return_code = Cmiss_rendition_add_glyph(rendition, graphics_object,
 				cmiss_graphic_name);
 			DEACCESS(Cmiss_rendition)(&rendition);
 			if (graphics_object_name)
@@ -4780,7 +4725,7 @@ int Scene_add_graphics_object(struct Scene *scene,
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* Scene_add_graphics_object */
 
@@ -4919,19 +4864,19 @@ int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
 class Cmiss_scene_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_scene_attribute attribute)
-    {
-    	const char *enum_string = 0;
-    	switch (attribute)
-    	{
-    		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
-    			enum_string = "IS_MANAGED";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_scene_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
+				enum_string = "IS_MANAGED";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_scene_attribute

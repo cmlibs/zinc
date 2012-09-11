@@ -920,7 +920,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Image_file_format)
 
-char *Image_file_format_extension(enum Image_file_format image_file_format)
+const char *Image_file_format_extension(enum Image_file_format image_file_format)
 /*******************************************************************************
 LAST MODIFIED : 1 March 2002
 
@@ -931,7 +931,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 .yuv#### extensions.
 ==============================================================================*/
 {
-	char *file_format_extension;
+	const char *file_format_extension;
 
 	ENTER(Image_file_format_extension);
 	switch (image_file_format)
@@ -996,7 +996,8 @@ Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
 {
-	char *file_extension, *other_file_extension;
+	char *file_extension;
+	const char *other_file_extension;
 	enum Image_file_format image_file_format;
 	int return_code;
 
@@ -1042,7 +1043,7 @@ Returns the <Image_file_format> determined from the file_extension in
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Raw_image_storage)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Raw_image_storage));
 	switch (enumerator_value)
@@ -2029,7 +2030,7 @@ int write_png_image_file(char *file_name,
 	unsigned char pixel_component;
 	int x, y, w, return_code = 0;
 
-	if (file_name && (4 == number_of_components) && (1 == number_of_bytes_per_component) && 
+	if (file_name && (4 == number_of_components) && (1 == number_of_bytes_per_component) &&
 		(0 < number_of_columns) && (0 < number_of_rows) && image)
 	{
 		output_file = fopen(file_name, "wb");
@@ -2060,7 +2061,7 @@ int write_png_image_file(char *file_name,
 					title_text.key = "Title";
 					title_text.text = "Cmgui png file";
 					png_set_text(png_ptr, info_ptr, &title_text, 1);
-					
+
 					/* initialize the structures */
 					png_write_info(png_ptr, info_ptr);
 
@@ -2591,7 +2592,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 								{
 									pixel=((unsigned char *)image)+number_of_components*row_number*
 								   (number_of_columns+row_padding)+
-							      (2-(k-1)/(number_of_strips/samples_per_pixel));
+								  (2-(k-1)/(number_of_strips/samples_per_pixel));
 									for (j=number_of_columns;j>0;j--)
 									{
 										*uncompressed_byte= *pixel;
@@ -3048,10 +3049,10 @@ number_of_components=4, RGBA
 							/* No longer doing a byte_swap as the use of << to add the
 								bytes of the chars together will sort that out */
 							if ((0==fseek(image_file,512,SEEK_SET))&&
-							    (number_of_rows==(int)fread(row_starts_char,4,
+								(number_of_rows==(int)fread(row_starts_char,4,
 								 number_of_rows,image_file))&&
 								 (number_of_rows==(int)fread(row_sizes_char,4,
-							  	 number_of_rows,image_file)))
+								 number_of_rows,image_file)))
 							{
 								/* find the maximum row size */
 								row_size_char=row_sizes_char;
@@ -7197,20 +7198,20 @@ the <format>
 	  switch (format)
 	  {
 #if defined (USE_IMAGEMAGICK)
-	    case CMGUI_IMAGE_RGB:
-	    {
-              TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
-	      get_magick_image_parameters(cmgui_image->magick_image,
+		case CMGUI_IMAGE_RGB:
+		{
+			  TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
+		  get_magick_image_parameters(cmgui_image->magick_image,
 					  &cmgui_image->width, &cmgui_image->height,
 					  &cmgui_image->number_of_components,
 					  &cmgui_image->number_of_bytes_per_component, 0);
-	    } break;
+		} break;
 #endif /* defined (USE_IMAGEMAGICK) */
-	    default:
-	    {
-	      display_message(ERROR_MESSAGE, "Cmgui_image_convert_format.  Format conversion not implemented");
-	      return_code = 0;
-	    }
+		default:
+		{
+		  display_message(ERROR_MESSAGE, "Cmgui_image_convert_format.  Format conversion not implemented");
+		  return_code = 0;
+		}
 	  }
 	}
 	else
@@ -7239,11 +7240,12 @@ The <cmgui_image_information> should be given appropriate width, height
 and other parameters for formats that require them.
 ==============================================================================*/
 {
-	char *file_name;
+	const char *file_name;
 	int height, i, return_code, width;
 	struct Cmgui_image *cmgui_image;
 #if defined (USE_IMAGEMAGICK)
-	char *file_name_prefix, *old_magick_size, magick_size[41];
+	const char *file_name_prefix;
+	char *old_magick_size, magick_size[41];
 	int image_data_length, length, number_of_files;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
@@ -7822,7 +7824,7 @@ that the images be adjoined in the single file.
 					temp_next = magick_image->next;
 					magick_image->next = (Image *)NULL;
 					/* Need to use the correct pointer type for the API */
-					
+
 					/* If we have one already free it */
 					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
 					temp_memory_block = ImagesToBlob(magick_image_info, magick_image,

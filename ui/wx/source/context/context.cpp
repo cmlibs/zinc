@@ -4,7 +4,7 @@
 
 #include "general/message.h"
 #include "general/debug.h"
-#include "user_interface/user_interface.h"
+//-- #include "user_interface/user_interface.h"
 #include "time/time_keeper.h"
 #include "context/user_interface_module.h"
 #include "user_interface/event_dispatcher.h"
@@ -35,13 +35,13 @@ struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct C
 struct Event_dispatcher *Cmiss_context_get_default_event_dispatcher(Cmiss_context_id context)
 {
 	struct Event_dispatcher *event_dispatcher = NULL;
-	if (context)
+	if (context && context->UI_module)
 	{
-		if (!context->event_dispatcher)
+		if (!context->UI_module->event_dispatcher)
 		{
-			context->event_dispatcher = CREATE(Event_dispatcher)();
+			context->UI_module->event_dispatcher = CREATE(Event_dispatcher)();
 		}
-		event_dispatcher = context->event_dispatcher;
+		event_dispatcher = context->UI_module->event_dispatcher;
 	}
 	else
 	{
@@ -160,15 +160,17 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 
 int Cmiss_context_process_idle_event(Cmiss_context_id context)
 {
-	if (context && context->event_dispatcher)
+	int return_code = 0;
+	if (context && context->UI_module && context->UI_module->event_dispatcher)
 	{
-		return Event_dispatcher_process_idle_event(context->event_dispatcher);
+		return_code = Event_dispatcher_process_idle_event(context->UI_module->event_dispatcher);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_context_do_idle_event.  Missing context or event dispatcher.");
-		return 0;
 	}
+
+	return return_code;
 }
 
