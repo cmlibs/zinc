@@ -131,10 +131,10 @@ class wxPanel;
 
 struct Graphics_buffer_wx *create_Graphics_buffer_wx(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	wxPanel *parent,
+	wxGLCanvas *canvas,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth,
 	struct Graphics_buffer_wx *buffer_to_match);
 /*******************************************************************************

@@ -109,20 +109,6 @@ Module types
 ------------
 */
 
-enum Graphics_buffer_class
-/*******************************************************************************
-LAST MODIFIED : 10 March 2005
-
-DESCRIPTION :
-==============================================================================*/
-{
-	GRAPHICS_BUFFER_ONSCREEN_CLASS, /* A normal graphics buffer */
-	GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, /* Try to create an offscreen buffer with shared display lists */
-	GRAPHICS_BUFFER_OFFSCREEN_CLASS  /* Try to create an offscreen buffer, don't worry whether it shares context or not */
-};
-
-class wxGraphicsBuffer;
-
 int DESTROY(Graphics_buffer_wx)(struct Graphics_buffer_wx **buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -156,7 +142,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	wxPanel *parent;
-	wxGraphicsBuffer *canvas;
+	wxGLCanvas *canvas;
 	int *attrib_list, framebuffer_width, framebuffer_height;
 #if defined (OPENGL_API)
 	GLuint fbo, depthbuffer, img;
@@ -220,8 +206,19 @@ Module functions
 
 //-- DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
+struct Graphics_buffer *CREATE(Graphics_buffer)(
+		struct Graphics_buffer_package *package, Graphics_buffer_type type)
+{
+	struct Graphics_buffer *buffer = new Graphics_buffer;
+	buffer->height = 0;
+	buffer->width = 0;
+	buffer->origin_x = 0;
+	buffer->origin_y = 0;
+	buffer->type = type;
+}
+
 struct Graphics_buffer_wx *CREATE(Graphics_buffer_wx)(
-	struct Graphics_buffer_package *package)
+	struct Graphics_buffer_package *package, Graphics_buffer_type type)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
 
@@ -236,7 +233,7 @@ contained in the this module only.
 	buffer = new Graphics_buffer_wx();
 	if (buffer)
 	{
-		buffer->type = GRAPHICS_BUFFER_INVALID_TYPE;
+		buffer->type = type;
 		buffer->package = package;
 		buffer->access_count = 0;
 
@@ -249,8 +246,8 @@ contained in the this module only.
 		//-- buffer->input_callback_list=
 		//-- 	CREATE(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))();
 
-		buffer->parent = (wxPanel *)NULL;
-		buffer->canvas = (wxGraphicsBuffer *)NULL;
+		buffer->parent = 0;
+		buffer->canvas = 0;
 		buffer->attrib_list = NULL;
 #if defined (OPENGL_API)
 		buffer->fbo = 0;
@@ -275,321 +272,321 @@ contained in the this module only.
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
 
-static const wxString canvas_name;
+//static const wxString canvas_name;
 
-class wxGraphicsBuffer : public wxGLCanvas
-{
-	Graphics_buffer_wx *graphics_buffer;
-	wxPanel *parent;
-	int key_code, cursor_x, cursor_y;
-public:
+//class wxGraphicsBuffer : public wxGLCanvas
+//{
+//	Graphics_buffer_wx *graphics_buffer;
+//	wxPanel *parent;
+//	int key_code, cursor_x, cursor_y;
+//public:
 
-	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
-		Graphics_buffer_wx *graphics_buffer
-		, int *attrib_list)
-		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
-			wxFULL_REPAINT_ON_RESIZE, canvas_name
-			, attrib_list)
-		, graphics_buffer(graphics_buffer)
-		, parent(parent)
-		, key_code(0)
-		, cursor_x(-1)
-		, cursor_y(-1)
-	{
-	};
+//	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
+//		Graphics_buffer_wx *graphics_buffer
+//		, int *attrib_list)
+//		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
+//			wxFULL_REPAINT_ON_RESIZE, canvas_name
+//			, attrib_list)
+//		, graphics_buffer(graphics_buffer)
+//		, parent(parent)
+//		, key_code(0)
+//		, cursor_x(-1)
+//		, cursor_y(-1)
+//	{
+//	};
 
-	~wxGraphicsBuffer()
-	{
-		if (graphics_buffer)
-		{
-			graphics_buffer->canvas = (wxGraphicsBuffer *)NULL;
-			if ((GetContext() == graphics_buffer->package->wxSharedContext))
-			{
-				graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
-			}
-		}
-	};
+//	~wxGraphicsBuffer()
+//	{
+//		if (graphics_buffer)
+//		{
+//			graphics_buffer->canvas = (wxGraphicsBuffer *)NULL;
+//			if ((GetContext() == graphics_buffer->package->wxSharedContext))
+//			{
+//				graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
+//			}
+//		}
+//	};
 
-	void ClearGraphicsBufferReference()
-	{
-		graphics_buffer = 0;
-	}
+//	void ClearGraphicsBufferReference()
+//	{
+//		graphics_buffer = 0;
+//	}
 
-	void OnPaint( wxPaintEvent& WXUNUSED(event) )
-	{
-		/* Unfortunately can't find a better place to copy the shareable context */
-		if (!graphics_buffer->package->wxSharedContext)
-		{
-			graphics_buffer->package->wxSharedContext = GetContext();
-		}
+//	void OnPaint( wxPaintEvent& WXUNUSED(event) )
+//	{
+//		/* Unfortunately can't find a better place to copy the shareable context */
+//		if (!graphics_buffer->package->wxSharedContext)
+//		{
+//			graphics_buffer->package->wxSharedContext = GetContext();
+//		}
 
-		/* must always be here */
-		wxPaintDC dc(this);
-		SetCurrent();
+//		/* must always be here */
+//		wxPaintDC dc(this);
+//		SetCurrent();
 
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glFrustum(-0.5f, 0.5f, -0.5f, 0.5f, 1.0f, 3.0f);
-			glMatrixMode(GL_MODELVIEW);
+//			glMatrixMode(GL_PROJECTION);
+//			glLoadIdentity();
+//			glFrustum(-0.5f, 0.5f, -0.5f, 0.5f, 1.0f, 3.0f);
+//			glMatrixMode(GL_MODELVIEW);
 
-			/* clear color and depth buffers */
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//			/* clear color and depth buffers */
+//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			/* draw six faces of a cube */
-			glBegin(GL_QUADS);
-			glNormal3f( 0.0f, 0.0f, 1.0f);
-			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
-			glVertex3f(-0.5f,-0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
+//			/* draw six faces of a cube */
+//			glBegin(GL_QUADS);
+//			glNormal3f( 0.0f, 0.0f, 1.0f);
+//			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
+//			glVertex3f(-0.5f,-0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
 
-			glNormal3f( 0.0f, 0.0f,-1.0f);
-			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
-			glVertex3f( 0.5f, 0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
+//			glNormal3f( 0.0f, 0.0f,-1.0f);
+//			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
+//			glVertex3f( 0.5f, 0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
 
-			glNormal3f( 0.0f, 1.0f, 0.0f);
-			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
-			glVertex3f(-0.5f, 0.5f,-0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
+//			glNormal3f( 0.0f, 1.0f, 0.0f);
+//			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
+//			glVertex3f(-0.5f, 0.5f,-0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
 
-			glNormal3f( 0.0f,-1.0f, 0.0f);
-			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
-			glVertex3f( 0.5f,-0.5f, 0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
+//			glNormal3f( 0.0f,-1.0f, 0.0f);
+//			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f( 0.5f,-0.5f,-0.5f);
+//			glVertex3f( 0.5f,-0.5f, 0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
 
-			glNormal3f( 1.0f, 0.0f, 0.0f);
-			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
-			glVertex3f( 0.5f,-0.5f,-0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
+//			glNormal3f( 1.0f, 0.0f, 0.0f);
+//			glVertex3f( 0.5f, 0.5f, 0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
+//			glVertex3f( 0.5f,-0.5f,-0.5f); glVertex3f( 0.5f, 0.5f,-0.5f);
 
-			glNormal3f(-1.0f, 0.0f, 0.0f);
-			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
-			glVertex3f(-0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
-			glEnd();
+//			glNormal3f(-1.0f, 0.0f, 0.0f);
+//			glVertex3f(-0.5f,-0.5f,-0.5f); glVertex3f(-0.5f,-0.5f, 0.5f);
+//			glVertex3f(-0.5f, 0.5f, 0.5f); glVertex3f(-0.5f, 0.5f,-0.5f);
+//			glEnd();
 
-			glFlush();
-			SwapBuffers();
-		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-		//-- 	graphics_buffer->expose_callback_list, graphics_buffer, NULL);
-	}
+//			glFlush();
+//			SwapBuffers();
+//		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+//		//-- 	graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+//	}
 
-	void OnSize(wxSizeEvent& event)
-	{
-		// this is also necessary to update the context on some platforms
-		wxGLCanvas::OnSize(event);
+//	void OnSize(wxSizeEvent& event)
+//	{
+//		// this is also necessary to update the context on some platforms
+//		wxGLCanvas::OnSize(event);
 
-		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-		//-- 	graphics_buffer->resize_callback_list, graphics_buffer, NULL);
-	}
+//		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+//		//-- 	graphics_buffer->resize_callback_list, graphics_buffer, NULL);
+//	}
 
-	void OnEraseBackground(wxEraseEvent& WXUNUSED(event))
-	{
-		/* Do nothing, to avoid flashing on MSW */
-	}
+//	void OnEraseBackground(wxEraseEvent& WXUNUSED(event))
+//	{
+//		/* Do nothing, to avoid flashing on MSW */
+//	}
 
-	void OnKeyEvent(struct Graphics_buffer_input *input)
-	{
-		input->button_number = 0;
-		input->position_x = cursor_x;
-		input->position_y = cursor_y;
-		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
-		//-- 	graphics_buffer->input_callback_list, graphics_buffer, input);
-	}
+//	void OnKeyEvent(struct Graphics_buffer_input *input)
+//	{
+//		input->button_number = 0;
+//		input->position_x = cursor_x;
+//		input->position_y = cursor_y;
+//		//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+//		//-- 	graphics_buffer->input_callback_list, graphics_buffer, input);
+//	}
 
-	void OnKeyUp( wxKeyEvent& event )
-	{
-		struct Graphics_buffer_input input;
-		input.type = GRAPHICS_BUFFER_KEY_RELEASE;
-		key_code = event.GetKeyCode();
-		input.key_code = key_code;
-		int input_modifier = 0;
-		if (event.ShiftDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-		}
-		if (event.ControlDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-		}
-		if (event.AltDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-		}
-		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
-			(input_modifier);
-		OnKeyEvent(&input);
-		event.Skip();
-	}
+//	void OnKeyUp( wxKeyEvent& event )
+//	{
+//		struct Graphics_buffer_input input;
+//		input.type = GRAPHICS_BUFFER_KEY_RELEASE;
+//		key_code = event.GetKeyCode();
+//		input.key_code = key_code;
+//		int input_modifier = 0;
+//		if (event.ShiftDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+//		}
+//		if (event.ControlDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+//		}
+//		if (event.AltDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+//		}
+//		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+//			(input_modifier);
+//		OnKeyEvent(&input);
+//		event.Skip();
+//	}
 
-	void OnKeyDown( wxKeyEvent& event )
-	{
-		struct Graphics_buffer_input input;
-		input.type = GRAPHICS_BUFFER_KEY_PRESS;
-		key_code = event.GetKeyCode();
-		input.key_code = key_code;
-		int input_modifier = 0;
-		if (event.ShiftDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-		}
-		if (event.ControlDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-		}
-		if (event.AltDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-		}
-		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
-			(input_modifier);
-		OnKeyEvent(&input);
-		event.Skip();
-	}
+//	void OnKeyDown( wxKeyEvent& event )
+//	{
+//		struct Graphics_buffer_input input;
+//		input.type = GRAPHICS_BUFFER_KEY_PRESS;
+//		key_code = event.GetKeyCode();
+//		input.key_code = key_code;
+//		int input_modifier = 0;
+//		if (event.ShiftDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+//		}
+//		if (event.ControlDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+//		}
+//		if (event.AltDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+//		}
+//		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+//			(input_modifier);
+//		OnKeyEvent(&input);
+//		event.Skip();
+//	}
 
-	void OnMouse( wxMouseEvent& event )
-	{
-		int input_modifier, return_code;
-		struct Graphics_buffer_input input;
+//	void OnMouse( wxMouseEvent& event )
+//	{
+//		int input_modifier, return_code;
+//		struct Graphics_buffer_input input;
 
-		return_code = 1;
-		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
-		input.button_number = 0;
-		input.key_code = key_code;
-		cursor_x = input.position_x = event.GetX();
-		cursor_y = input.position_y = event.GetY();
-		input_modifier = 0;
-		if (event.Leaving())
-		{
-			cursor_x = input.position_x = -1;
-			cursor_y = input.position_y = -1;
-		}
-		if (event.ShiftDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-		}
-		if (event.ControlDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-		}
-		if (event.AltDown())
-		{
-			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-		}
+//		return_code = 1;
+//		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+//		input.button_number = 0;
+//		input.key_code = key_code;
+//		cursor_x = input.position_x = event.GetX();
+//		cursor_y = input.position_y = event.GetY();
+//		input_modifier = 0;
+//		if (event.Leaving())
+//		{
+//			cursor_x = input.position_x = -1;
+//			cursor_y = input.position_y = -1;
+//		}
+//		if (event.ShiftDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+//		}
+//		if (event.ControlDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+//		}
+//		if (event.AltDown())
+//		{
+//			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+//		}
 
-		if (event.Dragging())
-		{
-			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
-			if (event.LeftIsDown())
-			{
-				input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-			}
-		}
-		else if (event.ButtonDown())
-		{
-			if (this != this->FindFocus())
-			{
-				input.key_code = 0;
-				this->SetFocus();
-			}
-			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
-			switch (event.GetButton())
-			{
-				case wxMOUSE_BTN_LEFT:
-				{
-					input.button_number = 1;
-				} break;
-				case wxMOUSE_BTN_MIDDLE:
-				{
-					input.button_number = 2;
-				} break;
-				case wxMOUSE_BTN_RIGHT:
-				{
-					input.button_number = 3;
-				} break;
-				case wxMOUSE_BTN_NONE:
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
-					return_code=0;
-				} break;
-			}
-		}
-		else if (event.ButtonUp())
-		{
-			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
-			switch (event.GetButton())
-			{
-				case wxMOUSE_BTN_LEFT:
-				{
-					input.button_number = 1;
-				} break;
-				case wxMOUSE_BTN_MIDDLE:
-				{
-					input.button_number = 2;
-				} break;
-				case wxMOUSE_BTN_RIGHT:
-				{
-					input.button_number = 3;
-				} break;
-				case wxMOUSE_BTN_NONE:
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
-					return_code=0;
-				} break;
-			}
-		}
-		else
-		{
-		  /* Ignore other events */
-		  return_code=0;
-		}
+//		if (event.Dragging())
+//		{
+//			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+//			if (event.LeftIsDown())
+//			{
+//				input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+//			}
+//		}
+//		else if (event.ButtonDown())
+//		{
+//			if (this != this->FindFocus())
+//			{
+//				input.key_code = 0;
+//				this->SetFocus();
+//			}
+//			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+//			switch (event.GetButton())
+//			{
+//				case wxMOUSE_BTN_LEFT:
+//				{
+//					input.button_number = 1;
+//				} break;
+//				case wxMOUSE_BTN_MIDDLE:
+//				{
+//					input.button_number = 2;
+//				} break;
+//				case wxMOUSE_BTN_RIGHT:
+//				{
+//					input.button_number = 3;
+//				} break;
+//				case wxMOUSE_BTN_NONE:
+//				default:
+//				{
+//					display_message(ERROR_MESSAGE,
+//						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
+//					return_code=0;
+//				} break;
+//			}
+//		}
+//		else if (event.ButtonUp())
+//		{
+//			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+//			switch (event.GetButton())
+//			{
+//				case wxMOUSE_BTN_LEFT:
+//				{
+//					input.button_number = 1;
+//				} break;
+//				case wxMOUSE_BTN_MIDDLE:
+//				{
+//					input.button_number = 2;
+//				} break;
+//				case wxMOUSE_BTN_RIGHT:
+//				{
+//					input.button_number = 3;
+//				} break;
+//				case wxMOUSE_BTN_NONE:
+//				default:
+//				{
+//					display_message(ERROR_MESSAGE,
+//						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
+//					return_code=0;
+//				} break;
+//			}
+//		}
+//		else
+//		{
+//		  /* Ignore other events */
+//		  return_code=0;
+//		}
 
-		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
-			(input_modifier);
+//		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+//			(input_modifier);
 
-		if (return_code)
-		{
-			//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
-			//-- 	graphics_buffer->input_callback_list, graphics_buffer, &input);
-		}
-	}
+//		if (return_code)
+//		{
+//			//-- CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+//			//-- 	graphics_buffer->input_callback_list, graphics_buffer, &input);
+//		}
+//	}
 
-   DECLARE_EVENT_TABLE();
-};
+//   DECLARE_EVENT_TABLE();
+//};
 
-BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
-	EVT_SIZE(wxGraphicsBuffer::OnSize)
-	EVT_PAINT(wxGraphicsBuffer::OnPaint)
-	EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
-	EVT_KEY_UP(wxGraphicsBuffer::OnKeyUp)
-	EVT_KEY_DOWN(wxGraphicsBuffer::OnKeyDown)
-	EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
-END_EVENT_TABLE()
+//BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
+//	EVT_SIZE(wxGraphicsBuffer::OnSize)
+//	EVT_PAINT(wxGraphicsBuffer::OnPaint)
+//	EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
+//	EVT_KEY_UP(wxGraphicsBuffer::OnKeyUp)
+//	EVT_KEY_DOWN(wxGraphicsBuffer::OnKeyDown)
+//	EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
+//END_EVENT_TABLE()
 
-class wxTestingBuffer : public wxGLCanvas
-{
-	 wxPanel *parent;
-	 Graphics_buffer *graphics_buffer;
-	 wxGLContext *sharedContext;
+//class wxTestingBuffer : public wxGLCanvas
+//{
+//	 wxPanel *parent;
+//	 Graphics_buffer *graphics_buffer;
+//	 wxGLContext *sharedContext;
 
-public:
-	wxTestingBuffer(wxPanel *parent, Graphics_buffer_wx *graphics_buffer, wxGLContext* sharedContext, int *attrib_array)
-		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
-			wxFULL_REPAINT_ON_RESIZE, canvas_name, attrib_array)
-		, parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
-	 {
-	 };
+//public:
+//	wxTestingBuffer(wxPanel *parent, Graphics_buffer_wx *graphics_buffer, wxGLContext* sharedContext, int *attrib_array)
+//		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
+//			wxFULL_REPAINT_ON_RESIZE, canvas_name, attrib_array)
+//		, parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
+//	 {
+//	 };
 
-	~wxTestingBuffer()
-	{
-	};
+//	~wxTestingBuffer()
+//	{
+//	};
 
-	void Set_wx_SharedContext()
-	{
-		if (!sharedContext)
-		{
-			graphics_buffer->package->wxSharedContext = GetContext();
-		}
-	}
-};
+//	void Set_wx_SharedContext()
+//	{
+//		if (!sharedContext)
+//		{
+//			graphics_buffer->package->wxSharedContext = GetContext();
+//		}
+//	}
+//};
 
 int Graphics_buffer_wx::make_current()
 /*******************************************************************************
@@ -775,10 +772,10 @@ int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer_wx *buffe
 }
 #endif /* defined (OPENGL_API) */
 
-static void Graphics_buffer_create_buffer_wx(
+void Graphics_buffer_create_buffer_wx(
 	struct Graphics_buffer_wx *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	wxPanel *parent,
+	wxGLCanvas *parent,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -796,7 +793,7 @@ DESCRIPTION :
 	wxLogNull logNo;
 	if (buffer)
 	{
-		 buffer->parent = parent;
+//		 buffer->parent = parent;
 		 return_code = 0;
 		 if (buffer->type == GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 		 {
@@ -861,13 +858,14 @@ DESCRIPTION :
 							return_code = 1;
 					 }
 				}
-				if (!return_code)
+				//-- if (!return_code)
+				if (0)
 				{
 					 /* if not, test, create a new visual attribute list and create a
 							new canvas, else use the current visual attribute list*/
-					 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
-							graphics_buffer_package->wxSharedContext,
-							visual_attributes);
+					 test_canvas = 0;//-- new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
+							//-- graphics_buffer_package->wxSharedContext,
+							//-- visual_attributes);
 					 if (ALLOCATE(visual_attributes, int, number_of_visual_attributes))
 					 {
 						selection_level = 5;
@@ -981,9 +979,9 @@ DESCRIPTION :
 							 {
 									delete test_canvas;
 							 }
-							 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
-									graphics_buffer_package->wxSharedContext,
-									visual_attributes);
+							 test_canvas = 0;//-- new wxTestingBuffer(parent, (Graphics_buffer_wx *)NULL,
+									//-- graphics_buffer_package->wxSharedContext,
+									//-- visual_attributes);
 							 selection_level--;
 							 if ((selection_level == 0) && (test_canvas->m_vi == NULL))
 							 {
@@ -1004,7 +1002,7 @@ DESCRIPTION :
 				}
 				else
 				{
-					 if (buffer_to_match->attrib_list)
+					 if (0)//-- buffer_to_match->attrib_list)
 					 {
 							/* if attrib_list is found on the buffer to match, copy it
 								 into the new buffer, if not found, that means the
@@ -1080,29 +1078,29 @@ DESCRIPTION :
 					 buffer->attrib_list[4] = 0;
 				}
 #endif /* defined (UNIX) */
-				if (!buffer->package->wxSharedContext)
-				{
-					wxFrame *frame = new wxFrame(parent, -1, wxString::FromAscii("temporary"));
-					wxPanel *temp = new wxPanel(frame);
-					wxTestingBuffer *testingbuffer;
-					struct Graphics_buffer_wx *temp_buffer;
-					temp_buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package);
-					temp_buffer->type= GRAPHICS_BUFFER_WX_TYPE;
-					temp_buffer->parent = temp;
-					temp_buffer->attrib_list = NULL;
-					testingbuffer = new wxTestingBuffer(temp, temp_buffer,
-						graphics_buffer_package->wxSharedContext,
-						buffer->attrib_list);
-					testingbuffer->Set_wx_SharedContext();
-					frame->Show(false);
-					DESTROY(Graphics_buffer_wx)(&temp_buffer);
-				}
-				buffer->canvas = new wxGraphicsBuffer(parent,
-					graphics_buffer_package->wxSharedContext,
-					buffer, buffer->attrib_list);
-				wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-				topsizer->Add(buffer->canvas, 1, wxEXPAND);//wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
-				parent->SetSizer(topsizer);
+//				if (!buffer->package->wxSharedContext)
+//				{
+//					wxFrame *frame = new wxFrame(parent, -1, wxString::FromAscii("temporary"));
+//					wxPanel *temp = new wxPanel(frame);
+//					wxTestingBuffer *testingbuffer;
+//					struct Graphics_buffer_wx *temp_buffer;
+//					temp_buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package);
+//					temp_buffer->type= GRAPHICS_BUFFER_WX_TYPE;
+//					temp_buffer->parent = temp;
+//					temp_buffer->attrib_list = NULL;
+//					testingbuffer = new wxTestingBuffer(temp, temp_buffer,
+//						graphics_buffer_package->wxSharedContext,
+//						buffer->attrib_list);
+//					testingbuffer->Set_wx_SharedContext();
+//					frame->Show(false);
+//					DESTROY(Graphics_buffer_wx)(&temp_buffer);
+//				}
+//				buffer->canvas = new wxGraphicsBuffer(parent,
+//					graphics_buffer_package->wxSharedContext,
+//					buffer, buffer->attrib_list);
+//				wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
+//				topsizer->Add(buffer->canvas, 1, wxEXPAND);//wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
+//				parent->SetSizer(topsizer);
 		 }
 	}
 	else
@@ -1226,7 +1224,7 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen);
 
-	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package);
+	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package, GRAPHICS_BUFFER_WX_TYPE);
 	if (buffer != NULL)
 	{
 		USE_PARAMETER(width);
@@ -1273,7 +1271,7 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen);
 
-	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package);
+	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package, GRAPHICS_BUFFER_WX_TYPE);
 	if (buffer != NULL)
 	{
 		USE_PARAMETER(width);
@@ -1315,7 +1313,7 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen_from_buffer);
 
-	buffer = CREATE(Graphics_buffer_wx)(buffer_to_match->package);
+	buffer = CREATE(Graphics_buffer_wx)(buffer_to_match->package, GRAPHICS_BUFFER_WX_TYPE);
 	if (buffer != NULL)
 	{
 		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
@@ -1353,7 +1351,7 @@ DESCRIPTION :
 
 struct Graphics_buffer_wx *create_Graphics_buffer_wx(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	wxPanel *parent,
+	wxGLCanvas *canvas,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -1363,12 +1361,11 @@ struct Graphics_buffer_wx *create_Graphics_buffer_wx(
 	 struct Graphics_buffer_wx *buffer;
 
 	ENTER(create_Graphics_buffer_wx);
-	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package);
+	buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package, GRAPHICS_BUFFER_WX_TYPE);
 	if (buffer != NULL)
 	{
-		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;
 		 Graphics_buffer_create_buffer_wx(buffer, graphics_buffer_package,
-				parent, buffering_mode, stereo_mode, minimum_colour_buffer_depth,
+				canvas, buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 				minimum_depth_buffer_depth, minimum_accumulation_buffer_depth, 0, 0,
 				buffer_to_match);
 	}
@@ -1381,6 +1378,15 @@ struct Graphics_buffer_wx *create_Graphics_buffer_wx(
 	LEAVE;
 
 	return (buffer);
+}
+
+struct Graphics_buffer *create_Graphics_buffer(
+		struct Graphics_buffer_package *graphics_buffer_package,
+		wxGLCanvas *canvas)
+{
+	struct Graphics_buffer *buffer = CREATE(Graphics_buffer_wx)(graphics_buffer_package, GRAPHICS_BUFFER_WX_TYPE);
+
+	return buffer;
 }
 
 int Graphics_buffer_make_current(struct Graphics_buffer_wx *buffer)
@@ -2221,22 +2227,22 @@ Closes a Graphics buffer instance
 	if (buffer_ptr && (buffer = *buffer_ptr))
 	{
 		return_code=1;
-		if (buffer->initialise_callback_list)
+		//-- if (buffer->initialise_callback_list)
 		{
 			//-- DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback)))(
 			//-- 	&buffer->initialise_callback_list);
 		}
-		if (buffer->resize_callback_list)
+		//-- if (buffer->resize_callback_list)
 		{
 			//-- DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback)))(
 			//-- 	&buffer->resize_callback_list);
 		}
-		if (buffer->expose_callback_list)
+		//-- if (buffer->expose_callback_list)
 		{
 			//-- DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback)))(
 			//-- 	&buffer->expose_callback_list);
 		}
-		if (buffer->input_callback_list)
+		//-- if (buffer->input_callback_list)
 		{
 			//-- DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))(
 			//-- 	&buffer->input_callback_list);
@@ -2244,8 +2250,8 @@ Closes a Graphics buffer instance
 		/* Remove reference to this object in wxGraphicsBuffer */
 		if (buffer->canvas)
 		{
-			buffer->canvas->ClearGraphicsBufferReference();
-			delete buffer->canvas;
+			//-- buffer->canvas->ClearGraphicsBufferReference();
+			//-- delete buffer->canvas;
 		}
 		if (buffer->attrib_list != NULL)
 		{

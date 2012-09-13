@@ -24,7 +24,7 @@
  *
  * Contributor(s):
  *   Shane Blackett <shane@blackett.co.nz>
- *   
+ *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
@@ -57,15 +57,18 @@ public:
 	 * Requires the ndc transformation to be different as the viewport is the picking window.
 	 */
 	int picking;
-	
+
 	int allow_texture_tiling; /** Flag controls whether when compiling a large texture
-	                              it can be split into multiple texture tiles */
+								  it can be split into multiple texture tiles */
 	Texture_tiling *texture_tiling;  /** If a given texture is compiled into tiles
 													 then this field is filled in and expected to
 													 be used when compiling graphics that use that material. */
 	double viewport_width, viewport_height;
 
 	int current_layer, number_of_layers;
+
+	unsigned int buffer_width;
+	unsigned int buffer_height;
 
 	SubObjectGroupHighlightFunctor *highlight_functor;
 
@@ -80,6 +83,8 @@ public:
 		viewport_height(1.0),
 		current_layer(0),
 		number_of_layers(1),
+		buffer_width(0),
+		buffer_height(0),
 		highlight_functor(NULL)
 	{
 	}
@@ -136,7 +141,7 @@ public:
 
 
 /***************************************************************************//**
- * Factory function to create a renderer that uses immediate mode 
+ * Factory function to create a renderer that uses immediate mode
  * glBegin/glEnd calls to render primitives.
  */
 Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer(
@@ -150,7 +155,7 @@ Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_re
 	Graphics_buffer *graphics_buffer);
 
 /***************************************************************************//**
- * Factory function to create a renderer that uses immediate mode 
+ * Factory function to create a renderer that uses immediate mode
  * client vertex arrays to render primitives.
  */
 Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer(
@@ -164,7 +169,7 @@ Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_displ
 	Graphics_buffer *graphics_buffer);
 
 /***************************************************************************//**
- * Factory function to create a renderer that uses immediate mode 
+ * Factory function to create a renderer that uses immediate mode
  * vertex buffer objects to render primitives.
  */
 Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(

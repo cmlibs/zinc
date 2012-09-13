@@ -103,7 +103,7 @@ finite element group rendition.
 
 	/* rendition which owns this graphic */
 	struct Cmiss_rendition *rendition;
-	
+
 	/* name for identifying settings */
 	const char *name;
 
@@ -128,7 +128,7 @@ finite element group rendition.
 	struct Computed_field *iso_scalar_field;
 	int number_of_iso_values;
 	/* If the iso_values array is set then these values are used,
-		otherwise number_of_iso_values values are distributed from 
+		otherwise number_of_iso_values values are distributed from
 		first_iso_value to last_iso_value including these values for n>1 */
 	double *iso_values, first_iso_value, last_iso_value,
 		decimation_threshold;
@@ -729,7 +729,7 @@ int DESTROY(Cmiss_graphic)(
 	return (return_code);
 }
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Returns the dimension of the <graphic>, which varies for some graphic types.
  * @param graphic Cmiss graphic
  * @param fe_region  Used for iso_surfaces and element_points with USE_ELEMENT
@@ -811,7 +811,7 @@ int Cmiss_element_conditional_field_is_true(Cmiss_element_id element,
 	return 0;
 }
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Converts a finite element into a graphics object with the supplied graphic.
  * @param element  The Cmiss_element.
  * @param graphic_to_object_data  Data for converting finite element to graphics.
@@ -949,7 +949,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									number_in_xi[0],
 									graphic->circle_discretization,
 									graphic->texture_coordinate_field,
-									top_level_element, graphic->render_type, 
+									top_level_element, graphic->render_type,
 									graphic_to_object_data->time)))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
@@ -1080,7 +1080,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												}
 												for (i = 0 ; i < graphic->number_of_iso_values ; i++)
 												{
-													double iso_value = 
+													double iso_value =
 														graphic->first_iso_value +
 														(double)i * iso_value_range;
 													return_code = create_iso_surfaces_from_FE_element(element,
@@ -1207,7 +1207,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												}
 												for (i = 0 ; i < graphic->number_of_iso_values ; i++)
 												{
-													double iso_value = 
+													double iso_value =
 														graphic->first_iso_value +
 														(double)i * iso_value_range;
 													return_code = create_iso_lines_from_FE_element(element,
@@ -1476,8 +1476,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 
 	return (return_code);
 } /* FE_element_to_graphics_object */
- 
-/***************************************************************************//** 
+
+/***************************************************************************//**
  * Creates a streamline seeded from the location given by the
  * seed_node_mesh_location_field at the node.
  * @param node  The node to seed streamline from.
@@ -1733,7 +1733,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_graphic, \
 int Cmiss_graphic_selects_cad_primitives(struct Cmiss_graphic *graphic)
 {
 	int return_code;
-	
+
 	if (graphic)
 	{
 		return_code=(GRAPHICS_NO_SELECT != graphic->select_mode)&&(
@@ -1755,7 +1755,7 @@ int Cmiss_graphic_selects_cad_primitives(struct Cmiss_graphic *graphic)
 int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 {
 	int return_code;
-	
+
 	ENTER(Cmiss_graphic_selects_elements);
 	if (graphic)
 	{
@@ -1879,6 +1879,38 @@ int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	LEAVE;
 
 	return (return_code);
+}
+int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphic_glyph_type glyph_type)
+{
+	int return_code = 0;
+
+	if (graphic && glyph_type != CMISS_GRAPHIC_GLYPH_TYPE_INVALID)
+	{
+		if ((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+			(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
+			(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+			(graphic->graphic_type == CMISS_GRAPHIC_POINT))
+		{
+			GT_object *glyph;
+			Graphic_glyph_scaling_mode glyph_scaling_mode;
+			Triple glyph_centre,glyph_scale_factors,glyph_size;
+			Computed_field *orientation_scale_field, *variable_scale_field; ;
+			Cmiss_graphic_get_glyph_parameters(graphic,
+				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
+				&orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
+			if (glyph_type == CMISS_GRAPHIC_GLYPH_AXES)
+			{
+				glyph = Cmiss_rendition_get_glyph_from_manager(graphic->rendition, "axes_solid");
+			}
+			return_code = Cmiss_graphic_set_glyph_parameters(graphic,glyph,
+				glyph_scaling_mode, glyph_centre, glyph_size,
+				orientation_scale_field, glyph_scale_factors,
+				variable_scale_field);
+		}
+	}
+
+	return return_code;
 }
 
 int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic)
@@ -2133,8 +2165,8 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 	USE_PARAMETER(dummy_void);
 	if (graphic)
 	{
-  		switch (graphic->select_mode)
-  		{
+		switch (graphic->select_mode)
+		{
 		case GRAPHICS_SELECT_ON:
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_SELECTION);
 			break;
@@ -2149,7 +2181,7 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 			display_message(ERROR_MESSAGE,
 				"Cmiss_graphic_update_selected.  Unknown select_mode");
 			break;
-  		}
+		}
 		return 1;
 	}
 	return 0;
@@ -2162,7 +2194,7 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 
 	ENTER(Cmiss_graphic_update_non_trivial_GT_objects);
 	if (graphic && graphic->graphics_object)
-	{	
+	{
 		set_GT_object_default_material(graphic->graphics_object,
 			graphic->material);
 		set_GT_object_secondary_material(graphic->graphics_object,
@@ -2507,7 +2539,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 		if (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
 		{
-			sprintf(temp_string," circle_discretization %d", 
+			sprintf(temp_string," circle_discretization %d",
 				graphic->circle_discretization);
 			append_string(&graphic_string,temp_string,&error);
 			if (0.0 != graphic->constant_radius)
@@ -2580,20 +2612,20 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				for (i = 0 ; i < graphic->number_of_iso_values ; i++)
 				{
 					sprintf(temp_string, " %g", graphic->iso_values[i]);
-					append_string(&graphic_string,temp_string,&error);				
+					append_string(&graphic_string,temp_string,&error);
 				}
 			}
 			else
 			{
 				sprintf(temp_string," range_number_of_iso_values %d",
 					graphic->number_of_iso_values);
-				append_string(&graphic_string,temp_string,&error);				
+				append_string(&graphic_string,temp_string,&error);
 				sprintf(temp_string," first_iso_value %g",
 					graphic->first_iso_value);
-				append_string(&graphic_string,temp_string,&error);				
+				append_string(&graphic_string,temp_string,&error);
 				sprintf(temp_string," last_iso_value %g",
 					graphic->last_iso_value);
-				append_string(&graphic_string,temp_string,&error);				
+				append_string(&graphic_string,temp_string,&error);
 			}
 			if (graphic->decimation_threshold > 0.0)
 			{
@@ -2941,7 +2973,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 			/* for surfaces and volumes */
 			if ((CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
-				|| (CMISS_GRAPHIC_SURFACES==graphic->graphic_type) 
+				|| (CMISS_GRAPHIC_SURFACES==graphic->graphic_type)
 				|| (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
 			{
 				append_string(&graphic_string," ",&error);
@@ -2997,7 +3029,7 @@ int Cmiss_graphic_to_point_object_at_time(
 			scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 			scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 			scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-			
+
 			Triple *point_list, *axis1_list, *axis2_list, *axis3_list,
 				*scale_list;
 			ALLOCATE(point_list, Triple, 1);
@@ -3040,7 +3072,7 @@ int Cmiss_graphic_to_point_object_at_time(
 		{
 			if (graphic->graphics_object != graphic->customised_graphics_object)
 			{
-				REACCESS(GT_object)(&graphic->graphics_object, 
+				REACCESS(GT_object)(&graphic->graphics_object,
 					graphic->customised_graphics_object);
 			}
 		}
@@ -3200,15 +3232,15 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_element(
   SubObjectGroupHighlightFunctor *highlight_functor = NULL;
   if (group_field)
   {
-    Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+	Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 	  if (Cmiss_field_group_contains_local_region(sub_group))
 	  {
-	  	highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
-	  	highlight_functor->setContainsAll(1);
+		highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
+		highlight_functor->setContainsAll(1);
 	  }
 	  else
 	  {
-	  	Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
+		Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
 			if (element_group)
 			{
 				Computed_field_element_group *group_core =
@@ -3219,10 +3251,10 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_element(
 				Cmiss_field_element_group_destroy(&element_group);
 		}
 		}
-    if (sub_group)
-    {
-      Cmiss_field_group_destroy(&sub_group);
-    }
+	if (sub_group)
+	{
+	  Cmiss_field_group_destroy(&sub_group);
+	}
   }
 
   return (highlight_functor);
@@ -3237,24 +3269,24 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
 	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 	  if (Cmiss_field_group_contains_local_region(sub_group))
 	  {
-	  	highlight_functor = new SubObjectGroupHighlightFunctor(NULL, NULL);
-	  	highlight_functor->setContainsAll(1);
+		highlight_functor = new SubObjectGroupHighlightFunctor(NULL, NULL);
+		highlight_functor->setContainsAll(1);
 	  }
 	  else
 	  {
-	  	Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
-	  	if (node_group)
-	  	{
-	  		Computed_field_node_group *group_core =
-	  			Computed_field_node_group_core_cast(node_group);
-	  		highlight_functor =	new SubObjectGroupHighlightFunctor(group_core,
-	  			&Computed_field_subobject_group::isIdentifierInList);
-	  		Cmiss_field_node_group_destroy(&node_group);
-	  	}
-	  }
-    if (sub_group)
+		Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+		if (node_group)
 		{
-    	Cmiss_field_group_destroy(&sub_group);
+			Computed_field_node_group *group_core =
+				Computed_field_node_group_core_cast(node_group);
+			highlight_functor =	new SubObjectGroupHighlightFunctor(group_core,
+				&Computed_field_subobject_group::isIdentifierInList);
+			Cmiss_field_node_group_destroy(&node_group);
+		}
+	  }
+	if (sub_group)
+		{
+		Cmiss_field_group_destroy(&sub_group);
 		}
 	}
 
@@ -4046,12 +4078,12 @@ int Cmiss_graphic_to_graphics_object(
 						}
 					}
 				}
- 				if (graphic->selected_graphics_changed)
- 				{
- 					if (graphic->graphics_object)
- 						GT_object_changed(graphic->graphics_object);
- 					graphic->selected_graphics_changed = 0;
- 				}
+				if (graphic->selected_graphics_changed)
+				{
+					if (graphic->graphics_object)
+						GT_object_changed(graphic->graphics_object);
+					graphic->selected_graphics_changed = 0;
+				}
 			}
 			Cmiss_graphics_filter_destroy(&filter);
 		}
@@ -4110,7 +4142,7 @@ int Cmiss_graphic_glyph_change(
 {
 	int return_code;
 	Cmiss_graphic *graphic =NULL;
-	
+
 	ENTER(Cmiss_graphic_glyph_change);
 	graphic = (Cmiss_graphic *)graphic_void;
 	if (glyph && graphic)
@@ -4295,7 +4327,7 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	int return_code;
 
 	ENTER(Cmiss_graphic_uses_changed_FE_field);
-	if (graphic && ((CMISS_GRAPHIC_POINT==graphic->graphic_type) || 
+	if (graphic && ((CMISS_GRAPHIC_POINT==graphic->graphic_type) ||
 			graphic->coordinate_field) && fe_field_change_log)
 	{
 		if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
@@ -4346,9 +4378,9 @@ int Cmiss_graphic_Computed_field_change(
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		if (change_data->selection_changed && graphic->graphics_object &&
-	  		(CMISS_GRAPHIC_POINT != graphic->graphic_type) &&
-	  		(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
-	  	{
+			(CMISS_GRAPHIC_POINT != graphic->graphic_type) &&
+			(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
+		{
 			Cmiss_graphic_update_selected(graphic, (void *)NULL);
 		}
 	}
@@ -4369,7 +4401,7 @@ int Cmiss_graphic_get_visible_graphics_object_range(
 	int return_code = 1;
 	struct Cmiss_graphic_range *graphic_range =
 		(struct Cmiss_graphic_range *)graphic_range_void;
-	
+
 	ENTER(Cmiss_graphic_get_visible_graphics_object_range);
 
 	if (graphic && graphic_range && graphic_range->graphics_object_range)
@@ -4406,7 +4438,7 @@ struct GT_object *Cmiss_graphic_get_graphics_object(
 	struct Cmiss_graphic *graphic)
 {
 	struct GT_object *graphics_object
-	
+
 	ENTER(Cmiss_graphic_get_graphics_object);
 	if (graphic)
 	{
@@ -4448,7 +4480,7 @@ int Cmiss_graphic_type_uses_dimension(
 		} break;
 		case CMISS_GRAPHIC_STREAMLINES:
 		{
-			return_code = ((-1 == dimension) || (2 == dimension) || 
+			return_code = ((-1 == dimension) || (2 == dimension) ||
 				(3 == dimension));
 		} break;
 		case CMISS_GRAPHIC_ELEMENT_POINTS:
@@ -4714,7 +4746,7 @@ int Cmiss_graphic_set_glyph_parameters(
 int Cmiss_graphic_get_iso_surface_parameters(
 	struct Cmiss_graphic *graphic,struct Computed_field **iso_scalar_field,
 	int *number_of_iso_values, double **iso_values,
-	double *first_iso_value, double *last_iso_value, 
+	double *first_iso_value, double *last_iso_value,
 	double *decimation_threshold)
 {
 	int i, return_code;
@@ -5030,10 +5062,10 @@ int Cmiss_graphic_set_discretization(
 	if (graphic && discretization && Cmiss_graphic_type_uses_attribute(
 		graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 	{
-		if ((graphic->discretization.number_in_xi1 != 
+		if ((graphic->discretization.number_in_xi1 !=
 				discretization->number_in_xi1) ||
 			(graphic->discretization.number_in_xi2 !=
-				discretization->number_in_xi2) || 
+				discretization->number_in_xi2) ||
 			(graphic->discretization.number_in_xi3 !=
 				discretization->number_in_xi3))
 		{
@@ -5069,7 +5101,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		{
 			DEALLOCATE(destination->name);
 		}
-		if (source->name && ALLOCATE(destination->name, char, 
+		if (source->name && ALLOCATE(destination->name, char,
 			strlen(source->name) + 1))
 		{
 			strcpy((char *)destination->name, source->name);
@@ -5110,7 +5142,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		{
 			Cmiss_graphic_set_iso_surface_parameters(destination,
 				source->iso_scalar_field,source->number_of_iso_values,
-				source->iso_values, 
+				source->iso_values,
 				source->first_iso_value, source->last_iso_value,
 				source->decimation_threshold);
 		}
@@ -5137,7 +5169,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		{
 			if (destination->glyph)
 			{
-				GT_object_remove_callback(destination->glyph, 
+				GT_object_remove_callback(destination->glyph,
 					Cmiss_graphic_glyph_change, (void *)destination);
 				DEACCESS(GT_object)(&(destination->glyph));
 			}
@@ -5150,7 +5182,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 				DEACCESS(Computed_field)(&destination->variable_scale_field);
 			}
 		}
-		
+
 		if (CMISS_GRAPHIC_POINT==source->graphic_type)
 		{
 			destination->overlay_flag = source->overlay_flag;
@@ -5339,7 +5371,7 @@ int Cmiss_graphic_FE_region_change(
 {
 	int fe_field_related_object_change, return_code;
 	struct Cmiss_graphic_FE_region_change_data *data;
-	
+
 	ENTER(Cmiss_graphic_FE_region_change);
 	if (graphic &&
 		(data = (struct Cmiss_graphic_FE_region_change_data *)data_void))
@@ -5356,7 +5388,7 @@ int Cmiss_graphic_FE_region_change(
 				{
 					/* must always rebuild if identifiers changed */
 					if ((data->fe_node_change_summary &
-						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)) || 
+						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)) ||
 						(Cmiss_graphic_uses_changed_FE_field(graphic,
 							data->fe_field_changes) && (
 								(data->fe_field_change_summary & (
@@ -5445,7 +5477,7 @@ int Cmiss_graphic_data_FE_region_change(
 {
 	int return_code;
 	struct Cmiss_graphic_FE_region_change_data *data;
-	
+
 	ENTER(Cmiss_graphic_data_FE_region_change);
 	if (graphic &&
 		(data = (struct Cmiss_graphic_FE_region_change_data *)data_void))
@@ -5845,7 +5877,7 @@ int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
 	}
 	LEAVE;
 
-          	return (return_code);
+			return (return_code);
 } /* Cmiss_graphic_list_contents */
 
 int Cmiss_graphic_get_position_in_list(
@@ -6440,7 +6472,7 @@ int Cmiss_graphic_set_circle_discretization(
 	if (graphic)
 	{
 		if (graphic->circle_discretization != circle_discretization
-		    && (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type))
+			&& (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type))
 		{
 			graphic->circle_discretization = circle_discretization;
 		}
@@ -6591,7 +6623,7 @@ int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width)
 	else
 	{
 	  display_message(ERROR_MESSAGE,
-	    "Cmiss_graphic_set_line_width.  Invalid argument(s)");
+		"Cmiss_graphic_set_line_width.  Invalid argument(s)");
 	  return_code = 0;
 	}
 	LEAVE;
@@ -6743,7 +6775,7 @@ int Cmiss_graphic_time_change(
 	struct Cmiss_graphic *graphic,void *dummy_void)
 {
 	int return_code;
-	
+
 	ENTER(Cmiss_graphic_time_change);
 	USE_PARAMETER(dummy_void);
 	if (graphic)
@@ -6774,9 +6806,9 @@ int Cmiss_graphic_update_time_behaviour(
 {
 	int return_code, time_dependent;
 	struct Cmiss_graphic_update_time_behaviour_data *data;
-	
+
 	ENTER(Cmiss_graphic_update_time_behaviour);
-	if (graphic && (data = 
+	if (graphic && (data =
 		(struct Cmiss_graphic_update_time_behaviour_data *)
 		update_time_behaviour_void))
 	{
@@ -6815,17 +6847,17 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->orientation_scale_field && 
+		if (graphic->orientation_scale_field &&
 			Computed_field_has_multiple_times(graphic->orientation_scale_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->variable_scale_field && 
+		if (graphic->variable_scale_field &&
 			Computed_field_has_multiple_times(graphic->variable_scale_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->label_field && 
+		if (graphic->label_field &&
 			Computed_field_has_multiple_times(graphic->label_field))
 		{
 			time_dependent = 1;
@@ -6840,22 +6872,22 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->variable_scale_field && 
+		if (graphic->variable_scale_field &&
 			Computed_field_has_multiple_times(graphic->variable_scale_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->displacement_map_field && 
+		if (graphic->displacement_map_field &&
 			Computed_field_has_multiple_times(graphic->displacement_map_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->stream_vector_field && 
+		if (graphic->stream_vector_field &&
 			Computed_field_has_multiple_times(graphic->stream_vector_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->data_field && 
+		if (graphic->data_field &&
 			Computed_field_has_multiple_times(graphic->data_field))
 		{
 			time_dependent = 1;
@@ -6951,10 +6983,10 @@ int Cmiss_graphic_spectrum_change(
 				spectrum_change_data->graphics_changed = 1;
 			}
 		}
-		/* The material gets it's own notification of the change, 
+		/* The material gets it's own notification of the change,
 			it should propagate that to the Cmiss_graphic */
 		struct Spectrum *colour_lookup;
-		if (graphic->material && (colour_lookup = 
+		if (graphic->material && (colour_lookup =
 				Graphical_material_get_colour_lookup_spectrum(graphic->material)))
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
@@ -7220,43 +7252,43 @@ int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
 class Cmiss_graphic_type_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphic_type type)
-    {
-        const char *enum_string = 0;
-        switch (type)
-        {
-        	case CMISS_GRAPHIC_NODE_POINTS:
-        		enum_string = "NODE_POINTS";
-        		break;
-        	case CMISS_GRAPHIC_DATA_POINTS:
-        		enum_string = "DATA_POINTS";
-        		break;
-        	case CMISS_GRAPHIC_LINES:
-        		enum_string = "LINES";
-        		break;
-        	case CMISS_GRAPHIC_CYLINDERS:
-        		enum_string = "CYLINDERS";
-        		break;
-        	case CMISS_GRAPHIC_SURFACES:
-        		enum_string = "SURFACES";
-        		break;
-        	case CMISS_GRAPHIC_ISO_SURFACES:
-        		enum_string = "ISO_SURFACES";
-        		break;
-        	case CMISS_GRAPHIC_ELEMENT_POINTS:
-        		enum_string = "ELEMENT_POINTS";
-        		break;
-        	case CMISS_GRAPHIC_STREAMLINES:
-        		enum_string = "STREAMLINES";
-        		break;
-        	case CMISS_GRAPHIC_POINT:
-        		enum_string = "POINT";
-        		break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphic_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMISS_GRAPHIC_NODE_POINTS:
+				enum_string = "NODE_POINTS";
+				break;
+			case CMISS_GRAPHIC_DATA_POINTS:
+				enum_string = "DATA_POINTS";
+				break;
+			case CMISS_GRAPHIC_LINES:
+				enum_string = "LINES";
+				break;
+			case CMISS_GRAPHIC_CYLINDERS:
+				enum_string = "CYLINDERS";
+				break;
+			case CMISS_GRAPHIC_SURFACES:
+				enum_string = "SURFACES";
+				break;
+			case CMISS_GRAPHIC_ISO_SURFACES:
+				enum_string = "ISO_SURFACES";
+				break;
+			case CMISS_GRAPHIC_ELEMENT_POINTS:
+				enum_string = "ELEMENT_POINTS";
+				break;
+			case CMISS_GRAPHIC_STREAMLINES:
+				enum_string = "STREAMLINES";
+				break;
+			case CMISS_GRAPHIC_POINT:
+				enum_string = "POINT";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string)
@@ -7273,22 +7305,22 @@ char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type)
 class Cmiss_graphics_render_type_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphics_render_type type)
-    {
-        const char *enum_string = 0;
-        switch (type)
-        {
-        case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
-            enum_string = "SHADED";
-            break;
-        case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
-            enum_string = "WIREFRAME";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphics_render_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
+			enum_string = "SHADED";
+			break;
+		case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
+			enum_string = "WIREFRAME";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphics_render_type	Cmiss_graphics_render_type_enum_from_string(

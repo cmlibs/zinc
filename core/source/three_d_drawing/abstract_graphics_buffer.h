@@ -48,23 +48,18 @@ Global types
 ------------
 */
 
-#include <vector>
-
 enum Graphics_buffer_type
 {
 	GRAPHICS_BUFFER_INVALID_TYPE,
 	GRAPHICS_BUFFER_GLX_X3D_TYPE,
 	GRAPHICS_BUFFER_GLX_DM_PBUFFER_TYPE, /* Special type available only on O2's */
 	GRAPHICS_BUFFER_GLX_PBUFFER_TYPE, /* Accelerated offscreen rendering */
-	GRAPHICS_BUFFER_GLX_PIXMAP_TYPE, /* Non shared offscreen, no good for our display lists but
-											  can be used for find_xi_special buffer */
+	GRAPHICS_BUFFER_GLX_PIXMAP_TYPE, /* Non shared offscreen, no good for our display lists but can be used for find_xi_special buffer */
 	GRAPHICS_BUFFER_GTKGLAREA_TYPE,
 	GRAPHICS_BUFFER_GTKGLEXT_TYPE,
 	GRAPHICS_BUFFER_WIN32_TYPE,
-	GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE, /* Accelerated offscreen rendering,
-															  automatically copied on to screen. */
-	GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE, /* Non accelerated offscreen rendering,
-															 automatically copied on to screen. */
+	GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE, /* Accelerated offscreen rendering, automatically copied on to screen. */
+	GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE, /* Non accelerated offscreen rendering, automatically copied on to screen. */
 	GRAPHICS_BUFFER_WX_TYPE,
 	GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE,
 	GRAPHICS_BUFFER_CARBON_TYPE,
@@ -87,110 +82,47 @@ enum Graphics_buffer_stereo_mode
 	GRAPHICS_BUFFER_STEREO
 };
 
-enum Graphics_buffer_input_modifier
-{
-	GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT = 1,
-	GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL = 2,
-	GRAPHICS_BUFFER_INPUT_MODIFIER_ALT = 4,
-	GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1 = 8
-};
-
-enum Graphics_buffer_input_event_type
-{
-	GRAPHICS_BUFFER_INVALID_INPUT,
-	GRAPHICS_BUFFER_MOTION_NOTIFY,
-	GRAPHICS_BUFFER_BUTTON_PRESS,
-	GRAPHICS_BUFFER_BUTTON_RELEASE,
-	GRAPHICS_BUFFER_KEY_PRESS,
-	GRAPHICS_BUFFER_KEY_RELEASE
-};
-
-struct Graphics_buffer_input
-{
-	enum Graphics_buffer_input_event_type type;
-	int button_number;
-	int key_code;
-	int position_x;
-	int position_y;
-	/* flags indicating the state of the shift, control and alt keys - use
-		 logical OR with GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT etc. */
-	enum Graphics_buffer_input_modifier input_modifier;
-};
-
-struct Graphics_buffer_expose_data
-{
-	int left;
-	int bottom;
-	int right;
-	int top;
-};
-
-typedef void callback_function_Graphics_buffer_callback(struct Graphics_buffer *,void *,void *);
-struct callback_item_Graphics_buffer_callback
-{
-	callback_function_Graphics_buffer_callback *function;
-	void *user_data;
-	int access_count;
-};
-
-typedef void callback_function_Graphics_buffer_input_callback(struct Graphics_buffer *, struct Cmiss_scene_viewer_input *,void *);
-struct callback_item_Graphics_buffer_input_callback
-{
-	callback_function_Graphics_buffer_input_callback *function;
-	void *user_data;
-	int access_count;
-};
-
 struct Graphics_buffer
 {
-	enum Graphics_buffer_type type;
-	struct Graphics_buffer_package *package;
-	int access_count;
+	unsigned int access_count;
+	unsigned int width;
+	unsigned int height;
+	unsigned int origin_x;
+	unsigned int origin_y;
+	Graphics_buffer_type type;
+	Graphics_buffer_package *package;
 
-	virtual ~Graphics_buffer() {}
+	bool is_visible() const
+	{
+		bool visible = false;
+		switch (type)
+		{
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				visible = true;
+				break;
+			}
+			default:
+			{}
+		}
 
-	std::vector<callback_item_Graphics_buffer_callback> initialise_callback_list_;
+		return visible;
+	}
 
-	struct list_callback_item_Graphics_buffer_callback
-		*initialise_callback_list;
-	struct list_callback_item_Graphics_buffer_callback
-		*resize_callback_list;
-	struct list_callback_item_Graphics_buffer_callback
-		*expose_callback_list;
-	struct list_callback_item_Graphics_buffer_input_callback
-		*input_callback_list;
+	Graphics_buffer *access()
+	{
+		access_count++;
+		return this;
+	}
 
-/*
-	DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
-		struct Graphics_buffer *, void *, void);
+	int deaccess()
+	{
+		--access_count;
+		if (access_count == 0)
+			delete this;
 
-	DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_input_callback, \
-		struct Graphics_buffer *, struct Graphics_buffer_input *, void);
-*/
-
-	Graphics_buffer *access() { access_count++; return this;}
-	int deaccess() {access_count--; if (access_count == 0) delete this; return 1;}
-	virtual double get_width() const { return 0.0; }
-	virtual double get_height() const { return 0.0; }
-	virtual int get_origin_x() const { return 0; }
-	virtual int get_origin_y() const { return 0; }
-	virtual int is_visible() const { return 0; }
-	virtual int make_current() { return 0; }
-	virtual int get_buffering_mode(enum Graphics_buffer_buffering_mode *graphics_buffer_buffering_mode) const { return 0; }
-	virtual int get_stereo_mode(enum Graphics_buffer_stereo_mode *graphics_buffer_stereo_mode) const { return 0; }
-	virtual int add_initialise_callback(callback_function_Graphics_buffer_callback initialise_callback, void *user_data) { return 0; }
-	virtual int add_resize_callback(callback_function_Graphics_buffer_callback resize_callback, void *user_data) const { return 0; }
-	virtual int add_expose_callback(callback_function_Graphics_buffer_callback expose_callback, void *user_data) const { return 0; }
-	virtual int add_input_callback(callback_function_Graphics_buffer_input_callback input_callback, void *user_data) const { return 0; }
-	virtual int awaken() const { return 0; }
-	virtual int set_width(int /* width */) { return 0; }
-	virtual int set_height(int /* height */) { return 0; }
-	virtual int get_visual_id() const { return 0; }
-	virtual int get_colour_buffer_depth() const { return 0; }
-	virtual int get_depth_buffer_depth() const { return 0; }
-	virtual int get_accumulation_buffer_depth() const { return 0; }
-	virtual int swap_buffers() const { return 0; }
-	virtual int buffer_awaken() const { return 0; }
+		return 1;
+	}
 };
 
 #endif /* !defined (ABSTRACT_GRAPHICS_BUFFER_H) */

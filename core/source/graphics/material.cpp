@@ -6211,15 +6211,14 @@ will work with order_independent_transparency.
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
 			{
 				GLint loc1;
-				if (data && data->renderer && data->renderer->graphics_buffer)
+				if (data && data->renderer)
 				{
 					if (glIsProgram(material->program->glsl_current_program))
 					{
 						loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
 						if (loc1>-1)
 						{
-							glUniform4f(loc1,data->renderer->graphics_buffer->get_width(),
-								data->renderer->graphics_buffer->get_height(), 1.0, 1.0);
+							glUniform4f(loc1, data->renderer->buffer_width, data->renderer->buffer_height, 1.0, 1.0);
 						}
 						loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
 						if (loc1 != (GLint)-1)

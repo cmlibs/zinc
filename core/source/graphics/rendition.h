@@ -69,10 +69,12 @@ DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_scene_region_change, struct Cmiss_r
 struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmiss_region,
 	struct Cmiss_graphics_module *graphics_module);
 
-/***************************************************************************//** 
+GT_object *Cmiss_rendition_get_glyph_from_manager(Cmiss_rendition_id rendition, const char* glyph_name);
+
+/***************************************************************************//**
  * Destroy Cmiss_rendition and clean up the memory it uses.
  *
- * @param  cmiss_rendition_address the address to the pointer of 
+ * @param  cmiss_rendition_address the address to the pointer of
  *   the cmiss_rendition_address to be deleted
  * @return  1 if successfully destroy cmiss_rendition, otherwise 0
  */
@@ -84,17 +86,17 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition);
 int Cmiss_rendition_get_position(struct Cmiss_rendition *rendition);
 
 int Cmiss_rendition_set_position(struct Cmiss_rendition *rendition, unsigned int position);
-/***************************************************************************//** 
+/***************************************************************************//**
  * Set the position of the rendition
  * @param rendition to be edited
  * @param position Position to be set for the cmiss_rendition
  * @return If successfully set the position, otherwise NULL
  */
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Get the range of coordinates of visible graphics in the rendition and all its
  * child region renditions.
- * 
+ *
  * @param rendition  The rendition to get the range of.
  * @param scene  The scene to filter rendition contents.
  * @param graphics_object_range_void void pointer to graphics_object_range
@@ -103,7 +105,7 @@ int Cmiss_rendition_set_position(struct Cmiss_rendition *rendition, unsigned int
 int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	struct Cmiss_scene *scene, struct Graphics_object_range_struct *graphics_object_range);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Currently, a Cmiss_region may have at most one cmiss_rendition.
  * @param cmiss_region The region of interest
  * @return If rendition found returns it, otherwise NULL
@@ -117,7 +119,7 @@ struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region 
  */
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Wrapper for accessing the list of graphic in <Cmiss_rendition>.
  * @param cmiss_rendition target for that rendition
  * @param conditional_function conditional function for the list
@@ -133,7 +135,7 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
  * Adds a callback routine which is called whenever a Cmiss_rendition is aware of
  * changes.
  */
-int Cmiss_rendition_add_callback(struct Cmiss_rendition *rendition, 
+int Cmiss_rendition_add_callback(struct Cmiss_rendition *rendition,
 	Cmiss_rendition_callback callback, void *user_data);
 
 /***************************************************************************//**
@@ -155,7 +157,7 @@ Cmiss_field_id Cmiss_rendition_guess_coordinate_field(
 /***************************************************************************//**
  * Iterates through every material used by the scene.
  */
-int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,	
+int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
 	void *user_data);
 
@@ -238,7 +240,7 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 	struct Cmiss_rendition *source);
 
 struct GT_element_group *Cmiss_rendition_get_gt_element_group(
-	struct Cmiss_rendition *rendition); 
+	struct Cmiss_rendition *rendition);
 
 int Cmiss_rendition_get_visibility_flag(
 	struct Cmiss_rendition *rendition);
@@ -327,7 +329,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_rendition);
 
 PROTOTYPE_ANY_OBJECT(Cmiss_rendition);
 
-int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition, 
+int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 	struct GT_object *glyph, const char *cmiss_graphic_name);
 
 Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);

@@ -411,22 +411,22 @@ specified name and the default properties.
 ==============================================================================*/
 
 int set_material_program_type(struct Graphical_material *material_to_be_modified,
-	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag, 
-	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag, 
-	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag, 
+	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
+	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
+	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
 	 int lit_volume_scale_alpha_flag, int return_code);
-/****************************************************************************** 
+/******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
 DESCRIPTION : Set up the material program type for using the vertex
 and fragment program. This and following functions are orginally
-from the modify_graphical_material. 
+from the modify_graphical_material.
 NOTE: I use the pointer to the material_package from the material.
 ==============================================================================*/
 
 int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
 	 struct Graphical_material *material_to_be_modified);
-/****************************************************************************** 
+/******************************************************************************
 LAST MODIFIED : 5 Dec 2007
 
 DESCRIPTION : This function will set the bump mapping and per
@@ -434,15 +434,14 @@ pixel_lighting_flag of the material_to_be_modified to be the same as
 the one in material, it is used for setting up the GUI.
 ==============================================================================*/
 
-int compile_Graphical_material_for_order_independent_transparency(
-	struct Graphical_material *material, 
+int compile_Graphical_material_for_order_independent_transparency(struct Graphical_material *material,
 	void *material_order_independent_data_void);
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Recompile each of the <materials> which have already been compiled so that they
-will work with order_independent_transparency. 
+will work with order_independent_transparency.
 ==============================================================================*/
 
 /***************************************************************************//**

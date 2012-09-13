@@ -93,7 +93,6 @@ Global types
 */
 
 struct Graphical_material;
-struct Graphics_buffer;
 struct Graphics_font;
 struct Cmiss_scene;
 
@@ -633,7 +632,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 int GT_nurbs_set_surface(struct GT_nurbs *nurbs,
 	int sorder, int torder, int sknotcount, int tknotcount,
-	ZnReal *sknots, ZnReal *tknots, 
+	ZnReal *sknots, ZnReal *tknots,
 	int scontrolcount, int tcontrolcount, ZnReal *control_points);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
@@ -759,7 +758,7 @@ LAST MODIFIED : 18 June 2004
 
 DESCRIPTION :
 SAB Added to allow GT_pointset to be hidden but should be replaced.
-Gets the <number_of_points> and the <positions> of those points into the 
+Gets the <number_of_points> and the <positions> of those points into the
 <pointset> object.  The <positions> pointer is copied directly from the internal
 storage.
 ==============================================================================*/
@@ -771,7 +770,7 @@ LAST MODIFIED : 18 June 2004
 
 DESCRIPTION :
 SAB Added to allow GT_pointset to be hidden but should be replaced.
-Sets the <number_of_points> and the <positions> of those points into the 
+Sets the <number_of_points> and the <positions> of those points into the
 <pointset> object.  The <positions> pointer is copied directly overwriting the
 current storage and the internal data, text and names arrays are messed up.
 ==============================================================================*/
@@ -986,7 +985,7 @@ Note: Passing a NULL <changed_spectrum_list> indicates the equivalent of a
 change to any spectrum in use in the linked graphics objects.
 ==============================================================================*/
 
-int GT_object_add_callback(struct GT_object *graphics_object, 
+int GT_object_add_callback(struct GT_object *graphics_object,
 	Graphics_object_callback callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 13 October 1998
@@ -1216,8 +1215,8 @@ LAST MODIFIED : 26 October 2005
 
 DESCRIPTION :
 If <graphics_object> does not already contain a GT_voltex then the <voltex> is
-added in the normal way.  If a GT_voltex is already contained in the 
-<graphics_object> then the new <voltex> is merged into the existing one and 
+added in the normal way.  If a GT_voltex is already contained in the
+<graphics_object> then the new <voltex> is merged into the existing one and
 any co-located vertices are merged, stitching the two voltexes together.
 ==============================================================================*/
 
@@ -1234,7 +1233,7 @@ int GT_object_normalise_GT_voltex_normals(struct GT_object *graphics_object);
 LAST MODIFIED : 28 October 2005
 
 DESCRIPTION :
-If a GT_voltex is contained in the <graphics_object> then normals are 
+If a GT_voltex is contained in the <graphics_object> then normals are
 normalised for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 
@@ -1242,7 +1241,7 @@ normalised for each of the VT_iso_vertices using the surrounding triangles.
  * Performs polygon reduction by converting surface into a GT_voltex and using
  * its decimation function, then converting back to a GT_surface which will
  * replace all previous GT_surface objects in graphics_object.
- * 
+ *
  * @param graphics_object  Graphics object of type g_SURFACE. Note that only
  * a few surface types are supported in the conversion to voltex; see
  * GT_voltex_create_from_GT_surface().

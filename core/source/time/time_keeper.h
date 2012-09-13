@@ -53,6 +53,8 @@ enum Time_keeper_play_mode
 typedef int (*Time_keeper_callback)(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *user_data);
 
+#include <general/object.h>
+
 PROTOTYPE_OBJECT_FUNCTIONS(Time_keeper);
 
 ZINC_API struct Time_keeper *CREATE(Time_keeper)(const char *name,

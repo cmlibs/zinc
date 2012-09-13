@@ -178,7 +178,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_font,name)
 		{
 			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name)(
 				destination,source);
-			if (return_code) 
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -381,7 +381,7 @@ int Graphics_font_package_define_font(
 LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
-Defines an <alias_name> in the <font_package> which refers to the font 
+Defines an <alias_name> in the <font_package> which refers to the font
 <font_name>.
 ==============================================================================*/
 {
@@ -412,7 +412,7 @@ Defines an <alias_name> in the <font_package> which refers to the font
 			}
 			else
 			{
-				return_code = ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
+				return_code = ADD_OBJECT_TO_MANAGER(Graphics_font)(font,
 					font_package->font_manager);
 			}
 		}
@@ -426,7 +426,7 @@ Defines an <alias_name> in the <font_package> which refers to the font
 	}
 	else
 	{
- 		display_message(ERROR_MESSAGE,
+		display_message(ERROR_MESSAGE,
 			"Graphics_font_package_define_font.  "
 			"Invalid arguments");
 		return_code = 0;
@@ -444,7 +444,7 @@ LAST MODIFIED : 11 April 2007
 DESCRIPTION :
 Finds a Graphics_font with name <font_name> in the <font_package>.
 If it doesn't exist then a font is created using the <font_name>
-as the user interface dependent font string. 
+as the user interface dependent font string.
 ==============================================================================*/
 {
 	Graphics_font *font;
@@ -460,14 +460,14 @@ as the user interface dependent font string.
 			font = CREATE(Graphics_font)(font_name, font_name);
 			if (font != 0)
 			{
-				ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
-					font_package->font_manager);				
+				ADD_OBJECT_TO_MANAGER(Graphics_font)(font,
+					font_package->font_manager);
 			}
 		}
 	}
 	else
 	{
- 		display_message(ERROR_MESSAGE,
+		display_message(ERROR_MESSAGE,
 			"Graphics_font_package_define_font_alias.  "
 			"Invalid arguments");
 	}
@@ -567,7 +567,7 @@ int Graphics_font_compile(struct Graphics_font *font,
 LAST MODIFIED : 12 March 2008
 
 DESCRIPTION :
-Compiles the specified <font> so it can be used by the graphics.  The 
+Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required so that we can determine what API is used by this buffer.
 ==============================================================================*/
 {
@@ -618,20 +618,20 @@ Compiles the specified <font> so it can be used by the graphics.  The
 						font_desc = pango_font_description_from_string (font->font_string);
 					}
 
-					pango_font = gdk_gl_font_use_pango_font (font_desc, font->first_bitmap, 
+					pango_font = gdk_gl_font_use_pango_font (font_desc, font->first_bitmap,
 						font->number_of_bitmaps, font->display_list_offset);
 					if (pango_font == NULL)
 					{
 						display_message(WARNING_MESSAGE,"wrapperInitText.  "
 							"Text display is not implemented for Gtk prior to version 2.");
 					}
-					
+
 					font_metrics = pango_font_get_metrics (pango_font, NULL);
-					
+
 					font_height = pango_font_metrics_get_ascent (font_metrics) +
 						pango_font_metrics_get_descent (font_metrics);
 					font_height = PANGO_PIXELS (font_height);
-					
+
 					pango_font_description_free (font_desc);
 					pango_font_metrics_unref (font_metrics);
 				} break;
@@ -671,14 +671,6 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							win32_font = static_cast<HFONT__*>(GetStockObject(DEFAULT_GUI_FONT));
 						}
 					}
-					if (win32_font)
-					{
-						Graphics_buffer_win32_use_font_bitmaps(buffer,
-							win32_font, font->first_bitmap, font->number_of_bitmaps, 
-							font->display_list_offset);
-						return_code = 1;
-					}
-					else
 					{
 						display_message(ERROR_MESSAGE,"Graphics_font.  "
 							"Unable to get any font.");
@@ -761,7 +753,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 									"Graphics_font_compile.  "
 									"Error making memoryDC for wx font.");
 								return_code = 0;
-							}							
+							}
 							dc.SetBackground(*wxBLACK_BRUSH);
 							dc.SetTextForeground(*wxWHITE);
 							dc.SetBrush(*wxWHITE_BRUSH);
@@ -789,14 +781,14 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							data_ptr = image_data + (char_height - 1 - j) * bitmap_size * 3;
 							for (k = 0 ; k < xbitmap_width ; k++)
 							{
-								*xbm_ptr = 
-									((data_ptr[0] & 0x80) ? 0x80 : 0) + 
-									((data_ptr[3] & 0x80) ? 0x40 : 0) + 
-									((data_ptr[6] & 0x80) ? 0x20 : 0) + 
-									((data_ptr[9] & 0x80) ? 0x10 : 0) + 
-									((data_ptr[12] & 0x80) ? 0x08 : 0) + 
-									((data_ptr[15] & 0x80) ? 0x04 : 0) + 
-									((data_ptr[18] & 0x80) ? 0x02 : 0) + 
+								*xbm_ptr =
+									((data_ptr[0] & 0x80) ? 0x80 : 0) +
+									((data_ptr[3] & 0x80) ? 0x40 : 0) +
+									((data_ptr[6] & 0x80) ? 0x20 : 0) +
+									((data_ptr[9] & 0x80) ? 0x10 : 0) +
+									((data_ptr[12] & 0x80) ? 0x08 : 0) +
+									((data_ptr[15] & 0x80) ? 0x04 : 0) +
+									((data_ptr[18] & 0x80) ? 0x02 : 0) +
 									((data_ptr[21] & 0x80) ? 0x01 : 0);
 								xbm_ptr++;
 								data_ptr+=8*3;
@@ -852,7 +844,7 @@ DESCRIPTION :
 		if (font->display_list_offset)
 		{
 			glBitmap(0, 0, 0, 0, font->offset_x, font->offset_y, NULL);
-			
+
 			/* set the list base (i.e. the number that is added to each and every list
 				call made from now on) */
 			glListBase(font->display_list_offset);
@@ -862,7 +854,7 @@ DESCRIPTION :
 				that it represents to screen, and updates the current Raster Position state
 				variable in OpenGL to advance the "print cursor").  */
 			glCallLists(strlen(text), GL_UNSIGNED_BYTE, (GLubyte *)text);
-			
+
 			return_code = 1;
 		}
 		else
@@ -882,4 +874,4 @@ DESCRIPTION :
 	LEAVE;
 	return (return_code);
 } /* Graphics_font_rendergl_text */
-	
+

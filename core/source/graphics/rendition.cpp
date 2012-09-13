@@ -263,7 +263,7 @@ int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *chi
 {
 	int return_code;
 	struct Cmiss_rendition *parent_rendition;
-	
+
 	ENTER(Cmiss_rendition_notify_parent_rendition_callback);
 	if (child_rendition &&
 		(parent_rendition = Cmiss_region_get_rendition_internal((struct Cmiss_region *)region_void)))
@@ -358,7 +358,7 @@ Callback for change in the global element selection.
 } /* Cmiss_rendition_element_point_ranges_selection_change */
 
 /***************************************************************************//**
- * Allocates memory and assigns fields for a cmiss rendition for the given 
+ * Allocates memory and assigns fields for a cmiss rendition for the given
  * cmiss_region. Access count is set to 1.
  */
 struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_region,
@@ -379,7 +379,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 					CREATE(LIST(Cmiss_graphic))()))
 			{
 				cmiss_rendition->region = cmiss_region;
- 				cmiss_rendition->fe_region = ACCESS(FE_region)(fe_region);
+				cmiss_rendition->fe_region = ACCESS(FE_region)(fe_region);
 				cmiss_rendition->data_fe_region = ACCESS(FE_region)(data_fe_region);
 				cmiss_rendition->fe_region_callback_set = 0;
 				cmiss_rendition->data_fe_region_callback_set = 0;
@@ -394,7 +394,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->visibility_flag = true;
 				cmiss_rendition->update_callback_list=
 					(struct Cmiss_rendition_callback_data *)NULL;
- 				/* managers and callback ids */
+				/* managers and callback ids */
 				cmiss_rendition->computed_field_manager=Cmiss_region_get_Computed_field_manager(
 					 cmiss_region);
 				cmiss_rendition->computed_field_manager_callback_id=(void *)NULL;
@@ -415,13 +415,13 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->selection_group = NULL;
 				cmiss_rendition->selection_removed = 0;
 				cmiss_rendition->selection_handler_list = NULL;
- 				if (graphics_module)
- 				{
- 					Element_point_ranges_selection_add_callback(
- 						Cmiss_graphics_module_get_element_point_ranges_selection(graphics_module),
- 						Cmiss_rendition_element_points_ranges_selection_change,
- 						(void *)cmiss_rendition);
- 				}
+				if (graphics_module)
+				{
+					Element_point_ranges_selection_add_callback(
+						Cmiss_graphics_module_get_element_point_ranges_selection(graphics_module),
+						Cmiss_rendition_element_points_ranges_selection_change,
+						(void *)cmiss_rendition);
+				}
 			}
 			else
 			{
@@ -586,7 +586,7 @@ static void Cmiss_rendition_data_FE_region_change(struct FE_region *fe_region,
 		{
 			data.time = 0;
 		}
-		
+
 		data.fe_region = fe_region;
 		Cmiss_rendition_begin_change(rendition);
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
@@ -678,13 +678,13 @@ static void Cmiss_rendition_Computed_field_change(
 	LEAVE;
 }
 
-int Cmiss_region_attach_rendition(struct Cmiss_region *region, 
+int Cmiss_region_attach_rendition(struct Cmiss_region *region,
 	struct Cmiss_rendition *rendition)
 {
 	int return_code;
 	struct Any_object *any_object;
 
-	ENTER(Cmiss_region_attach_rendition);	
+	ENTER(Cmiss_region_attach_rendition);
 
 	if (NULL != (any_object = CREATE(ANY_OBJECT(Cmiss_rendition))(rendition)) &&
 		Cmiss_region_private_attach_any_object(region, any_object))
@@ -715,7 +715,7 @@ int Cmiss_region_attach_rendition(struct Cmiss_region *region,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_attach_rendition. Could not attach object.");	
+			"Cmiss_region_attach_rendition. Could not attach object.");
 		DESTROY(Any_object)(&any_object);
 		return_code = 0;
 	}
@@ -734,7 +734,7 @@ struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmi
 	{
 		rendition = CREATE(Cmiss_rendition)(cmiss_region, graphics_module);
 		{
-			if (!(rendition && Cmiss_region_attach_rendition(cmiss_region, 
+			if (!(rendition && Cmiss_region_attach_rendition(cmiss_region,
 						rendition)))
 			{
 				DEACCESS(Cmiss_rendition)(&rendition);
@@ -756,7 +756,7 @@ struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmi
 	return (rendition);
 }
 
-void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition, 
+void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition,
 	struct Cmiss_region *child_region)
 {
 	struct Cmiss_rendition *child_rendition;
@@ -779,7 +779,7 @@ void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition,
 		if (rendition->list_of_scene &&
 			!rendition->list_of_scene->empty())
 		{
-			std::list<struct Scene *>::iterator pos = 
+			std::list<struct Scene *>::iterator pos =
 				rendition->list_of_scene->begin();
 			while (pos != rendition->list_of_scene->end())
 			{
@@ -818,7 +818,7 @@ int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 		{
 			if (!Cmiss_region_has_rendition(child_region))
 			{
-				Cmiss_rendition_add_child_region(rendition, 
+				Cmiss_rendition_add_child_region(rendition,
 					child_region);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
@@ -849,7 +849,7 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 	{
 		if (region_changes->children_changed)
 		{
- 			Cmiss_rendition_begin_change(rendition);
+			Cmiss_rendition_begin_change(rendition);
 			if (region_changes->child_added)
 			{
 				child_region = region_changes->child_added;
@@ -1388,6 +1388,12 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_get_range */
 
+GT_object *Cmiss_rendition_get_glyph_from_manager(Cmiss_rendition_id rendition, const char* glyph_name)
+{
+	return FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(glyph_name,
+		Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
+}
+
 struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region *cmiss_region)
 {
 	struct Cmiss_rendition *rendition = NULL;
@@ -1479,7 +1485,7 @@ int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_deaccess_rendition. Rendition does not exist");	
+			"Cmiss_region_deaccess_rendition. Rendition does not exist");
 		return_code = 0;
 	}
 	return (return_code);
@@ -1589,7 +1595,7 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 		/* check whether rendition contents need building */
 		return_code = Cmiss_rendition_build_graphics_objects(rendition,
 			renderer->get_Scene(), renderer->time, renderer->name_prefix);
-    /* Call the renderer to compile each of the graphics */
+	/* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,
 			rendition->list_of_graphics);
@@ -1740,7 +1746,7 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 			}
 			return_code = renderer->Cmiss_rendition_execute_members(rendition);
 			return_code = renderer->Cmiss_rendition_execute_child_rendition(rendition);
-			if (rendition->transformation)	
+			if (rendition->transformation)
 			{
 				/* Restore starting modelview matrix */
 				glPopAttrib();
@@ -1883,7 +1889,7 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 	return (return_code);
 } /* Cmiss_region_modify_rendition */
 
-int Cmiss_rendition_add_callback(struct Cmiss_rendition *rendition, 
+int Cmiss_rendition_add_callback(struct Cmiss_rendition *rendition,
 	Cmiss_rendition_callback callback, void *user_data)
 {
 	int return_code;
@@ -1961,7 +1967,7 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
 				{
 					previous->next = callback_data->next;
 					DEALLOCATE(callback_data);
-					return_code = 1;		
+					return_code = 1;
 				}
 			}
 			if (!return_code)
@@ -1982,7 +1988,7 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_remove_callback */
 
-int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,	
+int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
 	void *user_data)
 {
@@ -1991,7 +1997,7 @@ int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
 	ENTER(Cmiss_rendition_for_each_material);
 	if (rendition && iterator_function && user_data)
 	{
-		/* Could be smarter if there was a reduced number used by the 
+		/* Could be smarter if there was a reduced number used by the
 			scene, however for now just do every material in the manager */
 		MANAGER(Graphical_material) *graphical_material_manager =
 				Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
@@ -2017,7 +2023,7 @@ int for_each_rendition_in_Cmiss_rendition(
 	int return_code;
 	struct Cmiss_region *region, *child_region = NULL;
 	struct Cmiss_rendition *child_rendition;
-	
+
 	ENTER(for_each_rendition_in_Cmiss_rendition);
 	if (rendition)
 	{
@@ -2044,11 +2050,11 @@ int for_each_rendition_in_Cmiss_rendition(
 	{
 		display_message(ERROR_MESSAGE,"for_each_rendition_in_Cmiss_rendition.  "
 			"Invalid argument(s)");
-		return_code=0;	
+		return_code=0;
 	}
 	LEAVE;
 
-	return (return_code);	
+	return (return_code);
 }
 
 int Cmiss_rendition_get_graphic_position(
@@ -2355,7 +2361,7 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 	return (return_code);
 } /* Cmiss_rendition_modify */
 
-int Cmiss_rendition_set_visibility_flag(struct Cmiss_rendition *rendition, 
+int Cmiss_rendition_set_visibility_flag(struct Cmiss_rendition *rendition,
 	int visibility_flag)
 {
 	if (rendition)
@@ -2659,7 +2665,7 @@ int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 				{
 					display_message(ERROR_MESSAGE, "Cmiss_rendition_set_transformation.  "
 						"Unable to allocate transformation");
-					return_code = 0;				
+					return_code = 0;
 				}
 			}
 		}
@@ -2806,7 +2812,7 @@ int Cmiss_rendition_set_transformation_with_time_callback(struct Cmiss_rendition
 			return_code=0;
 	 }
 
-	 LEAVE;	
+	 LEAVE;
 
 	 return (return_code);
 }
@@ -2925,12 +2931,12 @@ static int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *renditi
 // 	char *time_object_name;
 	int return_code;
 	struct Time_object *time;
-	
+
 	ENTER(Cmiss_rendition_update_time_behaviour);
 	if (rendition)
 	{
 		return_code = 1;
-		/* Ensure the Scene object has a time object if and only if the 
+		/* Ensure the Scene object has a time object if and only if the
 			graphics object has more than one time */
 		if(Cmiss_rendition_has_multiple_times(rendition))
 		{
@@ -2964,7 +2970,7 @@ static int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *renditi
 			{
 				Cmiss_rendition_set_time_object(rendition,
 					(struct Time_object *)NULL);
-			}		
+			}
 		}
 	}
 	else
@@ -3027,7 +3033,7 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 			struct Cmiss_region *region = ACCESS(Cmiss_region)(rendition->region);
 			struct Cmiss_region *child_region;
 			struct Cmiss_rendition *child_rendition;
-			
+
 			child_region = Cmiss_region_get_first_child(region);
 			while (child_region)
 			{
@@ -3223,7 +3229,7 @@ int DESTROY(Cmiss_rendition)(
 	return (return_code);
 }
 
-int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition, 
+int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 	struct GT_object *glyph, const char *cmiss_graphic_name)
 {
 	int return_code = 0;

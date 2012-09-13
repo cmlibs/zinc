@@ -61,7 +61,7 @@ LAST MODIFIED : 13 March 2008
 DESCRIPTION :
 Describes the buffering mode of the scene viewer.  A DOUBLE_BUFFER allows the
 graphics to be drawn offscreen before being displayed all at once, reducing the
-apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or 
+apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or
 other features unavailable on a single buffer scene_viewer.  Secifying
 ANY_BUFFER_MODE will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
 be selected depending on the other requirements of the scene_viewer.
@@ -71,7 +71,7 @@ window, such as when the graphics are to be composited by an external program.
 These are currently only implemeneted for winapi.
 The graphics will be drawn offscreen and only rendered on screen when requested,
 such as with the Cmiss_scene_viewer_handle_windows_event.  The COPY version will
-overwrite any existing pixels when drawing and the BLEND version will use the 
+overwrite any existing pixels when drawing and the BLEND version will use the
 alpha channel of the rendered scene to blend itself with the existing pixels.
 ==============================================================================*/
 {
@@ -88,13 +88,13 @@ LAST MODIFIED : 2 November 2006
 
 DESCRIPTION :
 Controls the way the mouse and keyboard are used to interact with the scene viewer.
-CMISS_SCENE_VIEWER_INTERACT_STANDARD is the traditional cmgui mode. 
-  Rotate: Left mouse button 
+CMISS_SCENE_VIEWER_INTERACT_STANDARD is the traditional cmgui mode.
+  Rotate: Left mouse button
   Translate: Middle mouse button
   Zoom: Right mouse button
 CMISS_SCENE_VIEWER_INTERACT_2D is a mode more suitable for 2D use
   Translate: Left mouse button
-  Rotate: Middle mouse button 
+  Rotate: Middle mouse button
   Zoom: Right mouse button
 ==============================================================================*/
 {
@@ -162,12 +162,12 @@ normal render, this causes them to obscure other objects behind if they are
 drawn first.
 CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY puts out all the opaque geometry first
 and then ignores the depth test while drawing all partially transparent objects,
-this ensures everything is drawn but multiple layers of transparency will 
+this ensures everything is drawn but multiple layers of transparency will
 always draw on top of each other which means a surface that is behind another
 may be drawn over the top of one that is supposed to be in front.
 CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY divides the viewing volume between the
 near and far clip planes into "transparency_layers" slices and renders each
-slice from back to front.  This is very slow and can still have artefacts at 
+slice from back to front.  This is very slow and can still have artefacts at
 the edges of the layers.  Best use of the slices is made if the near and far
 clip planes are tight around the objects in the scene.
 CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY uses some Nvidia extensions
@@ -185,13 +185,13 @@ no materials used in the scene can contain textures.
 
 enum Cmiss_scene_viewer_blending_mode
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED :
 
 DESCRIPTION :
 SCENE_VIEWER_BLEND_NORMAL is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
 SCENE_VIEWER_BLEND_TRUE_ALPHA is available for OpenGL version 1.4 and above
 and is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
-for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha, which 
+for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha, which
 results in the correct final alpha value in a saved image.
 ==============================================================================*/
 {
@@ -250,7 +250,7 @@ int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
 LAST MODIFIED : 2 November 2006
 
 DESCRIPTION :
-Returns the mouse and keyboard interaction mode of the Scene_viewer.  
+Returns the mouse and keyboard interaction mode of the Scene_viewer.
 See the definition of the
 Cmiss_scene_viewer_interact_mode enumerator.
 ==============================================================================*/
@@ -431,6 +431,12 @@ View angle is measured across the largest square which fits inside the viewing
 window.
 ==============================================================================*/
 
+ZINC_API int Cmiss_scene_viewer_set_graphics_buffer_width(Cmiss_scene_viewer_id scene_viewer,
+	unsigned int width);
+
+ZINC_API int Cmiss_scene_viewer_set_graphics_buffer_height(Cmiss_scene_viewer_id scene_viewer,
+	unsigned int height);
+
 ZINC_API int Cmiss_scene_viewer_get_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
 	unsigned int *antialias);
 /*******************************************************************************
@@ -470,7 +476,7 @@ Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
 significant value, 0.1 is a small value causing significant distortion.
 The <focal_depth> is depth in normalised device coordinates, -1 at near plane
 and +1 at far plane.  At this <focal_depth> the image is in focus no matter
-how small the <depth_of_field>. 
+how small the <depth_of_field>.
 ==============================================================================*/
 
 ZINC_API int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
@@ -479,7 +485,7 @@ ZINC_API int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_vi
 LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
-Returns the <perturb_lines> flag which determines whether the 
+Returns the <perturb_lines> flag which determines whether the
 GL_EXT_polygon_offset extension is used to offset the lines from the surfaces
 in the z direction of the scene viewer.
 ==============================================================================*/
@@ -777,8 +783,8 @@ Removes the callback calling <function> with <user_data> from
  * @param scene_viewer  Handle to Cmiss_scene_viewer object.
  * @return  Handle to Cmiss_scene_viewer_input on success, or NULL on failure.
  */
-ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
-	Cmiss_scene_viewer_id scene_viewer);
+//-- ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
+//-- 	Cmiss_scene_viewer_id scene_viewer);
 
 /*******************************************************************************
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
@@ -787,7 +793,7 @@ ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
+//-- ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
 
 /***************************************************************************//**
  * Manually calls the scene viewer's list of input callbacks with the supplied
@@ -797,8 +803,8 @@ ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input
  * @param input_data  Description of the input event.
  * @return  Status CMISS_OK on success, any other value if failed.
  */
-ZINC_API int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_input_id input_data);
+//-- ZINC_API int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
+//-- 	Cmiss_scene_viewer_input_id input_data);
 
 ZINC_API int Cmiss_scene_viewer_add_input_callback(
 	Cmiss_scene_viewer_id scene_viewer,
@@ -810,7 +816,7 @@ LAST MODIFIED : 11 September 2007
 DESCRIPTION :
 Adds callback <function> that will be activated each time input is received
 by the scene_viewer.
-If <add_first> is true (non zero) then this callback will be added to the 
+If <add_first> is true (non zero) then this callback will be added to the
 front of the list.
 When a callback event is generated the list is processed as long as each
 callback function returns true, so to stop processing and not call any more
@@ -829,9 +835,9 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_event_type(
-	Cmiss_scene_viewer_input_id input_data,
-	enum Cmiss_scene_viewer_input_event_type *event_type);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_event_type(
+//-- 	Cmiss_scene_viewer_input_id input_data,
+//-- 	enum Cmiss_scene_viewer_input_event_type *event_type);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -839,9 +845,9 @@ DESCRIPTION :
 Returns the type of event that <input_data> represents.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_event_type(
-	Cmiss_scene_viewer_input_id input_data,
-	enum Cmiss_scene_viewer_input_event_type event_type);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_event_type(
+//-- 	Cmiss_scene_viewer_input_id input_data,
+//-- 	enum Cmiss_scene_viewer_input_event_type event_type);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -849,8 +855,8 @@ DESCRIPTION :
 Sets the type of event that <input_data> represents.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_button_number(
-	Cmiss_scene_viewer_input_id input_data);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_button_number(
+//-- 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -859,8 +865,8 @@ Returns the button number that generated the event.
 This will be 1 to 3 for a button event and 0 for a non button event.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_button_number(
-	Cmiss_scene_viewer_input_id input_data, int button_number);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_button_number(
+//-- 	Cmiss_scene_viewer_input_id input_data, int button_number);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -869,8 +875,8 @@ Sets the button number that the event represents.
 1 to 3 for a button event and 0 for a non button event.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_key_code(
-	Cmiss_scene_viewer_input_id input_data);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_key_code(
+//-- 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -878,8 +884,8 @@ DESCRIPTION :
 Returns the key code that generated the event.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_key_code(
-	Cmiss_scene_viewer_input_id input_data, int key_code);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_key_code(
+//-- 	Cmiss_scene_viewer_input_id input_data, int key_code);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -887,8 +893,8 @@ DESCRIPTION :
 Sets the key code that the event represents.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_x_position(
-	Cmiss_scene_viewer_input_id input_data);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_x_position(
+//-- 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -896,8 +902,8 @@ DESCRIPTION :
 Returns the x position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_x_position(
-	Cmiss_scene_viewer_input_id input_data, int x_position);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_x_position(
+//-- 	Cmiss_scene_viewer_input_id input_data, int x_position);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -905,8 +911,8 @@ DESCRIPTION :
 Sets the x position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_y_position(
-	Cmiss_scene_viewer_input_id input_data);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_y_position(
+//-- 	Cmiss_scene_viewer_input_id input_data);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -914,8 +920,8 @@ DESCRIPTION :
 Returns the y position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_y_position(
-	Cmiss_scene_viewer_input_id input_data, int y_position);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_y_position(
+//-- 	Cmiss_scene_viewer_input_id input_data, int y_position);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -923,9 +929,9 @@ DESCRIPTION :
 Sets the y position of the mouse when the event occured in pixels from top left corner.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_get_modifier_flags(
-	Cmiss_scene_viewer_input_id input_data,
-	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags);
+//-- ZINC_API int Cmiss_scene_viewer_input_get_modifier_flags(
+//-- 	Cmiss_scene_viewer_input_id input_data,
+//-- 	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags);
 /*******************************************************************************
 LAST MODIFIED : 12 September 2007
 
@@ -934,9 +940,9 @@ Returns the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_input_set_modifier_flags(
-	Cmiss_scene_viewer_input_id input_data,
-	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags);
+//-- ZINC_API int Cmiss_scene_viewer_input_set_modifier_flags(
+//-- 	Cmiss_scene_viewer_input_id input_data,
+//-- 	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags);
 /*******************************************************************************
 LAST MODIFIED : 12 September 2007
 
@@ -945,9 +951,9 @@ Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+//-- ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
+//-- 	Cmiss_scene_viewer_id scene_viewer,
+//-- 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 September 2007
 
@@ -956,9 +962,9 @@ This callback will be notified when a repaint is required by a windowless mode
 scene_viewer, so that the host application can do the redraw.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+//-- ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
+//-- 	Cmiss_scene_viewer_id scene_viewer,
+//-- 	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
@@ -975,12 +981,15 @@ DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
 
+//ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
+//	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+//	void *parent_void,
+//	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+//	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+//	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+//	int minimum_accumulation_buffer_depth);
 ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
-	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
-	void *parent_void,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
+		Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+		void *canvas);
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

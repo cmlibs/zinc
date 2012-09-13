@@ -70,5 +70,15 @@ enum Cmiss_graphic_type
 	 * object in cmgui. This will be replaced in the future*/
 }; /* enum Cmiss_graphics_type */
 
+/**
+ *	An enum defining the type of graphic glyph.
+ */
+enum Cmiss_graphic_glyph_type
+{
+	CMISS_GRAPHIC_GLYPH_TYPE_INVALID = 0,
+	CMISS_GRAPHIC_GLYPH_POINT,
+	CMISS_GRAPHIC_GLYPH_AXES
+};
+
 #define CMISS_GRAPHIC_ID_H
 #endif /* CMISS_GRAPHIC_ID_H */

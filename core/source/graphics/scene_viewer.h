@@ -71,11 +71,11 @@ struct MANAGER(Scene);
 */
 struct Cmiss_scene_viewer_package;
 
-/* 
-The Cmiss_scene_viewer which is Public is currently the same object as the 
-cmgui internal Scene_viewer.  The Public interface is contained in 
+/*
+The Cmiss_scene_viewer which is Public is currently the same object as the
+cmgui internal Scene_viewer.  The Public interface is contained in
 api/cmiss_scene_viewer.h however most of the functions come directly from
-this module.  So that these functions match the public declarations the 
+this module.  So that these functions match the public declarations the
 struct Scene_viewer is declared to be the same as Cmiss_scene_viewer here
 and the functions given their public names.
 */
@@ -107,7 +107,7 @@ and the functions given their public names.
    Cmiss_scene_viewer_get_transparency_layers
 #define Scene_viewer_set_transparency_layers \
    Cmiss_scene_viewer_set_transparency_layers
-#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode 
+#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
 #define Scene_viewer_get_view_angle Cmiss_scene_viewer_get_view_angle
 #define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
 #define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
@@ -353,7 +353,7 @@ LAST MODIFIED : 4 September 2007
 DESCRIPTION :
 Creates the scene viewer with respect to the cmiss_scene_viewer_package.
 The scene_viewer automatically removes itself from the package when it is
-destroyed.  If the package is destroyed at some point (usually by the 
+destroyed.  If the package is destroyed at some point (usually by the
 destruction of the Command data) then all the scene viewers will be
 destroyed as well.
 ==============================================================================*/
@@ -373,7 +373,7 @@ int Scene_viewer_get_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 9 October 2003
 
 DESCRIPTION :
-Gets the <scene_viewer> tumble angle.  
+Gets the <scene_viewer> tumble angle.
 ==============================================================================*/
 
 int Scene_viewer_set_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
@@ -382,7 +382,7 @@ int Scene_viewer_set_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
-Sets the <scene_viewer> tumble angle.  
+Sets the <scene_viewer> tumble angle.
 ==============================================================================*/
 
 int Scene_viewer_get_freespin_tumble_axis(struct Scene_viewer *scene_viewer,
@@ -464,7 +464,7 @@ Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
 significant value, 0.1 is a small value causing significant distortion.
 The <focal_depth> is depth in normalised device coordinates, -1 at near plane
 and +1 at far plane.  At this <focal_depth> the image is in focus no matter
-how small the <depth_of_field>. 
+how small the <depth_of_field>.
 ==============================================================================*/
 
 int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
@@ -773,7 +773,7 @@ int Scene_viewer_get_NDC_info(struct Scene_viewer *scene_viewer,
 	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height);
 /*******************************************************************************
 LAST MODIFIED : 21 January 1998
- 
+
 DESCRIPTION :
 Gets the NDC_info from the scene_viewer - see Scene_viewer_set_NDC_info.
 ==============================================================================*/
@@ -1012,7 +1012,7 @@ LAST MODIFIED : 9 October 1999
 DESCRIPTION :
 When the transparency_mode of the Scene_viewer is layered_transparency then
 the z depth is divided into <layers> slices.  From back to front for each layer
-the clip planes are set to clip all other layers and then the entire scene is 
+the clip planes are set to clip all other layers and then the entire scene is
 drawn.  This is very expensive but can get great results for transparent
 surfaces.  Best use of the slices is made if the near and far clip planes are
 tight around the objects in the scene.
@@ -1112,7 +1112,7 @@ Gets the viewing volume of the Scene_viewer.
  * @return  1 if successfully get the view volume and NDC info, otherwise 0.
  */
 int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(struct Scene_viewer *scene_viewer,
-	int target_width, int target_height, int source_width, int source_height, double *left, 
+	int target_width, int target_height, int source_width, int source_height, double *left,
 	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height);
 
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
@@ -1430,9 +1430,9 @@ int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
-Adds callback that will be activated each time input is received by the 
+Adds callback that will be activated each time input is received by the
 scene_viewer.
-If <add_first> is true (non zero) then this callback will be added to the 
+If <add_first> is true (non zero) then this callback will be added to the
 front of the list.
 When a callback event is generated the list is processed as long as each
 callback function returns true, so to stop processing and not call any more
@@ -1566,7 +1566,7 @@ int Scene_viewer_win32_set_window_size(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 14 September 2007
 
 DESCRIPTION :
-Sets the maximum extent of the graphics window within which individual paints 
+Sets the maximum extent of the graphics window within which individual paints
 will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -1584,17 +1584,6 @@ Cmiss_field_image_id Scene_viewer_get_background_image_field(
 
 int Scene_viewer_set_background_image_field(
 	struct Scene_viewer *scene_viewer, Cmiss_field_image_id image_field);
-
-/***************************************************************************//**
- * Gets matrix transforming coordinate system to
- * CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
- * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
- * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
- * coordinates which reverse z so are left-handed.
- */
-int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum Cmiss_graphics_coordinate_system coordinate_system,
-	gtMatrix *local_transformation_matrix, double *projection);
 
 Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 	Scene_viewer_rendering_data *rendering_data);

@@ -52,6 +52,8 @@ The public interface to the Cmiss_rendition.
 #include "types/cmiss_graphics_material_id.h"
 #include "types/cmiss_tessellation_id.h"
 
+#include "cmiss_shared_object.h"
+
 /*******************************************************************************
  * Returns a new reference to the graphic with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -80,7 +82,7 @@ int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Set the material of the cmiss graphic
  *
  * @param graphic  The graphic to be edit
@@ -89,7 +91,7 @@ int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  */
 int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Set the selected material of the cmiss graphic
  *
  * @param graphic  The graphic to be edit
@@ -99,7 +101,7 @@ int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material
 int Cmiss_graphic_set_selected_material(
 	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Set the texture coordinate field of the cmiss graphic.
  *
  * Texture coordinate field is use to set up and describe how a texture should
@@ -148,7 +150,7 @@ enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
  * Set the type for how the graphics will be rendered in GL.
  *
  * @param graphic  The handle to the graphic to be edit
- * @param render_type  type of rendering for this graphic, please see the 
+ * @param render_type  type of rendering for this graphic, please see the
  *   render_type definition for more information.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
@@ -172,6 +174,8 @@ int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
  */
 int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
+
+ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphic_glyph_type glyph_type);
 
 /***************************************************************************//**
  * Specifying the coordinate system in which to render the coordinates of graphics.

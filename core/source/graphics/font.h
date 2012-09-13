@@ -61,9 +61,6 @@ DECLARE_LIST_TYPES(Graphics_font);
 
 DECLARE_MANAGER_TYPES(Graphics_font);
 
-
-struct Graphics_buffer;
-
 /*
 Global functions
 ----------------
@@ -86,7 +83,7 @@ DESCRIPTION :
 
 
 
-struct MANAGER(Graphics_font)	
+struct MANAGER(Graphics_font)
 	 *Graphics_font_package_get_font_manager(
 		 struct Graphics_font_package *font_package);
 /*******************************************************************************
@@ -105,7 +102,7 @@ int Graphics_font_package_define_font(
 LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
-Defines font named <font_name> in the <font_package> using the 
+Defines font named <font_name> in the <font_package> using the
 user interface dependent <font_string>.
 ==============================================================================*/
 
@@ -117,19 +114,19 @@ LAST MODIFIED : 11 April 2007
 DESCRIPTION :
 Finds a Graphics_font with name <font_name> in the <font_package>.
 If it doesn't exist then a font is created using the <font_name>
-as the user interface dependent font string. 
+as the user interface dependent font string.
 ==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
 
-PROTOTYPE_LIST_FUNCTIONS(Graphics_font); 
+PROTOTYPE_LIST_FUNCTIONS(Graphics_font);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,const char *);
 
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *); 
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *);
 
 int DESTROY(Graphics_font)(struct Graphics_font **font_address);
 /*******************************************************************************
@@ -145,7 +142,7 @@ int Graphics_font_compile(struct Graphics_font *font,
 LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-Compiles the specified <font> so it can be used by the graphics.  The 
+Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required as the Win32 API requires a window context.
 ==============================================================================*/
 

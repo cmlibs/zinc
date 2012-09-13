@@ -41,6 +41,14 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "cmiss_zinc_configure.h"
+
+#include <wx/wx.h>
+#if defined (USE_GLEW)
+#include <GL/glew.h>
+#endif
+#include <wx/glcanvas.h>
+
 #include "general/debug.h"
 #include "general/mystring.h"
 //#include "command/cmiss.h"
