@@ -45,6 +45,8 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,7 +75,7 @@ Global functions
  * @param field_module  The field module to obtain a new reference to.
  * @return  New field module reference with incremented reference count.
  */
-Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_module);
+ZINC_API Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
  * Destroys reference to the field module and sets pointer/handle to NULL.
@@ -82,7 +84,7 @@ Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_modu
  * @param field_module_address  Address of field module reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
+ZINC_API int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for this field module. Call this
@@ -96,7 +98,7 @@ int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
  * @param field_module  The field_module to begin change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
+ZINC_API int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for this field module.
@@ -107,7 +109,7 @@ int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
  * @param field_module  The field_module to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
+ZINC_API int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
  * Returns the field of the specified name from the field module.
@@ -116,7 +118,7 @@ int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
  * @param field_name  The name of the field to find.
  * @return  New reference to field of specified name, or NULL if not found.
  */
-Cmiss_field_id Cmiss_field_module_find_field_by_name(
+ZINC_API Cmiss_field_id Cmiss_field_module_find_field_by_name(
 	Cmiss_field_module_id field_module, const char *field_name);
 
 /***************************************************************************//**
@@ -132,7 +134,7 @@ Cmiss_field_id Cmiss_field_module_find_field_by_name(
  * @return  Handle to field_iterator at position before first, or NULL if
  * error.
  */
-Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
+ZINC_API Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
 	Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
@@ -144,7 +146,7 @@ Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
  * faces for.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
+ZINC_API int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
  * Gets the region this field module can create fields for.
@@ -152,7 +154,7 @@ int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
  * @param field_module  The field module to query.
  * @return  Accessed handle to owning region for field_module.
  */
-Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id field_module);
+ZINC_API Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id field_module);
 
 #ifdef __cplusplus
 }

@@ -44,11 +44,13 @@ The public interface to the some of the internal functions of cmiss.
 #ifndef __CMISS_CORE_H__
 #define __CMISS_CORE_H__
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void *Cmiss_allocate(int bytes);
+ZINC_API void *Cmiss_allocate(int bytes);
 /*******************************************************************************
 LAST MODIFIED : 12 August 2003
 
@@ -57,7 +59,7 @@ Frees the memory associated with the pointer.  Used to clean up when functions
 return buffers allocated internally to cmiss.
 ==============================================================================*/
 
-int Cmiss_deallocate(void *ptr);
+ZINC_API int Cmiss_deallocate(void *ptr);
 /*******************************************************************************
 LAST MODIFIED : 12 August 2003
 

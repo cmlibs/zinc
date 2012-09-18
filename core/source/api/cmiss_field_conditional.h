@@ -63,7 +63,7 @@ extern "C" {
  * @param source_field_three  FALSE = zero conditional component results.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two,
 	Cmiss_field_id source_field_three);

@@ -48,6 +48,8 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,7 +63,7 @@ extern "C" {
  * @param values The array of constant values
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
 	int number_of_values, const double *values);
 
 /*****************************************************************************//**
@@ -74,7 +76,7 @@ Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_mo
  * @param source_field The field the values are copied from.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -88,7 +90,7 @@ Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_mo
  * is 0 and the last is (number_of_field_components - 1).
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, int component_index);
 
 /*****************************************************************************//**
@@ -100,7 +102,7 @@ Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_m
  * @param source_fields  The array of fields to be concatenating together.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
 	int number_of_source_fields, Cmiss_field_id *source_fields);
 
 #ifdef __cplusplus

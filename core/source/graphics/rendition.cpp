@@ -487,7 +487,7 @@ static struct Computed_field *Cmiss_rendition_get_default_coordinate_field(
 /***************************************************************************//**
  * Set legacy default_coordinate_field in gfx modify g_element general command.
  */
-static int Cmiss_rendition_set_default_coordinate_field(
+int Cmiss_rendition_set_default_coordinate_field(
 	struct Cmiss_rendition *rendition,
 	struct Computed_field *default_coordinate_field)
 {

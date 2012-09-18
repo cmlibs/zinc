@@ -70,7 +70,7 @@ extern "C" {
  * @param region  The region to obtain a new reference to.
  * @return  New region reference with incremented reference count.
  */
-Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
+ZINC_API Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
 
 /*******************************************************************************
  * Destroys this handle to the region, and sets it to NULL.
@@ -94,7 +94,7 @@ ZINC_API int Cmiss_region_destroy(Cmiss_region_id *region_address);
  * @param region  The region to begin change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_begin_change(Cmiss_region_id region);
+ZINC_API int Cmiss_region_begin_change(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for this region only.
@@ -106,7 +106,7 @@ int Cmiss_region_begin_change(Cmiss_region_id region);
  * @param region  The region to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_end_change(Cmiss_region_id region);
+ZINC_API int Cmiss_region_end_change(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for all regions in a tree, used to
@@ -117,7 +117,7 @@ int Cmiss_region_end_change(Cmiss_region_id region);
  * @param region  The root of the region tree to begin change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
+ZINC_API int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for all regions in a tree.
@@ -129,7 +129,7 @@ int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
  * @param region  The root of the region tree to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
+ZINC_API int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Returns the name of the region.
@@ -138,7 +138,7 @@ int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
  * @return  On success: allocated string containing region name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_region_get_name(Cmiss_region_id region);
+ZINC_API char *Cmiss_region_get_name(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Sets the name of the region.
@@ -151,7 +151,7 @@ char *Cmiss_region_get_name(Cmiss_region_id region);
  * @param name  The new name for the region.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_set_name(Cmiss_region_id region, const char *name);
+ZINC_API int Cmiss_region_set_name(Cmiss_region_id region, const char *name);
 
 /***************************************************************************//**
  * Returns a reference to the parent region of this region.
@@ -159,7 +159,7 @@ int Cmiss_region_set_name(Cmiss_region_id region, const char *name);
  * @param region  The child region.
  * @return  Accessed reference to parent region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_get_parent(Cmiss_region_id region);
+ZINC_API Cmiss_region_id Cmiss_region_get_parent(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Returns a reference to the first child region of this region.
@@ -167,7 +167,7 @@ Cmiss_region_id Cmiss_region_get_parent(Cmiss_region_id region);
  * @param region  The region whose first child is requested.
  * @return  Accessed reference to first child region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_get_first_child(Cmiss_region_id region);
+ZINC_API Cmiss_region_id Cmiss_region_get_first_child(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Returns a reference to this region's next sibling region.
@@ -175,7 +175,7 @@ Cmiss_region_id Cmiss_region_get_first_child(Cmiss_region_id region);
  * @param region  The region whose next sibling is requested.
  * @return  Accessed reference to next sibling region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_get_next_sibling(Cmiss_region_id region);
+ZINC_API Cmiss_region_id Cmiss_region_get_next_sibling(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Returns a reference to this region's previous sibling region.
@@ -183,7 +183,7 @@ Cmiss_region_id Cmiss_region_get_next_sibling(Cmiss_region_id region);
  * @param region  The region whose previous sibling is requested.
  * @return  Accessed reference to previous sibling region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_get_previous_sibling(Cmiss_region_id region);
+ZINC_API Cmiss_region_id Cmiss_region_get_previous_sibling(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Replaces the region reference with a reference to its next sibling.
@@ -196,7 +196,7 @@ Cmiss_region_id Cmiss_region_get_previous_sibling(Cmiss_region_id region);
  *
  * @param region_address  The address of the region reference to replace.
  */
-void Cmiss_region_reaccess_next_sibling(Cmiss_region_id *region_address);
+ZINC_API void Cmiss_region_reaccess_next_sibling(Cmiss_region_id *region_address);
 
 /***************************************************************************//**
  * Adds new_child to the end of the list of child regions of this region.
@@ -209,7 +209,7 @@ void Cmiss_region_reaccess_next_sibling(Cmiss_region_id *region_address);
  * @param new_child  The child to add.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child);
+ZINC_API int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child);
 
 /***************************************************************************//**
  * Inserts new_child before the existing ref_child in the list of child regions
@@ -223,7 +223,7 @@ int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child)
  * @param new_child  The child to append.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_insert_child_before(Cmiss_region_id region,
+ZINC_API int Cmiss_region_insert_child_before(Cmiss_region_id region,
 	Cmiss_region_id new_child, Cmiss_region_id ref_child);
 
 /***************************************************************************//**
@@ -234,7 +234,7 @@ int Cmiss_region_insert_child_before(Cmiss_region_id region,
  * @param old_child  The child to remove.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_remove_child(Cmiss_region_id region,
+ZINC_API int Cmiss_region_remove_child(Cmiss_region_id region,
 	Cmiss_region_id old_child);
 
 /***************************************************************************//**
@@ -244,7 +244,7 @@ int Cmiss_region_remove_child(Cmiss_region_id region,
  * @param subregion  The region being tested for containment.
  * @return  1 if this region is or contains subregion, 0 if not.
  */
-int Cmiss_region_contains_subregion(Cmiss_region_id region,
+ZINC_API int Cmiss_region_contains_subregion(Cmiss_region_id region,
 	Cmiss_region_id subregion);
 
 /***************************************************************************//**
@@ -254,7 +254,7 @@ int Cmiss_region_contains_subregion(Cmiss_region_id region,
  * @param name  The name of the child.
  * @return  Accessed reference to the named child, or NULL if no match.
  */
-Cmiss_region_id Cmiss_region_find_child_by_name(
+ZINC_API Cmiss_region_id Cmiss_region_find_child_by_name(
 	Cmiss_region_id region, const char *name);
 
 /***************************************************************************//**
@@ -268,7 +268,7 @@ Cmiss_region_id Cmiss_region_find_child_by_name(
  * @param path  The directory-style path to the subregion.
  * @return  Accessed reference to subregion, or NULL no match.
  */
-Cmiss_region_id Cmiss_region_find_subregion_at_path(Cmiss_region_id region,
+ZINC_API Cmiss_region_id Cmiss_region_find_subregion_at_path(Cmiss_region_id region,
 	const char *path);
 
 /***************************************************************************//**
@@ -278,7 +278,7 @@ Cmiss_region_id Cmiss_region_find_subregion_at_path(Cmiss_region_id region,
  * @param region  The region from which to obtain the field module.
  * @return  Field module object.
  */
-Cmiss_field_module_id Cmiss_region_get_field_module(Cmiss_region_id region);
+ZINC_API Cmiss_field_module_id Cmiss_region_get_field_module(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Creates and returns a reference to a region compatible with base_region,
@@ -288,7 +288,7 @@ Cmiss_field_module_id Cmiss_region_get_field_module(Cmiss_region_id region);
  * @param base_region  An existing region.
  * @return  Accessed reference to the newly created region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
+ZINC_API Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
 
 /***************************************************************************//**
  * Create a child region with provided name in parent region.
@@ -299,7 +299,7 @@ Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
  * @param name  The name for the newly created region
  * @return  Accessed reference to the new child region, or NULL if failed.
  */
-Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
+ZINC_API Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
 	const char *name);
 
 /***************************************************************************//**
@@ -312,7 +312,7 @@ Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
  * forward slash "/". Leading and trailing separator slashes are optional.
  * @return  Accessed reference to the new subregion, or NULL if failed.
  */
-Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
+ZINC_API Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
 	const char *path);
 
 /***************************************************************************//**
@@ -326,7 +326,7 @@ Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
-int Cmiss_region_read(Cmiss_region_id region,
+ZINC_API int Cmiss_region_read(Cmiss_region_id region,
 	Cmiss_stream_information_id stream_information);
 
 /***************************************************************************//**
@@ -339,7 +339,7 @@ int Cmiss_region_read(Cmiss_region_id region,
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
-int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
+ZINC_API int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
 
 /***************************************************************************//**
  * Write region data using the data provided in the Cmiss_io_stream object.
@@ -351,7 +351,7 @@ int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
  * @return  Status CMISS_OK if data is successfully written out, any other value
  * on failure.
  */
-int Cmiss_region_write(Cmiss_region_id region,
+ZINC_API int Cmiss_region_write(Cmiss_region_id region,
 	Cmiss_stream_information_id stream_information);
 
 /***************************************************************************//**
@@ -363,7 +363,7 @@ int Cmiss_region_write(Cmiss_region_id region,
  * @return  Status CMISS_OK if data is successfully written out, any other value
  * otherwise.
  */
-int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
+ZINC_API int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
 
 enum Cmiss_stream_information_region_attribute
 {
@@ -378,7 +378,7 @@ enum Cmiss_stream_information_region_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_stream_information_region_attribute
+ZINC_API enum Cmiss_stream_information_region_attribute
 	Cmiss_stream_information_region_attribute_enum_from_string(const char *string);
 
 /***************************************************************************//**
@@ -388,7 +388,7 @@ enum Cmiss_stream_information_region_attribute
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_stream_information_region_attribute_enum_to_string(
+ZINC_API char *Cmiss_stream_information_region_attribute_enum_to_string(
 	enum Cmiss_stream_information_region_attribute attribute);
 
 /*****************************************************************************//**
@@ -398,7 +398,7 @@ char *Cmiss_stream_information_region_attribute_enum_to_string(
  *
  * @return The created object.
  */
-Cmiss_stream_information_id Cmiss_region_create_stream_information(
+ZINC_API Cmiss_stream_information_id Cmiss_region_create_stream_information(
 	Cmiss_region_id region);
 
 /***************************************************************************//**
@@ -411,7 +411,7 @@ Cmiss_stream_information_id Cmiss_region_create_stream_information(
  * @return  region specific representation if the input stream_information is
  * of this type, otherwise NULL.
  */
-Cmiss_stream_information_region_id Cmiss_stream_information_cast_region(
+ZINC_API Cmiss_stream_information_region_id Cmiss_stream_information_cast_region(
 	Cmiss_stream_information_id stream_information);
 
 /***************************************************************************//**
@@ -439,7 +439,7 @@ CMISS_C_INLINE Cmiss_stream_information_id Cmiss_stream_information_region_base_
  * @return  Status CMISS_OK if the operation is successful, any other value on
  * failure.
  */
-int Cmiss_stream_information_region_destroy(
+ZINC_API int Cmiss_stream_information_region_destroy(
 	Cmiss_stream_information_region_id *stream_information_address);
 
 /***************************************************************************//**
@@ -450,7 +450,7 @@ int Cmiss_stream_information_region_destroy(
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
-int Cmiss_stream_information_region_has_attribute(
+ZINC_API int Cmiss_stream_information_region_has_attribute(
 	Cmiss_stream_information_region_id stream_information,
 	enum Cmiss_stream_information_region_attribute attribute);
 
@@ -461,7 +461,7 @@ int Cmiss_stream_information_region_has_attribute(
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-double Cmiss_stream_information_region_get_attribute_real(
+ZINC_API double Cmiss_stream_information_region_get_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	enum Cmiss_stream_information_region_attribute attribute);
 
@@ -476,7 +476,7 @@ double Cmiss_stream_information_region_get_attribute_real(
  * failed or attribute not valid or unable to be set for this
  * Cmiss_stream_information_region.
  */
-int Cmiss_stream_information_region_set_attribute_real(
+ZINC_API int Cmiss_stream_information_region_set_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	enum Cmiss_stream_information_region_attribute attribute,
 	double value);
@@ -490,7 +490,7 @@ int Cmiss_stream_information_region_set_attribute_real(
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
-int Cmiss_stream_information_region_has_resource_attribute(
+ZINC_API int Cmiss_stream_information_region_has_resource_attribute(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
 	enum Cmiss_stream_information_region_attribute attribute);
@@ -503,7 +503,7 @@ int Cmiss_stream_information_region_has_resource_attribute(
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-double Cmiss_stream_information_region_get_resource_attribute_real(
+ZINC_API double Cmiss_stream_information_region_get_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
 	enum Cmiss_stream_information_region_attribute attribute);
@@ -519,7 +519,7 @@ double Cmiss_stream_information_region_get_resource_attribute_real(
  * failed or attribute not valid or unable to be set for this
  * Cmiss_stream_information_region.
  */
-int Cmiss_stream_information_region_set_resource_attribute_real(
+ZINC_API int Cmiss_stream_information_region_set_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
 	enum Cmiss_stream_information_region_attribute attribute,
