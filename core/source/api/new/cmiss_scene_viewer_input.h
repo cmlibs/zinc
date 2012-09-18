@@ -43,6 +43,10 @@ typedef int Cmiss_scene_viewer_input_modifier;
 
 #include "cmiss_scene_viewer.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int Cmiss_scene_viewer_default_input_callback(Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_input_id input);
 
@@ -59,6 +63,10 @@ Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_sc
 int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number);
 
 int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_SCENE_VIEWER_INPUT_H__ */
 
