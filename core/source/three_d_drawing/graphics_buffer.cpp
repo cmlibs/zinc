@@ -44,8 +44,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 
 #include "api/cmiss_zinc_configure.h"
 
-#define WX_USER_INTERFACE
-
 #if defined (WIN32)
 //#	define WINDOWS_LEAN_AND_MEAN
 #	define NOMINMAX
