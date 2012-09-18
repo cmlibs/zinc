@@ -2914,7 +2914,7 @@ kept in a sensible state.
 	return (return_code);
 } /* Scene_viewer_render_scene_in_viewport */
 
-static int Scene_viewer_automatic_tumble(struct Scene_viewer *scene_viewer)
+int Scene_viewer_automatic_tumble(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 28 September 2000
 

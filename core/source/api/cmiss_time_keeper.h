@@ -49,6 +49,10 @@ rewind and fast forward.
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * An enum type to define which direction the time keeper should go.
  */
@@ -87,16 +91,16 @@ enum Cmiss_time_keeper_repeat_mode
 	CMISS_TIME_KEEPER_REPEAT_MODE_INVALID = 0, /*!< Invalid play mode to handle special
 																							 circumstances. */
 	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_ONCE = 1, /*!< Only play once until it reaches either the
-																    minimum or maximum time set on the 
-																		time keeper. */  
+																	minimum or maximum time set on the
+																		time keeper. */
 	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_LOOP = 2, /*!< Play repeatedly in the same direction.
-																    i.e The time keeper will start from the 
-																		minimum time again after it reaches the 
+																	i.e The time keeper will start from the
+																		minimum time again after it reaches the
 																		maximum time during a forward playback
-																		time keeper. */  
+																		time keeper. */
 	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_SWING = 3 /*!< Play repeatedly in both direction.
-																     i.e The time keeper will play forward till 
-																		 it reaches the maximum time and then play 
+																	 i.e The time keeper will play forward till
+																		 it reaches the maximum time and then play
 																		 backward to minimum time and the same cycle
 																		 will repeat until stopped by the user. */
 };
@@ -233,22 +237,22 @@ int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
 
 /***************************************************************************//**
  * Create and returns a time notifier with regular update time in time keeper.
- * The returned time notifier will automatically be added to the time keeper. 
+ * The returned time notifier will automatically be added to the time keeper.
  *
  * @param update_frequency  The number of times which time notifier will receive
  *    callback per unit of time in the time keeper.
  * @param time_offset  This value will set the exact time the notification
- *    happenes and allow setting the callback time other than t=0. 
- *    Time notifier will receive/send out notification when 
+ *    happenes and allow setting the callback time other than t=0.
+ *    Time notifier will receive/send out notification when
  *    time_offset + original callback time is reached.
- * @return  The time notifier if successfully create a time notifier otherwise 
+ * @return  The time notifier if successfully create a time notifier otherwise
  *    NULL.
  */
 Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
 	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
 
 /***************************************************************************//**
- * Get the current frame mode of the time keeper. 
+ * Get the current frame mode of the time keeper.
  *
  * @param time_keeper  Handle to time keeper.
  * @return  CMISS_TIME_KEEPER_REAL_TIME or
@@ -260,10 +264,10 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
 
 /***************************************************************************//**
  * Set the time keeper to either play real time or every frame. In real time
- * mode, the time keeper may skip frames to ensure animation matches real-time 
- * as closely as possible, when the redraw time is greater than the requested 
- * interval. Every frame mode will cause the time keeper to generate every 
- * event it thinks is due and may affect the synchronisation both with the 
+ * mode, the time keeper may skip frames to ensure animation matches real-time
+ * as closely as possible, when the redraw time is greater than the requested
+ * interval. Every frame mode will cause the time keeper to generate every
+ * event it thinks is due and may affect the synchronisation both with the
  * system time and between time notifiers.
  *
  * @param time_keeper  Handle to time keeper.
@@ -275,7 +279,7 @@ int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_frame_mode frame_mode);
 
 /***************************************************************************//**
- * Get the current playing direction of the time keeper. 
+ * Get the current playing direction of the time keeper.
  *
  * @param time_keeper  Handle to time keeper.
  * @return  CMISS_TIME_KEEPER_PLAY_FORWARD or CMISS_TIME_KEEPER_PLAY_BACKWARD
@@ -314,18 +318,18 @@ int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
 int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
- * Get the current repeat mode of the time keeper. 
+ * Get the current repeat mode of the time keeper.
  *
  * @param time_keeper  Handle to time keeper.
  * @return  CMISS_TIME_KEEPER_PLAY_ONCE, CMISS_TIME_KEEPER_PLAY_LOOP or
  *    CMISS_TIME_KEEPER_PLAY_SWING if successfully called, otherwise
- *    CMISS_TIME_KEEPER_INVALID_REPEAT_MODE is returned. 
+ *    CMISS_TIME_KEEPER_INVALID_REPEAT_MODE is returned.
  */
 enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
 	Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
- * Set the repeat mode of the time keeper. 
+ * Set the repeat mode of the time keeper.
  *
  * @param time_keeper  Handle to time keeper.
  * @param Cmiss_time_keeper_repeat_mode  enumerator to tell time keeper which
@@ -338,28 +342,32 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 
 /***************************************************************************//**
  * Add a time notifier to the time keeper. The time keeper will keep track of the
- * time. When time changes, time keeper will notify the time notifier and then 
+ * time. When time changes, time keeper will notify the time notifier and then
  * the time notifier will notify its clients. time notifier can only have one set of
- * time keeper but time keeper can have multiple time notifiers. This function 
- * will increase the access count of the time notifier. 
- * 
+ * time keeper but time keeper can have multiple time notifiers. This function
+ * will increase the access count of the time notifier.
+ *
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper, 
+int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
 	Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
- * Remove the time notifier from the time keeper. This function will decrease the 
- * access count of the time notifier. 
+ * Remove the time notifier from the time keeper. This function will decrease the
+ * access count of the time notifier.
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper, 
+int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper,
 	Cmiss_time_notifier_id time_notifier);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_TIME_KEEPER_H__ */

@@ -48,10 +48,14 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Creates a field with the components specified in the array values.
  * Internally this a composite field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param number_of_values  The number of values in the array.
  * @param values The array of constant values
@@ -65,7 +69,7 @@ Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_mo
  * as a placeholder candidate for replacement with more complicated operations
  * later on.
  * Internally this a composite field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field the values are copied from.
  * @return Newly created field
@@ -77,7 +81,7 @@ Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_mo
  * Creates a field with the single source field and extracts a single component
  * specified by the component_number.
  * Internally this a composite field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field the component value is copied from.
  * @param component_index  The index for the component.  The first values index
@@ -98,5 +102,9 @@ Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_m
  */
 Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
 	int number_of_source_fields, Cmiss_field_id *source_fields);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_COMPOSITE_H__ */

@@ -47,12 +47,16 @@ Implements cmiss fields which conditionally calculate their inputs.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Creates a conditional field with the same number of components as each of the
  * source_fields. For each component, if the value of source_field_one is TRUE
  * (non-zero) then the result will be the value of source_field_two, otherwise the
  * component result will be taken from source_field_three.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  Conditional field.
  * @param source_field_two  TRUE = non-zero conditional component results.
@@ -63,5 +67,9 @@ Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two,
 	Cmiss_field_id source_field_three);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_CONDITIONAL_H) */

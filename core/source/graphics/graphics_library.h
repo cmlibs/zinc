@@ -231,13 +231,13 @@ LAST MODIFIED : 30 June 2004
 
 DESCRIPTION :
 Read pixels from the current graphics context into <frame_data> of size <width>
-and <height> according to the storage type.  'MakeCurrent' the desired source 
+and <height> according to the storage type.  'MakeCurrent' the desired source
 before calling this routine.  If <front_buffer> is 1 then pixels will be read
 from the front buffer, otherwise they will be read from the back buffer in a
 double buffered context.
 ==============================================================================*/
 
-enum Graphics_library_vendor_id ZINC_API Graphics_library_get_vendor_id(void);
+enum Graphics_library_vendor_id Graphics_library_get_vendor_id(void);
 /*******************************************************************************
 LAST MODIFIED : 18 March 2008
 
@@ -246,7 +246,7 @@ Returns an enumeration which can be used to select for a particular vendor
 implementation which is valid for the current OpenGL context.
 ==============================================================================*/
 
-int ZINC_API Graphics_library_load_extension(const char *extension_name);
+int Graphics_library_load_extension(const char *extension_name);
 /*******************************************************************************
 LAST MODIFIED : 2 March 2007
 
@@ -261,7 +261,7 @@ so it returns GLEXTENSION_UNSURE, allowing the calling procedure to react
 appropriately.
 ==============================================================================*/
 
-int ZINC_API Graphics_library_load_extensions(char *extensions);
+int Graphics_library_load_extensions(char *extensions);
 /*******************************************************************************
 LAST MODIFIED : 20 February 2004
 
@@ -415,10 +415,10 @@ yet we just don't know.
 #endif /* defined (GL_NV_float_buffer) */
 #if defined (GL_VERSION_2_0)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_shading_language);
-#endif 
+#endif
 #if defined (GL_VERSION_1_4)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_SGIS_generate_mipmap);
-#endif 
+#endif
 /* Fake extension to control whether display lists are used or not.
  * This is only determined by the corresponding CMISS_GL_display_list environment
  * variable. */
@@ -429,140 +429,140 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
    /* Testing to see if we are using Mesa like headers (NVIDIA defined APIENTRY and not APIENTRYP) */
 
 #    if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-       /* Note that while to strictly satisfy the GL_EXT_texture3D 
-	    this function would have the EXT delimiter the SGI
-	    OpenGL is version 1.1 with GL_EXT_texture3D but supplies
-	    all the 1.2 compliant symbols, so the code is simpler with
-	    just one version */
-       GRAPHICS_LIBRARY_EXTERN PFNGLTEXIMAGE3DPROC GLHANDLE(glTexImage3D);
+	   /* Note that while to strictly satisfy the GL_EXT_texture3D
+		this function would have the EXT delimiter the SGI
+		OpenGL is version 1.1 with GL_EXT_texture3D but supplies
+		all the 1.2 compliant symbols, so the code is simpler with
+		just one version */
+	   GRAPHICS_LIBRARY_EXTERN PFNGLTEXIMAGE3DPROC GLHANDLE(glTexImage3D);
 #      define glTexImage3D (GLHANDLE(glTexImage3D))
 #    endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 
 #    if defined (GL_VERSION_1_3)
-       GRAPHICS_LIBRARY_EXTERN PFNGLACTIVETEXTUREPROC GLHANDLE(glActiveTexture);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLACTIVETEXTUREPROC GLHANDLE(glActiveTexture);
 #      define glActiveTexture (GLHANDLE(glActiveTexture))
-       GRAPHICS_LIBRARY_EXTERN PFNGLCLIENTACTIVETEXTUREPROC GLHANDLE(glClientActiveTexture);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLCLIENTACTIVETEXTUREPROC GLHANDLE(glClientActiveTexture);
 #      define glClientActiveTexture (GLHANDLE(glClientActiveTexture))
-       GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
 #      define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
 #    endif /* defined (GL_VERSION_1_3) */
 
 #    if defined (GL_VERSION_1_4)
-       GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
 #    endif /* defined (GL_VERSION_1_4) */
 
 #    if defined (GL_VERSION_1_5)
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENBUFFERSPROC GLHANDLE(glGenBuffers);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGENBUFFERSPROC GLHANDLE(glGenBuffers);
 #      define glGenBuffers (GLHANDLE(glGenBuffers))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEBUFFERSPROC GLHANDLE(glDeleteBuffers);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETEBUFFERSPROC GLHANDLE(glDeleteBuffers);
 #      define glDeleteBuffers (GLHANDLE(glDeleteBuffers))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBINDBUFFERPROC GLHANDLE(glBindBuffer);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBINDBUFFERPROC GLHANDLE(glBindBuffer);
 #      define glBindBuffer (GLHANDLE(glBindBuffer))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERDATAPROC GLHANDLE(glBufferData);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERDATAPROC GLHANDLE(glBufferData);
 #      define glBufferData (GLHANDLE(glBufferData))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERSUBDATAPROC GLHANDLE(glBufferSubData);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERSUBDATAPROC GLHANDLE(glBufferSubData);
 #      define glBufferSubData (GLHANDLE(glBufferSubData))
 #    endif /* defined (GL_VERSION_1_5) */
 
 #    if defined (GL_VERSION_2_0)
-       GRAPHICS_LIBRARY_EXTERN PFNGLATTACHSHADERPROC GLHANDLE(glAttachShader);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLATTACHSHADERPROC GLHANDLE(glAttachShader);
 #      define glAttachShader (GLHANDLE(glAttachShader))
-       GRAPHICS_LIBRARY_EXTERN PFNGLCOMPILESHADERPROC GLHANDLE(glCompileShader);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLCOMPILESHADERPROC GLHANDLE(glCompileShader);
 #      define glCompileShader (GLHANDLE(glCompileShader))
-       GRAPHICS_LIBRARY_EXTERN PFNGLCREATEPROGRAMPROC GLHANDLE(glCreateProgram);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLCREATEPROGRAMPROC GLHANDLE(glCreateProgram);
 #      define glCreateProgram (GLHANDLE(glCreateProgram))
-       GRAPHICS_LIBRARY_EXTERN PFNGLCREATESHADERPROC GLHANDLE(glCreateShader);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLCREATESHADERPROC GLHANDLE(glCreateShader);
 #      define glCreateShader (GLHANDLE(glCreateShader))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMPROC GLHANDLE(glDeleteProgram);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMPROC GLHANDLE(glDeleteProgram);
 #      define glDeleteProgram (GLHANDLE(glDeleteProgram))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETESHADERPROC GLHANDLE(glDeleteShader);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETESHADERPROC GLHANDLE(glDeleteShader);
 #      define glDeleteShader (GLHANDLE(glDeleteShader))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDRAWBUFFERSPROC GLHANDLE(glDrawBuffers);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDRAWBUFFERSPROC GLHANDLE(glDrawBuffers);
 #      define glDrawBuffers (GLHANDLE(glDrawBuffers))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGETPROGRAMIVPROC  GLHANDLE(glGetProgramiv);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGETPROGRAMIVPROC  GLHANDLE(glGetProgramiv);
 #      define glGetProgramiv (GLHANDLE(glGetProgramiv))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERIVPROC  GLHANDLE(glGetShaderiv);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERIVPROC  GLHANDLE(glGetShaderiv);
 #      define glGetShaderiv (GLHANDLE(glGetShaderiv))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERINFOLOGPROC GLHANDLE(glGetShaderInfoLog);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERINFOLOGPROC GLHANDLE(glGetShaderInfoLog);
 #      define glGetShaderInfoLog (GLHANDLE(glGetShaderInfoLog))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERSOURCEPROC GLHANDLE(glGetShaderSource);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERSOURCEPROC GLHANDLE(glGetShaderSource);
 #      define glGetShaderSource (GLHANDLE(glGetShaderSource))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGETUNIFORMLOCATIONPROC GLHANDLE(glGetUniformLocation);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGETUNIFORMLOCATIONPROC GLHANDLE(glGetUniformLocation);
 #      define glGetUniformLocation (GLHANDLE(glGetUniformLocation))
-       GRAPHICS_LIBRARY_EXTERN PFNGLISPROGRAMPROC GLHANDLE(glIsProgram);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLISPROGRAMPROC GLHANDLE(glIsProgram);
 #      define glIsProgram (GLHANDLE(glIsProgram))
-       GRAPHICS_LIBRARY_EXTERN PFNGLLINKPROGRAMPROC GLHANDLE(glLinkProgram);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLLINKPROGRAMPROC GLHANDLE(glLinkProgram);
 #      define glLinkProgram (GLHANDLE(glLinkProgram))
-       GRAPHICS_LIBRARY_EXTERN PFNGLSHADERSOURCEPROC GLHANDLE(glShaderSource);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLSHADERSOURCEPROC GLHANDLE(glShaderSource);
 #      define glShaderSource  (GLHANDLE(glShaderSource))
-       GRAPHICS_LIBRARY_EXTERN PFNGLUSEPROGRAMPROC GLHANDLE(glUseProgram);
-#      define glUseProgram (GLHANDLE(glUseProgram))   
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1IPROC GLHANDLE(glUniform1i);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUSEPROGRAMPROC GLHANDLE(glUseProgram);
+#      define glUseProgram (GLHANDLE(glUseProgram))
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1IPROC GLHANDLE(glUniform1i);
 #      define glUniform1i  (GLHANDLE(glUniform1i))
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1FPROC GLHANDLE(glUniform1f);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1FPROC GLHANDLE(glUniform1f);
 #      define glUniform1f  (GLHANDLE(glUniform1f))
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM2FPROC GLHANDLE(glUniform2f);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM2FPROC GLHANDLE(glUniform2f);
 #      define glUniform2f  (GLHANDLE(glUniform2f))
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM3FPROC GLHANDLE(glUniform3f);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM3FPROC GLHANDLE(glUniform3f);
 #      define glUniform3f  (GLHANDLE(glUniform3f))
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
 #      define glUniform4f  (GLHANDLE(glUniform4f))
 #    endif /* defined (GL_VERSION_2_0) */
 
 #    if defined (GL_VERSION_3_0)
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPEXTPROC GLHANDLE(glGenerateMipmap);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPEXTPROC GLHANDLE(glGenerateMipmap);
 #      define glGenerateMipmap (GLHANDLE(glGenerateMipmap))
 #    endif /* defined (GL_VERSION_3_0) */
 
 #    if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
 #      define glGenProgramsARB (GLHANDLE(glGenProgramsARB))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBINDPROGRAMARBPROC GLHANDLE(glBindProgramARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBINDPROGRAMARBPROC GLHANDLE(glBindProgramARB);
 #      define glBindProgramARB (GLHANDLE(glBindProgramARB))
-       GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMSTRINGARBPROC GLHANDLE(glProgramStringARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMSTRINGARBPROC GLHANDLE(glProgramStringARB);
 #      define glProgramStringARB (GLHANDLE(glProgramStringARB))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
 #      define glDeleteProgramsARB (GLHANDLE(glDeleteProgramsARB))
-       GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FARBPROC GLHANDLE(glProgramEnvParameter4fARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FARBPROC GLHANDLE(glProgramEnvParameter4fARB);
 #      define glProgramEnvParameter4fARB (GLHANDLE(glProgramEnvParameter4fARB))
-       GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FVARBPROC GLHANDLE(glProgramEnvParameter4fvARB);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FVARBPROC GLHANDLE(glProgramEnvParameter4fvARB);
 #      define glProgramEnvParameter4fvARB (GLHANDLE(glProgramEnvParameter4fvARB))
 #    endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
 
 #    if defined (GL_EXT_framebuffer_object)
-      GRAPHICS_LIBRARY_EXTERN PFNGLGENFRAMEBUFFERSEXTPROC GLHANDLE(glGenFramebuffersEXT);
+	  GRAPHICS_LIBRARY_EXTERN PFNGLGENFRAMEBUFFERSEXTPROC GLHANDLE(glGenFramebuffersEXT);
 #      define glGenFramebuffersEXT (GLHANDLE(glGenFramebuffersEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBINDFRAMEBUFFEREXTPROC GLHANDLE(glBindFramebufferEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBINDFRAMEBUFFEREXTPROC GLHANDLE(glBindFramebufferEXT);
 #      define glBindFramebufferEXT (GLHANDLE(glBindFramebufferEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENRENDERBUFFERSEXTPROC GLHANDLE(glGenRenderbuffersEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLGENRENDERBUFFERSEXTPROC GLHANDLE(glGenRenderbuffersEXT);
 #      define glGenRenderbuffersEXT (GLHANDLE(glGenRenderbuffersEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLBINDRENDERBUFFEREXTPROC GLHANDLE(glBindRenderbufferEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBINDRENDERBUFFEREXTPROC GLHANDLE(glBindRenderbufferEXT);
 #      define glBindRenderbufferEXT (GLHANDLE(glBindRenderbufferEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEEXTPROC GLHANDLE(glRenderbufferStorageEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEEXTPROC GLHANDLE(glRenderbufferStorageEXT);
 #      define glRenderbufferStorageEXT (GLHANDLE(glRenderbufferStorageEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC GLHANDLE(glFramebufferRenderbufferEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC GLHANDLE(glFramebufferRenderbufferEXT);
 #      define glFramebufferRenderbufferEXT (GLHANDLE(glFramebufferRenderbufferEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERTEXTURE2DEXTPROC GLHANDLE(glFramebufferTexture2DEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERTEXTURE2DEXTPROC GLHANDLE(glFramebufferTexture2DEXT);
 #      define glFramebufferTexture2DEXT (GLHANDLE(glFramebufferTexture2DEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC GLHANDLE(glCheckFramebufferStatusEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC GLHANDLE(glCheckFramebufferStatusEXT);
 #      define glCheckFramebufferStatusEXT (GLHANDLE(glCheckFramebufferStatusEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEFRAMEBUFFERSEXTPROC GLHANDLE(glDeleteFramebuffersEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETEFRAMEBUFFERSEXTPROC GLHANDLE(glDeleteFramebuffersEXT);
 #      define glDeleteFramebuffersEXT (GLHANDLE(glDeleteFramebuffersEXT))
-       GRAPHICS_LIBRARY_EXTERN PFNGLDELETERENDERBUFFERSEXTPROC GLHANDLE(glDeleteRenderbuffersEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLDELETERENDERBUFFERSEXTPROC GLHANDLE(glDeleteRenderbuffersEXT);
 #      define glDeleteRenderbuffersEXT (GLHANDLE(glDeleteRenderbuffersEXT))
 #    endif /* GL_EXT_framebuffer_object */
 #    if defined (GL_EXT_framebuffer_blit)
-       GRAPHICS_LIBRARY_EXTERN PFNGLBLITFRAMEBUFFEREXTPROC GLHANDLE(glBlitFramebufferEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLBLITFRAMEBUFFEREXTPROC GLHANDLE(glBlitFramebufferEXT);
 #      define glBlitFramebufferEXT (GLHANDLE(glBlitFramebufferEXT))
 #    endif /* (GL_EXT_framebuffer_blit) */
 #    if defined (GL_EXT_framebuffer_multisample)
-       GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC GLHANDLE(glRenderbufferStorageMultisampleEXT);
+	   GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC GLHANDLE(glRenderbufferStorageMultisampleEXT);
 #      define glRenderbufferStorageMultisampleEXT (GLHANDLE(glRenderbufferStorageMultisampleEXT))
 #    endif /* GL_EXT_framebuffer_multisample */
 
 #  else  /* defined (APIENTRY) */
-     /* We don't have types for the functions so we will not use any extensions */
+	 /* We don't have types for the functions so we will not use any extensions */
 #    undef GL_VERSION_1_2
 #    undef GL_VERSION_1_3
 #    undef GL_VERSION_1_4

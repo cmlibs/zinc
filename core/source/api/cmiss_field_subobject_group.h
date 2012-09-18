@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_field_subobject_group.h
- * 
+ *
  * Implements region sub object groups, e.g. node group, element group.
  * These group fields evaluate to 1 (true) at domain locations in the group, and
  * 0 elsewhere.
@@ -50,6 +50,10 @@
 #include "types/cmiss_element_id.h"
 #include "types/cmiss_node_id.h"
 #include "types/cmiss_field_subobject_group_id.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************************************//**
  * Creates a node group field which packages a Cmiss_nodeset_group i.e. a subset
@@ -164,5 +168,9 @@ int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_grou
  */
 Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 	Cmiss_field_element_group_id element_group);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */

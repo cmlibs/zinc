@@ -1,6 +1,6 @@
 /*****************************************************************************//**
  * FILE : cmiss_field_alias.h
- * 
+ *
  * Implements a cmiss field which is an alias for another field, commonly from a
  * different region to make it available locally.
  *
@@ -47,6 +47,10 @@
 #include "types/cmiss_field_alias_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a cmiss field which is an alias for another field, possibly from
  * another region.
@@ -59,5 +63,9 @@
  */
 Cmiss_field_id Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
 	Cmiss_field_id original_field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_ALIAS_H) */

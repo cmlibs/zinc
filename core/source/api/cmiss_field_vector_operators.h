@@ -44,6 +44,10 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a vector field with (dimension) components whose values are given by
  * the cross product of the (dimension-1) source fields.
@@ -105,5 +109,9 @@ Cmiss_field_id Cmiss_field_module_create_magnitude(
  */
 Cmiss_field_id Cmiss_field_module_create_normalise(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_VECTOR_OPERATORS_H__ */

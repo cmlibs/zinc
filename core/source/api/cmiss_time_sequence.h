@@ -44,6 +44,10 @@
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_time_sequence_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Finds or creates a Cmiss_time_sequence in the field module which matches the
  * sequence of times provided.
@@ -87,5 +91,9 @@ int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
  */
 int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
 	int time_index, double time);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_TIME_SEQUENCE_H__ */

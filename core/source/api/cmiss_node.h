@@ -53,6 +53,10 @@ Global functions
 ----------------
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
@@ -188,7 +192,7 @@ int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
-    Cmiss_field_id conditional_field);
+	Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Return a handle to the node in the nodeset with this identifier.
@@ -458,5 +462,9 @@ int Cmiss_node_get_identifier(Cmiss_node_id node);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_NODE_H__ */

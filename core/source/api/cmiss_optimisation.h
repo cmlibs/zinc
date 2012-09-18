@@ -52,6 +52,10 @@
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_optimisation_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * The optimisation methods available via the Cmiss_optimisation object.
  *
@@ -444,5 +448,9 @@ char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation)
  * criteria satisfied), and any other value on failure.
  */
 int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_OPTIMISATION_H__ */

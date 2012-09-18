@@ -108,11 +108,11 @@ The contents of this object are private.
 
 DECLARE_LIST_TYPES(Scene_picked_object);
 
-/* 
-The Cmiss_scene which is Public is currently the same object as the 
-cmgui internal Scene.  The Public interface is contained in 
+/*
+The Cmiss_scene which is Public is currently the same object as the
+cmgui internal Scene.  The Public interface is contained in
 api/cmiss_scene.h however most of the functions come directly from
-this module.  So that these functions match the public declarations the 
+this module.  So that these functions match the public declarations the
 struct Scene is declared to be the same as Cmiss_scene here
 and the functions given their public names.
 */
@@ -263,7 +263,7 @@ DESCRIPTION :
 Sets the current time in <scene>.
 ==============================================================================*/
 
-int ZINC_API Scene_for_each_material(struct Scene *scene,
+int Scene_for_each_material(struct Scene *scene,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
 	void *user_data);
 /*******************************************************************************
@@ -422,7 +422,7 @@ struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
 LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
-Returns the list of all any_objects in the <scene_picked_object_list>. 
+Returns the list of all any_objects in the <scene_picked_object_list>.
 ==============================================================================*/
 
 struct FE_element *Scene_picked_object_list_get_nearest_element(
@@ -769,10 +769,10 @@ in the <scene> which point to this spectrum.  The <range_set> flag is set if
 any valid graphics objects using this spectrum were found.
 ==============================================================================*/
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Get the top region of the scene.
  * Caller must clean up handle with Cmiss_scene_destroy.
- * 
+ *
  * @param scene  The scene
  * @return  Handle to the top region of the scene, or NULL if none.
  */
@@ -783,7 +783,7 @@ int Cmiss_scene_add_rendition(struct Scene *scene, struct Cmiss_rendition *rendi
 int Scene_rendition_changed(
 	struct Scene *scene,struct Cmiss_rendition *rendition);
 
-int Cmiss_scene_remove_rendition(struct Scene *scene, 
+int Cmiss_scene_remove_rendition(struct Scene *scene,
 	struct Cmiss_rendition *rendition);
 
 //int Cmiss_scene_rendition_list_set_show(Scene *scene,

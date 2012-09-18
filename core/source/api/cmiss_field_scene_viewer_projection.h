@@ -47,6 +47,10 @@
 #include "types/cmiss_graphics_coordinate_system.h"
 #include "types/cmiss_scene_viewer_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a field whose values are the 4x4 transformation matrix mapping
  * coordinates between two graphics coordinate systems for a scene viewer.
@@ -73,5 +77,9 @@ Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_graphics_coordinate_system from_coordinate_system,
 	enum Cmiss_graphics_coordinate_system to_coordinate_system);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

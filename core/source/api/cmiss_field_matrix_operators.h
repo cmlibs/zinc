@@ -47,6 +47,10 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a field returning the scalar real determinant of a square matrix
  * source field. Only supports up to 3x3 matrix.
@@ -156,5 +160,9 @@ Cmiss_field_id Cmiss_field_module_create_projection(
 Cmiss_field_id Cmiss_field_module_create_transpose(
 	Cmiss_field_module_id field_module,
 	int source_number_of_rows, Cmiss_field_id source_field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_MATRIX_OPERATORS_H__ */

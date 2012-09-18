@@ -2,7 +2,7 @@
 FILE : cmiss_time.h
 
 DESCRIPTION :
-The public interface to the Cmiss_time_notifier which supplies a concept of time 
+The public interface to the Cmiss_time_notifier which supplies a concept of time
 to Cmgui.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -43,15 +43,19 @@ to Cmgui.
 
 #include "types/cmiss_time_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * The type used for time notifier callback. It is a pointer to a function which
  * takes the same arguments.
  *
  * @param Cmiss_time_notifier_id  Handle to time notifier.
- * @param current_time  Time in the time notifier when the callback is being 
+ * @param current_time  Time in the time notifier when the callback is being
  *    triggered by the time notifier.
  * @param User_data  any data user want to pass into the callback function.
- * @return  return one if such the callback function 
+ * @return  return one if such the callback function
  *    has been called successfully otherwise 0.
  */
 typedef int (*Cmiss_time_notifier_callback)(Cmiss_time_notifier_id time_notifier,
@@ -95,11 +99,11 @@ int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
 /***************************************************************************//**
  * This controls the rate which the time depedent object is called back.
  * The default value is 10 which means time notifier will receive 10 callbacks
- * per unit of time in the time keeper. 
- * i.e. If the speed of time keeper is set to be 1 and the update frequency of 
+ * per unit of time in the time keeper.
+ * i.e. If the speed of time keeper is set to be 1 and the update frequency of
  * time notifier is set to be 10, the actual interval between each callbacks is:
  * (1/speed of time keeper)/(udpate frequency) which is 0.1s.
- * Note that the time notifier does not promised to receive callback exactly 
+ * Note that the time notifier does not promised to receive callback exactly
  * 0.1s after the previous callback.
  *
  * @param time_notifier  Handle to time notifier.
@@ -113,8 +117,8 @@ int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifi
 
 /***************************************************************************//**
  * This controls the exact time which the time notifier receive callbacks.
- * Time offset will set the notifier to receive callback when 
- * time_offset + original callback time is reached. i.e 
+ * Time offset will set the notifier to receive callback when
+ * time_offset + original callback time is reached. i.e
  *
  * @param time_notifier  Handle to time notifier.
  * @param offset  This set the time that notifier will receive callback.
@@ -123,5 +127,9 @@ int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifi
  */
 int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_notifier,
 	double time_offset);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_TIME_H__ */

@@ -45,6 +45,10 @@
 
 #include "types/cmiss_tessellation_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Labels of tessellation attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -216,5 +220,9 @@ int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation
  */
 int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
 	int size, const int *refinement_factors);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -69,7 +69,7 @@ struct Cmiss_graphics_module;
  * @param default_spectrum  Default spectrum
  * @return  If successfully constructed, return the Cmiss_rendition
  */
-ZINC_API struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
+struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
 
 /***************************************************************************//**
  * Return Graphical_material manager in the Cmiss_graphics_module.
@@ -98,7 +98,7 @@ struct Material_package *Cmiss_graphics_module_get_material_package(
  * @return  the manager of light in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
+struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -108,7 +108,7 @@ ZINC_API struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
  * @return  the default light in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct Light *Cmiss_graphics_module_get_default_light(
+struct Light *Cmiss_graphics_module_get_default_light(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -166,7 +166,7 @@ struct MANAGER(GT_object) *Cmiss_graphics_module_get_default_glyph_manager(
  * @return  the manager of scenes in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
+struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -176,7 +176,7 @@ ZINC_API struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
  * @return  default scene in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct Scene *Cmiss_graphics_module_get_default_scene(
+struct Scene *Cmiss_graphics_module_get_default_scene(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -186,7 +186,7 @@ ZINC_API struct Scene *Cmiss_graphics_module_get_default_scene(
  * @return  the manager of light_models in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
+struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -196,7 +196,7 @@ ZINC_API struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_mana
  * @return  the default light_models in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API struct Light_model *Cmiss_graphics_module_get_default_light_model(
+struct Light_model *Cmiss_graphics_module_get_default_light_model(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -219,7 +219,7 @@ struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manag
 struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
 	struct Cmiss_graphics_module *graphics_module);
 
-int ZINC_API Cmiss_graphics_module_set_time_keeper_internal(
+int Cmiss_graphics_module_set_time_keeper_internal(
 		struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper);
 
 struct Time_keeper *Cmiss_graphics_module_get_time_keeper_internal(

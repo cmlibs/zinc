@@ -50,6 +50,10 @@ Implements cmiss fields which wrap images, structured grid data.
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_stream_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Describes the format for storage.
  * Whether a particular format is actually available depends on whether
@@ -253,14 +257,14 @@ char *Cmiss_stream_information_image_pixel_format_enum_to_string(
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
- * actual image data if no source_field is provided, which should then be set using 
+ * actual image data if no source_field is provided, which should then be set using
  * a Cmiss_field_image_set_* function.
- * If a source_field is provided, an internal texture will be evaluated if it has 
- * sizes and dimension defined. If domain field is not provided by the user, 
- * this function will try to take the texture coordinates field from the source 
+ * If a source_field is provided, an internal texture will be evaluated if it has
+ * sizes and dimension defined. If domain field is not provided by the user,
+ * this function will try to take the texture coordinates field from the source
  * field and if it is not available, this field will automatically
  * create a xi field or get the xi field from the source field region as its domain
- * field. 
+ * field.
  * It is not mandatory to provide domain_field, source_field or both.
  * Texture format will depend on the number of components of the source field.
  * i.e "1 component field creates a LUMINANCE texture, "
@@ -628,5 +632,9 @@ int Cmiss_stream_information_image_set_file_format(
 int Cmiss_stream_information_image_set_pixel_format(
 	Cmiss_stream_information_image_id stream_information,
 	enum Cmiss_stream_information_image_pixel_format pixel_format);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_IMAGE_H) */

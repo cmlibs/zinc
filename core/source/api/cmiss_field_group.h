@@ -1,11 +1,11 @@
 /***************************************************************************//**
  * FILE : cmiss_field_group.h
- * 
+ *
  * Implements a cmiss field which maintains a group or selection of objects
  * from the region including the region itself, other fields representing domain
  * object groups (e.g. node, element), and related groups from child regions.
  * The field evaluates to 1 (true) at domain locations in the group, and 0
- * elsewhere.  
+ * elsewhere.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -53,6 +53,10 @@
 #include "types/cmiss_node_id.h"
 #include "types/cmiss_region_id.h"
 #include "types/cmiss_field_subobject_group_id.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************************************//**
  * Creates a group field which can contain an arbitrary set of subregions or
@@ -285,7 +289,7 @@ Cmiss_field_element_group_id Cmiss_field_group_get_element_group(
 
 /***************************************************************************//**
  * Get a subgroup of the given group for the specified domain.
- * 
+ *
  * @param group the group field
  * @param domain the domain field
  * @returns the subgroup field for the specified domain, NULL otherwise
@@ -300,4 +304,9 @@ Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_grou
  */
 Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
 	Cmiss_field_group_id group);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* !defined (CMISS_FIELD_GROUP_H) */

@@ -161,7 +161,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-char ZINC_API *allocate(unsigned long int size, const char *file_name,int line_number,const char *type);
+char *allocate(unsigned long int size, const char *file_name,int line_number,const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -169,7 +169,7 @@ DESCRIPTION :
 Wrapper for malloc.
 ==============================================================================*/
 
-void ZINC_API deallocate(char *ptr,const char *file_name,int line_number);
+void deallocate(char *ptr,const char *file_name,int line_number);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -177,7 +177,7 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char ZINC_API *reallocate(char *ptr,unsigned long int size,const char *file_name,int line_number,
+char *reallocate(char *ptr,unsigned long int size,const char *file_name,int line_number,
 	const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
@@ -187,7 +187,7 @@ Wrapper for realloc.
 ==============================================================================*/
 #endif /* !defined (OPTIMISED) */
 
-int list_memory(int count, int show_pointers, int increment_counter, 
+int list_memory(int count, int show_pointers, int increment_counter,
 	int show_structures);
 /*******************************************************************************
 LAST MODIFIED : 29 February 2000

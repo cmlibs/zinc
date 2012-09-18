@@ -46,10 +46,14 @@ The public interface to the Cmiss_fields that perform trigonometry.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Creates a field where the components are the sine value (using radians) of the
  * components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field
  * @return Newly created field
@@ -61,7 +65,7 @@ Cmiss_field_id Cmiss_field_module_create_sin(
 /*****************************************************************************//**
  * Creates a field where the components are the cosine value (using radians) of the
  * components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return Newly created field
@@ -71,9 +75,9 @@ Cmiss_field_id Cmiss_field_module_create_cos(
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
- * Creates a field where the components are the trigonometric tangent value 
+ * Creates a field where the components are the trigonometric tangent value
  * (using radians) of the components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return Newly created field
@@ -85,7 +89,7 @@ Cmiss_field_id Cmiss_field_module_create_tan(
 /*****************************************************************************//**
  * Creates a field where the components are the arcsine value (using radians) of the
  * components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return Newly created field
@@ -97,7 +101,7 @@ Cmiss_field_id Cmiss_field_module_create_asin(
 /*****************************************************************************//**
  * Creates a field where the components are the arccosine value (using radians) of the
  * components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field
  * @return Newly created field (components in radians)
@@ -109,7 +113,7 @@ Cmiss_field_id Cmiss_field_module_create_acos(
 /*****************************************************************************//**
  * Creates a field where the components are the arctangent value (using radians) of the
  * components of the source_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field Input field
  * @return Newly created field (components in radians)
@@ -123,7 +127,7 @@ Cmiss_field_id Cmiss_field_module_create_atan(
  * so that the angle returned (in radians) is the angle between a positive x axis in
  * a plane and the vector (x,y) where x is the source_field_one component and y is
  * the source_field_two component.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -133,5 +137,9 @@ Cmiss_field_id Cmiss_field_module_create_atan2(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_TRIGONOMETRY_H__ */

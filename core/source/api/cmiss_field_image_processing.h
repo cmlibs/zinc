@@ -48,6 +48,10 @@ Implements cmiss fields which deal with image processing
 #include "types/cmiss_field_image_processing_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a field performing ITK binary dilate image filter on scalar source
  * field image. Sets number of components to same number as <source_field>.
@@ -94,13 +98,13 @@ WARNING: To be deprecated.
 /*****************************************************************************//**
  * Creates a field which applies an ITK binary threshold image filter on source.
  * The newly created field consists of binary values (either 0 or 1) which are
- * determined by applying the threshold range to the source field. 
- * Input values with an intensity range between lower_threshold and the 
+ * determined by applying the threshold range to the source field.
+ * Input values with an intensity range between lower_threshold and the
  * upper_threshold are set to 1, the rest are set to 0.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
- * @param lower_threshold  Threshold value below which all pixels are set to 0 
+ * @param lower_threshold  Threshold value below which all pixels are set to 0
  * @param upper_threshold  Theshold value above which all values are set to 0
  * @return  Newly created field
 */
@@ -112,7 +116,7 @@ Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
  * If field can be cast to a Cmiss_field_binary_threshold_image_filter_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new image filter reference.
- * 
+ *
  * @param field  Id of the field to cast
  * @return  Id of the cast field, or NULL
 */
@@ -138,7 +142,7 @@ WARNING: To be deprecated.
  */
 Cmiss_field_id Cmiss_field_module_create_canny_edge_detection_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	double variance, double maximumError, 
+	double variance, double maximumError,
   double upperThreshold, double lowerThreshold);
 
 int Cmiss_field_get_type_canny_edge_detection_image_filter(Cmiss_field_id field,
@@ -204,11 +208,11 @@ WARNING: To be deprecated.
  * field. This means that each pixel value in the new field
  * is based on a weighted average of the pixel and the surrounding pixel values
  * from the source field. Pixels further away are given a lower weighting.
- * Increasing the variance increases the width of the gaussian distribution 
- * used and hence the number of pixels used to calculate the weighted average. 
- * This smooths the image more.  A limit is set on the max_kernel_width used 
+ * Increasing the variance increases the width of the gaussian distribution
+ * used and hence the number of pixels used to calculate the weighted average.
+ * This smooths the image more.  A limit is set on the max_kernel_width used
  * to approximate the guassian to ensure the calculation completes.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
  * @param variance  The variance of the gaussian distribution used in the filter
@@ -223,7 +227,7 @@ Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
  * If field can be cast to a Cmiss_field_discrete_gaussian_image_filter_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new image filter reference.
- * 
+ *
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
@@ -279,7 +283,7 @@ int Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, 
+If the field is of type FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER,
 the source_field and discrete_gaussian_image_filter
 used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
@@ -381,13 +385,13 @@ enum General_threshold_filter_mode
  * Creates a field applying the ITK threshold image filter to the source field.
  * The newly created field replaces certain values with a specified outside
  * value, based on which threshold mode and the threshold values.
- * For the below mode, all pixels BELOW the below value are set to 
+ * For the below mode, all pixels BELOW the below value are set to
  * the outside value
  * For the above mode, all pixels ABOVE the above value are set to a
  * outside value
- * For the oustide mode, all pixels OUTSIDE the range defined by the 
+ * For the oustide mode, all pixels OUTSIDE the range defined by the
  * below and above values are set to the outside value
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field to be filtered
  * @param threshold_mode The threshold mode to apply, either BELOW, ABOVE or OUTSIDE
@@ -397,18 +401,22 @@ enum General_threshold_filter_mode
  * @return Newly created field
 */
 Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field, 
-	enum General_threshold_filter_mode threshold_mode, 
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	enum General_threshold_filter_mode threshold_mode,
 	double outside_value, double below_value, double above_value);
 
 /*****************************************************************************//**
  * If field can be cast to a Cmiss_field_threshold_image_filter_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new image filter reference.
- * 
+ *
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
 Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_IMAGE_PROCESSING_H) */

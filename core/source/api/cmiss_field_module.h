@@ -1,6 +1,6 @@
 /*****************************************************************************//**
  * FILE : cmiss_field_module.h
- * 
+ *
  * Public interface to the field module including its generic functions.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -45,6 +45,10 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * Automatic scalar broadcast
  *
@@ -65,7 +69,7 @@ Global functions
 /***************************************************************************//**
  * Returns a new reference to the field module with reference count incremented.
  * Caller is responsible for destroying the new reference.
- * 
+ *
  * @param field_module  The field module to obtain a new reference to.
  * @return  New field module reference with incremented reference count.
  */
@@ -149,5 +153,9 @@ int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
  * @return  Accessed handle to owning region for field_module.
  */
 Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id field_module);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_MODULE_H__ */

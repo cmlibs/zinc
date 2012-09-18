@@ -44,6 +44,10 @@
 #define __CMISS_STATUS_H__
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Generic status codes returned by API functions to indicate success or error.
  *
@@ -60,5 +64,9 @@ enum Cmiss_status
 {
 	CMISS_OK = 1 /*!< value to be returned on success */
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

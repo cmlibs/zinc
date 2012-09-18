@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_field_finite_element.h
- * 
+ *
  * Implements fields interpolated over finite element meshes with
  * parameters indexed by nodes.
  *
@@ -49,6 +49,10 @@
 #include "types/cmiss_field_finite_element_id.h"
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_node_id.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************************************//**
  * Creates a real-valued finite_element field which can be interpolated over a
@@ -350,5 +354,9 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_stored_string_base_cast(
  */
 int Cmiss_field_stored_string_destroy(
 	Cmiss_field_stored_string_id *stored_string_field_address);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_FINITE_ELEMENT_H) */

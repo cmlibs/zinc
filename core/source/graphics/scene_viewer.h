@@ -301,7 +301,7 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer_package>.
 ==============================================================================*/
 
-ZINC_API struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
+struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -309,7 +309,7 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 
-ZINC_API struct Scene *Cmiss_scene_viewer_package_get_default_scene(
+struct Scene *Cmiss_scene_viewer_package_get_default_scene(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007

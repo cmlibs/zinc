@@ -54,6 +54,10 @@ scenes.
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
 LAST MODIFIED : 13 March 2008
@@ -997,5 +1001,9 @@ ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
 	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

@@ -48,6 +48,10 @@
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_node_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Labels of field attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -158,7 +162,7 @@ int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 /***************************************************************************//**
  * Returns a new reference to the field with reference count incremented.
  * Caller is responsible for destroying the new reference.
- * 
+ *
  * @param field  The field to obtain a new reference to.
  * @return  New field reference with incremented reference count.
  */
@@ -389,7 +393,7 @@ Cmiss_field_id Cmiss_field_get_source_field(Cmiss_field_id field, int index);
 
 /***************************************************************************//**
  * Returns a reference to the field module which owns this field.
- * 
+ *
  * @param field  The field to obtain field module for.
  * @return  Field module which this field belongs to.
  */
@@ -541,5 +545,9 @@ int Cmiss_field_iterator_destroy(Cmiss_field_iterator_id *field_iterator_address
  * @return  Handle to the next field, or NULL if none remaining.
  */
 Cmiss_field_id Cmiss_field_iterator_next(Cmiss_field_iterator_id field_iterator);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_H__ */

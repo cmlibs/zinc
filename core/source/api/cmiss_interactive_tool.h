@@ -39,6 +39,10 @@
 
 #include "types/cmiss_interactive_tool_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
  * command function will apply to the interactive tool being passed into this
@@ -62,5 +66,9 @@ int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_interactive_tool_destroy(Cmiss_interactive_tool_id *interactive_tool);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_INTERACTIVE_TOOL_H__ */

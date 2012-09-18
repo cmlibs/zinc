@@ -48,6 +48,10 @@
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
  *
@@ -84,13 +88,13 @@ ZINC_API Cmiss_graphics_module_id Cmiss_graphics_module_access(
  * only be destroyed when all handles to it are destroyed.
  *
  * @param graphics_module_address  Address of the graphics module handle to be
- * destroyed. 
+ * destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Creates a scene with an access_count of 1. Caller is responsible for calling
  * Cmiss_scene_destroy to destroy the reference to it.
  *
@@ -200,5 +204,9 @@ ZINC_API int Cmiss_graphics_module_define_standard_materials(
  */
 ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

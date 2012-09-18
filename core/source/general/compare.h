@@ -58,12 +58,12 @@ DESCRIPTION :
 Returns -1 if int_1 < int_2, 0 if int_1 = int_2 and 1 if int_1 > int_2.
 ==============================================================================*/
 
-int ZINC_API compare_pointer(void *pointer_1,void *pointer_2);
+int compare_pointer(void *pointer_1,void *pointer_2);
 /*******************************************************************************
 LAST MODIFIED : 15 March 1999
 
 DESCRIPTION :
-Returns -1 if pointer_1 < pointer_2, 0 if pointer_1 = pointer_2 
+Returns -1 if pointer_1 < pointer_2, 0 if pointer_1 = pointer_2
 and 1 if pointer_1 > pointer_2.
 ==============================================================================*/
 
@@ -72,7 +72,7 @@ int compare_double(double double_1,double double_2);
 LAST MODIFIED : 25 February 2005
 
 DESCRIPTION :
-Returns -1 if double_1 < double_2, 0 if double_1 = double_2 
+Returns -1 if double_1 < double_2, 0 if double_1 = double_2
 and 1 if double_1 > double_2.
 ==============================================================================*/
 #endif

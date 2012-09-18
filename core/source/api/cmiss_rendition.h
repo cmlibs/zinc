@@ -53,6 +53,10 @@ The public interface to the Cmiss_rendition.
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -75,8 +79,8 @@ ZINC_API int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
 /***************************************************************************//**
  * Use this function with Cmiss_rendition_end_change.
  *
- * Use this function before making multiple changes on the rendition, this 
- * will stop rendition from executing any immediate changes made in 
+ * Use this function before making multiple changes on the rendition, this
+ * will stop rendition from executing any immediate changes made in
  * rendition. After multiple changes have been made, use
  * Cmiss_rendition_end_change to execute all changes made previously in rendition
  * at once.
@@ -259,5 +263,9 @@ int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition);
  */
 int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_RENDITION_H__ */

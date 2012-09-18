@@ -39,6 +39,10 @@
 
 #include "types/cmiss_selection_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*Cmiss_selection_handler_callback_function)(
 	Cmiss_selection_event_id selection_event,	void *client_data);
 
@@ -145,5 +149,9 @@ int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selectio
  */
 int Cmiss_selection_event_owning_rendition_is_destroyed(
 	Cmiss_selection_event_id selection_event);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_SELECTION_H__ */

@@ -128,11 +128,9 @@ DESCRIPTION :
 	wxGLContext* wxSharedContext;
 };
 
-//-- FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
-//-- 	struct Graphics_buffer *, void *);
+//-- FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, struct Graphics_buffer *, void *);
 
-//-- FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_input_callback, \
-//-- 	struct Graphics_buffer *, struct Graphics_buffer_input *);
+//-- FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_input_callback, struct Graphics_buffer *, struct Graphics_buffer_input *);
 
 //struct Graphics_buffer_wx : public Graphics_buffer
 ///*******************************************************************************

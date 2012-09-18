@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * cmiss_context.h
- * 
+ *
  * API to access the main root structure of cmgui.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -48,15 +48,9 @@
 #include "types/cmiss_region_id.h"
 #include "cmiss_time_keeper.h"
 
-#if defined (WIN32_USER_INTERFACE)
-//#define WINDOWS_LEAN_AND_MEAN
-#if !defined (NOMINMAX)
-#define NOMINMAX
+#ifdef __cplusplus
+extern "C" {
 #endif
-#include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
-
-
 
 /***************************************************************************//**
  * Create a new cmgui context with an id <id>.
@@ -69,7 +63,7 @@ ZINC_API Cmiss_context_id Cmiss_context_create(const char *id);
 /*******************************************************************************
  * Returns a new reference to the context with reference count incremented.
  * Caller is responsible for destroying the new reference.
- * 
+ *
  * @param context  The context to obtain a new reference to.
  * @return  New region reference with incremented reference count.
  */
@@ -88,7 +82,7 @@ ZINC_API int Cmiss_context_destroy(Cmiss_context_id *context_address);
  * Returns a handle to the default graphics module.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  The handle to the default graphics module of the context if 
+ * @return  The handle to the default graphics module of the context if
  *    successfully called, otherwise 0.
  */
 ZINC_API Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
@@ -106,7 +100,7 @@ ZINC_API Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_con
  * Returns the default region in the context.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  The handle to the default region of the context if successfully 
+ * @return  The handle to the default region of the context if successfully
  *    called, otherwise 0.
  */
 ZINC_API Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
@@ -115,7 +109,7 @@ ZINC_API Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id conte
  * Create a new region and return a reference to it. Use this function to create
  * a region forming the root of an independent region tree. To create regions
  * for addition to an existing region tree, use Cmiss_region_create_region.
- * 
+ *
  * @see Cmiss_region_create_region
  * @param context  Handle to a cmiss_context object.
  * @return  Reference to newly created region if successful, otherwise NULL.
@@ -123,18 +117,18 @@ ZINC_API Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id conte
 ZINC_API Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui application. 
+ * Execute cmgui command as in standalone cmgui application.
  * User interface must be enabled before this function can be called successfully.
  *
  * @param context  Handle to a cmiss_context object.
  * @param command  Command to be executed.
  * @return  Status CMISS_OK on success, any other value on failure.
 */
-int Cmiss_context_execute_command(Cmiss_context_id context, 
+int Cmiss_context_execute_command(Cmiss_context_id context,
 	const char *command);
 
 /***************************************************************************//**
- * Returns the handle to time keeper and also increments the access count of 
+ * Returns the handle to time keeper and also increments the access count of
  * the returned time keeper by one.
  * User interface must be enabled before this function can be called successfully.
  *
@@ -165,4 +159,9 @@ ZINC_API int Cmiss_context_enable_user_interface(Cmiss_context_id context, void 
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_context_process_idle_event(Cmiss_context_id context);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __CMISS_CONTEXT_H__ */

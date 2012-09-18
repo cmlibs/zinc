@@ -44,6 +44,10 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a field which performs a coordinate transformation from the source
  * field values in their coordinate system type into the coordinate system type
@@ -63,7 +67,7 @@ Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
  * their original coordinate system and coordinate positions, to the coordinate
  * system of this field. Sets the number of components in returned field to 3
  * times the number of vectors expected from the source vector_field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param vector_field  Vector field to be transformed. Can be a single vector
  * (1,2 or 3 components), two vectors (4 or 6 components) or three vectors
@@ -74,5 +78,9 @@ Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
 Cmiss_field_id Cmiss_field_module_create_vector_coordinate_transformation(
 	Cmiss_field_module_id field_module, Cmiss_field_id vector_field,
 	Cmiss_field_id coordinate_field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_COORDINATE_TRANSFORMATION_H) */

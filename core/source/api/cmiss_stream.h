@@ -46,6 +46,10 @@
 #include "types/cmiss_c_inline.h"
 #include "types/cmiss_stream_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
 * Returns a new reference to the stream_information with reference count
 * incremented.
@@ -267,5 +271,9 @@ int Cmiss_stream_resource_memory_get_buffer(Cmiss_stream_resource_memory_id reso
 int Cmiss_stream_resource_memory_get_buffer_copy(
 	Cmiss_stream_resource_memory_id resource, void **memory_buffer_references,
 	unsigned int *memory_buffer_sizes);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * cmiss_graphics_filter.h
- * 
+ *
  * Public interface to Cmiss_graphics_filter objects for filtering graphics
  * displayed in a Cmiss_scene.
  */
@@ -51,6 +51,10 @@
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Labels of graphics_filter attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -94,7 +98,7 @@ char *Cmiss_graphics_filter_attribute_enum_to_string(
 /*******************************************************************************
  * Returns a new reference to the filter with reference count incremented.
  * Caller is responsible for destroying the new reference.
- * 
+ *
  * @param filter  The filter to obtain a new reference to.
  * @return  New filter reference with incremented reference count.
  */
@@ -337,5 +341,9 @@ int Cmiss_graphics_filter_operator_insert_operand_before(
 int Cmiss_graphics_filter_operator_remove_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*__CMISS_GRAPHICS_FILTER_H__*/

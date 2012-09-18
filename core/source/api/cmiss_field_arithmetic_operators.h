@@ -47,11 +47,15 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 
 #include "types/cmiss_field_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************************************************************//**
  * Creates a field where the which calculates the components of source_field_one
  * raised to the power of the components in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -65,7 +69,7 @@ Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_modul
  * Creates a field where the which multiplies the components of source_field_one and
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -79,7 +83,7 @@ Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_mo
  * Creates a field where the which divides the components of source_field_one
  * by source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -93,7 +97,7 @@ Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_modu
  * Creates a field where the which adds the components of source_field_one and
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -107,7 +111,7 @@ Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
  * Creates a field where the which subtracts the components of source_field_two
  * from source_field_one.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -124,7 +128,7 @@ Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_mo
  * WARNING: to be deprecated
  * I think this should be deprecated and either only the dot product kept
  * or the dot product and a field with sums the components without weights.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @param weights A vector of values equal in length to the number of components
@@ -135,9 +139,9 @@ Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id fi
 	Cmiss_field_id source_field, double *weights);
 
 /*****************************************************************************//**
- * Creates a field where the field components are the natural logarithm 
+ * Creates a field where the field components are the natural logarithm
  * of each component in the source field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
@@ -146,9 +150,9 @@ Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
- * Creates a field where the field components are the square root 
+ * Creates a field where the field components are the square root
  * of each component in the source field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
@@ -157,9 +161,9 @@ Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
- * Creates a field where the field components are the natural exponent 
+ * Creates a field where the field components are the natural exponent
  * of each component in the source field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
@@ -168,14 +172,18 @@ Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
- * Creates a field where the field components are the absolute value of each 
+ * Creates a field where the field components are the absolute value of each
  * component in the source field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_module_create_abs(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_ARITHMETIC_OPERATORS_H__ */

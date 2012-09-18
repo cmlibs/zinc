@@ -44,6 +44,10 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * Creates a field which computes the sum of each source field component over
  * all nodes in the nodeset for which it is defined. Returned field has same
@@ -106,5 +110,9 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
 Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_NODESET_OPERATORS_H) */

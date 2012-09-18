@@ -84,7 +84,7 @@ Different types of machines supported.
 Global functions
 ----------------
 */
-ZINC_API struct Machine_information *CREATE(Machine_information)(void);
+struct Machine_information *CREATE(Machine_information)(void);
 /*******************************************************************************
 LAST MODIFIED : 20 December 1996
 
@@ -93,7 +93,7 @@ Creates a machine information structure.
 ???GMH.  Perhaps this could be extended to tell it a machine to interrogate?
 ==============================================================================*/
 
-ZINC_API int DESTROY(Machine_information)(
+int DESTROY(Machine_information)(
 	struct Machine_information **machine_information_address);
 /*******************************************************************************
 LAST MODIFIED : 20 December 1996

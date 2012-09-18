@@ -44,8 +44,9 @@ The public interface to the some of the internal functions of cmiss.
 #ifndef __CMISS_CORE_H__
 #define __CMISS_CORE_H__
 
-#define Cmiss_ALLOCATE(pointer,type,number) \
-   (pointer=(type *)Cmiss_allocate(sizeof(type)*number))
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void *Cmiss_allocate(int bytes);
 /*******************************************************************************
@@ -64,4 +65,9 @@ DESCRIPTION :
 Frees the memory associated with the pointer.  Used to clean up when functions
 return buffers allocated internally to cmiss.
 ==============================================================================*/
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __CMISS_CORE_H__ */

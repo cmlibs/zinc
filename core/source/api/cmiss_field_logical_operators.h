@@ -48,6 +48,10 @@ The public interface to the Cmiss_fields that perform logical operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one AND source_field_two is non-zero, 0 otherwise.
@@ -79,7 +83,7 @@ Cmiss_field_id Cmiss_field_module_create_equal_to(
  * Creates a field whose component values are 1 if that component of
  * source_field_one is greater than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -93,7 +97,7 @@ Cmiss_field_id Cmiss_field_module_create_greater_than(
  * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -140,5 +144,9 @@ Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
  */
 Cmiss_field_id Cmiss_field_module_create_xor(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_FIELD_LOGICAL_OPERATORS_H__ */

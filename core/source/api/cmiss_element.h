@@ -53,6 +53,10 @@ Global types
 ------------
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Common element shapes.
  */
@@ -678,5 +682,9 @@ enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
  */
 int Cmiss_element_merge(Cmiss_element_id element,
 	Cmiss_element_template_id element_template);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_ELEMENT_H__ */

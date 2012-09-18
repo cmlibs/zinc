@@ -1,6 +1,6 @@
 /*******************************************************************************
  * cmiss_scene.h
- * 
+ *
  * Public interface to the Cmiss_scene object which represents a set of graphics
  * able to be output to the Cmiss_scene_viewer or other outputs/devices.
  * It broadly comprises a reference to a region sub-tree and filters controlling
@@ -50,6 +50,10 @@
 #include "types/cmiss_scene_id.h"
 
 #include "cmiss_shared_object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************************************//**
  * Labels of scene attributes which may be set or obtained using generic
@@ -128,7 +132,7 @@ Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
 */
 ZINC_API int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Set the top region of the scene. Rendition from this top region and its child
  * region will be compiled into a display list for rendering.
  *
@@ -139,8 +143,8 @@ ZINC_API int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
 ZINC_API int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
 
 /***************************************************************************//**
- * Return the name of the scene. 
- * 
+ * Return the name of the scene.
+ *
  * @param scene  The scene whose name is requested.
  * @return  On success: allocated string containing scene name. Up to caller to
  * free using Cmiss_deallocate().
@@ -173,5 +177,9 @@ Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*__CMISS_SCENE_H__*/

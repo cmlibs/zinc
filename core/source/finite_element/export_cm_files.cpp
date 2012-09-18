@@ -76,7 +76,7 @@ Writes text for an <ipcoor_file> to support <field>.
 	{
 		return_code = 1;
 		fprintf(ipcoor_file, " CMISS Version 1.21 ipcoor File Version 1\n");
-		fprintf(ipcoor_file, " Heading: cmgui generated file\n\n"); 
+		fprintf(ipcoor_file, " Heading: cmgui generated file\n\n");
 		fprintf(ipcoor_file, " The global coordinates for region 1 are [1]:\n");
 		fprintf(ipcoor_file, "   (1) rectangular cartesian (x,y,z)\n");
 		fprintf(ipcoor_file, "   (2) cylindrical polar (r,theta,z)\n");
@@ -139,7 +139,7 @@ static int FE_element_field_add_basis_to_list(
 LAST MODIFIED : 22 March 2006
 
 DESCRIPTION :
-FE_element iterator which adds the FE_basis representing data->field to the 
+FE_element iterator which adds the FE_basis representing data->field to the
 data->basis_list if it isn't there already.
 ==============================================================================*/
 {
@@ -155,7 +155,7 @@ data->basis_list if it isn't there already.
 		{
 			for (i = 0 ; return_code && (i < data->number_of_components) ; i++)
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field, 
+				return_code = FE_element_field_get_component_FE_basis(element, data->field,
 					/*component_number*/i, &fe_basis);
 				if (!IS_OBJECT_IN_LIST(FE_basis)(fe_basis, data->basis_types))
 				{
@@ -210,8 +210,8 @@ Writes text for an <ipbase_file> to support <field>.
 {
 	enum FE_basis_type basis_type;
 	int any_derivatives, basis_number, dimension, finished,
-		has_derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS], interpolant_index, 
-		node_flags[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_gauss_points, 
+		has_derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS], interpolant_index,
+		node_flags[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_gauss_points,
 		number_of_nodes[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code, xi_number;
 	struct FE_element_field_add_basis_data add_basis_data;
 	struct FE_basis *basis;
@@ -234,10 +234,10 @@ Writes text for an <ipbase_file> to support <field>.
 		ALLOCATE(data->basis_array, struct FE_basis *, data->number_of_bases);
 
 		fprintf(ipbase_file, " CMISS Version 1.21 ipbase File Version 2\n");
-		fprintf(ipbase_file, " Heading: cmgui generated file\n\n"); 
+		fprintf(ipbase_file, " Heading: cmgui generated file\n\n");
 		fprintf(ipbase_file, " Enter the number of types of basis function [1]: %d\n\n",
 			data->number_of_bases);
-		
+
 		basis_number = 0;
 		while (NULL != (basis = FIRST_OBJECT_IN_LIST_THAT(FE_basis)(
 			(LIST_CONDITIONAL_FUNCTION(FE_basis) *)NULL, (void *)NULL,
@@ -311,7 +311,7 @@ Writes text for an <ipbase_file> to support <field>.
 				fprintf(ipbase_file, "   (4) Quadratic Hermite\n");
 				fprintf(ipbase_file, "   (5) Cubic Hermite\n");
 				fprintf(ipbase_file, "    %d\n", interpolant_index);
-				
+
 				fprintf(ipbase_file, " Enter the number of Gauss points in the Xi(%d) direction [2]: %d\n",
 					xi_number + 1, number_of_gauss_points);
 			}
@@ -396,7 +396,7 @@ Writes text for an <ipbase_file> to support <field>.
 			REMOVE_OBJECT_FROM_LIST(FE_basis)(basis, add_basis_data.basis_types);
 		}
 		DESTROY(LIST(FE_basis))(&add_basis_data.basis_types);
-		
+
 	}
 	else
 	{
@@ -448,7 +448,7 @@ Also sets a flag if any of components of the field have versions.
 				/* Check for consistent number of derivatives */
 				for (i = 0 ; i < data->number_of_components ; i++)
 				{
-					if (data->number_of_derivatives[i] != 
+					if (data->number_of_derivatives[i] !=
 						get_FE_node_field_component_number_of_derivatives(
 							node, data->field, i))
 					{
@@ -508,7 +508,7 @@ DESCRIPTION :
 Writes the node to an ipnode file.
 ==============================================================================*/
 {
-	char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
+	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
 	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
 		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
@@ -547,7 +547,7 @@ Writes the node to an ipnode file.
 						FE_NODAL_VALUE, /*time*/0.0, &value);
 					fprintf(data->ipnode_file, " The Xj(%d) coordinate is [ 0.00000E+00]:  %le\n",
 						i + 1, value);
-					
+
 					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
 					{
 						get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, /*version*/j,
@@ -580,7 +580,7 @@ DESCRIPTION :
 Writes the node to an ipmap file.
 ==============================================================================*/
 {
-	char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
+	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
 	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
 		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
@@ -627,16 +627,16 @@ Writes the node to an ipmap file.
 					/* Store the values for all versions and components and derivatives */
 					ALLOCATE(values, FE_value, number_of_versions *
 						data->number_of_components * data->maximum_number_of_derivatives);
-					
+
 					for (i = 0 ; i < data->number_of_components ; i++)
 					{
 						for (j = 0 ; j < number_of_versions ; j++)
 						{
 							for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
 							{
-								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, 
+								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i,
 									/*version*/j,
-									value_type[k], /*time*/0.0, values + 
+									value_type[k], /*time*/0.0, values +
 									j * data->number_of_components * data->maximum_number_of_derivatives
 									+ i * data->maximum_number_of_derivatives + k);
 							}
@@ -648,7 +648,7 @@ Writes the node to an ipmap file.
 						}
 					}
 				}
-					
+
 				for (i = 0 ; i < data->number_of_components ; i++)
 				{
 					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", i + 1);
@@ -656,7 +656,7 @@ Writes the node to an ipmap file.
 
 					/* We don't map out the first version */
 					fprintf(data->ipmap_file, " For version number%2d:\n", 1);
-					
+
 					fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: N\n");
 
 					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
@@ -694,24 +694,24 @@ Writes the node to an ipmap file.
 									match = 1;
 									inverse_match = 1;
 									n = 0;
-									while ((match || inverse_match) 
+									while ((match || inverse_match)
 										&& n < data->number_of_components)
 									{
 										diff = values[/*this version*/j *
-											data->number_of_components * 
-											data->maximum_number_of_derivatives + 
+											data->number_of_components *
+											data->maximum_number_of_derivatives +
 											n * data->maximum_number_of_derivatives + k]
 											- values[/*other version*/m *
-											data->number_of_components * 
-											data->maximum_number_of_derivatives + 
+											data->number_of_components *
+											data->maximum_number_of_derivatives +
 												n * data->maximum_number_of_derivatives + k];
 										sum = values[/*this version*/j *
-											data->number_of_components * 
-											data->maximum_number_of_derivatives + 
+											data->number_of_components *
+											data->maximum_number_of_derivatives +
 											n * data->maximum_number_of_derivatives + k]
 											+ values[/*other version*/m *
-											data->number_of_components * 
-											data->maximum_number_of_derivatives + 
+											data->number_of_components *
+											data->maximum_number_of_derivatives +
 												n * data->maximum_number_of_derivatives + k];
 										if ((diff > 1e-8) || (diff < -1e-8))
 										{
@@ -736,7 +736,7 @@ Writes the node to an ipmap file.
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
 											  value_strings[k]);
-									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n", 
+									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, match_version,
 										i + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
@@ -745,7 +745,7 @@ Writes the node to an ipmap file.
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
 											  value_strings[k]);
-									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n", 
+									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, inverse_match_version,
 										i + 1, k + 2);
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: -0.10000E+01\n");
@@ -783,7 +783,7 @@ Writes the node to an ipmap file.
 	return (return_code);
 } /* write_cm_FE_nodal_mapping */
 
-static int write_ipnode_file(FILE *ipnode_file, FILE *ipmap_file, 
+static int write_ipnode_file(FILE *ipnode_file, FILE *ipmap_file,
 	struct FE_region *region, struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2006
@@ -801,7 +801,7 @@ Writes text for an <ipbase_file> to support <field>.
 		return_code = 1;
 
 		fprintf(ipnode_file, " CMISS Version 1.21 ipnode File Version 2\n");
-		fprintf(ipnode_file, " Heading: cmgui generated file\n\n"); 
+		fprintf(ipnode_file, " Heading: cmgui generated file\n\n");
 
 		cm_node_data.number_of_nodes = 0;
 		cm_node_data.field = field;
@@ -820,7 +820,7 @@ Writes text for an <ipbase_file> to support <field>.
 		{
 			for (i = 0 ; i < cm_node_data.number_of_components ; i++)
 			{
-				if (cm_node_data.number_of_derivatives[i] > 
+				if (cm_node_data.number_of_derivatives[i] >
 					cm_node_data.maximum_number_of_derivatives)
 				{
 					cm_node_data.maximum_number_of_derivatives =
@@ -828,7 +828,7 @@ Writes text for an <ipbase_file> to support <field>.
 				}
 			}
 
-			fprintf(ipnode_file, " The number of nodes is [1]: %d\n", 
+			fprintf(ipnode_file, " The number of nodes is [1]: %d\n",
 				cm_node_data.number_of_nodes);
 			fprintf(ipnode_file, " Number of coordinates [3]: %d\n",
 				cm_node_data.number_of_components);
@@ -857,7 +857,7 @@ Writes text for an <ipbase_file> to support <field>.
 			if (ipmap_file)
 			{
 				fprintf(ipmap_file, " CMISS Version 2.0  ipmap File Version 1\n");
-				fprintf(ipmap_file, " Heading: cmgui generated file\n\n"); 
+				fprintf(ipmap_file, " Heading: cmgui generated file\n\n");
 
 				fprintf(ipmap_file, " Define node position mapping [N]? y\n");
 				fprintf(ipmap_file, " The number of nodes with special mappings is [    1]: %d\n",
@@ -910,7 +910,7 @@ Counts how many elements have the field defined.
 	if (element && (data = (struct FE_element_write_cm_check_element_values_data *)data_void))
 	{
 		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field,element) && 
+		if (FE_field_is_defined_in_element(data->field,element) &&
 			FE_element_field_is_standard_node_based(element, data->field))
 		{
 			data->number_of_elements++;
@@ -951,7 +951,7 @@ Writes the element to an ipelem file.
 	if (element && (data = (struct FE_element_write_cm_check_element_values_data *)data_void))
 	{
 		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field, element) && 
+		if (FE_field_is_defined_in_element(data->field, element) &&
 			FE_element_field_is_standard_node_based(element, data->field))
 		{
 			get_FE_element_identifier(element, &element_id);
@@ -963,9 +963,9 @@ Writes the element to an ipelem file.
 				data->number_of_components);
 			for (i = 0 ; i < data->number_of_components ; i++)
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field, 
+				return_code = FE_element_field_get_component_FE_basis(element, data->field,
 					/*component_number*/i, &fe_basis);
-				
+
 				basis_number = 0;
 				while ((data->basis_array[basis_number] != fe_basis) && (basis_number < data->number_of_bases))
 				{
@@ -980,7 +980,7 @@ Writes the element to an ipelem file.
 				FE_basis_get_dimension(data->basis_array[i], &basis_dimension);
 				if (dimension == basis_dimension)
 				{
-					/* Use the first component as it has a basis, could try and match to the 
+					/* Use the first component as it has a basis, could try and match to the
 						which component actually used this basis above */
 					if (get_FE_element_field_component(element, data->field, /*component*/0, &component))
 					{
@@ -1030,9 +1030,9 @@ Writes the element to an ipelem file.
 										standard_node_map, &number_of_nodal_values);
 
 									get_FE_element_node(element, node_index, &node);
-									derivatives_in_node = 
+									derivatives_in_node =
 										get_FE_node_field_component_number_of_derivatives(node, data->field, /*component*/0);
-									
+
 									/* Get the nodal_value_index of the first value and use that to specify version,
 										cannot support mixes or mismatches anyway, could check all values the same */
 									Standard_node_to_element_map_get_nodal_value_index(
@@ -1051,7 +1051,7 @@ Writes the element to an ipelem file.
 										just specify the same versions for now. */
 									for (k = 0 ; k < 3 ; k++)
 									{
-										fprintf(data->ipelem_file, 
+										fprintf(data->ipelem_file,
 											" The version number for occurrence  %d of node %5d"
 											", njj=%d is [ 1]: %d\n", occurences, node_number_array[j],
 											k + 1, version + 1);
@@ -1095,7 +1095,7 @@ Writes text for an <ipbase_file> to support <field>.
 	if (ipelem_file && region && field)
 	{
 		fprintf(ipelem_file, " CMISS Version 1.21 ipelem File Version 2\n");
-		fprintf(ipelem_file, " Heading: cmgui generated file\n\n"); 
+		fprintf(ipelem_file, " Heading: cmgui generated file\n\n");
 
 		cm_element_data.number_of_elements = 0;
 		cm_element_data.field = field;
@@ -1107,7 +1107,7 @@ Writes text for an <ipbase_file> to support <field>.
 			FE_element_write_cm_check_element_values, (void *)&cm_element_data);
 		if (return_code)
 		{
-			fprintf(ipelem_file, " The number of elements is [1]: %d\n\n", 
+			fprintf(ipelem_file, " The number of elements is [1]: %d\n\n",
 				cm_element_data.number_of_elements);
 
 			return_code = FE_region_for_each_FE_element(region,
@@ -1137,7 +1137,7 @@ static int write_cm_FE_region(FILE *ipcoor_file, FILE *ipbase_file,
 LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
-Writes <field> of <fe_region> to the <output_file>.  The <ipmap_file> is 
+Writes <field> of <fe_region> to the <output_file>.  The <ipmap_file> is
 optional, all the others are required.
 ==============================================================================*/
 {
@@ -1169,7 +1169,7 @@ optional, all the others are required.
 			display_message(ERROR_MESSAGE, "write_cm_FE_region.  Failed");
 			return_code = 0;
 		}
-	  
+
 		if (data.basis_array)
 		{
 			DEALLOCATE(data.basis_array);
@@ -1200,7 +1200,7 @@ LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
 Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and <ipelem_file>
-that defines elements of <field> in <write_path>.  The <ipmap_file> is 
+that defines elements of <field> in <write_path>.  The <ipmap_file> is
 optional, all the others are required.
 ==============================================================================*/
 {
@@ -1210,7 +1210,7 @@ optional, all the others are required.
 
 	ENTER(write_exregion_file);
 	write_region = (struct Cmiss_region *)NULL;
-	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && root_region && 
+	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && root_region &&
 		(NULL != (write_region = Cmiss_region_find_subregion_at_path(root_region, write_path))))
 	{
 		return_code = 1;

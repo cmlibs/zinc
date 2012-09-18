@@ -40,6 +40,10 @@
 #include "types/cmiss_field_image_id.h"
 #include "types/cmiss_graphics_material_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Labels of material attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -261,5 +265,9 @@ int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
  */
 Cmiss_field_image_id Cmiss_graphics_material_get_image_field(
 	Cmiss_graphics_material_id material, int image_number);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

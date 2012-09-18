@@ -190,7 +190,7 @@ struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct C
 	{
 		if (!context->graphics_module)
 		{
-			context->graphics_module = Cmiss_context_create_graphics_module(context);
+			context->graphics_module = Cmiss_graphics_module_create(context);
 		}
 		graphics_module = Cmiss_graphics_module_access(context->graphics_module);
 	}

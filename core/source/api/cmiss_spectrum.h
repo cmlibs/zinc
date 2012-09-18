@@ -39,6 +39,10 @@
 
 #include "types/cmiss_spectrum_id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Labels of spectrum attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -148,5 +152,9 @@ int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
  */
 int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
 	const char *command_string);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_SPECTRUM_H__ */

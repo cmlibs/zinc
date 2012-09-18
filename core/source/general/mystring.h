@@ -143,13 +143,13 @@ int check_suffix(char **string, const char *suffix);
 LAST MODIFIED : 24 September 1998
 
 DESCRIPTION :
-Compares the file extension of the string.  If the string given has the 
-supplied suffix (or the universal suffix .cmiss) then the function returns 
+Compares the file extension of the string.  If the string given has the
+supplied suffix (or the universal suffix .cmiss) then the function returns
 without changing anything.  Otherwise the string is REALLOCATED and the suffix
 added to the end of the string.
 ==============================================================================*/
 
-ZINC_API char *duplicate_string(const char *source_string);
+char *duplicate_string(const char *source_string);
 /*******************************************************************************
 LAST MODIFIED : 2 December 1998
 

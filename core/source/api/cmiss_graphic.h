@@ -54,6 +54,10 @@ The public interface to the Cmiss_rendition.
 
 #include "cmiss_shared_object.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * Returns a new reference to the graphic with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -248,5 +252,9 @@ int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*__CMISS_GRAPHIC_H__*/
