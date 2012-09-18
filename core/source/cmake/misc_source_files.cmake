@@ -70,6 +70,10 @@ SET( TIME_HDRS
 	source/time/time_keeper.h
 	source/time/time_private.h )
 
+SET( THREE_D_DRAWING_SRCS
+	source/three_d_drawing/graphics_buffer.cpp )
+SET( THREE_D_DRAWING_HDRS
+	source/three_d_drawing/graphics_buffer.h )
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	#SET( THREE_D_DRAWING_SRCS ${THREE_D_DRAWING_SRCS} source/general/photogrammetry.cpp )
 	SET( THREE_D_DRAWING_HDRS ${THREE_D_DRAWING_HDRS} source/three_d_drawing/abstract_graphics_buffer.h )

@@ -63,8 +63,7 @@ Global functions
 */
 
 
-struct Graphics_buffer_package *CREATE(Graphics_buffer_package)(
-	struct User_interface *user_interface);
+struct Graphics_buffer_package *CREATE(Graphics_buffer_package)();
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
 
@@ -93,26 +92,26 @@ Sets a particular visual to be used by all graphics buffers.
 
 //-- PROTOTYPE_OBJECT_FUNCTIONS(Graphics_buffer);
 
-struct Graphics_buffer_wx *create_Graphics_buffer_offscreen(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	int width, int height,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
+//struct Graphics_buffer_wx *create_Graphics_buffer_offscreen(
+//	struct Graphics_buffer_package *graphics_buffer_package,
+//	int width, int height,
+//	enum Graphics_buffer_buffering_mode buffering_mode,
+//	enum Graphics_buffer_stereo_mode stereo_mode,
+//	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+//	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
 
-struct Graphics_buffer_wx *create_Graphics_buffer_shared_offscreen(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	int width, int height,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
+//struct Graphics_buffer_wx *create_Graphics_buffer_shared_offscreen(
+//	struct Graphics_buffer_package *graphics_buffer_package,
+//	int width, int height,
+//	enum Graphics_buffer_buffering_mode buffering_mode,
+//	enum Graphics_buffer_stereo_mode stereo_mode,
+//	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+//	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
 
@@ -129,14 +128,14 @@ DESCRIPTION :
 
 class wxPanel;
 
-struct Graphics_buffer_wx *create_Graphics_buffer_wx(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	wxGLCanvas *canvas,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth,
-	struct Graphics_buffer_wx *buffer_to_match);
+//struct Graphics_buffer_wx *create_Graphics_buffer_wx(
+//	struct Graphics_buffer_package *graphics_buffer_package,
+//	wxGLCanvas *canvas,
+//	enum Graphics_buffer_buffering_mode buffering_mode,
+//	enum Graphics_buffer_stereo_mode stereo_mode,
+//	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+//	int minimum_accumulation_buffer_depth,
+//	struct Graphics_buffer_wx *buffer_to_match);
 /*******************************************************************************
 LAST MODIFIED : 7 December 2006
 

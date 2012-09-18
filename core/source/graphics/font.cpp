@@ -52,6 +52,7 @@ This provides a Cmgui interface to the font contexts of many types.
 #include "general/manager_private.h"
 #include "graphics/font.h"
 #include "graphics/graphics_library.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "general/message.h"
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
@@ -595,7 +596,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			font->display_list_offset = glGenLists (font->number_of_bitmaps);
 
 			/* Can have multiple types compiled in at the same time (X and gtk) */
-			switch (0 /* //-- Graphics_buffer_get_type(buffer) */)
+			switch (Graphics_buffer_get_type(buffer))
 			{
 #if defined (GTK_USER_INTERFACE)
 #  if defined GTK_USE_GTKGLAREA
@@ -808,6 +809,9 @@ Compiles the specified <font> so it can be used by the graphics.  The
 
 				} break;
 #endif /* defined (WX_USER_INTERFACE) */
+				case GRAPHICS_BUFFER_ONSCREEN_TYPE:
+				{
+				}break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,"Graphics_font.  "

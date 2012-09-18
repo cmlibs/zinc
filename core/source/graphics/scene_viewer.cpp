@@ -57,6 +57,7 @@ November 97 Created from rendering part of Drawing.
 #include <map>
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
+#include "api/new/cmiss_scene_viewer_input.h"
 //#include "api/cmiss_graphic.h"
 //#include "computed_field/computed_field.h"
 //#include "computed_field/computed_field_composite.h"
@@ -82,8 +83,8 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
-#include "three_d_drawing/abstract_graphics_buffer.h"
-#include "user_interface/event_dispatcher.h"
+#include "three_d_drawing/graphics_buffer.h"
+//#include "user_interface/event_dispatcher.h"
 #include "interaction/interactive_event.h"
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
@@ -135,6 +136,7 @@ DESCRIPTION:
 The default data used to create Cmiss_scene_viewers.
 ==============================================================================*/
 {
+	int access_count;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour *background_colour;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -144,7 +146,7 @@ The default data used to create Cmiss_scene_viewers.
 	struct Light_model *default_light_model;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *scene;
-	struct User_interface *user_interface;
+	//-- struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
@@ -161,6 +163,19 @@ struct Scene_viewer_image_texture
 	struct Scene_viewer *scene_viewer;
 };
 
+struct Cmiss_scene_viewer_input
+{
+	int access_count;
+	enum Cmiss_scene_viewer_input_event_type type;
+	int button_number;
+	int key_code;
+	int position_x;
+	int position_y;
+	/* flags indicating the state of the shift, control and alt keys - use
+	 * logical OR with CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
+	Cmiss_scene_viewer_input_modifier input_modifier;
+};
+
 struct Scene_viewer
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -168,6 +183,7 @@ LAST MODIFIED : 12 July 2000
 DESCRIPTION :
 ==============================================================================*/
 {
+	int access_count;
 	/* The buffer into which this scene viewer is rendering */
 	struct Graphics_buffer *graphics_buffer;
 	enum Scene_viewer_input_mode input_mode;
@@ -302,7 +318,7 @@ DESCRIPTION :
 	struct Scene_viewer_order_independent_transparency_data
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
-	struct User_interface *user_interface;
+	//-- struct User_interface *user_interface;
 #if defined (WIN32_SYSTEM)
 	/* Clear twice, if set then the glClear in the background will be called
 		twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
@@ -315,6 +331,153 @@ DESCRIPTION :
 
 DECLARE_LIST_TYPES(Scene_viewer);
 
+Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(struct Scene_viewer *scene_viewer)
+{
+	Cmiss_scene_viewer_input_id input = 0;
+	if (scene_viewer)
+	{
+		if(ALLOCATE(input, struct Cmiss_scene_viewer_input, 1))
+		{
+			input->access_count = 1;
+			input->button_number = 0;
+			input->input_modifier = CMISS_SCENE_VIEWER_INPUT_MODIFIER_NONE;
+			input->key_code = 0;
+			input->position_x = 0;
+			input->position_y = 0;
+			input->type = CMISS_SCENE_VIEWER_INPUT_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_get_input.  Invalid argument(s)");
+	}
+
+	return (input);
+}
+
+Cmiss_scene_viewer_input_id Cmiss_scene_viewer_input_access(Cmiss_scene_viewer_input_id input)
+{
+	if (input)
+	{
+		input->access_count++;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_access.  Invalid argument(s)");
+	}
+
+	return (input);
+}
+
+int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input)
+{
+	int return_code = 0;
+	if (address_input)
+	{
+		(*address_input)->access_count--;
+		if ((*address_input)->access_count == 0)
+		{
+			DEALLOCATE(*address_input);
+			*address_input = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_destroy.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, unsigned int x, unsigned int y)
+{
+	int return_code = 0;
+	if (input)
+	{
+		return_code = 1;
+		input->position_x = x;
+		input->position_y = y;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_set_position.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier)
+{
+	int return_code = 0;
+	if (input)
+	{
+		return_code = 1;
+		input->input_modifier = modifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_set_modifier.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_scene_viewer_input_id input)
+{
+	Cmiss_scene_viewer_input_modifier modifier = CMISS_SCENE_VIEWER_INPUT_INVALID;
+	if (input)
+	{
+		modifier = input->input_modifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_get_modifier.  Invalid argument(s)");
+	}
+
+	return (modifier);
+}
+
+int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number)
+{
+	int return_code = 0;
+	if (input)
+	{
+		return_code = 1;
+		input->button_number = number;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_set_button_number.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type)
+{
+	int return_code = 0;
+	if (input)
+	{
+		return_code = 1;
+		input->type = type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_set_type.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	enum Cmiss_graphics_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection)
@@ -322,8 +485,8 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	int return_code = 1;
 	if (scene_viewer)
 	{
-		double viewport_width = scene_viewer->graphics_buffer->width;//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		double viewport_height = scene_viewer->graphics_buffer->height;//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		double viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		double viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		switch (coordinate_system)
 		{
 			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
@@ -2217,10 +2380,10 @@ access this function.
 		return_code=1;
 		if ((!left) && (!bottom) && (!right) && (!top))
 		{
-			rendering_data.viewport_left = scene_viewer->graphics_buffer->origin_x;//-- Graphics_buffer_get_origin_x(scene_viewer->graphics_buffer);
-			rendering_data.viewport_bottom = scene_viewer->graphics_buffer->origin_y;//-- Graphics_buffer_get_origin_y(scene_viewer->graphics_buffer);
-			rendering_data.viewport_width = scene_viewer->graphics_buffer->width;//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			rendering_data.viewport_height = scene_viewer->graphics_buffer->height;//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			rendering_data.viewport_left = Graphics_buffer_get_origin_x(scene_viewer->graphics_buffer);
+			rendering_data.viewport_bottom = Graphics_buffer_get_origin_y(scene_viewer->graphics_buffer);
+			rendering_data.viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			rendering_data.viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		}
 		else
 		{
@@ -2263,7 +2426,7 @@ access this function.
 		/* only redraw if the drawing widget has area and neither it nor any of its
 			 parents are unmanaged */
 		do_render=(0<rendering_data.viewport_width) && (0<rendering_data.viewport_height)
-			&& scene_viewer->graphics_buffer->is_visible();//--Graphics_buffer_is_visible(scene_viewer->graphics_buffer);
+			&& Graphics_buffer_is_visible(scene_viewer->graphics_buffer);
 		if (do_render)
 		{
 			/* Calculate the transformations before doing the callback list */
@@ -3123,13 +3286,13 @@ Creates a Cmiss_scene_viewer_package.
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 
 	ENTER(CREATE(Scene_viewer_package));
-	if (graphics_buffer_package && background_colour && default_light_model &&
-		scene && user_interface )//-- && interactive_tool_manager)
+	if (background_colour && default_light_model && scene)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(scene_viewer_package,struct Cmiss_scene_viewer_package,1))
 		{
-			scene_viewer_package->graphics_buffer_package = graphics_buffer_package;
+			scene_viewer_package->access_count = 0;
+			scene_viewer_package->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			scene_viewer_package->background_colour = background_colour;
 			scene_viewer_package->interactive_tool_manager = interactive_tool_manager;
 			scene_viewer_package->light_manager = light_manager;
@@ -3138,7 +3301,7 @@ Creates a Cmiss_scene_viewer_package.
 			scene_viewer_package->default_light_model = ACCESS(Light_model)(default_light_model);
 			scene_viewer_package->scene_manager = scene_manager;
 			scene_viewer_package->scene = ACCESS(Scene)(scene);
-			scene_viewer_package->user_interface = user_interface;
+			//-- scene_viewer_package->user_interface = user_interface;
 			scene_viewer_package->scene_viewer_list = CREATE(LIST(Scene_viewer))();
 			scene_viewer_package->destroy_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))();
@@ -3200,6 +3363,19 @@ DESCRIPTION :
 	return_code = 1;
 
 	return (return_code);
+}
+
+struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmiss_scene_viewer_package *scene_viewer_package)
+{
+	if (scene_viewer_package)
+	{
+		(scene_viewer_package->access_count)++;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ACCESS(scene_viewer_package).  Invalid argument");
+	}
 }
 
 int DESTROY(Cmiss_scene_viewer_package)(
@@ -3408,11 +3584,9 @@ performed in idle time so that multiple redraws are avoided.
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(CREATE(Scene_viewer));
-	if (graphics_buffer&&background_colour&&default_light_model&&scene&&
-		user_interface)//-- &&graphics_buffer->get_buffering_mode(&graphics_buffer_buffering_mode)//-- Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode)
-		//-- && graphics_buffer->stereo_mode(&graphics_buffer_stereo_mode))
-		//-- Graphics_buffer_get_stereo_mode(
-		//-- graphics_buffer,&graphics_buffer_stereo_mode))
+	if (graphics_buffer && background_colour && default_light_model && scene &&
+		Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode) &&
+		Graphics_buffer_get_stereo_mode(graphics_buffer, &graphics_buffer_stereo_mode))
 	{
 		return_code=1;
 		switch(graphics_buffer_buffering_mode)
@@ -3422,6 +3596,7 @@ performed in idle time so that multiple redraws are avoided.
 				buffering_mode = SCENE_VIEWER_SINGLE_BUFFER;
 			} break;
 			case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+			case GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
 			{
 				buffering_mode = SCENE_VIEWER_DOUBLE_BUFFER;
 			} break;
@@ -3435,6 +3610,7 @@ performed in idle time so that multiple redraws are avoided.
 		switch(graphics_buffer_stereo_mode)
 		{
 			case GRAPHICS_BUFFER_MONO:
+			case GRAPHICS_BUFFER_ANY_STEREO_MODE:
 			{
 				stereo_mode = SCENE_VIEWER_MONO;
 			} break;
@@ -3456,12 +3632,12 @@ performed in idle time so that multiple redraws are avoided.
 			if (scene_viewer &&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
-				scene_viewer->graphics_buffer=graphics_buffer->access();//-- ACCESS(Graphics_buffer)(graphics_buffer);
+				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
 				scene_viewer->temporary_transform_mode=0;
-				scene_viewer->user_interface=user_interface;
+				//-- scene_viewer->user_interface=user_interface;
 				scene_viewer->buffering_mode = buffering_mode;
 				scene_viewer->stereo_mode = stereo_mode;
 				scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
@@ -3701,7 +3877,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		//--}
 
 		/* must destroy the widget */
-		scene_viewer->graphics_buffer->deaccess();//-- DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);
+		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);
 		if (scene_viewer->pixel_data)
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
@@ -3769,7 +3945,7 @@ DESCRIPTION :
 			cmiss_scene_viewer_package->default_light_model,
 			cmiss_scene_viewer_package->scene_manager,
 			scene,
-			cmiss_scene_viewer_package->user_interface);
+			/* user_interface */0);
 
 		new_interactive_tool_manager = 0;//--CREATE(MANAGER(Interactive_tool))();
 		//--FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
@@ -3803,6 +3979,673 @@ DESCRIPTION :
 
 	return (scene_viewer);
 } /* create_Scene_viewer_from_package */
+
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
+	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode)
+{
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+	struct Graphics_buffer *graphics_buffer;
+	struct Cmiss_scene_viewer *scene_viewer;
+
+	if (cmiss_scene_viewer_package)
+	{
+		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND;
+		}
+		else
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+		}
+		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
+		}
+		else
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
+		}
+		graphics_buffer = CREATE(Graphics_buffer)(
+			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			GRAPHICS_BUFFER_ONSCREEN_TYPE,
+			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode);
+		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
+			cmiss_scene_viewer_package,
+			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_create.  "
+			"The Cmiss_scene_viewer data must be initialised before any scene "
+			"viewers can be created.");
+		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
+	}
+
+	return (scene_viewer);
+} /* create_Cmiss_scene_viewer_wx */
+
+int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input)
+/*******************************************************************************
+LAST MODIFIED : 1 July 2002
+
+DESCRIPTION :
+Converts mouse button-press and motion events into viewing transformations in
+<scene_viewer>.
+==============================================================================*/
+{
+	int width,height;
+	double near_x,near_y,near_z,far_x,far_y,far_z,dx,dy,dz;
+	double old_near_x,old_near_y,old_near_z,old_far_x,old_far_y,old_far_z;
+	double radius,fact,a[3],b[3],c[3],e[3],eye_distance,tangent_dist,d,phi,
+		axis[3],angle;
+	int return_code,pointer_x,pointer_y,i,delta_x,delta_y,view_changed;
+
+	ENTER(Scene_viewer_input_transform);
+	if (scene_viewer && input)
+	{
+		return_code=1;
+		switch (input->type)
+		{
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS:
+			{
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+				/* printf("button %d press at %d %d\n",input->button,
+					pointer_x,pointer_y); */
+				if (Scene_viewer_unproject(pointer_x,pointer_y,
+					&near_x,&near_y,&near_z,&far_x,&far_y,&far_z))
+				{
+					/*printf("PRESS  Near: %8.4f %8.4f %8.4f  Far: %8.4f %8.4f %8.4f\n",
+						near_x,near_y,near_z,far_x,far_y,far_z);*/
+					switch (input->button_number)
+					{
+						case 1:
+						{
+							scene_viewer->tumble_angle = 0;
+							scene_viewer->tumble_active = 0;
+							switch (scene_viewer->interact_mode)
+							{
+								case SCENE_VIEWER_INTERACT_STANDARD:
+								{
+									if (0.0 != scene_viewer->tumble_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+									}
+								} break;
+								case SCENE_VIEWER_INTERACT_2D:
+								{
+									if (0.0 != scene_viewer->translate_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+									}
+								} break;
+							}
+						} break;
+						case 2:
+						{
+							switch (scene_viewer->interact_mode)
+							{
+								case SCENE_VIEWER_INTERACT_STANDARD:
+								{
+									if (0.0 != scene_viewer->translate_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+									}
+								}break;
+								case SCENE_VIEWER_INTERACT_2D:
+								{
+									if (0.0 != scene_viewer->tumble_rate)
+									{
+										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+									}
+								}break;
+							}
+						} break;
+						case 3:
+						{
+							if (0.0 != scene_viewer->zoom_rate)
+							{
+								scene_viewer->drag_mode=SV_DRAG_ZOOM;
+							}
+						} break;
+						default:
+						{
+						} break;
+					}
+					scene_viewer->previous_pointer_x=pointer_x;
+					scene_viewer->previous_pointer_y=pointer_y;
+				}
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY:
+			{
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+#if defined (DEBUG_CODE)
+				printf("mouse move to %d %d\n",pointer_x,pointer_y);
+#endif /* defined (DEBUG_CODE) */
+				if (Scene_viewer_unproject(pointer_x,pointer_y,
+					&near_x,&near_y,&near_z,&far_x,&far_y,&far_z)&&
+					Scene_viewer_unproject(scene_viewer->previous_pointer_x,
+						scene_viewer->previous_pointer_y, &old_near_x,&old_near_y,
+						&old_near_z,&old_far_x,&old_far_y,&old_far_z))
+				{
+					view_changed=0;
+					switch (scene_viewer->drag_mode)
+					{
+						case SV_DRAG_NOTHING:
+						{
+						} break;
+						case SV_DRAG_TUMBLE:
+						{
+							/* Tumble works like you are pulling string off a ball placed in
+								the middle of the window. The line of the string is in the
+								direction of dragging. If you follow back to the tangent point
+								on the front of the ball, then the axis of rotation is the
+								cross product of the vector from the centre of the ball to this
+								tangent point with the direction you are pulling the string.
+								As the distance from line you drag along to the centre of the
+								window increases, the tumbling increasingly turns to twisting
+								about the view direction. */
+							width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+							height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+							if ((0<width)&&(0<height))
+							{
+								/* get the radius of the ball */
+								radius=0.25*(width+height);
+								delta_x=pointer_x-scene_viewer->previous_pointer_x;
+								delta_y=scene_viewer->previous_pointer_y-pointer_y;
+								if (0<(tangent_dist=sqrt((double)(delta_x*delta_x+delta_y*delta_y))))
+								{
+									/* get unit vector dx,dy normal to drag line */
+									dx=-(double)delta_y/tangent_dist;
+									dy= (double)delta_x/tangent_dist;
+									/* get shortest distance to centre along drag line normal */
+									d=dx*(pointer_x-0.5*(width-1))+dy*(0.5*(height-1)-pointer_y);
+									/* limit d to radius so twists about view direction */
+									if (d > radius)
+									{
+										d = radius;
+									}
+									else
+									{
+										if (d < -radius)
+										{
+											d = -radius;
+										}
+									}
+									/* phi ranges from 0 pointing out of the screen to +/- PI/2
+										 in the plane of the window */
+									phi=acos(d/radius)-0.5*PI;
+									/* apply the tumble_rate to slow/hasten tumble */
+									angle=scene_viewer->tumble_rate*tangent_dist/radius;
+									/* get axis to rotate about */
+									/* a = vector towards viewer = angle to rotate about as a
+										 right hand screw when phi = -PI/2 */
+									a[0]=scene_viewer->eyex-scene_viewer->lookatx;
+									a[1]=scene_viewer->eyey-scene_viewer->lookaty;
+									a[2]=scene_viewer->eyez-scene_viewer->lookatz;
+									normalize3(a);
+									/* b = up vector */
+									b[0]=scene_viewer->upx;
+									b[1]=scene_viewer->upy;
+									b[2]=scene_viewer->upz;
+									normalize3(b);
+									/* c = b (x) a = vector to the right */
+									cross_product3(b,a,c);
+									normalize3(c);
+									/* e = angle to rotate about if phi = 0 */
+									e[0] = dx*c[0] + dy*b[0];
+									e[1] = dx*c[1] + dy*b[1];
+									e[2] = dx*c[2] + dy*b[2];
+									/* get actual angle to rotate by from a, e and phi */
+									axis[0]=sin(phi)*a[0]+cos(phi)*e[0];
+									axis[1]=sin(phi)*a[1]+cos(phi)*e[1];
+									axis[2]=sin(phi)*a[2]+cos(phi)*e[2];
+									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
+										-angle))
+									{
+										//-- if (Interactive_tool_is_Transform_tool(
+										//-- 	scene_viewer->interactive_tool) &&
+										//-- 	Interactive_tool_transform_get_free_spin(
+										//-- 		scene_viewer->interactive_tool))
+										if (1)
+										{
+											/* Store axis and angle so that we can make the
+												 scene viewer spin if left alone. */
+											scene_viewer->tumble_axis[0] = axis[0];
+											scene_viewer->tumble_axis[1] = axis[1];
+											scene_viewer->tumble_axis[2] = axis[2];
+											scene_viewer->tumble_angle = -angle;
+											scene_viewer->tumble_active = 0;
+										}
+										else
+										{
+											scene_viewer->tumble_angle = 0;
+											scene_viewer->tumble_active = 0;
+										}
+										view_changed=1;
+									}
+								}
+							}
+						} break;
+						case SV_DRAG_TRANSLATE:
+						{
+							/* a = vector towards viewer */
+							a[0]=scene_viewer->eyex-scene_viewer->lookatx;
+							a[1]=scene_viewer->eyey-scene_viewer->lookaty;
+							a[2]=scene_viewer->eyez-scene_viewer->lookatz;
+							eye_distance=normalize3(a);
+							/* translate at lookat point; proportion from near to far */
+							if ((scene_viewer->far_plane > scene_viewer->near_plane)&&
+								(eye_distance >= scene_viewer->near_plane)&&
+								(eye_distance <= scene_viewer->far_plane))
+							{
+								fact = (eye_distance-scene_viewer->near_plane)/
+									(scene_viewer->far_plane-scene_viewer->near_plane);
+							}
+							else
+							{
+								fact = 0.0;
+							}
+							/* get translation at eye distance between near and far */
+							/* apply the translate_rate to slow/hasten translate */
+							dx=scene_viewer->translate_rate*
+								((1.0-fact)*(near_x-old_near_x) + fact*(far_x-old_far_x));
+							dy=scene_viewer->translate_rate*
+								((1.0-fact)*(near_y-old_near_y) + fact*(far_y-old_far_y));
+							dz=scene_viewer->translate_rate*
+								((1.0-fact)*(near_z-old_near_z) + fact*(far_z-old_far_z));
+							scene_viewer->eyex -= dx;
+							scene_viewer->eyey -= dy;
+							scene_viewer->eyez -= dz;
+							scene_viewer->lookatx -= dx;
+							scene_viewer->lookaty -= dy;
+							scene_viewer->lookatz -= dz;
+							view_changed=1;
+						} break;
+						case SV_DRAG_ZOOM:
+						{
+							/*??? Handles only symmetric viewing volume */
+							radius=0.25*(scene_viewer->right-scene_viewer->left+
+								scene_viewer->top-scene_viewer->bottom);
+							/* apply the zoom_rate to slow/hasten zoom */
+							fact=1.0 + 0.01*scene_viewer->zoom_rate;
+							i=pointer_y;
+							while (i>scene_viewer->previous_pointer_y)
+							{
+								radius /= fact;
+								i--;
+							}
+							while (i<scene_viewer->previous_pointer_y)
+							{
+								radius *= fact;
+								i++;
+							}
+							scene_viewer->left=-radius;
+							scene_viewer->right=radius;
+							scene_viewer->bottom=-radius;
+							scene_viewer->top=radius;
+							view_changed=1;
+						} break;
+						default:
+						{
+						} break;
+					}
+					if (view_changed)
+					{
+						Scene_viewer_set_transform_flag(scene_viewer);
+						Scene_viewer_redraw_now(scene_viewer);
+						/* send the callbacks */
+						CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+							scene_viewer->sync_callback_list,scene_viewer,NULL);
+					}
+					scene_viewer->previous_pointer_x=pointer_x;
+					scene_viewer->previous_pointer_y=pointer_y;
+				}
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
+			{
+				if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
+				{
+					scene_viewer->tumble_active = 1;
+					if (!scene_viewer->idle_update_callback_id)
+					{
+						scene_viewer->idle_update_callback_id = 0;
+						//-- 	Event_dispatcher_add_idle_callback(
+						//-- 		User_interface_get_event_dispatcher(scene_viewer->user_interface),
+						//-- 		Scene_viewer_idle_update_callback, (void *)scene_viewer,
+						//-- 		EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+					}
+				}
+#if defined (DEBUG_CODE)
+				printf("button %d release at %d %d\n",input->button_number,
+					input->position_x,input->position_y);
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+				if (Scene_viewer_unproject(pointer_x,pointer_y,
+					&near_x,&near_y,&near_z,&far_x,&far_y,&far_z))
+				{
+					printf("RELEASENear: %8.4f %8.4f %8.4f  Far: %8.4f %8.4f %8.4f\n",
+						near_x,near_y,near_z,far_x,far_y,far_z);
+				}
+#endif /* defined (DEBUG_CODE) */
+				scene_viewer->drag_mode=SV_DRAG_NOTHING;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_PRESS:
+			{
+#if defined (DEBUG_CODE)
+				printf("key %d press at %d %d\n",input->key_code,input->position_x,
+					input->position_y);
+#endif /* defined (DEBUG_CODE) */
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE:
+			{
+#if defined (DEBUG_CODE)
+				printf("key %d release at %d %d\n",input->key_code,input->position_x,
+					input->position_y);
+#endif /* defined (DEBUG_CODE) */
+			} break;
+			default:
+			{
+				printf("Scene_viewer_input_transform.  Invalid X event");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_input_transform.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_input_transform */
+
+int Scene_viewer_input_viewport_transform(
+	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input)
+/*******************************************************************************
+LAST MODIFIED : 1 July 2002
+
+DESCRIPTION :
+Converts mouse button-press and motion events into viewport zoom and translate
+transformations.
+==============================================================================*/
+{
+	double dx,dy,zoom_ratio,fact;
+	int return_code,pointer_x,pointer_y,i;
+
+	ENTER(Scene_viewer_input_viewport_transform);
+	if (scene_viewer&&input)
+	{
+		return_code=1;
+		switch (input->type)
+		{
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS:
+			{
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+				switch (input->button_number)
+				{
+					case 1:
+					{
+						switch (scene_viewer->interact_mode)
+						{
+							case SCENE_VIEWER_INTERACT_STANDARD:
+							{
+								scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+							}break;
+							case SCENE_VIEWER_INTERACT_2D:
+							{
+								scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+							}break;
+						}
+					} break;
+					case 2:
+					{
+						switch (scene_viewer->interact_mode)
+						{
+							case SCENE_VIEWER_INTERACT_STANDARD:
+							{
+								scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+							}break;
+							case SCENE_VIEWER_INTERACT_2D:
+							{
+								scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+							}break;
+						}
+					} break;
+					case 3:
+					{
+						scene_viewer->drag_mode=SV_DRAG_ZOOM;
+					} break;
+					default:
+					{
+					} break;
+				}
+				scene_viewer->previous_pointer_x=pointer_x;
+				scene_viewer->previous_pointer_y=pointer_y;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY:
+			{
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+				switch (scene_viewer->drag_mode)
+				{
+					case SV_DRAG_NOTHING:
+					{
+					} break;
+					case SV_DRAG_TRANSLATE:
+					{
+						dx=(pointer_x-scene_viewer->previous_pointer_x)/
+							scene_viewer->user_viewport_pixels_per_unit_x;
+						dy=(scene_viewer->previous_pointer_y-pointer_y)/
+							scene_viewer->user_viewport_pixels_per_unit_y;
+						scene_viewer->user_viewport_left -= dx;
+						scene_viewer->user_viewport_top -= dy;
+						Scene_viewer_set_transform_flag(scene_viewer);
+						Scene_viewer_redraw_now(scene_viewer);
+					} break;
+					case SV_DRAG_ZOOM:
+					{
+						zoom_ratio=1.0;
+						fact=1.01;
+						i=pointer_y;
+						while (i>scene_viewer->previous_pointer_y)
+						{
+							zoom_ratio *= fact;
+							i--;
+						}
+						while (i<scene_viewer->previous_pointer_y)
+						{
+							zoom_ratio /= fact;
+							i++;
+						}
+						Scene_viewer_viewport_zoom(scene_viewer,zoom_ratio);
+						Scene_viewer_redraw_now(scene_viewer);
+					} break;
+					default:
+					{
+					} break;
+				}
+				scene_viewer->previous_pointer_x=pointer_x;
+				scene_viewer->previous_pointer_y=pointer_y;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
+			{
+				pointer_x=input->position_x;
+				pointer_y=input->position_y;
+				scene_viewer->drag_mode=SV_DRAG_NOTHING;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_PRESS:
+			{
+				printf("key %d press at %d %d\n",input->key_code,input->position_x,
+					input->position_y);
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE:
+			{
+				printf("key %d release at %d %d\n",input->key_code,input->position_x,
+					input->position_y);
+			} break;
+			default:
+			{
+				printf("Scene_viewer_input_viewport_transform.  Invalid X event");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_input_viewport_transform.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_input_viewport_transform */
+
+int Cmiss_scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the Scene_viewer window. The
+resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_default_input_callback);
+	if (scene_viewer)
+	{
+		switch (scene_viewer->input_mode)
+		{
+			case SCENE_VIEWER_NO_INPUT_OR_DRAW:
+			case SCENE_VIEWER_NO_INPUT:
+			{
+				/* do nothing */
+			} break;
+			case SCENE_VIEWER_SELECT:
+			{
+				/* can override select mode by holding down control key */
+				if (CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS==input->type)
+				{
+					if (((CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL & input->input_modifier)&&
+						(SCENE_VIEWER_ABSOLUTE_VIEWPORT != scene_viewer->viewport_mode))
+						||((SCENE_VIEWER_ABSOLUTE_VIEWPORT == scene_viewer->viewport_mode)&&
+						!((1==input->button_number)||
+						(CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 & input->input_modifier))))
+					{
+						scene_viewer->temporary_transform_mode=1;
+					}
+					else
+					{
+						scene_viewer->temporary_transform_mode=0;
+					}
+				}
+				if (scene_viewer->temporary_transform_mode)
+				{
+					if (SCENE_VIEWER_RELATIVE_VIEWPORT == scene_viewer->viewport_mode ||
+						SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT == scene_viewer->viewport_mode)
+					{
+						if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
+						{
+							Scene_viewer_input_transform(scene_viewer, input);
+						}
+					}
+					else
+					{
+						Scene_viewer_input_viewport_transform(scene_viewer, input);
+					}
+				}
+				else
+				{
+					/*???RC temporary until all tools are Interactive_tools */
+					if (1)//-- scene_viewer->interactive_tool)
+					{
+						//-- Scene_viewer_input_select(scene_viewer, input);
+						display_message(ERROR_MESSAGE,
+							"Scene_viewer_default_input_callback.  Input selection not implemented.");
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Scene_viewer_default_input_callback.  Always need an interactive tool");
+					}
+				}
+			} break;
+			case SCENE_VIEWER_UPDATE_ON_CLICK:
+			case SCENE_VIEWER_TRANSFORM:
+			{
+				if (SCENE_VIEWER_UPDATE_ON_CLICK==scene_viewer->input_mode)
+				{
+					if (CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS==input->type)
+					{
+						if (input->input_modifier & CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL)
+						{
+							Scene_viewer_view_all(scene_viewer);
+						}
+					}
+					scene_viewer->update_pixel_image=1;
+					Scene_viewer_redraw(scene_viewer);
+				}
+				if (SCENE_VIEWER_RELATIVE_VIEWPORT==scene_viewer->viewport_mode ||
+					SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT==scene_viewer->viewport_mode)
+				{
+					if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
+					{
+						Scene_viewer_input_transform(scene_viewer, input);
+					}
+				}
+				else
+				{
+					Scene_viewer_input_viewport_transform(scene_viewer, input);
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_viewer_default_input_callback.  Invalid input mode");
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_default_input_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+	/* We want to call any other callbacks even if this fails. */
+	return_code = 1;
+
+	return(return_code);
+} /* Scene_viewer_default_input_callback */
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -5771,8 +6614,7 @@ int Cmiss_scene_viewer_set_graphics_buffer_width(Cmiss_scene_viewer_id scene_vie
 
 	if (scene_viewer)
 	{
-		return_code = 1;
-		scene_viewer->graphics_buffer->width = width;
+		return_code = Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
 	}
 	else
 	{
@@ -5789,8 +6631,7 @@ int Cmiss_scene_viewer_set_graphics_buffer_height(Cmiss_scene_viewer_id scene_vi
 
 	if (scene_viewer)
 	{
-		return_code = 1;
-		scene_viewer->graphics_buffer->height = height;
+		return_code = Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
 	}
 	else
 	{
@@ -6545,8 +7386,8 @@ Returns the width and height of the Scene_viewers drawing area.
 	ENTER(Scene_viewer_get_viewport_size);
 	if (scene_viewer&&width&&height)
 	{
-		*width = scene_viewer->graphics_buffer->width;//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		*height = scene_viewer->graphics_buffer->height;//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		return_code=1;
 	}
 	else
@@ -6569,23 +7410,20 @@ DESCRIPTION :
 Sets the width and height of the Scene_viewers drawing area.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
-	ENTER(Scene_viewer_set_viewport_size);
 	if (scene_viewer&&(0<width)&&(0<height))
 	{
-		scene_viewer->graphics_buffer->width = width;//-- Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
-		scene_viewer->graphics_buffer->height = height;//-- Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
+		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
+		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
 		Scene_viewer_set_transform_flag(scene_viewer);
-		return_code=1;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_set_viewport_size.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_set_viewport_size */
@@ -7027,8 +7865,8 @@ scene viewer on screen.
 		{
 #endif /* defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
-			*width = scene_viewer->graphics_buffer->width;//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			*height = scene_viewer->graphics_buffer->height;//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
 				preferred_antialias, preferred_transparency_layers,
@@ -7300,8 +8138,8 @@ Scales of the absolute image while keeping the same centre point.
 		scene_viewer->user_viewport_pixels_per_unit_x *= zoom_ratio;
 		scene_viewer->user_viewport_pixels_per_unit_y *= zoom_ratio;
 		/* adjust top,left so that zoom comes from centre of viewport */
-		width = scene_viewer->graphics_buffer->width;//-- Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-		height = scene_viewer->graphics_buffer->height;//-- Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		scene_viewer->user_viewport_left += 0.5*(zoom_ratio-1.0)*
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*

@@ -107,7 +107,7 @@ struct User_interface_module *User_interface_module_create(
 			}
 		}
 
-		UI_module->event_dispatcher = Cmiss_context_get_default_event_dispatcher(context);
+		UI_module->event_dispatcher = 0;//-- Cmiss_context_get_default_event_dispatcher(context);
 		if (NULL == (UI_module->user_interface = CREATE(User_interface)
 				(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
 					"cmgui")))
@@ -117,8 +117,7 @@ struct User_interface_module *User_interface_module_create(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (UI_module->user_interface)
 		{
-			UI_module->graphics_buffer_package = CREATE(Graphics_buffer_package)(
-				UI_module->user_interface);
+			UI_module->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			Graphics_buffer_package_set_override_visual_id(UI_module->graphics_buffer_package,
 				visual_id);
 		}

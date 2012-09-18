@@ -82,5 +82,10 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( API_HDRS ${API_HDRS}
 		source/api/cmiss_scene_viewer.h
 		source/api/types/cmiss_scene_viewer_id.h )
+		
+	SET( NEW_API_HDRS ${NEW_API_HDRS}
+	  source/api/new/cmiss_scene_viewer_input.h )
+	  
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
+SET( API_HDRS ${API_HDRS} ${NEW_API_HDRS} )

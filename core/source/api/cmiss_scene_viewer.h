@@ -207,6 +207,7 @@ LAST MODIFIED : 11 September 2007
 DESCRIPTION :
 ==============================================================================*/
 {
+	CMISS_SCENE_VIEWER_INPUT_INVALID,
 	CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY,
 	CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS,
 	CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE,
@@ -988,8 +989,13 @@ Returns a count of the number of scene viewer redraws.
 //	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 //	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 //	int minimum_accumulation_buffer_depth);
+//ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
+//		Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+//		void *canvas);
+
 ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
-		Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
-		void *canvas);
+	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode);
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

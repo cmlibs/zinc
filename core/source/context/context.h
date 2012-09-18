@@ -46,6 +46,7 @@
 #include "general/manager.h"
 
 #define Context Cmiss_context
+
 struct Context
 {
 	int access_count;
@@ -54,7 +55,8 @@ struct Context
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct Cmiss_graphics_module *graphics_module;
-	struct User_interface_module *UI_module;
+	//-- struct User_interface_module *UI_module;
+	struct Cmiss_scene_viewer_package *scene_viewer_package;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
@@ -87,8 +89,8 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
  * @param context  Pointer to a cmiss_context object.
  * @return  the default event_dispatcher if successfully, otherwise NULL.
  */
-struct Event_dispatcher *Cmiss_context_get_default_event_dispatcher(
-	struct Context *context);
+//-- struct Event_dispatcher *Cmiss_context_get_default_event_dispatcher(
+//-- 	struct Context *context);
 
 /***************************************************************************//**
  * Return the IO_stream_package in context.

@@ -253,7 +253,7 @@ DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
 Global functions
 ----------------
 */
-ZINC_API struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -269,7 +269,9 @@ DESCRIPTION :
 Creates a Scene_viewer_package.
 ==============================================================================*/
 
-ZINC_API int DESTROY(Cmiss_scene_viewer_package)(
+struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmiss_scene_viewer_package *scene_viewer_package);
+
+int DESTROY(Cmiss_scene_viewer_package)(
 	struct Cmiss_scene_viewer_package **scene_viewer_package_address);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -343,7 +345,7 @@ DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
 ==============================================================================*/
 
-ZINC_API struct Scene_viewer *create_Scene_viewer_from_package(
+struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	struct Scene *scene);
