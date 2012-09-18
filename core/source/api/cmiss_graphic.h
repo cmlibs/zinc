@@ -74,7 +74,7 @@ Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
  * @return  Status CMISS_OK if successfully destroy graphic, otherwise any
  * other value.
  */
-int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
+ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 
 /***************************************************************************//**
  * Sets the field supplying coordinates for the graphic.
