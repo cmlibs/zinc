@@ -47,22 +47,22 @@ typedef int Cmiss_scene_viewer_input_modifier;
 extern "C" {
 #endif
 
-int Cmiss_scene_viewer_default_input_callback(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_default_input_callback(Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_input_id input);
 
-Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(Cmiss_scene_viewer_id scene_viewer);
 
-int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input);
+ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input);
 
-int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, unsigned int x, unsigned int y);
+ZINC_API int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, unsigned int x, unsigned int y);
 
-int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier);
+ZINC_API int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier);
 
-Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_scene_viewer_input_id input);
+ZINC_API Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_scene_viewer_input_id input);
 
-int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number);
+ZINC_API int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number);
 
-int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type);
+ZINC_API int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type);
 
 #ifdef __cplusplus
 }
