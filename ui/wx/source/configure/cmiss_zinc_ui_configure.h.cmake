@@ -1,7 +1,0 @@
-
-#ifndef CMISS_ZINC_UI_CONFIGURE_H
-#define CMISS_ZINC_UI_CONFIGURE_H
-
-#cmakedefine WX_USER_INTERFACE
-
-#endif /* CMISS_ZINC_UI_CONFIGURE_H */
