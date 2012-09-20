@@ -203,7 +203,7 @@ Module functions
  * @param manage_faces  Set if faces are added/removed with parent elements.
  * Faces are only removed if not in use by any other elements in group.
  */
-static int process_modify_element_group(Cmiss_field_group_id group,
+int process_modify_element_group(Cmiss_field_group_id group,
 	Cmiss_region_id region, int dimension, char add_flag,
 	Cmiss_field_id conditional_field, Cmiss_field_group_id from_group,
 	Multi_range *element_ranges, char selected_flag, FE_value time,
@@ -490,14 +490,14 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 	return return_code;
 }
 
-static int set_Texture_image_from_field(struct Texture *texture,
+int set_Texture_image_from_field(struct Texture *texture,
 	struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	int propagate_field,
 	struct Spectrum *spectrum,
 	Cmiss_mesh_id search_mesh,
 	enum Texture_storage_type storage,
-	int image_width, int image_height, int image_depth, 
+	int image_width, int image_height, int image_depth,
 	int number_of_bytes_per_component,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Graphical_material *fail_material)
@@ -529,7 +529,7 @@ Currently limited to 1 byte per component.
 		{
 			if (!texture_coordinate_field)
 			{
-				texture_coordinate_field = 
+				texture_coordinate_field =
 					source_texture_coordinate_field;
 			}
 			if (image_width == 0)
@@ -697,13 +697,13 @@ is the region where the fields are defined (the parent region in this case).
 	struct FE_region *fe_region;
 }; /* struct Apply_transformation_data */
 
-static int apply_transformation_to_node(struct FE_node *node,
+int apply_transformation_to_node(struct FE_node *node,
 	void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 3 March 2003
 
 DESCRIPTION :
-Iterator that modifies the position of each node according to the 
+Iterator that modifies the position of each node according to the
 transformation in the transformation data.
 Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 ==============================================================================*/
@@ -907,7 +907,7 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 
 		DEACCESS(FE_element)(&element);
 
-   	DEACCESS(FE_element)(&template_element);
+	DEACCESS(FE_element)(&template_element);
 	}
 	// must remember to end define faces mode
 	FE_region_end_define_faces(fe_region);

@@ -308,13 +308,11 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 				default_background_colour.green = 0.0;
 				default_background_colour.blue = 0.0;
 				context->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
-					(/* Graphics_buffer_package */0,
-						&default_background_colour,
+					(&default_background_colour,
 						/* interactive_tool_manager */0,
 						Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
 						Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
-						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene,
-						/* user_interface */0);
+						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene);
 				DEACCESS(Light_model)(&default_light_model);
 				DEACCESS(Light)(&default_light);
 				Cmiss_scene_destroy(&default_scene);

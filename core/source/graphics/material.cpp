@@ -523,7 +523,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Material_program)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
 	enum Material_program_type, compare_int)
 
-static struct Material_program_uniform *CREATE(Material_program_uniform)(char *name)
+struct Material_program_uniform *CREATE(Material_program_uniform)(char *name)
 /*******************************************************************************
 ==============================================================================*/
 {
@@ -601,7 +601,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program_uniform, na
  * array of doubles and I don't see the need to copy and pass floats.
  * It isn't called double_vector then because we are going to use it with Uniform?f
  */
-static int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
+int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
 	unsigned int number_of_values, double *values)
 {
 	int return_code;

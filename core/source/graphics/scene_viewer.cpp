@@ -3268,14 +3268,12 @@ Global functions
 */
 
 struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
-	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct User_interface *user_interface)
+	struct MANAGER(Scene) *scene_manager,struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -3376,6 +3374,8 @@ struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmi
 		display_message(ERROR_MESSAGE,
 			"ACCESS(scene_viewer_package).  Invalid argument");
 	}
+
+	return scene_viewer_package;
 }
 
 int DESTROY(Cmiss_scene_viewer_package)(
@@ -3562,8 +3562,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct User_interface *user_interface)
+	struct MANAGER(Scene) *scene_manager,struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -3944,8 +3943,7 @@ DESCRIPTION :
 			cmiss_scene_viewer_package->light_model_manager,
 			cmiss_scene_viewer_package->default_light_model,
 			cmiss_scene_viewer_package->scene_manager,
-			scene,
-			/* user_interface */0);
+			scene);
 
 		new_interactive_tool_manager = 0;//--CREATE(MANAGER(Interactive_tool))();
 		//--FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
