@@ -443,6 +443,16 @@ int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
 int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
    Cmiss_field_id conditional_field);
 
+/*******************************************************************************
+ * Returns a new handle to the element basis with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param mesh  The element basis to obtain a new reference to.
+ * @return  New element basis handle with incremented reference count.
+ */
+Cmiss_element_basis_id Cmiss_element_basis_access(
+	Cmiss_element_basis_id element_basis);
+
 /***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.
  * Internally this just decrements the reference count.
@@ -492,6 +502,16 @@ int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
 int Cmiss_element_basis_get_number_of_nodes(
 	Cmiss_element_basis_id element_basis);
 
+/*******************************************************************************
+ * Returns a new handle to the element iterator with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param mesh  The element iterator to obtain a new reference to.
+ * @return  New element iterator handle with incremented reference count.
+ */
+Cmiss_element_iterator_id Cmiss_element_iterator_access(
+	Cmiss_element_iterator_id element_iterator);
+
 /***************************************************************************//**
  * Destroys this handle to the element_iterator and sets it to NULL.
  *
@@ -512,6 +532,16 @@ int Cmiss_element_iterator_destroy(
  */
 Cmiss_element_id Cmiss_element_iterator_next(
 	Cmiss_element_iterator_id element_iterator);
+
+/*******************************************************************************
+ * Returns a new handle to the element template with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param mesh  The element template to obtain a new reference to.
+ * @return  New element template handle with incremented reference count.
+ */
+Cmiss_element_template_id Cmiss_element_template_access(
+	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
  * Destroys this handle to the element_template and sets it to NULL.

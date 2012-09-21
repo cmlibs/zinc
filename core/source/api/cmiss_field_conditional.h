@@ -47,6 +47,8 @@ Implements cmiss fields which conditionally calculate their inputs.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

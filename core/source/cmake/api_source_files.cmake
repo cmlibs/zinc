@@ -10,6 +10,7 @@ SET( API_HDRS
 	source/api/cmiss_field_arithmetic_operators.h
 	source/api/cmiss_field_composite.h
 	source/api/cmiss_field_conditional.h
+	source/api/cmiss_field_constant.h
 	source/api/cmiss_field_coordinate_transformation.h
 	source/api/cmiss_field_finite_element.h
 	source/api/cmiss_field_group.h

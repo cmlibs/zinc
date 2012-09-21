@@ -42,12 +42,12 @@ Implements a constant string field.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
+#include "api/cmiss_field_constant.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-#include "computed_field/computed_field_string_constant.h"
 
 namespace {
 
@@ -198,7 +198,7 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(Cmiss_field_ca
 
 } //namespace
 
-struct Computed_field *Computed_field_create_string_constant(
+struct Computed_field *Cmiss_field_module_create_string_constant(
 	struct Cmiss_field_module *field_module, const char *string_value_in)
 {
 	Computed_field *field = NULL;

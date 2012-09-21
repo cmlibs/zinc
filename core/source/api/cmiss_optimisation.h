@@ -199,6 +199,15 @@ enum Cmiss_optimisation_attribute
 Cmiss_optimisation_id Cmiss_field_module_create_optimisation(
 	Cmiss_field_module_id field_module);
 
+/*******************************************************************************
+ * Returns a new handle to the optimisation with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param optimisation  The optimisation to obtain a new reference to.
+ * @return  New optimisation handle with incremented reference count.
+ */
+Cmiss_optimisation_id Cmiss_optimisation_access(Cmiss_optimisation_id optimisation);
+
 /***************************************************************************//**
  * Destroys reference to the optimisation object and sets pointer/handle to NULL.
  *

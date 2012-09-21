@@ -47,6 +47,7 @@ Function definitions for debugging.
 #include <string.h>
 
 #include "api/cmiss_zinc_configure.h"
+#include "api/cmiss_core.h"
 
 #include "general/message.h"
 #include "general/debug.h"
@@ -163,7 +164,7 @@ DESCRIPTION :
 		block = (struct Memory_block *)NULL;
 	}
 	LEAVE;
-	
+
 	return (block);
 } /* CREATE(Memory_block) */
 
@@ -294,7 +295,7 @@ DESCRIPTION :
 					printf("  triangle_index %d\n", triangle->triangle_index);
 					printf("  vertex_indices %d,%d,%d\n", triangle->vertex_index[0],
 						triangle->vertex_index[1], triangle->vertex_index[2]);
-					printf("  cell_ptr 0x%x\n", triangle->cell_ptr);					
+					printf("  cell_ptr 0x%x\n", triangle->cell_ptr);
 					printf("  list_index = %d\n", triangle->triangle_list_index);
 				}
 				else if (!strcmp(block->type, "struct MC_vertex"))
@@ -487,7 +488,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 		if (!display_message_call_in_progress)
 		{
 			display_message_call_in_progress=1;
-			if (memory_block_list && (block = 
+			if (memory_block_list && (block =
 				FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
 			{
 				previous_total_allocated_memory=total_allocated_memory;
@@ -700,7 +701,7 @@ actual object type and then the appropriate list function is called.
 
 		if (memory_block_list)
 		{
-			FOR_EACH_OBJECT_IN_LIST(Memory_block)(list_memory_block, 
+			FOR_EACH_OBJECT_IN_LIST(Memory_block)(list_memory_block,
 				(void *)&list_memory_data, memory_block_list);
 		}
 
@@ -708,7 +709,7 @@ actual object type and then the appropriate list function is called.
 		{
 			for (i = 1 ; i < maximum_count + 1 ; i++)
 			{
-				printf("  Allocated memory with count %3d: %12ld\n", i, 
+				printf("  Allocated memory with count %3d: %12ld\n", i,
 					list_memory_data.count_total[i]);
 			}
 		}
@@ -746,7 +747,7 @@ DESCRIPTION :
 If <on> is non-zero then check memory output is turned on, otherwise, it is
 turned off.  Check memory involves calling display_message to give memory
 change information for ALLOCATE, DEALLOCATE and REALLOCATE.  display_message
-is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion 
+is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion
 prevented).
 ==============================================================================*/
 {

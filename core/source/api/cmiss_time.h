@@ -62,6 +62,16 @@ typedef int (*Cmiss_time_notifier_callback)(Cmiss_time_notifier_id time_notifier
 	double current_time, void *user_data);
 
 /***************************************************************************//**
+ * Access the time notifier, increase the access count of the time notifier
+ * by one.
+ *
+ * @param time_notifier  handle to the "to be access" cmiss time_notifier.
+ * @return  handle to time_notifier if successfully access time_notifier.
+ */
+Cmiss_time_notifier_id Cmiss_time_notifier_access(
+	Cmiss_time_notifier_id time_notifier);
+
+/***************************************************************************//**
  * Destroys this reference to the time notifier (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -95,6 +105,14 @@ int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
  */
 int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
   Cmiss_time_notifier_callback callback, void *user_data);
+
+/***************************************************************************//**
+ * Gets the current time from the time notifier.
+ *
+ * @param time_notifier  Handle to time notifier.
+ * @return  Current time.
+ */
+double Cmiss_time_notifier_get_current_time(Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
  * This controls the rate which the time depedent object is called back.

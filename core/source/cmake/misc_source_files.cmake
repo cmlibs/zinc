@@ -38,12 +38,17 @@ SET( IO_DEVICES_HDRS
 SET( FIELD_IO_SRCS
 	source/field_io/read_fieldml.cpp )
 SET( FIELD_IO_HDRS
+	source/field_io/cmiss_field_ensemble.h
+	source/field_io/cmiss_field_ensemble_id.h
+	source/field_io/cmiss_field_parameters.h
+	source/field_io/cmiss_field_parameters_id.h
 	source/field_io/read_fieldml.h )
 
 SET( MESH_SRCS 
 	source/mesh/cmiss_element_private.cpp
 	source/mesh/cmiss_node_private.cpp )
 SET( MESH_HDRS 
+	source/mesh/cmiss_node_private.hpp
 	source/mesh/cmiss_element_private.hpp )
 
 SET( NODE_SRCS source/node/node_operations.cpp )

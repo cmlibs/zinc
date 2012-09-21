@@ -377,9 +377,28 @@ typedef Cmiss_set<Cmiss_node *,FE_node_compare_number> Cmiss_set_Cmiss_node;
 
 struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 {
+	int access_count;
 	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
-		Cmiss_set_Cmiss_node::ext_iterator(container)
+		Cmiss_set_Cmiss_node::ext_iterator(container),
+		access_count(1)
 	{
+	}
+
+	Cmiss_node_iterator access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_node_iterator_id &iterator)
+	{
+		if (!iterator)
+			return 0;
+		--(iterator->access_count);
+		if (iterator->access_count <= 0)
+			delete iterator;
+		iterator = 0;
+		return 1;
 	}
 };
 #endif // NODE_STL_CONTAINER
@@ -391,9 +410,28 @@ typedef Cmiss_btree<Cmiss_node,int,CMISS_NODE_BTREE_ORDER> Cmiss_set_Cmiss_node;
 
 struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 {
+	int access_count;
 	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
-		Cmiss_set_Cmiss_node::ext_iterator(container)
+		Cmiss_set_Cmiss_node::ext_iterator(container),
+		access_count(1)
 	{
+	}
+
+	Cmiss_node_iterator_id access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_node_iterator_id &iterator)
+	{
+		if (!iterator)
+			return 0;
+		--(iterator->access_count);
+		if (iterator->access_count <= 0)
+			delete iterator;
+		iterator = 0;
+		return 1;
 	}
 };
 
@@ -934,9 +972,29 @@ typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_Cmiss_el
 
 struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
 {
+	int access_count;
+
 	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
-		Cmiss_set_Cmiss_element::ext_iterator(container)
+		Cmiss_set_Cmiss_element::ext_iterator(container),
+		access_count(1)
 	{
+	}
+
+	Cmiss_element_iterator_id access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_element_iterator_id &iterator)
+	{
+		if (!iterator)
+			return 0;
+		--(iterator->access_count);
+		if (iterator->access_count <= 0)
+			delete iterator;
+		iterator = 0;
+		return 1;
 	}
 };
 #endif
@@ -959,9 +1017,29 @@ typedef Cmiss_btree<Cmiss_element,const CM_element_information *,CMISS_ELEMENT_B
 
 struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
 {
+	int access_count;
+
 	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
-		Cmiss_set_Cmiss_element::ext_iterator(container)
+		Cmiss_set_Cmiss_element::ext_iterator(container),
+		access_count(1)
 	{
+	}
+
+	Cmiss_element_iterator_id access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_element_iterator_id &iterator)
+	{
+		if (!iterator)
+			return 0;
+		--(iterator->access_count);
+		if (iterator->access_count <= 0)
+			delete iterator;
+		iterator = 0;
+		return 1;
 	}
 };
 
@@ -10543,117 +10621,6 @@ Frees the memory for the node field creator and sets
 	return (return_code);
 } /* DESTROY(FE_node_field_creator) */
 
-int FE_node_field_creator_get_nodal_derivative_versions(
-	struct FE_node_field_creator *node_field_creator,
-	int *number_of_derivatives,
-	enum FE_nodal_value_type **nodal_derivative_types,int **max_versions)
-/*******************************************************************************
-LAST MODIFIED: 11 February 2002
-
-DESCRIPTION:
-Given <node_field_creator>, returns <number_of_derivatives>
-which is the size of the arrays <nodal_derivative_types> (containing the
-FE_nodal_value_type of the derivates present at the node_field_creator)
-and <max_versions> (which contains the maximum number of versions of each
-derivative type).
-Note: This function allocates the arrays nodal_derivative_types and max_versions,
-the user is responsible for freeing them.
-==============================================================================*/
-{
-	enum FE_nodal_value_type  *the_nodal_derivative_types,**nodal_value_types,
-		*the_nodal_value_types,a_nodal_value_type;
-	int array_size,found,max_array_size,i,j,k,number_of_components,
-		number_of_component_derivatives,number_of_versions,	return_code,*max_nodal_versions;
-	max_nodal_versions=(int *)NULL;
-	the_nodal_derivative_types=(enum FE_nodal_value_type *)NULL;
-	return_code = 0;
-	if(node_field_creator&&number_of_derivatives)
-	{
-		/*max_array_size will contain the max possible comb of versions and derviative types */
-		/*will usually be too big.*/
-		max_array_size=0;
-		number_of_components=node_field_creator->number_of_components;
-		for(i=0;i<number_of_components;i++)
-		{
-			max_array_size+=node_field_creator->numbers_of_versions[i]*
-				node_field_creator->numbers_of_derivatives[i];
-		}
-		if(ALLOCATE(the_nodal_derivative_types,enum FE_nodal_value_type,max_array_size)&&
-			ALLOCATE(max_nodal_versions,int,max_array_size))
-		{
-			/*fill in arrays with blanks*/
-			for(i=0;i<max_array_size;i++)
-			{
-				the_nodal_derivative_types[i]=FE_NODAL_UNKNOWN;
-				max_nodal_versions[i]=0;
-			}
-			return_code = 1;
-			/*nodal_value_types an array of arrays of FE_nodal_value_type*/
-			nodal_value_types=node_field_creator->nodal_value_types;
-			/*for all components*/
-			array_size=0;
-			for(i=0;i<number_of_components;i++)
-			{
-				number_of_component_derivatives=node_field_creator->numbers_of_derivatives[i];
-				number_of_versions=node_field_creator->numbers_of_versions[i];
-				/*the_nodal_value_types an array of FE_nodal_value_type*/
-				the_nodal_value_types=*nodal_value_types;
-				/* for all the derivatives*/
-				/* number_of_component_derivatives+1 as also have nodal value*/
-				for(j=0;j<number_of_component_derivatives+1;j++)
-				{
-					if(j!=0)/*don't consider 1st as this is nodal value, not derivative*/
-					{
-						a_nodal_value_type=*the_nodal_value_types;
-						k=0;
-						found=0;
-						/*loop through any previously stored derivative/versions*/
-						while((k<=array_size)&&(!found))
-						{
-							/* have we already stored the derivative/version */
-							if((a_nodal_value_type==the_nodal_derivative_types[k])&&
-								(max_nodal_versions[k]==number_of_versions))
-							{
-								found=1;
-							}
-							else
-							{
-								k++;
-							}
-						}
-						if(!found)
-						{
-							/* if we haven't found the derivative/version, store it*/
-							the_nodal_derivative_types[array_size]=a_nodal_value_type;
-							max_nodal_versions[array_size]=number_of_versions;
-							array_size++;
-						}
-					}/* 	if(j!=0)*/
-					the_nodal_value_types++;
-				}/* for(j=0;j<number_of_component_derivatives+1;j++) */
-				nodal_value_types++;
-			}/* for(i=0;i<number_of_components;i++) */
-			*number_of_derivatives=array_size;
-			*nodal_derivative_types=the_nodal_derivative_types;
-			*max_versions=max_nodal_versions;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_field_creator_get_nodal_derivative_versions. array alocation failed");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_creator_get_nodal_derivative_versions. Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-}/* FE_node_field_creator_get_nodal_derivative_versions*/
-
 int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type)
@@ -10667,8 +10634,6 @@ specified.
 {
 	enum FE_nodal_value_type *new_nodal_value_types;
 	int number_of_derivatives, return_code;
-	ENTER(FE_node_field_creator_define_derivative);
-
 	if (node_field_creator && (component_number >= 0) &&
 		 (component_number < node_field_creator->number_of_components))
 	{
@@ -10695,13 +10660,10 @@ specified.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_creator_define_derivative. Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
 	return (return_code);
-}/* FE_node_field_creator_define_derivative */
+}
 
 int FE_node_field_creator_define_versions(
 	struct FE_node_field_creator *node_field_creator, int component_number,
@@ -10714,8 +10676,6 @@ Specifies the <number_of_versions> for <component_number> specified.
 ==============================================================================*/
 {
 	int return_code;
-	ENTER(FE_node_field_creator_define_derivative);
-
 	if (node_field_creator && (component_number >= 0) &&
 		 (component_number < node_field_creator->number_of_components))
 	{
@@ -10725,14 +10685,61 @@ Specifies the <number_of_versions> for <component_number> specified.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_creator_define_derivative. Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_node_field_creator_define_derivative */
+}
+
+int FE_node_field_creator_get_number_of_versions(
+	struct FE_node_field_creator *node_field_creator, int component_number)
+{
+	int number_of_versions = 0;
+	if (node_field_creator && (component_number < node_field_creator->number_of_components))
+	{
+		if (component_number >= 0)
+		{
+			number_of_versions = node_field_creator->numbers_of_versions[component_number];
+		}
+		else
+		{
+			for (int i = 0; i < node_field_creator->number_of_components; ++i)
+			{
+				if (node_field_creator->numbers_of_versions[i] > number_of_versions)
+				{
+					number_of_versions = node_field_creator->numbers_of_versions[i];
+				}
+			}
+		}
+	}
+	return number_of_versions;
+}
+
+int FE_node_field_creator_has_derivative(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	enum FE_nodal_value_type derivative_type)
+{
+	if (node_field_creator && (component_number < node_field_creator->number_of_components))
+	{
+		int start = 0;
+		int limit = node_field_creator->number_of_components;
+		if (component_number >= 0)
+		{
+			start = component_number;
+			limit = component_number + 1;
+		}
+		for (int i = start; i < limit; ++i)
+		{
+			int number_of_derivatives = node_field_creator->numbers_of_derivatives[i];
+			enum FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[i];
+			for (int j = 0; j <= number_of_derivatives; ++j)
+			{
+				if (nodal_value_types[j] == derivative_type)
+					return 1;
+			}
+		}
+	}
+	return 0;
+}
 
 struct FE_node *CREATE(FE_node)(int cm_node_identifier,
 	struct FE_region *fe_region, struct FE_node *template_node)
@@ -15168,13 +15175,16 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_node,cm_node_identi
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
 DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator)
 
+Cmiss_node_iterator_id Cmiss_node_iterator_access(Cmiss_node_iterator_id node_iterator)
+{
+	return node_iterator->access();
+}
+
 int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address)
 {
-	if (!node_iterator_address)
-		return 0;
-	delete *node_iterator_address;
-	*node_iterator_address = 0;
-	return 1;
+	if (node_iterator_address)
+		return Cmiss_node_iterator::deaccess(*node_iterator_address);
+	return 0;
 }
 
 Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator)
@@ -22993,13 +23003,16 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
 DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator)
 
+Cmiss_element_iterator_id Cmiss_element_iterator_access(Cmiss_element_iterator_id element_iterator)
+{
+	return element_iterator->access();
+}
+
 int Cmiss_element_iterator_destroy(Cmiss_element_iterator_id *element_iterator_address)
 {
-	if (!element_iterator_address)
-		return 0;
-	delete *element_iterator_address;
-	*element_iterator_address = 0;
-	return 1;
+	if (element_iterator_address)
+		return Cmiss_element_iterator::deaccess(*element_iterator_address);
+	return 0;
 }
 
 Cmiss_element_id Cmiss_element_iterator_next(Cmiss_element_iterator_id element_iterator)

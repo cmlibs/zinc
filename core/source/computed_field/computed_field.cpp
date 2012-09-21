@@ -3329,6 +3329,11 @@ int Cmiss_field_set_attribute_real(Cmiss_field_id field,
 	return return_code;
 }
 
+char *Cmiss_field_get_component_name(Cmiss_field_id field, int component_number)
+{
+	return Computed_field_get_component_name(field, component_number - 1);
+}
+
 enum Cmiss_field_coordinate_system_type Cmiss_field_get_coordinate_system_type(
 	Cmiss_field_id field)
 {

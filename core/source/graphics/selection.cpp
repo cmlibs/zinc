@@ -53,11 +53,16 @@ static void  Cmiss_selection_handler_callback(
 struct Cmiss_selection_event
 {
 	enum Cmiss_selection_change_type change_type;
-	int owning_rendition_destroyed;
+	int owning_rendition_destroyed, access_count;
 
 	Cmiss_selection_event() :
 		change_type(CMISS_SELECTION_NO_CHANGE),
-		owning_rendition_destroyed(0)
+		owning_rendition_destroyed(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_selection_event()
 	{
 	}
 };
@@ -95,6 +100,7 @@ struct Cmiss_selection_handler
 	int set_callback(Cmiss_selection_handler_callback_function function_in,
 		void *user_data_in)
 	{
+		remove_manager_callback();
 		function = function_in;
 		user_data = user_data_in;
 		int return_code = 0;
@@ -105,7 +111,7 @@ struct Cmiss_selection_handler
 			if (field_manager)
 			{
 				callback_id = MANAGER_REGISTER(Computed_field)(
-					Cmiss_selection_handler_callback,(void *)this,	field_manager);
+					Cmiss_selection_handler_callback, (void *)this,	field_manager);
 				return_code = (callback_id != NULL);
 			}
 		}
@@ -124,7 +130,7 @@ struct Cmiss_selection_handler
 
 	void remove_manager_callback()
 	{
-		if (rendition)
+		if (callback_id && rendition)
 		{
 			Cmiss_region_id region = Cmiss_rendition_get_region(rendition);
 			if (region)
@@ -172,6 +178,25 @@ int DESTROY(Cmiss_selection_handler)(struct Cmiss_selection_handler **selection_
 		return_code = 0;
 	}
 	LEAVE;
+
+	return (return_code);
+}
+
+int DESTROY(Cmiss_selection_event)(struct Cmiss_selection_event **selection_event_address)
+{
+	int return_code;
+
+	if (selection_event_address && (*selection_event_address))
+	{
+		delete *selection_event_address;
+		*selection_event_address = NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(selection_event_address).  Invalid argument");
+		return_code = 0;
+	}
 
 	return (return_code);
 }
@@ -248,7 +273,7 @@ static void Cmiss_selection_handler_callback(
 					if (event->change_type != CMISS_SELECTION_NO_CHANGE)
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
-				delete event;
+				Cmiss_selection_event_destroy(&event);
 				Cmiss_field_group_destroy(&group_field);
 			}
 		}
@@ -327,6 +352,19 @@ int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handle
 	return DEACCESS(Cmiss_selection_handler)(selection_handler_address);
 }
 
+DECLARE_OBJECT_FUNCTIONS(Cmiss_selection_event);
+
+Cmiss_selection_event_id Cmiss_selection_event_access(
+	Cmiss_selection_event_id selection_event)
+{
+	return ACCESS(Cmiss_selection_event)(selection_event);
+}
+
+int Cmiss_selection_event_destroy(Cmiss_selection_event_id *selection_event_address)
+{
+	return DEACCESS(Cmiss_selection_event)(selection_event_address);
+}
+
 enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
 	Cmiss_selection_event_id selection_event)
 {
@@ -357,7 +395,7 @@ int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selec
 			event->change_type = CMISS_SELECTION_NO_CHANGE;
 			event->owning_rendition_destroyed = 1;
 			(selection_handler->function)(event, selection_handler->user_data);
-			delete event;
+			Cmiss_selection_event_destroy(&event);
 		}
 		selection_handler->remove_manager_callback();
 	}

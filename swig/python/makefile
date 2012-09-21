@@ -23,24 +23,27 @@ CFLAGS = -c -Wall -fPIC #Required for building shared libraries on x86_64
 CXXFLAGS = -shared -Wall -fPIC
 
 # Includes
-SWIG_INCLUDES = -I$(CMISS_ROOT)/cmgui/source
+SWIG_INCLUDES = -I$(CMISS_ROOT)/src/cmgui-swig/source
 
 #CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/x86_64-linux/cmgui-wx-debug/ -lcmgui
-CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui
+CMISS_LIBS = -L$(CMISS_ROOT)/build/cmgui-gtk-optimised-shared -lcmgui
 
-PYTHON_INCLUDES = -I/usr/include/python2.5 -I$(CMISS_ROOT)/cmgui/source
+CMGUI_SOURCE = $(CMISS_ROOT)/src/cmgui-swig/source
+PYTHON_INCLUDES = -I/usr/include/python2.6 -I$(CMGUI_SOURCE)
 
-INTERFACE_PATH=$(CMISS_ROOT)/cmgui/source/swig/interface
-OBJECT_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/object
-BIN_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/Cmiss
+
+INTERFACE_PATH=$(CMGUI_SOURCE)/swig/interface
+OBJECT_PATH=$(CMGUI_SOURCE)/swig/python/object
+BIN_PATH=$(CMGUI_SOURCE)/swig/python/Zn
 VPATH=$(INTERFACE_PATH):$(OBJECT_PATH):$(BIN_PATH)
 
 # Dependencies
-INTERFACES = CmissContext.i CmissRegion.i CmissFieldModule.i CmissGraphicsModule.i CmissMaterial.i
+INTERFACES = ZnContext.i ZnRegion.i ZnFieldModule.i ZnGraphicsModule.i ZnMaterial.i ZnRendition.i ZnField.i ZnStream.i ZnElement.i ZnNode.i ZnDifferentialOperator.i ZnFieldCache.i ZnTessellation.i ZnGraphic.i ZnSelection.i ZnGraphicsFilter.i ZnScene.i ZnSpectrum.i ZnOptimisation.i ZnTime.i ZnTimeSequence.i
+#INTERFACES = ZnTest.i
 PYTHON_PACKAGE_INIT = __init__.py
 PYTHON_WRAPS = $(INTERFACES:.i=_wrap.cxx)
 PYTHON_OBJECTS = $(PYTHON_WRAPS:.cxx=.o)
-PYTHON_MODULES = $(subst Cmiss,_,$(INTERFACES:.i=.so))
+PYTHON_MODULES = $(subst Zn,_,$(INTERFACES:.i=.so))
 
 CmguiPython: $(PYTHON_MODULES) $(PYTHON_PACKAGE_INIT)
 
@@ -54,7 +57,7 @@ $(PYTHON_MODULES): $(PYTHON_OBJECTS)
 	@if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
-	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(OBJECT_PATH)/$(subst .so,_wrap.o,$(subst _,Cmiss,$@)) -o $(BIN_PATH)/$@
+	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(OBJECT_PATH)/$(subst .so,_wrap.o,$(subst _,Zn,$@)) -o $(BIN_PATH)/$@
 
 $(PYTHON_OBJECTS): $(PYTHON_WRAPS)
 	@if [ ! -d $(OBJECT_PATH) ]; then \

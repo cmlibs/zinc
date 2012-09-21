@@ -50,7 +50,6 @@
 #include "computed_field/computed_field_private.hpp"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
-#include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"

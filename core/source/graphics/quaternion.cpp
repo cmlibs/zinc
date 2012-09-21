@@ -45,6 +45,8 @@ operations should be added into this class.
 #include "quaternion.hpp"
 #include <math.h>
 
+#include "general/debug.h"
+
 void Quaternion::set(const double quat_w, const double quat_x, const double quat_y, const double quat_z)
 {
 	 ENTER(Quaternion::set);

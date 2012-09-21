@@ -60,10 +60,27 @@ char computed_field_if_type_string[] = "if";
 
 class Computed_field_if : public Computed_field_core
 {
+	Cmiss_field_value_type value_type;
+
 public:
 	Computed_field_if() : Computed_field_core()
+		, value_type(CMISS_FIELD_VALUE_TYPE_INVALID)
 	{
-	};
+	}
+
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			if (Cmiss_field_get_value_type(parent->source_fields[1]) ==
+				Cmiss_field_get_value_type(parent->source_fields[2]))
+			{
+				value_type = Cmiss_field_get_value_type(parent->source_fields[1]);
+				return true;
+			}
+		}
+		return false;
+	}
 
 private:
 	Computed_field_core *copy()
@@ -74,6 +91,18 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_if_type_string);
+	}
+
+	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /* parentCache */)
+	{
+		if (value_type == CMISS_FIELD_VALUE_TYPE_REAL)
+			return new RealFieldValueCache(field->number_of_components);
+		else if (value_type == CMISS_FIELD_VALUE_TYPE_STRING)
+			return new StringFieldValueCache();
+		else if (value_type == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION)
+			return new MeshLocationFieldValueCache();
+
+		return 0;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -97,15 +126,15 @@ private:
 
 int Computed_field_if::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	Computed_field *switch_field = getSourceField(0);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switch_field->evaluate(cache));
 	if (source1Cache)
 	{
 		/* 2. Work out whether we need to evaluate source_field_two
 			or source_field_three or both. */
 		int calculate_field_two = 0;
 		int calculate_field_three = 0;
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		for (int i = 0 ; i < switch_field->number_of_components ; i++)
 		{
 			if (source1Cache->values[i])
 			{
@@ -116,50 +145,72 @@ int Computed_field_if::evaluate(Cmiss_field_cache& cache, FieldValueCache& inVal
 				calculate_field_three = 1;
 			}
 		}
-		RealFieldValueCache *source2Cache = 0;
-		RealFieldValueCache *source3Cache = 0;
-		if (calculate_field_two)
+		if (value_type == CMISS_FIELD_VALUE_TYPE_REAL)
 		{
-			source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
-		}
-		if (calculate_field_three)
-		{
-			source3Cache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
-		}
-		if (((!calculate_field_two) || source2Cache) && ((!calculate_field_three) || source3Cache))
-		{
-			int number_of_xi = cache.getRequestedDerivatives();
-			FE_value *derivative = valueCache.derivatives;
-			valueCache.derivatives_valid = (0 != number_of_xi);
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			RealFieldValueCache *source2Cache = 0;
+			RealFieldValueCache *source3Cache = 0;
+			if (calculate_field_two)
 			{
-				RealFieldValueCache *useSourceCache;
-				if (source1Cache->values[i])
+				source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+			}
+			if (calculate_field_three)
+			{
+				source3Cache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+			}
+			if (((!calculate_field_two) || source2Cache) && ((!calculate_field_three) || source3Cache))
+			{
+				int number_of_xi = cache.getRequestedDerivatives();
+				FE_value *derivative = valueCache.derivatives;
+				valueCache.derivatives_valid = (0 != number_of_xi);
+				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
-					useSourceCache = source2Cache;
-				}
-				else
-				{
-					useSourceCache = source3Cache;
-				}
-				valueCache.values[i] = useSourceCache->values[i];
-				if (valueCache.derivatives_valid)
-				{
-					if (useSourceCache->derivatives_valid)
+					RealFieldValueCache *useSourceCache;
+					int switch_field_i = i;
+					if (switch_field->number_of_components == 1)
+						switch_field_i = 0;
+					if (source1Cache->values[switch_field_i])
 					{
-						for (int j = 0 ; j < number_of_xi ; j++)
-						{
-							*derivative = useSourceCache->derivatives[i * number_of_xi + j];
-							derivative++;
-						}
+						useSourceCache = source2Cache;
 					}
 					else
 					{
-						valueCache.derivatives_valid = 0;
+						useSourceCache = source3Cache;
+					}
+					valueCache.values[i] = useSourceCache->values[i];
+					if (valueCache.derivatives_valid)
+					{
+						if (useSourceCache->derivatives_valid)
+						{
+							for (int j = 0 ; j < number_of_xi ; j++)
+							{
+								*derivative = useSourceCache->derivatives[i * number_of_xi + j];
+								derivative++;
+							}
+						}
+						else
+						{
+							valueCache.derivatives_valid = 0;
+						}
 					}
 				}
+				return 1;
 			}
-			return 1;
+		}
+		else if (value_type == CMISS_FIELD_VALUE_TYPE_STRING)
+		{
+			StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
+			StringFieldValueCache *useSourceCache = calculate_field_two ?
+				StringFieldValueCache::cast(getSourceField(1)->evaluate(cache)) :
+				StringFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+			if (useSourceCache)
+			{
+				valueCache.setString(useSourceCache->stringValue);
+				return 1;
+			}
+		}
+		else if (value_type == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION)
+		{
 		}
 	}
 	return 0;
@@ -265,11 +316,11 @@ although its cache may be lost.
 
 	ENTER(Computed_field_create_if);
 	if (source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		source_field_three && source_field_three->isNumerical() &&
+		source_field_two && source_field_three &&
+		((source_field_one->number_of_components == 1) ||
 		(source_field_one->number_of_components ==
-			source_field_two->number_of_components)&&
-		(source_field_one->number_of_components ==
+			source_field_two->number_of_components)) &&
+		(source_field_two->number_of_components ==
 			source_field_three->number_of_components))
 	{
 		Computed_field *source_fields[3];
@@ -278,7 +329,7 @@ although its cache may be lost.
 		source_fields[2] = source_field_three;
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
-			source_field_one->number_of_components,
+			source_field_two->number_of_components,
 			/*number_of_source_fields*/3, source_fields,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_if());

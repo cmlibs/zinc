@@ -65,6 +65,7 @@ November 97 Created from rendering part of Drawing.
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 //#include "computed_field/field_module.hpp"
 #include "general/enumerator_private.hpp"
 #include "general/geometry.h"

@@ -58,6 +58,16 @@ extern "C" {
 int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive_tool,
 	const char *command);
 
+/*******************************************************************************
+ * Returns a new handle to the interactive tool with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param mesh  The interactive tool to obtain a new reference to.
+ * @return  New interactive tool handle with incremented reference count.
+ */
+Cmiss_interactive_tool_id Cmiss_interactive_tool_access(
+	Cmiss_interactive_tool_id interactive_tool);
+
 /***************************************************************************//**
  * Destroy the interactive_tool.
  *

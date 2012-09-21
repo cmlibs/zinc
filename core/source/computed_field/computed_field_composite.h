@@ -47,6 +47,7 @@ and real values in any order into a single vector field.
 #define COMPUTED_FIELD_COMPOSITE_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_constant.h"
 #include "api/cmiss_field_composite.h"
 
 #define Computed_field_create_constant Cmiss_field_module_create_constant
@@ -133,12 +134,12 @@ struct Computed_field *Cmiss_field_module_create_component(
  * says which <source_field> to use, and the <source_value_number> specifies the
  * component number. If the <source_field_number> is -1 for any component, the
  * <source_value_number> is the offset into the <source_values>.
- * 
+ *
  * Note: rigorous checking is performed to ensure that no values are invalid and
  * that the <source_fields> are presented in the order they are first used in the
  * <source_field_numbers>, and also that <source_values> are used in the order
  * they are given and that none are used more than once.
- * 
+ *
  * Some of these restrictions are enforced to ensure type-specific contents can
  * be compared easily -- otherwise there would be more than one way to describe
  * the same source data.

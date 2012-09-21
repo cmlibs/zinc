@@ -51,6 +51,7 @@ This provides an object which supplies a concept of time to Cmgui
 #define Time_object Cmiss_time_notifier
 #define Time_object_add_callback Cmiss_time_notifier_add_callback
 #define Time_object_remove_callback Cmiss_time_notifier_remove_callback
+#define Time_object_get_current_time Cmiss_time_notifier_get_current_time
 #define Time_object_regular_set_frequency Cmiss_time_notifier_regular_set_frequency
 #define Time_object_regular_set_offset Cmiss_time_notifier_regular_set_offset
 

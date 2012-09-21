@@ -718,6 +718,21 @@ Removes a callback which was added previously
 	return (return_code);
 } /* Time_object_remove_callback */
 
+Cmiss_time_notifier_id Cmiss_time_notifier_access(Cmiss_time_notifier_id time_notifier)
+{
+	Cmiss_time_notifier_id local_time_notifier;
+
+	if (time_notifier)
+	{
+		local_time_notifier = ACCESS(Time_object)(time_notifier);
+	}
+	else
+	{
+		local_time_notifier = 0;
+	}
+
+	return local_time_notifier;
+}
 
 int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address)
 {

@@ -55,18 +55,6 @@ extern "C" {
 #endif
 
 /*****************************************************************************//**
- * Creates a field with the components specified in the array values.
- * Internally this a composite field.
- *
- * @param field_module  Region field module which will own new field.
- * @param number_of_values  The number of values in the array.
- * @param values The array of constant values
- * @return Newly created field
- */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
-	int number_of_values, const double *values);
-
-/*****************************************************************************//**
  * Creates a field with the single source field.  This field is useful
  * as a placeholder candidate for replacement with more complicated operations
  * later on.

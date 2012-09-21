@@ -486,16 +486,13 @@ Frees the memory for the node field creator and sets
 <*node_field_creator_address> to NULL.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Adds the derivative of specified <derivative_type> to the <component_number>
+ * specified.
+ */
 int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type);
-/*******************************************************************************
-LAST MODIFIED: 16 November 2001
-
-DESCRIPTION:
-Adds the derivative of specified <derivative_type> to the <component_number>
-specified.
-==============================================================================*/
 
 int FE_node_field_creator_define_versions(
 	struct FE_node_field_creator *node_field_creator, int component_number,
@@ -507,22 +504,34 @@ DESCRIPTION:
 Specifies the <number_of_versions> for <component_number> specified.
 ==============================================================================*/
 
-int FE_node_field_creator_get_nodal_derivative_versions(
-	struct FE_node_field_creator *node_field_creator, 
-	int *number_of_derivatives, 
-	enum FE_nodal_value_type **nodal_derivative_types,int **max_versions);
-/*******************************************************************************
-LAST MODIFIED: 11 February 2002
+/***************************************************************************//**
+ * Returns the number of versions defined for a given component in the
+ * node field creator.
+ *
+ * @param node_field_creator  Node field creator to query.
+ * @param component_number  The component from 0 to the number of field
+ * components-1, or negative to get maximum number of versions in any component.
+ * @return  Number of versions for component of field, or maximum in any
+ * component if component_number is -1). Returns 0 if field not defined or
+ * invalid arguments are supplied.
+ */
+int FE_node_field_creator_get_number_of_versions(
+	struct FE_node_field_creator *node_field_creator, int component_number);
 
-DESCRIPTION:
-Given <node_field_creator>, returns <number_of_derivatives>
-which is the size of the arrays <nodal_derivative_types> (containing the 
-FE_nodal_value_type of the derivates present at the node_field_creator) 
-and <max_versions> (which contains the maximum number of versions of each 
-derivative type).
-Note: This function allocates the arrays nodal_derivative_types and max_versions, 
-the user is responsible for freeing them.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns whether a nodal derivative is defined for a component in the
+ * node field creator.
+ *
+ * @param node_field_creator  Node field creator to query.
+ * @param component_number  The component from 0 to the number of field
+ * components-1, or negative to check if *any* component has the nodal derivative.
+ * @param derivative_type  The type of nodal derivative to check.
+ * @return  1 if derivative_type is defined for component_number of field (or
+ * for any component if component_number is -1), 0 if not.
+ */
+int FE_node_field_creator_has_derivative(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	enum FE_nodal_value_type derivative_type);
 
 struct FE_node *CREATE(FE_node)(int cm_node_identifier,
 	struct FE_region *fe_region, struct FE_node *template_node);

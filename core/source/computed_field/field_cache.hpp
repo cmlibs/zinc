@@ -267,13 +267,13 @@ public:
 	// NOT THREAD SAFE
 	void setValueCache(int cacheIndex, FieldValueCache* valueCache)
 	{
-		if (cacheIndex < (int)valueCaches.size())
+		if (cacheIndex < static_cast<int>(valueCaches.size()))
 		{
 			delete valueCaches[cacheIndex];
 		}
 		else
 		{
-			for (int i = valueCaches.size(); i <= cacheIndex; ++i)
+			for (int i = static_cast<int>(valueCaches.size()); i <= cacheIndex; ++i)
 				valueCaches.push_back(0);
 		}
 		valueCaches[cacheIndex] = valueCache;

@@ -45,6 +45,7 @@
 #include "api/cmiss_scene.h"
 #include "general/list.h"
 #include "general/manager.h"
+#include "general/mystring.h"
 #include "general/object.h"
 
 struct Cmiss_rendition;

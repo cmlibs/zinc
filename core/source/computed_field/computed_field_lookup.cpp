@@ -82,7 +82,7 @@ public:
 		Computed_field_core(),
 		lookup_node(ACCESS(FE_node)(lookup_node))
 	{
-	};
+	}
 		
 	virtual bool attach_to_field(Computed_field *parent)
 	{

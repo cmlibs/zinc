@@ -115,6 +115,12 @@ public:
 		}
 	}
 
+	Cmiss_element_basis_id access()
+	{
+		++access_count;
+		return this;
+	}
+
 	static int deaccess(Cmiss_element_basis_id &basis)
 	{
 		if (!basis)
@@ -460,6 +466,12 @@ public:
 		template_element(NULL),
 		access_count(1)
 	{
+	}
+
+	Cmiss_element_template_id access()
+	{
+		++access_count;
+		return this;
 	}
 
 	static int deaccess(Cmiss_element_template_id &element_template)
@@ -1297,6 +1309,15 @@ Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh)
 	return FE_region_get_master_Cmiss_region(mesh->getFeRegion());
 }
 
+Cmiss_element_basis_id Cmiss_element_basis_access(
+	Cmiss_element_basis_id element_basis)
+{
+	if (element_basis)
+		return element_basis->access();
+
+	return 0;
+}
+
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)
 {
 	if (element_basis_address)
@@ -1332,6 +1353,15 @@ int Cmiss_element_basis_get_number_of_nodes(
 {
 	if (element_basis)
 		return element_basis->getNumberOfNodes();
+	return 0;
+}
+
+Cmiss_element_template_id Cmiss_element_template_access(
+	Cmiss_element_template_id element_template)
+{
+	if (element_template)
+		element_template->access();
+
 	return 0;
 }
 

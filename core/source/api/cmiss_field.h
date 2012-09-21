@@ -341,6 +341,16 @@ ZINC_API int Cmiss_field_set_attribute_real(Cmiss_field_id field,
 	enum Cmiss_field_attribute attribute, double value);
 
 /***************************************************************************//**
+ * Return the name of a component of the field.
+ *
+ * @param field  The field whose component name is requested.
+ * @param component_number  Component number from 1 to number of components.
+ * @return  On success: allocated string containing field component name. Up to
+ * caller to free using Cmiss_deallocate().
+ */
+char *Cmiss_field_get_component_name(Cmiss_field_id field, int component_number);
+
+/***************************************************************************//**
  * Get the coordinate system type to interpret field values in.
  *
  * @param field  The field to query.
