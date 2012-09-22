@@ -249,7 +249,7 @@ Closes the scene_viewer.
 ZINC_API int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_id scene);
 
-int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_interact_mode *interact_mode);
 /*******************************************************************************
 LAST MODIFIED : 2 November 2006
@@ -260,7 +260,7 @@ See the definition of the
 Cmiss_scene_viewer_interact_mode enumerator.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_interact_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int Cmiss_scene_viewer_set_interact_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_interact_mode interact_mode);
 /*******************************************************************************
 LAST MODIFIED : 2 November 2006

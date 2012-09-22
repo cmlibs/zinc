@@ -70,7 +70,7 @@ enum Cmiss_time_keeper_play_direction
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_time_keeper_play_direction
+ZINC_API enum Cmiss_time_keeper_play_direction
 	Cmiss_time_keeper_play_direction_enum_from_string(const char *string);
 
 /***************************************************************************//**
@@ -80,7 +80,7 @@ enum Cmiss_time_keeper_play_direction
  * @param direction  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_time_keeper_play_direction_enum_to_string(
+ZINC_API char *Cmiss_time_keeper_play_direction_enum_to_string(
 	enum Cmiss_time_keeper_play_direction direction);
 
 /***************************************************************************//**
@@ -112,7 +112,7 @@ enum Cmiss_time_keeper_repeat_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_string(
+ZINC_API enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -122,7 +122,7 @@ enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_strin
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_time_keeper_repeat_mode_enum_to_string(
+ZINC_API char *Cmiss_time_keeper_repeat_mode_enum_to_string(
 	enum Cmiss_time_keeper_repeat_mode mode);
 
 enum Cmiss_time_keeper_frame_mode
@@ -139,7 +139,7 @@ enum Cmiss_time_keeper_frame_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
+ZINC_API enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -149,7 +149,7 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_time_keeper_frame_mode_enum_to_string(
+ZINC_API char *Cmiss_time_keeper_frame_mode_enum_to_string(
 	enum Cmiss_time_keeper_frame_mode mode);
 
 enum Cmiss_time_keeper_attribute
@@ -182,7 +182,7 @@ enum Cmiss_time_keeper_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
+ZINC_API enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -192,7 +192,7 @@ enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
  * @param mode  attribute to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_time_keeper_attribute_enum_to_string(
+ZINC_API char *Cmiss_time_keeper_attribute_enum_to_string(
 	enum Cmiss_time_keeper_attribute attribute);
 
 /***************************************************************************//**
@@ -220,7 +220,7 @@ ZINC_API int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
+ZINC_API double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_attribute attribute);
 
 /***************************************************************************//**
@@ -232,7 +232,7 @@ double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this time_keeper object.
  */
-int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_attribute attribute, double value);
 
 /***************************************************************************//**
@@ -248,7 +248,7 @@ int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
  * @return  The time notifier if successfully create a time notifier otherwise
  *    NULL.
  */
-Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
+ZINC_API Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
 	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
 
 /***************************************************************************//**
@@ -259,7 +259,7 @@ Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
  *    CMISS_TIME_KEEPER_EVERY_FRAME if successfully called, otherwise
  *    CMISS_TIME_KEEPER_INVALID_FRAME_MODE is returned.
  */
-enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
+ZINC_API enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
 	Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
@@ -275,7 +275,7 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
  * @return  Status CMISS_OK if successfully set the time keeper to play every
  * frame, any other value on failure.
  */
-int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_frame_mode frame_mode);
 
 /***************************************************************************//**
@@ -284,7 +284,7 @@ int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
  * @param time_keeper  Handle to time keeper.
  * @return  CMISS_TIME_KEEPER_PLAY_FORWARD or CMISS_TIME_KEEPER_PLAY_BACKWARD
  */
-enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
+ZINC_API enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
 	Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
@@ -298,7 +298,7 @@ enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
  * @return  Status CMISS_OK if successfully set the frame mode of time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_play_direction play_direction);
 
 /***************************************************************************//**
@@ -306,7 +306,7 @@ int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
  * @param time_keeper  Handle to time keeper.
  * @return  1 if time keeper is playing, 0 if not or invalid argument.
  */
-int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
+ZINC_API int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
  * Stops the time keeper from playing.
@@ -315,7 +315,7 @@ int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
  * @return  Status CMISS_OK if successfully to stop the time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
+ZINC_API int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
  * Get the current repeat mode of the time keeper.
@@ -325,7 +325,7 @@ int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
  *    CMISS_TIME_KEEPER_PLAY_SWING if successfully called, otherwise
  *    CMISS_TIME_KEEPER_INVALID_REPEAT_MODE is returned.
  */
-enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
+ZINC_API enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
 	Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
@@ -337,7 +337,7 @@ enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
  * @return  Status CMISS_OK if successfully set the repeat mode of time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_repeat_mode repeat_mode);
 
 /***************************************************************************//**
@@ -352,7 +352,7 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
 	Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
@@ -363,7 +363,7 @@ int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper,
+ZINC_API int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper,
 	Cmiss_time_notifier_id time_notifier);
 
 #ifdef __cplusplus

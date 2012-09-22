@@ -44,6 +44,8 @@
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_time_sequence_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +59,7 @@ extern "C" {
  * times.
  * @return  The time sequence matching the times array, or NULL if failed.
  */
-Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
+ZINC_API Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
 	Cmiss_field_module_id field_module, int number_of_times, double *times);
 
 /***************************************************************************//**
@@ -67,7 +69,7 @@ Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
  * @param time_sequence  The time sequence to obtain a new reference to.
  * @return  New time sequence reference with incremented reference count.
  */
-Cmiss_time_sequence_id Cmiss_time_sequence_access(
+ZINC_API Cmiss_time_sequence_id Cmiss_time_sequence_access(
 	Cmiss_time_sequence_id time_sequence);
 
 /***************************************************************************//**
@@ -77,7 +79,7 @@ Cmiss_time_sequence_id Cmiss_time_sequence_access(
  * @param time_sequence_address  Address of time sequence reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
+ZINC_API int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
 
 /***************************************************************************//**
  * Sets the time for the given time_index in the time sequence.
@@ -89,7 +91,7 @@ int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
  * @param time  The time to set.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+ZINC_API int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
 	int time_index, double time);
 
 #ifdef __cplusplus

@@ -43,6 +43,8 @@ to Cmgui.
 
 #include "types/cmiss_time_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +70,7 @@ typedef int (*Cmiss_time_notifier_callback)(Cmiss_time_notifier_id time_notifier
  * @param time_notifier  handle to the "to be access" cmiss time_notifier.
  * @return  handle to time_notifier if successfully access time_notifier.
  */
-Cmiss_time_notifier_id Cmiss_time_notifier_access(
+ZINC_API Cmiss_time_notifier_id Cmiss_time_notifier_access(
 	Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
@@ -79,7 +81,7 @@ Cmiss_time_notifier_id Cmiss_time_notifier_access(
  * @return  Status CMISS_OK if successfully destroy(deaccess) the time notifier,
  * any other value on failure.
  */
-int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address);
+ZINC_API int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address);
 
 /***************************************************************************//**
  * Adds a callback routine which is called whenever the time given to the
@@ -91,7 +93,7 @@ int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address);
  * @return  Status CMISS_OK if successfully add callback,
  * any other value on failure.
  */
-int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
+ZINC_API int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
 	Cmiss_time_notifier_callback callback, void *user_data);
 
 /***************************************************************************//**
@@ -103,7 +105,7 @@ int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
  * @return  Status CMISS_OK if successfully remove callback, any other value
  * on failure.
  */
-int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
+ZINC_API int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
   Cmiss_time_notifier_callback callback, void *user_data);
 
 /***************************************************************************//**
@@ -112,7 +114,7 @@ int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
  * @param time_notifier  Handle to time notifier.
  * @return  Current time.
  */
-double Cmiss_time_notifier_get_current_time(Cmiss_time_notifier_id time_notifier);
+ZINC_API double Cmiss_time_notifier_get_current_time(Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
  * This controls the rate which the time depedent object is called back.
@@ -130,7 +132,7 @@ double Cmiss_time_notifier_get_current_time(Cmiss_time_notifier_id time_notifier
  * @return  Status CMISS_OK if successfully set the update frequency to the value
  * provided, any other value on failure.
  */
-int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifier,
+ZINC_API int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifier,
 	double frequency);
 
 /***************************************************************************//**
@@ -143,7 +145,7 @@ int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifi
  * @return  Status CMISS_OK if successfully set the update frequency to the value
  * provided, any other value on failure.
  */
-int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_notifier,
+ZINC_API int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_notifier,
 	double time_offset);
 
 #ifdef __cplusplus

@@ -47,6 +47,8 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,7 +62,7 @@ extern "C" {
  * 1, 4 or 9 components.
  * @return  Newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_determinant(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_determinant(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
 /***************************************************************************//**
@@ -71,7 +73,7 @@ Cmiss_field_id Cmiss_field_module_create_determinant(
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_eigenvalues(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_eigenvalues(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -84,7 +86,7 @@ Cmiss_field_id Cmiss_field_module_create_eigenvalues(
  * @param eigenvalues_field  Eigenvalues type field.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_eigenvectors(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_eigenvectors(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id eigenvalues_field);
 
@@ -96,7 +98,7 @@ Cmiss_field_id Cmiss_field_module_create_eigenvectors(
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_matrix_invert(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_matrix_invert(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -113,7 +115,7 @@ Cmiss_field_id Cmiss_field_module_create_matrix_invert(
  * @param source_field2  M rows * P columns component matrix field 2.
  * @return Newly created matrix with N*P components.
  */
-Cmiss_field_id Cmiss_field_module_create_matrix_multiply(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_matrix_multiply(
 	Cmiss_field_module_id field_module,
 	int number_of_rows, Cmiss_field_id source_field1,
 	Cmiss_field_id source_field2);
@@ -142,7 +144,7 @@ Cmiss_field_id Cmiss_field_module_create_matrix_multiply(
  * @param projection_matrix_field  Field supplying projection matrix.
  * @return  Newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_projection(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_projection(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field);
 
@@ -157,7 +159,7 @@ Cmiss_field_id Cmiss_field_module_create_projection(
  * @param source_field  N rows * M columns component matrix field.
  * @return Newly created M*N component transposed matrix field.
  */
-Cmiss_field_id Cmiss_field_module_create_transpose(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_transpose(
 	Cmiss_field_module_id field_module,
 	int source_number_of_rows, Cmiss_field_id source_field);
 

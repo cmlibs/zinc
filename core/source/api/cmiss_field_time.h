@@ -48,6 +48,11 @@ Implements cmiss fields that is controlled by time.
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_time_keeper_id.h"
 
+#include "cmiss_shared_object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 /***************************************************************************//**
  * Creates a field whose value equals the source_field evaluated at the time
  * given by time_field, overriding any time prescribed for field evaluation.
@@ -57,7 +62,7 @@ Implements cmiss fields that is controlled by time.
  * @param time_field  Field providing time value to evaluate at.
  * @return  Handle to a new time lookup field on success, NULL on failure.
  */
-Cmiss_field_id Cmiss_field_module_create_time_lookup(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_time_lookup(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_field_id time_field);
 
@@ -68,7 +73,11 @@ Cmiss_field_id Cmiss_field_module_create_time_lookup(
  * @param time_keeper  Cmiss_time_keeper object.
  * @return  Handle to a new time value field on success, NULL on failure.
  */
-Cmiss_field_id Cmiss_field_module_create_time_value(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_time_value(
 	Cmiss_field_module_id field_module, Cmiss_time_keeper_id time_keeper);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !defined (CMISS_FIELD_TIME_H) */

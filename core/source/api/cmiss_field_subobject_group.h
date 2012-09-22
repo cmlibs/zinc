@@ -51,6 +51,8 @@
 #include "types/cmiss_node_id.h"
 #include "types/cmiss_field_subobject_group_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +70,7 @@ extern "C" {
  * Nodeset must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-Cmiss_field_id Cmiss_field_module_create_node_group(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_node_group(
 	Cmiss_field_module_id field_module, Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
@@ -79,7 +81,7 @@ Cmiss_field_id Cmiss_field_module_create_node_group(
  * @param field  handle to the field to cast
  * @return  handle of the cast field, or NULL
 */
-Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
+ZINC_API Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
 
 /***************************************************************************//**
  * Cast node group field back to its base field and return the field.  Otherwise
@@ -100,7 +102,7 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
  * @return  Status CMISS_OK if successfully destroy the node group,
  * any other value on failure.
  */
-int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
+ZINC_API int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
 /***************************************************************************//**
  * Get a handle to the 'dual' nodeset group of this node group, which provides
@@ -109,7 +111,7 @@ int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address
  * @param node_group  Handle to node group field.
  * @return  Handle to nodeset group. Caller is responsible for destroying this.
  */
-Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
+ZINC_API Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
 	Cmiss_field_node_group_id node_group);
 
 /***************************************************************************//**
@@ -125,7 +127,7 @@ Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
  * Mesh must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-Cmiss_field_id Cmiss_field_module_create_element_group(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_element_group(
 	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
@@ -136,7 +138,7 @@ Cmiss_field_id Cmiss_field_module_create_element_group(
  * @param field  handle to the field to cast
  * @return  handle of the cast field, or NULL
 */
-Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field);
+ZINC_API Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field);
 
 /***************************************************************************//**
  * Cast element group field back to its base field and return the field.  Otherwise
@@ -157,7 +159,7 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
  * @return  Status CMISS_OK if successfully destroy the element group,
  * any other value on failure.
  */
-int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
+ZINC_API int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 
 /***************************************************************************//**
  * Get a handle to the 'dual' mesh group of this element group, which provides
@@ -166,7 +168,7 @@ int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_grou
  * @param element_group  Handle to element group field.
  * @return  Handle to mesh group. Caller is responsible for destroying this.
  */
-Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
+ZINC_API Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 	Cmiss_field_element_group_id element_group);
 
 #ifdef __cplusplus

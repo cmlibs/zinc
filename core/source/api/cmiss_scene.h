@@ -78,7 +78,7 @@ enum Cmiss_scene_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_scene_attribute
+ZINC_API enum Cmiss_scene_attribute
 	Cmiss_scene_attribute_enum_from_string(const char  *string);
 
 /***************************************************************************//**
@@ -88,7 +88,7 @@ enum Cmiss_scene_attribute
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_scene_attribute_enum_to_string(enum Cmiss_scene_attribute attribute);
+ZINC_API char *Cmiss_scene_attribute_enum_to_string(enum Cmiss_scene_attribute attribute);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the scene object.
@@ -97,7 +97,7 @@ char *Cmiss_scene_attribute_enum_to_string(enum Cmiss_scene_attribute attribute)
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
+ZINC_API int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
 	enum Cmiss_scene_attribute attribute);
 
 /***************************************************************************//**
@@ -110,7 +110,7 @@ int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
  * @return  status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this scene object.
  */
-int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
+ZINC_API int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
 	enum Cmiss_scene_attribute attribute, int value);
 
 /*******************************************************************************
@@ -120,7 +120,7 @@ int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
  * @param scene  The scene to obtain a new reference to.
  * @return  New scene reference with incremented reference count.
  */
-Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
+ZINC_API Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
 
 /*******************************************************************************
 * Destroys this reference to the scene (and sets it to NULL).
@@ -149,7 +149,7 @@ ZINC_API int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_r
  * @return  On success: allocated string containing scene name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_scene_get_name(Cmiss_scene_id scene);
+ZINC_API char *Cmiss_scene_get_name(Cmiss_scene_id scene);
 
 /***************************************************************************//**
  * Set the name of the scene.
@@ -158,7 +158,7 @@ char *Cmiss_scene_get_name(Cmiss_scene_id scene);
  * @param name  New name for scene.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
+ZINC_API int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
 
 /***************************************************************************//**
  * Get the filter currently used in <scene>.
@@ -166,7 +166,7 @@ int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
  * @param scene  Scene to get the filters from.
  * @return  filter if successful, otherwise NULL.
  */
-Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
+ZINC_API Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
 
 /***************************************************************************//**
  * Set the filter to be used in <scene>. No graphics will be shown until a filter

@@ -45,6 +45,8 @@
 
 #include "types/cmiss_tessellation_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -84,7 +86,7 @@ enum Cmiss_tessellation_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_tessellation_attribute
+ZINC_API enum Cmiss_tessellation_attribute
 	Cmiss_tessellation_attribute_enum_from_string(const char  *string);
 
 /***************************************************************************//**
@@ -94,7 +96,7 @@ enum Cmiss_tessellation_attribute
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_tessellation_attribute_enum_to_string(
+ZINC_API char *Cmiss_tessellation_attribute_enum_to_string(
 	enum Cmiss_tessellation_attribute attribute);
 
 /*******************************************************************************
@@ -104,7 +106,7 @@ char *Cmiss_tessellation_attribute_enum_to_string(
  * @param tessellation  The tessellation to obtain a new reference to.
  * @return  New tessellation reference with incremented reference count.
  */
-Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation);
+ZINC_API Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation);
 
 /*******************************************************************************
  * Destroys this reference to the tessellation (and sets it to NULL).
@@ -114,7 +116,7 @@ Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellati
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
+ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the tessellation object.
@@ -123,7 +125,7 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 	enum Cmiss_tessellation_attribute attribute);
 
 /***************************************************************************//**
@@ -136,7 +138,7 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
  * @return  status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this tessellation object.
  */
-int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 	enum Cmiss_tessellation_attribute attribute, int value);
 
 /***************************************************************************//**
@@ -146,7 +148,7 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
  * @return  allocated string containing tessellation name, or NULL on failure.
  * Up to caller to free using Cmiss_deallocate().
  */
-char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
+ZINC_API char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
 
 /***************************************************************************//**
  * Set/change name for <tessellation>.
@@ -156,7 +158,7 @@ char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
  * @return  status CMISS_OK if successfully set/change name for tessellation,
  * any other value on failure.
  */
-int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *name);
+ZINC_API int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *name);
 
 /***************************************************************************//**
  * Gets the minimum number of line segments used to approximate curves in each
@@ -169,7 +171,7 @@ int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *
  * @param minimum_divisions  Array to receive numbers of divisions.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
 	int size, int *minimum_divisions);
 
 /***************************************************************************//**
@@ -185,7 +187,7 @@ int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
  * dimension, with the last number in array applying to all higher dimensions.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
 	int size, const int *minimum_divisions);
 
 /***************************************************************************//**
@@ -199,7 +201,7 @@ int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
  * @param refinement_factors  Array to receive refinement factors.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
 	int size, int *refinement_factors);
 
 /***************************************************************************//**
@@ -218,7 +220,7 @@ int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation
  * applying to all higher dimensions.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
+ZINC_API int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
 	int size, const int *refinement_factors);
 
 #ifdef __cplusplus

@@ -48,6 +48,8 @@
 #include "types/cmiss_field_module_id.h"
 #include "types/cmiss_node_id.h"
 
+#include "cmiss_shared_object.h"
+
 /*
 Global types
 ------------
@@ -99,7 +101,7 @@ Global functions
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
+ZINC_API enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -109,7 +111,7 @@ enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type);
+ZINC_API char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type);
 
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
@@ -118,7 +120,7 @@ char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
+ZINC_API enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -128,7 +130,7 @@ enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_basis_function_type_enum_to_string(
+ZINC_API char *Cmiss_basis_function_type_enum_to_string(
 	enum Cmiss_basis_function_type type);
 
 /***************************************************************************//**
@@ -141,7 +143,7 @@ char *Cmiss_basis_function_type_enum_to_string(
  * i.e. basis function is initially homogeneous.
  * @return  Handle to element_basis, or NULL if error.
  */
-Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
+ZINC_API Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
 	Cmiss_field_module_id field_module, int dimension,
 	enum Cmiss_basis_function_type function_type);
 
@@ -154,7 +156,7 @@ Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
  * @param dimension  The dimension of the mesh from 1 to 3.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
+ZINC_API Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
 	Cmiss_field_module_id field_module, int dimension);
 
 /***************************************************************************//**
@@ -171,7 +173,7 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
  * @param name  The name of the finite element mesh.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
+ZINC_API Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name);
 
 /*******************************************************************************
@@ -181,7 +183,7 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
  * @param mesh  The mesh to obtain a new reference to.
  * @return  New mesh handle with incremented reference count.
  */
-Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
+ZINC_API Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the finite element mesh and sets it to NULL.
@@ -190,7 +192,7 @@ Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
  * @param mesh_address  Address of handle to the mesh to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
+ZINC_API int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
 
 /***************************************************************************//**
  * Returns whether the element is from the mesh.
@@ -199,7 +201,7 @@ int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
  * @param element  The element to query about.
  * @return  1 if element is in the mesh, 0 if not or error.
  */
-int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh,
+ZINC_API int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh,
 	Cmiss_element_id element);
 
 /***************************************************************************//**
@@ -209,7 +211,7 @@ int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh,
  * @param mesh  Handle to the mesh the template works with.
  * @return  Handle to element_template, or NULL if error.
  */
-Cmiss_element_template_id Cmiss_mesh_create_element_template(
+ZINC_API Cmiss_element_template_id Cmiss_mesh_create_element_template(
 	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
@@ -224,7 +226,7 @@ Cmiss_element_template_id Cmiss_mesh_create_element_template(
  * @param element_template  Template for element shape and fields.
  * @return  Handle to newly created element, or NULL if error.
  */
-Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
+ZINC_API Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
 	int identifier, Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -240,7 +242,7 @@ Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
  * @return  Handle to element_iterator at position before first, or NULL if
  * error.
  */
-Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
+ZINC_API Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
 	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
@@ -255,7 +257,7 @@ Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
  * @param element_template  Template for element shape and fields.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
+ZINC_API int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -265,7 +267,7 @@ int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
  * @param mesh  Handle to mesh to destroy elements from.
  * @return  Status CMISS_OK if all elements destroyed, any other value if failed.
  */
-int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
+ZINC_API int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroy the element if it is in the mesh. Removes element from any related
@@ -276,7 +278,7 @@ int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
  * @return  Status CMISS_OK if element is successfully destroyed, any other
  * value if failed.
  */
-int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
+ZINC_API int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
 
 /***************************************************************************//**
  * Destroy all elements in the mesh for which the conditional field is true i.e.
@@ -290,8 +292,8 @@ int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
  * is to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
-   Cmiss_field_id conditional_field);
+ZINC_API int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
+	Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Return a handle to the element in the mesh with this identifier.
@@ -300,7 +302,7 @@ int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
  * @param identifier  Non-negative integer identifier of element.
  * @return  Handle to the element, or NULL if not found.
  */
-Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
+ZINC_API Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier);
 
 /***************************************************************************//**
@@ -316,7 +318,7 @@ Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
  * @return  Handle to differential operator, or NULL if failed. Caller is
  * responsible for destroying the returned handle.
  */
-Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
+ZINC_API Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
 	Cmiss_mesh_id mesh, int order, int term);
 
 /***************************************************************************//**
@@ -325,7 +327,7 @@ Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
  * @param mesh  Handle to the mesh to query.
  * @return  dimension of mesh.
  */
-int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
+ZINC_API int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Get the master mesh which owns the elements for this mesh. Can be the
@@ -335,7 +337,7 @@ int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
  * @return  Handle to the master mesh. Caller is responsible for destroying
  * the returned handle.
  */
-Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh);
+ZINC_API Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Return the name of the mesh.
@@ -345,7 +347,7 @@ Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh);
  * @return  On success: allocated string containing mesh name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
+ZINC_API char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Return the number of elements in the mesh.
@@ -353,7 +355,7 @@ char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
  * @param mesh  Handle to the mesh to query.
  * @return  Number of elements in mesh.
  */
-int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
+ZINC_API int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Check if two mesh handles refer to the same object.
@@ -362,7 +364,7 @@ int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
  * @param mesh2  The second mesh to match.
  * @return  1 if the two meshes match, 0 if not.
  */
-int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
+ZINC_API int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
 
 /***************************************************************************//**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
@@ -373,7 +375,7 @@ int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
  * @return  Mesh group specific representation if the input mesh is of this
  * type, otherwise returns NULL.
  */
-Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
+ZINC_API Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the mesh group and sets it to NULL.
@@ -382,7 +384,7 @@ Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
  * @param mesh_group_address  Address of mesh group handle to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address);
+ZINC_API int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address);
 
 /***************************************************************************//**
  * Cast mesh group back to its base mesh class.
@@ -408,7 +410,7 @@ CMISS_C_INLINE Cmiss_mesh_id Cmiss_mesh_group_base_cast(
  * @param element  Handle to element to add. Must be from the group's master mesh.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
+ZINC_API int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
 	Cmiss_element_id element);
 
 /***************************************************************************//**
@@ -417,7 +419,7 @@ int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
  * @param mesh_group  Handle to mesh group to modify.
  * @return  Status CMISS_OK if all elements removed, any other value if failed.
  */
-int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
+ZINC_API int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
 
 /***************************************************************************//**
  * Remove specified element from mesh group.
@@ -426,7 +428,7 @@ int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
  * @param element  Handle to element to remove.
  * @return  Status CMISS_OK if element removed, any other value if failed.
  */
-int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
+ZINC_API int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
 	Cmiss_element_id element);
 
 /***************************************************************************//**
@@ -440,7 +442,7 @@ int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
  * is to be removed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
+ZINC_API int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
    Cmiss_field_id conditional_field);
 
 /*******************************************************************************
@@ -450,7 +452,7 @@ int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
  * @param mesh  The element basis to obtain a new reference to.
  * @return  New element basis handle with incremented reference count.
  */
-Cmiss_element_basis_id Cmiss_element_basis_access(
+ZINC_API Cmiss_element_basis_id Cmiss_element_basis_access(
 	Cmiss_element_basis_id element_basis);
 
 /***************************************************************************//**
@@ -460,7 +462,7 @@ Cmiss_element_basis_id Cmiss_element_basis_access(
  * @param element_basis_address  Address of handle to element_basis to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
+ZINC_API int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
 
 /***************************************************************************//**
  * Gets the number of dimensions of the elements this basis works with.
@@ -468,7 +470,7 @@ int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
  * @param element_basis  Element basis to query.
  * @return  The number of dimensions.
  */
-int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis);
+ZINC_API int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis);
 
 /***************************************************************************//**
  * Gets the basis function type for a component of the basis.
@@ -478,7 +480,7 @@ int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis);
  * dimension.
  * @return  The basis function type.
  */
-enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
+ZINC_API enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
 	Cmiss_element_basis_id element_basis, int chart_component);
 
 /***************************************************************************//**
@@ -490,7 +492,7 @@ enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
  * @param basis_type  The basis type to use on the chosen chart component.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
+ZINC_API int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
 	int chart_component, enum Cmiss_basis_function_type function_type);
 
 /***************************************************************************//**
@@ -499,7 +501,7 @@ int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
  * @param element_basis  Element basis to query.
  * @return  number of nodes expected, or 0 if basis is incomplete or invalid.
  */
-int Cmiss_element_basis_get_number_of_nodes(
+ZINC_API int Cmiss_element_basis_get_number_of_nodes(
 	Cmiss_element_basis_id element_basis);
 
 /*******************************************************************************
@@ -509,7 +511,7 @@ int Cmiss_element_basis_get_number_of_nodes(
  * @param mesh  The element iterator to obtain a new reference to.
  * @return  New element iterator handle with incremented reference count.
  */
-Cmiss_element_iterator_id Cmiss_element_iterator_access(
+ZINC_API Cmiss_element_iterator_id Cmiss_element_iterator_access(
 	Cmiss_element_iterator_id element_iterator);
 
 /***************************************************************************//**
@@ -519,7 +521,7 @@ Cmiss_element_iterator_id Cmiss_element_iterator_access(
  * destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_iterator_destroy(
+ZINC_API int Cmiss_element_iterator_destroy(
 	Cmiss_element_iterator_id *element_iterator_address);
 
 /***************************************************************************//**
@@ -530,7 +532,7 @@ int Cmiss_element_iterator_destroy(
  * @param element_iterator  Element iterator to query and advance.
  * @return  Handle to the next element, or NULL if none remaining.
  */
-Cmiss_element_id Cmiss_element_iterator_next(
+ZINC_API Cmiss_element_id Cmiss_element_iterator_next(
 	Cmiss_element_iterator_id element_iterator);
 
 /*******************************************************************************
@@ -540,7 +542,7 @@ Cmiss_element_id Cmiss_element_iterator_next(
  * @param mesh  The element template to obtain a new reference to.
  * @return  New element template handle with incremented reference count.
  */
-Cmiss_element_template_id Cmiss_element_template_access(
+ZINC_API Cmiss_element_template_id Cmiss_element_template_access(
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -551,7 +553,7 @@ Cmiss_element_template_id Cmiss_element_template_access(
  * to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_template_destroy(
+ZINC_API int Cmiss_element_template_destroy(
 	Cmiss_element_template_id *element_template_address);
 
 /***************************************************************************//**
@@ -560,7 +562,7 @@ int Cmiss_element_template_destroy(
  * @param element_template  Element template to query.
  * @return  The shape set in the element template.
  */
-enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
+ZINC_API enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -577,7 +579,7 @@ enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
  * @param shape_type  Enumerator of standard element shapes.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_template,
+ZINC_API int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_template,
 	enum Cmiss_element_shape_type shape_type);
 
 /***************************************************************************//**
@@ -586,7 +588,7 @@ int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_temp
  * @param element_template  Element template to query.
  * @return  The number of local nodes, or 0 on error.
  */
-int Cmiss_element_template_get_number_of_nodes(
+ZINC_API int Cmiss_element_template_get_number_of_nodes(
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -598,7 +600,7 @@ int Cmiss_element_template_get_number_of_nodes(
  * @param number_of_nodes  The number of nodes.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_template_set_number_of_nodes(
+ZINC_API int Cmiss_element_template_set_number_of_nodes(
 	Cmiss_element_template_id element_template, int number_of_nodes);
 
 /***************************************************************************//**
@@ -622,7 +624,7 @@ int Cmiss_element_template_set_number_of_nodes(
  * xi = (0,0), (0.5,0), (1,0), (0,0.5), (0.5,0.5) ...
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_template_define_field_simple_nodal(
+ZINC_API int Cmiss_element_template_define_field_simple_nodal(
 	Cmiss_element_template_id element_template,
 	Cmiss_field_id field,  int component_number,
 	Cmiss_element_basis_id basis, int basis_number_of_nodes,
@@ -637,7 +639,7 @@ int Cmiss_element_template_define_field_simple_nodal(
  * @param local_node_index  The index from 1 to number of nodes in template.
  * @return  Handle to the global node, or NULL if none or error.
  */
-Cmiss_node_id Cmiss_element_template_get_node(
+ZINC_API Cmiss_node_id Cmiss_element_template_get_node(
 	Cmiss_element_template_id element_template, int local_node_index);
 
 /***************************************************************************//**
@@ -650,7 +652,7 @@ Cmiss_node_id Cmiss_element_template_get_node(
  * @param node  The global node to set at that index.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
+ZINC_API int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
 	int local_node_index, Cmiss_node_id node);
 
 /*******************************************************************************
@@ -660,7 +662,7 @@ int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
  * @param element  The element to obtain a new reference to.
  * @return  New element handle with incremented reference count.
  */
-Cmiss_element_id Cmiss_element_access(Cmiss_element_id element);
+ZINC_API Cmiss_element_id Cmiss_element_access(Cmiss_element_id element);
 
 /***************************************************************************//**
  * Destroys this handle to the element and sets it to NULL.
@@ -669,7 +671,7 @@ Cmiss_element_id Cmiss_element_access(Cmiss_element_id element);
  * @param element_address  Address of handle to the element to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_destroy(Cmiss_element_id *element_address);
+ZINC_API int Cmiss_element_destroy(Cmiss_element_id *element_address);
 
 /***************************************************************************//**
  * Returns the number of dimensions of the element's chart.
@@ -677,7 +679,7 @@ int Cmiss_element_destroy(Cmiss_element_id *element_address);
  * @param element  The element to query.
  * @return  The dimension.
  */
-int Cmiss_element_get_dimension(Cmiss_element_id element);
+ZINC_API int Cmiss_element_get_dimension(Cmiss_element_id element);
 
 /***************************************************************************//**
  * Returns the non-negative integer uniquely identifying the element in its
@@ -687,7 +689,7 @@ int Cmiss_element_get_dimension(Cmiss_element_id element);
  * @return  The non-negative integer identifier of the element, or a negative
  * value if element is invalid.
  */
-int Cmiss_element_get_identifier(Cmiss_element_id element);
+ZINC_API int Cmiss_element_get_identifier(Cmiss_element_id element);
 
 /***************************************************************************//**
  * Gets the shape type of the element. Note that legacy meshes may return an
@@ -698,7 +700,7 @@ int Cmiss_element_get_identifier(Cmiss_element_id element);
  * @param element  Element to query.
  * @return  The element's shape type.
  */
-enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
+ZINC_API enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
 	Cmiss_element_id element);
 
 /***************************************************************************//**
@@ -710,7 +712,7 @@ enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
  * @param element_template  Template containing element field definitions.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_element_merge(Cmiss_element_id element,
+ZINC_API int Cmiss_element_merge(Cmiss_element_id element,
 	Cmiss_element_template_id element_template);
 
 #ifdef __cplusplus

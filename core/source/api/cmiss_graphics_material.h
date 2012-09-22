@@ -40,6 +40,8 @@
 #include "types/cmiss_field_image_id.h"
 #include "types/cmiss_graphics_material_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -103,7 +105,7 @@ enum Cmiss_graphics_material_attribute
  * @param attribute_name  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_graphics_material_attribute
+ZINC_API enum Cmiss_graphics_material_attribute
 	Cmiss_graphics_material_attribute_enum_from_string(const char *string);
 
 /***************************************************************************//**
@@ -113,7 +115,7 @@ enum Cmiss_graphics_material_attribute
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_graphics_material_attribute_enum_to_string(
+ZINC_API char *Cmiss_graphics_material_attribute_enum_to_string(
 	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
@@ -122,7 +124,7 @@ char *Cmiss_graphics_material_attribute_enum_to_string(
  * @param material  handle to the "to be access" cmiss material.
  * @return  handle to material if successfully access material.
  */
-Cmiss_graphics_material_id Cmiss_graphics_material_access(Cmiss_graphics_material_id material);
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_access(Cmiss_graphics_material_id material);
 
 /***************************************************************************//**
  * Destroys this reference to the material (and sets it to NULL).
@@ -133,7 +135,7 @@ Cmiss_graphics_material_id Cmiss_graphics_material_access(Cmiss_graphics_materia
  * @return  Status CMISS_OK if successfully destroy material, any other value on
  * failure.
  */
-int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
+ZINC_API int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the graphics material.
@@ -142,7 +144,7 @@ int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
@@ -155,7 +157,7 @@ int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id mat
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
  */
-int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, int value);
 
 /***************************************************************************//**
@@ -165,7 +167,7 @@ int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id mat
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
+ZINC_API double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
@@ -177,7 +179,7 @@ double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id mat
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
  */
-int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, double value);
 
 /***************************************************************************//**
@@ -188,7 +190,7 @@ int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id materi
  * @param attribute  The identifier of the vectors attribute to get.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, double *values);
 
 /***************************************************************************//**
@@ -200,7 +202,7 @@ int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id mater
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
  */
-int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, const double *values);
 
 /***************************************************************************//**
@@ -210,7 +212,7 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
  * @return  allocated string containing material name, otherwise NULL. Up to
  * caller to free using Cmiss_deallocate().
  */
-char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
+ZINC_API char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
 
 /***************************************************************************//**
  * Set/change name for <material>.
@@ -220,7 +222,7 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
  * @return  Status CMISS_OK if successfully set/change name for material,
  * any other value on failure.
  */
-int Cmiss_graphics_material_set_name(
+ZINC_API int Cmiss_graphics_material_set_name(
 	Cmiss_graphics_material_id material, const char *name);
 
 /***************************************************************************//**
@@ -235,7 +237,7 @@ int Cmiss_graphics_material_set_name(
  * @param command  Command to be executed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
 	const char *command_string);
 
 /***************************************************************************//**
@@ -250,7 +252,7 @@ int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
  * 		material.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
+ZINC_API int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
 	int image_number, Cmiss_field_image_id image_field);
 
 /***************************************************************************//**
@@ -263,7 +265,7 @@ int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
  * @return  cmiss_field if a field has been sett for the material, otherwise NULL.
  * 		This also incremenet the access count of the cmiss_field by 1;
  */
-Cmiss_field_image_id Cmiss_graphics_material_get_image_field(
+ZINC_API Cmiss_field_image_id Cmiss_graphics_material_get_image_field(
 	Cmiss_graphics_material_id material, int image_number);
 
 #ifdef __cplusplus

@@ -141,7 +141,7 @@ ZINC_API int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
  * @param graphic_name  The name of the graphic to find.
  * @return  New reference to graphic of specified name, or NULL if not found.
  */
-Cmiss_graphic_id Cmiss_rendition_find_graphic_by_name(Cmiss_rendition_id rendition,
+ZINC_API Cmiss_graphic_id Cmiss_rendition_find_graphic_by_name(Cmiss_rendition_id rendition,
 	const char *graphic_name);
 
 /***************************************************************************//**
@@ -150,7 +150,7 @@ Cmiss_graphic_id Cmiss_rendition_find_graphic_by_name(Cmiss_rendition_id renditi
  * @param rendition  Handle to a cmiss_rendition object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-Cmiss_graphic_id Cmiss_rendition_get_first_graphic(Cmiss_rendition_id rendition);
+ZINC_API Cmiss_graphic_id Cmiss_rendition_get_first_graphic(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Get the next graphic after <ref_graphic> on the graphics list of <rendition>.
@@ -159,7 +159,7 @@ Cmiss_graphic_id Cmiss_rendition_get_first_graphic(Cmiss_rendition_id rendition)
  *  @param ref_grpahic  Handle to a cmiss_graphic object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-Cmiss_graphic_id Cmiss_rendition_get_next_graphic(Cmiss_rendition_id rendition,
+ZINC_API Cmiss_graphic_id Cmiss_rendition_get_next_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id ref_graphic);
 
 /***************************************************************************//**
@@ -169,7 +169,7 @@ Cmiss_graphic_id Cmiss_rendition_get_next_graphic(Cmiss_rendition_id rendition,
  * @param ref_grpahic  Handle to a cmiss_graphic object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-Cmiss_graphic_id Cmiss_rendition_get_previous_graphic(Cmiss_rendition_id rendition,
+ZINC_API Cmiss_graphic_id Cmiss_rendition_get_previous_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id ref_graphic);
 
 /***************************************************************************//**
@@ -178,7 +178,7 @@ Cmiss_graphic_id Cmiss_rendition_get_previous_graphic(Cmiss_rendition_id renditi
  * @param rendition  The handle to the rendition
  * @return  Returns the number of graphic in rendition.
  */
-int Cmiss_rendition_get_number_of_graphics(Cmiss_rendition_id rendition);
+ZINC_API int Cmiss_rendition_get_number_of_graphics(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Get and return an accessed handle to the selection group of rendition.
@@ -189,7 +189,7 @@ int Cmiss_rendition_get_number_of_graphics(Cmiss_rendition_id rendition);
  *
  * @return Return selection group if successfully otherwise null.
  */
-Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
+ZINC_API Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Set the specified selection field to be the highlighting and selection group
@@ -204,7 +204,7 @@ Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rend
  * @param selection_field  selection field to be set for this group.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
+ZINC_API int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
 	Cmiss_field_group_id selection_field);
 
 /***************************************************************************//**
@@ -214,7 +214,7 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
  * @param rendition  The handle to the rendition.
  * @return  1 for visible, 0 for not visible.
  */
-int Cmiss_rendition_get_visibility_flag(Cmiss_rendition_id rendition);
+ZINC_API int Cmiss_rendition_get_visibility_flag(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Set the state of the rendition's visibility flag. Note this only affects
@@ -224,7 +224,7 @@ int Cmiss_rendition_get_visibility_flag(Cmiss_rendition_id rendition);
  * @param visibility_flag  integer value to be set for the value of visibility flag.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_rendition_set_visibility_flag(Cmiss_rendition_id rendition,
+ZINC_API int Cmiss_rendition_set_visibility_flag(Cmiss_rendition_id rendition,
 	int visibility_flag);
 
 /***************************************************************************//**
@@ -237,7 +237,7 @@ int Cmiss_rendition_set_visibility_flag(Cmiss_rendition_id rendition,
  * 		Cmiss_graphic
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
+ZINC_API int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic);
 
 /***************************************************************************//**
@@ -248,7 +248,7 @@ int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
  * @return  Status CMISS_OK if successfully remove all graphics from rendition,
  * any other value on failure.
  */
-int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition);
+ZINC_API int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Removes <graphic> from <rendition> and decrements the position
@@ -261,7 +261,7 @@ int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition);
  * @return  Status CMISS_OK if successfully remove graphic from rendition,
  * any other value on failure.
  */
-int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
+ZINC_API int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic);
 
 #ifdef __cplusplus

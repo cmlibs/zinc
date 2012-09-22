@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_differential_operator.h
- * 
+ *
  * Public interface to differential operator objects used to specify which
  * field derivative to evaluate.
  */
@@ -44,16 +44,22 @@
 
 #include "types/cmiss_differential_operator_id.h"
 
+#include "cmiss_shared_object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Returns a new reference to the differential operator with reference count
  * incremented. Caller is responsible for destroying the new reference.
- * 
+ *
  * @param differential_operator  The differential operator to obtain a new
  * reference to.
  * @return  New differential operator reference with incremented reference
  * count.
  */
-Cmiss_differential_operator_id Cmiss_differential_operator_access(
+ZINC_API Cmiss_differential_operator_id Cmiss_differential_operator_access(
 	Cmiss_differential_operator_id differential_operator);
 
 /***************************************************************************//**
@@ -64,7 +70,11 @@ Cmiss_differential_operator_id Cmiss_differential_operator_access(
  * reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_differential_operator_destroy(
+ZINC_API int Cmiss_differential_operator_destroy(
 	Cmiss_differential_operator_id *differential_operator_address);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CMISS_DIFFERENTIAL_OPERATOR_H__ */

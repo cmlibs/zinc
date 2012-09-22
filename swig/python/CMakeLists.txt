@@ -13,41 +13,42 @@ INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 FIND_PACKAGE(Zinc)
 INCLUDE_DIRECTORIES(${ZINC_INCLUDE_DIRS})
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../core/source)
+INCLUDE_DIRECTORIES(../../core/source)
 
 SET(CMAKE_SWIG_FLAGS "")
 
 
 SET(INTERFACE_SRCS
-    ../interface/ZnContext.i
-    ../interface/ZnRegion.i
-    ../interface/ZnFieldModule.i
-    ../interface/ZnGraphicsModule.i
-    ../interface/ZnMaterial.i
-    ../interface/ZnRendition.i
-    ../interface/ZnField.i
-    ../interface/ZnStream.i
-    ../interface/ZnElement.i
-    ../interface/ZnNode.i
-    ../interface/ZnDifferentialOperator.i
-    ../interface/ZnFieldCache.i
-    ../interface/ZnTessellation.i
-    ../interface/ZnGraphic.i
-    ../interface/ZnSelection.i
-    ../interface/ZnGraphicsFilter.i
-    ../interface/ZnScene.i
-    ../interface/ZnSpectrum.i
-    ../interface/ZnOptimisation.i
-    ../interface/ZnTime.i
-    ../interface/ZnTimeSequence.i)
+	../interface/ZnContext.i
+	../interface/ZnRegion.i
+	../interface/ZnFieldModule.i
+	../interface/ZnGraphicsModule.i
+	../interface/ZnMaterial.i
+	../interface/ZnRendition.i
+	../interface/ZnField.i
+	../interface/ZnStream.i
+	../interface/ZnElement.i
+	../interface/ZnNode.i
+	../interface/ZnDifferentialOperator.i
+	../interface/ZnFieldCache.i
+	../interface/ZnTessellation.i
+	../interface/ZnGraphic.i
+	../interface/ZnSelection.i
+	../interface/ZnGraphicsFilter.i
+	../interface/ZnScene.i
+	../interface/ZnSpectrum.i
+	../interface/ZnOptimisation.i
+	../interface/ZnTime.i
+	../interface/ZnTimeSequence.i)
 
 SET(CMAKE_SWIG_OUTDIR Zn)
 SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)
-#SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES SWIG_FLAGS "-includeall")
+# SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES SWIG_FLAGS "-includeall")
 
 FOREACH(SWIG_INTERFACE ${INTERFACE_SRCS})
     GET_FILENAME_COMPONENT(MODULE ${SWIG_INTERFACE} NAME_WE)
     STRING(REPLACE "Zn" "" MODULE ${MODULE})
+    # GET_FILENAME_COMPONENT(SWIG_INTERFACE_ABSOLUTE ${SWIG_INTERFACE} ABSOLUTE)
     SWIG_ADD_MODULE(${MODULE} python ${SWIG_INTERFACE})
     SWIG_LINK_LIBRARIES(${MODULE} ${PYTHON_LIBRARIES} ${ZINC_LIBRARIES})
     SET_TARGET_PROPERTIES(${SWIG_MODULE_${MODULE}_REAL_NAME} PROPERTIES

@@ -47,6 +47,8 @@
 #include "types/cmiss_field_alias_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,7 +63,7 @@ extern "C" {
  * be from a different region.
  * @return  Newly created alias field
  */
-Cmiss_field_id Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
 	Cmiss_field_id original_field);
 
 #ifdef __cplusplus

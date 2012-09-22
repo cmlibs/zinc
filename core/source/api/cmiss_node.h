@@ -48,6 +48,8 @@
 #include "types/cmiss_node_id.h"
 #include "types/cmiss_time_sequence_id.h"
 
+#include "cmiss_shared_object.h"
+
 /*
 Global functions
 ----------------
@@ -64,7 +66,7 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
+ZINC_API enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -74,7 +76,7 @@ enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
+ZINC_API char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
 
 /***************************************************************************//**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
@@ -91,7 +93,7 @@ char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
  * @param name  The name of the nodeset: "cmiss_nodes" or "cmiss_data".
  * @return  Handle to the nodeset, or NULL if error.
  */
-Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
+ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name);
 
 /*******************************************************************************
@@ -101,7 +103,7 @@ Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
  * @param nodeset  The nodeset to obtain a new reference to.
  * @return  New nodeset handle with incremented reference count.
  */
-Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
+ZINC_API Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Destroys this handle to the nodeset and sets it to NULL.
@@ -110,7 +112,7 @@ Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
  * @param nodeset_address  Address of handle to the nodeset to destroy.
  *  @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
+ZINC_API int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
 
 /***************************************************************************//**
  * Returns whether the node is from the nodeset.
@@ -119,7 +121,7 @@ int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
  * @param node  The node to query about.
  * @return  1 if node is in the nodeset, 0 if not or error.
  */
-int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
+ZINC_API int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
 /***************************************************************************//**
  * Create a blank template from which new nodes can be created in this nodeset.
@@ -129,7 +131,7 @@ int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
  * @param nodeset  Handle to the nodeset the template works with.
  * @return  Handle to node_template, or NULL if error.
  */
-Cmiss_node_template_id Cmiss_nodeset_create_node_template(
+ZINC_API Cmiss_node_template_id Cmiss_nodeset_create_node_template(
 	Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
@@ -143,7 +145,7 @@ Cmiss_node_template_id Cmiss_nodeset_create_node_template(
  * @param node_template  Template for defining node fields.
  * @return  Handle to newly created node, or NULL if error.
  */
-Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
+ZINC_API Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 	int identifier, Cmiss_node_template_id node_template);
 
 /***************************************************************************//**
@@ -157,7 +159,7 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
  * @param nodeset  Handle to the nodeset to iterate over.
  * @return  Handle to node_iterator at position before first, or NULL if error.
  */
-Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
+ZINC_API Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
 	Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
@@ -167,7 +169,7 @@ Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
  * @param nodeset  Handle to nodeset to destroy nodes from.
  * @return  Status CMISS_OK if all nodes destroyed, any other value if failed.
  */
-int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
+ZINC_API int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Destroy the node if it is in the nodeset. Removes node from any related
@@ -177,7 +179,7 @@ int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
  * @param node  The node to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
+ZINC_API int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
 /***************************************************************************//**
  * Destroy all nodes in the nodeset for which the conditional field is true i.e.
@@ -191,7 +193,7 @@ int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
  * is to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
+ZINC_API int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 	Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
@@ -201,7 +203,7 @@ int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
  * @param identifier  Non-negative integer identifier of node.
  * @return  Handle to the node, or NULL if not found.
  */
-Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
+ZINC_API Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier);
 
 /***************************************************************************//**
@@ -212,7 +214,7 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
  * @return  Handle to the master nodeset. Caller is responsible for destroying
  * the returned handle.
  */
-Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
+ZINC_API Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Return the name of the nodeset.
@@ -222,7 +224,7 @@ Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
  * @return  On success: allocated string containing nodeset name. Up to caller
  * to free using Cmiss_deallocate().
  */
-char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
+ZINC_API char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Return the number of nodes in the nodeset.
@@ -230,7 +232,7 @@ char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
  * @param nodeset  Handle to the nodeset to query.
  * @return  Number of nodes in nodeset.
  */
-int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
+ZINC_API int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Check if two nodeset handles refer to the same object.
@@ -239,7 +241,7 @@ int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
  * @param nodeset2  The second nodeset to match.
  * @return  1 if the two nodesets match, 0 if not.
  */
-int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
+ZINC_API int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
 
 /***************************************************************************//**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
@@ -250,7 +252,7 @@ int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
  * @return  Nodeset group specific representation if the input nodeset is of
  * this type, otherwise returns NULL.
  */
-Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
+ZINC_API Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Destroys this handle to the nodeset group and sets it to NULL.
@@ -259,7 +261,7 @@ Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
  * @param nodeset_group_address  Address of nodeset group handle to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address);
+ZINC_API int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address);
 
 /***************************************************************************//**
  * Cast nodeset group back to its base nodeset class.
@@ -285,7 +287,7 @@ CMISS_C_INLINE Cmiss_nodeset_id Cmiss_nodeset_group_base_cast(
  * @param node  Handle to node to add. Must be from the group's master nodeset.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
+ZINC_API int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
 
 /***************************************************************************//**
@@ -294,7 +296,7 @@ int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
  * @param nodeset_group  Handle to nodeset group to modify.
  * @return  Status CMISS_OK if all nodes removed, any other value if failed.
  */
-int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
+ZINC_API int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
 
 /***************************************************************************//**
  * Remove specified node from nodeset group.
@@ -303,7 +305,7 @@ int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
  * @param node  Handle to node to remove.
  * @return  Status CMISS_OK if node is removed, any other value if failed.
  */
-int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
+ZINC_API int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
 
 /***************************************************************************//**
@@ -316,7 +318,7 @@ int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
  * is to be removed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_group_remove_nodes_conditional(
+ZINC_API int Cmiss_nodeset_group_remove_nodes_conditional(
 	Cmiss_nodeset_group_id nodeset_group, Cmiss_field_id conditional_field);
 
 /*******************************************************************************
@@ -326,7 +328,7 @@ int Cmiss_nodeset_group_remove_nodes_conditional(
  * @param mesh  The node iterator to obtain a new reference to.
  * @return  New node iterator handle with incremented reference count.
  */
-Cmiss_node_iterator_id Cmiss_node_iterator_access(
+ZINC_API Cmiss_node_iterator_id Cmiss_node_iterator_access(
 	Cmiss_node_iterator_id node_iterator);
 
 /***************************************************************************//**
@@ -335,7 +337,7 @@ Cmiss_node_iterator_id Cmiss_node_iterator_access(
  * @param node_iterator_address  Address of handle to node_iterator to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
+ZINC_API int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
 
 /***************************************************************************//**
  * Returns a handle to the next node in the container being iterated over then
@@ -345,7 +347,7 @@ int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
  * @param node_iterator  Node iterator to query and advance.
  * @return  Handle to the next node, or NULL if none remaining.
  */
-Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
+ZINC_API Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
 
 /*******************************************************************************
  * Returns a new handle to the node template with reference count incremented.
@@ -354,7 +356,7 @@ Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
  * @param mesh  The node template to obtain a new reference to.
  * @return  New node template handle with incremented reference count.
  */
-Cmiss_node_template_id Cmiss_node_template_access(
+ZINC_API Cmiss_node_template_id Cmiss_node_template_access(
 	Cmiss_node_template_id node_template);
 
 /***************************************************************************//**
@@ -365,7 +367,7 @@ Cmiss_node_template_id Cmiss_node_template_access(
  * to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
+ZINC_API int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
 
 /***************************************************************************//**
  * Defines the field on the node_template with just a single node value per
@@ -377,7 +379,7 @@ int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
  * stored_mesh_location type only.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 	Cmiss_field_id field);
 
 /***************************************************************************//**
@@ -390,7 +392,7 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
  * @param node  The node to obtain the field definition from.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_define_field_from_node(
+ZINC_API int Cmiss_node_template_define_field_from_node(
 	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	Cmiss_node_id node);
 
@@ -407,7 +409,7 @@ int Cmiss_node_template_define_field_from_node(
  * @param derivative_type  The type of nodal derivative to define.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type);
 
@@ -426,7 +428,7 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
  * will be defined.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_define_time_sequence(
+ZINC_API int Cmiss_node_template_define_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	struct Cmiss_time_sequence *time_sequence);
 
@@ -446,7 +448,7 @@ int Cmiss_node_template_define_time_sequence(
  * stored for the component/s, at least 1 (the default).
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number, int number_of_versions);
 
 /***************************************************************************//**
@@ -462,7 +464,7 @@ int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
  * component if component_number is -1). Returns 0 if field not defined or
  * invalid arguments are supplied.
  */
-int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number);
 
 /***************************************************************************//**
@@ -474,7 +476,7 @@ int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_templ
  * @return  Handle to time sequence object if defined for field, or NULL if none
  * or error. Up to caller to destroy returned handle.
  */
-Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
+ZINC_API Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_id field);
 
 /***************************************************************************//**
@@ -490,7 +492,7 @@ Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
  * @return  1 if derivative_type is defined for component_number of field (or
  * for any component if component_number is -1), 0 if not.
  */
-int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type);
 
@@ -504,7 +506,7 @@ int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_template,
  * stored_mesh_location type only.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
+ZINC_API int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
 	Cmiss_field_id field);
 
 /*******************************************************************************
@@ -514,7 +516,7 @@ int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
  * @param node  The node to obtain a new reference to.
  * @return  New node handle with incremented reference count.
  */
-Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
+ZINC_API Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
 
 /***************************************************************************//**
  * Destroys this handle to the node and sets it to NULL.
@@ -523,7 +525,7 @@ Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
  * @param node_address  Address of handle to the node to destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_destroy(Cmiss_node_id *node_address);
+ZINC_API int Cmiss_node_destroy(Cmiss_node_id *node_address);
 
 /***************************************************************************//**
  * Returns the non-negative integer uniquely identifying the node in its
@@ -533,7 +535,7 @@ int Cmiss_node_destroy(Cmiss_node_id *node_address);
  * @return  The non-negative integer identifier of the node, or a negative
  * value if node is invalid.
  */
-int Cmiss_node_get_identifier(Cmiss_node_id node);
+ZINC_API int Cmiss_node_get_identifier(Cmiss_node_id node);
 
 /***************************************************************************//**
  * Modifies the node to define fields as described in the node_template.
@@ -542,7 +544,7 @@ int Cmiss_node_get_identifier(Cmiss_node_id node);
  * @param node_template  Template containing node field descriptions.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template);
+ZINC_API int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template);
 
 #ifdef __cplusplus
 }

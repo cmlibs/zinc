@@ -47,6 +47,8 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 
 #include "types/cmiss_field_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,7 +63,7 @@ extern "C" {
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -75,7 +77,7 @@ Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_modul
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -89,7 +91,7 @@ Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_mo
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -103,7 +105,7 @@ Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_modu
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -117,7 +119,7 @@ Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -135,7 +137,7 @@ Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_mo
  * in the source field which is dot producted with the source field components.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, double *weights);
 
 /*****************************************************************************//**
@@ -146,7 +148,7 @@ Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id fi
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -157,7 +159,7 @@ Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -168,7 +170,7 @@ Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -179,7 +181,7 @@ Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_abs(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_abs(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 #ifdef __cplusplus

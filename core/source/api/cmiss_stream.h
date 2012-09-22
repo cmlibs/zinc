@@ -46,6 +46,8 @@
 #include "types/cmiss_c_inline.h"
 #include "types/cmiss_stream_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,7 +60,7 @@ extern "C" {
 * @param stream_information  The stream_information to obtain a new reference to.
 * @return  New stream_information reference with incremented reference count.
 */
-Cmiss_stream_information_id Cmiss_stream_information_access(
+ZINC_API Cmiss_stream_information_id Cmiss_stream_information_access(
 	Cmiss_stream_information_id stream_information);
 
 /***************************************************************************//**
@@ -69,7 +71,7 @@ Cmiss_stream_information_id Cmiss_stream_information_access(
  * @return  status CMISS_OK if successfully destroyed the stream_information,
  * any other value on failure.
  */
-int Cmiss_stream_information_destroy(
+ZINC_API int Cmiss_stream_information_destroy(
 	Cmiss_stream_information_id *stream_information_address);
 
 /***************************************************************************//**
@@ -88,7 +90,7 @@ int Cmiss_stream_information_destroy(
  *  @param file_name  name of a file.
  * @return  Handle to newly created stream_resource.
  */
-Cmiss_stream_resource_id Cmiss_stream_information_create_resource_file(
+ZINC_API Cmiss_stream_resource_id Cmiss_stream_information_create_resource_file(
 	Cmiss_stream_information_id stream_information, const char *file_name);
 
 /***************************************************************************//**
@@ -105,7 +107,7 @@ Cmiss_stream_resource_id Cmiss_stream_information_create_resource_file(
  * 	stream_resource.
  * @return  Handle to newly created stream_resource.
  */
-Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory(
+ZINC_API Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory(
 	Cmiss_stream_information_id stream_information);
 
 /***************************************************************************//**
@@ -123,7 +125,7 @@ Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory(
  * @param buffer_length  length of the buffer
  * @return  Handle to newly created stream_resource.
  */
-Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory_buffer(
+ZINC_API Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory_buffer(
 	Cmiss_stream_information_id stream_information, const void *buffer,
 	unsigned int buffer_length);
 
@@ -134,7 +136,7 @@ Cmiss_stream_resource_id Cmiss_stream_information_create_resource_memory_buffer(
 * @param stream  The stream_resource to obtain a new reference to.
 * @return  New stream_resource reference with incremented reference count.
 */
-Cmiss_stream_resource_id Cmiss_stream_resource_access(Cmiss_stream_resource_id resource);
+ZINC_API Cmiss_stream_resource_id Cmiss_stream_resource_access(Cmiss_stream_resource_id resource);
 
 /***************************************************************************//**
  * Destroys this reference to the stream (and sets it to NULL).
@@ -144,7 +146,7 @@ Cmiss_stream_resource_id Cmiss_stream_resource_access(Cmiss_stream_resource_id r
  * @return  status CMISS_OK if successfully destroyed the output stream handle,
  * any other value on failure.
  */
-int Cmiss_stream_resource_destroy(Cmiss_stream_resource_id *resource_address);
+ZINC_API int Cmiss_stream_resource_destroy(Cmiss_stream_resource_id *resource_address);
 
 /***************************************************************************//**
  * If the stream_resource is of file type, then this function returns
@@ -155,7 +157,7 @@ int Cmiss_stream_resource_destroy(Cmiss_stream_resource_id *resource_address);
  * @return  stream_resource_file specific representation if the input
  * stream_resource is of this type, otherwise NULL.
  */
-Cmiss_stream_resource_file_id Cmiss_stream_resource_cast_file(
+ZINC_API Cmiss_stream_resource_file_id Cmiss_stream_resource_cast_file(
 	Cmiss_stream_resource_id resource);
 
 /*****************************************************************************//**
@@ -164,7 +166,7 @@ Cmiss_stream_resource_file_id Cmiss_stream_resource_cast_file(
  * is destroyed and the pointer is set to NULL.
  * @return  status CMISS_OK if the operation is successful, any other value on failure.
  */
-int Cmiss_stream_resource_file_destroy(
+ZINC_API int Cmiss_stream_resource_file_destroy(
 	Cmiss_stream_resource_file_id *resource_address);
 
 /***************************************************************************//**
@@ -191,7 +193,7 @@ CMISS_C_INLINE Cmiss_stream_resource_id Cmiss_stream_resource_file_base_cast(
  * @return  On success: allocated string containing field name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_stream_resource_file_get_name(Cmiss_stream_resource_file_id resource);
+ZINC_API char *Cmiss_stream_resource_file_get_name(Cmiss_stream_resource_file_id resource);
 
 /***************************************************************************//**
  * If the stream_resource is of memory type, then this function returns
@@ -205,7 +207,7 @@ char *Cmiss_stream_resource_file_get_name(Cmiss_stream_resource_file_id resource
  * @return  stream_resource_memory specific representation if the input
  * stream_resource is of this type, otherwise NULL.
  */
-Cmiss_stream_resource_memory_id Cmiss_stream_resource_cast_memory(
+ZINC_API Cmiss_stream_resource_memory_id Cmiss_stream_resource_cast_memory(
 	Cmiss_stream_resource_id resource);
 
 /*****************************************************************************//**
@@ -215,7 +217,7 @@ Cmiss_stream_resource_memory_id Cmiss_stream_resource_cast_memory(
  * is destroyed and the pointer is set to NULL.
  * @return  status CMISS_OK if the operation is successful, any other value on failure.
  */
-int Cmiss_stream_resource_memory_destroy(
+ZINC_API int Cmiss_stream_resource_memory_destroy(
 	Cmiss_stream_resource_memory_id *resource_address);
 
 /***************************************************************************//**
@@ -248,7 +250,7 @@ CMISS_C_INLINE Cmiss_stream_resource_id Cmiss_stream_resource_memory_base_cast(
  * 	the returned memory block.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_stream_resource_memory_get_buffer(Cmiss_stream_resource_memory_id resource,
+ZINC_API int Cmiss_stream_resource_memory_get_buffer(Cmiss_stream_resource_memory_id resource,
 	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
 
 /*****************************************************************************//**
@@ -268,7 +270,7 @@ int Cmiss_stream_resource_memory_get_buffer(Cmiss_stream_resource_memory_id reso
  * 	the returned memory block.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_stream_resource_memory_get_buffer_copy(
+ZINC_API int Cmiss_stream_resource_memory_get_buffer_copy(
 	Cmiss_stream_resource_memory_id resource, void **memory_buffer_references,
 	unsigned int *memory_buffer_sizes);
 

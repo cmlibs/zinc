@@ -48,6 +48,8 @@ The public interface to the Cmiss_fields that perform logical operations.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,7 +64,7 @@ extern "C" {
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
 /***************************************************************************//**
@@ -75,7 +77,7 @@ Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id field_module,
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_equal_to(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_equal_to(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
@@ -89,7 +91,7 @@ Cmiss_field_id Cmiss_field_module_create_equal_to(
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_greater_than(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_greater_than(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
@@ -103,7 +105,7 @@ Cmiss_field_id Cmiss_field_module_create_greater_than(
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_less_than(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_less_than(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
@@ -117,7 +119,7 @@ Cmiss_field_id Cmiss_field_module_create_less_than(
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
 /***************************************************************************//**
@@ -129,7 +131,7 @@ Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
  * @param source_field  The source field.
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /***************************************************************************//**
@@ -142,7 +144,7 @@ Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_xor(Cmiss_field_module_id field_module,
+ZINC_API Cmiss_field_id Cmiss_field_module_create_xor(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
 #ifdef __cplusplus

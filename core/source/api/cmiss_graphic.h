@@ -65,7 +65,7 @@ extern "C" {
  * @param graphic  The graphic to obtain a new reference to.
  * @return  New graphic reference with incremented reference count.
  */
-Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
+ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
  * Destroys the graphic and sets the pointer to NULL.
@@ -83,7 +83,7 @@ ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
  * @param coordinate_field  The cmiss_field to be use as the coordinate field.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
+ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
 
 /***************************************************************************//**
@@ -93,7 +93,7 @@ int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  * @param material  The material to be set to graphic as the default material
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
+ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
 /***************************************************************************//**
  * Set the selected material of the cmiss graphic
@@ -102,7 +102,7 @@ int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material
  * @param material  The material to be set to graphic as the selected material
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_selected_material(
+ZINC_API int Cmiss_graphic_set_selected_material(
 	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
 /***************************************************************************//**
@@ -116,7 +116,7 @@ int Cmiss_graphic_set_selected_material(
  *   texture coordinate field.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
+ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
 
 /***************************************************************************//**
@@ -127,7 +127,7 @@ int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
  *
  * @return  tessellation for graphic or NULL if none.
  */
-Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
+ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
  * Sets the tessellation object of the graphics.
@@ -137,7 +137,7 @@ Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
  *
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_tessellation(
+ZINC_API int Cmiss_graphic_set_tessellation(
 		Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
 
 /***************************************************************************//**
@@ -147,7 +147,7 @@ int Cmiss_graphic_set_tessellation(
  * @return  The render type If successfully get render_type for graphic, otherwise
  * 		it returns INVALID_TYPE;
  */
-enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
+ZINC_API enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 	Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
@@ -158,7 +158,7 @@ enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
  *   render_type definition for more information.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_render_type(
+ZINC_API int Cmiss_graphic_set_render_type(
 	Cmiss_graphic_id graphic, enum Cmiss_graphics_render_type render_type);
 
 /***************************************************************************//**
@@ -167,7 +167,7 @@ int Cmiss_graphic_set_render_type(
  * @param graphic  The graphic to query.
  * @return  1 if graphic visibility flag is set, 0 if not.
  */
-int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
+ZINC_API int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
  * Sets status of graphic visibility flag attribute.
@@ -176,7 +176,7 @@ int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
  * @param visibility_flag  1 to set, 0 to clear.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
+ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
 
 ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphic_glyph_type glyph_type);
@@ -189,7 +189,7 @@ ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphi
  * 		for graphic.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
+ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
 	enum Cmiss_graphics_coordinate_system coordinate_system);
 
 /***************************************************************************//**
@@ -198,7 +198,7 @@ int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to modify.
  * @return  coordinate system used in graphic.
  */
-enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
+ZINC_API enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
@@ -208,7 +208,7 @@ enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
+ZINC_API enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
@@ -217,7 +217,7 @@ enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
+ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
 
 /***************************************************************************//**
  * Return the name of the graphic. Graphic does not have a name until user has
@@ -227,7 +227,7 @@ char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
  * @return  On success: allocated string containing graphic name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
+ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
  * Set the name of the graphic. Unlike other containers, rendition can contains
@@ -237,7 +237,7 @@ char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
  * @param name  The new name for the graphic.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
+ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 
 /***************************************************************************//**
  * It takes the same string of command as gfx modify g_element <region_name>
@@ -251,7 +251,7 @@ int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
  * @param command  Command to be executed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
+ZINC_API int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
 
 #ifdef __cplusplus
 }

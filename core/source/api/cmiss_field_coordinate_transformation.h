@@ -44,6 +44,8 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,7 +61,7 @@ extern "C" {
  * Must have 1 to 3 components.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
 /***************************************************************************//**
@@ -75,7 +77,7 @@ Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
  * @param coordinate_field  Field giving location where vector value is from.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_vector_coordinate_transformation(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_vector_coordinate_transformation(
 	Cmiss_field_module_id field_module, Cmiss_field_id vector_field,
 	Cmiss_field_id coordinate_field);
 

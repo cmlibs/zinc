@@ -46,6 +46,8 @@ The public interface to the Cmiss_fields that perform trigonometry.
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,7 +60,7 @@ extern "C" {
  * @param source_field Input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_sin(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_sin(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -70,7 +72,7 @@ Cmiss_field_id Cmiss_field_module_create_sin(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_cos(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_cos(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -82,7 +84,7 @@ Cmiss_field_id Cmiss_field_module_create_cos(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_tan(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_tan(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -94,7 +96,7 @@ Cmiss_field_id Cmiss_field_module_create_tan(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_asin(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_asin(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -106,7 +108,7 @@ Cmiss_field_id Cmiss_field_module_create_asin(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-Cmiss_field_id Cmiss_field_module_create_acos(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_acos(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -118,7 +120,7 @@ Cmiss_field_id Cmiss_field_module_create_acos(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-Cmiss_field_id Cmiss_field_module_create_atan(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_atan(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
@@ -133,7 +135,7 @@ Cmiss_field_id Cmiss_field_module_create_atan(
  * @param source_field_two Second input field
  * @return Newly created field (components in radians)
  */
-Cmiss_field_id Cmiss_field_module_create_atan2(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_atan2(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);

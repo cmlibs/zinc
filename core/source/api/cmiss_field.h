@@ -348,7 +348,7 @@ ZINC_API int Cmiss_field_set_attribute_real(Cmiss_field_id field,
  * @return  On success: allocated string containing field component name. Up to
  * caller to free using Cmiss_deallocate().
  */
-char *Cmiss_field_get_component_name(Cmiss_field_id field, int component_number);
+ZINC_API char *Cmiss_field_get_component_name(Cmiss_field_id field, int component_number);
 
 /***************************************************************************//**
  * Get the coordinate system type to interpret field values in.

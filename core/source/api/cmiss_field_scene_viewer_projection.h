@@ -47,6 +47,8 @@
 #include "types/cmiss_graphics_coordinate_system.h"
 #include "types/cmiss_scene_viewer_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,7 +74,7 @@ extern "C" {
  * transformation.
  * @return  Newly created field with 16 components.
  */
-Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	Cmiss_field_module_id field_module,
 	Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_graphics_coordinate_system from_coordinate_system,

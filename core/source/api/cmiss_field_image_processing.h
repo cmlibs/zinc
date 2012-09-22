@@ -48,6 +48,8 @@ Implements cmiss fields which deal with image processing
 #include "types/cmiss_field_image_processing_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,11 +60,11 @@ extern "C" {
  * The <radius> and <dilate_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
  */
-Cmiss_field_id Cmiss_field_module_create_binary_dilate_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_binary_dilate_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	int radius, double dilate_value);
 
-int Cmiss_field_get_type_binary_dilate_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_binary_dilate_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
 	int *radius, double *dilate_value);
 /*******************************************************************************
@@ -80,11 +82,11 @@ WARNING: To be deprecated.
  * The <radius> and <erode_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
  */
-Cmiss_field_id Cmiss_field_module_create_binary_erode_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_binary_erode_image_filter(
 		Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 		int radius, double erode_value);
 
-int Cmiss_field_get_type_binary_erode_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_binary_erode_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, int *radius, double *erode_value);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
@@ -108,7 +110,7 @@ WARNING: To be deprecated.
  * @param upper_threshold  Theshold value above which all values are set to 0
  * @return  Newly created field
 */
-Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double lower_threshold, double upper_threshold);
 
@@ -120,9 +122,9 @@ Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
  * @param field  Id of the field to cast
  * @return  Id of the cast field, or NULL
 */
-Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field);
+ZINC_API Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field);
 
-int Cmiss_field_get_type_binary_threshold_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_binary_threshold_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
 	double *lower_threshold, double *upper_threshold);
 /*******************************************************************************
@@ -140,12 +142,12 @@ WARNING: To be deprecated.
  * Creates a field returning result of ITK canny edge detection filter on the
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_module_create_canny_edge_detection_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_canny_edge_detection_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double variance, double maximumError,
   double upperThreshold, double lowerThreshold);
 
-int Cmiss_field_get_type_canny_edge_detection_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_canny_edge_detection_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *variance, double *maximumError,
 	double *upperThreshold, double *lowerThreshold);
 /*******************************************************************************
@@ -163,12 +165,12 @@ WARNING: To be deprecated.
  * Creates a field performing ITK connected threshold image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_module_create_connected_threshold_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_connected_threshold_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
   double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, const double *seed_points);
 
-int Cmiss_field_get_type_connected_threshold_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_connected_threshold_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
   double *lower_threshold, double *upper_threshold, double *replace_value,
   int *num_seed_points, int *dimension, double **seed_points);
@@ -188,11 +190,11 @@ WARNING: To be deprecated.
  * on scalar source field image.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double timeStep, double conductance, int numIterations);
 
-int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *timeStep, double *conductance, int *numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -219,7 +221,7 @@ WARNING: To be deprecated.
  * @param max_kernel_width  The limit on the maximum kernel width that may be used
  * @return  Newly created field
 */
-Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double variance, int maxKernelWidth);
 
@@ -231,9 +233,9 @@ Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
-Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_cast_discrete_gaussian_image_filter(Cmiss_field_id field);
+ZINC_API Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_cast_discrete_gaussian_image_filter(Cmiss_field_id field);
 
-int Cmiss_field_get_type_discrete_gaussian_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_discrete_gaussian_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *variance, int *maxKernelWidth);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -248,12 +250,12 @@ WARNING: To be deprecated.
  * Creates a field performing ITK fast marching image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_module_create_fast_marching_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_fast_marching_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double stopping_value, int num_seed_points, int dimension,
 	const double *seed_points, const double *seed_values, const int *output_size);
 
-int Cmiss_field_get_type_fast_marching_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_fast_marching_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *stopping_value,
   int *num_seed_points, int *dimension, double **seed_points,
   double **seed_values, int **output_size);
@@ -273,11 +275,11 @@ WARNING: To be deprecated.
  * filter on scalar source field image.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_module_create_gradient_magnitude_recursive_gaussian_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_gradient_magnitude_recursive_gaussian_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double sigma);
 
-int Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(
+ZINC_API int Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(
 	Cmiss_field_id field, Cmiss_field_id *source_field, double *sigma);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -298,12 +300,12 @@ WARNING: To be deprecated.
  * @param histogramMinimum  Optional array of minimum value of histogram for each source field component
  * @param histogramMaximum  Optional array of maximum value of histogram for each source field component
  */
-Cmiss_field_id Cmiss_field_module_create_histogram_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_histogram_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	const int *numberOfBins, double marginalScale,
 	const double *histogramMinimum, const double *histogramMaximum);
 
-int Cmiss_field_get_type_histogram_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_histogram_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, int **numberOfBins, double *marginalScale,
 	double **histogramMinimum, double **histogramMaximum);
 /*******************************************************************************
@@ -321,11 +323,11 @@ WARNING: To be deprecated.
  * <source_field> dimension.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_module_create_mean_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_mean_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	int *radius_sizes);
 
-int Cmiss_field_get_type_mean_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_mean_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, int **radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -340,11 +342,11 @@ WARNING: To be deprecated.
  * Creates a field performing ITK rescale intensity image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_module_create_rescale_intensity_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_rescale_intensity_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double outputMin, double outputMax);
 
-int Cmiss_field_get_type_rescale_intensity_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_rescale_intensity_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *outputMin, double *outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -359,11 +361,11 @@ WARNING: To be deprecated.
  * Creates a field performing ITK sigmoid image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_module_create_sigmoid_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_sigmoid_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double min, double max,	double alpha, double beta);
 
-int Cmiss_field_get_type_sigmoid_image_filter(Cmiss_field_id field,
+ZINC_API int Cmiss_field_get_type_sigmoid_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *min, double *max, double *alpha, double *beta);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -400,7 +402,7 @@ enum General_threshold_filter_mode
  * @param above_value Above value used by ABOVE and OUTSIDE modes
  * @return Newly created field
 */
-Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	enum General_threshold_filter_mode threshold_mode,
 	double outside_value, double below_value, double above_value);
@@ -413,7 +415,7 @@ Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
-Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
+ZINC_API Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
 
 #ifdef __cplusplus
 }

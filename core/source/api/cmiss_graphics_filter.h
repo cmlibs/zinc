@@ -82,7 +82,7 @@ enum Cmiss_graphics_filter_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_graphics_filter_attribute
+ZINC_API enum Cmiss_graphics_filter_attribute
 	Cmiss_graphics_filter_attribute_enum_from_string(const char  *string);
 
 /***************************************************************************//**
@@ -92,7 +92,7 @@ enum Cmiss_graphics_filter_attribute
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_graphics_filter_attribute_enum_to_string(
+ZINC_API char *Cmiss_graphics_filter_attribute_enum_to_string(
 	enum Cmiss_graphics_filter_attribute attribute);
 
 /*******************************************************************************
@@ -102,7 +102,7 @@ char *Cmiss_graphics_filter_attribute_enum_to_string(
  * @param filter  The filter to obtain a new reference to.
  * @return  New filter reference with incremented reference count.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_filter_access(Cmiss_graphics_filter_id filter);
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_access(Cmiss_graphics_filter_id filter);
 
 /*******************************************************************************
  * Destroys this reference to the filter (and sets it to NULL).
@@ -122,7 +122,7 @@ ZINC_API int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_addr
  * @return  Boolean value of filter for this graphic:
  *     1 == true == show or 0 == false == hide
  */
-int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
+ZINC_API int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
 	Cmiss_graphic_id graphic);
 
 /***************************************************************************//**
@@ -132,7 +132,7 @@ int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
  * @return  allocated string containing graphics_filter name, or NULL on failure.
  * Up to caller to free using Cmiss_deallocate().
  */
-char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
+ZINC_API char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
 
 /*******************************************************************************
  * Set name of the scene filter
@@ -141,7 +141,7 @@ char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
  * @param name  name to be set to the scene filter
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
+ZINC_API int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
 	const char *name);
 
 /***************************************************************************//**
@@ -164,7 +164,7 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility
  * @param match_name  The name a graphic must have to be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
 	Cmiss_graphics_module_id graphics_module, const char *match_name);
 
 /***************************************************************************//**
@@ -175,7 +175,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
  * @param match_region  The region to be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
 	Cmiss_graphics_module_id graphics_module,Cmiss_region_id match_region);
 
 /***************************************************************************//**
@@ -185,7 +185,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
  *
  * @return  Handle to the new filter, or NULL on failure.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -195,7 +195,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
  *
  * @return  Handle to the new filter, or NULL on failure.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -205,7 +205,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
+ZINC_API int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
 	enum Cmiss_graphics_filter_attribute attribute);
 
 /***************************************************************************//**
@@ -218,7 +218,7 @@ int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this graphics_filter object.
  */
-int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
+ZINC_API int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
 	enum Cmiss_graphics_filter_attribute attribute, int value);
 
 /***************************************************************************//**
@@ -230,7 +230,7 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
  * @return  Operator specific representation if the input filter is of this type,
  * otherwise NULL.
  */
-Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(
+ZINC_API Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(
 	Cmiss_graphics_filter_id filter);
 
 /***************************************************************************//**
@@ -258,7 +258,7 @@ CMISS_C_INLINE Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_base_cast
  * @param operator_filter_address  Address of handle to the operator filter.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_operator_destroy(
+ZINC_API int Cmiss_graphics_filter_operator_destroy(
 	Cmiss_graphics_filter_operator_id *operator_filter_address);
 
 /*******************************************************************************
@@ -270,7 +270,7 @@ int Cmiss_graphics_filter_operator_destroy(
  * @param operand  The filter to be added
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_operator_append_operand(
+ZINC_API int Cmiss_graphics_filter_operator_append_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand);
 
@@ -279,7 +279,7 @@ int Cmiss_graphics_filter_operator_append_operand(
  * @param operator_filter  The operator filter to be iterated over.
  * @return  Handle to the first operand, or NULL if none or invalid argument.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
 	Cmiss_graphics_filter_operator_id operator_filter);
 
 /*******************************************************************************
@@ -290,7 +290,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
  * @param ref_operand  The filter to be referenced
  * @return  Handle to the next operand, or NULL if none or invalid argument.
  */
-Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id ref_operand);
 
@@ -301,7 +301,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
  * @param operand  The filter to be checked.
  * @return  1 if operand is active, 0 if operand is not active or not an operand.
  */
-int Cmiss_graphics_filter_operator_get_operand_is_active(
+ZINC_API int Cmiss_graphics_filter_operator_get_operand_is_active(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand);
 
@@ -313,7 +313,7 @@ int Cmiss_graphics_filter_operator_get_operand_is_active(
  * @param is_active  Value to set: non-zero to mark as active, 0 for inactive.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_operator_set_operand_is_active(
+ZINC_API int Cmiss_graphics_filter_operator_set_operand_is_active(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand, int is_active);
 
@@ -327,7 +327,7 @@ int Cmiss_graphics_filter_operator_set_operand_is_active(
  * @param ref_operand  The reference filter to insert before.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_operator_insert_operand_before(
+ZINC_API int Cmiss_graphics_filter_operator_insert_operand_before(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand);
 
@@ -338,7 +338,7 @@ int Cmiss_graphics_filter_operator_insert_operand_before(
  * @param operand  The filter to be removed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphics_filter_operator_remove_operand(
+ZINC_API int Cmiss_graphics_filter_operator_remove_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand);
 

@@ -39,6 +39,8 @@
 
 #include "types/cmiss_spectrum_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,7 +67,7 @@ enum Cmiss_spectrum_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
+ZINC_API enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -75,7 +77,7 @@ enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_spectrum_attribute_enum_to_string(
+ZINC_API char *Cmiss_spectrum_attribute_enum_to_string(
 	enum Cmiss_spectrum_attribute attribute);
 
 /***************************************************************************//**
@@ -84,7 +86,7 @@ char *Cmiss_spectrum_attribute_enum_to_string(
  * @param spectrum  handle to the "to be access" cmiss spectrum.
  * @return  handle to spectrum if successfully access spectrum.
  */
-Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
+ZINC_API Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
 
 /***************************************************************************//**
  * Destroy the spectrum.
@@ -94,7 +96,7 @@ Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
  * @return  status CMISS_OK if successfully destroy spectrum, any other value
  * on failure.
  */
-int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
+ZINC_API int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the graphics spectrum.
@@ -103,7 +105,7 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
+ZINC_API int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
 	enum Cmiss_spectrum_attribute attribute);
 
 /***************************************************************************//**
@@ -116,7 +118,7 @@ int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
  * @return  status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this spectrum object.
  */
-int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
+ZINC_API int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 	enum Cmiss_spectrum_attribute attribute, int value);
 
 /***************************************************************************//**
@@ -126,7 +128,7 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
  * @return  allocated string containing spectrum name, otherwise NULL. Up to
  * caller to free using Cmiss_deallocate().
  */
-char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
+ZINC_API char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 
 /***************************************************************************//**
  * Set/change name for <spectrum>.
@@ -136,7 +138,7 @@ char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
  * @return  status CMISS_OK if successfully set/change name for spectrum,
  * any other value on failure.
  */
-int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
+ZINC_API int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
@@ -150,7 +152,7 @@ int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
  * @param command  Command to be executed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
+ZINC_API int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
 	const char *command_string);
 
 #ifdef __cplusplus

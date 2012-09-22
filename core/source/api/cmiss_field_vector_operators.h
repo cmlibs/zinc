@@ -44,6 +44,8 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,7 +61,7 @@ extern "C" {
  * equal to (dimension).
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_cross_product(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product(
 	Cmiss_field_module_id field_module, int dimension,
 	Cmiss_field_id *source_fields);
 
@@ -72,7 +74,7 @@ Cmiss_field_id Cmiss_field_module_create_cross_product(
  * @param source_field_two  Second source field.  Must have 3 components.
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -85,7 +87,7 @@ Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
  * @param source_field_two  Second source field.
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_dot_product(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_dot_product(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -96,7 +98,7 @@ Cmiss_field_id Cmiss_field_module_create_dot_product(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_magnitude(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_magnitude(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
 /***************************************************************************//**
@@ -107,7 +109,7 @@ Cmiss_field_id Cmiss_field_module_create_magnitude(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_normalise(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_normalise(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
 #ifdef __cplusplus

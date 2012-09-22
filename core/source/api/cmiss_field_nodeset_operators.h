@@ -44,6 +44,8 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
 
+#include "cmiss_shared_object.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,7 +60,7 @@ extern "C" {
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
@@ -72,7 +74,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
@@ -89,7 +91,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
@@ -107,7 +109,7 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
