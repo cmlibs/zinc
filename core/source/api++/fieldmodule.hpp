@@ -181,15 +181,15 @@ public:
 		return Field(Cmiss_field_module_find_field_by_name(id, fieldName));
 	}
 
-	int defineField(const char *fieldName, const char *commandString)
-	{
-		return Cmiss_field_module_define_field(id, fieldName, commandString);
-	}
+	//-- int defineField(const char *fieldName, const char *commandString)
+	//-- {
+	//-- 	return Cmiss_field_module_define_field(id, fieldName, commandString);
+	//-- }
 
-	Field createField(const char *fieldName, const char *commandString)
-	{
-		return Field(Cmiss_field_module_create_field(id, fieldName, commandString));
-	}
+	//-- Field createField(const char *fieldName, const char *commandString)
+	//-- {
+	//-- 	return Field(Cmiss_field_module_create_field(id, fieldName, commandString));
+	//-- }
 
 	FieldCache createCache()
 	{

@@ -40,9 +40,7 @@
 #ifndef __CONTEXT_HPP__
 #define __CONTEXT_HPP__
 
-extern "C" {
 #include "api/cmiss_context.h"
-}
 #include "api++/region.hpp"
 #include "api++/graphicsmodule.hpp"
 #include "api++/timekeeper.hpp"
@@ -98,15 +96,15 @@ public:
 		return id;
 	}
 
-	int enableUserInterface()
-	{
-		return Cmiss_context_enable_user_interface(id, NULL);
-	}
+	//-- int enableUserInterface()
+	//-- {
+	//-- 	return Cmiss_context_enable_user_interface(id, NULL);
+	//-- }
 
-	int executeCommand(const char *command)
-	{
-		return Cmiss_context_execute_command(id, command);
-	}
+	//-- int executeCommand(const char *command)
+	//-- {
+	//-- 	return Cmiss_context_execute_command(id, command);
+	//-- }
 
 	Region getDefaultRegion()
 	{
@@ -123,15 +121,15 @@ public:
 		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));
 	}
 
-	TimeKeeper getDefaultTimeKeeper()
-	{
-		return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
-	}
+	//-- TimeKeeper getDefaultTimeKeeper()
+	//-- {
+	//-- 	return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
+	//-- }
 
-	int runMainLoop()
-	{
-		return Cmiss_context_run_main_loop(id);
-	}
+	//-- int runMainLoop()
+	//-- {
+	//-- 	return Cmiss_context_run_main_loop(id);
+	//-- }
 };
 
 }  // namespace Zn

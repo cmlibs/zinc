@@ -39,9 +39,7 @@
 #ifndef __CMISS_RENDITION_HPP__
 #define __CMISS_RENDITION_HPP__
 
-extern "C" {
 #include "api/cmiss_rendition.h"
-}
 #include "api++/graphic.hpp"
 #include "api++/fieldtypesgroup.hpp"
 #include "api++/selection.hpp"
@@ -197,10 +195,10 @@ public:
 		return Cmiss_rendition_remove_graphic(id, graphic.getId());
 	}
 
-	int executeCommand(const char *command_string)
-	{
-		return Cmiss_rendition_execute_command(id, command_string);
-	}
+	//-- int executeCommand(const char *command_string)
+	//-- {
+	//-- 	return Cmiss_rendition_execute_command(id, command_string);
+	//-- }
 };
 
 } // namespace Cmiss

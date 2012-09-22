@@ -23,13 +23,13 @@ CFLAGS = -c -Wall -fPIC #Required for building shared libraries on x86_64
 CXXFLAGS = -shared -Wall -fPIC
 
 # Includes
-SWIG_INCLUDES = -I$(CMISS_ROOT)/src/cmgui-swig/source
+SWIG_INCLUDES = -I/home/hsorby/work/musculoskeletalatlas/zinc/core/source
 
 #CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/x86_64-linux/cmgui-wx-debug/ -lcmgui
 CMISS_LIBS = -L$(CMISS_ROOT)/build/cmgui-gtk-optimised-shared -lcmgui
 
-CMGUI_SOURCE = $(CMISS_ROOT)/src/cmgui-swig/source
-PYTHON_INCLUDES = -I/usr/include/python2.6 -I$(CMGUI_SOURCE)
+CMGUI_SOURCE = /home/hsorby/work/musculoskeletalatlas/zinc
+PYTHON_INCLUDES = -I/usr/include/python2.7 -I$(CMGUI_SOURCE)/core/source -I/home/hsorby/work/musculoskeletalatlas/zinc-build-d/core/source/api/
 
 
 INTERFACE_PATH=$(CMGUI_SOURCE)/swig/interface
