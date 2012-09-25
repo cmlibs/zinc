@@ -326,6 +326,15 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 <scene_viewer>.
 ==============================================================================*/
 
+ZINC_API int Cmiss_scene_viewer_set_viewport_size(Cmiss_scene_viewer_id scene_viewer,
+	int width, int height);
+/*******************************************************************************
+LAST MODIFIED : 2 July 2002
+
+DESCRIPTION :
+Sets the width and height of the Scene_viewers drawing area.
+==============================================================================*/
+
 ZINC_API int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_viewport_mode viewport_mode);
 /*******************************************************************************

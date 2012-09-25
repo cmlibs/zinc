@@ -267,18 +267,6 @@ DESCRIPTION :
 Creates a Scene_viewer_package.
 ==============================================================================*/
 
-struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmiss_scene_viewer_package *scene_viewer_package);
-
-int DESTROY(Cmiss_scene_viewer_package)(
-	struct Cmiss_scene_viewer_package **scene_viewer_package_address);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Destroys the scene_viewer_package.
-==============================================================================*/
-
-
 int Cmiss_scene_viewer_package_add_destroy_callback(struct Cmiss_scene_viewer_package *scene_viewer_package,
 	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,void *user_data);
 /*******************************************************************************
@@ -1201,15 +1189,6 @@ LAST MODIFIED : 24 March 1998
 
 DESCRIPTION :
 Returns the actual projection matrix applied to fill the window.
-==============================================================================*/
-
-int Scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
-	int width, int height);
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Sets the width and height of the Scene_viewers drawing area.
 ==============================================================================*/
 
 int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,

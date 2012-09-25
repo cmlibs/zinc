@@ -95,7 +95,7 @@ public:
 		return id;
 	}
 
-	int setPosition(unsigned int x, unsigned int y)
+	int setPosition(int x, int y)
 	{
 		return Cmiss_scene_viewer_input_set_position(id, x, y);
 	}
@@ -136,24 +136,23 @@ public:
 	};
 
 	SceneViewer() : id(0)
-	{ printf("creating null scene viewer\n"); }
+	{  }
 
 	// takes ownership of C-style region reference
 	explicit SceneViewer(Cmiss_scene_viewer_id in_scene_viewer_id) :
 		id(in_scene_viewer_id)
-	{ printf("creating scene viewer\n"); }
+	{  }
 
 	SceneViewer(const SceneViewer& scene_viewer_package) :
 		id(Cmiss_scene_viewer_access(scene_viewer_package.id))
-	{ printf("copying scene viewer\n"); }
+	{  }
 
 	SceneViewer& operator=(const SceneViewer& scene_viewer)
 	{
 		Cmiss_scene_viewer_id temp_id = Cmiss_scene_viewer_access(scene_viewer.id);
 		if (0 != id)
 		{
-			printf("deleting scene viewer in copy\n");
-			//-- Cmiss_scene_viewer_destroy(&id);
+			Cmiss_scene_viewer_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -163,8 +162,7 @@ public:
 	{
 		if (0 != id)
 		{
-			printf("deleting scene viewer in destructor\n");
-			//Cmiss_scene_viewer_destroy(&id);
+			Cmiss_scene_viewer_destroy(&id);
 		}
 	}
 
@@ -191,6 +189,11 @@ public:
 	int setGraphicsBufferHeight(int height)
 	{
 		return Cmiss_scene_viewer_set_graphics_buffer_height(id, height);
+	}
+
+	int setViewportSize(int width, int height)
+	{
+		return Cmiss_scene_viewer_set_viewport_size(id, width, height);
 	}
 
 	SceneViewerInput getInput()

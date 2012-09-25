@@ -105,7 +105,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 			}
 			if (context->scene_viewer_package)
 			{
-				DESTROY(Cmiss_scene_viewer_package)(&context->scene_viewer_package);
+				Cmiss_scene_viewer_package_destroy(&context->scene_viewer_package);
 			}
 			if (context->any_object_selection)
 			{
@@ -318,7 +318,7 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 				Cmiss_scene_destroy(&default_scene);
 			}
 		}
-		scene_viewer_package = ACCESS(Cmiss_scene_viewer_package)(context->scene_viewer_package);
+		scene_viewer_package = Cmiss_scene_viewer_package_access(context->scene_viewer_package);
 	}
 	else
 	{

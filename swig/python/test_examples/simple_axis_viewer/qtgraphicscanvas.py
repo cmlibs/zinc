@@ -8,11 +8,10 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
         QtOpenGL.QGLWidget.__init__(self, parent)
         self.context_ = Context.Context("axisviewer")
         self.scene_viewer_ = None
-        self.scene_viewer_package_ = None
 
     def initializeGL(self):
-        self.scene_viewer_package_ = self.context_.getDefaultSceneViewerPackage()
-        self.scene_viewer_ = self.scene_viewer_package_.createSceneViewer(SceneViewer.SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.SceneViewer.STEREO_MODE_ANY)
+        scene_viewer_package_ = self.context_.getDefaultSceneViewerPackage()
+        self.scene_viewer_ = scene_viewer_package_.createSceneViewer(SceneViewer.SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.SceneViewer.STEREO_MODE_ANY)
         root_region = self.context_.getDefaultRegion()
         graphics_module = self.context_.getDefaultGraphicsModule()
         graphics_module.enableRenditions(root_region)
@@ -32,8 +31,7 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
         self.scene_viewer_.redrawNow()
 
     def resizeGL(self, width, height):
-        self.scene_viewer_.setGraphicsBufferWidth(width)
-        self.scene_viewer_.setGraphicsBufferHeight(height)
+        self.scene_viewer_.setViewportSize(width, height)
 
     def mousePressEvent(self, mouseevent):
         input = self.scene_viewer_.getInput()
@@ -61,7 +59,6 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
             
         self.scene_viewer_.defaultInputCallback(input)
         
-
     def mouseMoveEvent(self, mouseevent):
         input = self.scene_viewer_.getInput()
         input.setPosition(mouseevent.x(), mouseevent.y())
@@ -72,6 +69,5 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
         self.scene_viewer_.defaultInputCallback(input)
         
         self.updateGL()
-
 
 

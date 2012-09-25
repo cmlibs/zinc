@@ -56,7 +56,7 @@ ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *addre
 
 ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_input_access(Cmiss_scene_viewer_input_id input);
 
-ZINC_API int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, unsigned int x, unsigned int y);
+ZINC_API int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, int x, int y);
 
 ZINC_API int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier);
 

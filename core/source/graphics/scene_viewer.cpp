@@ -393,7 +393,7 @@ int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input)
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, unsigned int x, unsigned int y)
+int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, int x, int y)
 {
 	int return_code = 0;
 	if (input)
@@ -3290,7 +3290,7 @@ Creates a Cmiss_scene_viewer_package.
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(scene_viewer_package,struct Cmiss_scene_viewer_package,1))
 		{
-			scene_viewer_package->access_count = 0;
+			scene_viewer_package->access_count = 1;
 			scene_viewer_package->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			scene_viewer_package->background_colour = background_colour;
 			scene_viewer_package->interactive_tool_manager = interactive_tool_manager;
@@ -3379,33 +3379,6 @@ struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmi
 	return scene_viewer_package;
 }
 
-Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package)
-{
-	return ACCESS(Cmiss_scene_viewer_package)(scene_viewer_package);
-}
-
-int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address)
-{
-	int return_code = 0;
-	Cmiss_scene_viewer_package_id object = 0;
-
-	if (scene_viewer_package_address && (object = *scene_viewer_package_address))
-	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
-		{
-			return_code = DESTROY(Cmiss_scene_viewer_package)(scene_viewer_package_address);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*scene_viewer_package_address = 0;
-	}
-
-	return (return_code);
-} /* DEACCESS(object_type) */
-
 int DESTROY(Cmiss_scene_viewer_package)(
 	struct Cmiss_scene_viewer_package **scene_viewer_package_address)
 /*******************************************************************************
@@ -3451,6 +3424,38 @@ Destroys the scene_viewer_package.
 
 	return (return_code);
 } /* DESTROY(Cmiss_scene_viewer_package) */
+
+Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package)
+{
+	if (scene_viewer_package)
+	{
+		scene_viewer_package->access_count++;
+	}
+
+	return scene_viewer_package;
+}
+
+int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address)
+{
+	int return_code = 0;
+	Cmiss_scene_viewer_package_id object = 0;
+
+	if (scene_viewer_package_address && (object = *scene_viewer_package_address))
+	{
+		(object->access_count)--;
+		if (object->access_count <= 0)
+		{
+			return_code = DESTROY(Cmiss_scene_viewer_package)(scene_viewer_package_address);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*scene_viewer_package_address = 0;
+	}
+
+	return (return_code);
+} /* DEACCESS(object_type) */
 
 int Cmiss_scene_viewer_package_add_destroy_callback(
 	struct Cmiss_scene_viewer_package *scene_viewer_package,
@@ -3853,13 +3858,11 @@ DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
 ==============================================================================*/
 {
-	int return_code;
-	struct Scene_viewer *scene_viewer;
+	int return_code = 0;
+	struct Scene_viewer *scene_viewer = 0;
 
-	ENTER(DESTROY(Scene_viewer));
 	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
 	{
-		printf("scene viewer access count = %d\n", (*scene_viewer_address)->access_count);
 		Scene_viewer_sleep(scene_viewer);
 		Scene_viewer_image_texture_set_field(&(scene_viewer->image_texture),
 			NULL);
@@ -3911,7 +3914,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
 		}
-		printf("destroying scene_viewer\n");
 		delete scene_viewer;
 		*scene_viewer_address = 0;
 		return_code=1;
@@ -3920,9 +3922,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	{
 		display_message(ERROR_MESSAGE,
 			"DESTROY(Scene_viewer).  Missing scene_viewer");
-		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
@@ -3940,13 +3940,11 @@ DESCRIPTION :
 
 Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id scene_viewer)
 {
-	printf("scene viewer b4 access count = %d\n", scene_viewer->access_count);
 	if (scene_viewer)
 	{
 		scene_viewer->access_count++;
 	}
 
-	printf("scene viewer a4 access count = %d\n", scene_viewer->access_count);
 	return scene_viewer;
 }
 
@@ -7444,7 +7442,7 @@ Returns the width and height of the Scene_viewers drawing area.
 	return (return_code);
 } /* Scene_viewer_get_viewport_size */
 
-int Scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
+int Cmiss_scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
 	int width, int height)
 /*******************************************************************************
 LAST MODIFIED : 21 January 1998
@@ -7465,11 +7463,11 @@ Sets the width and height of the Scene_viewers drawing area.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_viewport_size.  Invalid argument(s)");
+			"Cmiss_scene_viewer_set_viewport_size.  Invalid argument(s)");
 	}
 
 	return (return_code);
-} /* Scene_viewer_set_viewport_size */
+} /* Cmiss_scene_viewer_set_viewport_size */
 
 //int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
 //	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
@@ -9406,8 +9404,29 @@ Closes the scene_viewer.
 {
 	/* The normal destroy will call the Scene_viewer_package callback
 		to remove it from the package */
-	printf("scene viewer access count = %d\n", (*scene_viewer_id_address)->access_count);
-	return (DESTROY(Scene_viewer)(scene_viewer_id_address));
+	int return_code = 0;
+	if (scene_viewer_id_address)
+	{
+		(*scene_viewer_id_address)->access_count--;
+		if ((*scene_viewer_id_address)->access_count == 0)
+		{
+			return_code = DESTROY(Scene_viewer)(scene_viewer_id_address);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*scene_viewer_id_address = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_destroy.  Invalid argument(s)");
+	}
+
+	return (return_code);
+	//-- printf("scene viewer access count = %d\n", (*scene_viewer_id_address)->access_count);
+	//-- return (DESTROY(Scene_viewer)(scene_viewer_id_address));
 }
 
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
