@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Axis Viewer</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="icons.qrc">
+    <normaloff>:/cmiss_icon.ico</normaloff>:/cmiss_icon.ico</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="1">
     <widget class="QPushButton" name="pushButton">
@@ -47,7 +51,9 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>pushButton</sender>

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'axis_viewer.ui'
 #
-# Created: Mon Sep 24 13:35:21 2012
+# Created: Tue Sep 25 19:51:26 2012
 #      by: PyQt4 UI code generator 4.9.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,6 +18,9 @@ class Ui_AxisViewerDlg(object):
     def setupUi(self, AxisViewerDlg):
         AxisViewerDlg.setObjectName(_fromUtf8("AxisViewerDlg"))
         AxisViewerDlg.resize(400, 300)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/cmiss_icon.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        AxisViewerDlg.setWindowIcon(icon)
         self.gridLayout = QtGui.QGridLayout(AxisViewerDlg)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.pushButton = QtGui.QPushButton(AxisViewerDlg)
@@ -38,3 +41,4 @@ class Ui_AxisViewerDlg(object):
         self.pushButton.setText(QtGui.QApplication.translate("AxisViewerDlg", "&Quit", None, QtGui.QApplication.UnicodeUTF8))
 
 from qtgraphicscanvas import QtGraphicsCanvas
+import icons_rc

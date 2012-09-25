@@ -13,7 +13,7 @@ class AxisViewerDlg(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_AxisViewerDlg()
         self.ui.setupUi(self)
-
+        self.setWindowIcon(QtGui.QIcon("cmiss_icon.ico"))
 
 def main():
     
@@ -23,7 +23,6 @@ def main():
     w.show()
 
     sys.exit(app.exec_())
-
 
 if __name__ == '__main__':
     main()
