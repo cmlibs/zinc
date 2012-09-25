@@ -1,14 +1,9 @@
 /*******************************************************************************
-FILE : event_dispatcher.h
-
-LAST MODIFIED : 17 January 2006
-
-DESCRIPTION :
-Routines for managing the main event loop in cmiss and dispatching events on
-registered file descriptors to the correct callbacks.
-==============================================================================*/
+ * ZnSceneViewer.i
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -20,11 +15,11 @@ registered file descriptors to the correct callbacks.
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is cmgui.
+ * The Original Code is libZinc.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2012
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -42,22 +37,14 @@ registered file descriptors to the correct callbacks.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (EVENT_DISPATCHER_H)
-#define EVENT_DISPATCHER_H
 
-enum Event_dispatcher_idle_priority
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
+%module SceneViewer
+%ignore Scene;
 
-DESCRIPTION :
-==============================================================================*/
-{
-	EVENT_DISPATCHER_X_PRIORITY,
-	EVENT_DISPATCHER_TRACKING_EDITOR_PRIORITY,
-	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY,
-	EVENT_DISPATCHER_SYNC_SCENE_VIEWERS_PRIORITY,
-	EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY
-};
+%{
+#include "api++/sceneviewer.hpp"
+%}
 
+%include "api++/scene.hpp"
+%include "api++/sceneviewer.hpp"
 
-#endif /* !defined (EVENT_DISPATCHER_H) */

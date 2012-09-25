@@ -3332,7 +3332,6 @@ DESCRIPTION :
 {
 	struct Cmiss_scene_viewer_package *package;
 
-	ENTER(create_Scene_viewer_from_package);
 	USE_PARAMETER(dummy_void);
 	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
 	{
@@ -3357,6 +3356,7 @@ DESCRIPTION :
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
+		printf("scene viewer destroying with the package.\n");
 		DESTROY(Scene_viewer)(&scene_viewer);
 	}
 	return_code = 1;
@@ -3378,6 +3378,33 @@ struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmi
 
 	return scene_viewer_package;
 }
+
+Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package)
+{
+	return ACCESS(Cmiss_scene_viewer_package)(scene_viewer_package);
+}
+
+int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address)
+{
+	int return_code = 0;
+	Cmiss_scene_viewer_package_id object = 0;
+
+	if (scene_viewer_package_address && (object = *scene_viewer_package_address))
+	{
+		(object->access_count)--;
+		if (object->access_count <= 0)
+		{
+			return_code = DESTROY(Cmiss_scene_viewer_package)(scene_viewer_package_address);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*scene_viewer_package_address = 0;
+	}
+
+	return (return_code);
+} /* DEACCESS(object_type) */
 
 int DESTROY(Cmiss_scene_viewer_package)(
 	struct Cmiss_scene_viewer_package **scene_viewer_package_address)
@@ -3632,6 +3659,7 @@ performed in idle time so that multiple redraws are avoided.
 			if (scene_viewer &&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
+				scene_viewer->access_count = 1;
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
@@ -3831,6 +3859,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	ENTER(DESTROY(Scene_viewer));
 	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
 	{
+		printf("scene viewer access count = %d\n", (*scene_viewer_address)->access_count);
 		Scene_viewer_sleep(scene_viewer);
 		Scene_viewer_image_texture_set_field(&(scene_viewer->image_texture),
 			NULL);
@@ -3882,6 +3911,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
 		}
+		printf("destroying scene_viewer\n");
 		delete scene_viewer;
 		*scene_viewer_address = 0;
 		return_code=1;
@@ -3908,6 +3938,18 @@ DESCRIPTION :
 	return(scene_viewer);
 }
 
+Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id scene_viewer)
+{
+	printf("scene viewer b4 access count = %d\n", scene_viewer->access_count);
+	if (scene_viewer)
+	{
+		scene_viewer->access_count++;
+	}
+
+	printf("scene viewer a4 access count = %d\n", scene_viewer->access_count);
+	return scene_viewer;
+}
+
 int DEACCESS(Scene_viewer)(struct Scene_viewer **scene_viewer_address)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -3916,9 +3958,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	//Do nothing as the scene viewer removes itself from the package list
+	printf("deaccessing scene viewer\n");
 	*scene_viewer_address = (struct Scene_viewer *)NULL;
 	return(1);
 }
+
 DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
 struct Scene_viewer *create_Scene_viewer_from_package(
@@ -9362,6 +9406,7 @@ Closes the scene_viewer.
 {
 	/* The normal destroy will call the Scene_viewer_package callback
 		to remove it from the package */
+	printf("scene viewer access count = %d\n", (*scene_viewer_id_address)->access_count);
 	return (DESTROY(Scene_viewer)(scene_viewer_id_address));
 }
 

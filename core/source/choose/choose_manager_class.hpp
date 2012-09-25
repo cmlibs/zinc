@@ -48,11 +48,8 @@ Calls the client-specified callback routine if a different object is chosen.
 #define CHOOSE_MANAGER_CLASS_H
 
 #include "choose/choose_class.hpp"
-extern "C"
-{
 #include "general/mystring.h"
-#include "user_interface/message.h"
-}
+#include "general/message.h"
 
 template < class Managed_object, class Manager > class Managed_object_chooser
 /*****************************************************************************
@@ -107,11 +104,11 @@ DESCRIPTION :
 				items, item_names, current_object,
 				user_interface);
 			typedef int (Managed_object_chooser::*Member_function)(Managed_object *);
-			Callback_base<Managed_object*> *callback = 
-			   new Callback_member_callback<Managed_object*, 
+			Callback_base<Managed_object*> *callback =
+			   new Callback_member_callback<Managed_object*,
 				Managed_object_chooser, Member_function>(
 				this, &Managed_object_chooser::chooser_callback);
-				
+
 			chooser->set_callback(callback);
 
 			manager_callback_id =
@@ -134,7 +131,7 @@ DESCRIPTION :
 ============================================================================*/
 	{
 		int i;
-		
+
 		if (number_of_items>=0)
 		{
 			 if (items)
@@ -167,18 +164,18 @@ DESCRIPTION :
 LAST MODIFIED : 8 February 2007
 
 DESCRIPTION :
-Called by the 
+Called by the
 ============================================================================*/
 	{
 		int return_code;
-		
+
 		if (update_callback)
 		{
 			/* now call the procedure with the user data */
 			update_callback->callback_function(object);
 		}
 		return_code=1;
-		
+
 		return (return_code);
 	} /* Managed_object_chooser::get_callback */
 
@@ -203,14 +200,14 @@ Called by the
 	}
 
 /***************************************************************************//**
-* Set the chooser manager to the one in the argument if appropriate. 
-* 
+* Set the chooser manager to the one in the argument if appropriate.
+*
 * @param new_manager object manager to be used in this chooser
 */
 	 int set_manager(typename Manager::Manager_type *new_manager)
 	 {
 			int return_code = 1;
-			
+
 			Manager *temp_manager(new Manager(new_manager));
 			if (temp_manager != manager)
 			{
@@ -233,7 +230,7 @@ Called by the
 						return_code = 0;
 				 }
 			}
-			
+
 			return (return_code);
 	 }
 
@@ -282,7 +279,7 @@ LAST MODIFIED : 20 April 2007
 
 DESCRIPTION :
 Returns the number in list
-============================================================================*/		
+============================================================================*/
 	{
 		return(chooser->get_number_of_item());
 	} /* Managed_object_chooser::get_object */
@@ -379,7 +376,7 @@ A manager iterator which adds each object to the chooser.
 		chooser_object = (Managed_object_chooser*)chooser_object_void;
 		if (chooser_object)
 		{
-			if (!(chooser_object->conditional_function) || 
+			if (!(chooser_object->conditional_function) ||
 				(chooser_object->conditional_function)(object,
 					chooser_object->conditional_function_user_data))
 			{
@@ -477,7 +474,7 @@ chooser and should be.
 	int object_is_in_chooser, object_should_be_in_chooser, return_code;
 	Managed_object_chooser* class_chooser;
 
-	if (object && 
+	if (object &&
 		(class_chooser = (Managed_object_chooser*)class_chooser_void))
 	{
 		if (class_chooser->conditional_function)
@@ -521,7 +518,7 @@ annoying flickering on the screen.
 {
 	Managed_object_chooser* class_chooser;
 
-	if (message && 
+	if (message &&
 		(class_chooser = (Managed_object_chooser*)class_chooser_void))
 	{
 		bool update_menu = false;

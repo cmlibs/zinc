@@ -39,9 +39,7 @@
 #ifndef __SCENE_HPP__
 #define __SCENE_HPP__
 
-extern "C" {
 #include "api/cmiss_scene.h"
-}
 #include "api++/graphicsfilter.hpp"
 #include "api++/region.hpp"
 

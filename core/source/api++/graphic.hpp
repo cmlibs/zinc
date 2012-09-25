@@ -108,6 +108,13 @@ public:
 		COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT,
 	};
 
+	enum GlyphType
+	{
+		GLYPH_TYPE_INVALID = CMISS_GRAPHIC_GLYPH_TYPE_INVALID,
+		GLYPH_TYPE_POINT = CMISS_GRAPHIC_GLYPH_POINT,
+		GLYPH_TYPE_AXES = CMISS_GRAPHIC_GLYPH_AXES
+	};
+
 	Cmiss_graphic_id getId()
 	{
 		return id;
@@ -180,10 +187,16 @@ public:
 		return Cmiss_graphic_set_name(id, name);
 	}
 
-	int define(const char *command_string)
+	int setGlyphType(GlyphType type)
 	{
-		return Cmiss_graphic_define(id, command_string);
+		return Cmiss_graphic_set_glyph_type(id,
+			static_cast<Cmiss_graphic_glyph_type>(type));
 	}
+
+	//-- int define(const char *command_string)
+	//-- {
+	//-- 	return Cmiss_graphic_define(id, command_string);
+	//-- }
 
 };
 

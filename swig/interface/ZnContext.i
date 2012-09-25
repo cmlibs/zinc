@@ -46,12 +46,17 @@
 %ignore TimeKeeper; 
 %ignore StreamInformationRegion;
 %ignore StreamInformation;
+%ignore SceneViewerPackage;
+%ignore Scene;
 
 %{
 #include "api++/context.hpp"
 %}
 
+%include "api++/scene.hpp"
+%include "api++/sceneviewer.hpp"
 %include "api++/timekeeper.hpp"
 %include "api++/region.hpp"
 %include "api++/graphicsmodule.hpp"
 %include "api++/context.hpp"
+

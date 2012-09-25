@@ -238,6 +238,8 @@ Global functions
 ----------------
 */
 
+ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id scene_viewer);
+
 ZINC_API int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
@@ -1001,6 +1003,11 @@ ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
 	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode);
+
+ZINC_API Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package);
+ZINC_API int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address);
+
+
 
 #ifdef __cplusplus
 }

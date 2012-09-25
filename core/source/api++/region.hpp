@@ -39,9 +39,7 @@
 #ifndef __REGION_HPP__
 #define __REGION_HPP__
 
-extern "C" {
 #include "api/cmiss_region.h"
-}
 #include "api++/fieldmodule.hpp"
 #include "api++/stream.hpp"
 
@@ -214,7 +212,7 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_region_set_name(id, name);
- 	}
+	}
 
 	Region getParent()
 	{

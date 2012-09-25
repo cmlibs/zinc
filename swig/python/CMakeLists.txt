@@ -2,7 +2,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-PROJECT(Zinc_wrap)
+PROJECT(ZincPython)
 
 FIND_PACKAGE(SWIG REQUIRED)
 INCLUDE(${SWIG_USE_FILE})
@@ -36,6 +36,7 @@ SET(INTERFACE_SRCS
 	../interface/ZnSelection.i
 	../interface/ZnGraphicsFilter.i
 	../interface/ZnScene.i
+	../interface/ZnSceneViewer.i
 	../interface/ZnSpectrum.i
 	../interface/ZnOptimisation.i
 	../interface/ZnTime.i

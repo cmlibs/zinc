@@ -1394,7 +1394,7 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	ZnReal length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region)
 {
-	gtDataType gt_data_type;
+	ZnRealType gt_data_type;
 	GLfloat *stream_data;
 	int element_dimension,number_of_stream_points,number_of_coordinate_components,
 		number_of_stream_vector_components;
@@ -1488,7 +1488,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_region *fe_region)
 {
 	double cosw,magnitude,sinw,thickness;
-	gtDataType gt_data_type;
+	ZnRealType gt_data_type;
 	GLfloat *data,*datum,*stream_data,stream_datum= 0.0;
 	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
 		number_of_stream_vector_components,surface_points_per_step;

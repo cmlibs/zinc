@@ -278,7 +278,7 @@ DESCRIPTION :
 	g_TWO_COMPONENTS,
 	g_VECTOR,
 	g_VECTOR4
-} gtDataType;
+} ZnRealType;
 
 typedef enum
 /*******************************************************************************

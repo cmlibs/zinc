@@ -39,9 +39,7 @@
 #ifndef __GRAPHICS_MODULE_HPP__
 #define __GRAPHICS_MODULE_HPP__
 
-extern "C" {
 #include "api/cmiss_graphics_module.h"
-}
 #include "api++/region.hpp"
 #include "api++/rendition.hpp"
 #include "api++/graphicsmaterial.hpp"
@@ -96,7 +94,7 @@ public:
 	{
 		return id;
 	}
-	
+
 	int enableRenditions(Region& region)
 	{
 		return Cmiss_graphics_module_enable_renditions(id, region.getId());

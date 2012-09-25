@@ -39,9 +39,7 @@
 #ifndef __FIELD_MODULE_HPP__
 #define __FIELD_MODULE_HPP__
 
-extern "C" {
 #include "api/cmiss_field_module.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldcache.hpp"
 #include "api++/element.hpp"

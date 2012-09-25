@@ -64,7 +64,7 @@ enum Convert_finite_elements_mode
 	CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED
 };
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode)
 
 struct Element_refinement
 {
@@ -83,7 +83,7 @@ Global functions
  */
 int finite_element_conversion(struct Cmiss_region *source_region,
 	struct Cmiss_region *destination_region,
-	enum Convert_finite_elements_mode mode, int number_of_fields, 
+	enum Convert_finite_elements_mode mode, int number_of_fields,
 	struct Computed_field **field_array,
 	struct Element_refinement refinement, FE_value tolerance);
 

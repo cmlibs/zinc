@@ -44,6 +44,7 @@
 #include "api++/region.hpp"
 #include "api++/graphicsmodule.hpp"
 #include "api++/timekeeper.hpp"
+#include "api++/sceneviewer.hpp"
 
 namespace Zn
 {
@@ -119,6 +120,11 @@ public:
 	GraphicsModule getDefaultGraphicsModule()
 	{
 		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));
+	}
+
+	SceneViewerPackage getDefaultSceneViewerPackage()
+	{
+		return SceneViewerPackage(Cmiss_context_get_default_scene_viewer_package(id));
 	}
 
 	//-- TimeKeeper getDefaultTimeKeeper()

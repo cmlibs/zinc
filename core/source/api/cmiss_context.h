@@ -117,17 +117,6 @@ ZINC_API Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id conte
 ZINC_API Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui application.
- * User interface must be enabled before this function can be called successfully.
- *
- * @param context  Handle to a cmiss_context object.
- * @param command  Command to be executed.
- * @return  Status CMISS_OK on success, any other value on failure.
-*/
-int Cmiss_context_execute_command(Cmiss_context_id context,
-	const char *command);
-
-/***************************************************************************//**
  * Returns the handle to time keeper and also increments the access count of
  * the returned time keeper by one.
  * User interface must be enabled before this function can be called successfully.
@@ -147,8 +136,6 @@ ZINC_API Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
  */
 ZINC_API Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context);
-
-ZINC_API int Cmiss_context_enable_user_interface(Cmiss_context_id context, void *user_interface_instance);
 
 /***************************************************************************//**
  * Process idle event in cmgui. Use this function to update idle event in cmgui

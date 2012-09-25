@@ -65,7 +65,7 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 	RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD
 };
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
 /*
 Global functions

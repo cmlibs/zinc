@@ -52,9 +52,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if defined (USE_GLEW)
 #	include <GL/glew.h>
 #endif
-#include <wx/wx.h>
-#include <wx/glcanvas.h>
-#include <wx/debug.h>
 
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -67,7 +64,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
 #if defined (UNIX) && !defined (DARWIN)
-#include "user_interface/event_dispatcher.h"
+//-- #include "user_interface/event_dispatcher.h"
 #endif /* defined (UNIX) && !defined (DARWIN) */
 //#include "three_d_drawing/window_system_extensions.h"
 
@@ -115,7 +112,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int override_visual_id;
-	wxGLContext* wxSharedContext;
+	//-- wxGLContext* wxSharedContext;
 };
 
 
@@ -261,7 +258,7 @@ it to share graphics contexts.
 	if (ALLOCATE(package, struct Graphics_buffer_package, 1))
 	{
 		package->override_visual_id = 0;
-		package->wxSharedContext = (wxGLContext*)NULL;
+		//-- package->wxSharedContext = (wxGLContext*)NULL;
 	}
 	else
 	{
@@ -591,11 +588,11 @@ Returns the height of buffer represented by <buffer>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_get_height.  Invalid buffer");
+			"Graphics_buffer_get_origin_x.  Invalid buffer");
 	}
 
 	return (origin_x);
-} /* Graphics_buffer_get_height */
+} /* Graphics_buffer_get_origin_x */
 
 unsigned int Graphics_buffer_get_origin_y(struct Graphics_buffer *buffer)
 /*******************************************************************************
@@ -614,11 +611,11 @@ Returns the height of buffer represented by <buffer>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_get_height.  Invalid buffer");
+			"Graphics_buffer_get_origin_y.  Invalid buffer");
 	}
 
 	return (origin_y);
-} /* Graphics_buffer_get_height */
+} /* Graphics_buffer_get_origin_y */
 
 int Graphics_buffer_is_visible(struct Graphics_buffer *buffer)
 /*******************************************************************************

@@ -500,7 +500,7 @@ LAST MODIFIED : 14 July 2006
 
 DESCRIPTION :
 Writes VRML code to the file handle which represents the given
-continuous polyline. If data or spectrum are NULL they are ignored.  
+continuous polyline. If data or spectrum are NULL they are ignored.
 ==============================================================================*/
 {
 	ZnReal *data_ptr = 0;
@@ -732,7 +732,7 @@ DESCRIPTION :
 								{
 									for (i=0;i<npts1-1;i++)
 									{
- 										data->addSquare(number_of_data_components,
+										data->addSquare(number_of_data_components,
 											&nodes[index], &nodes[index+1], &nodes[index+npts1], &nodes[index+npts1+1]);
 										index++;
 									}
@@ -842,7 +842,7 @@ DESCRIPTION :
 
 static int render_voltex_to_finite_elements(
 	struct Render_to_finite_elements_data *data,
-	int number_of_vertices, struct VT_iso_vertex **vertex_list, 
+	int number_of_vertices, struct VT_iso_vertex **vertex_list,
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
 	int number_of_data_components)
 /*******************************************************************************
@@ -901,7 +901,7 @@ DESCRIPTION :
 } /* render_voltex_to_finite_elements */
 
 static int Graphics_object_render_to_finite_elements(
-	struct GT_object *object, double time, 
+	struct GT_object *object, double time,
 	struct Render_to_finite_elements_data *data)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
@@ -1240,7 +1240,7 @@ int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_regio
 	}
 	else
 	{
- 		display_message(ERROR_MESSAGE,"render_to_finite_elements.  "
+		display_message(ERROR_MESSAGE,"render_to_finite_elements.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}

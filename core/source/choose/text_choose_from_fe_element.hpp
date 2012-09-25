@@ -46,31 +46,27 @@ Calls the client-specified callback routine if a different object is chosen.
 #if !defined (TEXT_CHOOSE_FROM_FE_ELEMENT_H)
 #define TEXT_CHOOSE_FROM_FE_ELEMENT_H
 
-extern "C" {
 #include <stdio.h>
-}
 #include "wx/wx.h"
 #include "general/callback_class.hpp"
-extern "C" {
 #include "general/debug.h"
 #include "finite_element/finite_element_region.h"
-#include "user_interface/message.h"
+#include "general/message.h"
 #include "user_interface/user_interface.h"
-}
 
 struct FE_element;
 
 class wxFeElementTextChooser : public wxTextCtrl
 {
 private:
-	struct FE_element *current_object,*last_updated_object; 
-	struct FE_region *fe_region; 
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function; 
-	void *conditional_function_user_data; 
+	struct FE_element *current_object,*last_updated_object;
+	struct FE_region *fe_region;
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function;
+	void *conditional_function_user_data;
 	Callback_base<FE_element*> *callback;
 
 public:
-	 wxFeElementTextChooser(wxWindow *parent, 
+	 wxFeElementTextChooser(wxWindow *parent,
 		 FE_element *initial_object,	FE_region *fe_region,
 		 LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
 		 void *conditional_function_user_data) :
@@ -126,81 +122,81 @@ Module variables
 */
 
 	int update()
-/***************************************************************************** 
-LAST MODIFIED : 28 January 2003 
+/*****************************************************************************
+LAST MODIFIED : 28 January 2003
 
-DESCRIPTION : 
-Tells CMGUI about the current values. Sends a pointer to the current object. 
-Avoids sending repeated updates if the object address has not changed. 
-============================================================================*/ 
-{ 
-	int return_code; 
+DESCRIPTION :
+Tells CMGUI about the current values. Sends a pointer to the current object.
+Avoids sending repeated updates if the object address has not changed.
+============================================================================*/
+{
+	int return_code;
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_UPDATE(object_type));
 		if (current_object != last_updated_object)
-		{ 
+		{
 #if defined (NEW_CODE)
-			if (update_callback.procedure) 
-			{ 
-				/* now call the procedure with the user data and the position data */ 
-				(update_callback.procedure)( 
-					widget, update_callback.data, 
-					current_object); 
-			} 
+			if (update_callback.procedure)
+			{
+				/* now call the procedure with the user data and the position data */
+				(update_callback.procedure)(
+					widget, update_callback.data,
+					current_object);
+			}
 #endif // defined (NEW_CODE)
-			last_updated_object = current_object; 
-		} 
-		return_code=1; 
-	LEAVE; 
+			last_updated_object = current_object;
+		}
+		return_code=1;
+	LEAVE;
 
-	return (return_code); 
+	return (return_code);
 } /* TEXT_CHOOSE_FROM_FE_REGION_UPDATE(object_type) */
 
 	int select_object(struct FE_element *new_object)
-/***************************************************************************** 
-LAST MODIFIED : 30 April 2003 
+/*****************************************************************************
+LAST MODIFIED : 30 April 2003
 
-DESCRIPTION : 
-Makes sure the <new_object> is valid for this text chooser, then calls an 
-update in case it has changed, and writes the new object string in the widget. 
+DESCRIPTION :
+Makes sure the <new_object> is valid for this text chooser, then calls an
+update in case it has changed, and writes the new object string in the widget.
 ============================================================================*/ \
-	{ 
-	const char *current_string; 
-	static const char *null_object_name="<NONE>"; 
-	int return_code; 
+	{
+	const char *current_string;
+	static const char *null_object_name="<NONE>";
+	int return_code;
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
 	current_string = const_cast<char *>(GetValue().c_str());
 	if (current_string)
-	{ 
+	{
 		 if (new_object && ((!(FE_region_contains_FE_element(
-			 fe_region, new_object)) || 
-				(conditional_function && 
-				!(conditional_function(new_object, 
+			 fe_region, new_object)) ||
+				(conditional_function &&
+				!(conditional_function(new_object,
 							conditional_function_user_data))))))
-		 if (new_object && ((!FE_region_contains_FE_element( 
-			 fe_region, new_object)) || 
-				(conditional_function && 
-				!(conditional_function(new_object, 
-					conditional_function_user_data))))) 
-		 { 
-				display_message(ERROR_MESSAGE, 
-					 "TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type).  Invalid object"); 
-				new_object=(struct FE_element *)NULL; 
-		 } 
-		 if (new_object) 
-		 { 
- 				current_object=new_object;
-		 } 
-		 else 
-		 { 
-				if (!current_object) 
-				{ 
-					 current_object= 
+		 if (new_object && ((!FE_region_contains_FE_element(
+			 fe_region, new_object)) ||
+				(conditional_function &&
+				!(conditional_function(new_object,
+					conditional_function_user_data)))))
+		 {
+				display_message(ERROR_MESSAGE,
+					 "TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type).  Invalid object");
+				new_object=(struct FE_element *)NULL;
+		 }
+		 if (new_object)
+		 {
+				current_object=new_object;
+		 }
+		 else
+		 {
+				if (!current_object)
+				{
+					 current_object=
 							FE_region_get_first_FE_element_that(
-								 fe_region, 
-								 conditional_function, 
-								 conditional_function_user_data); 
+								 fe_region,
+								 conditional_function,
+								 conditional_function_user_data);
 				}
 		 }
 		/* write out the current_object */
@@ -228,82 +224,82 @@ update in case it has changed, and writes the new object string in the widget.
 	{
 		 return_code = 0;
 	}
-	
-	LEAVE; 
-	
-	return (return_code); 
+
+	LEAVE;
+
+	return (return_code);
 } /* TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type) */
 
 
-static void object_change(struct FE_region *fe_region, struct FE_region_changes *changes, 
+static void object_change(struct FE_region *fe_region, struct FE_region_changes *changes,
 	 void *text_choose_object_void)
-/***************************************************************************** 
-LAST MODIFIED : 28 March 2003 
+/*****************************************************************************
+LAST MODIFIED : 28 March 2003
 
-DESCRIPTION : 
-Updates the chosen object and text field in response to messages. 
-============================================================================*/ 
-{ 
+DESCRIPTION :
+Updates the chosen object and text field in response to messages.
+============================================================================*/
+{
 	int fe_element_change;
 	wxFeElementTextChooser *chooser;
-	 
+
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(FE_element));
 
 	USE_PARAMETER(fe_region);
 	chooser = static_cast<wxFeElementTextChooser *>(text_choose_object_void);
 	if (chooser)
 	{
-		if (chooser->current_object) 
+		if (chooser->current_object)
 		{
 			int dimension = get_FE_element_dimension(chooser->current_object);
-			if (CHANGE_LOG_QUERY(FE_element)( 
+			if (CHANGE_LOG_QUERY(FE_element)(
 				FE_region_changes_get_FE_element_changes(changes, dimension),
 				chooser->current_object, &fe_element_change))
-				{ 
+				{
 						if (fe_element_change &
 							(CHANGE_LOG_OBJECT_CHANGED(FE_element) |
 							 CHANGE_LOG_OBJECT_REMOVED(FE_element)))
-					{ 
-						chooser->select_object((struct FE_element *)NULL); 
-					} 
-				} 
+					{
+						chooser->select_object((struct FE_element *)NULL);
+					}
+				}
 		}
 	}
 
-	LEAVE; 
+	LEAVE;
 } /* TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(FE_element) */
 
 int GetCallback(struct FE_element *new_object)
-/***************************************************************************** 
-LAST MODIFIED : 28 January 2003 
+/*****************************************************************************
+LAST MODIFIED : 28 January 2003
 
-DESCRIPTION : 
-Returns a pointer to the callback item of the text_choose_object_widget. 
-============================================================================*/ 
-{ 
-	//	struct Callback_data *return_address; 
+DESCRIPTION :
+Returns a pointer to the callback item of the text_choose_object_widget.
+============================================================================*/
+{
+	//	struct Callback_data *return_address;
 
-	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(FE_element)); 
-	
+	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(FE_element));
+
 	USE_PARAMETER(new_object);
-		/* Get the pointer to the data for the text_choose_object dialog */ 
+		/* Get the pointer to the data for the text_choose_object dialog */
 	//		text_choose_object = wxFeElementTextChooser->GetValue();
 #if defined (NEW_CODE)
-		if (text_choose_object) 
-		{ 
-			//			return_address=&(update_callback); 
-		} 
-		else 
-		{ 
-// 			display_message(ERROR_MESSAGE, 
-// 				"TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(" #object_type 
-// 				").  Missing widget data"); 
-			//		return_address=(struct FE_element *)NULL; 
-		} 
+		if (text_choose_object)
+		{
+			//			return_address=&(update_callback);
+		}
+		else
+		{
+// 			display_message(ERROR_MESSAGE,
+// 				"TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(" #object_type
+// 				").  Missing widget data");
+			//		return_address=(struct FE_element *)NULL;
+		}
 #endif
-	LEAVE; 
+	LEAVE;
 
-	return 1; 
+	return 1;
 } /* TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(object_type) */
 
 int SetCallback(struct FE_element *new_object)
@@ -313,34 +309,34 @@ LAST MODIFIED : 28 January 2003 \
 DESCRIPTION : \
 Changes the callback item of the text_choose_object_widget. \
 ============================================================================*/
-{ 
-	int return_code; 
-	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(object_type)); 
-	
+{
+	int return_code;
+	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(object_type));
+
 	USE_PARAMETER(new_object);
-	/* Get the pointer to the data for the text_choose_object dialog */ 
+	/* Get the pointer to the data for the text_choose_object dialog */
 	//	text_choose_object = wxFeElementTextChooser->GetValue();
 #if defined (NEW_CODE)
-	if (text_choose_object) 
-	{ 
-		update_callback.procedure= 
-			new_callback->procedure; 
-		update_callback.data=new_callback->data; 
+	if (text_choose_object)
+	{
+		update_callback.procedure=
+			new_callback->procedure;
+		update_callback.data=new_callback->data;
 		return_code=1;
-	} 
-	else 
-		{ 
-			display_message(ERROR_MESSAGE, 
-			 "TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(" #object_type 
-				").  Missing widget data"); 
-			return_code=0; 
-		} 
-	} 
+	}
+	else
+		{
+			display_message(ERROR_MESSAGE,
+			 "TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(" #object_type
+				").  Missing widget data");
+			return_code=0;
+		}
+	}
 #endif
 
-	LEAVE; 
+	LEAVE;
 
-	return (return_code); 
+	return (return_code);
 } /* TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(object_type) */
 
 int set_fe_region(FE_region *fe_region_in)
@@ -364,33 +360,33 @@ LAST MODIFIED : 28 January 2003 \
 \
 DESCRIPTION : \
 Returns the currently chosen object in the text_choose_object_widget. \
-============================================================================*/ 
-{ 
-	 struct FE_element *new_object,*return_address; 
-	 ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(object_type)); 
+============================================================================*/
+{
+	 struct FE_element *new_object,*return_address;
+	 ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(object_type));
 	 new_object = FE_region_element_string_to_FE_element(fe_region,
 			const_cast<char *>(GetValue().c_str()));
 	 select_object(new_object);
 	 return_address = current_object;
-	LEAVE; 
+	LEAVE;
 
-	return (return_address); 
+	return (return_address);
 } /* TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(object_type) */
 
 int set_object(struct FE_element *new_object)
-/***************************************************************************** 
+/*****************************************************************************
 LAST MODIFIED : 28 January 2003 \
 \
 DESCRIPTION : \
 Changes the chosen object in the text_choose_object_widget. \
-============================================================================*/ 
-{ 
-	int return_code; 
+============================================================================*/
+{
+	int return_code;
 
-	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(object_type)); 
+	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(object_type));
 	last_updated_object=new_object;
 	return_code = select_object(new_object);
-	
+
 	LEAVE;
 	return (return_code);
 
