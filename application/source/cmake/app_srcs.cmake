@@ -1,0 +1,42 @@
+
+SET(APP_SRCS
+    source/cmgui.cpp
+    source/comfile/comfile.cpp
+    source/command/cmiss.cpp
+    source/command/command.c
+    source/command/console.cpp
+    source/command/example_path.c
+    source/command/parser.c
+    source/context/context_app.cpp
+    source/context/user_interface_module.cpp
+    source/element/element_point_tool.cpp
+    source/element/element_tool.cpp
+    source/element/element_point_viewer_wx.cpp
+    source/emoter/emoter_dialog.cpp
+    source/finite_element/read_fieldml_01.c
+    source/finite_element/write_fieldml_01.c
+    source/graphics/transform_tool.cpp
+    source/dialog/tessellation_dialog.cpp
+    source/graphics/region_tree_viewer_wx.cpp
+    source/graphics/spectrum_editor_wx.cpp
+    source/graphics/spectrum_editor_dialog_wx.cpp
+    source/interaction/interactive_tool.c
+    source/io_devices/matrix.c
+    source/node/node_tool.cpp
+    source/three_d_drawing/window_system_extensions.c
+    source/user_interface/confirmation.cpp
+    source/user_interface/event_dispatcher.cpp
+    source/user_interface/filedir.cpp
+    source/user_interface/user_interface.cpp
+    source/colour/colour_editor_wx.cpp
+    source/comfile/comfile_window_wx.cpp
+    source/command/command_window.cpp
+    source/computed_field/computed_field_scene_viewer_projection.cpp
+    source/graphics/graphics_window.cpp
+    source/material/material_editor_wx.cpp
+    source/node/node_viewer_wx.cpp
+    source/region/cmiss_region_chooser_wx.cpp
+    source/transformation/transformation_editor_wx.cpp
+    source/user_interface/idle.c)
+
+
