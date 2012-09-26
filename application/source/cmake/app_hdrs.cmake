@@ -62,6 +62,14 @@ source/graphics/light_model_app.h
 source/graphics/light_app.h
 source/computed_field/computed_field_set_app.h
 source/general/multi_range_app.h
+source/choose/choose_class.hpp
+source/choose/choose_enumerator_class.hpp
+source/choose/choose_listbox_class.hpp
+source/choose/text_FE_choose_class.hpp
+source/choose/text_choose_from_fe_element.hpp
+source/choose/choose_manager_class.hpp
+source/choose/choose_list_class.hpp
+source/choose/choose_manager_listbox_class.hpp
     source/api/cmiss_fdio.h
     source/api/cmiss_idle.h
     source/comfile/comfile.h

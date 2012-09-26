@@ -84,15 +84,6 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
 	struct Context *context);
 
 /***************************************************************************//**
- * Return the event dispatcher in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the default event_dispatcher if successfully, otherwise NULL.
- */
-//-- struct Event_dispatcher *Cmiss_context_get_default_event_dispatcher(
-//-- 	struct Context *context);
-
-/***************************************************************************//**
  * Return the IO_stream_package in context.
  *
  * @param context  Pointer to a cmiss_context object.

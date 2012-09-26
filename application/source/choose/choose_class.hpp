@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : choose_listbox_class.hpp
+FILE : choose_class.hpp
 
-LAST MODIFIED : 7 Jan 2008
+LAST MODIFIED : 9 February 2007
 
 DESCRIPTION :
 Class for implementing an wxList dialog control for choosing an object
@@ -44,44 +44,52 @@ Calls the client-specified callback routine if a different object is chosen.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CHOOSE_LISTBOX_CLASS_H)
-#define CHOOSE_LISTBOX_CLASS_H
+#if !defined (CHOOSE_CLASS_H)
+#define CHOOSE_CLASS_H
 
 #include "general/callback_class.hpp"
 
-template < class Object >class wxObjectListBox : public wxListBox
+template < class Object > class wxChooser : public wxChoice
+/*****************************************************************************
+LAST MODIFIED : 8 February 2007
+
+DESCRIPTION :
+============================================================================*/
 {
 private:
-	 Callback_base< Object > *callback;
+	Callback_base< Object > *callback;
 
 public:
-	 wxObjectListBox(wxPanel  *parent, 
-			int number_of_items, Object *items, 
-			char **item_names, Object current_object,
-			User_interface *user_interface) :
-			wxListBox(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1), 0, NULL, wxLB_SINGLE)
+	wxChooser<Object>(wxPanel *parent,
+		int number_of_items, Object *items,
+		char **item_names, Object current_object,
+		User_interface *user_interface) :
+		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
 	{
-		callback = NULL;
 		USE_PARAMETER(user_interface);
+		callback = NULL;
 		build_main_menu(number_of_items, items, item_names, current_object);
-		Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
-			 wxCommandEventHandler(wxObjectListBox::OnListItemSelected));
+
+		Connect(wxEVT_COMMAND_CHOICE_SELECTED,
+			wxCommandEventHandler(wxChooser::OnChoiceSelected));
+
 		wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
 		sizer->Add(this,
 			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
 		parent->SetSizer(sizer);
+
 		Show();
 	}
 
-	 ~wxObjectListBox()
+	~wxChooser()
 	 {
-		 if (callback)
-		 {
-			 delete callback;
-		 }
+		if (callback)
+		{
+			delete callback;
+		}
 	 }
 
-	void OnListItemSelected(wxCommandEvent& event)
+	void OnChoiceSelected(wxCommandEvent& event)
 	{
 		USE_PARAMETER(event);
 		if (callback)
@@ -89,7 +97,7 @@ public:
 			callback->callback_function(get_item());
 		}
    }
-	
+
 	Object get_item()
 	{
 		return (static_cast<Object>(GetClientData(GetSelection())));
@@ -97,10 +105,11 @@ public:
 
 	int set_callback(Callback_base< Object > *callback_object)
 	{
-		 if (callback)
-		 {
-			 delete callback;
-		 }
+		if (callback)
+		{
+			delete callback;
+			callback = NULL;
+		}
 		callback = callback_object;
 		return (1);
 	}
@@ -109,12 +118,14 @@ public:
 	{
 		unsigned int i, return_code;
 		return_code = 0;
-		for (i = 0 ; !return_code && (i < GetCount()) ; i++)
+		unsigned int number_of_items = GetCount();
+		for (i = 0 ; i < number_of_items ; i++)
 		{
 			if (new_item == GetClientData(i))
 			{
 				SetSelection(i);
 				return_code = 1;
+				break;
 			}
 		}
 		return (return_code);
@@ -128,22 +139,18 @@ public:
 		return (return_code);
 	}
 
-	 wxString get_string_of_selected_item()
-	 {
-			return (GetStringSelection());
-	 }
-
-
-	int build_main_menu(int number_of_items, 
-		 Object *items, char **item_names, 
-		 Object current_item)
+	int build_main_menu(int number_of_items,
+		Object *items, char **item_names,
+		Object current_item)
 	{
 		int current_item_index, i;
+		wxString wxname;
 		Clear();
 		current_item_index = 0;
 		for (i = 0 ; i < number_of_items ; i++)
 		{
-			Append(item_names[i], items[i]);
+			wxname = wxString::FromAscii(item_names[i]);
+			Append(wxname, items[i]);
 			if (current_item == items[i])
 			{
 				current_item_index = i;
@@ -154,4 +161,4 @@ public:
 	}
 };
 
-#endif /* !defined (CHOOSE_LISTBOX_CLASS_H) */
+#endif /* !defined (CHOOSE_CLASS_H) */

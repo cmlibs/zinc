@@ -1260,7 +1260,6 @@ Sets the <material> to be edited by the <material_editor>.
 	 Colour temp_colour;
 	 int return_code, per_pixel_set;
 	 Cmiss_field_image_id field = NULL;
-	 double alpha_dbl, shininess_dbl;
 	 MATERIAL_PRECISION alpha,shininess;
 
 	ENTER(material_editor_wx_set_material);

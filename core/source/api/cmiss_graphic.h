@@ -179,7 +179,7 @@ ZINC_API int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
 ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
 
-ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphic_glyph_type glyph_type);
+ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_glyph_type glyph_type);
 
 /***************************************************************************//**
  * Specifying the coordinate system in which to render the coordinates of graphics.

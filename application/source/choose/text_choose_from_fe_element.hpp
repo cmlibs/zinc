@@ -56,6 +56,8 @@ Calls the client-specified callback routine if a different object is chosen.
 
 struct FE_element;
 
+const char *emptystring = "";
+
 class wxFeElementTextChooser : public wxTextCtrl
 {
 private:
@@ -70,7 +72,7 @@ public:
 		 FE_element *initial_object,	FE_region *fe_region,
 		 LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
 		 void *conditional_function_user_data) :
-			wxTextCtrl(parent, /*id*/-1, "" ,wxPoint(0,0), wxSize(-1,-1),wxTE_PROCESS_ENTER),
+			wxTextCtrl(parent, /*id*/-1, wxString::FromAscii(emptystring) ,wxPoint(0,0), wxSize(-1,-1),wxTE_PROCESS_ENTER),
 			fe_region(fe_region), conditional_function(conditional_function),
 			conditional_function_user_data(conditional_function_user_data)
 /*******************************************************************************
@@ -166,7 +168,8 @@ update in case it has changed, and writes the new object string in the widget.
 	int return_code;
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
-	current_string = const_cast<char *>(GetValue().c_str());
+	wxString tmp = GetValue();
+	current_string = tmp.mb_str(wxConvUTF8);
 	if (current_string)
 	{
 		 if (new_object && ((!(FE_region_contains_FE_element(
@@ -206,14 +209,14 @@ update in case it has changed, and writes the new object string in the widget.
 			sprintf(object_name, "%d", Cmiss_element_get_identifier(current_object));
 			if (strcmp(object_name,current_string))
 			{
-				SetValue(object_name);
+				SetValue(wxString::FromAscii(object_name));
 			}
 		}
 		else
 		{
 			if (strcmp(null_object_name,current_string))
 			{
-				SetValue(null_object_name);
+				SetValue(wxString::FromAscii(null_object_name));
 			}
 		}
 		 /* inform the client of any change */
@@ -363,9 +366,11 @@ Returns the currently chosen object in the text_choose_object_widget. \
 ============================================================================*/
 {
 	 struct FE_element *new_object,*return_address;
+	 wxString tmp = GetValue();
+
 	 ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(object_type));
 	 new_object = FE_region_element_string_to_FE_element(fe_region,
-			const_cast<char *>(GetValue().c_str()));
+			tmp.mb_str(wxConvUTF8));
 	 select_object(new_object);
 	 return_address = current_object;
 	LEAVE;

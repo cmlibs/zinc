@@ -41,10 +41,13 @@
 # This is the project name and shows up in ides
 PROJECT( ZincCore )
 
+SET( CMISS_ZINC_CONFIGURE ${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h )
+SET( CMISS_SHARED_OBJECT ${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
 CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_zinc_configure.h.cmake
-    ${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h )
+    ${CMISS_ZINC_CONFIGURE} )
 CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_shared_object.h.cmake
-    ${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
+    ${CMISS_SHARED_OBJECT} )
+SET( CONFIGURE_HDRS ${CMISS_ZINC_CONFIGURE} ${CMISS_SHARED_OBJECT} )
 
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from

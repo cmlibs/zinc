@@ -58,8 +58,8 @@ private:
 	Callback_base< typename Enumerator::Enumerator_type > *callback;
 
 public:
-	wxEnumeratorChooser<Enumerator>(wxPanel *parent, 
-		int number_of_items, 
+	wxEnumeratorChooser<Enumerator>(wxPanel *parent,
+		int number_of_items,
 		const char **item_names, typename Enumerator::Enumerator_type current_value,
 		User_interface *user_interface) :
 		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
@@ -93,7 +93,7 @@ public:
 			callback->callback_function(get_item());
 		}
    }
-	
+
 	typename Enumerator::Enumerator_type get_item()
 	{
 		return (static_cast<typename Enumerator::Enumerator_type>
@@ -112,7 +112,7 @@ public:
 	int set_item(typename Enumerator::Enumerator_type new_value)
 	{
 		unsigned int return_code;
-		
+
 		SetSelection(new_value-1);
 
 		// Could check to see that the value was actually set
@@ -121,15 +121,15 @@ public:
 		return (return_code);
 	}
 
-	int build_main_menu(int number_of_items, 
-		const char **item_names, 
+	int build_main_menu(int number_of_items,
+		const char **item_names,
 		typename Enumerator::Enumerator_type current_value)
 	{
 		int i;
 		Clear();
 		for (i = 0 ; i < number_of_items ; i++)
 		{
-			Append(item_names[i]);
+			Append(wxString::FromAscii(item_names[i]));
 		}
 		SetSelection(current_value);
 		return 1;
@@ -179,11 +179,11 @@ DESCRIPTION :
 				item_names, current_value,
 				user_interface);
 			typedef int (Enumerator_chooser::*Member_function)(typename Enumerator::Enumerator_type);
-			Callback_base<typename Enumerator::Enumerator_type> *callback = 
-				new Callback_member_callback< typename Enumerator::Enumerator_type, 
+			Callback_base<typename Enumerator::Enumerator_type> *callback =
+				new Callback_member_callback< typename Enumerator::Enumerator_type,
 				Enumerator_chooser, Member_function>(
 				this, &Enumerator_chooser::chooser_callback);
-				
+
 			chooser->set_callback(callback);
 		}
 		else
@@ -222,18 +222,18 @@ DESCRIPTION :
 LAST MODIFIED : 8 February 2007
 
 DESCRIPTION :
-Called by the 
+Called by the
 ============================================================================*/
 	{
 		int return_code;
-		
+
 		if (update_callback)
 		{
 			/* now call the procedure with the user data */
 			update_callback->callback_function(value);
 		}
 		return_code=1;
-		
+
 		return (return_code);
 	} /* Enumerator_chooser::get_callback */
 
