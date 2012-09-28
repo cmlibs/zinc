@@ -37,12 +37,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __FIELD_CACHE_HPP__
-#define __FIELD_CACHE_HPP__
+#ifndef __ZN_FIELD_CACHE_HPP__
+#define __ZN_FIELD_CACHE_HPP__
 
-extern "C" {
 #include "api/cmiss_field.h"
-}
 #include "api++/field.hpp"
 #include "api++/element.hpp"
 #include "api++/node.hpp"
@@ -57,11 +55,11 @@ protected:
 
 public:
 
-	FieldCache() : id(NULL)
+	FieldCache() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	FieldCache(Cmiss_field_cache_id in_field_cache_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCache(Cmiss_field_cache_id in_field_cache_id) :
 		id(in_field_cache_id)
 	{  }
 
@@ -72,7 +70,7 @@ public:
 	FieldCache& operator=(const FieldCache& fieldCache)
 	{
 		Cmiss_field_cache_id temp_id = Cmiss_field_cache_access(fieldCache.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_cache_destroy(&id);
 		}
@@ -82,7 +80,7 @@ public:
 
 	~FieldCache()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_cache_destroy(&id);
 		}
@@ -165,11 +163,11 @@ inline int Field::evaluateDerivative(DifferentialOperator& differentialOperator,
 		cache.getId(), numberOfValues, outValues);
 }
 
-inline int Field::isDefinedAtLocation(FieldCache& cache)
+inline bool Field::isDefinedAtLocation(FieldCache& cache)
 {
 	return Cmiss_field_is_defined_at_location(id, cache.getId());
 }
 
 }  // namespace Zn
 
-#endif /* __CMISS_NODE_HPP__ */
+#endif /* __ZN_FIELD_CACHE_HPP__ */

@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_FINITE_ELEMENT_HPP__
-#define __FIELD_TYPES_FINITE_ELEMENT_HPP__
+#ifndef __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__
+#define __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__
 
-extern "C" {
 #include "api/cmiss_field_finite_element.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 #include "api++/element.hpp"
@@ -53,10 +51,11 @@ class FieldFiniteElement : public Field
 {
 public:
 
-	FieldFiniteElement() : Field(NULL)
+	FieldFiniteElement() : Field(0)
 	{ }
 
-	FieldFiniteElement(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFiniteElement(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	FieldFiniteElement(Field& field) :
@@ -69,10 +68,11 @@ class FieldEmbedded : public Field
 {
 public:
 
-	FieldEmbedded() : Field(NULL)
+	FieldEmbedded() : Field(0)
 	{ }
 
-	FieldEmbedded(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEmbedded(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -81,10 +81,11 @@ class FieldFindMeshLocation : public Field
 {
 public:
 
-	FieldFindMeshLocation() : Field(NULL)
+	FieldFindMeshLocation() : Field(0)
 	{ }
 
-	FieldFindMeshLocation(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFindMeshLocation(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	FieldFindMeshLocation(Field& field) :
@@ -121,10 +122,11 @@ class FieldNodeValue : public Field
 {
 public:
 
-	FieldNodeValue() : Field(NULL)
+	FieldNodeValue() : Field(0)
 	{ }
 
-	FieldNodeValue(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeValue(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -133,10 +135,11 @@ class FieldStoredMeshLocation : public Field
 {
 public:
 
-	FieldStoredMeshLocation() : Field(NULL)
+	FieldStoredMeshLocation() : Field(0)
 	{ }
 
-	FieldStoredMeshLocation(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredMeshLocation(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	FieldStoredMeshLocation(Field& field) :
@@ -149,10 +152,11 @@ class FieldStoredString : public Field
 {
 public:
 
-	FieldStoredString() : Field(NULL)
+	FieldStoredString() : Field(0)
 	{ }
 
-	FieldStoredString(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredString(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	FieldStoredString(Field& field) :
@@ -174,25 +178,25 @@ inline FieldEmbedded FieldModule::createEmbedded(Field& sourceField, Field& embe
 }
 
 inline FieldFindMeshLocation FieldModule::createFindMeshLocation(
-	Field sourceField, Field meshField, Mesh mesh)
+	Field& sourceField, Field& meshField, Mesh& mesh)
 {
 	return FieldFindMeshLocation(Cmiss_field_module_create_find_mesh_location(id,
 		sourceField.getId(), meshField.getId(), mesh.getId()));
 }
 
-inline FieldNodeValue FieldModule::createNodeValue(Field sourceField,
-	NodalValueType nodalValueType, int versionNumber)
+inline FieldNodeValue FieldModule::createNodeValue(Field& sourceField,
+	Node::ValueType valueType, int versionNumber)
 {
 	return FieldNodeValue(Cmiss_field_module_create_node_value(id,
-		sourceField.getId(), static_cast<Cmiss_nodal_value_type>(nodalValueType),
+		sourceField.getId(), static_cast<Cmiss_nodal_value_type>(valueType),
 		versionNumber));
 }
 
-inline FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh mesh)
+inline FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh& mesh)
 {
 	return FieldStoredMeshLocation(Cmiss_field_module_create_stored_mesh_location(id,
 		mesh.getId()));
 }
 
 }  // namespace Zn
-#endif /* __FIELD_TYPES_FINITE_ELEMENT_HPP__ */
+#endif /* __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__ */

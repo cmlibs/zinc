@@ -37,12 +37,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_STREAM_INFORMATION_HPP__
-#define __CMISS_STREAM_INFORMATION_HPP__
+#ifndef __ZN_STREAM_HPP__
+#define __ZN_STREAM_HPP__
 
-extern "C" {
 #include "api/cmiss_stream.h"
-}
 
 namespace Zn
 {
@@ -55,20 +53,20 @@ protected:
 
 public:
 
-	StreamResource() : id(NULL)
+	StreamResource() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	StreamResource(Cmiss_stream_resource_id in_stream_resource_id) : id(in_stream_resource_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamResource(Cmiss_stream_resource_id in_stream_resource_id) : id(in_stream_resource_id)
 	{  }
 
-	StreamResource(const StreamResource& streamInformation) : id(Cmiss_stream_resource_access(streamInformation.id))
+	StreamResource(const StreamResource& streamResource) : id(Cmiss_stream_resource_access(streamResource.id))
 	{  }
 
 	StreamResource& operator=(const StreamResource& streamInformation)
 	{
 		Cmiss_stream_resource_id temp_id = Cmiss_stream_resource_access(streamInformation.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_stream_resource_destroy(&id);
 		}
@@ -78,7 +76,7 @@ public:
 
 	~StreamResource()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_stream_resource_destroy(&id);
 		}
@@ -101,7 +99,8 @@ public:
 		StreamResource(streamResource)
 	{  }
 
-	StreamResourceFile(Cmiss_stream_resource_file_id stream_resource_file_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamResourceFile(Cmiss_stream_resource_file_id stream_resource_file_id) :
 		StreamResource(reinterpret_cast<Cmiss_stream_resource_id>(stream_resource_file_id))
 	{ }
 
@@ -123,7 +122,8 @@ public:
 		StreamResource(streamResource)
 	{  }
 
-	StreamResourceMemory(Cmiss_stream_resource_memory_id stream_resource_memory_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamResourceMemory(Cmiss_stream_resource_memory_id stream_resource_memory_id) :
 		StreamResource(reinterpret_cast<Cmiss_stream_resource_id>(stream_resource_memory_id))
 	{ }
 
@@ -137,11 +137,11 @@ protected:
 
 public:
 
-	StreamInformation() : id(NULL)
+	StreamInformation() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	StreamInformation(Cmiss_stream_information_id in_stream_information_id) : id(in_stream_information_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamInformation(Cmiss_stream_information_id in_stream_information_id) : id(in_stream_information_id)
 	{  }
 
 	StreamInformation(const StreamInformation& streamInformation) :
@@ -151,7 +151,7 @@ public:
 	StreamInformation& operator=(const StreamInformation& streamInformation)
 	{
 		Cmiss_stream_information_id temp_id = Cmiss_stream_information_access(streamInformation.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_stream_information_destroy(&id);
 		}
@@ -161,7 +161,7 @@ public:
 
 	~StreamInformation()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_stream_information_destroy(&id);
 		}
@@ -196,4 +196,4 @@ public:
 }  // namespace Zn
 
 
-#endif /* __CMISS_CONTEXT_HPP__ */
+#endif /* __ZN_STREAM_HPP__ */

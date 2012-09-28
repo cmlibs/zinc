@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_RENDITION_HPP__
-#define __CMISS_RENDITION_HPP__
+#ifndef __ZN_CMISS_RENDITION_HPP__
+#define __ZN_CMISS_RENDITION_HPP__
 
 #include "api/cmiss_rendition.h"
 #include "api++/graphic.hpp"
@@ -55,11 +55,11 @@ protected:
 
 public:
 
-	Rendition() : id(NULL)
+	Rendition() : id(0)
 	{  }
 
-	// takes ownership of C-style rendition reference
-	Rendition(Cmiss_rendition_id rendition_id) : id(rendition_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Rendition(Cmiss_rendition_id rendition_id) : id(rendition_id)
 	{  }
 
 	Rendition(const Rendition& rendition) : id(Cmiss_rendition_access(rendition.id))
@@ -68,7 +68,7 @@ public:
 	Rendition& operator=(const Rendition& rendition)
 	{
 		Cmiss_rendition_id temp_id = Cmiss_rendition_access(rendition.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_rendition_destroy(&id);
 		}
@@ -78,25 +78,11 @@ public:
 
 	~Rendition()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_rendition_destroy(&id);
 		}
 	}
-
-	enum GraphicType
-	{
-		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID ,
-		GRAPHIC_NODE_POINTS = CMISS_GRAPHIC_NODE_POINTS,
-		GRAPHIC_DATA_POINTS = CMISS_GRAPHIC_DATA_POINTS,
-		GRAPHIC_LINES = CMISS_GRAPHIC_LINES,
-		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS,
-		GRAPHIC_SURFACES = CMISS_GRAPHIC_SURFACES,
-		GRAPHIC_ISO_SURFACES = CMISS_GRAPHIC_ISO_SURFACES,
-		CMISS_GRAPHIC_ELEMENT_POINTS,
-		GRAPHIC_ELEMENT_POINTS = CMISS_GRAPHIC_STREAMLINES,
-		GRAPHIC_POINT = CMISS_GRAPHIC_POINT,
-	};
 
 	// needed for casting constructors: see RenditionImage(Rendition&)
 	Cmiss_rendition_id getId()
@@ -114,7 +100,7 @@ public:
 		return Cmiss_rendition_end_change(id);
 	}
 
-	Graphic createGraphic(GraphicType graphicType)
+	Graphic createGraphic(Graphic::GraphicType graphicType)
 	{
 		return Graphic(Cmiss_rendition_create_graphic(id,
 			static_cast<Cmiss_graphic_type>(graphicType)));
@@ -132,7 +118,7 @@ public:
 	 *
 	 * @param rendition  Rendition in which to find the graphic.
 	 * @param graphic_name  The name of the graphic to find.
-	 * @return  New reference to graphic of specified name, or NULL if not found.
+	 * @return  New reference to graphic of specified name, or 0 if not found.
 	 */
 	Graphic findGraphicByName(const char *graphicName)
 	{
@@ -170,14 +156,14 @@ public:
 			(Cmiss_field_group_id)(fieldGroup.getId()));
 	}
 
-	int getVisibilityFlag()
+	bool getVisibilityFlag()
 	{
 		return Cmiss_rendition_get_visibility_flag(id);
 	}
 
-	int setVisibilityFlag(int visibilityFlag)
+	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_rendition_set_visibility_flag(id, visibilityFlag);
+		return Cmiss_rendition_set_visibility_flag(id, (int)visibilityFlag);
 	}
 
 	int moveGraphicBefore(Graphic& graphic, Graphic& refGraphic)
@@ -195,12 +181,8 @@ public:
 		return Cmiss_rendition_remove_graphic(id, graphic.getId());
 	}
 
-	//-- int executeCommand(const char *command_string)
-	//-- {
-	//-- 	return Cmiss_rendition_execute_command(id, command_string);
-	//-- }
 };
 
 } // namespace Cmiss
 
-#endif /* __CMISS_RENDITION_HPP__ */
+#endif /* __ZN_CMISS_RENDITION_HPP__ */

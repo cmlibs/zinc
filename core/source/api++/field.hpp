@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_HPP__
-#define __FIELD_HPP__
+#ifndef __ZN_FIELD_HPP__
+#define __ZN_FIELD_HPP__
 
-extern "C" {
 #include "api/cmiss_field.h"
-}
 #include "api++/differentialoperator.hpp"
 
 namespace Zn
@@ -61,21 +59,20 @@ protected:
 
 public:
 
-	Field() : id(NULL)
+	Field() : id(0)
 	{ }
 
-	// takes ownership of C-style region reference
-	Field(Cmiss_field_id field_id) : id(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Field(Cmiss_field_id field_id) : id(field_id)
 	{ }
 
-	Field(const Field& field) :
-		id(Cmiss_field_access(field.id))
+	Field(const Field& field) : id(Cmiss_field_access(field.id))
 	{ }
 
 	Field& operator=(const Field& field)
 	{
 		Cmiss_field_id temp_id = Cmiss_field_access(field.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_destroy(&id);
 		}
@@ -85,7 +82,7 @@ public:
 
 	~Field()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_destroy(&id);
 		}
@@ -114,9 +111,9 @@ public:
 		COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR,
 		COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR,
 		COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL,
-			/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+			/*!< uses ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
 		COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL,
-			/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+			/*!< uses ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
 		COORDINATE_SYSTEM_TYPE_FIBRE = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE,
 			/*!< For Euler angles specifying fibre axes orientation from default
 			 * aligned with element xi coordinates. */
@@ -164,9 +161,14 @@ public:
 			 static_cast<Cmiss_field_coordinate_system_type>(coordinateSystemType));
 	}
 
-	int getNumberOfComponent()
+	int getNumberOfComponents()
 	{
 		return Cmiss_field_get_number_of_components(id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	char *getName()
@@ -208,10 +210,10 @@ public:
 	int evaluateDerivative(DifferentialOperator& differentialOperator,
 		FieldCache& cache, int numberOfValues, double *outValues);
 
-	int isDefinedAtLocation(FieldCache& cache);
+	bool isDefinedAtLocation(FieldCache& cache);
 
 };
 
 }  // namespace Zn
 
-#endif /* __FIELD_HPP__ */
+#endif /* __ZN_FIELD_HPP__ */

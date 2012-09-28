@@ -36,13 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_GROUP_HPP__
-#define __FIELD_TYPES_GROUP_HPP__
+#ifndef __ZN_FIELD_TYPES_GROUP_HPP__
+#define __ZN_FIELD_TYPES_GROUP_HPP__
 
-extern "C" {
 #include "api/cmiss_field_group.h"
-}
-
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 #include "api++/fieldtypessubobjectgroup.hpp"
@@ -57,13 +54,15 @@ class FieldGroup : public Field
 {
 public:
 
-	FieldGroup() : Field(NULL)
+	FieldGroup() : Field(0)
 	{ }
 
-	FieldGroup(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGroup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	FieldGroup(Cmiss_field_group_id field_group_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGroup(Cmiss_field_group_id field_group_id) :
 		Field(reinterpret_cast<Cmiss_field_id>(field_group_id))
 	{	}
 
@@ -109,7 +108,7 @@ public:
 			reinterpret_cast<Cmiss_field_group_id>(id));
 	}
 
-	int addReion(Region& region)
+	int addRegion(Region& region)
 	{
 		return Cmiss_field_group_add_region(reinterpret_cast<Cmiss_field_group_id>(id),
 			region.getId());
@@ -184,4 +183,4 @@ inline FieldGroup FieldModule::createGroup()
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_GROUP_HPP__ */
+#endif /* __ZN_FIELD_TYPES_GROUP_HPP__ */

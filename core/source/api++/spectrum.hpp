@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __SPECTRUM_HPP__
-#define __SPECTRUM_HPP__
+#ifndef __ZN_SPECTRUM_HPP__
+#define __ZN_SPECTRUM_HPP__
 
-extern "C" {
 #include "api/cmiss_spectrum.h"
-}
 
 namespace Zn
 {
@@ -53,11 +51,11 @@ protected:
 
 public:
 
-	Spectrum() : id(NULL)
+	Spectrum() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	Spectrum(Cmiss_spectrum_id in_spectrum_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Spectrum(Cmiss_spectrum_id in_spectrum_id) :
 		id(in_spectrum_id)
 	{  }
 
@@ -68,7 +66,7 @@ public:
 	Spectrum& operator=(const Spectrum& spectrum)
 	{
 		Cmiss_spectrum_id temp_id = Cmiss_spectrum_access(spectrum.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_spectrum_destroy(&id);
 		}
@@ -78,7 +76,7 @@ public:
 
 	~Spectrum()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_spectrum_destroy(&id);
 		}
@@ -117,13 +115,13 @@ public:
 		return Cmiss_spectrum_set_name(id, name);
 	}
 
-	//-- int executeCommand(const char *commandString)
-	//-- {
-	//-- 	return Cmiss_spectrum_execute_command(id, commandString);
-	//-- }
+	int executeCommand(const char *commandString)
+	{
+		return Cmiss_spectrum_execute_command(id, commandString);
+	}
 
 };
 
 }  // namespace Zn
 
-#endif /* __SPECTRUM_HPP__ */
+#endif /* __ZN_SPECTRUM_HPP__ */

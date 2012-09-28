@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_TRIGONOMETRY_HPP__
-#define __FIELD_TYPES_TRIGONOMETRY_HPP__
+#ifndef __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__
+#define __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__
 
-extern "C" {
 #include "api/cmiss_field_trigonometry.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldSin : public Field
 {
 public:
 
-	FieldSin() : Field(NULL)
+	FieldSin() : Field(0)
 	{	}
 
-	FieldSin(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSin(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -64,10 +63,11 @@ class FieldCos : public Field
 {
 public:
 
-	FieldCos() : Field(NULL)
+	FieldCos() : Field(0)
 	{	}
 
-	FieldCos(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCos(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -76,10 +76,11 @@ class FieldTan : public Field
 {
 public:
 
-	FieldTan() : Field(NULL)
+	FieldTan() : Field(0)
 	{	}
 
-	FieldTan(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -88,10 +89,11 @@ class FieldAsin : public Field
 {
 public:
 
-	FieldAsin() : Field(NULL)
+	FieldAsin() : Field(0)
 	{	}
 
-	FieldAsin(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAsin(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -100,10 +102,11 @@ class FieldAcos : public Field
 {
 public:
 
-	FieldAcos() : Field(NULL)
+	FieldAcos() : Field(0)
 	{	}
 
-	FieldAcos(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAcos(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -112,10 +115,11 @@ class FieldAtan : public Field
 {
 public:
 
-	FieldAtan() : Field(NULL)
+	FieldAtan() : Field(0)
 	{	}
 
-	FieldAtan(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAtan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -124,10 +128,11 @@ class FieldAtan2 : public Field
 {
 public:
 
-	FieldAtan2() : Field(NULL)
+	FieldAtan2() : Field(0)
 	{	}
 
-	FieldAtan2(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAtan2(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -170,4 +175,4 @@ inline FieldAtan2 FieldModule::createAtan2(Field& sourceField1, Field& sourceFie
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_TRIGONOMETRY_HPP__ */
+#endif /* __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__ */

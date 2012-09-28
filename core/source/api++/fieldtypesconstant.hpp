@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_CONSTANT_HPP__
-#define __FIELD_TYPES_CONSTANT_HPP__
+#ifndef __ZN_FIELD_TYPES_CONSTANT_HPP__
+#define __ZN_FIELD_TYPES_CONSTANT_HPP__
 
-extern "C" {
 #include "api/cmiss_field_constant.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldConstant : public Field
 {
 public:
 
-	FieldConstant() : Field(NULL)
+	FieldConstant() : Field(0)
 	{ }
 
-	FieldConstant(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldConstant(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -64,10 +63,11 @@ class FieldStringConstant : public Field
 {
 public:
 
-	FieldStringConstant() : Field(NULL)
+	FieldStringConstant() : Field(0)
 	{ }
 
-	FieldStringConstant(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStringConstant(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -86,4 +86,4 @@ inline FieldStringConstant FieldModule::createStringConstant(const char *stringC
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_CONSTANT_HPP__ */
+#endif /* __ZN_FIELD_TYPES_CONSTANT_HPP__ */

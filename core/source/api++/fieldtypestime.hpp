@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_TIME_HPP__
-#define __FIELD_TYPES_TIME_HPP__
+#ifndef __ZN_FIELD_TYPES_TIME_HPP__
+#define __ZN_FIELD_TYPES_TIME_HPP__
 
-extern "C" {
 #include "api/cmiss_field_time.h"
-}
 #include "api++/field.hpp"
 #include "api++/timekeeper.hpp"
 
@@ -52,10 +50,11 @@ class FieldTimeLookup : public Field
 {
 public:
 
-	FieldTimeLookup() : Field(NULL)
+	FieldTimeLookup() : Field(0)
 	{	}
 
-	FieldTimeLookup(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTimeLookup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -64,10 +63,11 @@ class FieldTimeValue : public Field
 {
 public:
 
-	FieldTimeValue() : Field(NULL)
+	FieldTimeValue() : Field(0)
 	{	}
 
-	FieldTimeValue(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTimeValue(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -85,4 +85,4 @@ inline FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper)
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_TIME_HPP__ */
+#endif /* __ZN_FIELD_TYPES_TIME_HPP__ */

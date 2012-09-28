@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_LOGICAL_OPERATORS_HPP__
-#define __FIELD_TYPES_LOGICAL_OPERATORS_HPP__
+#ifndef __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__
+#define __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__
 
-extern "C" {
 #include "api/cmiss_field_logical_operators.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldAnd : public Field
 {
 public:
 
-	FieldAnd() : Field(NULL)
+	FieldAnd() : Field(0)
 	{	}
 
-	FieldAnd(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAnd(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -70,28 +69,24 @@ class FieldEqualTo : public Field
 {
 public:
 
-	FieldEqualTo() : Field(NULL)
+	FieldEqualTo() : Field(0)
 	{	}
 
-	FieldEqualTo(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEqualTo(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
-
-inline FieldEqualTo operator==(Field& operand1, Field& operand2)
-{
-    FieldModule fieldModule(operand1);
-    return fieldModule.createEqualTo(operand1, operand2);
-}
 
 class FieldGreaterThan : public Field
 {
 public:
 
-	FieldGreaterThan() : Field(NULL)
+	FieldGreaterThan() : Field(0)
 	{	}
 
-	FieldGreaterThan(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGreaterThan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -106,10 +101,11 @@ class FieldLessThan : public Field
 {
 public:
 
-	FieldLessThan() : Field(NULL)
+	FieldLessThan() : Field(0)
 	{	}
 
-	FieldLessThan(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldLessThan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -124,10 +120,11 @@ class FieldOr : public Field
 {
 public:
 
-	FieldOr() : Field(NULL)
+	FieldOr() : Field(0)
 	{	}
 
-	FieldOr(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldOr(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -142,10 +139,11 @@ class FieldNot : public Field
 {
 public:
 
-	FieldNot() : Field(NULL)
+	FieldNot() : Field(0)
 	{	}
 
-	FieldNot(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNot(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -160,10 +158,11 @@ class FieldXor : public Field
 {
 public:
 
-	FieldXor() : Field(NULL)
+	FieldXor() : Field(0)
 	{	}
 
-	FieldXor(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldXor(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -211,4 +210,4 @@ inline FieldXor FieldModule::createXor(Field& sourceField1, Field& sourceField2)
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__ */
+#endif /* __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__ */

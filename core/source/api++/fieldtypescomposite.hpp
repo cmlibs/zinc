@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_COMPOSITE_HPP__
-#define __FIELD_TYPES_COMPOSITE_HPP__
+#ifndef __ZN_FIELD_TYPES_COMPOSITE_HPP__
+#define __ZN_FIELD_TYPES_COMPOSITE_HPP__
 
-extern "C" {
 #include "api/cmiss_field_composite.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldIdentity : public Field
 {
 public:
 
-	FieldIdentity() : Field(NULL)
+	FieldIdentity() : Field(0)
 	{	}
 
-	FieldIdentity(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIdentity(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -64,10 +63,11 @@ class FieldComponent : public Field
 {
 public:
 
-	FieldComponent() : Field(NULL)
+	FieldComponent() : Field(0)
 	{	}
 
-	FieldComponent(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldComponent(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -76,10 +76,11 @@ class FieldConcatenate : public Field
 {
 public:
 
-	FieldConcatenate() : Field(NULL)
+	FieldConcatenate() : Field(0)
 	{	}
 
-	FieldConcatenate(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldConcatenate(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -95,15 +96,15 @@ inline FieldComponent FieldModule::createComponent(Field& sourceField, int compo
 		sourceField.getId(), componentIndex));
 }
 
-inline FieldConcatenate FieldModule::createConcatenate(int numberOfSourceFields, Field **sourceFields)
+inline FieldConcatenate FieldModule::createConcatenate(int numberOfSourceFields, Field *sourceFields)
 {
-	Cmiss_field_id concatenateField = NULL;
+	Cmiss_field_id concatenateField = 0;
 	if (numberOfSourceFields > 0)
 	{
 		Cmiss_field_id *source_fields = new Cmiss_field_id[numberOfSourceFields];
 		for (int i = 0; i < numberOfSourceFields; i++)
 		{
-			source_fields[i] = sourceFields[i]->getId();
+			source_fields[i] = sourceFields[i].getId();
 		}
 		concatenateField = Cmiss_field_module_create_concatenate(id, numberOfSourceFields, source_fields);
 		delete[] source_fields;
@@ -113,4 +114,4 @@ inline FieldConcatenate FieldModule::createConcatenate(int numberOfSourceFields,
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_COMPOSITE_HPP__ */
+#endif /* __ZN_FIELD_TYPES_COMPOSITE_HPP__ */

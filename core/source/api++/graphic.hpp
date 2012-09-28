@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_GRAPHIC_HPP__
-#define __CMISS_GRAPHIC_HPP__
+#ifndef __ZN_CMISS_GRAPHIC_HPP__
+#define __ZN_CMISS_GRAPHIC_HPP__
 
-extern "C" {
 #include "api/cmiss_graphic.h"
-}
 #include "api++/field.hpp"
 #include "api++/graphicsmaterial.hpp"
 #include "api++/tessellation.hpp"
@@ -57,11 +55,11 @@ protected:
 
 public:
 
-	Graphic() : id(NULL)
+	Graphic() : id(0)
 	{  }
 
-	// takes ownership of C-style graphic reference
-	Graphic(Cmiss_graphic_id graphic_id) : id(graphic_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Graphic(Cmiss_graphic_id graphic_id) : id(graphic_id)
 	{  }
 
 	Graphic(const Graphic& graphic) : id(Cmiss_graphic_access(graphic.id))
@@ -70,7 +68,7 @@ public:
 	Graphic& operator=(const Graphic& graphic)
 	{
 		Cmiss_graphic_id temp_id = Cmiss_graphic_access(graphic.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphic_destroy(&id);
 		}
@@ -80,7 +78,7 @@ public:
 
 	~Graphic()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphic_destroy(&id);
 		}
@@ -88,7 +86,7 @@ public:
 
 	enum RenderType
 	{
-		RENDER_TYPE_INVALD = CMISS_GRAPHICS_RENDER_TYPE_INVALD,
+		RENDER_TYPE_INVALID = CMISS_GRAPHICS_RENDER_TYPE_INVALID,
 		RENDER_TYPE_SHADED = CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 		RENDER_TYPE_WIREFRAME = CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME,
 	};
@@ -113,6 +111,20 @@ public:
 		GLYPH_TYPE_INVALID = CMISS_GRAPHIC_GLYPH_TYPE_INVALID,
 		GLYPH_TYPE_POINT = CMISS_GRAPHIC_GLYPH_POINT,
 		GLYPH_TYPE_AXES = CMISS_GRAPHIC_GLYPH_AXES
+	};
+
+	enum GraphicType
+	{
+		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID ,
+		GRAPHIC_NODE_POINTS = CMISS_GRAPHIC_NODE_POINTS,
+		GRAPHIC_DATA_POINTS = CMISS_GRAPHIC_DATA_POINTS,
+		GRAPHIC_LINES = CMISS_GRAPHIC_LINES,
+		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS,
+		GRAPHIC_SURFACES = CMISS_GRAPHIC_SURFACES,
+		GRAPHIC_ISO_SURFACES = CMISS_GRAPHIC_ISO_SURFACES,
+		GRAPHIC_ELEMENT_POINTS = CMISS_GRAPHIC_ELEMENT_POINTS,
+		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES,
+		GRAPHIC_POINT = CMISS_GRAPHIC_POINT,
 	};
 
 	Cmiss_graphic_id getId()
@@ -156,14 +168,14 @@ public:
 			static_cast<Cmiss_graphics_render_type>(renderType));
 	}
 
-	int getVisibilityFlag()
+	bool getVisibilityFlag()
 	{
 		return Cmiss_graphic_get_visibility_flag(id);
 	}
 
-	int setVisibilityFlag(int visibilityFlag)
+	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_graphic_set_visibility_flag(id, visibilityFlag);
+		return Cmiss_graphic_set_visibility_flag(id, (int)visibilityFlag);
 	}
 
 	enum CoordinateSystem getCoordinateSystem()
@@ -191,15 +203,10 @@ public:
 	{
 		return Cmiss_graphic_set_glyph_type(id,
 			static_cast<Cmiss_graphic_glyph_type>(type));
-	}
-
-	//-- int define(const char *command_string)
-	//-- {
-	//-- 	return Cmiss_graphic_define(id, command_string);
-	//-- }
+	 }
 
 };
 
 } // namespace Cmiss
 
-#endif /* __CMISS_GRAPHIC_HPP__ */
+#endif /* __ZN_CMISS_GRAPHIC_HPP__ */

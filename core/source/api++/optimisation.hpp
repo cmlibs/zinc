@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __OPTIMISATION_HPP__
-#define __OPTIMISATION_HPP__
+#ifndef __ZN_OPTIMISATION_HPP__
+#define __ZN_OPTIMISATION_HPP__
 
-extern "C" {
 #include "api/cmiss_optimisation.h"
-}
 #include "api++/field.hpp"
 
 namespace Zn
@@ -54,11 +52,11 @@ protected:
 
 public:
 
-	Optimisation() : id(NULL)
+	Optimisation() : id(0)
 	{   }
 
-	// takes ownership of C-style region reference
-	Optimisation(Cmiss_optimisation_id in_optimisation_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Optimisation(Cmiss_optimisation_id in_optimisation_id) :
 		id(in_optimisation_id)
 	{  }
 
@@ -69,7 +67,7 @@ public:
 	Optimisation& operator=(const Optimisation& optimisation)
 	{
 		Cmiss_optimisation_id temp_id = Cmiss_optimisation_access(optimisation.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_optimisation_destroy(&id);
 		}
@@ -79,7 +77,7 @@ public:
 
 	~Optimisation()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_optimisation_destroy(&id);
 		}
@@ -166,7 +164,7 @@ public:
 		return (Cmiss_optimisation_add_independent_field(id, field.getId()));
 	}
 
-	int removeIndenpdentField(Field& field)
+	int removeIndepdentField(Field& field)
 	{
 		return (Cmiss_optimisation_remove_independent_field(id, field.getId()));
 	}
@@ -205,4 +203,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __OPTIMISATION_HPP__ */
+#endif /* __ZN_OPTIMISATION_HPP__ */

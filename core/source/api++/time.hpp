@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __TIME_HPP__
-#define __TIME_HPP__
+#ifndef __ZN_TIME_HPP__
+#define __ZN_TIME_HPP__
 
-extern "C" {
 #include "api/cmiss_time.h"
-}
 
 namespace Zn
 {
@@ -57,11 +55,11 @@ protected:
 
 public:
 
-	TimeNotifier() : id(NULL)
+	TimeNotifier() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	TimeNotifier(Cmiss_time_notifier_id in_time_notifier_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit TimeNotifier(Cmiss_time_notifier_id in_time_notifier_id) :
 		id(in_time_notifier_id)
 	{  }
 
@@ -72,7 +70,7 @@ public:
 	TimeNotifier& operator=(const TimeNotifier& time_notifierNotifier)
 	{
 		Cmiss_time_notifier_id temp_id = Cmiss_time_notifier_access(time_notifierNotifier.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_time_notifier_destroy(&id);
 		}
@@ -82,7 +80,7 @@ public:
 
 	~TimeNotifier()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_time_notifier_destroy(&id);
 		}
@@ -117,4 +115,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __TIME_HPP__ */
+#endif /* __ZN_TIME_HPP__ */

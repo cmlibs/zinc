@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_CONDITIONAL_HPP__
-#define __FIELD_TYPES_CONDITIONAL_HPP__
+#ifndef __ZN_FIELD_TYPES_CONDITIONAL_HPP__
+#define __ZN_FIELD_TYPES_CONDITIONAL_HPP__
 
-extern "C" {
 #include "api/cmiss_field_conditional.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldIf : public Field
 {
 public:
 
-	FieldIf() : Field(NULL)
+	FieldIf() : Field(0)
 	{	}
 
-	FieldIf(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIf(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -68,4 +67,4 @@ inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, F
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_CONDITIONAL_HPP__ */
+#endif /* __ZN_FIELD_TYPES_CONDITIONAL_HPP__ */

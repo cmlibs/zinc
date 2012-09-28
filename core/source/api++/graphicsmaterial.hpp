@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_GRAPHICS_MATERIAL_HPP__
-#define __CMISS_GRAPHICS_MATERIAL_HPP__
+#ifndef __ZN_CMISS_GRAPHICS_MATERIAL_HPP__
+#define __ZN_CMISS_GRAPHICS_MATERIAL_HPP__
 
-extern "C" {
 #include "api/cmiss_graphics_material.h"
-}
 
 namespace Zn
 {
@@ -54,11 +52,11 @@ protected:
 
 public:
 	
-	GraphicsMaterial() : id(NULL)
+	GraphicsMaterial() : id(0)
 	{ }
 
-	// takes ownership of C-style graphics_module reference
-	GraphicsMaterial(Cmiss_graphics_material_id graphics_material_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsMaterial(Cmiss_graphics_material_id graphics_material_id) :
 		id(graphics_material_id)
 	{ }
 
@@ -69,7 +67,7 @@ public:
 	GraphicsMaterial& operator=(const GraphicsMaterial& graphicsMaterial)
 	{
 		Cmiss_graphics_material_id temp_id = Cmiss_graphics_material_access(graphicsMaterial.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_material_destroy(&id);
 		}
@@ -79,7 +77,7 @@ public:
 
 	~GraphicsMaterial()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_material_destroy(&id);
 		}
@@ -152,4 +150,4 @@ public:
 
 } // namespace Cmiss
 
-#endif /* __CMISS_GRAPHICS_MATERIAL_HPP__ */
+#endif /* __ZN_CMISS_GRAPHICS_MATERIAL_HPP__ */

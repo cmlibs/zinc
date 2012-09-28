@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_NODESET_OPERATORS_HPP__
-#define __FIELD_TYPES_NODESET_OPERATORS_HPP__
+#ifndef __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__
+#define __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__
 
-extern "C" {
 #include "api/cmiss_field_nodeset_operators.h"
-}
 #include "api++/field.hpp"
 #include "api++/node.hpp"
 
@@ -52,10 +50,11 @@ class FieldNodesetSum : public Field
 {
 public:
 
-	FieldNodesetSum() : Field(NULL)
+	FieldNodesetSum() : Field(0)
 	{	}
 
-	FieldNodesetSum(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetSum(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -64,10 +63,11 @@ class FieldNodesetMean : public Field
 {
 public:
 
-	FieldNodesetMean() : Field(NULL)
+	FieldNodesetMean() : Field(0)
 	{	}
 
-	FieldNodesetMean(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetMean(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -76,10 +76,11 @@ class FieldNodesetSumSquares : public Field
 {
 public:
 
-	FieldNodesetSumSquares() : Field(NULL)
+	FieldNodesetSumSquares() : Field(0)
 	{	}
 
-	FieldNodesetSumSquares(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetSumSquares(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -88,10 +89,11 @@ class FieldNodesetMeanSquares : public Field
 {
 public:
 
-	FieldNodesetMeanSquares() : Field(NULL)
+	FieldNodesetMeanSquares() : Field(0)
 	{	}
 
-	FieldNodesetMeanSquares(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetMeanSquares(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -124,4 +126,4 @@ inline FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_NODESET_OPERATORS_HPP__ */
+#endif /* __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__ */

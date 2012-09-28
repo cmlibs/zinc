@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __SCENE_HPP__
-#define __SCENE_HPP__
+#ifndef __ZN_SCENE_HPP__
+#define __ZN_SCENE_HPP__
 
 #include "api/cmiss_scene.h"
 #include "api++/graphicsfilter.hpp"
@@ -53,11 +53,11 @@ protected:
 
 public:
 
-	Scene() : id(NULL)
+	Scene() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	Scene(Cmiss_scene_id in_scene_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Scene(Cmiss_scene_id in_scene_id) :
 		id(in_scene_id)
 	{  }
 
@@ -68,7 +68,7 @@ public:
 	Scene& operator=(const Scene& scene)
 	{
 		Cmiss_scene_id temp_id = Cmiss_scene_access(scene.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_scene_destroy(&id);
 		}
@@ -78,7 +78,7 @@ public:
 
 	~Scene()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_scene_destroy(&id);
 		}
@@ -136,4 +136,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __SCENE_HPP__ */
+#endif /* __ZN_SCENE_HPP__ */

@@ -36,18 +36,14 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_SUBOBJECT_GROUP_HPP__
-#define __FIELD_TYPES_SUBOBJECT_GROUP_HPP__
+#ifndef __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__
+#define __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__
 
-extern "C" {
 #include "api/cmiss_field_subobject_group.h"
-}
-
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 #include "api++/node.hpp"
 #include "api++/element.hpp"
-#include "api++/region.hpp"
 
 namespace Zn
 {
@@ -56,13 +52,15 @@ class FieldElementGroup : public Field
 {
 public:
 
-	FieldElementGroup() : Field(NULL)
+	FieldElementGroup() : Field(0)
 	{	}
 
-	FieldElementGroup(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldElementGroup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	FieldElementGroup(Cmiss_field_element_group_id field_element_group_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldElementGroup(Cmiss_field_element_group_id field_element_group_id) :
 		Field(reinterpret_cast<Cmiss_field_id>(field_element_group_id))
 	{ }
 
@@ -81,13 +79,15 @@ class FieldNodeGroup : public Field
 {
 public:
 
-	FieldNodeGroup() : Field(NULL)
+	FieldNodeGroup() : Field(0)
 	{	}
 
-	FieldNodeGroup(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeGroup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	FieldNodeGroup(Cmiss_field_node_group_id field_node_group_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeGroup(Cmiss_field_node_group_id field_node_group_id) :
 		Field(reinterpret_cast<Cmiss_field_id>(field_node_group_id))
 	{ }
 
@@ -115,4 +115,4 @@ inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_SUBOBJECT_GROUP_HPP__ */
+#endif /* __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__ */

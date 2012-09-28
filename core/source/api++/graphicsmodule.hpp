@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __GRAPHICS_MODULE_HPP__
-#define __GRAPHICS_MODULE_HPP__
+#ifndef __ZN_GRAPHICS_MODULE_HPP__
+#define __ZN_GRAPHICS_MODULE_HPP__
 
 #include "api/cmiss_graphics_module.h"
 #include "api++/region.hpp"
@@ -59,11 +59,11 @@ protected:
 
 public:
 
-	GraphicsModule() : id(NULL)
+	GraphicsModule() : id(0)
 	{ }
 
-	// takes ownership of C-style graphics_module reference
-	GraphicsModule(Cmiss_graphics_module_id graphics_module_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsModule(Cmiss_graphics_module_id graphics_module_id) :
 		id(graphics_module_id)
 	{ }
 
@@ -74,7 +74,7 @@ public:
 	GraphicsModule& operator=(const GraphicsModule& graphicsModule)
 	{
 		Cmiss_graphics_module_id temp_id = Cmiss_graphics_module_access(graphicsModule.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_module_destroy(&id);
 		}
@@ -84,7 +84,7 @@ public:
 
 	~GraphicsModule()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_module_destroy(&id);
 		}
@@ -94,7 +94,7 @@ public:
 	{
 		return id;
 	}
-
+	
 	int enableRenditions(Region& region)
 	{
 		return Cmiss_graphics_module_enable_renditions(id, region.getId());
@@ -187,4 +187,4 @@ public:
 
 } // namespace Zn
 
-#endif /* __GRAPHICS_MODULE_HPP__ */
+#endif /* __ZN_GRAPHICS_MODULE_HPP__ */

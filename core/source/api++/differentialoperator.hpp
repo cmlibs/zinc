@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __DIFFFERENTIAL_OPERATOR_HPP__
-#define __DIFFFERENTIAL_OPERATOR_HPP__
+#ifndef __ZN_DIFFFERENTIAL_OPERATOR_HPP__
+#define __ZN_DIFFFERENTIAL_OPERATOR_HPP__
 
-extern "C" {
 #include "api/cmiss_differential_operator.h"
-}
 
 namespace Zn
 {
@@ -53,11 +51,11 @@ protected:
 
 public:
 
-	DifferentialOperator() : id(NULL)
+	DifferentialOperator() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	DifferentialOperator(Cmiss_differential_operator_id in_differential_operator_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit DifferentialOperator(Cmiss_differential_operator_id in_differential_operator_id) :
 		id(in_differential_operator_id)
 	{  }
 
@@ -68,7 +66,7 @@ public:
 	DifferentialOperator& operator=(const DifferentialOperator& differentialOperator)
 	{
 		Cmiss_differential_operator_id temp_id = Cmiss_differential_operator_access(differentialOperator.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_differential_operator_destroy(&id);
 		}
@@ -78,7 +76,7 @@ public:
 
 	~DifferentialOperator()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_differential_operator_destroy(&id);
 		}
@@ -92,4 +90,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __DIFFFERENTIAL_OPERATOR_HPP__ */
+#endif /* __ZN_DIFFFERENTIAL_OPERATOR_HPP__ */

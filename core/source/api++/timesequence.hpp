@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __TIME_SEQUENCE_HPP__
-#define __TIME_SEQUENCE_HPP__
+#ifndef __ZN_TIME_SEQUENCE_HPP__
+#define __ZN_TIME_SEQUENCE_HPP__
 
-extern "C" {
 #include "api/cmiss_time_sequence.h"
-}
 
 namespace Zn
 {
@@ -53,11 +51,11 @@ protected:
 
 public:
 
-	TimeSequence() : id(NULL)
+	TimeSequence() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	TimeSequence(Cmiss_time_sequence_id in_time_sequence_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit TimeSequence(Cmiss_time_sequence_id in_time_sequence_id) :
 		id(in_time_sequence_id)
 	{  }
 
@@ -68,7 +66,7 @@ public:
 	TimeSequence& operator=(const TimeSequence& timeSequence)
 	{
 		Cmiss_time_sequence_id temp_id = Cmiss_time_sequence_access(timeSequence.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_time_sequence_destroy(&id);
 		}
@@ -78,7 +76,7 @@ public:
 
 	~TimeSequence()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_time_sequence_destroy(&id);
 		}
@@ -99,4 +97,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __TIME_KEEPER_HPP__ */
+#endif /* __ZN_TIME_KEEPER_HPP__ */

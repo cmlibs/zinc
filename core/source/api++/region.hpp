@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __REGION_HPP__
-#define __REGION_HPP__
+#ifndef __ZN_REGION_HPP__
+#define __ZN_REGION_HPP__
 
 #include "api/cmiss_region.h"
 #include "api++/fieldmodule.hpp"
@@ -56,7 +56,8 @@ public:
 		StreamInformation(streamInformation)
 	{  }
 
-	StreamInformationRegion(Cmiss_stream_information_region_id stream_information_region_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamInformationRegion(Cmiss_stream_information_region_id stream_information_region_id) :
 		StreamInformation(reinterpret_cast<Cmiss_stream_information_id>(stream_information_region_id))
 	{ }
 
@@ -119,11 +120,11 @@ protected:
 
 public:
 
-	Region() : id(NULL)
+	Region() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	Region(Cmiss_region_id in_region_id) : id(in_region_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Region(Cmiss_region_id in_region_id) : id(in_region_id)
 	{  }
 
 	Region(const Region& region) : id(Cmiss_region_access(region.id))
@@ -132,7 +133,7 @@ public:
 	Region& operator=(const Region& region)
 	{
 		Cmiss_region_id temp_id = Cmiss_region_access(region.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_region_destroy(&id);
 		}
@@ -142,7 +143,7 @@ public:
 
 	~Region()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_region_destroy(&id);
 		}
@@ -212,7 +213,7 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_region_set_name(id, name);
-	}
+ 	}
 
 	Region getParent()
 	{
@@ -278,4 +279,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __REGION_HPP__ */
+#endif /* __ZN_REGION_HPP__ */

@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_IMAGE_HPP__
-#define __FIELD_TYPES_IMAGE_HPP__
+#ifndef __ZN_FIELD_TYPES_IMAGE_HPP__
+#define __ZN_FIELD_TYPES_IMAGE_HPP__
 
-extern "C" {
 #include "api/cmiss_field_image.h"
-}
 #include "api++/field.hpp"
 #include "api++/stream.hpp"
 
@@ -54,12 +52,12 @@ class StreamInformationImage : public StreamInformation
 
 public:
 
-	// takes ownership of C-style region reference
 	StreamInformationImage(StreamInformation& streamInformation) :
 		StreamInformation(streamInformation)
 	{ }
 
-	StreamInformationImage(Cmiss_stream_information_image_id stream_information_image_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamInformationImage(Cmiss_stream_information_image_id stream_information_image_id) :
 		StreamInformation(reinterpret_cast<Cmiss_stream_information_id>(stream_information_image_id))
 	{ }
 
@@ -128,10 +126,16 @@ class FieldImage : public Field
 {
 public:
 
-	FieldImage() : Field(NULL)
+	FieldImage() : Field(0)
 	{ }
 
-	FieldImage(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImage(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImage(Cmiss_field_image_id field_image_id) :
+		Field(reinterpret_cast<Cmiss_field_id>(field_image_id))
 	{	}
 
 	// casting constructor: must check isValid()
@@ -282,4 +286,4 @@ inline FieldImage FieldModule::createImage(Field& domain_field, Field& source_fi
 
 } // namespace Cmiss
 
-#endif /* __FIELD_TYPES_IMAGE_HPP__ */
+#endif /* __ZN_FIELD_TYPES_IMAGE_HPP__ */

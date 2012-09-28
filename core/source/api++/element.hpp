@@ -37,12 +37,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __ELEMENT_HPP__
-#define __ELEMENT_HPP__
+#ifndef __ZN_ELEMENT_HPP__
+#define __ZN_ELEMENT_HPP__
 
-extern "C" {
 #include "api/cmiss_element.h"
-}
 #include "api++/field.hpp"
 #include "api++/differentialoperator.hpp"
 #include "api++/node.hpp"
@@ -60,11 +58,11 @@ private:
 
 public:
 
-	Element() : id(NULL)
+	Element() : id(0)
 	{ }
 
-	// takes ownership of C-style element reference
-	Element(Cmiss_element_id element_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Element(Cmiss_element_id element_id) :
 		id(element_id)
 	{ }
 
@@ -74,7 +72,7 @@ public:
 
 	~Element()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_destroy(&id);
 		}
@@ -83,7 +81,7 @@ public:
 	Element& operator=(const Element& element)
 	{
 		Cmiss_element_id temp_id = Cmiss_element_access(element.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_destroy(&id);
 		}
@@ -133,15 +131,15 @@ class ElementBasis
 {
 private:
 
-	ElementBasis() : id(NULL)
-	{ }
-
 	Cmiss_element_basis_id id;
 
 public:
 
-	// takes ownership of C-style element_basis reference
-	ElementBasis(Cmiss_element_basis_id element_basis_id) :
+	ElementBasis() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit ElementBasis(Cmiss_element_basis_id element_basis_id) :
 		id(element_basis_id)
 	{ }
 
@@ -152,7 +150,7 @@ public:
 	ElementBasis& operator=(const ElementBasis& elementBasis)
 	{
 		Cmiss_element_basis_id temp_id = Cmiss_element_basis_access(elementBasis.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_basis_destroy(&id);
 		}
@@ -162,7 +160,7 @@ public:
 
 	~ElementBasis()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_basis_destroy(&id);
 		}
@@ -211,15 +209,15 @@ class ElementTemplate
 {
 private:
 
-	ElementTemplate() : id(NULL)
-	{ }
-
 	Cmiss_element_template_id id;
 
 public:
 
-	// takes ownership of C-style element_template reference
-	ElementTemplate(Cmiss_element_template_id element_template_id) :
+	ElementTemplate() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit ElementTemplate(Cmiss_element_template_id element_template_id) :
 		id(element_template_id)
 	{ }
 
@@ -230,7 +228,7 @@ public:
 	ElementTemplate& operator=(const ElementTemplate& elementTemplate)
 	{
 		Cmiss_element_template_id temp_id = Cmiss_element_template_access(elementTemplate.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_template_destroy(&id);
 		}
@@ -240,36 +238,23 @@ public:
 
 	~ElementTemplate()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_template_destroy(&id);
 		}
 	}
-
-	enum ShapeType
-	{
-		SHAPE_TYPE_INVALID = CMISS_ELEMENT_SHAPE_TYPE_INVALID,/**< unspecified shape of known dimension */
-		SHAPE_LINE = CMISS_ELEMENT_SHAPE_LINE ,        /**< 1-D: 0 <= xi1 <= 1 */
-		SHAPE_SQUARE = CMISS_ELEMENT_SHAPE_SQUARE,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
-		SHAPE_TRIANGLE = CMISS_ELEMENT_SHAPE_TRIANGLE,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
-		SHAPE_CUBE = CMISS_ELEMENT_SHAPE_CUBE,        /**< 3-D: 0 <= xi1,xi2,xi3 <= 1 */
-		SHAPE_TETRAHEDRON = CMISS_ELEMENT_SHAPE_TETRAHEDRON, /**< 3-D: 0 <= xi1,xi2,xi3; xi1+xi2+xi3 <= 1 */
-		SHAPE_WEDGE12 = CMISS_ELEMENT_SHAPE_WEDGE12,     /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1; 0 <= xi3 <= 1 */
-		SHAPE_WEDGE13 = CMISS_ELEMENT_SHAPE_WEDGE13,     /**< 3-D: 0 <= xi1,xi3; xi1+xi3 <= 1; 0 <= xi2 <= 1 */
-		SHAPE_WEDGE23 = CMISS_ELEMENT_SHAPE_WEDGE23     /**< 3-D: 0 <= xi2,xi3; xi2+xi3 <= 1; 0 <= xi1 <= 1 */
-	};
 
 	Cmiss_element_template_id getId()
 	{
 		return id;
 	}
 
-	enum ShapeType getShapeType()
+	enum Element::ShapeType getShapeType()
 	{
-		return static_cast<ShapeType>(Cmiss_element_template_get_shape_type(id));
+		return static_cast<Element::ShapeType>(Cmiss_element_template_get_shape_type(id));
 	}
 
-	int setShapeType(enum ShapeType shapeType)
+	int setShapeType(enum Element::ShapeType shapeType)
 	{
 		return Cmiss_element_template_set_shape_type(id,
 			static_cast<Cmiss_element_shape_type>(shapeType));
@@ -308,15 +293,15 @@ class ElementIterator
 {
 private:
 
-	ElementIterator() : id(NULL)
-	{ }
-
 	Cmiss_element_iterator_id id;
 
 public:
 
-	// takes ownership of C-style element_basis reference
-	ElementIterator(Cmiss_element_iterator_id element_iterator_id) :
+	ElementIterator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit ElementIterator(Cmiss_element_iterator_id element_iterator_id) :
 		id(element_iterator_id)
 	{ }
 
@@ -327,7 +312,7 @@ public:
 	ElementIterator& operator=(const ElementIterator& elementIterator)
 	{
 		Cmiss_element_iterator_id temp_id = Cmiss_element_iterator_access(elementIterator.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_iterator_destroy(&id);
 		}
@@ -337,7 +322,7 @@ public:
 
 	~ElementIterator()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_element_iterator_destroy(&id);
 		}
@@ -351,19 +336,17 @@ public:
 
 class Mesh
 {
-private:
-
-	Mesh() : id(NULL)
-	{ }
 
 protected:
 	Cmiss_mesh_id id;
 
 public:
 
-	// takes ownership of C-style mesh reference
-	Mesh(Cmiss_mesh_id mesh_id) :
-		id(mesh_id)
+	Mesh() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Mesh(Cmiss_mesh_id mesh_id) :	id(mesh_id)
 	{ }
 
 	Mesh(const Mesh& mesh) :
@@ -372,7 +355,7 @@ public:
 
 	~Mesh()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_mesh_destroy(&id);
 		}
@@ -381,7 +364,7 @@ public:
 	Mesh& operator=(const Mesh& mesh)
 	{
 		Cmiss_mesh_id temp_id = Cmiss_mesh_access(mesh.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_mesh_destroy(&id);
 		}
@@ -394,7 +377,7 @@ public:
 		return id;
 	}
 
-	int containElement(Element& element)
+	bool containsElement(Element& element)
 	{
 		return Cmiss_mesh_contains_element(id, element.getId());
 	}
@@ -478,8 +461,8 @@ class MeshGroup  : public Mesh
 
 public:
 
-	// takes ownership of C-style mesh reference
-	MeshGroup(Cmiss_mesh_group_id mesh_id) : Mesh(reinterpret_cast<Cmiss_mesh_id>(mesh_id))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit MeshGroup(Cmiss_mesh_group_id mesh_id) : Mesh(reinterpret_cast<Cmiss_mesh_id>(mesh_id))
 	{ }
 
 	Cmiss_mesh_group_id getId()
@@ -520,4 +503,4 @@ inline int Element::merge(ElementTemplate& elementTemplate)
 }  // namespace Zn
 
 
-#endif /* __ELEMENT_HPP__ */
+#endif /* __ZN_ELEMENT_HPP__ */

@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__
-#define __FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__
+#ifndef __ZN_FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__
+#define __ZN_FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__
 
-extern "C" {
 #include "api/cmiss_field_coordinate_transformation.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldCoordinateTransformation: public Field
 {
 public:
 
-	FieldCoordinateTransformation() : Field(NULL)
+	FieldCoordinateTransformation() : Field(0)
 	{ }
 
-	FieldCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -64,10 +63,11 @@ class FieldVectorCoordinateTransformation: public Field
 {
 public:
 
-	FieldVectorCoordinateTransformation() : Field(NULL)
+	FieldVectorCoordinateTransformation() : Field(0)
 	{ }
 
-	FieldVectorCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldVectorCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -88,4 +88,4 @@ inline FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTr
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__ */
+#endif /* __ZN_FIELD_TYPES_COORDINATE_TRANSFORMATION_HPP__ */

@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_SELECTION_HPP__
-#define __CMISS_SELECTION_HPP__
+#ifndef __ZN_SELECTION_HPP__
+#define __ZN_SELECTION_HPP__
 
-extern "C" {
 #include "api/cmiss_selection.h"
-}
 
 namespace Zn
 {
@@ -53,11 +51,11 @@ protected:
 
 public:
 
-	SelectionHandler() : id(NULL)
+	SelectionHandler() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	SelectionHandler(Cmiss_selection_handler_id in_selection_handler_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit SelectionHandler(Cmiss_selection_handler_id in_selection_handler_id) :
 		id(in_selection_handler_id)
 	{  }
 
@@ -68,7 +66,7 @@ public:
 	SelectionHandler& operator=(const SelectionHandler& selectionHandler)
 	{
 		Cmiss_selection_handler_id temp_id = Cmiss_selection_handler_access(selectionHandler.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_selection_handler_destroy(&id);
 		}
@@ -78,7 +76,7 @@ public:
 
 	~SelectionHandler()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_selection_handler_destroy(&id);
 		}
@@ -89,14 +87,14 @@ public:
 		return id;
 	}
 
-	int getHierarchical()
+	bool getHierarchical()
 	{
 		return Cmiss_selection_handler_get_hierarchical(id);
 	}
 
-	int setHierarchical(int hierarchicalFlag)
+	int setHierarchical(bool hierarchicalFlag)
 	{
-		return Cmiss_selection_handler_set_hierarchical(id, hierarchicalFlag);
+		return Cmiss_selection_handler_set_hierarchical(id, (int)hierarchicalFlag);
 	}
 
 };
@@ -109,11 +107,11 @@ protected:
 
 public:
 
-	SelectionEvent() : id(NULL)
+	SelectionEvent() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	SelectionEvent(Cmiss_selection_event_id in_selection_event_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit SelectionEvent(Cmiss_selection_event_id in_selection_event_id) :
 		id(in_selection_event_id)
 	{  }
 
@@ -133,7 +131,7 @@ public:
 	SelectionEvent& operator=(const SelectionEvent& selectionEvent)
 	{
 		Cmiss_selection_event_id temp_id = Cmiss_selection_event_access(selectionEvent.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_selection_event_destroy(&id);
 		}
@@ -143,7 +141,7 @@ public:
 
 	~SelectionEvent()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_selection_event_destroy(&id);
 		}
@@ -168,4 +166,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __CMISS_SELECTION_HPP__ */
+#endif /* __ZN_SELECTION_HPP__ */

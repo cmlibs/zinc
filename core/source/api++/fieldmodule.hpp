@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_MODULE_HPP__
-#define __FIELD_MODULE_HPP__
+#ifndef __ZN_FIELD_MODULE_HPP__
+#define __ZN_FIELD_MODULE_HPP__
 
 #include "api/cmiss_field_module.h"
 #include "api++/field.hpp"
@@ -119,11 +119,11 @@ private:
 
 public:
 
-	FieldModule() : id(NULL)
+	FieldModule() : id(0)
 	{	}
 
-	// takes ownership of C-style field module reference
-	FieldModule(Cmiss_field_module_id field_module_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldModule(Cmiss_field_module_id field_module_id) :
 		id(field_module_id)
 	{ }
 
@@ -138,7 +138,7 @@ public:
 	FieldModule& operator=(const FieldModule& fieldModule)
 	{
 		Cmiss_field_module_id temp_id = Cmiss_field_module_access(fieldModule.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_module_destroy(&id);
 		}
@@ -148,7 +148,7 @@ public:
 
 	~FieldModule()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_field_module_destroy(&id);
 		}
@@ -178,16 +178,6 @@ public:
 	{
 		return Field(Cmiss_field_module_find_field_by_name(id, fieldName));
 	}
-
-	//-- int defineField(const char *fieldName, const char *commandString)
-	//-- {
-	//-- 	return Cmiss_field_module_define_field(id, fieldName, commandString);
-	//-- }
-
-	//-- Field createField(const char *fieldName, const char *commandString)
-	//-- {
-	//-- 	return Field(Cmiss_field_module_create_field(id, fieldName, commandString));
-	//-- }
 
 	FieldCache createCache()
 	{
@@ -251,7 +241,7 @@ public:
 
 	FieldComponent createComponent(Field& sourceField, int componentIndex);
 
-	FieldConcatenate createConcatenate(int numberOfSourceFields, Field **sourceFields);
+	FieldConcatenate createConcatenate(int numberOfSourceFields, Field *sourceFields);
 
 	FieldIf createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 
@@ -269,12 +259,12 @@ public:
 	FieldEmbedded createEmbedded(Field& sourceField, Field& embeddedLocationField);
 
 	FieldFindMeshLocation createFindMeshLocation(
-		Field sourceField, Field meshField, Mesh mesh);
+		Field& sourceField, Field& meshField, Mesh& mesh);
 
-	FieldNodeValue createNodeValue(Field sourceField,
-		NodalValueType nodalValueType, int versionNumber);
+	FieldNodeValue createNodeValue(Field& sourceField,
+		Node::ValueType valueType, int versionNumber);
 
-	FieldStoredMeshLocation createStoredMeshLocation(Mesh mesh);
+	FieldStoredMeshLocation createStoredMeshLocation(Mesh& mesh);
 
 	FieldGroup createGroup();
 
@@ -341,7 +331,7 @@ public:
 
 	FieldCrossProduct createCrossProduct(int dimension, Field* sourceFields);
 
-	FieldCrossProduct3D createCrossProduct3D(Field& sourceField1, Field& sourceField2);
+	FieldCrossProduct createCrossProduct3D(Field& sourceField1, Field& sourceField2);
 
 	FieldDotProduct createDotProduct(Field& sourceField1, Field& sourceField2);
 
@@ -358,4 +348,4 @@ inline FieldModule Field::getFieldModule()
 
 }  // namespace Zn
 
-#endif /* __FIELD_MODULE_HPP__ */
+#endif /* __ZN_FIELD_MODULE_HPP__ */

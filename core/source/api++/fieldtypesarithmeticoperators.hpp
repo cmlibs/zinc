@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
-#define __FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
+#ifndef __ZN_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
+#define __ZN_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
 
-extern "C" {
 #include "api/cmiss_field_arithmetic_operators.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldAdd : public Field
 {
 public:
 
-	FieldAdd() : Field(NULL)
+	FieldAdd() : Field(0)
 	{ }
 
-	FieldAdd(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAdd(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -70,10 +69,11 @@ class FieldPower : public Field
 {
 public:
 
-	FieldPower() : Field(NULL)
+	FieldPower() : Field(0)
 	{ }
 
-	FieldPower(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldPower(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -82,10 +82,11 @@ class FieldMultiply : public Field
 {
 public:
 
-	FieldMultiply() : Field(NULL)
+	FieldMultiply() : Field(0)
 	{ }
 
-	FieldMultiply(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMultiply(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -100,10 +101,11 @@ class FieldDivide : public Field
 {
 public:
 
-	FieldDivide() : Field(NULL)
+	FieldDivide() : Field(0)
 	{	}
 
-	FieldDivide(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDivide(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -118,10 +120,10 @@ class FieldSubtract : public Field
 {
 public:
 
-	FieldSubtract() : Field(NULL)
+	FieldSubtract() : Field(0)
 	{	}
-
-	FieldSubtract(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSubtract(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -136,10 +138,11 @@ class FieldSumComponents : public Field
 {
 public:
 
-	FieldSumComponents() : Field(NULL)
+	FieldSumComponents() : Field(0)
 	{	}
 
-	FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -148,10 +151,11 @@ class FieldLog : public Field
 {
 public:
 
-	FieldLog() : Field(NULL)
+	FieldLog() : Field(0)
 	{	}
 
-	FieldLog(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldLog(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -166,10 +170,11 @@ class FieldSqrt : public Field
 {
 public:
 
-	FieldSqrt() : Field(NULL)
+	FieldSqrt() : Field(0)
 	{	}
 
-	FieldSqrt(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSqrt(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -184,10 +189,11 @@ class FieldExp : public Field
 {
 public:
 
-	FieldExp() : Field(NULL)
+	FieldExp() : Field(0)
 	{	}
 
-	FieldExp(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldExp(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -202,10 +208,11 @@ class FieldAbs : public Field
 {
 public:
 
-	FieldAbs() : Field(NULL)
+	FieldAbs() : Field(0)
 	{	}
 
-	FieldAbs(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAbs(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -276,4 +283,4 @@ inline FieldAbs FieldModule::createAbs(Field& sourceField)
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__ */
+#endif /* __ZN_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__ */

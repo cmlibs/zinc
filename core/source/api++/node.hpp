@@ -36,55 +36,53 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __NODE_HPP__
-#define __NODE_HPP__
+#ifndef __ZN_NODE_HPP__
+#define __ZN_NODE_HPP__
 
-extern "C" {
 #include "api/cmiss_node.h"
-}
 #include "api++/field.hpp"
 
 namespace Zn
 {
 
-enum NodalValueType
-{
-	NODAL_VALUE_TYPE_INVALID = CMISS_NODAL_VALUE_TYPE_INVALID,
-	NODAL_VALUE = CMISS_NODAL_VALUE,
-	NODAL_D_DS1 = CMISS_NODAL_D_DS1,
-	NODAL_D_DS2 = CMISS_NODAL_D_DS2,
-	NODAL_D_DS3 = CMISS_NODAL_D_DS3,
-	NODAL_D2_DS1DS2 = CMISS_NODAL_D2_DS1DS2,
-	NODAL_D2_DS1DS3 = CMISS_NODAL_D2_DS1DS3,
-	NODAL_D2_DS2DS3 = CMISS_NODAL_D2_DS2DS3,
-	NODAL_D3_DS1DS2DS3 = CMISS_NODAL_D3_DS1DS2DS3,
-};
-
 class NodeTemplate;
 
 class Node
 {
-protected:
-
-	Node() : id(NULL)
-	{ }
+private:
 
 	Cmiss_node_id id;
 
 public:
 
-	// takes ownership of C-style region reference
-	Node(Cmiss_node_id node_id) : id(node_id)
+	Node() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Node(Cmiss_node_id node_id) : id(node_id)
 	{ }
 
 	Node(const Node& node) :
 		id(Cmiss_node_access(node.id))
 	{ }
 
+	enum ValueType
+	{
+		VALUE_TYPE_INVALID = CMISS_NODAL_VALUE_TYPE_INVALID,
+		VALUE = CMISS_NODAL_VALUE,
+		D_DS1 = CMISS_NODAL_D_DS1,
+		D_DS2 = CMISS_NODAL_D_DS2,
+		D_DS3 = CMISS_NODAL_D_DS3,
+		D2_DS1DS2 = CMISS_NODAL_D2_DS1DS2,
+		D2_DS1DS3 = CMISS_NODAL_D2_DS1DS3,
+		D2_DS2DS3 = CMISS_NODAL_D2_DS2DS3,
+		D3_DS1DS2DS3 = CMISS_NODAL_D3_DS1DS2DS3,
+	};
+
 	Node& operator=(const Node& node)
 	{
 		Cmiss_node_id temp_id = Cmiss_node_access(node.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_destroy(&id);
 		}
@@ -94,7 +92,7 @@ public:
 
 	~Node()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_destroy(&id);
 		}
@@ -119,15 +117,15 @@ class NodeTemplate
 {
 private:
 
-	NodeTemplate() : id(NULL)
-	{ }
-
 	Cmiss_node_template_id id;
 
 public:
 
-	// takes ownership of C-style node_template reference
-	NodeTemplate(Cmiss_node_template_id node_template_id) :
+	NodeTemplate() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit NodeTemplate(Cmiss_node_template_id node_template_id) :
 		id(node_template_id)
 	{ }
 
@@ -138,7 +136,7 @@ public:
 	NodeTemplate& operator=(const NodeTemplate& nodeTemplate)
 	{
 		Cmiss_node_template_id temp_id = Cmiss_node_template_access(nodeTemplate.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_template_destroy(&id);
 		}
@@ -148,7 +146,7 @@ public:
 
 	~NodeTemplate()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_template_destroy(&id);
 		}
@@ -199,15 +197,15 @@ class NodeIterator
 {
 private:
 
-	NodeIterator() : id(NULL)
-	{ }
-
 	Cmiss_node_iterator_id id;
 
 public:
 
-	// takes ownership of C-style node_basis reference
-	NodeIterator(Cmiss_node_iterator_id node_iterator_id) :
+	NodeIterator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit NodeIterator(Cmiss_node_iterator_id node_iterator_id) :
 		id(node_iterator_id)
 	{ }
 
@@ -218,7 +216,7 @@ public:
 	NodeIterator& operator=(const NodeIterator& nodeIterator)
 	{
 		Cmiss_node_iterator_id temp_id = Cmiss_node_iterator_access(nodeIterator.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_iterator_destroy(&id);
 		}
@@ -228,7 +226,7 @@ public:
 
 	~NodeIterator()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_node_iterator_destroy(&id);
 		}
@@ -248,11 +246,11 @@ protected:
 
 public:
 
-	Nodeset() : id(NULL)
+	Nodeset() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	Nodeset(Cmiss_nodeset_id nodeset_id) : id(nodeset_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Nodeset(Cmiss_nodeset_id nodeset_id) : id(nodeset_id)
 	{  }
 
 	Nodeset(const Nodeset& nodeset) :
@@ -262,7 +260,7 @@ public:
 	Nodeset& operator=(const Nodeset& nodeset)
 	{
 		Cmiss_nodeset_id temp_id = Cmiss_nodeset_access(nodeset.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_nodeset_destroy(&id);
 		}
@@ -272,7 +270,7 @@ public:
 
 	~Nodeset()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_nodeset_destroy(&id);
 		}
@@ -350,8 +348,8 @@ class NodesetGroup  : public Nodeset
 
 public:
 
-	// takes ownership of C-style nodeset reference
-	NodesetGroup(Cmiss_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<Cmiss_nodeset_id>(nodeset_id))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit NodesetGroup(Cmiss_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<Cmiss_nodeset_id>(nodeset_id))
 	{ }
 
 	Cmiss_nodeset_group_id getId()
@@ -392,4 +390,4 @@ inline int Node::merge(NodeTemplate nodeTemplate)
 
 }  // namespace Zn
 
-#endif /* __NODE_HPP__ */
+#endif /* __ZN_NODE_HPP__ */

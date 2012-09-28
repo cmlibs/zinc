@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_MATRIX_OPERATORS_HPP__
-#define __FIELD_TYPES_MATRIX_OPERATORS_HPP__
+#ifndef __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__
+#define __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__
 
-extern "C" {
 #include "api/cmiss_field_matrix_operators.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,10 +50,11 @@ class FieldDeterminant : public Field
 {
 public:
 
-	FieldDeterminant() : Field(NULL)
+	FieldDeterminant() : Field(0)
 	{	}
 
-	FieldDeterminant(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDeterminant(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -64,10 +63,11 @@ class FieldEigenvalues : public Field
 {
 public:
 
-	FieldEigenvalues() : Field(NULL)
+	FieldEigenvalues() : Field(0)
 	{	}
 
-	FieldEigenvalues(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEigenvalues(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -76,10 +76,11 @@ class FieldEigenvectors : public Field
 {
 public:
 
-	FieldEigenvectors() : Field(NULL)
+	FieldEigenvectors() : Field(0)
 	{	}
 
-	FieldEigenvectors(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEigenvectors(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -88,10 +89,11 @@ class FieldMatrixInvert : public Field
 {
 public:
 
-	FieldMatrixInvert() : Field(NULL)
+	FieldMatrixInvert() : Field(0)
 	{	}
 
-	FieldMatrixInvert(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMatrixInvert(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -100,10 +102,11 @@ class FieldMatrixMultiply : public Field
 {
 public:
 
-	FieldMatrixMultiply() : Field(NULL)
+	FieldMatrixMultiply() : Field(0)
 	{	}
 
-	FieldMatrixMultiply(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMatrixMultiply(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -112,11 +115,12 @@ class FieldProjection : public Field
 {
 public:
 
-	FieldProjection() : Field(NULL)
+	FieldProjection() : Field(0)
 	{	}
 
 
-	FieldProjection(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldProjection(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -125,11 +129,12 @@ class FieldTranspose : public Field
 {
 public:
 
-	FieldTranspose() : Field(NULL)
+	FieldTranspose() : Field(0)
 	{	}
 
 
-	FieldTranspose(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTranspose(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -181,4 +186,4 @@ inline FieldTranspose FieldModule::createTranspose(int sourceNumberOfRows,
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_MATRIX_OPERATORS_HPP__ */
+#endif /* __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__ */

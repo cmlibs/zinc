@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_TESSELLATION_HPP__
-#define __CMISS_TESSELLATION_HPP__
+#ifndef __ZN_TESSELLATION_HPP__
+#define __ZN_TESSELLATION_HPP__
 
-extern "C" {
 #include "api/cmiss_tessellation.h"
-}
 
 namespace Zn
 {
@@ -53,10 +51,11 @@ protected:
 
 public:
 
-	Tessellation() : id(NULL)
+	Tessellation() : id(0)
 	{  }
 
-	Tessellation(Cmiss_tessellation_id in_tessellation_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Tessellation(Cmiss_tessellation_id in_tessellation_id) :
 		id(in_tessellation_id)
 	{  }
 
@@ -67,7 +66,7 @@ public:
 	Tessellation& operator=(const Tessellation& tessellation)
 	{
 		Cmiss_tessellation_id temp_id = Cmiss_tessellation_access(tessellation.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_tessellation_destroy(&id);
 		}
@@ -77,7 +76,7 @@ public:
 
 	~Tessellation()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_tessellation_destroy(&id);
 		}
@@ -142,4 +141,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __CMISS_TESSELLATION_HPP__ */
+#endif /* __ZN_TESSELLATION_HPP__ */

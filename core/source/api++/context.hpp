@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CONTEXT_HPP__
-#define __CONTEXT_HPP__
+#ifndef __ZN_CONTEXT_HPP__
+#define __ZN_CONTEXT_HPP__
 
 #include "api/cmiss_context.h"
 #include "api++/region.hpp"
@@ -53,19 +53,19 @@ class Context
 {
 private:
 
-	Context() : id(NULL)
-	{ }
-
 	Cmiss_context_id id;
 
 public:
+
+	Context() : id(0)
+	{ }
 	// Creates a new Cmiss Context instance
 	Context(const char *contextName) :
 		id(Cmiss_context_create(contextName))
 	{ }
 
-	// takes ownership of C-style context reference
-	Context(Cmiss_context_id context_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Context(Cmiss_context_id context_id) :
 		id(context_id)
 	{ }
 
@@ -75,7 +75,7 @@ public:
 
 	~Context()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_context_destroy(&id);
 		}
@@ -84,7 +84,7 @@ public:
 	Context& operator=(const Context& context)
 	{
 		Cmiss_context_id temp_id = Cmiss_context_access(context.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_context_destroy(&id);
 		}
@@ -96,16 +96,6 @@ public:
 	{
 		return id;
 	}
-
-	//-- int enableUserInterface()
-	//-- {
-	//-- 	return Cmiss_context_enable_user_interface(id, NULL);
-	//-- }
-
-	//-- int executeCommand(const char *command)
-	//-- {
-	//-- 	return Cmiss_context_execute_command(id, command);
-	//-- }
 
 	Region getDefaultRegion()
 	{
@@ -123,22 +113,18 @@ public:
 	}
 
 	SceneViewerPackage getDefaultSceneViewerPackage()
-	{
+ 	{
 		return SceneViewerPackage(Cmiss_context_get_default_scene_viewer_package(id));
-	}
+ 	}
 
-	//-- TimeKeeper getDefaultTimeKeeper()
-	//-- {
-	//-- 	return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
-	//-- }
+//	TimeKeeper getDefaultTimeKeeper()
+//	{
+//		return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
+//	}
 
-	//-- int runMainLoop()
-	//-- {
-	//-- 	return Cmiss_context_run_main_loop(id);
-	//-- }
 };
 
 }  // namespace Zn
 
 
-#endif /* __CONTEXT_HPP__ */
+#endif /* __ZN_CONTEXT_HPP__ */

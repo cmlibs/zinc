@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __FIELD_TYPES_VECTOR_OPERATORS_HPP__
-#define __FIELD_TYPES_VECTOR_OPERATORS_HPP__
+#ifndef __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__
+#define __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__
 
-extern "C" {
 #include "api/cmiss_field_vector_operators.h"
-}
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"
 
@@ -52,22 +50,11 @@ class FieldCrossProduct : public Field
 {
 public:
 
-	FieldCrossProduct() : Field(NULL)
+	FieldCrossProduct() : Field(0)
 	{	}
 
-	FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
-	{	}
-
-};
-
-class FieldCrossProduct3D : public Field
-{
-public:
-
-	FieldCrossProduct3D() : Field(NULL)
-	{	}
-
-	FieldCrossProduct3D(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -76,10 +63,11 @@ class FieldDotProduct : public Field
 {
 public:
 
-	FieldDotProduct() : Field(NULL)
+	FieldDotProduct() : Field(0)
 	{	}
 
-	FieldDotProduct(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDotProduct(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -88,10 +76,11 @@ class FieldMagnitude : public Field
 {
 public:
 
-	FieldMagnitude() : Field(NULL)
+	FieldMagnitude() : Field(0)
 	{	}
 
-	FieldMagnitude(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMagnitude(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -100,17 +89,18 @@ class FieldNormalise : public Field
 {
 public:
 
-	FieldNormalise() : Field(NULL)
+	FieldNormalise() : Field(0)
 	{	}
 
-	FieldNormalise(Cmiss_field_id field_id) : Field(field_id)
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNormalise(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 inline FieldCrossProduct FieldModule::createCrossProduct(int dimension, Field* sourceFields)
 {
-	Cmiss_field_id field = NULL;
+	Cmiss_field_id field = 0;
 	if (dimension - 1 > 0)
 	{
 		Cmiss_field_id *source_fields = new Cmiss_field_id[dimension - 1];
@@ -125,9 +115,9 @@ inline FieldCrossProduct FieldModule::createCrossProduct(int dimension, Field* s
 	return FieldCrossProduct(field);
 }
 
-inline FieldCrossProduct3D FieldModule::createCrossProduct3D(Field& sourceField1, Field& sourceField2)
+inline FieldCrossProduct FieldModule::createCrossProduct3D(Field& sourceField1, Field& sourceField2)
 {
-	return FieldCrossProduct3D(Cmiss_field_module_create_cross_product_3d(id, sourceField1.getId(),
+	return FieldCrossProduct(Cmiss_field_module_create_cross_product_3d(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
@@ -149,4 +139,4 @@ inline FieldNormalise FieldModule::createNormalise(Field& sourceField)
 
 }  // namespace Zn
 
-#endif /* __FIELD_TYPES_VECTOR_OPERATORS_HPP__ */
+#endif /* __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__ */

@@ -36,12 +36,10 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_GRAPHICS_FILTER_HPP__
-#define __CMISS_GRAPHICS_FILTER_HPP__
+#ifndef __ZN_CMISS_GRAPHICS_FILTER_HPP__
+#define __ZN_CMISS_GRAPHICS_FILTER_HPP__
 
-extern "C" {
 #include "api/cmiss_graphics_filter.h"
-}
 #include "api++/graphic.hpp"
 
 namespace Zn
@@ -54,11 +52,11 @@ protected:
 
 public:
 
-	GraphicsFilter() : id(NULL)
+	GraphicsFilter() : id(0)
 	{  }
 
-	// takes ownership of C-style region reference
-	GraphicsFilter(Cmiss_graphics_filter_id in_graphics_filter_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsFilter(Cmiss_graphics_filter_id in_graphics_filter_id) :
 		id(in_graphics_filter_id)
 	{  }
 
@@ -69,7 +67,7 @@ public:
 	GraphicsFilter& operator=(const GraphicsFilter& graphicsFilter)
 	{
 		Cmiss_graphics_filter_id temp_id = Cmiss_graphics_filter_access(graphicsFilter.id);
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_filter_destroy(&id);
 		}
@@ -79,7 +77,7 @@ public:
 
 	~GraphicsFilter()
 	{
-		if (NULL != id)
+		if (0 != id)
 		{
 			Cmiss_graphics_filter_destroy(&id);
 		}
@@ -129,7 +127,8 @@ class GraphicsFilterOperator : public GraphicsFilter
 {
 public:
 
-	GraphicsFilterOperator(Cmiss_graphics_filter_operator_id graphics_filter_id) :
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsFilterOperator(Cmiss_graphics_filter_operator_id graphics_filter_id) :
 		GraphicsFilter(reinterpret_cast<Cmiss_graphics_filter_id>(graphics_filter_id))
 	{ }
 
@@ -183,4 +182,4 @@ public:
 
 }  // namespace Zn
 
-#endif /* __CMISS_GRAPHICS_FILTER_HPP__ */
+#endif /* __ZN_CMISS_GRAPHICS_FILTER_HPP__ */
