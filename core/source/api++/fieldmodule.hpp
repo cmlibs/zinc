@@ -154,6 +154,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_field_module_id getId()
 	{
 		return id;

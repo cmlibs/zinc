@@ -86,6 +86,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_time_notifier_id getId()
 	{
 		return id;

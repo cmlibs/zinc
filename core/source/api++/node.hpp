@@ -98,6 +98,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_node_id getId()
 	{
 		return id;
@@ -150,6 +155,11 @@ public:
 		{
 			Cmiss_node_template_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	enum ValueType
@@ -232,6 +242,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Node next()
 	{
 		return Node(Cmiss_node_iterator_next(id));
@@ -274,6 +289,11 @@ public:
 		{
 			Cmiss_nodeset_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_nodeset_id getId()

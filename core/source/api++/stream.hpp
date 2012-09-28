@@ -82,6 +82,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_stream_resource_id getId()
 	{
 		return id;
@@ -165,6 +170,11 @@ public:
 		{
 			Cmiss_stream_information_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_stream_information_id getId()

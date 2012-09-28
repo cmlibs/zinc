@@ -78,6 +78,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Element& operator=(const Element& element)
 	{
 		Cmiss_element_id temp_id = Cmiss_element_access(element.id);
@@ -126,7 +131,6 @@ public:
 
 };
 
-
 class ElementBasis
 {
 private:
@@ -164,6 +168,11 @@ public:
 		{
 			Cmiss_element_basis_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	enum FunctionType
@@ -242,6 +251,11 @@ public:
 		{
 			Cmiss_element_template_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_element_template_id getId()
@@ -328,6 +342,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Element next()
 	{
 		return Element(Cmiss_element_iterator_next(id));
@@ -359,6 +378,11 @@ public:
 		{
 			Cmiss_mesh_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Mesh& operator=(const Mesh& mesh)

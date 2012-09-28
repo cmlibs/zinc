@@ -83,6 +83,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_GRAPHICS_FILTER_ATTRIBUTE_INVALID,

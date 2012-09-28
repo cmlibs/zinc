@@ -83,6 +83,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_time_keeper_id getId()
 	{
 		return id;

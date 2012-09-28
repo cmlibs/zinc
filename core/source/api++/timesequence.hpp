@@ -82,6 +82,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_time_sequence_id getId()
 	{
 		return id;

@@ -82,6 +82,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_spectrum_id getId()
 	{
 		return id;

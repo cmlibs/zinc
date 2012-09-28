@@ -82,6 +82,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_selection_handler_id getId()
 	{
 		return id;
@@ -145,6 +150,11 @@ public:
 		{
 			Cmiss_selection_event_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_selection_event_id getId()

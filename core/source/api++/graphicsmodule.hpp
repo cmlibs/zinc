@@ -90,6 +90,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_graphics_module_id getId()
 	{
 		return id;

@@ -39,6 +39,7 @@
 #ifndef __ZN_FIELD_TYPES_COMPOSITE_HPP__
 #define __ZN_FIELD_TYPES_COMPOSITE_HPP__
 
+
 #include "api/cmiss_field_composite.h"
 #include "api++/field.hpp"
 #include "api++/fieldmodule.hpp"

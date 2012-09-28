@@ -46,7 +46,7 @@ namespace Zn
 
 class DifferentialOperator
 {
-protected:
+private:
 	Cmiss_differential_operator_id id;
 
 public:

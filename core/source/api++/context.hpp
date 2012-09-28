@@ -81,6 +81,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Context& operator=(const Context& context)
 	{
 		Cmiss_context_id temp_id = Cmiss_context_access(context.id);

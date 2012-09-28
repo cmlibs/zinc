@@ -82,6 +82,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_TESSELLATION_ATTRIBUTE_INVALID,

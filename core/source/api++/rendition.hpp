@@ -84,6 +84,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	// needed for casting constructors: see RenditionImage(Rendition&)
 	Cmiss_rendition_id getId()
 	{

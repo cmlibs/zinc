@@ -88,6 +88,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_field_id getId()
 	{
 		return id;
@@ -164,11 +169,6 @@ public:
 	int getNumberOfComponents()
 	{
 		return Cmiss_field_get_number_of_components(id);
-	}
-
-	bool isValid()
-	{
-		return (0 != id);
 	}
 
 	char *getName()

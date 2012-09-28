@@ -83,6 +83,10 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
 
 	enum Method
 	{

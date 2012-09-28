@@ -149,6 +149,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_region_id getId()
 	{
 		return id;

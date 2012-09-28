@@ -84,6 +84,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_scene_id getId()
 	{
 		return id;

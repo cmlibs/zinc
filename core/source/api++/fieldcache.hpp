@@ -86,6 +86,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_field_cache_id getId()
 	{
 		return id;

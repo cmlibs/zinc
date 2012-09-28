@@ -90,6 +90,11 @@ public:
 		}
 	}
 
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
 	Cmiss_scene_viewer_input_id getId()
 	{
 		return id;
@@ -164,6 +169,11 @@ public:
 		{
 			Cmiss_scene_viewer_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_scene_viewer_id getId()
@@ -244,6 +254,11 @@ public:
 		{
 			Cmiss_scene_viewer_package_destroy(&id);
 		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
 	}
 
 	Cmiss_scene_viewer_package_id getId()
