@@ -62,7 +62,7 @@ class Computed_field_function_package : public Computed_field_type_package
 
 namespace {
 
-char computed_field_function_type_string[] = "function";
+const char computed_field_function_type_string[] = "function";
 
 class Computed_field_function : public Computed_field_core
 {
@@ -218,9 +218,9 @@ DESCRIPTION :
 {
 	FE_value *temp_values;
 	int i, return_code;
-	
+
 	ENTER(Computed_field_function::set_values_at_location);
-	if (field && location && values && 
+	if (field && location && values &&
 		ALLOCATE(temp_values, FE_value, field->number_of_components))
 	{
 		if ((field->source_fields[0]->number_of_components ==
@@ -246,7 +246,7 @@ DESCRIPTION :
 		}
 		if (return_code)
 		{
-			return_code = 
+			return_code =
 				Computed_field_set_values_at_location(field->source_fields[0],
 				location, temp_values);
 		}
@@ -278,7 +278,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(List_Computed_field_function);
 	if (field)
 	{

@@ -141,7 +141,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Assign_variable *variable;
-	
+
 	if (name)
 	{
 		if (ALLOCATE(variable, struct Assign_variable, 1)
@@ -155,7 +155,7 @@ DESCRIPTION :
 			{
 				assign_variable_list = CREATE_LIST(Assign_variable)();
 			}
-			
+
 			if (!(ADD_OBJECT_TO_LIST(Assign_variable)(variable, assign_variable_list)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -176,8 +176,8 @@ DESCRIPTION :
 			"CREATE(Assign_variable).  Invalid arguments");
 		variable = (struct Assign_variable *)NULL;
 	}
-			
-	
+
+
 	return(variable);
 }
 
@@ -267,7 +267,7 @@ DESCRIPTION :
 {
 	char *new_value;
 	int return_code;
-	
+
 	if (variable && value)
 	{
 		if (REALLOCATE(new_value, variable->value, char, strlen(value) + 1))
@@ -298,50 +298,6 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Assign_variable,name,const char *,strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Assign_variable)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Assign_variable,name,const char *,
 	strcmp)
-
-static int reduce_fuzzy_string(char *reduced_string,const char *string)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1998
-
-DESCRIPTION :
-Copies <string> to <reduced_string> converting to upper case and removing
-whitespace, -'s and _'s.
-???RC Removed filtering of dash and underline.
-==============================================================================*/
-{
-	char *destination;
-	const char *source;
-	int return_code;
-
-	ENTER(reduce_fuzzy_string);
-	if ((source=string)&&(destination=reduced_string))
-	{
-		while (*source)
-		{
-			/* remove whitespace, -'s and _'s */
-			/*???RC don't know why you want to exclude - and _. I had a case where
-				I typed gfx create fibre_ (short for fibre_field) and it thought it was
-				ambiguous since there is also a gfx create fibres commands. */
-			if (!isspace(*source)/*&&(*source!='-')&&(*source!='_')*/)
-			{
-				*destination=toupper(*source);
-				destination++;
-			}
-			source++;
-		}
-		/* terminate the string */
-		*destination='\0';
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"reduce_fuzzy_string.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* reduce_fuzzy_string */
 
 static int execute_variable_command_operation(struct Parse_state *state,
 	void *operation_type_void,void *dummy_user_data)
@@ -531,149 +487,6 @@ Executes a VARIABLE SHOW command.
 Global functions
 ----------------
 */
-int fuzzy_string_compare(const char *first,const char *second)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2000
-
-DESCRIPTION :
-This is a case insensitive compare disregarding certain characters (whitespace,
-dashes and underscores).  For example, "Ambient Colour" matches the following:
-
-"AMBIENT_COLOUR", "ambient_colour", "ambientColour", "Ambient_Colour",
-"ambient-colour", "AmBiEnTcOlOuR", "Ambient-- Colour"
-
-and a large set of even louder versions.
-
-Both strings are first reduced, which removes whitespace and converts to upper
-case. Returns 1 iff the reduced second string is at least as long as the
-reduced first string and starts with the characters in the first.
-==============================================================================*/
-{
-	char *first_reduced,*second_reduced;
-	int compare_length,first_length,return_code,second_length;
-
-	ENTER(fuzzy_string_compare);
-	if (first&&second)
-	{
-		/*???Edouard.  Malloc()ing and free()ing space for every string compare is
-			perhaps going to eat a few too many cycles in the final analysis. I think
-			that the best idea would be to at some point in the future recode the
-			following to compare the strings 'live' by reducing and skipping the chars
-			one by one. I've done this before, but it's generally not all that
-			clean-looking, so I'm trying to write a simple one first off */
-		/* allocate memory */
-		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
-			ALLOCATE(second_reduced,char,strlen(second)+1))
-		{
-			/* reduce strings */
-			if (reduce_fuzzy_string(first_reduced,first)&&
-				reduce_fuzzy_string(second_reduced,second))
-			{
-				first_length=strlen(first_reduced);
-				second_length=strlen(second_reduced);
-				/* first reduced string must not be longer than second */
-				if (first_length <= second_length)
-				{
-					compare_length=first_length;
-					if (strncmp(first_reduced,second_reduced,compare_length))
-					{
-						return_code=0;
-					}
-					else
-					{
-						return_code=1;
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Error reducing");
-				return_code=0;
-			}
-			DEALLOCATE(first_reduced);
-			DEALLOCATE(second_reduced);
-		}
-		else
-		{
-			DEALLOCATE(first_reduced);
-			display_message(ERROR_MESSAGE,
-				"fuzzy_string_compare.  Insufficient memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* fuzzy_string_compare */
-
-int fuzzy_string_compare_same_length(const char *first,const char *second)
-/*******************************************************************************
-LAST MODIFIED : 14 August 1998
-
-DESCRIPTION :
-Same as fuzzy_string_compare except that the two reduced strings must be the
-same length.
-==============================================================================*/
-{
-	char *first_reduced,*second_reduced;
-	int return_code;
-
-	ENTER(fuzzy_string_compare_same_length);
-	if (first&&second)
-	{
-		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
-			ALLOCATE(second_reduced,char,strlen(second)+1))
-		{
-			/* reduce strings */
-			if (reduce_fuzzy_string(first_reduced,first)&&
-				reduce_fuzzy_string(second_reduced,second))
-			{
-				if (0==strcmp(first_reduced,second_reduced))
-				{
-					return_code=1;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"fuzzy_string_compare_same_length.  Error reducing");
-				return_code=0;
-			}
-			DEALLOCATE(first_reduced);
-			DEALLOCATE(second_reduced);
-		}
-		else
-		{
-			DEALLOCATE(first_reduced);
-			display_message(ERROR_MESSAGE,
-				"fuzzy_string_compare_same_length.  Insufficient memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"fuzzy_string_compare_same_length.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* fuzzy_string_compare_same_length */
-
 int process_option(struct Parse_state *state,
 	struct Modifier_entry *modifier_table)
 /*******************************************************************************
@@ -1175,7 +988,7 @@ DESCRIPTION :
 		exclusive_option=0;
 		return_code=1;
 		while ((state->current_token)&&(return_code=process_option(state,
-			(void *)modifier_table)));
+			modifier_table)));
 		multiple_options--;
 		exclusive_option=local_exclusive_option;
 	}
@@ -1205,8 +1018,8 @@ Creates an Option_table for text parsing.
 	{
 		option_table->allocated_entries = 0;
 		option_table->number_of_entries = 0;
- 		option_table->entry = (struct Modifier_entry *)NULL;
- 		option_table->help = (char *)NULL;
+		option_table->entry = (struct Modifier_entry *)NULL;
+		option_table->help = (char *)NULL;
 		/* flag indicating all options successfully added */
 		option_table->valid = 1;
 		/* store suboption_tables added to table for destroying with option_table */
@@ -1301,7 +1114,7 @@ If fails, marks the option_table as invalid.
 					display_message(ERROR_MESSAGE,
 						"Option_table_add_entry_private.  Token '%s' already in option table",
 						token);
-					return_code=0;				
+					return_code=0;
 				}
 				i++;
 			}
@@ -1779,12 +1592,12 @@ entered.
 					}
 				}
 				display_message(INFORMATION_MESSAGE,"\n%*s*%*s%.*s",
-					local_indent, " ", in_text_indent, " ", 
+					local_indent, " ", in_text_indent, " ",
 					output, option_table->help + index);
 				index += output;
 				in_text_indent = 2;
 			}
-		}		
+		}
 		/* add blank entry needed for process_option */
 		Option_table_add_entry_private(option_table,(char *)NULL,(void *)NULL,
 			(void *)NULL,(modifier_function)NULL);
@@ -2575,14 +2388,14 @@ if it exists.
 				{
 					display_message(ERROR_MESSAGE,
 						"parse_variable.  Concatenation token operator \"//\" required between variable and plain text.");
-					return_code=0;				
+					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"parse_variable.  Concatenation token operator \"//\" required between variable and plain text.");
-				return_code=0;				
+				return_code=0;
 			}
 		}
 	}
@@ -2627,7 +2440,7 @@ Executes a VARIABLE command.
 	{
 		if (state->current_token)
 		{
-			return_code=process_option(state,(void *)option_table);
+			return_code=process_option(state,option_table);
 		}
 		else
 		{
@@ -2656,10 +2469,12 @@ use of this command.
 ==============================================================================*/
 {
 	const char *current_token;
-	char *begin, *begin2, *end, *env_string, *var_name;
+	const char *end;
+	char *var_name, *env_string;
+	const char *begin, *begin2;
 	int return_code;
 	struct Assign_variable *variable;
-	
+
 	ENTER(execute_assign_variable);
 	USE_PARAMETER(dummy_to_be_modified);
 	USE_PARAMETER(dummy_user_data);
@@ -2672,7 +2487,7 @@ use of this command.
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				return_code = 1;
-				if (!(assign_variable_list) || 
+				if (!(assign_variable_list) ||
 					!(variable = FIND_BY_IDENTIFIER_IN_LIST(Assign_variable, name)
 					(current_token, assign_variable_list)))
 				{
@@ -2719,7 +2534,7 @@ use of this command.
 												"execute_assign_variable.  Closing ) missing.",
 												state->current_token);
 											return_code = 0;
-										}										
+										}
 									}
 								}
 								else
@@ -2738,7 +2553,7 @@ use of this command.
 										env_string = getenv(var_name);
 										if (env_string != NULL)
 										{
-											return_code = 
+											return_code =
 												Assign_variable_set_value(variable,
 													env_string);
 										}
@@ -2755,7 +2570,7 @@ use of this command.
 							}
 							else
 							{
-								return_code = 
+								return_code =
 									Assign_variable_set_value(variable, current_token);
 							}
 						}
@@ -2771,7 +2586,7 @@ use of this command.
 						display_message(ERROR_MESSAGE,
 							"execute_assign_variable.  Specify new value",
 							state->current_token);
-						return_code = 0;						
+						return_code = 0;
 					}
 				}
 			}
@@ -2807,7 +2622,7 @@ Clean up the global assign_variable_list.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(destroy_assign_variable_list);
 
 	if (assign_variable_list)
@@ -3007,7 +2822,7 @@ or pointing to allocated strings.
 	return (return_code);
 } /* set_names */
 
-static int set_names_from_list(struct Parse_state *state, void *data_void, 
+static int set_names_from_list(struct Parse_state *state, void *data_void,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 7 July 2004
@@ -3016,7 +2831,7 @@ DESCRIPTION :
 Modifier function for reading string names from <state> until one of the
 tokens is not in <data->tokens->string>.  While a valid token is encountered
 then the index for that token is set in <data->valid_tokens->index> (these should
-all be initialised to zero). 
+all be initialised to zero).
 ==============================================================================*/
 {
 	const char *current_token;
@@ -3163,10 +2978,10 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
  * Modifier function for extracting a string which may not be reallocated.
  * When used as a default, token-less entry, prevents tokens from being silently
  * ignored.
- * 
+ *
  * @param state  Current parse state.
  * @param multiple_strings_address_void  Void pointer giving address of string.
- * @param string_description_void  Void pointer to string to write as help.  
+ * @param string_description_void  Void pointer to string to write as help.
  * @return  1 on success, 0 on failure.
  */
 int set_string_no_realloc(struct Parse_state *state,void *string_address_void,
@@ -3867,7 +3682,7 @@ indicate that the float has been set.
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				value_address=(float *)value_address_void;
-			 	flag_address=(char *)flag_address_void;
+				flag_address=(char *)flag_address_void;
 				if ((value_address != NULL) && (flag_address != NULL))
 				{
 					if (1==sscanf(current_token," %f ",&value))
@@ -4908,7 +4723,7 @@ Now prints current contents of the vector with help.
 
 	ENTER(set_double_vector);
 	if (state && number_of_components_address_void)
-	{		
+	{
 		values_address=(double *)values_address_void;
 		number_of_components=	*((int *)number_of_components_address_void);
 		current_token=state->current_token;
@@ -4967,7 +4782,7 @@ Now prints current contents of the vector with help.
 				else
 				{
 					display_message(INFORMATION_MESSAGE," VALUES");
-				}		
+				}
 			}
 		}
 		else
@@ -4994,7 +4809,7 @@ static int set_variable_length_double_vector(struct Parse_state *state,
 LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
-Modifier function for reading doubles from <state>.  This function keeps 
+Modifier function for reading doubles from <state>.  This function keeps
 consuming tokens until one cannot be parsed as a double and sets this
 <number_of_components> into <number_of_components_address>.
 User data consists of a pointer to an integer containing number_of_components,
@@ -5022,7 +4837,7 @@ number_of_components floats.
 				{
 					comp_no = 0;
 					valid_token = 1;
-					if (REALLOCATE(*values_address, *values_address, double, 
+					if (REALLOCATE(*values_address, *values_address, double,
 							VARIABLE_LENGTH_VECTOR_ALLOCATION))
 					{
 						allocated_length = VARIABLE_LENGTH_VECTOR_ALLOCATION;
@@ -5037,7 +4852,7 @@ number_of_components floats.
 					{
 						if (comp_no >= allocated_length)
 						{
-							REALLOCATE(*values_address, *values_address, double, 
+							REALLOCATE(*values_address, *values_address, double,
 								VARIABLE_LENGTH_VECTOR_ALLOCATION + allocated_length);
 							allocated_length += VARIABLE_LENGTH_VECTOR_ALLOCATION;
 						}
@@ -5072,7 +4887,7 @@ number_of_components floats.
 						*((int *)number_of_components_address_void) = comp_no;
 						if (allocated_length != comp_no)
 						{
-							REALLOCATE(*values_address, *values_address, double, 
+							REALLOCATE(*values_address, *values_address, double,
 								comp_no);
 						}
 					}
@@ -5271,7 +5086,7 @@ DESCRIPTION :
 A modifier function for setting an integer switch to 1.
 If the value is currently set, this is indicated in the help, with the <token>
 if supplied, otherwise the word CURRENT.
-If the option's <token> is supplied and its value is currently set, it 
+If the option's <token> is supplied and its value is currently set, it
 ==============================================================================*/
 {
 	char *token;
@@ -5324,7 +5139,7 @@ DESCRIPTION :
 A modifier function for setting an integer switch to 0.
 If the value is currently unset, this is indicated in the help, with the <token>
 if supplied, otherwise the word CURRENT.
-If the option's <token> is supplied and its value is currently set, it 
+If the option's <token> is supplied and its value is currently set, it
 ==============================================================================*/
 {
 	char *token;
@@ -5666,7 +5481,7 @@ int Option_table_add_char_flag_entry(struct Option_table *option_table,
 LAST MODIFIED : 8 October 2003
 
 DESCRIPTION :
-Adds the given <token> to the <option_table>.  If the <token> is specified 
+Adds the given <token> to the <option_table>.  If the <token> is specified
 then the <flag> will be set.
 ==============================================================================*/
 {
@@ -5972,7 +5787,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 } /* Option_table_add_double_vector_entry */
 
 int Option_table_add_variable_length_double_vector_entry(
-	struct Option_table *option_table, const char *token, int *number_of_components, 
+	struct Option_table *option_table, const char *token, int *number_of_components,
 	double **vector)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2005
@@ -6017,7 +5832,7 @@ number of values specified in the <data>.
 	ENTER(Option_table_add_double_vector_with_help_entry);
 	if (option_table && token && vector && data)
 	{
-		return_code = Option_table_add_entry(option_table, token, (void *)vector, 
+		return_code = Option_table_add_entry(option_table, token, (void *)vector,
 			(void *)data, set_double_vector_with_help);
 	}
 	else
@@ -6068,7 +5883,7 @@ LAST MODIFIED : 7 July 2004
 
 DESCRIPTION :
 Adds the given <token> to the <option_table>.  The <data> contains an array
-of size <data->number_of_tokens> tokens.  Each of these tokens points to a 
+of size <data->number_of_tokens> tokens.  Each of these tokens points to a
 string <data->tokens[i].string>.  Input will be read from the parse state until
 a token not in the list of strings.  As each string is encountered the
 corresponding <data->tokens[i].index> is set.  When set these start from one,
@@ -6129,7 +5944,7 @@ LAST MODIFIED : 21 September 2006
 
 DESCRIPTION :
 Specifies that the given <token> will be ignored when parsing the option_table.
-The specified number of <expected_parameters> will also be ignored following 
+The specified number of <expected_parameters> will also be ignored following
 the <token>.
 ==============================================================================*/
 {
@@ -6138,7 +5953,7 @@ the <token>.
 	ENTER(Option_table_add_ignore_token_entry);
 	if (option_table && token)
 	{
-		return_code = Option_table_add_entry(option_table, token, 
+		return_code = Option_table_add_entry(option_table, token,
 			NULL, (void *)expected_parameters, set_nothing);
 	}
 	else
@@ -6160,7 +5975,7 @@ int Option_table_add_special_float3_entry(struct Option_table *option_table,
 	ENTER(Option_table_add_special_float3_entry);
 	if (option_table && token)
 	{
-		return_code = Option_table_add_entry(option_table, token, 
+		return_code = Option_table_add_entry(option_table, token,
 			values, (void *)separation_char_string, set_special_float3);
 	}
 	else
@@ -6280,10 +6095,10 @@ int Option_table_add_default_string_entry(struct Option_table *option_table,
 /***************************************************************************//**
  * Modifier function for extracting one or more strings, separated by and
  * ampersand &.
- * 
+ *
  * @param state  Current parse state.
  * @param multiple_strings_address_void  Address of Multiple_strings structure.
- * @param strings_description_void  void pointer to string to write as help.  
+ * @param strings_description_void  void pointer to string to write as help.
  * @return  1 on success, 0 on failure.
  */
 int set_multiple_strings(struct Parse_state *state,void *multiple_strings_address_void,

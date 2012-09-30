@@ -52,13 +52,13 @@ Implements a field which formats numeric values as a string.
 
 namespace {
 
-char computed_field_format_output_type_string[] = "format_output";
+const char computed_field_format_output_type_string[] = "format_output";
 
 class Computed_field_format_output : public Computed_field_core
 {
 public:
 	char *format_string;
-	/* Estimate from the format_string and number of components 
+	/* Estimate from the format_string and number of components
 	 * a sufficient output string allocation. */
 	int output_allocation_size;
 
@@ -112,7 +112,7 @@ private:
 	char* get_command_string();
 
 	/*****************************************************************************//**
-	 * Computed_field_format_output never has numerical components 
+	 * Computed_field_format_output never has numerical components
 	 */
 	int has_numerical_components()
 	{

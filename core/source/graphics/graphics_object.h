@@ -377,6 +377,7 @@ extern ZnReal global_line_width,global_point_size;
 Global functions
 ----------------
 */
+const char *GT_object_get_name(struct GT_object *gt_object);
 
 enum GT_object_type GT_object_get_type(struct GT_object *gt_object);
 /*******************************************************************************

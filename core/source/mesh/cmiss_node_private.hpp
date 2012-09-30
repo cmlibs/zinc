@@ -42,9 +42,7 @@
 #if !defined (CMISS_NODE_PRIVATE_HPP)
 #define CMISS_NODE_PRIVATE_HPP
 
-extern "C" {
 #include "api/cmiss_node.h"
-}
 
 struct FE_region;
 

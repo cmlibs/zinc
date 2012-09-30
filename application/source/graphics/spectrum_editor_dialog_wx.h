@@ -44,7 +44,9 @@ Header description for spectrum_editor_dialog widget.
 #if !defined (SPECTRUM_EDITOR_DIALOG_H)
 #define SPECTRUM_EDITOR_DIALOG_H
 
+#include "general/manager.h"
 #include "user_interface/user_interface.h"
+#include "graphics/scene.h"
 
 /*
 Global Types
@@ -61,9 +63,9 @@ Global Functions
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum, 
+	struct Spectrum *spectrum,
 	struct Graphics_font *font,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphics_buffer_app_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct Cmiss_graphics_module *graphics_module,
 	struct MANAGER(Scene) *scene_manager,

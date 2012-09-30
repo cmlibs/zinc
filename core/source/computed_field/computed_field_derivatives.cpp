@@ -66,19 +66,19 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_derivative_type_string[] = "derivative";
+const char computed_field_derivative_type_string[] = "derivative";
 
 class Computed_field_derivative_image_filter : public computed_field_image_filter
 {
-	/* This class is only used when the input is deemed to be grid based, 
-		the derivative is not calculable on the input field and the 
+	/* This class is only used when the input is deemed to be grid based,
+		the derivative is not calculable on the input field and the
 		get_native_resolution method is implemented. */
 
 public:
 	int xi_index;
 	int derivative_operator_order;
-       
-	Computed_field_derivative_image_filter(Computed_field *source_field, 
+
+	Computed_field_derivative_image_filter(Computed_field *source_field,
 		int xi_index, int derivative_operator_order);
 
 	~Computed_field_derivative_image_filter()
@@ -198,24 +198,24 @@ and generate the outputImage.
 		int return_code;
 
 		typedef itk::DerivativeImageFilter< ImageType , ImageType > FilterType;
-		
+
 		typename FilterType::Pointer filter = FilterType::New();
 
 		filter->SetDirection( derivative_image_filter->xi_index );
 		filter->SetOrder( derivative_image_filter->derivative_operator_order );
-		
+
 		return_code = derivative_image_filter->update_output_image
 			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
-		
+
 		return (return_code);
 	} /* set_filter */
 
 }; /* template < class ImageType > class Computed_field_derivative_image_filter_Functor */
 
 Computed_field_derivative_image_filter::Computed_field_derivative_image_filter(
-	Computed_field *source_field, int xi_index, int derivative_operator_order) : 
-	computed_field_image_filter(source_field), 
+	Computed_field *source_field, int xi_index, int derivative_operator_order) :
+	computed_field_image_filter(source_field),
 	xi_index(xi_index), derivative_operator_order(derivative_operator_order)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
@@ -254,7 +254,7 @@ public:
 
 	Computed_field_derivative_image_filter *derivative_image_filter;
 
-	Computed_field_derivative(int xi_index) : 
+	Computed_field_derivative(int xi_index) :
 		Computed_field_core(), xi_index(xi_index)
 	{
 		/* Only construct the image filter version if it is required */
@@ -340,7 +340,7 @@ bool Computed_field_derivative::is_defined_at_location(Cmiss_field_cache& cache)
 	// derivative values are only defined for element_xi locations, and only up to element dimension...
 	Field_element_xi_location* element_xi_location;
 	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())) &&
-  		(xi_index < element_xi_location->get_dimension()))
+		(xi_index < element_xi_location->get_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -525,7 +525,7 @@ int Computed_field_get_type_derivative(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DERIVATIVE, the 
+If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 <source_field> and <xi_index> used by it are returned.
 ==============================================================================*/
 {
@@ -554,7 +554,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 
 namespace {
 
-char computed_field_curl_type_string[] = "curl";
+const char computed_field_curl_type_string[] = "curl";
 
 class Computed_field_curl : public Computed_field_core
 {
@@ -802,7 +802,7 @@ int Computed_field_get_type_curl(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURL, the 
+If the field is of type COMPUTED_FIELD_CURL, the
 <source_field> and <coordinate_field> used by it are returned.
 ==============================================================================*/
 {
@@ -830,7 +830,7 @@ If the field is of type COMPUTED_FIELD_CURL, the
 
 namespace {
 
-char computed_field_divergence_type_string[] = "divergence";
+const char computed_field_divergence_type_string[] = "divergence";
 
 class Computed_field_divergence : public Computed_field_core
 {
@@ -1086,7 +1086,7 @@ int Computed_field_get_type_divergence(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DIVERGENCE, the 
+If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 <source_field> and <coordinate_field> used by it are returned.
 ==============================================================================*/
 {
@@ -1114,7 +1114,7 @@ If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 
 namespace {
 
-char computed_field_gradient_type_string[] = "gradient";
+const char computed_field_gradient_type_string[] = "gradient";
 
 class Computed_field_gradient : public Computed_field_core
 {
@@ -1127,7 +1127,7 @@ private:
 	~Computed_field_gradient()
 	{
 	}
-	
+
 	Computed_field_core *copy()
 	{
 		return new Computed_field_gradient();

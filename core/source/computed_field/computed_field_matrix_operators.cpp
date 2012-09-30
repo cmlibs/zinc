@@ -123,7 +123,7 @@ components, where n is a positive integer. If matrix is square, n is returned.
 
 namespace {
 
-char computed_field_determinant_type_string[] = "determinant";
+const char computed_field_determinant_type_string[] = "determinant";
 
 class Computed_field_determinant : public Computed_field_core
 {
@@ -265,7 +265,7 @@ public:
 	}
 };
 
-char computed_field_eigenvalues_type_string[] = "eigenvalues";
+const char computed_field_eigenvalues_type_string[] = "eigenvalues";
 
 class Computed_field_eigenvalues : public Computed_field_core
 {
@@ -439,6 +439,8 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues */
 
+} //namespace
+
 int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
@@ -457,8 +459,6 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues_conditional */
-
-} //namespace
 
 Computed_field *Cmiss_field_module_create_eigenvalues(
 	struct Cmiss_field_module *field_module,
@@ -510,7 +510,7 @@ eigenvalues of is returned.
 
 namespace {
 
-char computed_field_eigenvectors_type_string[] = "eigenvectors";
+const char computed_field_eigenvectors_type_string[] = "eigenvectors";
 
 class Computed_field_eigenvectors : public Computed_field_core
 {
@@ -724,7 +724,7 @@ public:
 	}
 };
 
-char computed_field_matrix_invert_type_string[] = "matrix_invert";
+const char computed_field_matrix_invert_type_string[] = "matrix_invert";
 
 class Computed_field_matrix_invert : public Computed_field_core
 {
@@ -938,7 +938,7 @@ matrix_invert of is returned.
 
 namespace {
 
-char computed_field_matrix_multiply_type_string[] = "matrix_multiply";
+const char computed_field_matrix_multiply_type_string[] = "matrix_multiply";
 
 class Computed_field_matrix_multiply : public Computed_field_core
 {
@@ -948,7 +948,7 @@ public:
 	Computed_field_matrix_multiply(
 		int number_of_rows) :
 		Computed_field_core(), number_of_rows(number_of_rows)
-									 
+
 	{
 	};
 
@@ -1184,7 +1184,7 @@ int Computed_field_get_type_matrix_multiply(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the 
+If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
 <number_of_rows> and <source_fields> used by it are returned.
 ==============================================================================*/
 {
@@ -1213,7 +1213,7 @@ If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
 
 namespace {
 
-char computed_field_projection_type_string[] = "projection";
+const char computed_field_projection_type_string[] = "projection";
 
 class Computed_field_projection : public Computed_field_core
 {
@@ -1274,7 +1274,7 @@ int Computed_field_projection::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			valueCache.values[i] = 0.0;
 			for (int j = 0 ; j < coordinate_components ; j++)
 			{
- 				valueCache.values[i] +=
+				valueCache.values[i] +=
 					projection_matrix[i * (coordinate_components + 1) + j] *
 					source1Cache->values[j];
 			}
@@ -1290,9 +1290,9 @@ int Computed_field_projection::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			perspective += projection_matrix[field->number_of_components
 				* (coordinate_components + 1) + j] * source1Cache->values[j];
 		}
-		perspective += projection_matrix[field->number_of_components 
+		perspective += projection_matrix[field->number_of_components
 			* (coordinate_components + 1) + coordinate_components];
-		
+
 		int number_of_xi = cache.getRequestedDerivatives();
 		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
 		{
@@ -1313,7 +1313,7 @@ int Computed_field_projection::evaluate(Cmiss_field_cache& cache, FieldValueCach
 				FE_value dhdxi = 0.0;
 				for (int j = 0 ; j < coordinate_components ; j++)
 				{
-					dhdxi += projection_matrix[field->number_of_components 
+					dhdxi += projection_matrix[field->number_of_components
 						* (coordinate_components + 1) + j]
 						* source1Cache->derivatives[j *number_of_xi + k];
 				}
@@ -1526,14 +1526,14 @@ int Computed_field_get_type_projection(struct Computed_field *field,
 
 namespace {
 
-char computed_field_transpose_type_string[] = "transpose";
+const char computed_field_transpose_type_string[] = "transpose";
 
 class Computed_field_transpose : public Computed_field_core
 {
 public:
 	int source_number_of_rows;
 
-	Computed_field_transpose(int source_number_of_rows) : 
+	Computed_field_transpose(int source_number_of_rows) :
 		Computed_field_core(), source_number_of_rows(source_number_of_rows)
 	{
 	};
@@ -1731,7 +1731,7 @@ int Computed_field_get_type_transpose(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_TRANSPOSE, the 
+If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 <source_number_of_rows> and <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -1759,21 +1759,21 @@ If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 
 namespace {
 
-char computed_field_quaternion_to_matrix_type_string[] = "quaternion_to_matrix";
+const char computed_field_quaternion_to_matrix_type_string[] = "quaternion_to_matrix";
 
 class Computed_field_quaternion_to_matrix : public Computed_field_core
 {
 public:
 
-	 Computed_field_quaternion_to_matrix() : 
+	 Computed_field_quaternion_to_matrix() :
 			Computed_field_core()
 	 {
 	 };
-	 
+
 	 ~Computed_field_quaternion_to_matrix()
 	 {
 	 };
-	 
+
 private:
 	 Computed_field_core *copy()
 	 {
@@ -1784,7 +1784,7 @@ private:
 	 {
 			return(computed_field_quaternion_to_matrix_type_string);
 	 }
-	 
+
 	 int compare(Computed_field_core* other_field)
 	 {
 			if (dynamic_cast<Computed_field_quaternion_to_matrix*>(other_field))
@@ -1794,7 +1794,7 @@ private:
 			else
 			{
 				 return 0;
-			}			
+			}
 	 }
 
 	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
@@ -1888,15 +1888,15 @@ Returns allocated command string for reproducing field. Includes type.
 
 /***************************************************************************//**
  * Creates a 4x4 (= 16 component) transformation matrix from a 4 component
- * quaternion valued source field. 
- * 
+ * quaternion valued source field.
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  4 component field giving source quaternion value.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_quaternion_to_matrix(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field) 
+	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
 	if (field_module && source_field && source_field->isNumerical() &&
@@ -1949,21 +1949,21 @@ transformation of is returned.
 
 namespace {
 
-char computed_field_matrix_to_quaternion_type_string[] = "matrix_to_quaternion";
+const char computed_field_matrix_to_quaternion_type_string[] = "matrix_to_quaternion";
 
 class Computed_field_matrix_to_quaternion : public Computed_field_core
 {
 public:
 
-	 Computed_field_matrix_to_quaternion() : 
+	 Computed_field_matrix_to_quaternion() :
 			Computed_field_core()
 	 {
 	 };
-	 
+
 	 ~Computed_field_matrix_to_quaternion()
 	 {
 	 };
-	 
+
 private:
 	 Computed_field_core *copy()
 	 {
@@ -1974,7 +1974,7 @@ private:
 	 {
 			return(computed_field_matrix_to_quaternion_type_string);
 	 }
-	 
+
 	int compare(Computed_field_core* other_field)
 	 {
 			if (dynamic_cast<Computed_field_matrix_to_quaternion*>(other_field))
@@ -2075,15 +2075,15 @@ Returns allocated command string for reproducing field. Includes type.
 
 /***************************************************************************//**
  * Creates a 4 component field returning the nearest quaternion value equivalent
- * to 4x4 matrix source field 
- * 
+ * to 4x4 matrix source field
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  4x4 component source field.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_matrix_to_quaternion(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field) 
+	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
 	if (field_module && source_field && source_field->isNumerical() &&

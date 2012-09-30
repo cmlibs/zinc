@@ -75,7 +75,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, Cmiss_mesh_id search_mesh,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	Graphics_buffer_package *graphics_buffer_package,
 	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution);
 
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_GRAPHICS_H) */

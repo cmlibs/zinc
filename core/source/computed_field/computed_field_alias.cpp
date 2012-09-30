@@ -1,6 +1,6 @@
 /*****************************************************************************//**
  * FILE : computed_field_alias.cpp
- * 
+ *
  * Implements a cmiss field which is an alias for another field, commonly from a
  * different region to make it available locally.
  *
@@ -54,27 +54,9 @@
 Module types
 ------------
 */
-
-class Computed_field_alias_package : public Computed_field_type_package
-{
-public:
-	Cmiss_region *root_region;
-
-	Computed_field_alias_package(Cmiss_region *root_region)
-	  : root_region(root_region)
-	{
-		ACCESS(Cmiss_region)(root_region);
-	}
-	
-	~Computed_field_alias_package()
-	{
-		DEACCESS(Cmiss_region)(&root_region);
-	}
-};
-
 namespace {
 
-char computed_field_alias_type_string[] = "alias";
+const char computed_field_alias_type_string[] = "alias";
 
 class Computed_field_alias : public Computed_field_core
 {
@@ -172,7 +154,7 @@ void Computed_field_alias::other_field_manager_change(
 	Computed_field_alias *alias_field_core =
 		reinterpret_cast<Computed_field_alias *>(alias_field_core_void);
 	Computed_field *field;
-	
+
 	if (message && alias_field_core && (field = alias_field_core->field) &&
 		(field->number_of_source_fields > 0) && field->source_fields)
 	{
@@ -264,7 +246,7 @@ int Computed_field_alias::evaluate(Cmiss_field_cache& cache, FieldValueCache& in
 }
 
 /***************************************************************************//**
- * Sets values of the original field at the supplied location. 
+ * Sets values of the original field at the supplied location.
  */
 enum FieldAssignmentResult Computed_field_alias::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
 {
@@ -284,13 +266,13 @@ enum FieldAssignmentResult Computed_field_alias::assign(Cmiss_field_cache& cache
 }
 
 /***************************************************************************//**
- * Writes type-specific details of the field to the console. 
+ * Writes type-specific details of the field to the console.
  */
 int Computed_field_alias::list()
 {
 	char *field_name;
 	int return_code;
-	
+
 	ENTER(List_Computed_field_alias);
 	if (field)
 	{

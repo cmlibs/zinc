@@ -63,7 +63,7 @@ DESCRIPTION :
  * is true then the field will have a single component and the magnitude of the
  * <coordinate_field> derivatives are used to calculate arc lengths at each
  * gauss point.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
@@ -83,12 +83,4 @@ int Computed_field_get_type_integration(struct Computed_field *field,
 	struct Computed_field **integrand, int *magnitude_coordinates,
 	struct Computed_field **coordinate_field);
 
-int Computed_field_register_type_integration(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region);
-/*******************************************************************************
-LAST MODIFIED : 7 March 2003
-
-DESCRIPTION :
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_INTEGRATION_H) */

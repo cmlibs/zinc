@@ -104,107 +104,6 @@ Module types
 ------------
 */
 
-struct Graphics_buffer_package
-/*******************************************************************************
-LAST MODIFIED : 5 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int override_visual_id;
-	//-- wxGLContext* wxSharedContext;
-};
-
-
-struct Graphics_buffer
-{
-	unsigned int access_count;
-	unsigned int width;
-	unsigned int height;
-	unsigned int origin_x;
-	unsigned int origin_y;
-	Graphics_buffer_type type;
-	enum Graphics_buffer_buffering_mode buffering_mode;
-	enum Graphics_buffer_stereo_mode stereo_mode;
-	int *attrib_list;
-#if defined (OPENGL_API)
-	GLuint fbo, depthbuffer, img;
-#if defined (USE_MSAA)
-	GLuint msbuffer, multi_depthbuffer, multi_fbo;
-#endif
-#endif
-	Graphics_buffer_package *package;
-
-//	int get_buffering_mode(enum Graphics_buffer_buffering_mode *graphics_buffer_buffering_mode) const;
-//	int get_stereo_mode(enum Graphics_buffer_stereo_mode *graphics_buffer_stereo_mode) const;
-
-//	bool is_visible() const
-//	{
-//		bool visible = false;
-//		switch (type)
-//		{
-//			case GRAPHICS_BUFFER_WX_TYPE:
-//			{
-//				visible = true;
-//				break;
-//			}
-//			default:
-//			{}
-//		}
-
-//		return visible;
-//	}
-
-//	Graphics_buffer *access()
-//	{
-//		access_count++;
-//		return this;
-//	}
-
-//	int deaccess()
-//	{
-//		--access_count;
-//		if (access_count == 0)
-//			delete this;
-
-//		return 1;
-//	}
-};
-
-//int Graphics_buffer::get_buffering_mode(enum Graphics_buffer_buffering_mode *graphics_buffer_buffering_mode) const
-//{
-//	int return_code = 0;
-//	if (type == GRAPHICS_BUFFER_WX_TYPE)
-//	{
-//		*graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-//		return_code = 1;
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,"Graphics_buffer_wx::get_buffering_mode.  "
-//			"Graphics_bufffer type unknown or not supported.");
-//	}
-
-//	return return_code;
-//}
-
-//int Graphics_buffer::get_stereo_mode(enum Graphics_buffer_stereo_mode *graphics_buffer_stereo_mode) const
-//{
-//	int return_code = 0;
-//	if (type == GRAPHICS_BUFFER_WX_TYPE)
-//	{
-//		*graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
-//		return_code = 1;
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,"Graphics_buffer_wx::get_stereo_mode.  "
-//			"Graphics_bufffer type unknown or not supported.");
-//	}
-
-//	return return_code;
-//}
-
 /*
 Module functions
 ----------------
@@ -220,20 +119,24 @@ struct Graphics_buffer *CREATE(Graphics_buffer)(
 	{
 		buffer->access_count = 1;
 		buffer->attrib_list = 0;
-		buffer->depthbuffer = -1;
-		buffer->fbo = -1;
 		buffer->height = 0;
-		buffer->img = -1;
-		buffer->msbuffer = -1;
-		buffer->multi_depthbuffer = -1;
-		buffer->multi_fbo = -1;
+		buffer->width = 0;
+#if defined (OPENGL_API)
+		buffer->fbo = 0;
+		buffer->depthbuffer = 0;
+		buffer->img = 0;
+#if defined (USE_MSAA)
+		buffer->msbuffer = 0;
+		buffer->multi_fbo = 0;
+		buffer->multi_depthbuffer = 0;
+#endif
+#endif
 		buffer->origin_x = 0;
 		buffer->origin_y = 0;
 		buffer->package = package;
 		buffer->type = type;
 		buffer->buffering_mode = buffering_mode;
 		buffer->stereo_mode = stereo_mode;
-		buffer->width = 0;
 	}
 
 	return buffer;
@@ -299,35 +202,6 @@ Closes the Graphics buffer package
 	return (return_code);
 } /* DESTROY(Graphics_buffer_package) */
 
-int Graphics_buffer_package_set_override_visual_id(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	int override_visual_id)
-/*******************************************************************************
-LAST MODIFIED : 21 May 2004
-
-DESCRIPTION :
-Sets a particular visual to be used by all graphics buffers.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphics_buffer_package_set_override_visual_id);
-	if (graphics_buffer_package)
-	{
-		graphics_buffer_package->override_visual_id = override_visual_id;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Graphics_buffer_package_set_override_visual_id.  "
-			"Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_package_set_override_visual_id */
-
 int Graphics_buffer_get_colour_buffer_depth(struct Graphics_buffer *buffer,
 	int *colour_buffer_depth)
 /*******************************************************************************
@@ -364,7 +238,7 @@ Returns the depth of the colour buffer used by the graphics buffer.
 	return (return_code);
 } /* Graphics_buffer_get_colour_buffer_depth */
 
-int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer *buffer,
+int Graphics_buffer_get_depth_buffer_depth(Graphics_buffer *buffer,
 	int *depth_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -392,7 +266,7 @@ Returns the depth of the depth buffer used by the graphics buffer.
 	return (return_code);
 } /* Graphics_buffer_get_depth_buffer_depth */
 
-int Graphics_buffer_get_accumulation_buffer_depth(struct Graphics_buffer *buffer,
+int Graphics_buffer_get_accumulation_buffer_depth(Graphics_buffer *buffer,
 	int *accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002

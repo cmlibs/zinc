@@ -171,7 +171,7 @@ Module functions
 ----------------
 */
 
-static int indent_fprintf(FILE *file, int indent, char *format, ... )
+static int indent_fprintf(FILE *file, int indent, const char *format, ... )
 /*******************************************************************************
 LAST MODIFIED : 28 February 2003
 
@@ -247,7 +247,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 	return (return_code);
 } /* write_element_xi_value */
 
-static int write_FE_region_field(FILE *output_file, int indent, 
+static int write_FE_region_field(FILE *output_file, int indent,
 	struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 28 January 2003
@@ -901,7 +901,7 @@ written.
 	ENTER(write_FE_node);
 	if (output_file && node)
 	{
-		indent_fprintf(output_file, indent, "<node name=\"%d\">\n", 
+		indent_fprintf(output_file, indent, "<node name=\"%d\">\n",
 			get_FE_node_identifier(node));
 		indent += EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "<assign_labels template_name=\"%s\">\n",
@@ -937,7 +937,7 @@ written.
 		}
 		indent_fprintf(output_file, indent, "</assign_labels>\n");
 		indent -= EXPORT_INDENT_SPACES;
-		indent_fprintf(output_file, indent, "</node>\n\n", 
+		indent_fprintf(output_file, indent, "</node>\n\n",
 			get_FE_node_identifier(node));
 		return_code = 1;
 	}
@@ -1028,7 +1028,7 @@ has been selected for output) then the header is written out.
 		template_name = (char *)NULL;
 		for (i = 0 ; !template_name && (i < write_data->number_of_node_templates) ; i++)
 		{
-			if (FE_nodes_have_same_template(write_data->node_templates[i].node, 
+			if (FE_nodes_have_same_template(write_data->node_templates[i].node,
 				node, field_order_info))
 			{
 				template_name = write_data->node_templates[i].template_name;
@@ -1044,7 +1044,7 @@ has been selected for output) then the header is written out.
 				templates[write_data->number_of_node_templates].node = node;
 				sprintf(templates[write_data->number_of_node_templates].template_name,
 					"NodeTemplate%d", write_data->number_of_node_templates + 1);
-				template_name = 
+				template_name =
 					templates[write_data->number_of_node_templates].template_name;
 				write_data->number_of_node_templates++;
 
@@ -1342,8 +1342,8 @@ be rewritten for 4-D and above elements.
 	return (return_code);
 } /* write_FE_element_shape */
 
-static int write_FE_basis_mapping(FILE *output_file, int indent, 
-	struct Basis_mapping *basis_mapping, 
+static int write_FE_basis_mapping(FILE *output_file, int indent,
+	struct Basis_mapping *basis_mapping,
 	struct FE_element_field_component *component)
 /*******************************************************************************
 LAST MODIFIED : 31 January 2003
@@ -1407,7 +1407,7 @@ Writes out the <basis> to <output_file>.
 			}
 			else
 			{
-				
+
 				display_message(ERROR_MESSAGE,
 					"write_FE_element_field.  Unknown modify function");
 			}
@@ -1507,7 +1507,7 @@ LAST MODIFIED : 4 September 2003
 
 DESCRIPTION :
 Returns true if <component_1> and <component_2> are represented by the same
-element template.  <element_1>, <field_1> and <component_number_1> and 
+element template.  <element_1>, <field_1> and <component_number_1> and
 <element_2>,  <field_2> and <component_number_2> are required so we can check the
 names for the nodal_value indices.
 ==============================================================================*/
@@ -1552,11 +1552,11 @@ names for the nodal_value indices.
 									Standard_node_to_element_map_get_node_index(
 										standard_node_map_2, &node_index_2) &&
 									Standard_node_to_element_map_get_number_of_nodal_values(
-										standard_node_map_1, &number_of_nodal_values_1) && 
+										standard_node_map_1, &number_of_nodal_values_1) &&
 									Standard_node_to_element_map_get_number_of_nodal_values(
 										standard_node_map_2, &number_of_nodal_values_2))
 								{
-									if ((node_index_1 == node_index_2) && 
+									if ((node_index_1 == node_index_2) &&
 										(number_of_nodal_values_1 == number_of_nodal_values_2))
 									{
 										get_FE_element_node(element_1, node_index_1, &node_1);
@@ -1615,7 +1615,7 @@ names for the nodal_value indices.
 						}
 						else
 						{
- 							return_code = 0;
+							return_code = 0;
 						}
 					}
 					else
@@ -1665,7 +1665,7 @@ names for the nodal_value indices.
 
 int write_FE_element_template(FILE *output_file, int indent,
 	struct Element_template *element_template,
-	struct FE_element *element, struct FE_field *field, int field_component_number, 
+	struct FE_element *element, struct FE_field *field, int field_component_number,
 	struct FE_element_field_component *component)
 /*******************************************************************************
 LAST MODIFIED : 5 February 2003
@@ -1970,10 +1970,10 @@ Writes information describing how <field> is defined at <element>.
 							(*data->number_of_basis_mappings)++;
 
 							write_FE_basis_mapping(output_file, data->indent,
-								basis_mapping, component);	
+								basis_mapping, component);
 						}
 					}
-					
+
 					/* Try and find this element node lookup template */
 					element_template = (struct Element_template *)NULL;
 					for (j = 0 ; (!element_template) && (j < *(data->number_of_element_templates)) ; j++)
@@ -2004,7 +2004,7 @@ Writes information describing how <field> is defined at <element>.
 								i;
 							sprintf(element_templates[*(data->number_of_element_templates)].element_template_name,
 								"ElementTemplate%d", *(data->number_of_element_templates) + 1);
-							element_template = 
+							element_template =
 								element_templates + *(data->number_of_element_templates);
 							(*data->number_of_element_templates)++;
 
@@ -2012,9 +2012,9 @@ Writes information describing how <field> is defined at <element>.
 							FE_element_field_component_get_modify(component, &modify);
 							FE_element_field_component_get_type(component, &component_type);
 							write_FE_element_template(output_file, data->indent,
-								element_template, element, field, i, component);	
+								element_template, element, field, i, component);
 						}
-					}					
+					}
 				}
 				else
 				{
@@ -2090,7 +2090,7 @@ Writes information describing how <field> is defined at <element>.
 						{
 							basis_mapping = (*data->basis_mappings) + j;
 						}
-					}			
+					}
 					element_template = (struct Element_template *)NULL;
 					for (j = 0 ; (!element_template) && (j < *(data->number_of_element_templates)) ; j++)
 					{
@@ -2113,13 +2113,13 @@ Writes information describing how <field> is defined at <element>.
 								component_name);
 							DEALLOCATE(component_name);
 							indent += EXPORT_INDENT_SPACES;
-					
+
 							indent_fprintf(output_file, indent, "<mapping_ref ref=\"%s\"/>\n",
 								basis_mapping->basis_mapping_name);
 							indent_fprintf(output_file, indent, "<label name=\"%s\">\n",
 								basis_mapping->element_nodal_values_name);
 							indent_fprintf(output_file, indent + EXPORT_INDENT_SPACES,
-								"<labels_template_ref ref=\"%s\"/>\n", 
+								"<labels_template_ref ref=\"%s\"/>\n",
 								element_template->element_template_name);
 							indent_fprintf(output_file, indent, "</label>\n");
 
@@ -2190,7 +2190,7 @@ are passed to this function.
 {
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
-	int field_no, i, j, node_index, number_of_components = 0, 
+	int field_no, i, j, node_index, number_of_components = 0,
 		number_of_nodes_in_component, number_of_fields = 0,
 		number_of_fields_in_header, number_of_nodes, number_of_scale_factor_sets,
 		number_of_scale_factors, return_code, *scale_factor_set_in_use,
@@ -2220,13 +2220,13 @@ are passed to this function.
 			*output_number_of_scale_factors;
 		write_element_field_data.output_scale_factor_indices=
 			*output_scale_factor_indices;
-		write_element_field_data.number_of_basis_mappings = 
+		write_element_field_data.number_of_basis_mappings =
 			number_of_basis_mappings;
 		write_element_field_data.basis_mappings = basis_mappings;
-		write_element_field_data.number_of_element_templates = 
+		write_element_field_data.number_of_element_templates =
 			number_of_element_templates;
 		write_element_field_data.element_templates = element_templates;
-			
+
 		if (field_order_info)
 		{
 			number_of_fields =
@@ -2557,16 +2557,16 @@ are passed to this function.
 					*output_number_of_scale_factors;
 				write_element_field_data.output_scale_factor_indices=
 					*output_scale_factor_indices;
-				write_element_field_data.element_interpolation = 
+				write_element_field_data.element_interpolation =
 					element_interpolation;
-				write_element_field_data.number_of_basis_mappings = 
+				write_element_field_data.number_of_basis_mappings =
 					number_of_basis_mappings;
-				write_element_field_data.basis_mappings = 
+				write_element_field_data.basis_mappings =
 					basis_mappings;
-				write_element_field_data.number_of_element_templates = 
+				write_element_field_data.number_of_element_templates =
 					number_of_element_templates;
 				write_element_field_data.element_templates = element_templates;
-					
+
 				if (field_order_info)
 				{
 					for (field_no = 0; field_no < number_of_fields; field_no++)
@@ -2789,7 +2789,7 @@ DESCRIPTION :
 {
 	FE_value scale_factor;
 	int field_no, first_grid_field, i, j, number_in_scale_factor_set,
-		number_of_faces, number_of_fields, number_of_nodes, 
+		number_of_faces, number_of_fields, number_of_nodes,
 		number_of_scale_factor_sets, return_code, scale_factor_index;
 	struct FE_element *face;
 	struct FE_element_shape *shape;
@@ -3045,11 +3045,11 @@ in the header.
 							element = element;
 						sprintf(element_interpolations[data->number_of_element_interpolations].element_interpolation_name,
 							"ElementInterpolation%d", data->number_of_element_interpolations + 1);
-						element_interpolation = 
+						element_interpolation =
 							element_interpolations + data->number_of_element_interpolations;
 						data->number_of_element_interpolations++;
 
-						write_FE_element_element_interpolation(output_file, 
+						write_FE_element_element_interpolation(output_file,
 							data->indent, element, element_interpolation,
 							data->field_order_info,
 							&(data->output_number_of_nodes),
@@ -3106,7 +3106,7 @@ If <field_order_info> contains fields, they are written in that order.
 	{
 		return_code = 1;
 		indent_fprintf(output_file, indent, "<fieldml xmlns=\"http://www.physiome.org.nz/fieldml/0.1#\"\n");
-      indent_fprintf(output_file, indent + 9, "xmlns:fieldml=\"http://www.physiome.org.nz/fieldml/0.1#\">\n");
+	  indent_fprintf(output_file, indent + 9, "xmlns:fieldml=\"http://www.physiome.org.nz/fieldml/0.1#\">\n");
 		indent += EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "<!-- Generated by Cmiss -->\n");
 		if (field_order_info)
@@ -3159,7 +3159,7 @@ If <field_order_info> contains fields, they are written in that order.
 			write_elements_data.number_of_element_templates = 0;
 			write_elements_data.element_templates = (struct Element_template *)NULL;
 			write_elements_data.number_of_element_interpolations = 0;
-			write_elements_data.element_interpolations = 
+			write_elements_data.element_interpolations =
 				(struct Element_interpolation *)NULL;
 			/* write 1-D, 2-D then 3-D so lines and faces precede elements */
 			for (dimension = 1; dimension <= 3; dimension++)
@@ -3209,7 +3209,7 @@ static int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
 	struct Cmiss_region *root_region, int force_no_master_region,
 	const char *write_path, struct Cmiss_region *write_region, int indent,
 	int write_elements, int write_nodes, struct FE_field_order_info *field_order_info,
-	struct LIST(Cmiss_region_write_info) *write_info_list, char *path)
+	struct LIST(Cmiss_region_write_info) *write_info_list, const char *path)
 /*******************************************************************************
 LAST MODIFIED : 12 November 2002
 
@@ -3273,7 +3273,7 @@ Notes:
 		}
 		else
 		{
-			REACCESS(Cmiss_region)(&write_path_region, write_region); 
+			REACCESS(Cmiss_region)(&write_path_region, write_region);
 		}
 		if (return_code)
 		{
@@ -3343,7 +3343,7 @@ Notes:
 									{
 										if (CMISS_REGION_WRITTEN != master_write_status)
 										{
-											if (write_path) 
+											if (write_path)
 											{
 												master_region_not_in_file = 1;
 											}
@@ -3440,7 +3440,7 @@ Notes:
 		display_message(ERROR_MESSAGE, "write_Cmiss_region.  Invalid argument(s)");
 		return_code = 0;
 	}
-	REACCESS(Cmiss_region)(&write_path_region, NULL); 
+	REACCESS(Cmiss_region)(&write_path_region, NULL);
 	LEAVE;
 
 	return (return_code);
@@ -3460,7 +3460,7 @@ LAST MODIFIED : 3 January 2008
 
 DESCRIPTION :
 Writes an exregion file to <output_file> with <root_region> at the top level of
-the file.  Optionally the <write_path> restricts the output to only that part 
+the file.  Optionally the <write_path> restricts the output to only that part
 of the hierarchy.
 If the structure of the file permits it to be written in the old exnode/exelem
 format this is done so; this is only possible if the output hierarchy is

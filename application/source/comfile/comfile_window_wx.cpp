@@ -41,7 +41,6 @@ Management routines for the comfile window.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <stdio.h>
 #include <string.h>
 #if 1
@@ -56,15 +55,12 @@ extern "C" {
 #include "user_interface/filedir.h"
 #include "general/message.h"
 #include "user_interface/user_interface.h"
-}
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include <wx/fontdlg.h>
 #include "icon/cmiss_icon.xpm"
-extern "C" {
 #include "comfile/comfile_window_wx.h"
-}
 #include "comfile/comfile_window_wx.xrch"
 #endif /*defined (WX_USER_INTERFACE)*/
 

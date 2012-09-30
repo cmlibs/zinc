@@ -44,7 +44,6 @@
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
 
-extern "C" {
 #include "api/cmiss_core.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_field_finite_element.h"
@@ -62,7 +61,6 @@ extern "C" {
 #include "general/mystring.h"
 #include "node/node_viewer_wx.h"
 #include "general/message.h"
-}
 #if defined (WX_USER_INTERFACE)
 #include <wx/collpane.h>
 #include "wx/wx.h"

@@ -55,8 +55,6 @@ Module types
 ------------
 */
 
-namespace {
-
 void list_divisions(int size, int *divisions)
 {
 	for (int i = 0; i < size; i++)
@@ -67,8 +65,6 @@ void list_divisions(int size, int *divisions)
 		}
 		display_message(INFORMATION_MESSAGE, "%d", divisions[i]);
 	}
-}
-
 }
 
 /***************************************************************************//**
@@ -765,8 +761,6 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 }
 
 
-namespace {
-
 int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
@@ -777,8 +771,6 @@ int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, vo
 	}
 	return 0;
 }
-
-} // anonymous namespace
 
 class Cmiss_tessellation_attribute_conversion
 {

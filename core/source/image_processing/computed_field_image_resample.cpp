@@ -54,18 +54,18 @@ Image processing fields use the native resolution to determine their image size.
 
 namespace {
 
-	char computed_field_image_resample_type_string[] = "image_resample";
-	
+	const char computed_field_image_resample_type_string[] = "image_resample";
+
 	class Computed_field_image_resample : public Computed_field_core
 	{
-		
+
 	public:
 		int dimension;  // Should match the dimension of the source field,
-		                // kept here just to help with iterating through array
+						// kept here just to help with iterating through array
 		int *sizes; // Resolution in each direction of <dimension>
-		
+
 		Computed_field_image_resample(int dimension, int *sizes_in) :
-			Computed_field_core(), dimension(dimension) 
+			Computed_field_core(), dimension(dimension)
 		{
 			int i;
 			sizes = new int[dimension];
@@ -74,7 +74,7 @@ namespace {
 				sizes[i] = sizes_in[i];
 			}
 		}
-		
+
 		~Computed_field_image_resample()
 		{
 			if (sizes)
@@ -82,30 +82,30 @@ namespace {
 				delete sizes;
 			}
 		}
-		
+
 	private:
 		Computed_field_core *copy()
 		{
 			return new Computed_field_image_resample(dimension, sizes);
 		}
-		
+
 		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{
 			return(computed_field_image_resample_type_string);
 		}
-		
+
 		int compare(Computed_field_core* other_field);
-		
+
 		int list();
-		
+
 		char* get_command_string();
 
 		int get_native_resolution(int *dimension,
 			int **sizes, Computed_field **texture_coordinate_field);
 	};
-	
+
 int Computed_field_image_resample::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -162,14 +162,14 @@ LAST MODIFIED : 7 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
-{       
+{
 	int i, return_code, source_dimension, *source_sizes;
-	
+
 	ENTER(Computed_field_image_resample::get_native_resolution);
 	if (field)
 	{
 		return_code = Computed_field_get_native_resolution(
-			field->source_fields[0], &source_dimension, &source_sizes, 
+			field->source_fields[0], &source_dimension, &source_sizes,
 			return_texture_coordinate_field);
 		if (dimension == source_dimension)
 		{
@@ -179,7 +179,7 @@ DESCRIPTION :
 			{
 				source_sizes[i] = sizes[i];
 			}
- 			*return_sizes = source_sizes;
+			*return_sizes = source_sizes;
 		}
 		else
 		{
@@ -215,7 +215,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    field : %s\n",
 			field->source_fields[0]->name);
-		
+
 		display_message(INFORMATION_MESSAGE,
 			"    sizes :");
 		for (i = 0 ; i < dimension ; i++)

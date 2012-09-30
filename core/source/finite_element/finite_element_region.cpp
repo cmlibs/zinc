@@ -84,13 +84,13 @@ DESCRIPTION :
 	/* if set, the master_fe_region owns all nodes, elements and fields, including
 		 field information, and this FE_region is merely a list of nodes and
 		 elements taken from the master_fe_region.
-		 ACCESSed if a normal FE_region, not ACCESSed if a data FE_region */ 
+		 ACCESSed if a normal FE_region, not ACCESSed if a data FE_region */
 	struct FE_region *master_fe_region;
 	/* top_data_hack flag indicates that the master_fe_region owns fields and elements
 	 * but not nodes, so FE_region contains independent set of data */
 	int top_data_hack;
 	/* ACCESSed pointer to attached FE_region containing data for this region */
-	/* SAB When checking to see if an FE_node belongs to the FE_region as 
+	/* SAB When checking to see if an FE_node belongs to the FE_region as
 		defined by it's fields we also need to check the data_fe_region */
 	struct FE_region *data_fe_region;
 	/* if this is a data_fe_region, non-ACCESSing pointer to base_fe_region this
@@ -186,7 +186,7 @@ if (0 < fe_region->number_of_clients) \
 	} \
 }
 
-/* Using these macros to conditionally reset the cache based on the 
+/* Using these macros to conditionally reset the cache based on the
 	constant change type in the FE_REGION_FE_NODE_CHANGE macro */
 #define FE_NODE_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_ADDED(type)
 
@@ -268,7 +268,7 @@ if (0 < fe_region->number_of_clients) \
 	} \
 }
 
-/* Using these macros to conditionally reset the cache based on the 
+/* Using these macros to conditionally reset the cache based on the
 	constant change type in the FE_REGION_FE_ELEMENT_CHANGE macro */
 #define FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_ADDED(type)
 
@@ -809,7 +809,7 @@ If <node_field_list> is omitted, an empty list is assumed.
 } /* FE_region_get_FE_node_field_info */
 
 int FE_region_get_FE_node_field_info_adding_new_field(
-	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
+	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address,
 	struct FE_node_field *new_node_field, int new_number_of_values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2005
@@ -819,10 +819,10 @@ Updates the pointer to <node_field_info_address> to point to a node_field info
 which appends to the fields in <node_field_info_address> one <new_node_field>.
 The node_field_info returned in <node_field_info_address> will be for the
 <new_number_of_values>.
-The <fe_region> maintains an internal list of these structures so they can be 
-shared between nodes.  This function allows a fast path when adding a single 
+The <fe_region> maintains an internal list of these structures so they can be
+shared between nodes.  This function allows a fast path when adding a single
 field.  If the node_field passed in is only referenced by one external object
-then it is assumed that this function can modify it rather than copying.  If 
+then it is assumed that this function can modify it rather than copying.  If
 there are more references then the object is copied and then modified.
 This function handles the access and deaccess of the <node_field_info_address>
 as if it is just updating then there is nothing to do.
@@ -834,7 +834,7 @@ as if it is just updating then there is nothing to do.
 	struct FE_region *master_fe_region;
 
 	ENTER(FE_region_get_FE_node_field_info_adding_new_field);
-	if (fe_region && node_field_info_address && 
+	if (fe_region && node_field_info_address &&
 		(NULL != (existing_node_field_info = *node_field_info_address)))
 	{
 		return_code = 1;
@@ -1181,7 +1181,7 @@ are ignored and along with all fields, nodes and elements the FE_region may addr
 will belong to the master region, and this FE_region will be merely a container
 for nodes and elements.
 If <master_fe_region> is not supplied, the FE_region will own all its own nodes,
-elements and fields.  If <basis_manager> or <element_shape_list> are not 
+elements and fields.  If <basis_manager> or <element_shape_list> are not
 supplied then a default empty object will be created for this region.  (Allowing
 them to be specified allows sharing across regions).
 ==============================================================================*/
@@ -1911,7 +1911,7 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 		{
 			fe_field = CREATE(FE_field)(name, master_fe_region);
 			if (fe_field &&
-				set_FE_field_external_information(fe_field, external) &&						
+				set_FE_field_external_information(fe_field, external) &&
 				set_FE_field_value_type(fe_field, value_type) &&
 				set_FE_field_number_of_components(fe_field, number_of_components) &&
 				((CONSTANT_FE_FIELD != fe_field_type) ||
@@ -1919,7 +1919,7 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 				((GENERAL_FE_FIELD != fe_field_type) ||
 					set_FE_field_type_general(fe_field)) &&
 				((INDEXED_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_indexed(fe_field, 
+					set_FE_field_type_indexed(fe_field,
 						indexer_field,number_of_indexed_values)) &&
 				set_FE_field_CM_field_type(fe_field, cm_field_type) &&
 				set_FE_field_coordinate_system(fe_field, coordinate_system) &&
@@ -1935,7 +1935,7 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 						{
 							if (!set_FE_field_component_name(fe_field, i, component_name))
 							{
-								DESTROY(FE_field)(&fe_field);	
+								DESTROY(FE_field)(&fe_field);
 								fe_field = (struct FE_field *)NULL;
 							}
 						}
@@ -2502,7 +2502,7 @@ LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Returns an <fe_field> which the <fe_region> considers to be its default
-coordinate field or returns 0 and sets *<fe_field> to NULL if it has no 
+coordinate field or returns 0 and sets *<fe_field> to NULL if it has no
 "coordinate" fields.
 ==============================================================================*/
 {
@@ -2579,7 +2579,7 @@ in use by an node in the same ultimate master FE_region.
 		{
 			return_code = 1;
 			struct FE_region *master_fe_region = fe_region;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
 				new_identifier, master_fe_region->fe_node_list))
 			{
@@ -2682,7 +2682,7 @@ with FE_region_begin/end_change.
 		if (!(node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
 			identifier, fe_region->fe_node_list)))
 		{
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (master_fe_region != fe_region)
 			{
 				node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
@@ -2739,7 +2739,7 @@ Returns the next unused node identifier for <fe_region> starting from
 	ENTER(FE_region_get_next_FE_node_identifier);
 	if (fe_region)
 	{
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 		if (start_identifier <= 0)
 		{
 			identifier = 1;
@@ -2866,12 +2866,12 @@ data_FE_region attached to it in that attached region.
 		{
 			return_code = 1;
 		}
-		else if (fe_region->data_fe_region && 
+		else if (fe_region->data_fe_region &&
 			IS_OBJECT_IN_LIST(FE_node)(node, fe_region->data_fe_region->fe_node_list))
 		{
 			return_code = 1;
 		}
-		else	
+		else
 		{
 			return_code = 0;
 		}
@@ -3632,7 +3632,7 @@ static int FE_region_remove_FE_node_iterator(struct FE_node *node,
 LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
-Removes <node> from fe_region.  Should enclose call between 
+Removes <node> from fe_region.  Should enclose call between
 FE_region_begin_change and FE_region_end_change to minimise messages.
 <data_void> points at a struct FE_region_remove_FE_node_iterator_data.
 ==============================================================================*/
@@ -3911,6 +3911,17 @@ See also FE_region_get_ultimate_master_FE_region.
 	return (return_code);
 } /* FE_region_get_immediate_master_FE_region */
 
+struct LIST(FE_field) *FE_region_get_FE_field_list(struct FE_region *fe_region)
+{
+	struct LIST(FE_field) *list = 0;
+	if (fe_region)
+	{
+		list = fe_region->fe_field_list;
+	}
+
+	return list;
+}
+
 int FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region,
 	struct FE_region **master_fe_region_address)
 /*******************************************************************************
@@ -4025,7 +4036,7 @@ int FE_region_change_FE_element_identifier(
 						FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(master_fe_region, element);
 					}
 				}
-				else 
+				else
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_region_change_FE_element_identifier.  "
@@ -5815,7 +5826,7 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 	struct FE_region_smooth_FE_element_data smooth_element_data;
 	struct FE_region_smooth_FE_node_data smooth_node_data;
 
-	ENTER(FE_region_smooth_FE_field);       
+	ENTER(FE_region_smooth_FE_field);
 	if (fe_region && fe_field)
 	{
 		/* get the ultimate master FE_region; only it has fields */
@@ -6040,6 +6051,18 @@ struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_regi
 		master_fe_region = master_fe_region->master_fe_region;
 	}
 	return master_fe_region->cmiss_region;
+}
+
+struct FE_region *FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region)
+{
+	if (!fe_region)
+		return 0;
+	struct FE_region *master_fe_region = fe_region;
+	while (master_fe_region->master_fe_region)
+	{
+		master_fe_region = master_fe_region->master_fe_region;
+	}
+	return master_fe_region;
 }
 
 static int FE_field_merge_into_FE_region(struct FE_field *fe_field,
@@ -6889,7 +6912,7 @@ LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Tells the <fe_region> to notify any interested clients that the <node> has
-been modified only for <fe_field>.  This is intended to be called by 
+been modified only for <fe_field>.  This is intended to be called by
 <finite_element.c> only as any external code will call through the modify
 functions in <finite_element.c>.
 ==============================================================================*/
@@ -6903,16 +6926,16 @@ functions in <finite_element.c>.
 		return_code = 1;
 		if (FE_region_contains_FE_node(fe_region, node))
 		{
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			FE_REGION_FE_NODE_FIELD_CHANGE(master_fe_region, node, fe_field);
 		}
-		/* If we notify the region indicated by the node_field_info of changes 
+		/* If we notify the region indicated by the node_field_info of changes
 			to a data point then this will be the parent of the data_fe_region,
 			so we need to check for this node in the data hack region too */
-		else if (fe_region->data_fe_region && 
+		else if (fe_region->data_fe_region &&
 			FE_region_contains_FE_node(fe_region->data_fe_region, node))
 		{
-			FE_REGION_FE_NODE_FIELD_CHANGE(fe_region->data_fe_region, 
+			FE_REGION_FE_NODE_FIELD_CHANGE(fe_region->data_fe_region,
 				node, fe_field);
 		}
 		else
@@ -6939,7 +6962,7 @@ LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Tells the <fe_region> to notify any interested clients that the <element> has
-been modified only for <fe_field>.  This is intended to be called by 
+been modified only for <fe_field>.  This is intended to be called by
 <finite_element.c> only as any external code will call through the modify
 functions in <finite_element.c>.
 ==============================================================================*/
@@ -6990,7 +7013,7 @@ int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region)
 		{
 			if (NUMBER_IN_LIST(FE_node)(fe_region->fe_node_list) ||
 				FE_region_get_number_of_FE_elements_all_dimensions(fe_region) ||
-				(fe_region->data_fe_region && 
+				(fe_region->data_fe_region &&
 					NUMBER_IN_LIST(FE_node)(fe_region->data_fe_region->fe_node_list)))
 			{
 				fe_region->informed_make_cmiss_number_field = 1;

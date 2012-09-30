@@ -52,10 +52,6 @@ DESCRIPTION :
 #include "general/mystring.h"
 #include "general/message.h"
 
-class Computed_field_coordinate_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 char computed_field_coordinate_transformation_type_string[] = "coordinate_transformation";
@@ -175,7 +171,7 @@ int Computed_field_coordinate_transformation::propagate_find_element_xi(Cmiss_fi
 	if (field && values && (field->number_of_components == number_of_values))
 	{
 		FE_value source_field_coordinates[3];
-		
+
 		/* convert this fields values back into source coordinate system */
 		return_code=convert_Coordinate_system(&(field->coordinate_system),
 			number_of_values,values, &(field->source_fields[0]->coordinate_system),
@@ -294,7 +290,7 @@ int Computed_field_get_type_coordinate_transformation(struct Computed_field *fie
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the 
+If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the
 <source_field> used by it is returned.
 ==============================================================================*/
 {
@@ -450,8 +446,7 @@ enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assi
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }
 
-int Computed_field_vector_coordinate_transformation::list(
-	)
+int Computed_field_vector_coordinate_transformation::list()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -480,8 +475,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_vector_coordinate_transformation */
 
-char *Computed_field_vector_coordinate_transformation::get_command_string(
-	)
+char *Computed_field_vector_coordinate_transformation::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -577,7 +571,7 @@ int Computed_field_get_type_vector_coordinate_transformation(struct Computed_fie
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the 
+If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the
 <vector_field> and <coordinate_field> used by it is returned.
 ==============================================================================*/
 {

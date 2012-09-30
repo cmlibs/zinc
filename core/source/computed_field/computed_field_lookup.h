@@ -51,15 +51,15 @@ Implements computed fields for lookups.
  * instead of the domain location requested.
  * Do not put in external API; should instead make 'embedded' field take a
  * any location-supplying field: mesh, node etc.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.
- * @param lookup_node  Node from same region as source field to evaluate value at.  
+ * @param lookup_node  Node from same region as source field to evaluate value at.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_nodal_lookup(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, struct FE_node *lookup_node); 
+	struct Computed_field *source_field, struct FE_node *lookup_node);
 
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the
@@ -68,5 +68,9 @@ struct Computed_field *Computed_field_create_nodal_lookup(
  */
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **source_field, struct FE_node **lookup_node);
+
+struct Computed_field *Computed_field_create_quaternion_SLERP(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_node_id quaternion_SLERP_node);
 
 #endif /* !defined (COMPUTED_FIELD_LOOKUP_H) */

@@ -1,18 +1,8 @@
 
+#if !defined (SPECTRUM_SETTINGS_APP_H_)
+#define SPECTRUM_SETTINGS_APP_H_
 
-
-
-
-	float *rgba;
-	float material_rgba[4];
-	float *data;
-
-
-
-	float spectrum_minimum, spectrum_maximum;
-
-
-
+#include "general/enumerator_app.h"
 
 int gfx_modify_spectrum_settings_linear(struct Parse_state *state,
 	void *modify_spectrum_data_void,void *spectrum_command_data_void);
@@ -46,3 +36,7 @@ Executes a GFX MODIFY SPECTRUM FIELD command.
 If return_code is 1, returns the completed Modify_spectrum_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
+
+PROTOTYPE_OPTION_TABLE_ADD_ENUMERATOR_FUNCTION(Spectrum_settings_colour_mapping);
+
+#endif

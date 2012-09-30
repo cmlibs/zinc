@@ -76,51 +76,6 @@ Module types
 ------------
 */
 
-struct Spectrum_settings
-/*******************************************************************************
-LAST MODIFIED : 14 July 1998
-
-DESCRIPTION :
-Stores one group of settings for a single part of a spectrum rendition.
-==============================================================================*/
-{
-	/* unique identifier for each settings */
-	int position;
-	int component_number; /* Which data component this settings uses (0 is first component)*/
-	int active; /* This corresponds to visiblity for graphical finite elements */
-	enum Spectrum_settings_type settings_type;
-	char settings_changed;	
-	/* These specify the range of values over which the settings operates */
-	ZnReal maximum, minimum;
-	/* These flags control whether the maximum, minumum values can be changed */
-	int fix_maximum,fix_minimum;
-	/* These flags control whether a settings is transparent (has no effect)
-		or is clamped at its extreme values outside it's minimum and maximum */
-	int extend_above, extend_below;
-	/* These specify the limits of the converted value before it is rendered to
-		a colour, i.e. red varies from <min_value> red at the <minimum> to 
-		<max_value> red at the <maximum> */
-	ZnReal max_value, min_value;
-	int reverse;
-	enum Spectrum_settings_colour_mapping colour_mapping;
-	ZnReal exaggeration, step_value;
-	/* The number of bands in a banded contour and the proportion (out of 1000)
-		of the black bands */
-	int number_of_bands, black_band_proportion;
-
-	/* SPECTRUM_FIELD type */
-	struct Computed_field *input_field;
-	struct Computed_field *output_field;
-
-#if defined (OPENGL_API)
-	/* Texture number for banded and step spectrums */
-	GLuint texture_id;
-#endif /* defined (OPENGL_API) */
-	 
-	/* For accessing objects */
-	int access_count;
-};
-
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum_settings);
 
 /*
@@ -452,7 +407,7 @@ Note: destination->access_count is not changed by COPY.
 		destination->position = source->position;
 		destination->active = source->active;
 		destination->minimum = source->minimum;
-		destination->maximum = source->maximum;	
+		destination->maximum = source->maximum;
 		destination->fix_maximum=source->fix_maximum;
 		destination->fix_minimum=source->fix_minimum;
 		destination->extend_above = source->extend_above;
@@ -464,9 +419,9 @@ Note: destination->access_count is not changed by COPY.
 		destination->number_of_bands = source->number_of_bands;
 		destination->black_band_proportion = source->black_band_proportion;
 		destination->step_value = source->step_value;
-		REACCESS(Computed_field)(&destination->input_field, 
+		REACCESS(Computed_field)(&destination->input_field,
 			source->input_field);
-		REACCESS(Computed_field)(&destination->output_field, 
+		REACCESS(Computed_field)(&destination->output_field,
 			source->output_field);
 		return_code = 1;
 	}
@@ -951,7 +906,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				else
 				{
 					append_string(&settings_string," right",&error);
-				}					
+				}
 			} break;
 			case SPECTRUM_FIELD:
 			{
@@ -1021,7 +976,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 					sprintf(temp_string," %s colour_range %g %g",
 						ENUMERATOR_STRING(Spectrum_settings_colour_mapping)(settings->colour_mapping),
 						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);
 				} break;
 				case SPECTRUM_BANDED:
 				{
@@ -1034,10 +989,10 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				{
 					sprintf(temp_string," step_texture step_value %g",settings->step_value);
 					append_string(&settings_string,temp_string,&error);
-				} break;	
+				} break;
 			}
 			sprintf(temp_string," component %d",settings->component_number + 1);
-			append_string(&settings_string,temp_string,&error);	
+			append_string(&settings_string,temp_string,&error);
 		}
 	}
 	else
@@ -1540,7 +1495,7 @@ Sets the step value of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->step_value = param1;
-		if ( settings->step_value <= settings->minimum 
+		if ( settings->step_value <= settings->minimum
 			|| settings->step_value >= settings->maximum )
 		{
 			settings->step_value = 0.5 * (settings->maximum + settings->minimum );
@@ -1603,13 +1558,13 @@ If <settings> ->fix_minimum is NOT set, set <settings> ->minimum to <value>
 		if(!settings->fix_minimum)
 		{
 			settings->minimum = value;
-			if ( settings->step_value <= settings->minimum 
+			if ( settings->step_value <= settings->minimum
 				|| settings->step_value >= settings->maximum )
 			{
 				settings->step_value = 0.5 * (settings->maximum + settings->minimum );
 			}
 			settings->settings_changed = 1;
-		}		
+		}
 		return_code = 1;
 	}
 	else
@@ -1654,7 +1609,7 @@ int Spectrum_settings_set_range_maximum(struct Spectrum_settings *settings,
 /*******************************************************************************
 LAST MODIFIED : 15 January 20001
 
-DESCRIPTION : 
+DESCRIPTION :
 If <settings> ->fix_maximum is NOT set, set <settings> ->maximum to <value>
 ==============================================================================*/
 {
@@ -1667,13 +1622,13 @@ If <settings> ->fix_maximum is NOT set, set <settings> ->maximum to <value>
 		if(!settings->fix_maximum)
 		{
 			settings->maximum = value;
-			if ( settings->step_value <= settings->minimum 
+			if ( settings->step_value <= settings->minimum
 				|| settings->step_value >= settings->maximum )
 			{
 				settings->step_value = 0.5 * (settings->maximum + settings->minimum );
 			}
 			settings->settings_changed = 1;
-		}		
+		}
 		return_code = 1;
 	}
 	else
@@ -2081,7 +2036,7 @@ component number used.  The first component_index is 0, so this means 1 componen
 	{
 		if (settings->settings_type == SPECTRUM_FIELD)
 		{
-			int number_of_input_components = 
+			int number_of_input_components =
 				Computed_field_get_number_of_components(settings->input_field);
 			if (*component_index < number_of_input_components - 1)
 			{
@@ -2123,7 +2078,7 @@ in the value pointed to by <colour_components_void>.
 	int done, return_code;
 
 	ENTER(Spectrum_settings_set_colour_components);
-	if (settings && (colour_components = 
+	if (settings && (colour_components =
 			(enum Spectrum_colour_components *)colour_components_void))
 	{
 		done = 0;
@@ -2133,30 +2088,30 @@ in the value pointed to by <colour_components_void>.
 					(settings->output_field);
 			if (2 == number_of_components)
 			{
-				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE
 					| SPECTRUM_COMPONENT_ALPHA);
 				done = 1;
 			}
 			else if (3 == number_of_components)
 			{
-				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE);
 				done = 1;
-			} 
+			}
 			else if (4 <= number_of_components)
 			{
-				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE
 					| SPECTRUM_COMPONENT_ALPHA);
 				done = 1;
-			} 
+			}
 		}
 		if (!done)
 		{
@@ -2168,34 +2123,34 @@ in the value pointed to by <colour_components_void>.
 				case SPECTRUM_BANDED:
 				case SPECTRUM_STEP:
 				{
-				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN 
+					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE);
 				} break;
 				case SPECTRUM_RED:
 				{
-					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_RED);
 				} break;
 				case SPECTRUM_GREEN:
 				{
-					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_GREEN);
 				} break;
 				case SPECTRUM_BLUE:
 				{
-					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_BLUE);
 				} break;
 				case SPECTRUM_ALPHA:
 				{
-					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_ALPHA);
 				} break;
 				case SPECTRUM_MONOCHROME:
 				{
-					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components) 
+					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_MONOCHROME);
 				} break;
 			}
@@ -2242,7 +2197,7 @@ DESCRIPTION :
 				case SPECTRUM_RED:
 				case SPECTRUM_GREEN:
 				case SPECTRUM_MONOCHROME:
-				case SPECTRUM_BLUE:	
+				case SPECTRUM_BLUE:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
 				case SPECTRUM_ALPHA:
@@ -2257,7 +2212,7 @@ DESCRIPTION :
 						if ((settings->black_band_proportion)%(settings->number_of_bands))
 						{
 #if defined (DEBUG_CODE)
-							printf("  proportion %d number %d >>", 
+							printf("  proportion %d number %d >>",
 								settings->black_band_proportion,settings->number_of_bands);
 #endif /* defined (DEBUG_CODE) */
 							settings->black_band_proportion += settings->number_of_bands-
@@ -2269,7 +2224,7 @@ DESCRIPTION :
 						texels_in_band=(settings->black_band_proportion)/
 							(settings->number_of_bands);
 						texels_per_band=1021/(settings->number_of_bands);
-					
+
 						/* the first and last texel are white to allow transparency
 							outside the band range */
 						i=0;
@@ -2321,7 +2276,7 @@ DESCRIPTION :
 						i++;
 						pixels[i]=255;
 						i++;
-					
+
 #if defined (DEBUG_CODE)
 						while (0 != (error=glGetError()))
 						{
@@ -2347,7 +2302,7 @@ DESCRIPTION :
 							glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 						}
 						glEnable(GL_TEXTURE_1D);
-#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */				
+#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
 						glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
 							pixels);
 						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
@@ -2355,7 +2310,7 @@ DESCRIPTION :
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 						glEnable(GL_TEXTURE_1D);
-#endif /* defined (OLD_CODE) */				
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG_CODE)
 						while (0 != (error=glGetError()))
 						{
@@ -2414,14 +2369,14 @@ DESCRIPTION :
 						glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 					}
 					glEnable(GL_TEXTURE_1D);
-#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */				
+#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
 					glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
 					glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 					glEnable(GL_TEXTURE_1D);
-#endif /* defined (OLD_CODE) */				
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG_CODE)
 					while (0 != (error=glGetError()))
 					{
@@ -2585,13 +2540,13 @@ passed in render data.
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
-						} break;							
+						} break;
 						case SPECTRUM_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
-						} break;	
+						} break;
 						case SPECTRUM_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1;
@@ -2631,7 +2586,7 @@ passed in render data.
 		{
 			/* Ignore inactive settings or settings which act on a component for which
 				there is no data */
-			if (settings->active && 
+			if (settings->active &&
 				(settings->component_number < render_data->number_of_data_components))
 			{
 				data_component = render_data->data[settings->component_number];
@@ -2807,13 +2762,13 @@ passed in render data.
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
-						} break;							
+						} break;
 						case SPECTRUM_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
-						} break;	
+						} break;
 						case SPECTRUM_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1;

@@ -140,7 +140,7 @@ the point and the Xi coordinates of the point within the element.
 	enum FE_field_type fe_field_type;
 	/* following two for INDEXED_FE_FIELD only */
 	struct FE_field *indexer_field;
-	int number_of_indexed_values; 
+	int number_of_indexed_values;
 	/* the number of components (allows vector valued fields) */
 	int number_of_components;
 	/* the names of the different vector components */
@@ -258,7 +258,7 @@ How to access the the global values and derivatives for a field at a node.
 	/* an array with <number_of_components> node field components */
 	struct FE_node_field_component *components;
 	/* the time dependence of all components below this point,
-	   if it is non-NULL then every value storage must be an array of 
+	   if it is non-NULL then every value storage must be an array of
 	   values that matches this fe_time_sequence */
 	struct FE_time_sequence *time_sequence;
 	/* the number of structures that point to this node field.  The node field
@@ -278,7 +278,7 @@ The fields defined for a node and how to access the values and derivatives.
 {
 	/* the total number of values and derivatives */
 	/*???RC not convinced number_of_values needs to be in this structure */
-	int number_of_values; 
+	int number_of_values;
 
 	/* the size of the data in node->values->storage */
 	int values_storage_size;
@@ -528,7 +528,7 @@ with respect to the <basis> and before the element values are blended to be with
 respect to the standard basis.  The <modify> function is to allow for special
 cases, such as CMISS nodes that have multiple theta values in cylindrical polar,
 spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
-either lying on the z-axis or being the first and last node in a circle. 
+either lying on the z-axis or being the first and last node in a circle.
 ==============================================================================*/
 {
 	/* the type of the global to element map */
@@ -1122,14 +1122,14 @@ static int get_Value_storage_size(enum Value_type value_type,
 LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
-Given the value type, returns the size in bytes of the memory required to store 
+Given the value type, returns the size in bytes of the memory required to store
 the following:
 For non-array type, the actual data.
 For array types, an integer storing the number of array values, and a pointer to
 the array values.
 for time depedant types, a pointer to the values.
 ==============================================================================*/
-{		
+{
 	int size;
 
 	ENTER(get_Value_storage_size);
@@ -1140,15 +1140,15 @@ for time depedant types, a pointer to the values.
 			case DOUBLE_VALUE:
 			{
 				size = sizeof(double *);
-			} break; 
-			case FE_VALUE_VALUE:				
+			} break;
+			case FE_VALUE_VALUE:
 			{
 				size = sizeof(FE_value *);
 			} break;
 			case FLT_VALUE:
 			{
 				size = sizeof(float *);
-			} break;	
+			} break;
 			case SHORT_VALUE:
 			{
 				size = sizeof(short *);
@@ -1182,12 +1182,12 @@ for time depedant types, a pointer to the values.
 				/* need this to handle 64-bit alignment problems of 64-bit quantities in
 					64-bit version */
 #if defined (O64)
-				size = (sizeof(struct FE_element *) + sizeof(FE_value) * 
+				size = (sizeof(struct FE_element *) + sizeof(FE_value) *
 					MAXIMUM_ELEMENT_XI_DIMENSIONS) -
-					((sizeof(struct FE_element *) + sizeof(FE_value) * 
+					((sizeof(struct FE_element *) + sizeof(FE_value) *
 						MAXIMUM_ELEMENT_XI_DIMENSIONS)%8) + 8;
 #else /* defined (O64) */
-				size = sizeof(struct FE_element *) + sizeof(FE_value) * 
+				size = sizeof(struct FE_element *) + sizeof(FE_value) *
 					MAXIMUM_ELEMENT_XI_DIMENSIONS;
 #endif /* defined (O64) */
 			} break;
@@ -1206,7 +1206,7 @@ for time depedant types, a pointer to the values.
 			case INT_VALUE:
 			{
 				size = sizeof(int);
-			} break;	
+			} break;
 			case UNSIGNED_VALUE:
 			{
 				size = sizeof(unsigned);
@@ -1216,15 +1216,15 @@ for time depedant types, a pointer to the values.
 				/* VALUE_STORAGE_ARRAY_LENGTH_INT_SIZE space for number of array values */
 				/* (*double) to store pointer to data*/
 				size = VALUE_STORAGE_ARRAY_LENGTH_INT_SIZE+sizeof(double *);
-			} break; 
-			case FE_VALUE_ARRAY_VALUE:				
+			} break;
+			case FE_VALUE_ARRAY_VALUE:
 			{
 				size = VALUE_STORAGE_ARRAY_LENGTH_INT_SIZE+sizeof(FE_value *);
 			} break;
 			case FLT_ARRAY_VALUE:
 			{
 				size = VALUE_STORAGE_ARRAY_LENGTH_INT_SIZE+sizeof(float *);
-			} break;	
+			} break;
 			case SHORT_ARRAY_VALUE:
 			{
 				size = VALUE_STORAGE_ARRAY_LENGTH_INT_SIZE+sizeof(short *);
@@ -1251,7 +1251,7 @@ for time depedant types, a pointer to the values.
 	}
 	LEAVE;
 
-	return (size);	
+	return (size);
 } /* get_Value_storage_size */
 
 static int free_value_storage_array(Value_storage *values_storage,
@@ -1446,7 +1446,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 	return (return_code);
 } /* free_value_storage_array */
 
-static int allocate_and_copy_values_storage_array(Value_storage *source, 
+static int allocate_and_copy_values_storage_array(Value_storage *source,
 	enum Value_type value_type, Value_storage *dest)
 /************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -1454,37 +1454,37 @@ LAST MODIFIED : 8 June 1999
 DESCRIPTION
 Allocate an array of type value_type, of the length stored in source.
 Copy the data from the array referenced by the pointer in source to the
-alocated array. Copy the number of array values and the pointer to the 
+alocated array. Copy the number of array values and the pointer to the
 allocated array into dest.
 
-Therefore must must free dest in calling function, and dest must be 
+Therefore must must free dest in calling function, and dest must be
 an unallocated pointer when this function is called.
 
 NOTE:
 For array types, the contents of values_storage is:
- | int (number of array values) | pointer to array (eg double *) | 
-  x number_of_values 
+ | int (number of array values) | pointer to array (eg double *) |
+  x number_of_values
 Assumes that sizeof(int) = 1 DWORD, so that the pointers are a DWORD aligned
 in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 =======================================================================*/
 {
 	int number_of_array_values,array_size,return_code;
- 
-	
-	ENTER(allocate_and_copy_values_storage_array);	
+
+
+	ENTER(allocate_and_copy_values_storage_array);
 	if (source)
-	{	
+	{
 		return_code = 1;
 		switch (value_type)
-		{				
-			case DOUBLE_ARRAY_VALUE:			
+		{
+			case DOUBLE_ARRAY_VALUE:
 			{
-				double *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				double *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (double **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(double))*(number_of_array_values);
@@ -1495,12 +1495,12 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 						memcpy(dest_array,source_array,array_size);
 						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (double **)(dest+sizeof(int));
-						*array_address = dest_array;					
+						*array_address = dest_array;
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
@@ -1511,19 +1511,19 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
 					/* copy the  NULL address of the new array into the dest
-						values_storage*/	
+						values_storage*/
 					array_address = (double **)(dest+sizeof(int));
-					*array_address = (double *)NULL;		
+					*array_address = (double *)NULL;
 				}
-			} break; 
-			case FE_VALUE_ARRAY_VALUE:				
+			} break;
+			case FE_VALUE_ARRAY_VALUE:
 			{
-				FE_value *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				FE_value *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (FE_value **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(FE_value))*(number_of_array_values);
@@ -1532,36 +1532,36 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (FE_value **)(dest+sizeof(int));
 						*array_address = dest_array;
-					}				
+					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
 					}
-				}	
+				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (FE_value **)(dest+sizeof(int));
-					*array_address = (FE_value *)NULL;		
+					*array_address = (FE_value *)NULL;
 				}
 			} break;
-			case FLT_ARRAY_VALUE:		
+			case FLT_ARRAY_VALUE:
 			{
-				float *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				float *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (float **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(float))*(number_of_array_values);
@@ -1590,7 +1590,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (float **)(dest+sizeof(int));
 					*array_address = (float *)NULL;
-				}	
+				}
 			} break;
 			case SHORT_ARRAY_VALUE:
 			{
@@ -1608,36 +1608,36 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (short **)(dest+sizeof(int));
 						*array_address = dest_array;
-					}				
+					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
-					}		
-				}	
+					}
+				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (short **)(dest+sizeof(int));
-					*array_address = (short *)NULL;		
-				}	
-			} break;	
-			case INT_ARRAY_VALUE:			
+					*array_address = (short *)NULL;
+				}
+			} break;
+			case INT_ARRAY_VALUE:
 			{
-				int *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				int *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (int **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(int))*(number_of_array_values);
@@ -1646,36 +1646,36 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (int **)(dest+sizeof(int));
-						*array_address = dest_array;									
+						*array_address = dest_array;
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
-					}							
-				}		
+					}
+				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (int **)(dest+sizeof(int));
-					*array_address = (int *)NULL;		
-				}	
+					*array_address = (int *)NULL;
+				}
 			} break;
 			case UNSIGNED_ARRAY_VALUE:
 			{
-				unsigned *dest_array,*source_array,**array_address;				
-				/* get number of array values from source */		 
+				unsigned *dest_array,*source_array,**array_address;
+				/* get number of array values from source */
 				number_of_array_values = *((int *)source);
 				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
-					/* get address of array from source */			
+					/* get address of array from source */
 					array_address = (unsigned **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(unsigned))*(number_of_array_values);
@@ -1684,32 +1684,32 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
-						/* copy the address of the new array into the dest values_storage*/	
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (unsigned **)(dest+sizeof(int));
 						*array_address = dest_array;
-					}				
+					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
 					}
-				}	
+				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest values_storage*/
 					array_address = (unsigned **)(dest+sizeof(int));
-					*array_address = (unsigned *)NULL;		
-				}		
+					*array_address = (unsigned *)NULL;
+				}
 			} break;
 			case STRING_VALUE:
 			{
-				char *dest_array,*source_array,**array_address;			
-				/* get address of array from source */				
+				char *dest_array,*source_array,**array_address;
+				/* get address of array from source */
 				array_address = (char **)(source);
 				if (*array_address)/* if we have a source array*/
 				{
@@ -1719,26 +1719,26 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					if (ALLOCATE(dest_array,char,array_size))
 					{
 						/* copy values into the dest array */
-						memcpy(dest_array,source_array,array_size);				
-						/* copy the address of the new array into the dest values_storage*/		
+						memcpy(dest_array,source_array,array_size);
+						/* copy the address of the new array into the dest values_storage*/
 						array_address = (char **)(dest);
 						*array_address = dest_array;
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"allocate_and_copy_values_storage_array. Out of memory");
 						return_code = 0;
-					}					
+					}
 				}
-				else	/* copy NULL into the dest values_storage*/	
+				else	/* copy NULL into the dest values_storage*/
 				{
 					array_address = (char **)(dest);
 					*array_address = (char *)NULL;
 				}
-			} break;		
+			} break;
 			default:
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"allocate_and_copy_values_storage_array. Invalid type");
 				return_code = 0;
@@ -1755,7 +1755,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	return (return_code);
 } /* allocate_and_copy_values_storage_array */
 
-static int copy_time_sequence_values_storage_array(Value_storage *source, 
+static int copy_time_sequence_values_storage_array(Value_storage *source,
 	enum Value_type value_type, struct FE_time_sequence *source_time_sequence,
 	struct FE_time_sequence *destination_time_sequence, Value_storage *dest)
 /************************************************************************
@@ -1770,8 +1770,8 @@ The destination must already have arrays allocated corresponding to the
 
 NOTE:
 For array types, the contents of values_storage is:
- | pointer to array (eg double *) | 
-  x number_of_values 
+ | pointer to array (eg double *) |
+  x number_of_values
 Assumes that sizeof(int) = 1 DWORD, so that the pointers are a DWORD aligned
 in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 =======================================================================*/
@@ -1779,10 +1779,10 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	int destination_time_index, source_number_of_times,
 		source_time_index, return_code;
 	FE_value time;
-	
-	ENTER(copy_time_sequence_values_storage_array);	
+
+	ENTER(copy_time_sequence_values_storage_array);
 	if (source)
-	{	
+	{
 		return_code = 1;
 		source_number_of_times = FE_time_sequence_get_number_of_times(
 			source_time_sequence);
@@ -1796,18 +1796,18 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					time, &destination_time_index))
 			{
 				switch (value_type)
-				{				
+				{
 					case DOUBLE_VALUE:
 					{
-						double *dest_array,*source_array,**array_address;				
-						/* get address of array from source */			
+						double *dest_array,*source_array,**array_address;
+						/* get address of array from source */
 						array_address = (double **)source;
 						source_array = *array_address;
 						array_address = (double **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
-					} break; 
+					} break;
 					case FE_VALUE_VALUE:
 					{
 						FE_value *dest_array,*source_array,**array_address;
@@ -1816,51 +1816,51 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 						source_array = *array_address;
 						array_address = (FE_value **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
 					} break;
-					case FLT_VALUE:		
+					case FLT_VALUE:
 					{
-						float *dest_array,*source_array,**array_address;				
-						/* get address of array from source */			
+						float *dest_array,*source_array,**array_address;
+						/* get address of array from source */
 						array_address = (float **)source;
 						source_array = *array_address;
 						array_address = (float **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
 					} break;
-					case SHORT_VALUE:		
+					case SHORT_VALUE:
 					{
-						short *dest_array,*source_array,**array_address;				
-						/* get address of array from source */			
+						short *dest_array,*source_array,**array_address;
+						/* get address of array from source */
 						array_address = (short **)source;
 						source_array = *array_address;
 						array_address = (short **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
-					} break;	
-					case INT_VALUE:			
+					} break;
+					case INT_VALUE:
 					{
-						int *dest_array,*source_array,**array_address;				
-						/* get address of array from source */			
+						int *dest_array,*source_array,**array_address;
+						/* get address of array from source */
 						array_address = (int **)source;
 						source_array = *array_address;
 						array_address = (int **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
 					} break;
 					case UNSIGNED_ARRAY_VALUE:
 					{
-						unsigned *dest_array,*source_array,**array_address;				
-						/* get address of array from source */			
+						unsigned *dest_array,*source_array,**array_address;
+						/* get address of array from source */
 						array_address = (unsigned **)source;
 						source_array = *array_address;
 						array_address = (unsigned **)dest;
 						dest_array = *array_address;
-						dest_array[destination_time_index] = 
+						dest_array[destination_time_index] =
 							source_array[source_time_index];
 					} break;
 					case STRING_VALUE:
@@ -1868,16 +1868,16 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 						display_message(ERROR_MESSAGE,
 							"copy_time_sequence_values_storage_array.  "
 							"String type not implemented for multiple times yet.");
-						return_code = 0;				
-					} break;		
+						return_code = 0;
+					} break;
 					default:
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"copy_time_sequence_values_storage_array.  Invalid type");
 						return_code = 0;
 					} break;
 				} /*switch (the_value_type) */
-					
+
 			}
 			else
 			{
@@ -1898,7 +1898,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	return (return_code);
 } /* copy_time_sequence_values_storage_array */
 
-int copy_time_sequence_values_storage_arrays(Value_storage *destination, 
+int copy_time_sequence_values_storage_arrays(Value_storage *destination,
 	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
 	struct FE_time_sequence *source_time_sequence, int number_of_values,
 	Value_storage *source)
@@ -1946,39 +1946,39 @@ the appropriate value size to transfer time value arrays from <source> with
 	return (return_code);
 } /* copy_time_sequence_values_storage_arrays */
 
-static int allocate_time_values_storage_array(enum Value_type value_type, 
+static int allocate_time_values_storage_array(enum Value_type value_type,
 	struct FE_time_sequence *destination_time_sequence, Value_storage *dest,
 	int initialise_storage)
 /************************************************************************
 LAST MODIFIED : 21 November 2001
 
 DESCRIPTION
-Allocate an array of type value_type with size determined by the 
+Allocate an array of type value_type with size determined by the
 destination_time_sequence.  If <initialise_storage> is true then the
 values in the array are set to the zero.
 
 NOTE:
 For time types, the contents of values_storage is:
- | pointer to array (eg double *) | 
-  x number_of_values 
+ | pointer to array (eg double *) |
+  x number_of_values
 Assumes that sizeof(int) = 1 DWORD, so that the pointers are a DWORD aligned
 in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 =======================================================================*/
 {
 	int number_of_times,j,return_code;
-	
-	ENTER(allocate_time_values_storage_array);	
+
+	ENTER(allocate_time_values_storage_array);
 	if (dest)
-	{	
+	{
 		return_code = 1;
 		number_of_times = FE_time_sequence_get_number_of_times(
 			destination_time_sequence);
 		/* Allocate the array */
 		switch (value_type)
-		{				
+		{
 			case DOUBLE_VALUE:
 			{
-				double *dest_array,**array_address;				
+				double *dest_array,**array_address;
 				/* allocate the dest array */
 				if (ALLOCATE(dest_array,double,number_of_times))
 				{
@@ -1989,17 +1989,17 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 							dest_array[j] = 0.0;
 						}
 					}
-					/* copy the address of the new array into the dest values_storage*/	
+					/* copy the address of the new array into the dest values_storage*/
 					array_address = (double **)dest;
-					*array_address = dest_array;					
+					*array_address = dest_array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
-			} break; 
+			} break;
 			case FE_VALUE_VALUE:
 			{
 				FE_value *dest_array,**array_address;
@@ -2013,12 +2013,12 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 							dest_array[j] = FE_VALUE_INITIALIZER;
 						}
 					}
-					/* copy the address of the new array into the dest values_storage*/	
+					/* copy the address of the new array into the dest values_storage*/
 					array_address = (FE_value **)dest;
-					*array_address = dest_array;					
+					*array_address = dest_array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
@@ -2037,18 +2037,18 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 							dest_array[j] = 0.0f;
 						}
 					}
-					/* copy the address of the new array into the dest values_storage*/	
+					/* copy the address of the new array into the dest values_storage*/
 					array_address = (float **)dest;
-					*array_address = dest_array;					
+					*array_address = dest_array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
-			case SHORT_VALUE:		
+			case SHORT_VALUE:
 			{
 				short *dest_array,**array_address;
 				/* allocate the dest array */
@@ -2061,18 +2061,18 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 							dest_array[j] = 0;
 						}
 					}
-					/* copy the address of the new array into the dest values_storage*/	
+					/* copy the address of the new array into the dest values_storage*/
 					array_address = (short **)dest;
-					*array_address = dest_array;					
+					*array_address = dest_array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
-			} break;	
-			case INT_VALUE:			
+			} break;
+			case INT_VALUE:
 			{
 				int *dest_array,**array_address;
 				/* allocate the dest array */
@@ -2085,12 +2085,12 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 							dest_array[j] = 0;
 						}
 					}
-					/* copy the address of the new array into the dest values_storage*/	
+					/* copy the address of the new array into the dest values_storage*/
 					array_address = (int **)dest;
-					*array_address = dest_array;					
+					*array_address = dest_array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
@@ -2100,10 +2100,10 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				display_message(ERROR_MESSAGE,
 					"allocate_time_values_storage_array. String type not implemented for multiple times yet.");
-				return_code = 0;				
-			} break;		
+				return_code = 0;
+			} break;
 			default:
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"allocate_time_values_storage_array. Invalid type");
 				return_code = 0;
@@ -2120,15 +2120,15 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	return (return_code);
 } /* allocate_time_values_storage_array */
 
-static int reallocate_time_values_storage_array(enum Value_type value_type, 
+static int reallocate_time_values_storage_array(enum Value_type value_type,
 	int new_number_of_values, Value_storage *new_array,
-	Value_storage *previous_array, 
+	Value_storage *previous_array,
 	int initialise_storage, int previous_number_of_values)
 /************************************************************************
 LAST MODIFIED : 20 December 2005
 
 DESCRIPTION
-Reallocate an array of type value_type with number_of_values.  If 
+Reallocate an array of type value_type with number_of_values.  If
 <initialise_storage> is true then the values from
 <previous_number_of_values> + 1 to <new_number_of_values> are set to zero.
 The routine will potentially overallocate the array to accelerate when
@@ -2136,14 +2136,14 @@ these arrays are expanded out one value at a time, many times over.
 =======================================================================*/
 {
 	int allocate_number_of_values, j, return_code;
-	
-	ENTER(allocate_time_values_storage_array);	
+
+	ENTER(allocate_time_values_storage_array);
 	if (new_array && previous_array)
-	{	
+	{
 		return_code = 1;
 
-		allocate_number_of_values = (new_number_of_values + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
-			(new_number_of_values % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);		
+		allocate_number_of_values = (new_number_of_values + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) -
+			(new_number_of_values % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);
 		switch (value_type)
 		{
 			case DOUBLE_VALUE:
@@ -2161,12 +2161,12 @@ these arrays are expanded out one value at a time, many times over.
 					*(double **)new_array = array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
-			} break; 
+			} break;
 			case FE_VALUE_VALUE:
 			{
 				FE_value *array;
@@ -2182,7 +2182,7 @@ these arrays are expanded out one value at a time, many times over.
 					*(FE_value **)new_array = array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
@@ -2203,7 +2203,7 @@ these arrays are expanded out one value at a time, many times over.
 					*(float **)new_array = array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
@@ -2224,12 +2224,12 @@ these arrays are expanded out one value at a time, many times over.
 					*(short **)new_array = array;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"allocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
-			} break; 
+			} break;
 			case INT_VALUE:
 			{
 				int *array;
@@ -2255,10 +2255,10 @@ these arrays are expanded out one value at a time, many times over.
 			{
 				display_message(ERROR_MESSAGE,
 					"allocate_time_values_storage_array. String type not implemented for multiple times yet.");
-				return_code = 0;				
-			} break;		
+				return_code = 0;
+			} break;
 			default:
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"allocate_time_values_storage_array. Invalid type");
 				return_code = 0;
@@ -2306,14 +2306,14 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 			{
 				int value_size;
 				Value_storage *src,*dest;
-				
+
 				dest = destination;
 				src = source;
 				value_size=get_Value_storage_size(value_type,
 					destination_time_sequence);
 				if (optimised_merge)
 				{
-					time_sequence_mapping = 
+					time_sequence_mapping =
 						FE_time_sequences_mapping(source_time_sequence, destination_time_sequence);
 				}
 				else
@@ -2328,7 +2328,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 						destination_number_of_times = FE_time_sequence_get_number_of_times(destination_time_sequence);
 						for (i=0;(i<number_of_values)&&return_code;i++)
 						{
-							reallocate_time_values_storage_array(value_type, 
+							reallocate_time_values_storage_array(value_type,
 								destination_number_of_times, dest, src,
 								/*initialise_storage*/0, /*previous_number_of_values*/0);
 							*(void **)src = 0x0;
@@ -2372,7 +2372,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 		else
 		{
 			switch (value_type)
-			{			
+			{
 				case DOUBLE_VALUE:
 				{
 					double *src,*dest;
@@ -2460,7 +2460,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 						dest++;
 						src++;
 					}
-				} break;	
+				} break;
 				case UNSIGNED_VALUE:
 				{
 					unsigned *src,*dest;
@@ -2473,10 +2473,10 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 						dest++;
 						src++;
 					}
-				} break;	
+				} break;
 				case DOUBLE_ARRAY_VALUE:
 				case FE_VALUE_ARRAY_VALUE:
-				case FLT_ARRAY_VALUE:	
+				case FLT_ARRAY_VALUE:
 				case SHORT_ARRAY_VALUE:
 				case INT_ARRAY_VALUE:
 				case UNSIGNED_ARRAY_VALUE:
@@ -2560,14 +2560,14 @@ Sets data in this memory to 0, pointers to NULL.
 		if (time_sequence)
 		{
 			/* set pointers to NULL */
-			switch (value_type) 
+			switch (value_type)
 			{
-				case DOUBLE_VALUE: 
-				{						
+				case DOUBLE_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((double **)temp_values_storage) = (double *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
 				case FE_VALUE_VALUE:
@@ -2575,39 +2575,39 @@ Sets data in this memory to 0, pointers to NULL.
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((FE_value **)temp_values_storage) = (FE_value *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
-				case FLT_VALUE: 
+				case FLT_VALUE:
 				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((float **)temp_values_storage) = (float *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				} break;
-				case SHORT_VALUE: 
-				{							
+				case SHORT_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((short **)temp_values_storage) = (short *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				} break;
-				case INT_VALUE: 
-				{						
+				case INT_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((int **)temp_values_storage) = (int *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
-				case UNSIGNED_VALUE: 
-				{							
+				case UNSIGNED_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((unsigned **)temp_values_storage) = (unsigned *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
 				default:
@@ -2621,14 +2621,14 @@ Sets data in this memory to 0, pointers to NULL.
 		else
 		{
 			/* set values to zero */
-			switch (value_type) 
+			switch (value_type)
 			{
-				case DOUBLE_VALUE: 
-				{						
+				case DOUBLE_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((double *)temp_values_storage) = 0.0;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
 				case ELEMENT_XI_VALUE:
@@ -2643,7 +2643,7 @@ Sets data in this memory to 0, pointers to NULL.
 							*((FE_value *)new_value) = 0;
 							new_value += sizeof(FE_value);
 						}
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
 				case FE_VALUE_VALUE:
@@ -2651,50 +2651,50 @@ Sets data in this memory to 0, pointers to NULL.
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((FE_value *)temp_values_storage) = 0.0;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
-				case FLT_VALUE: 
+				case FLT_VALUE:
 				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((float *)temp_values_storage) = 0.0;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				} break;
-				case SHORT_VALUE: 
-				{							
-					display_message(ERROR_MESSAGE," initialise_value_storage_array." 
+				case SHORT_VALUE:
+				{
+					display_message(ERROR_MESSAGE," initialise_value_storage_array."
 						"SHORT_VALUE. Code not written yet. Beware alignment problems ");
 					return_code = 0;
 				} break;
-				case INT_VALUE: 
-				{						
+				case INT_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((int *)temp_values_storage) = 0;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
-				case UNSIGNED_VALUE: 
-				{							
+				case UNSIGNED_VALUE:
+				{
 					for (i = number_of_values; 0 < i; i--)
 					{
 						*((unsigned *)temp_values_storage) = 0;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				}	break;
 				case STRING_VALUE:
 				{
 					for (i = number_of_values; 0 < i; i--)
 					{
-						*((char **)temp_values_storage) = (char *)NULL;	
-						temp_values_storage += size;	
+						*((char **)temp_values_storage) = (char *)NULL;
+						temp_values_storage += size;
 					}
 				} break;
 				/* set number of array values to 0, array pointers to NULL */
 				case DOUBLE_ARRAY_VALUE:
-				{ 						
+				{
 					double **array_address;
 
 					for (i = number_of_values; 0 < i; i--)
@@ -2705,10 +2705,10 @@ Sets data in this memory to 0, pointers to NULL.
 							 temp_values_storage*/
 						array_address = (double **)(temp_values_storage + sizeof(int));
 						*array_address = (double *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				} break;
-				case FE_VALUE_ARRAY_VALUE:				
+				case FE_VALUE_ARRAY_VALUE:
 				{
 					FE_value **array_address;
 
@@ -2717,7 +2717,7 @@ Sets data in this memory to 0, pointers to NULL.
 						*((int *)temp_values_storage) = 0;
 						array_address = (FE_value **)(temp_values_storage + sizeof(int));
 						*array_address = (FE_value *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
 				} break;
 				case FLT_ARRAY_VALUE:
@@ -2729,10 +2729,10 @@ Sets data in this memory to 0, pointers to NULL.
 						*((int *)temp_values_storage) = 0;
 						array_address = (float **)(temp_values_storage + sizeof(int));
 						*array_address = (float *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
-				} break;	
-				case SHORT_ARRAY_VALUE:			
+				} break;
+				case SHORT_ARRAY_VALUE:
 				{
 					short **array_address;
 
@@ -2741,10 +2741,10 @@ Sets data in this memory to 0, pointers to NULL.
 						*((int *)temp_values_storage) = 0;
 						array_address = (short **)(temp_values_storage + sizeof(int));
 						*array_address = (short *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
-				} break;			
-				case INT_ARRAY_VALUE:								
+				} break;
+				case INT_ARRAY_VALUE:
 				{
 					int **array_address;
 
@@ -2753,10 +2753,10 @@ Sets data in this memory to 0, pointers to NULL.
 						*((int *)temp_values_storage) = 0;
 						array_address = (int **)(temp_values_storage + sizeof(int));
 						*array_address = (int *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
-				} break;	
-				case UNSIGNED_ARRAY_VALUE:			
+				} break;
+				case UNSIGNED_ARRAY_VALUE:
 				{
 					unsigned **array_address;
 
@@ -2765,9 +2765,9 @@ Sets data in this memory to 0, pointers to NULL.
 						*((int *)temp_values_storage) = 0;
 						array_address = (unsigned **)(temp_values_storage + sizeof(int));
 						*array_address = (unsigned *)NULL;
-						temp_values_storage += size;	
+						temp_values_storage += size;
 					}
-				} break;	
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -2829,7 +2829,7 @@ Initialises the contents to be zero for values, NULL for pointers.
 		{
 			display_message(ERROR_MESSAGE,
 				"make_value_storage_array.  Not enough memory");
-		}	
+		}
 	}
 	else
 	{
@@ -2863,7 +2863,7 @@ A debug function to print a node's value storage (to stdout)
 			for (i=0;i<limit;i++)
 			{
 				printf("Nodal value[%d], = %f \n",i,*values);
-				values++;	
+				values++;
 			}
 		}
 		else
@@ -2893,20 +2893,20 @@ A debug function to print a node fields (to stdout)
 
 	int *the_count;
 
-	ENTER(show_node_field);		
+	ENTER(show_node_field);
 	the_count = (int *)count;
 	printf("count = %d\n",*the_count);
 	if (node_field)
-	{	
+	{
 		printf("node_field = %p \n",node_field);
 		if (node_field->field)
-		{	
+		{
 			printf("   node_field->field = %p \n",node_field->field);
 			printf("   name = %s \n",node_field->field->name);
 			printf("   number of values = %d \n",node_field->field->number_of_values);
-			printf("   number of components = %d \n",node_field->field->number_of_components);		
+			printf("   number of components = %d \n",node_field->field->number_of_components);
 			for (i=0;i<node_field->field->number_of_components;i++)
-			{	
+			{
 				printf("      component %d: \n",i);
 				component = &(node_field->components[i]);
 				printf("      number of versions = %d \n",component->number_of_versions);
@@ -2917,14 +2917,14 @@ A debug function to print a node fields (to stdout)
 		{
 			printf("node_field->field = NULL \n");
 		}
-		return_code =1;	
+		return_code =1;
 	}
 	else
 	{
 		printf("node_field = NULL \n");
 		return_code = 1;
 	}
-	(*the_count)++;	
+	(*the_count)++;
 	printf("\n");
 	LEAVE;
 	return (return_code);
@@ -3097,7 +3097,7 @@ for all components.
 {
 	int i,number_of_values;
 	struct FE_node_field_component *component;
-	
+
 	ENTER(FE_node_field_get_number_of_values);
 	number_of_values=0;
 	if (node_field)
@@ -3135,7 +3135,7 @@ for all nodes using the Node_field_info.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(FE_node_field_set_FE_time_sequence);
 	if (node_field && (node_field->access_count < 2))
 	{
@@ -3202,7 +3202,7 @@ Initialise the time arrays in FE_node_field's values_storage.
 Assumes values_storage has already been allocated.
 ==============================================================================*/
 {
- 	enum Value_type value_type;
+	enum Value_type value_type;
 	int i, number_of_values,offset,return_code,size;
 	struct FE_field *field;
 	struct FE_node_field_component *component;
@@ -3254,7 +3254,7 @@ static int FE_node_field_free_values_storage_arrays(
 LAST MODIFIED: 9 March 2005
 
 DESCRIPTION:
-Frees accesses and dynamically allocated memory in <start_of_values_storage> 
+Frees accesses and dynamically allocated memory in <start_of_values_storage>
 for the FE_node_field.
 The <start_of_the_values_storage> address is passed so that the this function
 can be called from an interator, the <node> is not passed so this function can
@@ -3283,7 +3283,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 			{
 				if (NULL != (start_of_values_storage=(Value_storage *)start_of_values_storage_void))
 				{
-					values_storage = start_of_values_storage + component->value;	
+					values_storage = start_of_values_storage + component->value;
 					number_of_values=
 						(1+component->number_of_derivatives)*component->number_of_versions;
 					free_value_storage_array(values_storage,value_type,
@@ -3339,7 +3339,7 @@ Copies the values for <new_node_field> into <new_values_storage> from the
 <old_values_storage> with the equivalent node field in <old_node_field_list>.
 
 ... when <new_values_storage> is not provided then the values described by
-<add_node_field_list> are copied from the <add_values_storage> into the 
+<add_node_field_list> are copied from the <add_values_storage> into the
 corresponding places in the <old_values_storage>.
 
 Notes:
@@ -3349,8 +3349,8 @@ no checks on this are made here.
 Assumes component nodal values are consecutive and start at first component.
 <copy_data_void> points at a struct FE_node_field_merge_values_storage_data.
 ==============================================================================*/
-{	
- 	enum Value_type value_type;
+{
+	enum Value_type value_type;
 	int number_of_values, return_code;
 	struct FE_field *field;
 	struct FE_node_field *add_node_field, *old_node_field;
@@ -3467,7 +3467,7 @@ Assumes component nodal values are consecutive and start at first component.
 							}
 							else
 							{
-								/* Release the storage of the old values.  The pointer is from the 
+								/* Release the storage of the old values.  The pointer is from the
 									start of the values storage to make it work as a node_field iterator. */
 								FE_node_field_free_values_storage_arrays(old_node_field,
 									(void *)copy_data->old_values_storage);
@@ -3523,7 +3523,7 @@ whether the node fields have times:
 * if the node fields have times, the times arrays are allocated, then the
 values at times in <node> are copied, followed by those in <add_node>.
 Hence, the values in <add_node> take preference over those in <node>.
-If <values_storage> is not provided then the fields described in the 
+If <values_storage> is not provided then the fields described in the
 <new_node_field_list> are looked for in the <add_node> and if found the
 values are copied into the existing values storage in <node>.
 Notes:
@@ -3570,7 +3570,7 @@ allocated in the new <values_storage> so <node> and <add_node> are unchanged.
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* merge_FE_node_values_storage */
 
@@ -3585,7 +3585,7 @@ by the all the node_fields in node_field_list.
 ==============================================================================*/
 {
 	int values_storage_size;
-	
+
 	ENTER(get_FE_node_field_list_values_storage_size);
 	values_storage_size=0;
 	if (node_field_list)
@@ -3604,7 +3604,7 @@ by the all the node_fields in node_field_list.
 	return (values_storage_size);
 } /* get_FE_node_field_list_values_storage_size */
 
-static int allocate_and_copy_FE_node_values_storage(struct FE_node *node, 
+static int allocate_and_copy_FE_node_values_storage(struct FE_node *node,
 	Value_storage **values_storage)
 /******************************************************************************
 LAST MODIFIED: 1 November 2002
@@ -3615,7 +3615,7 @@ Copies the node->values_storage to values_storage. Also allocates and copies
 any arrays in node->values_storage.
 
 Note that values_storage contains no information about the value_type(s) or the
-number of values of the data in it. You must refer to the FE_node/FE_field to 
+number of values of the data in it. You must refer to the FE_node/FE_field to
 get this.
 
 The the calling function is responsible for deallocating values_storage,
@@ -3629,7 +3629,7 @@ and any arrays in values_storage.
 	if (node)
 	{
 		return_code = 1;
-	
+
 		if (node->fields)
 		{
 			size = get_FE_node_field_list_values_storage_size(
@@ -3652,13 +3652,13 @@ and any arrays in values_storage.
 			}
 			else /* no fields, nothing to copy */
 			{
-				dest_values_storage = (Value_storage *)NULL;	
-			}	
-		}	
+				dest_values_storage = (Value_storage *)NULL;
+			}
+		}
 		else /* no fields, nothing to copy */
 		{
-		 dest_values_storage = (Value_storage *)NULL;	
-		}	
+		 dest_values_storage = (Value_storage *)NULL;
+		}
 		*values_storage = dest_values_storage;
 	}
 	else
@@ -3722,7 +3722,7 @@ returns true if <node_field> has time information defined
 
 	if (node_field&&!dummy)
 	{
-		return_code = (node_field->field->number_of_times > 0); 	
+		return_code = (node_field->field->number_of_times > 0);
 	}
 	else
 	{
@@ -4614,7 +4614,7 @@ Returns the number of values expected for the <node_field_info>.
 } /* FE_node_field_info_get_number_of_values */
 
 int FE_node_field_info_add_node_field(
-	struct FE_node_field_info *fe_node_field_info, 
+	struct FE_node_field_info *fe_node_field_info,
 	struct FE_node_field *new_node_field, int new_number_of_values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2005
@@ -4630,7 +4630,7 @@ is known to be the only object using this field info.
 	ENTER(FE_node_field_info_add_node_field);
 	if (fe_node_field_info)
 	{
-		if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, 
+		if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
 				fe_node_field_info->node_field_list))
 		{
 			fe_node_field_info->number_of_values = new_number_of_values;
@@ -10356,7 +10356,7 @@ The field value MUST have been previously allocated with set_FE_field_number_of_
 	return (return_code);
 } /* set_FE_field_time_FE_value */
 
-char *get_FE_field_name(struct FE_field *field)
+const char *get_FE_field_name(struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 February 1999
 
@@ -10365,7 +10365,7 @@ Returns a pointer to the name for the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
 {
-	char *name;
+	const char *name;
 
 	ENTER(get_FE_field_name);
 	if (field)
@@ -10376,7 +10376,7 @@ Should only call this function for unmanaged fields.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_name.  Invalid argument(s)");
-		name = (char *)NULL;
+		name = (const char *)NULL;
 	}
 	LEAVE;
 
@@ -12483,8 +12483,8 @@ and <component_number> at the <node> and <time>. \
 					{ \
 						FE_time_sequence_get_interpolation_for_time(time_sequence, \
 							time, &time_index_one, &time_index_two, &xi); \
-	               array = *((value_type **)values_storage); \
-		       *value = (value_type)(array[time_index_one] * (1.0 - xi) + \
+				   array = *((value_type **)values_storage); \
+			   *value = (value_type)(array[time_index_one] * (1.0 - xi) + \
 						  array[time_index_two] * xi); \
 					} \
 					else \
@@ -12499,7 +12499,7 @@ and <component_number> at the <node> and <time>. \
 				int index; \
 \
 				if (get_FE_nodal_int_value(node,field->indexer_field, \
-               /*component_number*/0,/*version*/0,	\
+			   /*component_number*/0,/*version*/0,	\
 					FE_NODAL_VALUE,time,&index)) \
 				{ \
 					/* index numbers start at 1 */ \
@@ -12559,7 +12559,7 @@ and <component_number> at the <node>. \
 	{ \
 		/* get the values storage */ \
 		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
-         version,type, value_enum,&values_storage,&time_sequence)) \
+		 version,type, value_enum,&values_storage,&time_sequence)) \
 		{ \
 			if (time_sequence) \
 			{ \
@@ -12582,8 +12582,8 @@ and <component_number> at the <node>. \
 				*((value_type *)values_storage) = value; \
 				return_code=1; \
 			} \
-         if (return_code) \
-         { \
+		 if (return_code) \
+		 { \
 				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field); \
 			} \
 		} \
@@ -12628,7 +12628,7 @@ it should only be used temporarily. \
 	{ \
 		/* get the values storage */ \
 		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
-         version,type, value_enum,&values_storage,&time_sequence)) \
+		 version,type, value_enum,&values_storage,&time_sequence)) \
 		{ \
 			if (time_sequence) \
 			{ \
@@ -12651,8 +12651,8 @@ it should only be used temporarily. \
 				*value = (value_type *)values_storage; \
 				return_code=1; \
 			} \
-         if (return_code) \
-         { \
+		 if (return_code) \
+		 { \
 				/* Check this node is being managed by the region it belongs to (All nodes \
 					are created with respect to some region but they are not necessarily merged \
 					into it yet. */ \
@@ -13978,7 +13978,7 @@ at the <node>. <string> may be NULL.
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"set_FE_nodal_string_value.  find_FE_nodal_values_storage_dest failed");
 		}
@@ -15302,7 +15302,7 @@ DESCRIPTION :
 Creates and returns an exact copy of the struct Linear_combination_of_global_values
 <source>.
 ==============================================================================*/
-{	
+{
 	int i,number_of_global_values;
 	struct Linear_combination_of_global_values *map;
 
@@ -15327,7 +15327,7 @@ Creates and returns an exact copy of the struct Linear_combination_of_global_val
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 				"copy_create_Linear_combination_of_global_values, Invalid argument");
 	}
@@ -15429,12 +15429,12 @@ DESCRIPTION :
 Creates and returns an exact copy of the struct Standard_node_to_element_map
 <source>.
 ==============================================================================*/
-{	
+{
 	int i, node_index, number_of_nodal_values;
 	struct Standard_node_to_element_map *map;
 
 	ENTER(copy_create_Standard_node_to_element_map)
-	map = (struct Standard_node_to_element_map *)NULL;	
+	map = (struct Standard_node_to_element_map *)NULL;
 	if (source)
 	{
 		node_index = source->node_index;
@@ -15450,13 +15450,13 @@ Creates and returns an exact copy of the struct Standard_node_to_element_map
 			}
 		}
 		else
-		{		 
+		{
 			display_message(ERROR_MESSAGE,
 				"copy_create_Standard_node_to_element_map.  Failed to create map");
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 				"copy_create_Standard_node_to_element_map.  Invalid argument");
 	}
@@ -15485,7 +15485,7 @@ If fails, sets *<node_index_address> to zero.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_get_node_index.  Invalid argument(s)");
 		if (node_index_address)
@@ -15519,7 +15519,7 @@ If fails, sets *<number_of_nodal_values_address> to zero.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_get_number_of_nodal_values.  "
 			"Invalid argument(s)");
@@ -15558,7 +15558,7 @@ If fails, sets *<nodal_value_index_address> to zero.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_get_nodal_value_index.  "
 			"Invalid argument(s)");
@@ -15599,7 +15599,7 @@ get a value from the node.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_set_nodal_value_index.  "
 			"Invalid argument(s)");
@@ -15634,7 +15634,7 @@ If fails, sets *<scale_factor_index_address> to zero.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_get_scale_factor_index.  "
 			"Invalid argument(s)");
@@ -15675,7 +15675,7 @@ needing to get a value from the scale factor set.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"Standard_node_to_element_map_set_scale_factor_index.  "
 			"Invalid argument(s)");
@@ -15779,7 +15779,7 @@ DESCRIPTION :
 Creates and returns an exact copy of the struct General_node_to_element_map
 <source>.
 ==============================================================================*/
-{	
+{
 	int i,node_index,number_of_nodal_values;
 	struct General_node_to_element_map *map;
 	struct Linear_combination_of_global_values **element_value,
@@ -15788,7 +15788,7 @@ Creates and returns an exact copy of the struct General_node_to_element_map
 	ENTER(copy_create_General_node_to_element_map)
 	map=(struct General_node_to_element_map *)NULL;
 	element_value=(struct Linear_combination_of_global_values **)NULL;
-	source_element_value=(struct Linear_combination_of_global_values **)NULL;	
+	source_element_value=(struct Linear_combination_of_global_values **)NULL;
 	if(source)
 	{
 		node_index=source->node_index;
@@ -15800,7 +15800,7 @@ Creates and returns an exact copy of the struct General_node_to_element_map
 			element_value=map->element_values;
 			for (i=number_of_nodal_values;i>0;i--)
 			{
-				
+
 				*element_value=copy_create_Linear_combination_of_global_values(
 					*source_element_value);
 				element_value++;
@@ -15808,13 +15808,13 @@ Creates and returns an exact copy of the struct General_node_to_element_map
 			}
 		}
 		else
-		{		 
+		{
 			display_message(ERROR_MESSAGE,
 				"copy_create_General_node_to_element_map, failed to create map");
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 				"copy_create_General_node_to_element_map, Invalid argument");
 	}
@@ -15842,7 +15842,7 @@ If fails, sets *<node_index_address> to zero.
 		return_code = 1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"General_node_to_element_map_get_node_index.  Invalid argument(s)");
 		if (node_index_address)
@@ -15862,7 +15862,7 @@ struct FE_element_field_component *copy_create_FE_element_field_component(
 LAST MODIFIED : 15 February 2002
 
 DESCRIPTION :
-Creates and returns an exact copy of the struct FE_element_field_component 
+Creates and returns an exact copy of the struct FE_element_field_component
 <source_component>.
 ==============================================================================*/
 {
@@ -15879,11 +15879,11 @@ Creates and returns an exact copy of the struct FE_element_field_component
 			{
 				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
 			}	break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:	
+			case GENERAL_NODE_TO_ELEMENT_MAP:
 			{
 				number_of_maps=source_component->map.general_node_based.number_of_nodes;
 			}	break;
-			case FIELD_TO_ELEMENT_MAP:	
+			case FIELD_TO_ELEMENT_MAP:
 			{
 				number_of_maps=source_component->map.field_based.number_of_element_values;
 			}	break;
@@ -15897,38 +15897,38 @@ Creates and returns an exact copy of the struct FE_element_field_component
 			source_component->basis,source_component->modify);
 		/* fill in the interior of component */
 		if(component)
-		{			
+		{
 			switch(source_component->type)
 			{
 				case STANDARD_NODE_TO_ELEMENT_MAP:
-				{																
+				{
 					for(i=0;i<number_of_maps;i++)
-					{					
+					{
 						component->map.standard_node_based.node_to_element_maps[i]=
 							copy_create_Standard_node_to_element_map(
 								source_component->map.standard_node_based.node_to_element_maps[i]);
-					}													
+					}
 				}	break;
-				case GENERAL_NODE_TO_ELEMENT_MAP:	
-				{									
+				case GENERAL_NODE_TO_ELEMENT_MAP:
+				{
 					for(i=0;i<number_of_maps;i++)
-					{					
+					{
 						component->map.general_node_based.node_to_element_maps[i]=
 							copy_create_General_node_to_element_map(
 								source_component->map.general_node_based.node_to_element_maps[i]);
-					}														
+					}
 				}	break;
-				case FIELD_TO_ELEMENT_MAP:	
-				{											
+				case FIELD_TO_ELEMENT_MAP:
+				{
 					for(i=0;i<number_of_maps;i++)
-					{					
+					{
 						component->map.field_based.element_values[i]=
 							copy_create_Linear_combination_of_global_values(
-								source_component->map.field_based.element_values[i]);									
-					}													
+								source_component->map.field_based.element_values[i]);
+					}
 				}	break;
 				case ELEMENT_GRID_MAP:
-				{					
+				{
 					int number_of_xi_coordinates = 0;
 					FE_basis_get_dimension(source_component->basis, &number_of_xi_coordinates);
 					for(i = 0; i < number_of_xi_coordinates; i++)
@@ -15946,7 +15946,7 @@ Creates and returns an exact copy of the struct FE_element_field_component
 			display_message(ERROR_MESSAGE,
 				"copy_create_FE_element_field_component, failed to create component");
 		}
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16193,7 +16193,7 @@ If fails, puts NULL in *<basis_address> if supplied.
 			display_message(ERROR_MESSAGE,
 				"FE_element_field_component_get_basis.  Missing basis");
 		}
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16244,7 +16244,7 @@ If fails, puts NULL in *<general_node_map_address> if supplied.
 				"FE_element_field_component_get_general_node_map.  "
 				"Missing general_node_to_element_map");
 		}
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16336,7 +16336,7 @@ The number_in_xi must currently be unset for this <xi_number>.
 		element_field_component->map.element_grid_based.number_in_xi[xi_number] =
 			number_in_xi;
 		return_code = 1;
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16370,7 +16370,7 @@ The value_index must currently be 0.
 	{
 		element_field_component->map.element_grid_based.value_index = value_index;
 		return_code = 1;
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16401,7 +16401,7 @@ If fails, puts NULL in *<modify_address> if supplied.
 	{
 		*modify_address = element_field_component->modify;
 		return_code = 1;
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16434,7 +16434,7 @@ Sets the <modify> function used by <element_field_component> -- can be NULL.
 	{
 		element_field_component->modify = modify;
 		return_code = 1;
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16536,7 +16536,7 @@ If fails, puts NULL in *<standard_node_map_address> if supplied.
 				"FE_element_field_component_get_standard_node_map.  "
 				"Missing standard_node_to_element_map");
 		}
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16580,7 +16580,7 @@ On successful return <standard_node_map> will be owned by the component.
 		element_field_component->map.standard_node_based.
 			node_to_element_maps[node_number] = standard_node_map;
 		return_code = 1;
-	} 
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -18777,11 +18777,11 @@ Returns true if the <element_field_values> are valid for calculating derivatives
 	{
 		if (element_field_values->derivatives_calculated)
 		{
- 			return_code = 1;
+			return_code = 1;
 		}
 		else
 		{
- 			return_code = 0;
+			return_code = 0;
 		}
 	}
 	else
@@ -18956,7 +18956,7 @@ It is an error if an equivalent FE_field is not found.
 } /* FE_element_field_list_clone_with_FE_field_list */
 
 struct FE_element_field_info *CREATE(FE_element_field_info)(
-	struct FE_region *fe_region, 
+	struct FE_region *fe_region,
 	struct LIST(FE_element_field) *fe_element_field_list)
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
@@ -18983,7 +18983,7 @@ common object.
 	if (fe_region)
 	{
 		if (ALLOCATE(fe_element_field_info, struct FE_element_field_info, 1))
-		{						
+		{
 			fe_element_field_info->element_field_list =
 				CREATE(LIST(FE_element_field)());
 			/* maintain pointer to the the FE_region this information belongs to.
@@ -19039,7 +19039,7 @@ memory for the information and sets <*element_field_info_address> to NULL.
 		(fe_element_field_info = *fe_element_field_info_address))
 	{
 		if (0 == fe_element_field_info->access_count)
-		{	
+		{
 			DESTROY(LIST(FE_element_field))(
 				&(fe_element_field_info->element_field_list));
 			DEALLOCATE(*fe_element_field_info_address);
@@ -19444,8 +19444,8 @@ version; no checks on this are made here.
 ???RC Ignore references to times in the above since not yet implemented; once
 they are, should follow pattern of FE_node_field_copy_values_storage.
 ==============================================================================*/
-{	
- 	enum Value_type value_type;
+{
+	enum Value_type value_type;
 	int cn, i, *number_in_xi, number_of_values, return_code;
 	struct FE_field *field;
 	struct FE_element_field *add_element_field, *old_element_field;
@@ -19646,7 +19646,7 @@ they are, should follow pattern of merge_FE_node_values_storage.
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* copy_FE_element_values_storage */
 
@@ -19848,7 +19848,7 @@ are stored in <values_storage> and frees any accesses and dynamic allocations
 in them. Only certain value types, eg. arrays, strings, element_xi require this.
 ==============================================================================*/
 {
- 	enum Value_type value_type;
+	enum Value_type value_type;
 	int i,j,*number_in_xi,number_of_values,return_code,value_index;
 	struct FE_element_field_component **component;
 	Value_storage *values_storage;
@@ -20372,7 +20372,7 @@ are stored in <source_values_storage> and copies them to the same location in
 been allocated but is uninitialised.
 ==============================================================================*/
 {
- 	enum Value_type value_type;
+	enum Value_type value_type;
 	int i,j,*number_in_xi,number_of_values,return_code,value_index;
 	struct Copy_element_grid_map_data *copy_data;
 	struct FE_element_field_component **component;
@@ -20581,8 +20581,8 @@ struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
-Searchs the <element_shape_list> for a shape with the specified <dimension> and 
-<type>.  If one is not found, a shape is created (with <type> duplicated) and 
+Searchs the <element_shape_list> for a shape with the specified <dimension> and
+<type>.  If one is not found, a shape is created (with <type> duplicated) and
 added to the list.  The shape is returned.
 <type> is analogous to the basis type array, except that the entries are 0 or 1.
 If <type> is omitted an "unspecified" shape of the given <dimension> is
@@ -21946,7 +21946,7 @@ Returns true if the only thing know about <element_shape> is its dimension.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(FE_element_shape_is_unspecified);
 	return_code = 0;
 	if (element_shape)
@@ -21975,7 +21975,7 @@ Returns true if the <element_shape> has only LINE_SHAPE in each dimension.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(FE_element_shape_is_line);
 	return_code = 0;
 	if (element_shape)
@@ -22200,13 +22200,13 @@ If fails, puts zero at <dimension_address>.
 	return (return_code);
 } /* get_FE_element_shape_dimension */
 
-int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
+int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, int *face_number)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
 DESCRIPTION :
-This function checks to see if the given <xi> location (of dimension 
+This function checks to see if the given <xi> location (of dimension
 <shape>->dimension) specifys a location on a face.  If it does then the function
 returns 1 and <face_number> is set.  Otherwise the function returns 0.
 SAB Doesn't work for polygons at the moment.
@@ -22428,10 +22428,10 @@ DESCRIPTION :
 Checks that the <xi> location is valid for elements with <shape>.
 The <tolerance> allows the location to go slightly outside.  If the values for
 <xi> location are further than <tolerance> outside the element then the values
-are modified to put it on the nearest face.  
+are modified to put it on the nearest face.
 ==============================================================================*/
 {
-	int i, return_code, simplex_dimensions, 
+	int i, return_code, simplex_dimensions,
 		simplex_direction[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value delta;
 
@@ -22542,7 +22542,7 @@ static int FE_element_ancestor_matches_recursive(
 			return 1;
 	}
 	return 0;
-}	
+}
 
 /*******************************************************************************
  * @return  first parent element matching or descending from ancestor, or
@@ -22559,7 +22559,7 @@ static struct FE_element *FE_element_get_first_parent_with_ancestor(
 			return (element->parents[i]);
 	}
 	return NULL;
-}	
+}
 
 /***************************************************************************//**
  * WARNING: only returns face_number of first instance of that child as face
@@ -23346,14 +23346,14 @@ column of the <coordinate_transformation> matrix.
 } /* inherit_FE_element_field */
 
 int adjacent_FE_element(struct FE_element *element,
-	int face_number, int *number_of_adjacent_elements, 
+	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
 /*******************************************************************************
 LAST MODIFIED : 27 October 2000
 
 DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the 
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the 
+Returns the list of <adjacent_elements> not including <element> which share the
+face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
 correct size and should be DEALLOCATED when finished with.
 ==============================================================================*/
 {
@@ -23750,7 +23750,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 							 element and field_element to ensure field values are still
 							 valid for a given line or face. */
 						element_field_values->field_element = ACCESS(FE_element)(field_element);
-						element_field_values->time_dependent = 
+						element_field_values->time_dependent =
 							FE_field_has_multiple_times(element_field_values->field);
 						element_field_values->time = time;
 						element_field_values->derivatives_calculated=calculate_derivatives;
@@ -24323,7 +24323,7 @@ must have already been calculated.  Currently only implemented for monomials.
 
 				/* Copy the specified derivative back into the values */
 				derivative_value = value + number_of_values * (xi_index + 1);
- 				for (j=0;j<number_of_values;j++)
+				for (j=0;j<number_of_values;j++)
 				{
 					*value = *derivative_value;
 					value++;
@@ -24331,7 +24331,7 @@ must have already been calculated.  Currently only implemented for monomials.
 				}
 
 				/* Now differentiate the values monomial as we did to calculate them above */
-				
+
 				value = element_field_values->component_values[k];
 				derivative_value = value + number_of_values;
 
@@ -24720,8 +24720,8 @@ LAST MODIFIED : 12 February 2003
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
 function allocates an array, <*element_field_nodes_array_address> to store the
-pointers to the ACCESS'd element nodes.  Components that are not node-based are 
-ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next 
+pointers to the ACCESS'd element nodes.  Components that are not node-based are
+ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
 fastest in xi2 and so on).
 The optional <top_level_element> forces inheritance from it as needed.
 NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
@@ -24757,7 +24757,7 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 			return_code=1;
 			number_of_element_field_nodes=0;
 			element_field_nodes_array=(struct FE_node **)NULL;
-			element_dimension=element->shape->dimension;		
+			element_dimension=element->shape->dimension;
 			number_of_components=element_field->field->number_of_components;
 			/* for each component */
 			component_address=element_field->components;
@@ -25052,14 +25052,14 @@ the derivatives will start at the first position of <jacobian>.
 						}
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,"calculate_FE_element_field.  "
 							"Index field %s gave out-of-range index %d in field %s",
 							field->indexer_field->name,index,field->name);
 					}
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,"calculate_FE_element_field.  "
 						"Could not calculate index field %s for field %s at %s %",
 						field->indexer_field->name,field->name,
@@ -25587,7 +25587,7 @@ single component, the value will be put in the first position of <values>.
 						}
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"calculate_FE_element_field_int_values.  "
 							"Index field %s gave out-of-range index %d in field %s",
@@ -25595,7 +25595,7 @@ single component, the value will be put in the first position of <values>.
 					}
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"calculate_FE_element_field_int_values.  "
 						"Could not calculate index field %s for field %s at %s %",
@@ -25747,7 +25747,7 @@ It is up to the calling function to deallocate the returned string values.
 						}
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,
 							"calculate_FE_element_field_string_values.  "
 							"Index field %s gave out-of-range index %d in field %s",
@@ -25755,7 +25755,7 @@ It is up to the calling function to deallocate the returned string values.
 					}
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"calculate_FE_element_field_string_values.  "
 						"Could not calculate index field %s for field %s at %s %",
@@ -26742,7 +26742,7 @@ Should only be called for unmanaged elements.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"set_FE_element_face.  Could not set element as parent of face");						
+						"set_FE_element_face.  Could not set element as parent of face");
 					return_code = 0;
 				}
 			}
@@ -26946,13 +26946,13 @@ Should only be called for unmanaged elements.
   ENTER(set_FE_element_node);
   if (element && node)
   {
-      return_code = FE_element_node_scale_field_info_set_node(
-          element->information, node_number, node);
+	  return_code = FE_element_node_scale_field_info_set_node(
+		  element->information, node_number, node);
   }
   else
   {
-      display_message(ERROR_MESSAGE,"set_FE_element_node.  Invalid argument(s)");
-      return_code=0;
+	  display_message(ERROR_MESSAGE,"set_FE_element_node.  Invalid argument(s)");
+	  return_code=0;
   }
   LEAVE;
 
@@ -27271,8 +27271,8 @@ Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 <element> to <scale_factor>.
 <element> must already have a shape and node_scale_field_information.
 Should only be called for unmanaged elements.
-This function is a bit naughty. Should really use 
-FE_element_set_scale_factor_for_nodal_value . 
+This function is a bit naughty. Should really use
+FE_element_set_scale_factor_for_nodal_value .
 ==============================================================================*/
 {
 	int return_code;
@@ -27753,7 +27753,7 @@ the field. Returns 0 without error if no field information at element.
 	return_code=0;
 	if (element && element->fields)
 	{
-		return_code = ((struct FE_element_field *)NULL != 
+		return_code = ((struct FE_element_field *)NULL !=
 			FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
 				FE_element_field_has_FE_field_values, (void *)NULL,
 				element->fields->element_field_list));
@@ -27874,7 +27874,7 @@ Calls the <iterator> for each field defined at the <element> until the
 	{
 		iterator_and_data.iterator = iterator;
 		iterator_and_data.user_data = user_data;
-		iterator_and_data.element = element;	
+		iterator_and_data.element = element;
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
 			for_FE_field_at_element_iterator, &iterator_and_data,
 			element->fields->element_field_list);
@@ -28013,7 +28013,7 @@ calls <iterator_function> with it and the <iterator_user_data>.
 {
 	int return_code;
 	struct FE_element_conditional_iterator_data *data;
-	
+
 	ENTER(FE_element_conditional_iterator);
 	if (element &&
 		(data = (struct FE_element_conditional_iterator_data *)data_void) &&
@@ -28293,7 +28293,7 @@ same as the element from <global_element_list1>.
 {
 	int i, number_of_faces, return_code;
 	struct FE_element **face1, **face2;
-	
+
 	ENTER(FE_element_shape_and_faces_match);
 	if (element1 && element1->shape && element2)
 	{
@@ -28615,7 +28615,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 							fe_region, element_field_list)))
 						{
 							/* merge the faces */
-							number_of_faces = source->shape->number_of_faces;					
+							number_of_faces = source->shape->number_of_faces;
 							source_face = source->faces;
 							for (i = 0; i < number_of_faces; i++)
 							{
@@ -28807,16 +28807,16 @@ int list_FE_element(struct FE_element *element)
 			/* write the nodes */
 			if ((element->information) && (element->information->nodes) && (0 < element->information->number_of_nodes))
 			{
-				display_message(INFORMATION_MESSAGE,"  nodes\n   ");				
+				display_message(INFORMATION_MESSAGE,"  nodes\n   ");
 				for (i = 0; i < element->information->number_of_nodes; i++)
 				{
 					if (element->information->nodes[i])
 					{
-						display_message(INFORMATION_MESSAGE," %d",element->information->nodes[i]->cm_node_identifier);				
+						display_message(INFORMATION_MESSAGE," %d",element->information->nodes[i]->cm_node_identifier);
 					}
 					else
 					{
-						display_message(INFORMATION_MESSAGE," -");				
+						display_message(INFORMATION_MESSAGE," -");
 					}
 				}
 				display_message(INFORMATION_MESSAGE, "\n");
@@ -29560,8 +29560,8 @@ storage for the <value> should have been allocated outside the function.
 			/* calculate field for node */
 			if (field->value_type == FE_VALUE_VALUE)
 			{
-				int components_to_calculate, first_comp, i; 
-				
+				int components_to_calculate, first_comp, i;
+
 				first_comp = 0;
 				components_to_calculate = field->number_of_components;
 				if ((0 <= component_number) && (component_number < components_to_calculate))
@@ -29587,7 +29587,7 @@ storage for the <value> should have been allocated outside the function.
 					return_code=0;
 			}
 		}
-		else	
+		else
 		{
 			struct FE_element_field_values *element_field_values;
 
@@ -29641,8 +29641,8 @@ Find the first time based field at a node
 		if (NULL != (time_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
 			FE_node_field_has_time,(void *)(NULL),
 			node->fields->node_field_list)))
-		{			
-			time_field = time_node_field->field;			
+		{
+			time_field = time_node_field->field;
 		}
 		else
 		{
@@ -29963,9 +29963,9 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			}
 			if (!parent)
 			{
-				parent = element->parents[0]; 
+				parent = element->parents[0];
 			}
-			
+
 			if ((parent) && (parent->shape) && (parent->shape->face_to_element) &&
 				(0 <= (face_number = FE_element_get_child_face_number(parent, element))) &&
 				(top_level_element = FE_element_get_top_level_element_conversion(
@@ -30057,7 +30057,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 	return (top_level_element);
 } /* FE_element_get_top_level_element_conversion */
 
-int FE_element_get_top_level_element_and_xi(struct FE_element *element, 
+int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
 	struct FE_element **top_level_element, FE_value *top_level_xi,
 	int *top_level_element_dimension)
@@ -30066,7 +30066,7 @@ LAST MODIFIED : 7 May 2003
 
 DESCRIPTION :
 Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
-for the given <element> and <xi>.  If <top_level_element> is already set it 
+for the given <element> and <xi>.  If <top_level_element> is already set it
 is checked and the <top_level_xi> calculated.
 ==============================================================================*/
 {
@@ -30276,7 +30276,7 @@ int get_FE_element_discretization(struct FE_element *element,
 /***************************************************************************//**
  * Return whether the shape-face mapping for the supplied face number gives the
  * face an inward normal.
- * 
+ *
  * @param shape  The shape - must be 3 dimensional.
  * @param face_number  Face index from 0 to (shape->number_of_faces - 1).
  * @return  1 if face has inward normal, 0 otherwise.
@@ -30285,7 +30285,7 @@ int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 	int face_number)
 {
 	int return_code;
-	
+
 	ENTER(FE_element_shape_face_has_inward_normal);
 	return_code = 0;
 	if (shape && (3 == shape->dimension) &&
@@ -30317,7 +30317,7 @@ int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 			"FE_element_shape_face_has_inward_normal.  Invalid argument(s)");
 	}
 	LEAVE;
-	
+
 	return (return_code);
 }
 
@@ -30334,7 +30334,7 @@ int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 			return_code =
 				FE_element_shape_face_has_inward_normal(element->parents[0]->shape,
 					FE_element_get_child_face_number(element->parents[0], element));
-		}				
+		}
 	}
 	else
 	{
@@ -31370,7 +31370,7 @@ int FE_node_get_position_cartesian(struct FE_node *node,
 	FE_value *node_z, FE_value *coordinate_jacobian)
 {
 	struct Coordinate_system *coordinate_system;
-	FE_value node_1,node_2,node_3;	
+	FE_value node_1,node_2,node_3;
 	int number_of_coordinate_components, return_code;
 
 	ENTER(FE_node_get_position_cartesian);
@@ -31683,7 +31683,7 @@ FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
 			(FE_VALUE_VALUE==field->value_type)&&
 			(1<=field->number_of_components)&&
 			(3>=field->number_of_components)&&
-			(FIBRE==field->coordinate_system.type);		
+			(FIBRE==field->coordinate_system.type);
 	}
 	else
 	{
@@ -31711,7 +31711,7 @@ either an element_xi value, or eventually a node.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		return_code = (ELEMENT_XI_VALUE == field->value_type);		
+		return_code = (ELEMENT_XI_VALUE == field->value_type);
 	}
 	else
 	{
@@ -32979,16 +32979,16 @@ Frees them memory used by field_order_info.
 	ENTER(DESTROY(FE_field_order_info));
 	if ((field_order_info_address) &&
 		(field_order_info = *field_order_info_address))
-	{			
+	{
 		if (field_order_info->fields)
-		{		
+		{
 			for (i = 0; i < field_order_info->number_of_fields; i++)
 			{
 				DEACCESS(FE_field)(&(field_order_info->fields[i]));
 			}
-			DEALLOCATE(field_order_info->fields);	
+			DEALLOCATE(field_order_info->fields);
 		}
-		DEALLOCATE(*field_order_info_address);	
+		DEALLOCATE(*field_order_info_address);
 		return_code = 1;
 	}
 	else
@@ -33032,7 +33032,7 @@ Adds <field> to the end of the list of fields in <field_order_info>.
 				field_order_info->allocated_number_of_fields -=
 					FE_FIELD_ORDER_INFO_ALLOCATE_SIZE;
 				display_message(ERROR_MESSAGE,
-					"add_FE_field_order_info_field.  Not enough memory");		
+					"add_FE_field_order_info_field.  Not enough memory");
 				return_code = 0;
 			}
 		}
@@ -33046,7 +33046,7 @@ Adds <field> to the end of the list of fields in <field_order_info>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"add_FE_field_order_info_field.  Invalid argument");		
+			"add_FE_field_order_info_field.  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
@@ -33101,7 +33101,7 @@ int clear_FE_field_order_info(struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Clears the fields from <field_order_info>.
 ==============================================================================*/
 {
@@ -33109,7 +33109,7 @@ Clears the fields from <field_order_info>.
 
 	ENTER(clear_FE_field_order_info_field);
 	if (field_order_info)
-	{		
+	{
 		for (i = 0; i < field_order_info->number_of_fields; i++)
 		{
 			DEACCESS(FE_field)(&(field_order_info->fields[i]));
@@ -33120,7 +33120,7 @@ Clears the fields from <field_order_info>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"clear_FE_field_order_info_field.  Invalid argument");		
+			"clear_FE_field_order_info_field.  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
@@ -33133,7 +33133,7 @@ int get_FE_field_order_info_number_of_fields(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <field_order_info> number_of_fields
 ==============================================================================*/
 {
@@ -33147,7 +33147,7 @@ Gets the <field_order_info> number_of_fields
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_field_order_info_number_of_fields.  Invalid argument");		
+			"get_FE_field_order_info_number_of_fields.  Invalid argument");
 		number_of_fields=0;
 	}
 	LEAVE;
@@ -33160,7 +33160,7 @@ struct FE_field *get_FE_field_order_info_field(
 /*******************************************************************************
 LAST MODIFIED : 4 September 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <field_order_info> field at the specified field_number.
 ==============================================================================*/
 {
@@ -33169,13 +33169,13 @@ Gets the <field_order_info> field at the specified field_number.
 	ENTER(get_FE_field_order_info_field);
 	if (field_order_info &&
 		(field_number <= field_order_info->number_of_fields))
-	{		
+	{
 		field=field_order_info->fields[field_number];
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_field_order_info_field.  Invalid argument(s)");		
+			"get_FE_field_order_info_field.  Invalid argument(s)");
 		field = (struct FE_field *)NULL;
 	}
 	LEAVE;
@@ -33222,14 +33222,14 @@ the field_order_info list.
 			/*???RC This should not have been here: */
 			/* DESTROY(FE_field)(&field); */
 			return_code = 0;
-		}	
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"define_node_field_and_field_order_info.  Invalid argument(s)");
 		return_code = 0;
-	}		 
+	}
 	LEAVE;
 
 	return (return_code);
@@ -33240,41 +33240,41 @@ struct FE_node_order_info *CREATE(FE_node_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
-Allocate space for an array of pointers to nodes of length number_of_nodes, 
-set these to NULL, copy the number_of_nodes. 
+DESCRIPTION :
+Allocate space for an array of pointers to nodes of length number_of_nodes,
+set these to NULL, copy the number_of_nodes.
 ==============================================================================*/
 {
 	int i;
 	struct FE_node_order_info *node_order_info;
 
-	ENTER(CREATE(FE_node_order_info));				
+	ENTER(CREATE(FE_node_order_info));
 	if (ALLOCATE(node_order_info,struct FE_node_order_info,1))
 	{
 		if (number_of_nodes>0)
-		{	
+		{
 			if (ALLOCATE(node_order_info->nodes,struct FE_node *,
 				number_of_nodes))
 			{
-				node_order_info->number_of_nodes = number_of_nodes; 
+				node_order_info->number_of_nodes = number_of_nodes;
 				for (i=0;i<number_of_nodes;i++)
-				{				
+				{
 					node_order_info->nodes[i]=(struct FE_node *)NULL;
-				}	
+				}
 				node_order_info->access_count=0;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 "CREATE(FE_node_order_info).  Could not allocate memory for node_field_info->nodes");
-				DEALLOCATE(node_order_info->nodes);		
+				DEALLOCATE(node_order_info->nodes);
 				DEALLOCATE(node_order_info);
 			}
 		}
 		else
-		{	
+		{
 			node_order_info->number_of_nodes=0;
-			node_order_info->nodes=(struct FE_node **)NULL;	
+			node_order_info->nodes=(struct FE_node **)NULL;
 			node_order_info->access_count=0;
 		}
 		node_order_info->current_node_number=0;
@@ -33282,8 +33282,8 @@ set these to NULL, copy the number_of_nodes.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"CREATE(FE_node_order_info).  Could not allocate memory for node field info");	
-		DEALLOCATE(node_order_info);	
+"CREATE(FE_node_order_info).  Could not allocate memory for node field info");
+		DEALLOCATE(node_order_info);
 	}
 	LEAVE;
 
@@ -33295,7 +33295,7 @@ int DESTROY(FE_node_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Frees them memory used by node_order_info.
 ==============================================================================*/
 {
@@ -33307,15 +33307,15 @@ Frees them memory used by node_order_info.
 	return_code=0;
 	if ((node_order_info_address)&&
 		(node_order_info= *node_order_info_address))
-	{					
-		/* free the components */		
+	{
+		/* free the components */
 		for (i=0;i<node_order_info->number_of_nodes;i++)
-		{				
+		{
 			node=node_order_info->nodes[i];
 			DEACCESS(FE_node)(&node);
-		}			
-		DEALLOCATE(node_order_info->nodes);	
-		DEALLOCATE(*node_order_info_address);	
+		}
+		DEALLOCATE(node_order_info->nodes);
+		DEALLOCATE(*node_order_info_address);
 		return_code=1;
 	}
 	else
@@ -33338,7 +33338,7 @@ Makes an exacy copy of the FE_node_order_info
 ==============================================================================*/
 {
 	int return_code,i;
-	
+
 	ENTER(COPY(FE_node_order_info));
 	return_code=0;
 	/* check the arguments */
@@ -33348,9 +33348,9 @@ Makes an exacy copy of the FE_node_order_info
 		if (destination->number_of_nodes)
 		{
 			for (i=0;i<destination->number_of_nodes;i++)
-			{				
+			{
 				DEACCESS(FE_node)(&(destination->nodes[i]));
-			}		
+			}
 			DEALLOCATE(destination->nodes);
 			destination->number_of_nodes=0;
 		}
@@ -33359,9 +33359,9 @@ Makes an exacy copy of the FE_node_order_info
 			/* copy the new */
 			destination->number_of_nodes=source->number_of_nodes;
 			for (i=0;i<destination->number_of_nodes;i++)
-			{				
+			{
 				destination->nodes[i]=ACCESS(FE_node)(source->nodes[i]);
-			}	
+			}
 		}
 		else
 		{
@@ -33384,7 +33384,7 @@ int get_FE_node_order_info_number_of_nodes(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> number_of_nodes
 ==============================================================================*/
 {
@@ -33398,7 +33398,7 @@ Gets the <node_order_info> number_of_nodes
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_number_of_nodes.  Invalid argument");		
+			"get_FE_node_order_info_number_of_nodes.  Invalid argument");
 		number_of_nodes=0;
 	}
 	LEAVE;
@@ -33411,7 +33411,7 @@ struct FE_node *get_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the specified node_number
 ==============================================================================*/
 {
@@ -33420,13 +33420,13 @@ Gets the <node_order_info> node at the specified node_number
 	ENTER(get_FE_node_order_info_node);
 	if ((node_order_info)&&
 		(node_number<=node_order_info->number_of_nodes))
-	{		
+	{
 		node=node_order_info->nodes[node_number];
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_node.  Invalid argument");		
+			"get_FE_node_order_info_node.  Invalid argument");
 		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
@@ -33440,7 +33440,7 @@ int set_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> node at the specified node_number.
 Also sets the current_node_number to <the node_number>
 ==============================================================================*/
@@ -33451,7 +33451,7 @@ Also sets the current_node_number to <the node_number>
 	return_code=0;
 	if ((node_order_info)&&
 		(node_number<=node_order_info->number_of_nodes)&&(node))
-	{	
+	{
 		REACCESS(FE_node)(&(node_order_info->nodes[node_number]),node);
 		node_order_info->current_node_number=node_number;
 		return_code=1;
@@ -33459,7 +33459,7 @@ Also sets the current_node_number to <the node_number>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_node_order_info_node.  Invalid argument");		
+			"set_FE_node_order_info_node.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -33472,21 +33472,21 @@ int get_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 gets the <node_order_info> <current_node_number>
 ==============================================================================*/
 {
 	int current_node_number;
 
-	ENTER(get_FE_node_order_info_current_node_number);	
+	ENTER(get_FE_node_order_info_current_node_number);
 	if (node_order_info&&(node_order_info->number_of_nodes>0))
-	{			
+	{
 		current_node_number=node_order_info->current_node_number;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_current_node_number.  Invalid argument");		
+			"get_FE_node_order_info_current_node_number.  Invalid argument");
 		current_node_number=-1;
 	}
 	LEAVE;
@@ -33499,7 +33499,7 @@ int set_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> <current_node_number>
 ==============================================================================*/
 {
@@ -33509,14 +33509,14 @@ Sets the <node_order_info> <current_node_number>
 	return_code=0;
 	if ((node_order_info)&&(current_node_number>-1)&&
 		(current_node_number<=node_order_info->number_of_nodes))
-	{			
+	{
 		node_order_info->current_node_number=current_node_number;
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_node_order_info_current_node_number.  Invalid argument");		
+			"set_FE_node_order_info_current_node_number.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -33529,7 +33529,7 @@ struct FE_node *get_FE_node_order_info_current_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the current_node_number
 ==============================================================================*/
 {
@@ -33537,7 +33537,7 @@ Gets the <node_order_info> node at the current_node_number
 
 	ENTER(get_FE_node_order_info_current_node);
 	if (node_order_info)
-	{		
+	{
 		if (node_order_info->number_of_nodes)
 		{
 			node=node_order_info->nodes[node_order_info->current_node_number];
@@ -33550,7 +33550,7 @@ Gets the <node_order_info> node at the current_node_number
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_current_node.  Invalid argument");		
+			"get_FE_node_order_info_current_node.  Invalid argument");
 		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
@@ -33563,7 +33563,7 @@ struct FE_node *get_FE_node_order_info_next_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the end of the array, return null.
 ==============================================================================*/
@@ -33572,12 +33572,12 @@ and returning the new current node. If at the end of the array, return null.
 
 	ENTER(get_FE_node_order_info_next_node);
 	if (node_order_info)
-	{		
+	{
 		if ((node_order_info->number_of_nodes)&&
 			(node_order_info->current_node_number<(node_order_info->number_of_nodes-1)))
-		{			
+		{
 			node_order_info->current_node_number++;
-			node=node_order_info->nodes[node_order_info->current_node_number];		
+			node=node_order_info->nodes[node_order_info->current_node_number];
 		}
 		else
 		{
@@ -33587,7 +33587,7 @@ and returning the new current node. If at the end of the array, return null.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_next_node.  Invalid argument");		
+			"get_FE_node_order_info_next_node.  Invalid argument");
 		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
@@ -33600,7 +33600,7 @@ struct FE_node *get_FE_node_order_info_prev_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the start of the array, return null.
 ==============================================================================*/
@@ -33609,12 +33609,12 @@ and returning the new current node. If at the start of the array, return null.
 
 	ENTER(get_FE_node_order_info_prev_node);
 	if (node_order_info)
-	{		
+	{
 		if ((node_order_info->number_of_nodes)&&
 			(node_order_info->current_node_number>0))
-		{			
+		{
 			node_order_info->current_node_number--;
-			node=node_order_info->nodes[node_order_info->current_node_number];		
+			node=node_order_info->nodes[node_order_info->current_node_number];
 		}
 		else
 		{
@@ -33624,7 +33624,7 @@ and returning the new current node. If at the start of the array, return null.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_prev_node.  Invalid argument");		
+			"get_FE_node_order_info_prev_node.  Invalid argument");
 		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
@@ -33648,9 +33648,9 @@ FE_node_order_info.  Use set_FE_node_order_info to set up the nodes.
 	ENTER(add_nodes_FE_node_order_info)
 	return_code=0;
 	if (node_order_info)
-	{		
+	{
 		old_number_of_nodes=node_order_info->number_of_nodes;
-		node_order_info->number_of_nodes += number_of_nodes_to_add;				
+		node_order_info->number_of_nodes += number_of_nodes_to_add;
 		if (REALLOCATE(nodes,node_order_info->nodes,struct FE_node *,
 			node_order_info->number_of_nodes))
 		{
@@ -33665,12 +33665,12 @@ FE_node_order_info.  Use set_FE_node_order_info to set up the nodes.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_node_order_info_add_node.  Out of memory ");	
+				"FE_node_order_info_add_node.  Out of memory ");
 			return_code=0;
 		}
-	}	
+	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_node_order_info_add_node.  Invalid arguments");
 		return_code=0;
@@ -33685,7 +33685,7 @@ int fill_FE_node_order_info(struct FE_node *node,void *dummy)
 LAST MODIFIED : 6 July 1999
 
 DESCRIPTION :
-Allocate space for and add an FE_node to previously created 
+Allocate space for and add an FE_node to previously created
 FE_node_order_info (passed in dummy).
 Called iteratively.
 ==============================================================================*/
@@ -33709,14 +33709,14 @@ Called iteratively.
 			node_order_info->nodes[node_order_info->number_of_nodes-1]=
 				ACCESS(FE_node)(node);
 			node_order_info->current_node_number=node_order_info->number_of_nodes-1;
-			return_code=1;	
-		}		
+			return_code=1;
+		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"fill_FE_node_order_info. Invalid arguments");
-		return_code=0;	
+		return_code=0;
 	}
 	LEAVE;
 
@@ -33728,41 +33728,41 @@ struct FE_element_order_info *CREATE(FE_element_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
-Allocate space for an array of pointers to elements of length number_of_elements, 
-set these to NULL, copy the number_of_elements. 
+DESCRIPTION :
+Allocate space for an array of pointers to elements of length number_of_elements,
+set these to NULL, copy the number_of_elements.
 ==============================================================================*/
 {
 	int i;
 	struct FE_element_order_info *element_order_info;
 
-	ENTER(CREATE(FE_element_order_info));				
+	ENTER(CREATE(FE_element_order_info));
 	if (ALLOCATE(element_order_info,struct FE_element_order_info,1))
 	{
 		if (number_of_elements>0)
-		{	
+		{
 			if (ALLOCATE(element_order_info->elements,struct FE_element *,
 				number_of_elements))
 			{
-				element_order_info->number_of_elements = number_of_elements; 
+				element_order_info->number_of_elements = number_of_elements;
 				for (i=0;i<number_of_elements;i++)
-				{				
+				{
 					element_order_info->elements[i]=(struct FE_element *)NULL;
-				}	
+				}
 				element_order_info->access_count=0;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 "CREATE(FE_element_order_info).  Could not allocate memory for element_field_info->elements");
-				DEALLOCATE(element_order_info->elements);		
+				DEALLOCATE(element_order_info->elements);
 				DEALLOCATE(element_order_info);
 			}
 		}
 		else
-		{	
+		{
 			element_order_info->number_of_elements=0;
-			element_order_info->elements=(struct FE_element **)NULL;	
+			element_order_info->elements=(struct FE_element **)NULL;
 			element_order_info->access_count=0;
 		}
 		element_order_info->current_element_number=0;
@@ -33770,8 +33770,8 @@ set these to NULL, copy the number_of_elements.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"CREATE(FE_element_order_info).  Could not allocate memory for element field info");	
-		DEALLOCATE(element_order_info);	
+"CREATE(FE_element_order_info).  Could not allocate memory for element field info");
+		DEALLOCATE(element_order_info);
 	}
 	LEAVE;
 
@@ -33783,7 +33783,7 @@ int DESTROY(FE_element_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Frees them memory used by element_order_info.
 ==============================================================================*/
 {
@@ -33795,15 +33795,15 @@ Frees them memory used by element_order_info.
 	return_code=0;
 	if ((element_order_info_address)&&
 		(element_order_info= *element_order_info_address))
-	{					
-		/* free the components */		
+	{
+		/* free the components */
 		for (i=0;i<element_order_info->number_of_elements;i++)
-		{				
+		{
 			element=element_order_info->elements[i];
 			DEACCESS(FE_element)(&element);
-		}			
-		DEALLOCATE(element_order_info->elements);	
-		DEALLOCATE(*element_order_info_address);	
+		}
+		DEALLOCATE(element_order_info->elements);
+		DEALLOCATE(*element_order_info_address);
 		return_code=1;
 	}
 	else
@@ -33826,7 +33826,7 @@ Makes an exacy copy of the FE_element_order_info
 ==============================================================================*/
 {
 	int return_code,i;
-	
+
 	ENTER(COPY(FE_element_order_info));
 	return_code=0;
 	/* check the arguments */
@@ -33836,9 +33836,9 @@ Makes an exacy copy of the FE_element_order_info
 		if (destination->number_of_elements)
 		{
 			for (i=0;i<destination->number_of_elements;i++)
-			{				
+			{
 				DEACCESS(FE_element)(&(destination->elements[i]));
-			}		
+			}
 			DEALLOCATE(destination->elements);
 			destination->number_of_elements=0;
 		}
@@ -33847,9 +33847,9 @@ Makes an exacy copy of the FE_element_order_info
 			/* copy the new */
 			destination->number_of_elements=source->number_of_elements;
 			for (i=0;i<destination->number_of_elements;i++)
-			{				
+			{
 				destination->elements[i]=ACCESS(FE_element)(source->elements[i]);
-			}	
+			}
 		}
 		else
 		{
@@ -33872,7 +33872,7 @@ int get_FE_element_order_info_number_of_elements(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> number_of_elements
 ==============================================================================*/
 {
@@ -33886,7 +33886,7 @@ Gets the <element_order_info> number_of_elements
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_number_of_elements.  Invalid argument");		
+			"get_FE_element_order_info_number_of_elements.  Invalid argument");
 		number_of_elements=0;
 	}
 	LEAVE;
@@ -33899,7 +33899,7 @@ struct FE_element *get_FE_element_order_info_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> element at the specified element_number
 ==============================================================================*/
 {
@@ -33908,13 +33908,13 @@ Gets the <element_order_info> element at the specified element_number
 	ENTER(get_FE_element_order_info_element);
 	if ((element_order_info)&&
 		(element_number<=element_order_info->number_of_elements))
-	{		
+	{
 		element=element_order_info->elements[element_number];
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_element.  Invalid argument");		
+			"get_FE_element_order_info_element.  Invalid argument");
 		element=(struct FE_element *)NULL;
 	}
 	LEAVE;
@@ -33928,7 +33928,7 @@ int set_FE_element_order_info_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <element_order_info> element at the specified element_number.
 Also sets the current_element_number to <the element_number>
 ==============================================================================*/
@@ -33939,7 +33939,7 @@ Also sets the current_element_number to <the element_number>
 	return_code=0;
 	if ((element_order_info)&&
 		(element_number<=element_order_info->number_of_elements)&&(element))
-	{	
+	{
 		REACCESS(FE_element)(&(element_order_info->elements[element_number]),element);
 		element_order_info->current_element_number=element_number;
 		return_code=1;
@@ -33947,7 +33947,7 @@ Also sets the current_element_number to <the element_number>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_element.  Invalid argument");		
+			"set_FE_element_order_info_element.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -33960,21 +33960,21 @@ int get_FE_element_order_info_current_element_number(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 gets the <element_order_info> <current_element_number>
 ==============================================================================*/
 {
 	int current_element_number;
 
-	ENTER(get_FE_element_order_info_current_element_number);	
+	ENTER(get_FE_element_order_info_current_element_number);
 	if (element_order_info&&(element_order_info->number_of_elements>0))
-	{			
+	{
 		current_element_number=element_order_info->current_element_number;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_current_element_number.  Invalid argument");		
+			"set_FE_element_order_info_current_element_number.  Invalid argument");
 		current_element_number=-1;
 	}
 	LEAVE;
@@ -33987,7 +33987,7 @@ int set_FE_element_order_info_current_element_number(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <element_order_info> <current_element_number>
 ==============================================================================*/
 {
@@ -33997,14 +33997,14 @@ Sets the <element_order_info> <current_element_number>
 	return_code=0;
 	if ((element_order_info)&&(current_element_number>-1)&&
 		(current_element_number<=element_order_info->number_of_elements))
-	{			
+	{
 		element_order_info->current_element_number=current_element_number;
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_current_element_number.  Invalid argument");		
+			"set_FE_element_order_info_current_element_number.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -34017,7 +34017,7 @@ struct FE_element *get_FE_element_order_info_current_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> element at the current_element_number
 ==============================================================================*/
 {
@@ -34025,7 +34025,7 @@ Gets the <element_order_info> element at the current_element_number
 
 	ENTER(get_FE_element_order_info_current_element);
 	if (element_order_info)
-	{		
+	{
 		if (element_order_info->number_of_elements)
 		{
 			element=element_order_info->elements[element_order_info->current_element_number];
@@ -34038,7 +34038,7 @@ Gets the <element_order_info> element at the current_element_number
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_current_element.  Invalid argument");		
+			"get_FE_element_order_info_current_element.  Invalid argument");
 		element=(struct FE_element *)NULL;
 	}
 	LEAVE;
@@ -34051,7 +34051,7 @@ struct FE_element *get_FE_element_order_info_next_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> next element by incrementing the current_element_number,
 and returning the new current element. If at the end of the array, return null.
 ==============================================================================*/
@@ -34060,12 +34060,12 @@ and returning the new current element. If at the end of the array, return null.
 
 	ENTER(get_FE_element_order_info_next_element);
 	if (element_order_info)
-	{		
+	{
 		if ((element_order_info->number_of_elements)&&
 			(element_order_info->current_element_number<(element_order_info->number_of_elements-1)))
-		{			
+		{
 			element_order_info->current_element_number++;
-			element=element_order_info->elements[element_order_info->current_element_number];		
+			element=element_order_info->elements[element_order_info->current_element_number];
 		}
 		else
 		{
@@ -34075,7 +34075,7 @@ and returning the new current element. If at the end of the array, return null.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_next_element.  Invalid argument");		
+			"get_FE_element_order_info_next_element.  Invalid argument");
 		element=(struct FE_element *)NULL;
 	}
 	LEAVE;
@@ -34088,7 +34088,7 @@ struct FE_element *get_FE_element_order_info_prev_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> next element by incrementing the current_element_number,
 and returning the new current element. If at the start of the array, return null.
 ==============================================================================*/
@@ -34097,12 +34097,12 @@ and returning the new current element. If at the start of the array, return null
 
 	ENTER(get_FE_element_order_info_prev_element);
 	if (element_order_info)
-	{		
+	{
 		if ((element_order_info->number_of_elements)&&
 			(element_order_info->current_element_number>0))
-		{			
+		{
 			element_order_info->current_element_number--;
-			element=element_order_info->elements[element_order_info->current_element_number];		
+			element=element_order_info->elements[element_order_info->current_element_number];
 		}
 		else
 		{
@@ -34112,7 +34112,7 @@ and returning the new current element. If at the start of the array, return null
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_prev_element.  Invalid argument");		
+			"get_FE_element_order_info_prev_element.  Invalid argument");
 		element=(struct FE_element *)NULL;
 	}
 	LEAVE;
@@ -34136,9 +34136,9 @@ FE_element_order_info.  Use set_FE_element_order_info to set up the elements.
 	ENTER(add_elements_FE_element_order_info)
 	return_code=0;
 	if (element_order_info)
-	{		
+	{
 		old_number_of_elements=element_order_info->number_of_elements;
-		element_order_info->number_of_elements += number_of_elements_to_add;				
+		element_order_info->number_of_elements += number_of_elements_to_add;
 		if (REALLOCATE(elements,element_order_info->elements,struct FE_element *,
 			element_order_info->number_of_elements))
 		{
@@ -34154,12 +34154,12 @@ FE_element_order_info.  Use set_FE_element_order_info to set up the elements.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_order_info_add_element.  Out of memory ");	
+				"FE_element_order_info_add_element.  Out of memory ");
 			return_code=0;
 		}
-	}	
+	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_order_info_add_element.  Invalid arguments");
 		return_code=0;
@@ -34174,7 +34174,7 @@ int fill_FE_element_order_info(struct FE_element *element,void *dummy)
 LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
-Allocate space for and add an FE_element to previously created 
+Allocate space for and add an FE_element to previously created
 FE_element_order_info (passed in dummy).
 Called iteratively.
 ==============================================================================*/
@@ -34198,14 +34198,14 @@ Called iteratively.
 			element_order_info->elements[element_order_info->number_of_elements-1]=
 				ACCESS(FE_element)(element);
 			element_order_info->current_element_number=element_order_info->number_of_elements-1;
-			return_code=1;	
-		}		
+			return_code=1;
+		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"fill_FE_element_order_info. Invalid arguments");
-		return_code=0;	
+		return_code=0;
 	}
 	LEAVE;
 
@@ -34220,11 +34220,11 @@ int FE_element_get_scale_factor_for_nodal_value(
 LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a 
+Given  <component_number>  and <nodal_value_type> of <field> at a
 <node> in an <element>, find the  corresponding <scale_factor>.
 ===============================================================================*/
 {
-	int i, nodal_value_index, nodal_value_number, number_of_nodes, 
+	int i, nodal_value_index, nodal_value_number, number_of_nodes,
 		number_of_versions, return_code,	scale_factor_index;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *element_field_component;
@@ -34369,7 +34369,7 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_get_scale_factor_for_nodal_value.  Invalid argument(s)");
 	}
@@ -34386,11 +34386,11 @@ int FE_element_set_scale_factor_for_nodal_value(
 LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a 
+Given  <component_number>  and <nodal_value_type> of <field> at a
 <node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
 ===============================================================================*/
 {
-	int i, nodal_value_index, nodal_value_number, number_of_nodes, 
+	int i, nodal_value_index, nodal_value_number, number_of_nodes,
 		number_of_versions, return_code,	scale_factor_index;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *element_field_component;
@@ -34471,11 +34471,11 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 												"FE_element_set_scale_factor_for_nodal_value.  "
 												"scale_factor_index = -1. can't set scale_factor ");
 											return_code = 1;
-											
+
 										}
 										else if ((0 <= scale_factor_index) && (scale_factor_index <
 											element->information->number_of_scale_factors))
-										{											
+										{
 											element->information->scale_factors[scale_factor_index]=scale_factor;
 											return_code = 1;
 										}
@@ -34537,7 +34537,7 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_set_scale_factor_for_nodal_value.  Invalid argument(s)");
 	}
@@ -34639,7 +34639,7 @@ int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 LAST MODIFIED : 8 June 2006
 
 DESCRIPTION :
-Steps into the adjacent element through face <face_number>, updating the 
+Steps into the adjacent element through face <face_number>, updating the
 <element_address> location.
 If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
@@ -34647,7 +34647,7 @@ If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
-<permutation> is used to resolve the possible rotation and flipping of the 
+<permutation> is used to resolve the possible rotation and flipping of the
 local face xi coordinates between the two parents.
 The shape mapping from parents are reused for all elements of the same shape
 and do not take into account the relative orientation of the parents.
@@ -34895,7 +34895,7 @@ LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-if an adjacent element is found then the element and xi location are changed 
+if an adjacent element is found then the element and xi location are changed
 to this element and the stepping continues using the remaining increment.  If
 no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
@@ -34943,7 +34943,7 @@ the <increment> will contain the fraction of the increment not used.
 			}
 			if (return_code)
 			{
-				*element_address=element;				
+				*element_address=element;
 				for (i = 0 ; i < dimension ; i++)
 				{
 					xi[i] = local_xi[i];
@@ -35068,7 +35068,7 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 LAST MODIFIED : 1 December 2004
 
 DESCRIPTION :
-Defines a tensor product basis on <element> with the specified <dimension> 
+Defines a tensor product basis on <element> with the specified <dimension>
 and <basis_type>.  This does not support mixed basis types in the tensor product.
 ==============================================================================*/
 {
@@ -35083,7 +35083,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 
 	ENTER(FE_element_define_tensor_product_basis);
 	return_code=1;
-	if (element && (dimension > 0) && 
+	if (element && (dimension > 0) &&
 		(dimension == element->shape->dimension) && field)
 	{
 		/* make basis */
@@ -35174,7 +35174,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 				{
 					/* Currently this cannot be increased so we must find it */
 					i = 0;
-					while ((i < old_number_of_scale_factor_sets) && 
+					while ((i < old_number_of_scale_factor_sets) &&
 						get_FE_element_scale_factor_set_identifier(element, i,
 							&scale_factor_identifier) &&
 						(element_basis != scale_factor_identifier))

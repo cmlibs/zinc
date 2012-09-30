@@ -44,5 +44,4 @@ Implements computed fields that control the string_constant behaviour.
 #if !defined (COMPUTED_FIELD_STRING_CONSTANT_H)
 #define COMPUTED_FIELD_STRING_CONSTANT_H
 
-
 #endif /* !defined (COMPUTED_FIELD_STRING_CONSTANT_H) */

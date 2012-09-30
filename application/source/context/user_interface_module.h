@@ -80,7 +80,7 @@ struct User_interface_module
 	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (WX_USER_INTERFACE) */
-	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Graphics_buffer_app_package *graphics_buffer_package;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	int external;
 };

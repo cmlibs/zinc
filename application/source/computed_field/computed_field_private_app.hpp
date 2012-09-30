@@ -1,4 +1,8 @@
 
+
+#if !defined (COMPUTED_FIELD_PRIVATE_APP_H_)
+#define COMPUTED_FIELD_PRIVATE_APP_H_
+
 /* Used by the register_type_function, Computed_field_type_data and
 	Computed_field_add_type_to_option_table*/
 typedef int (*Define_Computed_field_type_function)(
@@ -18,3 +22,6 @@ Adds the type of Computed_field described by <name> and
 <computed_field_package>.  This type is then added to the
 define_Computed_field_type option table when parsing commands.
 ==============================================================================*/
+
+
+#endif

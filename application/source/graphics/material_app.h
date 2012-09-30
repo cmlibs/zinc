@@ -30,15 +30,6 @@ int set_material_program_type(struct Graphical_material *material_to_be_modified
 /******************************************************************************
 from the modify_graphical_material.
 ******************************************************************************/
-#if defined (WX_USER_INTERFACE)
-int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
-/******************************************************************************
-LAST MODIFIED : 4 Dec 2007
-
-DESCRIPTION : This function is to allow the material editor to
-deaccess the material program from the material.
-==============================================================================*/
-#endif /*(WX_USER_INTERFACE)*/
 
 
 #if defined (OLD_CODE)

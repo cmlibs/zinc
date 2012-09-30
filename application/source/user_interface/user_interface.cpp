@@ -46,7 +46,6 @@ Functions for opening and closing the user interface.
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
 
-extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 /*???debug */
@@ -60,9 +59,7 @@ extern "C" {
 #endif
 #include "general/debug.h"
 #include "general/myio.h"
-}
 #if defined (GTK_USER_INTERFACE)
-extern "C" {
 #include <gtk/gtk.h>
 #include <glib.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -70,16 +67,13 @@ extern "C" {
 #else
 #include <gtk/gtkgl.h>
 #endif
-}
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 #include <carbon/carbon.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
-extern "C" {
 #include "user_interface/event_dispatcher.h"
 #include "general/message.h"
 #include "user_interface/user_interface.h"
-}
 
 /*
 Module types
@@ -169,14 +163,14 @@ Module functions
 static struct User_interface *polling_user_interface =
    (struct User_interface *)NULL;
 
-static gint User_interface_gtk_gpoll_callback(GPollFD *ufds, guint nfsd, 
+static gint User_interface_gtk_gpoll_callback(GPollFD *ufds, guint nfsd,
 	gint timeout)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2002
 
 DESCRIPTION :
 A dummy poll function used to find out which file descriptors that gtk is
-interested in and then in the check phase to return the results of our 
+interested in and then in the check phase to return the results of our
 actual polling.  Unnecessary in Gtk2 as there is a much more complete interface.
 ==============================================================================*/
 {
@@ -306,7 +300,7 @@ those processed by the event dispatcher.
 				user_interface->max_priority, &user_interface->g_context_timeout,
 				user_interface->gtk_fds, MAX_GTK_FDS);
 #else /* GTK_MAJOR_VERSION >= 2 */
-			/* We can't query or check the records directly so we overload the 
+			/* We can't query or check the records directly so we overload the
 				g_poll_func and see what filehandles the function wants to
 				poll.  The results are basically we return to the poll are invalid.
 				Then we do our own poll and use the results to reply correctly
@@ -359,8 +353,8 @@ those processed by the event dispatcher.
 					FD_SET(user_interface->gtk_fds[i].fd, &(descriptor_set->error_set));
 				}
 			}
-			if ((user_interface->g_context_timeout >= 0) && 
-				((descriptor_set->max_timeout_ns < 0) || 
+			if ((user_interface->g_context_timeout >= 0) &&
+				((descriptor_set->max_timeout_ns < 0) ||
 				(user_interface->g_context_timeout < descriptor_set->max_timeout_ns)))
 			{
 				descriptor_set->max_timeout_ns = user_interface->g_context_timeout * 1000;
@@ -421,8 +415,8 @@ DESCRIPTION :
 			}
 		}
 #if GTK_MAJOR_VERSION >= 2
-		if (g_main_context_check(user_interface->g_context, 
-			user_interface->max_priority, user_interface->gtk_fds, 
+		if (g_main_context_check(user_interface->g_context,
+			user_interface->max_priority, user_interface->gtk_fds,
 			user_interface->records_in_gtk_fds))
 		{
 			return_code = 1;
@@ -432,7 +426,7 @@ DESCRIPTION :
 			return_code = 0;
 		}
 #else /* GTK_MAJOR_VERSION >= 2 */
-		/* We can't query or check the records directly so we overload the 
+		/* We can't query or check the records directly so we overload the
 			g_poll_func and see what filehandles the function wants to
 			poll.  The results are basically we return to the poll are invalid.
 			Then we do our own poll and use the results to reply correctly
@@ -531,9 +525,9 @@ DESCRIPTION :
 static OSStatus User_interface_carbon_application_event_handler(
 	EventHandlerCallRef handler, EventRef event, void* userData)
 {
-    OSStatus result = eventNotHandledErr;
+	OSStatus result = eventNotHandledErr;
 
-    return result;
+	return result;
 }
 #endif /* defined (CARBON_USER_INTERFACE) */
 
@@ -627,8 +621,8 @@ for the <list_item>.  <*list_item> is set to NULL.
 } /* destroy_Shell_list_item */
 
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
-	struct Event_dispatcher *event_dispatcher, const char *class_name, 
+struct User_interface *CREATE(User_interface)(int *argc_address, char **argv,
+	struct Event_dispatcher *event_dispatcher, const char *class_name,
 	const char *application_name)
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
@@ -668,7 +662,7 @@ Open the <user_interface>.
 		user_interface->g_context = (GMainContext *)NULL;
 #endif /* GTK_MAJOR_VERSION >= 2 */
 		user_interface->records_in_gtk_fds = 0;
-		user_interface->gtk_descriptor_callback = 
+		user_interface->gtk_descriptor_callback =
 			(struct Event_dispatcher_descriptor_callback *)NULL;
 		user_interface->g_context_needs_prepare_and_query = 1;
 		user_interface->g_context_timeout = -1;
@@ -692,7 +686,7 @@ Open the <user_interface>.
 #if defined (GTK_USER_INTERFACE)
 		/* Initialize i18n support */
 		gtk_set_locale ();
-		
+
 		/* Initialize the widget set */
 		gtk_init (argc_address, &argv);
 
@@ -715,13 +709,13 @@ Open the <user_interface>.
 			&& (g_main_context_acquire(user_interface->g_context)))
 		{
 			g_main_context_ref(user_interface->g_context);
-			user_interface->gtk_descriptor_callback = 
+			user_interface->gtk_descriptor_callback =
 				Event_dispatcher_add_descriptor_callback(
 				user_interface->event_dispatcher,
 				User_interface_gtk_query_callback,
 				User_interface_gtk_check_callback,
 				User_interface_gtk_dispatch_callback,
-				user_interface); 
+				user_interface);
 		}
 		else
 		{
@@ -732,7 +726,7 @@ Open the <user_interface>.
 		}
 #else /* GTK_MAJOR_VERSION >= 2 */
 		g_main_set_poll_func(User_interface_gtk_gpoll_callback);
-		user_interface->gtk_descriptor_callback = 
+		user_interface->gtk_descriptor_callback =
 			Event_dispatcher_add_descriptor_callback(
 			user_interface->event_dispatcher,
 			User_interface_gtk_query_callback,
@@ -744,21 +738,21 @@ Open the <user_interface>.
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (CARBON_USER_INTERFACE)
-        EventTypeSpec event_type;
-        OSStatus error = noErr;
-        EventHandlerUPP appCommandProcess;
+		EventTypeSpec event_type;
+		OSStatus error = noErr;
+		EventHandlerUPP appCommandProcess;
 
-        if(appCommandProcess = NewEventHandlerUPP(
+		if(appCommandProcess = NewEventHandlerUPP(
 				  User_interface_carbon_application_event_handler))
 		  {
-            event_type.eventClass = kEventClassCommand;
-            event_type.eventKind = kEventCommandProcess;
-            InstallApplicationEventHandler(appCommandProcess, 1, 
+			event_type.eventClass = kEventClassCommand;
+			event_type.eventKind = kEventCommandProcess;
+			InstallApplicationEventHandler(appCommandProcess, 1,
 					&event_type, NULL, NULL);
-        }
+		}
 		  else
 		  {
-            error = memFullErr;
+			error = memFullErr;
 		  }
 #endif /* defined (CARBON_USER_INTERFACE) */
 	}
@@ -951,7 +945,7 @@ name.
 	ENTER(User_interface_get_local_machine_name);
 	if (user_interface && name_ptr)
 	{
-		if (user_interface->local_machine_info && 
+		if (user_interface->local_machine_info &&
 			user_interface->local_machine_info->name)
 		{
 			if (ALLOCATE(name, char, strlen(
@@ -959,7 +953,7 @@ name.
 			{
 				strcpy(name, user_interface->local_machine_info->name);
 				*name_ptr = name;
-				return_code = 1;				
+				return_code = 1;
 			}
 			else
 			{

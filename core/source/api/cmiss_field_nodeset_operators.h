@@ -43,6 +43,7 @@
 
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
 
 #include "cmiss_shared_object.h"
 

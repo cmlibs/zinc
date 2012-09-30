@@ -47,7 +47,6 @@
 #include "graphics/graphic.h"
 #include "graphics/graphics_module.h"
 #include "region/cmiss_region.h"
-#include "general/cmiss_set.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/scene.hpp"
@@ -392,52 +391,6 @@ int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter **filter_address)
 	return DEACCESS(Cmiss_graphics_filter)(filter_address);
 }
 
-/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
- * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
- */
-class Cmiss_graphics_filter_identifier : private Cmiss_graphics_filter
-{
-public:
-	Cmiss_graphics_filter_identifier(const char *name)
-	{
-		// const_cast OK as must never be modified & cleared in destructor
-		Cmiss_graphics_filter::name = const_cast<char *>(name);
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER;
-	}
-
-	virtual ~Cmiss_graphics_filter_identifier()
-	{
-		Cmiss_graphics_filter::name = NULL;
-	}
-
-	virtual bool match(struct Cmiss_graphic *graphic)
-	{
-		USE_PARAMETER(graphic);
-		return false;
-	}
-
-	virtual void list_type_specific() const
-	{
-	}
-
-	Cmiss_graphics_filter *getPseudoObject()
-	{
-		return this;
-	}
-};
-
-/** functor for ordering Cmiss_set<Cmiss_graphics_filter> by name */
-struct Cmiss_graphics_filter_compare_name
-{
-	bool operator() (const Cmiss_graphics_filter * graphics_filter1, const Cmiss_graphics_filter * graphics_filter2) const
-	{
-		return strcmp(graphics_filter1->name, graphics_filter2->name) < 0;
-	}
-};
-
-typedef Cmiss_set<Cmiss_graphics_filter *,Cmiss_graphics_filter_compare_name> Cmiss_set_Cmiss_graphics_filter;
-
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_graphics_filter, Cmiss_graphics_module, void *);
 
 namespace {
@@ -773,24 +726,6 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
 	return graphics_filter;
 }
 
-enum Cmiss_graphics_filter_type Cmiss_graphics_filter_get_type(Cmiss_graphics_filter_id graphics_filter)
-{
-	enum Cmiss_graphics_filter_type filter_type = CMISS_GRAPHICS_FILTER_TYPE_INVALID;
-	if (graphics_filter)
-	{
-		filter_type = graphics_filter->getType();
-	}
-	return filter_type;
-}
-
-struct Define_graphics_filter_data
-{
-	Cmiss_region *root_region;
-	Cmiss_graphics_module *graphics_module;
-	int number_of_filters;
-	Cmiss_graphics_filter **source_filters;
-};
-
 int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
 	enum Cmiss_graphics_filter_attribute attribute)
 {
@@ -963,22 +898,22 @@ int Cmiss_graphics_filter_operator_remove_operand(
 class Cmiss_graphics_filter_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphics_filter_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
-            enum_string = "IS_MANAGED";
-            break;
-        case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
-            enum_string = "IS_INVERSE";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphics_filter_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+		case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
+			enum_string = "IS_MANAGED";
+			break;
+		case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
+			enum_string = "IS_INVERSE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphics_filter_attribute Cmiss_graphics_filter_attribute_enum_from_string(

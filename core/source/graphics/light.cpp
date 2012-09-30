@@ -122,7 +122,10 @@ FULL_DECLARE_MANAGER_TYPE(Light);
 Module variables
 ----------------
 */
-
+const char *get_Light_name(struct Light *light)
+{
+	return light->name;
+}
 static int next_light_no=0;
 #define MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS 8
 static GLenum light_identifiers[MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS]=

@@ -44,6 +44,8 @@
 #if !defined (SCENE_H)
 #define SCENE_H
 
+#include <set>
+
 #include "api/cmiss_zinc_configure.h"
 #include "api/cmiss_shared_object.h"
 
@@ -64,6 +66,10 @@
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "time/time_keeper.h"
+/* Convert the type */
+#define Scene Cmiss_scene
+
+#include "graphics/rendition.h"
 /* #include "graphics/texture.h" */
 #if defined(USE_OPENCASCADE)
 #	include "api/cmiss_field_cad.h"
@@ -116,32 +122,115 @@ this module.  So that these functions match the public declarations the
 struct Scene is declared to be the same as Cmiss_scene here
 and the functions given their public names.
 */
-/* Convert the type */
-#define Scene Cmiss_scene
-
-struct Scene;
-/*******************************************************************************
-LAST MODIFIED : 8 December 1997
-
-DESCRIPTION :
-Stores the collections of objects that make up a 3-D graphical model.
-The contents of this object are private.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Scene);
-
-DECLARE_MANAGER_TYPES(Scene);
 
 /***************************************************************************//**
- * Structure to pass to define_Scene.
+ * Functor for comparing/sorting regions in region tree.
  */
-struct Define_scene_data
+class Rendition_list_compare
 {
-	struct MANAGER(Light) *light_manager;
-	struct MANAGER(Scene) *scene_manager;
-	struct Cmiss_region *root_region;
-	struct Cmiss_graphics_module *graphics_module;
-}; /* struct Define_scene_data */
+private:
+
+public:
+	Rendition_list_compare()
+	{
+	}
+
+	bool isRegionPlacedBefore(Cmiss_region *region1, Cmiss_region *region2) const
+	{
+		bool return_code = false;
+		if (region1 == region2)
+		{
+			return false;
+		}
+		if (!region1 || !region2)
+		{
+			return false;
+		}
+		if (Cmiss_region_contains_subregion(region1, region2))
+		{
+			return true;
+		}
+		else if (Cmiss_region_contains_subregion(region2, region1))
+		{
+			return false;
+		}
+		Cmiss_region *parent_region1 = Cmiss_region_get_parent(region1);
+		Cmiss_region *parent_region2 = Cmiss_region_get_parent(region2);
+		Cmiss_region *child_region1 = NULL;
+		Cmiss_region *child_region2 = NULL;
+		if (parent_region1 == parent_region2)
+		{
+			child_region1 = Cmiss_region_access(region1);
+			child_region2 = Cmiss_region_access(region2);
+		}
+		else
+		{
+			while (parent_region2 && (parent_region1 != parent_region2))
+			{
+				child_region2 = parent_region2;
+				parent_region2 =
+					Cmiss_region_get_parent(parent_region2);
+				if (parent_region1 != parent_region2)
+					Cmiss_region_destroy(&child_region2);
+			}
+			if (parent_region1 != parent_region2)
+			{
+				parent_region2 = Cmiss_region_get_parent(region2);
+				child_region2 = Cmiss_region_access(region2);
+				while (parent_region1 &&
+					(parent_region2 != parent_region1))
+				{
+					child_region1 = parent_region1;
+					parent_region1 =
+						Cmiss_region_get_parent(parent_region1);
+					if (parent_region1 != parent_region2)
+						Cmiss_region_destroy(&child_region1);
+				}
+			}
+		}
+		if (child_region1 && child_region2 && parent_region1 == parent_region2)
+		{
+			Cmiss_region *child_region = Cmiss_region_get_first_child(
+				parent_region1);
+			while (child_region)
+			{
+				if (child_region == child_region1)
+				{
+					return_code = true;
+					break;
+				}
+				else if (child_region == child_region2)
+				{
+					return_code = false;
+					break;
+				}
+				Cmiss_region_reaccess_next_sibling(&child_region);
+			}
+			if (child_region)
+				Cmiss_region_destroy(&child_region);
+		}
+		if (parent_region1)
+			Cmiss_region_destroy(&parent_region1);
+		if (parent_region2)
+			Cmiss_region_destroy(&parent_region2);
+		if (child_region1)
+			Cmiss_region_destroy(&child_region1);
+		if (child_region2)
+			Cmiss_region_destroy(&child_region2);
+		return return_code;
+	}
+
+	bool operator() (const Cmiss_rendition *rendition1, const Cmiss_rendition *rendition2) const
+	{
+		Cmiss_region *region1 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition1));
+		Cmiss_region *region2 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition2));
+
+		return isRegionPlacedBefore(region1, region2);
+	}
+};
+
+
+typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
 
 enum Scene_input_type
 {
@@ -149,6 +238,13 @@ enum Scene_input_type
 	SCENE_MOTION_NOTIFY,
 	SCENE_BUTTON_RELEASE
 }; /* enum Scene_input_type */
+
+
+struct Scene_get_data_range_for_spectrum_data
+{
+	struct Spectrum *spectrum;
+	struct Graphics_object_data_range_struct range;
+};
 
 struct Scene_input_callback_data
 /*******************************************************************************
@@ -187,11 +283,57 @@ Contains all information necessary for an input callback from the scene.
 	void *data;
 }; /* struct Scene_input_callback */
 
-struct Scene_get_data_range_for_spectrum_data
+struct Scene
+/*******************************************************************************
+LAST MODIFIED : 2 December 2002
+
+DESCRIPTION :
+Stores the collections of objects that make up a 3-D graphical model.
+==============================================================================*/
 {
-	struct Spectrum *spectrum;
-	struct Graphics_object_data_range_struct range;
-};
+	/* the name of the scene */
+	const char *name;
+	/* keep pointer to this scene's manager since can pass on manager change */
+	/* messages if member manager changes occur (eg. materials) */
+	/* after clearing in create, following to be modified only by manager */
+	struct MANAGER(Scene) *manager;
+	int manager_change_status;
+	bool is_managed_flag;
+	/* list of objects in the scene (plus visibility flag) */
+	enum Scene_change_status change_status;
+
+	struct Cmiss_region *region;
+	struct MANAGER(Light) *light_manager;
+	void *light_manager_callback_id;
+	struct LIST(Light) *list_of_lights;
+	/* routine to call and data to pass to a module that handles scene input */
+	/* such as picking and mouse drags */
+	struct Scene_input_callback input_callback;
+	Rendition_set *list_of_rendition;
+	/* level of cache in effect */
+	int cache;
+	/* flag indicating that graphics objects in scene objects need building */
+	int build;
+	Cmiss_graphics_filter_id filter;
+	/* the number of objects accessing this scene. The scene cannot be removed
+		from manager unless it is 1 (ie. only the manager is accessing it) */
+	int access_count;
+}; /* struct Scene */
+
+DECLARE_LIST_TYPES(Scene);
+
+DECLARE_MANAGER_TYPES(Scene);
+
+/***************************************************************************//**
+ * Structure to pass to define_Scene.
+ */
+struct Define_scene_data
+{
+	struct MANAGER(Light) *light_manager;
+	struct MANAGER(Scene) *scene_manager;
+	struct Cmiss_region *root_region;
+	struct Cmiss_graphics_module *graphics_module;
+}; /* struct Define_scene_data */
 
 struct Cmiss_graphic;
 struct Cmiss_rendition;

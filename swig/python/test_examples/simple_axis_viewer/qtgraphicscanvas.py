@@ -1,7 +1,8 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from Zn import Context, Region, GraphicsModule, Graphic
-from Zn import SceneViewer, Rendition, Scene, GraphicsFilter
+from Zn import Rendition, Scene, GraphicsFilter
+from Zn.SceneViewer import SceneViewerInput, SceneViewer
 
 class QtGraphicsCanvas(QtOpenGL.QGLWidget):
     def __init__(self, parent = None):
@@ -11,7 +12,7 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
 
     def initializeGL(self):
         scene_viewer_package_ = self.context_.getDefaultSceneViewerPackage()
-        self.scene_viewer_ = scene_viewer_package_.createSceneViewer(SceneViewer.SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.SceneViewer.STEREO_MODE_ANY)
+        self.scene_viewer_ = scene_viewer_package_.createSceneViewer(SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.STEREO_MODE_ANY)
         root_region = self.context_.getDefaultRegion()
         graphics_module = self.context_.getDefaultGraphicsModule()
         graphics_module.enableRenditions(root_region)
@@ -36,7 +37,7 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
     def mousePressEvent(self, mouseevent):
         input = self.scene_viewer_.getInput()
         input.setPosition(mouseevent.x(), mouseevent.y())
-        input.setType(SceneViewer.SceneViewerInput.INPUT_EVENT_TYPE_BUTTON_PRESS)
+        input.setType(SceneViewerInput.INPUT_EVENT_TYPE_BUTTON_PRESS)
         if mouseevent.button() == QtCore.Qt.LeftButton:
             input.setButtonNumber(1)
         elif mouseevent.button() == QtCore.Qt.MiddleButton:
@@ -49,7 +50,7 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
     def mouseReleaseEvent(self, mouseevent):
         input = self.scene_viewer_.getInput()
         input.setPosition(mouseevent.x(), mouseevent.y())
-        input.setType(SceneViewer.SceneViewerInput.INPUT_EVENT_TYPE_BUTTON_RELEASE)
+        input.setType(SceneViewerInput.INPUT_EVENT_TYPE_BUTTON_RELEASE)
         if mouseevent.button() == QtCore.Qt.LeftButton:
             input.setButtonNumber(1)
         elif mouseevent.button() == QtCore.Qt.MiddleButton:
@@ -62,7 +63,7 @@ class QtGraphicsCanvas(QtOpenGL.QGLWidget):
     def mouseMoveEvent(self, mouseevent):
         input = self.scene_viewer_.getInput()
         input.setPosition(mouseevent.x(), mouseevent.y())
-        input.setType(SceneViewer.SceneViewerInput.INPUT_EVENT_TYPE_MOTION_NOTIFY)
+        input.setType(SceneViewerInput.INPUT_EVENT_TYPE_MOTION_NOTIFY)
         if mouseevent.type() == QtCore.QEvent.Leave:
             input.setPosition(-1, -1)
         

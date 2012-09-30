@@ -43,6 +43,7 @@ DESCRIPTION :
 #if !defined (RENDITION_H)
 #define RENDITION_H
 
+#include <list>
 #include "api/cmiss_rendition.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
@@ -54,7 +55,60 @@ DESCRIPTION :
 #include "context/context.h"
 #include "region/cmiss_region.h"
 
-struct Cmiss_rendition;
+typedef std::list<Cmiss_selection_handler *> Selection_handler_list;
+
+struct Cmiss_rendition
+/*******************************************************************************
+LAST MODIFIED : 16 October 2008
+
+DESCRIPTION :
+Structure for maintaining a graphical rendition of region.
+==============================================================================*/
+{
+	/* the [FE] region being drawn */
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
+	struct FE_region *data_fe_region;
+	int fe_region_callback_set, data_fe_region_callback_set;
+	/* settings shared by whole rendition */
+	/* default coordinate field for graphics drawn with settings below */
+	struct Computed_field *default_coordinate_field;
+	/* list of objects interested in changes to the Cmiss_rendition */
+	struct Cmiss_rendition_callback_data *update_callback_list;
+	/* managers for updating graphics in response to global changes */
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct LIST(Cmiss_graphic) *list_of_graphics;
+	void *computed_field_manager_callback_id;
+	std::list<struct Scene *> *list_of_scene;
+	/* level of cache in effect */
+	int cache;
+	int changed; /**< true if rendition has changed and haven't updated clients */
+	int fast_changing;
+	/* for accessing objects */
+	int access_count;
+	gtMatrix *transformation;
+	bool visibility_flag;
+	/* transformaiton field for time dependent transformation */
+	struct Computed_field *transformation_field;
+	int transformation_time_callback_flag;
+	/* curve approximation with line segments over elements */
+	int *element_divisions;
+	int element_divisions_size;
+	/* number of segments used around cylinders */
+	int circle_discretization;
+	/* optional native_discretization for graphics drawn with settings below */
+	struct FE_field *native_discretization_field;
+	struct Cmiss_graphics_module *graphics_module;
+	struct Time_object *time_object;
+	/* callback list for transformation changes */
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)) *transformation_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_scene_region_change)) *scene_region_change_callback_list;
+	unsigned int position;
+	Cmiss_field_group_id selection_group;
+	int selection_removed; // flag set when selection_group cleared
+	Selection_handler_list *selection_handler_list;
+}; /* struct Cmiss_rendition */
+
 struct MANAGER_MESSAGE(Cmiss_tessellation);
 
 typedef int(*Cmiss_rendition_callback)(struct Cmiss_rendition *rendition,
@@ -430,6 +484,10 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
  */
 int Cmiss_rendition_graphic_changed_private(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic);
+
+int Cmiss_rendition_set_default_coordinate_field(
+	struct Cmiss_rendition *rendition,
+	struct Computed_field *default_coordinate_field);
 
 #endif /* !defined (RENDITION_H) */
 

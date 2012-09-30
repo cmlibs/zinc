@@ -56,7 +56,7 @@ class Computed_field_trigonometry_package : public Computed_field_type_package
 
 namespace {
 
-char computed_field_sin_type_string[] = "sin";
+const char computed_field_sin_type_string[] = "sin";
 
 class Computed_field_sin : public Computed_field_core
 {
@@ -219,7 +219,7 @@ int Computed_field_get_type_sin(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SIN, the 
+If the field is of type COMPUTED_FIELD_SIN, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -244,7 +244,7 @@ If the field is of type COMPUTED_FIELD_SIN, the
 
 namespace {
 
-char computed_field_cos_type_string[] = "cos";
+const char computed_field_cos_type_string[] = "cos";
 
 class Computed_field_cos : public Computed_field_core
 {
@@ -408,7 +408,7 @@ int Computed_field_get_type_cos(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COS, the 
+If the field is of type COMPUTED_FIELD_COS, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -433,7 +433,7 @@ If the field is of type COMPUTED_FIELD_COS, the
 
 namespace {
 
-char computed_field_tan_type_string[] = "tan";
+const char computed_field_tan_type_string[] = "tan";
 
 class Computed_field_tan : public Computed_field_core
 {
@@ -598,7 +598,7 @@ int Computed_field_get_type_tan(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_TAN, the 
+If the field is of type COMPUTED_FIELD_TAN, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -623,7 +623,7 @@ If the field is of type COMPUTED_FIELD_TAN, the
 
 namespace {
 
-char computed_field_asin_type_string[] = "asin";
+const char computed_field_asin_type_string[] = "asin";
 
 class Computed_field_asin : public Computed_field_core
 {
@@ -794,7 +794,7 @@ int Computed_field_get_type_asin(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ASIN, the 
+If the field is of type COMPUTED_FIELD_ASIN, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -819,7 +819,7 @@ If the field is of type COMPUTED_FIELD_ASIN, the
 
 namespace {
 
-char computed_field_acos_type_string[] = "acos";
+const char computed_field_acos_type_string[] = "acos";
 
 class Computed_field_acos : public Computed_field_core
 {
@@ -990,7 +990,7 @@ int Computed_field_get_type_acos(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ACOS, the 
+If the field is of type COMPUTED_FIELD_ACOS, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -1015,7 +1015,7 @@ If the field is of type COMPUTED_FIELD_ACOS, the
 
 namespace {
 
-char computed_field_atan_type_string[] = "atan";
+const char computed_field_atan_type_string[] = "atan";
 
 class Computed_field_atan : public Computed_field_core
 {
@@ -1179,7 +1179,7 @@ int Computed_field_get_type_atan(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ATAN, the 
+If the field is of type COMPUTED_FIELD_ATAN, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -1204,7 +1204,7 @@ If the field is of type COMPUTED_FIELD_ATAN, the
 
 namespace {
 
-char computed_field_atan2_type_string[] = "atan2";
+const char computed_field_atan2_type_string[] = "atan2";
 
 class Computed_field_atan2 : public Computed_field_core
 {
@@ -1395,7 +1395,7 @@ int Computed_field_get_type_atan2(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ATAN2, the 
+If the field is of type COMPUTED_FIELD_ATAN2, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {

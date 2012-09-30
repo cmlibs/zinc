@@ -8,11 +8,11 @@ Wraps itk::ThresholdImageFilter
 
 This enables the use of itk to do general thresholding.  The threshold filter
 can be used in three different ways.
-- specify one threshold value.  All pixels BELOW this value are set to a 
+- specify one threshold value.  All pixels BELOW this value are set to a
   specified outside value
 - specify one threshold value.  All pixels ABOVE this value are set to a
   specified outside value
-- specify two threshold values.  All pixels OUTSIDE the range defined by the 
+- specify two threshold values.  All pixels OUTSIDE the range defined by the
   threshold values are set to a specified outside value
 
 ==============================================================================*/
@@ -57,8 +57,8 @@ can be used in three different ways.
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 /* cannot use enumerator_private.h with c++ compiler, use cpp version instead
-	eventually should replace enumerator macros with a template */ 
-#include "general/enumerator_private.hpp"  
+	eventually should replace enumerator macros with a template */
+#include "general/enumerator_private.hpp"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "image_processing/computed_field_threshold_image_filter.h"
@@ -67,8 +67,6 @@ can be used in three different ways.
 #include "itkThresholdImageFilter.h"
 
 using namespace CMISS;
-
-PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 {
@@ -95,36 +93,36 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 		} break;
 	}
 	LEAVE;
-  
+
 	return (enumerator_string);
 } /* ENUMERATOR_STRING(General_threshold_filter_mode) */
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode)
 
 namespace {
-	
+
 	char computed_field_threshold_image_filter_type_string[] = "threshold_filter";
-	
+
 	class Computed_field_threshold_image_filter : public computed_field_image_filter
 	{
-		
+
 	public:
 		/* to specify the threshold filter we use an enumerated type that
 			can take values ABOVE, BELOW or OUTSIDE */
-		enum General_threshold_filter_mode threshold_mode;  
+		enum General_threshold_filter_mode threshold_mode;
 
 		double outside_value; // used by all modes
 		double below_value;   // needed for both below and outside mode
 		double above_value;   // neeeded for both above and outside mode
-		
+
 		Computed_field_threshold_image_filter(Computed_field *source_field,
-			enum General_threshold_filter_mode threshold_mode, 
+			enum General_threshold_filter_mode threshold_mode,
 			double oustide_value, double below_value, double above_value);
-		
+
 		~Computed_field_threshold_image_filter()
 		{
 		}
-		
+
 	private:
 		virtual void create_functor();
 
@@ -133,19 +131,19 @@ namespace {
 			return new Computed_field_threshold_image_filter(field->source_fields[0],
 				threshold_mode, outside_value, below_value, above_value);
 		}
-		
+
 		const char *get_type_string()
 		{
 			return(computed_field_threshold_image_filter_type_string);
 		}
-		
+
 		int compare(Computed_field_core* other_field);
-		
+
 		int list();
-		
+
 		char* get_command_string();
 	};
-	
+
 	int Computed_field_threshold_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
@@ -161,9 +159,9 @@ Compare the type specific data.
 		if (field && (other = dynamic_cast<Computed_field_threshold_image_filter*>(other_core)))
 		{
 
-			/* could get trickier here and check only the relevant above or below 
-				values depending on filter type.  eg for an above filter, 
-				the below value is irrelevant and could be ignored.  
+			/* could get trickier here and check only the relevant above or below
+				values depending on filter type.  eg for an above filter,
+				the below value is irrelevant and could be ignored.
 				Currently we just use a direct comparison of all set variables. */
 			if ((dimension == other->dimension)
 				&& (threshold_mode == other->threshold_mode)
@@ -219,9 +217,9 @@ and generate the outputImage.
 ==============================================================================*/
 		{
 			int return_code;
-		
+
 			typedef itk::ThresholdImageFilter< ImageType > FilterType;
-		
+
 			typename FilterType::Pointer filter = FilterType::New();
 
 			filter->SetOutsideValue( threshold_image_filter->outside_value );
@@ -241,22 +239,22 @@ and generate the outputImage.
 				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 				{
 					filter->ThresholdOutside( threshold_image_filter->below_value, threshold_image_filter->above_value );
-				} break; 
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
 						"Unknown threshold mode");
 				} break;
 			}
-		
+
 			return_code = threshold_image_filter->update_output_image
 				(cache, filter, this->outputImage,
 				 static_cast<ImageType*>(NULL),
 				 static_cast<FilterType*>(NULL));
-		
+
 			return (return_code);
 		} /* set_filter */
-		
+
 	}; /* template < class ImageType > class Computed_field_threshold_image_filter_Functor */
 
 	Computed_field_threshold_image_filter::Computed_field_threshold_image_filter(
@@ -264,7 +262,7 @@ and generate the outputImage.
 		enum General_threshold_filter_mode threshold_mode,
 		double outside_value, double below_value, double above_value) :
 		computed_field_image_filter(source_field),
-		threshold_mode(threshold_mode), outside_value(outside_value),  
+		threshold_mode(threshold_mode), outside_value(outside_value),
 		below_value(below_value),above_value(above_value)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -326,7 +324,7 @@ DESCRIPTION : list out the threshold filter options
 						"    below_value : %g\n", below_value);
 					display_message(INFORMATION_MESSAGE,
 						"    above_value : %g\n", above_value);
-				} break; 
+				} break;
 			}
 		}
 		else
@@ -366,7 +364,7 @@ Returns allocated command string for reproducing field. Includes type.
 			}
 			sprintf(temp_string, " %s outside_value %g",
 				ENUMERATOR_STRING(General_threshold_filter_mode)(threshold_mode), outside_value);
-			append_string(&command_string, temp_string, &error);		
+			append_string(&command_string, temp_string, &error);
 
 			switch (threshold_mode)
 			{
@@ -380,11 +378,11 @@ Returns allocated command string for reproducing field. Includes type.
 				} break;
 				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 				{
-					sprintf(temp_string, " below_value %g above_value %g", 
+					sprintf(temp_string, " below_value %g above_value %g",
 						below_value, above_value);
-				} break; 
+				} break;
 			}
-			append_string(&command_string, temp_string, &error);		
+			append_string(&command_string, temp_string, &error);
 
 		}
 		else
@@ -415,7 +413,7 @@ Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cm
 
 struct Computed_field *Cmiss_field_module_create_threshold_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, 
+	struct Computed_field *source_field,
 	enum General_threshold_filter_mode threshold_mode, double outside_value,
 	double below_value, double above_value)
 {
@@ -440,15 +438,15 @@ struct Computed_field *Cmiss_field_module_create_threshold_image_filter(
 }
 
 int Cmiss_field_get_type_threshold_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field,  
-	enum General_threshold_filter_mode *threshold_mode, 
+	struct Computed_field **source_field,
+	enum General_threshold_filter_mode *threshold_mode,
 	double *outside_value, double *below_value,	double *above_value)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FILTER, 
-the source_field and thresholds used by it are returned - 
+If the field is of type COMPUTED_FIELD_FILTER,
+the source_field and thresholds used by it are returned -
 otherwise an error is reported.
 ==============================================================================*/
 {

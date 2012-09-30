@@ -44,7 +44,6 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #if 1
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
-extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include <general/time.h>
@@ -55,32 +54,23 @@ extern "C" {
 #include "general/object.h"
 #include "general/message.h"
 #include "user_interface/event_dispatcher.h"
-}
 
 /* After the event_dispatcher.h has set up these variables */
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-extern "C" {
 #include <Xm/Xm.h>
-}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <wx/wx.h>
 #include <wx/apptrait.h>
-extern "C" {
 #include "user_interface/user_interface.h"
-}
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-extern "C" {
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #include "general/callback.h"
-}
 #elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include "carbon/carbon.h"
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
-extern "C" {
 #include <gtk/gtk.h>
-}
 #endif /* switch (USER_INTERFACE) */
 
 /*
@@ -99,14 +89,14 @@ DESCRIPTION :
 Contains all information necessary for a descriptor callback.
 ==============================================================================*/
 {
-	struct Event_dispatcher_descriptor_callback *self;	
+	struct Event_dispatcher_descriptor_callback *self;
 	int access_count;
 	int pending;
 	void *user_data;
-	/* When using the set_socket_* callbacks the user_data is an 
+	/* When using the set_socket_* callbacks the user_data is an
 		internal ALLOCATED structure. This flag is set so that the DESTROY
 	   DEALLOCATES this user_data.
-         */
+		 */
 	int deallocate_user_data_on_destroy;
 	Event_dispatcher_descriptor_query_function *query_callback;
 	Event_dispatcher_descriptor_check_function *check_callback;
@@ -158,7 +148,7 @@ DESCRIPTION :
 Contains all information necessary for a file descriptor callback.
 ==============================================================================*/
 {
-	struct Event_dispatcher_idle_callback *self;	
+	struct Event_dispatcher_idle_callback *self;
 	int access_count;
 #if defined (WIN32_SYSTEM)
 	FILETIME timestamp;
@@ -314,11 +304,11 @@ Processes window events on the network-only window.
 			}
 		}
 	}
-        else if (uMsg == UWM_IDLE)
-        {
+		else if (uMsg == UWM_IDLE)
+		{
 		Event_dispatcher_win32_idle_callback((void *)lParam);
 		ret = TRUE;
-        }
+		}
 	else
 		ret = TRUE;
 	LEAVE;
@@ -480,7 +470,7 @@ Calls the query callback for the <callback>.
 
 	ENTER(Event_dispatcher_descriptor_do_query_callback);
 
-	if (callback && callback->query_callback && (descriptor_set = 
+	if (callback && callback->query_callback && (descriptor_set =
 		(struct Event_dispatcher_descriptor_set *)descriptor_set_void))
 	{
 		return_code = callback->query_callback(descriptor_set, callback->user_data);
@@ -515,7 +505,7 @@ returns true then the pending flag is set in the <callback>.
 
 	ENTER(Event_dispatcher_descriptor_do_check_callback);
 
-	if (callback && callback->check_callback && (descriptor_set = 
+	if (callback && callback->check_callback && (descriptor_set =
 		(struct Event_dispatcher_descriptor_set *)descriptor_set_void))
 	{
 		callback->pending = callback->check_callback(descriptor_set,
@@ -550,7 +540,7 @@ An iterator function that finds a pending callback.
 	ENTER(Event_dispatcher_descriptor_callback_is_pending);
 	USE_PARAMETER(user_data);
 	if (callback)
-	{	
+	{
 		return_code=callback->pending;
 	}
 	else
@@ -577,7 +567,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_descriptor_
 #endif /* defined (WIN32_USER_INTERFACE) else */
 
 static struct Event_dispatcher_timeout_callback *CREATE(Event_dispatcher_timeout_callback)(
-	unsigned long timeout_s, unsigned long timeout_ns, 
+	unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function timeout_function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -653,7 +643,7 @@ Destroys the object associated with the file descriptor.
 } /* DESTROY(Event_dispatcher_timeout_callback) */
 
 static int Event_dispatcher_timeout_callback_compare(
-	struct Event_dispatcher_timeout_callback *timeout_one, 
+	struct Event_dispatcher_timeout_callback *timeout_one,
 	struct Event_dispatcher_timeout_callback *timeout_two)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2002
@@ -722,7 +712,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_timeout_cal
 	self,struct Event_dispatcher_timeout_callback *,Event_dispatcher_timeout_callback_compare)
 
 static struct Event_dispatcher_idle_callback *CREATE(Event_dispatcher_idle_callback)(
-	Event_dispatcher_idle_function idle_function, void *user_data, 
+	Event_dispatcher_idle_function idle_function, void *user_data,
 	enum Event_dispatcher_idle_priority priority)
 /*******************************************************************************
 LAST MODIFIED : 1 June 2003
@@ -812,7 +802,7 @@ Destroys the object associated with the file descriptor.
 } /* DESTROY(Event_dispatcher_idle_callback) */
 
 static int Event_dispatcher_idle_callback_compare(
-	struct Event_dispatcher_idle_callback *idle_one, 
+	struct Event_dispatcher_idle_callback *idle_one,
 	struct Event_dispatcher_idle_callback *idle_two)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2002
@@ -913,7 +903,7 @@ DESCRIPTION :
 	USE_PARAMETER(id);
 	if (timeout_callback = (struct Event_dispatcher_timeout_callback *)timeout_callback_void)
 	{
-		(*timeout_callback->timeout_function)(timeout_callback->user_data);		
+		(*timeout_callback->timeout_function)(timeout_callback->user_data);
 	}
 	else
 	{
@@ -1013,7 +1003,7 @@ DESCRIPTION :
 	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
 	{
 		if (idle_callback->idle_function &&
-		    (*idle_callback->idle_function)(idle_callback->user_data))
+			(*idle_callback->idle_function)(idle_callback->user_data))
 		{
 			display_message(ERROR_MESSAGE,
 				"Event_dispatcher_win32_idle_callback.  Callback function failed.");
@@ -1169,23 +1159,23 @@ Creates a connection to a event_dispatcher of the specified type.
 	if (ALLOCATE(event_dispatcher, struct Event_dispatcher, 1))
 	{
 #if defined (WIN32_USER_INTERFACE)
-		event_dispatcher->socket_list = 
+		event_dispatcher->socket_list =
 			CREATE(LIST(Fdio))();
 		event_dispatcher->networkWindowHandle = (HWND)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
-		event_dispatcher->descriptor_list = 
+		event_dispatcher->descriptor_list =
 			CREATE(LIST(Event_dispatcher_descriptor_callback))();
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
-		event_dispatcher->timeout_list = 
+		event_dispatcher->timeout_list =
 			CREATE(LIST(Event_dispatcher_timeout_callback))();
-		event_dispatcher->idle_list = 
+		event_dispatcher->idle_list =
 			CREATE(LIST(Event_dispatcher_idle_callback))();
 #if defined (USE_XTAPP_CONTEXT)
 		event_dispatcher->application_context = (XtAppContext)NULL;
 #else /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->special_idle_callback_pending = 0;
-		event_dispatcher->special_idle_callback = 
+		event_dispatcher->special_idle_callback =
 			(struct Event_dispatcher_idle_callback *)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->continue_flag = 1;
@@ -1316,7 +1306,7 @@ DESCRIPTION :
 } /* Event_dispatcher_add_descriptor_callback */
 
 int Event_dispatcher_remove_descriptor_callback(
-	struct Event_dispatcher *event_dispatcher, 
+	struct Event_dispatcher *event_dispatcher,
 	struct Event_dispatcher_descriptor_callback *callback_id)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
@@ -1375,7 +1365,7 @@ DESCRIPTION :
 			{
 				if (event_dispatcher->application_context)
 				{
-					interval_ms = 
+					interval_ms =
 						timeout_ns / 1000000 + timeout_s * 1000;
 					timeout_callback->xt_timeout_id = XtAppAddTimeOut(
 						event_dispatcher->application_context,  interval_ms,
@@ -1419,7 +1409,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct timeval timeofday;
-	struct timezone timeofdayzone;	
+	struct timezone timeofdayzone;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 
 	ENTER(Event_dispatcher_add_timeout_callback_at_time);
@@ -1433,8 +1423,8 @@ DESCRIPTION :
 			timeout_ns += 1000000000 - 1000*timeofday.tv_usec;
 		}
 		timeout_callback = Event_dispatcher_add_timeout_callback(
-			event_dispatcher, timeout_s - (unsigned long)timeofday.tv_sec, 
-			timeout_ns - 1000*(unsigned long)timeofday.tv_usec, 
+			event_dispatcher, timeout_s - (unsigned long)timeofday.tv_sec,
+			timeout_ns - 1000*(unsigned long)timeofday.tv_usec,
 			timeout_function, user_data);
 	}
 	else
@@ -1471,7 +1461,7 @@ Processes a Win32 timer.
   timeout_callback = (struct Event_dispatcher_timeout_callback*)TimerID;
   (*timeout_callback->timeout_function)(
 	timeout_callback->user_data);
-  
+
   DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
 
   LEAVE;
@@ -1489,7 +1479,7 @@ Set a timeout on Win32...
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 	ULONGLONG system_time, event_time, event_time_delta_millis;
-  
+
 	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
@@ -1498,9 +1488,9 @@ Set a timeout on Win32...
 			timeout_s, timeout_ns, timeout_function, user_data))
 		{
 			GetSystemTimeAsFileTime((FILETIME *)&system_time);
-		 
- 			/* Change the epoch to avoid overflow... */
- 			system_time -= 119603304000000000LL;
+
+			/* Change the epoch to avoid overflow... */
+			system_time -= 119603304000000000LL;
 			event_time = (ULONGLONG)timeout_s * 10000000L + (ULONGLONG)timeout_ns / 100L;
 			if (system_time < event_time)
 				event_time_delta_millis = (event_time - system_time) / 10000;
@@ -1508,7 +1498,7 @@ Set a timeout on Win32...
 				event_time_delta_millis = 0;
 
 			Event_dispatcher_ensure_network_window(event_dispatcher);
-		  
+
 			SetTimer(event_dispatcher->networkWindowHandle,
 				(ULONG)timeout_callback,
 				(ULONG)event_time_delta_millis,
@@ -1558,7 +1548,7 @@ Processes a Carbon timer.
 
   (*timeout_callback->timeout_function)(
 	timeout_callback->user_data);
-  
+
   DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
 
   LEAVE;
@@ -1575,7 +1565,7 @@ Set a timeout on Carbon...
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-  
+
 	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
@@ -1627,7 +1617,7 @@ class wxEventTimer : public wxTimer
 			timeout_callback->user_data);
 		delete this;
 	}
-	
+
 public:
 	wxEventTimer(struct Event_dispatcher_timeout_callback *timeout_callback):
 		timeout_callback(timeout_callback)
@@ -1652,7 +1642,7 @@ Set a timeout on wx widgets
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-  
+
 	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
@@ -1701,7 +1691,7 @@ Processes a Gtk timer.
   timeout_callback = (struct Event_dispatcher_timeout_callback*)user_data;
 
   (*timeout_callback->timeout_function)(timeout_callback->user_data);
-  
+
   DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
 
   LEAVE;
@@ -1721,7 +1711,7 @@ Set a timeout on Gtk main loop
 {
 	guint32 interval;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-  
+
 	ENTER(Event_dispatcher_add_timeout_callback_at_time);
 
 	if (event_dispatcher && timeout_function)
@@ -1826,22 +1816,22 @@ DESCRIPTION :
 #if defined (USE_GTK_MAIN_STEP)
 		/* This should preempt the WIN32_SYSTEM version */
 		timeout_callback = Event_dispatcher_add_gtk_timeout_callback(
-			event_dispatcher, timeout_s, 
-			timeout_ns, 
+			event_dispatcher, timeout_s,
+			timeout_ns,
 			timeout_function, user_data);
 #elif defined (CARBON_USER_INTERFACE)
 		timeout_callback = Event_dispatcher_add_Carbon_timeout_callback(
-			event_dispatcher, timeout_s, 
-			timeout_ns, 
+			event_dispatcher, timeout_s,
+			timeout_ns,
 			timeout_function, user_data);
 #elif defined (WX_USER_INTERFACE)
 		timeout_callback = Event_dispatcher_add_wx_timeout_callback(
-			event_dispatcher, timeout_s, 
-			timeout_ns, 
+			event_dispatcher, timeout_s,
+			timeout_ns,
 			timeout_function, user_data);
 #elif defined (WIN32_SYSTEM)
 		GetSystemTimeAsFileTime((FILETIME *)&system_time);
- 		system_time -= 119603304000000000LL;
+		system_time -= 119603304000000000LL;
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
 			event_dispatcher, timeout_s +
 			(unsigned long)(system_time/10000000L),
@@ -1851,8 +1841,8 @@ DESCRIPTION :
 #elif defined (USE_GENERIC_EVENT_DISPATCHER)
 		gettimeofday(&timeofday, NULL);
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
-			event_dispatcher, timeout_s + (unsigned long)timeofday.tv_sec, 
-			timeout_ns + 1000*(unsigned long)timeofday.tv_usec, 
+			event_dispatcher, timeout_s + (unsigned long)timeofday.tv_sec,
+			timeout_ns + 1000*(unsigned long)timeofday.tv_usec,
 			timeout_function, user_data);
 #else /* switch (USER_INTERFACE) */
 #error Timeout callbacks not defined on this platform
@@ -1871,7 +1861,7 @@ DESCRIPTION :
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_remove_timeout_callback(
-	struct Event_dispatcher *event_dispatcher, 
+	struct Event_dispatcher *event_dispatcher,
 	struct Event_dispatcher_timeout_callback *callback_id)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
@@ -1914,7 +1904,7 @@ DESCRIPTION :
 } /* Event_dispatcher_remove_timeout_callback */
 
 struct Event_dispatcher_idle_callback *Event_dispatcher_add_idle_callback(
-	struct Event_dispatcher *event_dispatcher, 
+	struct Event_dispatcher *event_dispatcher,
 	Event_dispatcher_idle_function *idle_function, void *user_data,
 	enum Event_dispatcher_idle_priority priority)
 /*******************************************************************************
@@ -1944,7 +1934,7 @@ DESCRIPTION :
 			{
 				if (event_dispatcher->application_context)
 				{
-					idle_callback->xt_idle_id = XtAppAddWorkProc(event_dispatcher->application_context, 
+					idle_callback->xt_idle_id = XtAppAddWorkProc(event_dispatcher->application_context,
 						Event_dispatcher_xt_idle_callback, idle_callback);
 				}
 				else
@@ -1965,7 +1955,7 @@ DESCRIPTION :
 			else
 			{
 				EventLoopRef main_loop = GetMainEventLoop();
-				EventLoopIdleTimerUPP idle_timer_function = 
+				EventLoopIdleTimerUPP idle_timer_function =
 					NewEventLoopIdleTimerUPP(Event_dispatcher_Carbon_idle_callback);
 
 				InstallEventLoopIdleTimer(main_loop,
@@ -2017,7 +2007,7 @@ DESCRIPTION :
 } /* Event_dispatcher_add_idle_event_callback */
 
 struct Event_dispatcher_idle_callback *Event_dispatcher_set_special_idle_callback(
-	struct Event_dispatcher *event_dispatcher, 
+	struct Event_dispatcher *event_dispatcher,
 	Event_dispatcher_idle_function *idle_function, void *user_data,
 	enum Event_dispatcher_idle_priority priority)
 /*******************************************************************************
@@ -2041,7 +2031,7 @@ DESCRIPTION :
 #else /* defined (USE_XTAPP_CONTEXT) */
 		idle_callback = CREATE(Event_dispatcher_idle_callback)(
 			idle_function, user_data, priority);
-		if (idle_callback != NULL) 
+		if (idle_callback != NULL)
 		{
 			REACCESS(Event_dispatcher_idle_callback)(
 				&event_dispatcher->special_idle_callback, idle_callback);
@@ -2068,7 +2058,7 @@ DESCRIPTION :
 } /* Event_dispatcher_set_special_idle_callback */
 
 int Event_dispatcher_remove_idle_callback(
-	struct Event_dispatcher *event_dispatcher, 
+	struct Event_dispatcher *event_dispatcher,
 	struct Event_dispatcher_idle_callback *callback_id)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -2150,7 +2140,7 @@ DESCRIPTION :
 		FD_ZERO(&(descriptor_set.read_set));
 		FD_ZERO(&(descriptor_set.write_set));
 		FD_ZERO(&(descriptor_set.error_set));
- 		descriptor_set.max_timeout_ns = -1;
+		descriptor_set.max_timeout_ns = -1;
 		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
 			(Event_dispatcher_descriptor_do_query_callback,
 			&descriptor_set, event_dispatcher->descriptor_list);
@@ -2278,7 +2268,7 @@ DESCRIPTION :
 				}
 				else
 				{
-					if (event_dispatcher->special_idle_callback_pending && 
+					if (event_dispatcher->special_idle_callback_pending &&
 						event_dispatcher->special_idle_callback)
 					{
 						callback_code = (*event_dispatcher->special_idle_callback->idle_function)
@@ -3207,7 +3197,7 @@ Called from glib whenever a socket is ready to read/write.
 	}
 
 	if ((condition & (G_IO_IN | G_IO_HUP)) &&
-	    !fdio->read_data.function)
+		!fdio->read_data.function)
 		fdio->read_source_tag = 0;
 	else if ((condition & G_IO_OUT) &&
 		!fdio->write_data.function)
@@ -3562,7 +3552,7 @@ Called from glib whenever a socket is ready to read/write.
 	}
 
 	if ((condition & (G_IO_IN | G_IO_HUP)) &&
-	    !fdio->read_data.function)
+		!fdio->read_data.function)
 		fdio->read_source_tag = 0;
 	else if ((condition & G_IO_OUT) &&
 		!fdio->write_data.function)

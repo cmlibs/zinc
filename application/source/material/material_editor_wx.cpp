@@ -41,7 +41,6 @@ Widgets for editing a graphical material.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <math.h>
 #define PI 3.1415927
 #define PI_180 (PI/180.0)
@@ -63,7 +62,6 @@ extern "C" {
 #include "graphics/texture.h"
 #include "material/material_editor_wx.h"
 #include "general/message.h"
-}
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_manager_class.hpp"
@@ -95,7 +93,7 @@ deaccess it.
 	int background;
 	/* edit_material is always a local copy of what is passed to the editor */
 	struct Graphical_material *edit_material, *current_material;
-	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_app *graphics_buffer;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct User_interface *user_interface;
 	wxMaterialEditor *wx_material_editor;
@@ -161,10 +159,10 @@ Uses gl to draw a sphere with a lighting source.
 #if defined (OPENGL_API)
 
 		Render_graphics_opengl *renderer =
-			Render_graphics_opengl_create_glbeginend_renderer(material_editor->graphics_buffer);
+			Render_graphics_opengl_create_glbeginend_renderer(Graphics_buffer_app_get_core_buffer(material_editor->graphics_buffer));
 
-		width = Graphics_buffer_get_width(material_editor->graphics_buffer);
-		height = Graphics_buffer_get_height(material_editor->graphics_buffer);
+		width = Graphics_buffer_get_width(Graphics_buffer_app_get_core_buffer(material_editor->graphics_buffer));
+		height = Graphics_buffer_get_height(Graphics_buffer_app_get_core_buffer(material_editor->graphics_buffer));
 		glViewport(0, 0, width, height);
 		glGetDoublev(GL_VIEWPORT,viewport_size);
 		glClearColor(0.0,0.0,0.0,0.0);
@@ -344,7 +342,7 @@ Updates the picture with the changed material.
 	return (return_code);
 } /* material_editor_update_picture */
 
-static void material_editor_expose_picture_callback(struct Graphics_buffer *graphics_buffer,
+static void material_editor_expose_picture_callback(struct Graphics_buffer_app *graphics_buffer,
 	void *dummy_void, void *material_editor_void)
 /*******************************************************************************
 LAST MODIFIED : 27 Nov 2007
@@ -405,7 +403,7 @@ Destroys the <*material_editor_address> and sets
 	return (return_code);
 } /* DESTROY(Material_editor) */
 
-static void material_editor_change_background(struct Graphics_buffer *graphics_buffer,
+static void material_editor_change_background(struct Graphics_buffer_app *graphics_buffer,
 	struct Graphics_buffer_input *input, void *material_editor_void)
 /*******************************************************************************
 LAST MODIFIED : 27 Nov 2007
@@ -1034,7 +1032,7 @@ current material.
 } /* Materia_editor_material_change */
 
 int Material_editor_build_widgets(struct Material_editor *material_editor,
-	struct Graphics_buffer_package *graphics_buffer_package)
+	struct Graphics_buffer_app_package *graphics_buffer_package)
 {
 	struct Graphical_material *temp_material;
 	int init_widgets, return_code = 1;
@@ -1095,7 +1093,7 @@ int Material_editor_build_widgets(struct Material_editor *material_editor,
 							 GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
 							 GRAPHICS_BUFFER_ANY_STEREO_MODE,
 							 /*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
-							 /*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer *)NULL)))
+							 /*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer_app *)NULL)))
 			{
 				 display_message(ERROR_MESSAGE,
 						"CREATE(Material_editor).  Could not create 3d widget.");
@@ -1167,7 +1165,7 @@ int Material_editor_remove_widgets(struct Material_editor *material_editor)
 		}
 		if (material_editor->graphics_buffer)
 		{
-			DESTROY(Graphics_buffer)(&(material_editor->graphics_buffer));
+			DESTROY(Graphics_buffer_app)(&(material_editor->graphics_buffer));
 		}
 		if (material_editor->material_manager_callback_id)
 		{
@@ -1185,7 +1183,7 @@ int Material_editor_remove_widgets(struct Material_editor *material_editor)
 struct Material_editor *CREATE(Material_editor)(
 	struct Cmiss_region *root_region,
 	struct Cmiss_graphics_module *graphics_module,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphics_buffer_app_package *graphics_buffer_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
@@ -1210,7 +1208,7 @@ Creates a Material_editor.
 						graphics_module);
 				material_editor->graphics_module = Cmiss_graphics_module_access(graphics_module);
 				material_editor->root_region = Cmiss_region_access(root_region);
-				material_editor->graphics_buffer = (struct Graphics_buffer *)NULL;
+				material_editor->graphics_buffer = (struct Graphics_buffer_app *)NULL;
 				material_editor->current_material=(struct Graphical_material *)NULL;
 				material_editor->edit_material=(struct Graphical_material *)NULL;
 				material_editor->user_interface = user_interface;
@@ -1422,7 +1420,7 @@ int material_editor_bring_up_editor(
 	struct Material_editor **material_editor_address,
 	struct Cmiss_region *root_region,
 	struct Cmiss_graphics_module *graphics_module,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphics_buffer_app_package *graphics_buffer_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 10 Jan 2008

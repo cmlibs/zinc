@@ -133,6 +133,7 @@ interest and set scene_viewer values directly.
 #include "graphics/light_app.h"
 #include "graphics/light_model_app.h"
 #include "three_d_drawing/graphics_buffer_app.h"
+#include "graphics/scene_viewer_app.h"
 
 /*
 Module constants
@@ -168,7 +169,7 @@ Contains information for a graphics window.
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	int manager_change_status;
 
-	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Graphics_buffer_app_package *graphics_buffer_package;
 #if defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
 #if GTK_MAJOR_VERSION >= 2
@@ -3111,7 +3112,7 @@ struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	enum Graphics_window_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphics_buffer_app_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -3143,7 +3144,7 @@ it.
 	int ortho_front_axis,ortho_up_axis;
 #endif /*(WX_USER_INTERFACE) */
 	int pane_no;
-	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_app *graphics_buffer;
 	struct Graphics_window *window=NULL;
 
 	ENTER(create_graphics_window);
@@ -3600,7 +3601,6 @@ it.
 				 (void *)window);
 			Graphics_window_update_time_settings_wx(window, (void *)NULL);
 
-			USE_PARAMETER(graphics_buffer);
 			USE_PARAMETER(add_interactive_tool_to_wx_toolbar);
 
 			/* make sure the first scene_viewer shows */
@@ -3610,7 +3610,7 @@ it.
 					graphics_buffer_package,
 					window->panel, graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-					minimum_accumulation_buffer_depth, (Graphics_buffer *)NULL);
+					minimum_accumulation_buffer_depth, (Graphics_buffer_app *)NULL);
 				 if (graphics_buffer)
 				 {
 						/* create one Scene_viewers */
@@ -3620,7 +3620,7 @@ it.
 									window->number_of_scene_viewers))
 						{
 							 pane_no = 0;
-							 window->scene_viewer_array[pane_no] = CREATE(Scene_viewer)(graphics_buffer,
+							 window->scene_viewer_array[pane_no] = CREATE(Scene_viewer)(Graphics_buffer_app_get_core_buffer(graphics_buffer),
 								background_colour, light_manager,default_light, light_model_manager,
 								default_light_model, scene_manager, window->scene);
 							 if (window->scene_viewer_array[pane_no])
@@ -4364,7 +4364,7 @@ Sets the layout mode in effect on the <window>.
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int perturb_lines;
 	struct Colour background_colour;
-	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_app *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
 	unsigned int transparency_layers;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -4425,12 +4425,12 @@ Sets the layout mode in effect on the <window>.
 					graphics_buffer = create_Graphics_buffer_wx(window->graphics_buffer_package,
 						current_panel, GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16,
-						/*minimum_accumulation_buffer_depth*/0, Scene_viewer_get_graphics_buffer(first_scene_viewer));
+						/*minimum_accumulation_buffer_depth*/0, /*buffer_to_match*/0);
 					if (graphics_buffer)
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
 						window->scene_viewer_array[pane_no]=
-							CREATE(Scene_viewer)(graphics_buffer,&background_colour,window->light_manager,
+							CREATE(Scene_viewer)(Graphics_buffer_app_get_core_buffer(graphics_buffer),&background_colour,window->light_manager,
 								window->default_light, window->light_model_manager,window->default_light_model,
 								window->scene_manager,window->scene);
 						if (window->scene_viewer_array[pane_no])
@@ -5396,7 +5396,7 @@ graphics window on screen.
 #if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
 	int multisample_framebuffer_flag = 0;
 #endif
-	struct Graphics_buffer *offscreen_buffer;
+	struct Graphics_buffer_app *offscreen_buffer;
 	struct Scene_viewer *scene_viewer;
 #if defined (SGI)
 /* The Octane can only handle 1024 */
@@ -5431,7 +5431,7 @@ graphics window on screen.
 		/* If working offscreen try and allocate as large an area as possible */
 		if (!force_onscreen)
 		{
-			offscreen_buffer = (struct Graphics_buffer *)NULL;
+			offscreen_buffer = (struct Graphics_buffer_app *)NULL;
 #define PANE_BORDER (2)
 			switch (window->layout_mode)
 			{
@@ -5526,8 +5526,8 @@ graphics window on screen.
 #endif /* (WX_USER_INTERFACE) */
 			/*offscreen_buffer currently does not work well with Windows */
 			if (!(offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
-				  tile_width, tile_height, Scene_viewer_get_graphics_buffer(
-				  Graphics_window_get_Scene_viewer(window,/*pane*/0)))))
+				  tile_width, tile_height, /*buffer_to_match*//*Scene_viewer_get_graphics_buffer(
+				  Graphics_window_get_Scene_viewer(window,pane0))*/0)))
 			{
 				force_onscreen = 1;
 			}
@@ -5535,7 +5535,7 @@ graphics window on screen.
 		if (!force_onscreen)
 		{
 			if (GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE ==
-				Graphics_buffer_get_type(offscreen_buffer))
+				Graphics_buffer_get_type(Graphics_buffer_app_get_core_buffer(offscreen_buffer)))
 			{
 				for (pane = 0 ; pane < number_of_panes ; pane++)
 				{
@@ -5550,7 +5550,7 @@ graphics window on screen.
 			{
 				return_code = 1;
 				Graphics_buffer_make_current(offscreen_buffer);
-				if (Graphics_buffer_get_type(offscreen_buffer) ==
+				if (Graphics_buffer_get_type(Graphics_buffer_app_get_core_buffer(offscreen_buffer)) ==
 					GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 				{
 					if (antialias > 1)
@@ -5635,7 +5635,7 @@ graphics window on screen.
 									viewport_left, viewport_top,
 									viewport_pixels_per_x, viewport_pixels_per_y);
 							}
-							if (Graphics_buffer_get_type(offscreen_buffer) ==
+							if (Graphics_buffer_get_type(Graphics_buffer_app_get_core_buffer(offscreen_buffer)) ==
 								GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE )
 							{
 #if !defined (USE_MSAA)
@@ -5676,7 +5676,7 @@ graphics window on screen.
 									patch_height = pane_height - tile_height * (tiles_down - 1);
 								}
 
-								if (Graphics_buffer_get_type(offscreen_buffer) ==
+								if (Graphics_buffer_get_type(Graphics_buffer_app_get_core_buffer(offscreen_buffer)) ==
 									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 								{
 #if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
@@ -5691,7 +5691,7 @@ graphics window on screen.
 										(j * tile_height + (panes_down - 1 - pane_j) * (pane_height + PANE_BORDER))
 										* frame_width) * number_of_components,
 									patch_width, patch_height, storage, /*front_buffer*/0);
-								if (Graphics_buffer_get_type(offscreen_buffer) ==
+								if (Graphics_buffer_get_type(Graphics_buffer_app_get_core_buffer(offscreen_buffer)) ==
 									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 								{
 #if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
@@ -5728,7 +5728,7 @@ graphics window on screen.
 				return_code=0;
 			}
 
-			DESTROY(Graphics_buffer)(&offscreen_buffer);
+			DESTROY(Graphics_buffer_app)(&offscreen_buffer);
 		}
 		else
 		{

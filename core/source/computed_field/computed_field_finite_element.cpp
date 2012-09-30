@@ -65,8 +65,8 @@ Implements a number of basic component wise operations on computed fields.
 #if defined (DEBUG_CODE)
 /* SAB This field is useful for debugging when things don't clean up properly
 	but has to be used carefully, especially as operations such as caching
-	accesses the node or element being considered so you get effects like 
-	the first point evaluated in an element having a count one less than 
+	accesses the node or element being considered so you get effects like
+	the first point evaluated in an element having a count one less than
 	all the others */
 #define COMPUTED_FIELD_ACCESS_COUNT
 #endif /* defined (DEBUG_CODE) */
@@ -264,7 +264,7 @@ public:
 
 };
 
-char computed_field_finite_element_type_string[] = "finite_element";
+const char computed_field_finite_element_type_string[] = "finite_element";
 
 class Computed_field_finite_element : public Computed_field_core
 {
@@ -1191,7 +1191,7 @@ inline Computed_field_finite_element *Computed_field_finite_element_core_cast(
 		reinterpret_cast<Computed_field*>(finite_element_field)->core));
 }
 
-static struct Computed_field *Computed_field_create_finite_element_internal(
+struct Computed_field *Computed_field_create_finite_element_internal(
 	struct Cmiss_field_module *field_module, struct FE_field *fe_field)
 {
 	char **component_names;
@@ -1480,7 +1480,7 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 
 namespace {
 
-char computed_field_cmiss_number_type_string[] = "cmiss_number";
+const char computed_field_cmiss_number_type_string[] = "cmiss_number";
 
 class Computed_field_cmiss_number : public Computed_field_core
 {
@@ -1658,7 +1658,7 @@ struct Computed_field *Computed_field_create_cmiss_number(
 #if defined (COMPUTED_FIELD_ACCESS_COUNT)
 namespace {
 
-char computed_field_access_count_type_string[] = "access_count";
+const char computed_field_access_count_type_string[] = "access_count";
 
 class Computed_field_access_count : public Computed_field_core
 {
@@ -1778,7 +1778,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 /*****************************************************************************//**
  * Creates a field which returns the element or node access count as its value.
- * 
+ *
  * @experimental
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
@@ -1800,7 +1800,7 @@ struct Computed_field *Computed_field_create_access_count(
 
 namespace {
 
-char computed_field_node_value_type_string[] = "node_value";
+const char computed_field_node_value_type_string[] = "node_value";
 
 class Computed_field_node_value : public Computed_field_core
 {
@@ -1821,7 +1821,7 @@ public:
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field);
 		ACCESS(FE_field)(fe_field);
 	};
-			
+
 	virtual ~Computed_field_node_value();
 
 	virtual void inherit_source_field_attributes()
@@ -1832,7 +1832,7 @@ public:
 				get_FE_field_coordinate_system(fe_field));
 		}
 	}
-			
+
 private:
 	Computed_field_core *copy();
 
@@ -2335,7 +2335,7 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 
 namespace {
 
-char computed_field_embedded_type_string[] = "embedded";
+const char computed_field_embedded_type_string[] = "embedded";
 
 class Computed_field_embedded : public Computed_field_core
 {
@@ -2526,7 +2526,7 @@ int Computed_field_get_type_embedded(struct Computed_field *field,
 
 namespace {
 
-char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
+const char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
 
 class Computed_field_find_mesh_location : public Computed_field_core
 {
@@ -2807,22 +2807,22 @@ Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
 class Cmiss_field_find_mesh_location_search_mode_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_find_mesh_location_search_mode mode)
-    {
-    	const char *enum_string = 0;
-    	switch (mode)
-    	{
-    		case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
-    			enum_string = "FIND_EXACT";
-    			break;
-    		case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
-    			enum_string = "FIND_NEAREST";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_find_mesh_location_search_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+			case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
+				enum_string = "FIND_EXACT";
+				break;
+			case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
+				enum_string = "FIND_NEAREST";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_find_mesh_location_search_mode
@@ -2866,7 +2866,7 @@ int Cmiss_field_find_mesh_location_set_search_mode(
 
 namespace {
 
-char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
+const char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
 class Computed_field_xi_coordinates : public Computed_field_core
 {
@@ -3062,7 +3062,7 @@ struct Computed_field *Computed_field_create_xi_coordinates(
 
 namespace {
 
-char computed_field_basis_derivative_type_string[] = "basis_derivative";
+const char computed_field_basis_derivative_type_string[] = "basis_derivative";
 
 class Computed_field_basis_derivative : public Computed_field_core
 {
@@ -3314,7 +3314,7 @@ DESCRIPTION :
 		return_code=GET_NAME(FE_field)(fe_field,&field_name);
 		if (return_code)
 		{
-			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);			
+			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			display_message(INFORMATION_MESSAGE,"    order : %d\n",order);
 			display_message(INFORMATION_MESSAGE,"    xi_indices : ");
 			for (i=0;i<order;i++)
@@ -3323,7 +3323,7 @@ DESCRIPTION :
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
 
-			DEALLOCATE(field_name);					 
+			DEALLOCATE(field_name);
 		}
 		return_code = 1;
 	}
@@ -3425,10 +3425,10 @@ Returns true if <field> has the appropriate static type string.
 
 /*****************************************************************************//**
  * Creates a field giving arbitrary order derivatives of a finite element field.
- * Modifies the calculated monomial coefficients by differentiating them wrt 
+ * Modifies the calculated monomial coefficients by differentiating them wrt
  * to the xi directions in accordance with the vector of <xi_indices> which is
  * length <order>.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param fe_field  FE_field to return derivatives w.r.t. xi for.
  * @param order  The order of the derivatives.
@@ -3501,7 +3501,7 @@ Cmiss_field_id Cmiss_field_module_create_basis_derivative(
 /***************************************************************************//**
  * Ensures there is an up-to-date computed field wrapper for <fe_field>.
  * @param fe_field  Field to wrap.
- * @param field_change_data_void FE_field_to_Computed_field_change_data. 
+ * @param field_change_data_void FE_field_to_Computed_field_change_data.
  */
 int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	int change, void *region_void)
@@ -4053,7 +4053,7 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 				 {
 						display_message(ERROR_MESSAGE,
 							 "Computed_field_get_FE_node_field_FE_time_sequence. None or"
-							 "more than one FE element field is used to define this" 
+							 "more than one FE element field is used to define this"
 							 "computed field, this function expects only one finite element"
 							 "field at the corresponding node otherwise it may contain more than"
 							 "one time sequence./n");

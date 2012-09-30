@@ -238,6 +238,10 @@ display lists. To switch to direct rendering this routine should just call
 direct_render_Light_model.
 ==============================================================================*/
 
+int Light_model_set_status(struct Light_model *light_model,int enabled);
+
+const char *Light_model_get_name(struct Light_model *light_model);
+
 #if defined __cplusplus
 class Render_graphics_opengl;
 

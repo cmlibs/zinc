@@ -41,5 +41,9 @@
 #if !defined (CMISS_MINIMISE_INTERNAL_H)
 #define CMISS_MINIMISE_INTERNAL_H
 
+#include "api/cmiss_optimisation.h"
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_optimisation_method);
+
 #endif /* !defined (CMISS_MINIMISE_INTERNAL_H) */
 

@@ -200,7 +200,7 @@ public:
 
 	template <class value_type> int get_vertex_buffer(
 		Graphics_vertex_array_attribute_type vertex_buffer_type,
-		value_type **vertex_buffer, unsigned int *values_per_vertex, 
+		value_type **vertex_buffer, unsigned int *values_per_vertex,
 		unsigned int *vertex_count);
 };
 
@@ -411,8 +411,8 @@ from the conditional_function causes the primitive to be removed. \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-	 		"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
-	 		#primitive_type ").  Invalid arguments"); \
+			"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+			#primitive_type ").  Invalid arguments"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
@@ -517,8 +517,8 @@ conditional_function. \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-	 		"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
-	 		#primitive_type ").  Invalid arguments"); \
+			"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+			#primitive_type ").  Invalid arguments"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
@@ -646,6 +646,10 @@ from the conditional_function causes the primitive to be removed.
 Global functions
 ----------------
 */
+const char *GT_object_get_name(struct GT_object *gt_object)
+{
+	return gt_object->name;
+}
 
 enum GT_object_type GT_object_get_type(struct GT_object *gt_object)
 /*******************************************************************************
@@ -666,7 +670,7 @@ Returns the object type from the gt_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_get_type.  Invalid argument(s)");
-		type = g_OBJECT_TYPE_INVALID; 
+		type = g_OBJECT_TYPE_INVALID;
 	}
 	LEAVE;
 
@@ -1562,7 +1566,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 					display_message(ERROR_MESSAGE,
 						"morph_GT_pointset.  Could not allocate normals");
 					DEALLOCATE(point);
-				}				
+				}
 			}
 			if (point)
 			{
@@ -1727,7 +1731,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					display_message(ERROR_MESSAGE,
 						"morph_GT_pointset.  Could not allocate normals");
 					DEALLOCATE(point);
-				}				
+				}
 			}
 			else
 			{
@@ -1755,7 +1759,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					{
 						DEALLOCATE(normallist);
 					}
-				}				
+				}
 			}
 			else
 			{
@@ -2139,7 +2143,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				DEALLOCATE(point);
 			}
 		}
-	  	else
+		else
 		{
 			normallist = (Triple *)NULL;
 		}
@@ -2166,7 +2170,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				}
 			}
 		}
-	  	else
+		else
 		{
 			tangentlist = (Triple *)NULL;
 		}
@@ -2197,7 +2201,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					{
 						DEALLOCATE(tangentlist);
 					}
-				}				
+				}
 			}
 			else
 			{
@@ -2427,7 +2431,7 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 				glyph_set->font = (Graphics_font *)NULL;
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
- 			glyph_set->data = data;
+			glyph_set->data = data;
 			glyph_set->label_bounds_dimension = label_bounds_dimension;
 			glyph_set->label_bounds_components = label_bounds_components;
 			glyph_set->label_bounds = label_bounds;
@@ -2709,7 +2713,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 int GT_nurbs_set_surface(struct GT_nurbs *nurbs,
 	int sorder, int torder, int sknotcount, int tknotcount,
-	double *sknots, double *tknots, 
+	double *sknots, double *tknots,
 	int scontrolcount, int tcontrolcount, double *control_points)
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
@@ -2777,7 +2781,7 @@ The arrays are assigned directly to the object and not copied.
 	int return_code;
 
 	ENTER(GT_nurbs_set_nurb_trim_curve);
-	if (nurbs && (order > 0) && (knotcount > 0) && knots 
+	if (nurbs && (order > 0) && (knotcount > 0) && knots
 		&& (control_count > 0) && control_points)
 	{
 		if(nurbs->cknots)
@@ -3169,7 +3173,7 @@ LAST MODIFIED : 18 June 2004
 
 DESCRIPTION :
 SAB Added to allow GT_pointset to be hidden but should be replaced.
-Gets the <number_of_points> and the <positions> of those points into the 
+Gets the <number_of_points> and the <positions> of those points into the
 <pointset> object.  The <positions> pointer is copied directly from the internal
 storage.
 ==============================================================================*/
@@ -3201,7 +3205,7 @@ LAST MODIFIED : 18 June 2004
 
 DESCRIPTION :
 SAB Added to allow GT_pointset to be hidden but should be replaced.
-Sets the <number_of_points> and the <positions> of those points into the 
+Sets the <number_of_points> and the <positions> of those points into the
 <pointset> object.  The <positions> pointer is copied directly overwriting the
 current storage and the internal data, text and names arrays are messed up.
 ==============================================================================*/
@@ -3564,7 +3568,7 @@ Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 struct GT_voltex *CREATE(GT_voltex)(
 	int number_of_vertices, struct VT_iso_vertex **vertex_list,
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int n_data_components, int n_texture_coordinates, 
+	int n_data_components, int n_texture_coordinates,
 	enum GT_voltex_type voltex_type)
 /*******************************************************************************
 LAST MODIFIED : 17 February 2006
@@ -3993,7 +3997,7 @@ and sets <*object> to NULL.
 			if (object->multipass_vertex_buffer_object)
 			{
 				glDeleteBuffers(1, &object->multipass_vertex_buffer_object);
-			}			
+			}
 			if (object->multipass_frame_buffer_object)
 			{
 #if defined GL_EXT_framebuffer_object
@@ -4146,7 +4150,7 @@ change to any material in use in the linked graphics objects.
 					(graphics_object->secondary_material))
 				{
 					/* vertex positions are calculated from the secondary material so need to be updated */
-					graphics_object->compile_status = GRAPHICS_NOT_COMPILED;					
+					graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
 				}
 				else
 				{
@@ -4216,7 +4220,7 @@ change to any spectrum in use in the linked graphics objects.
 	return (return_code);
 } /* GT_object_Spectrum_change */
 
-int GT_object_add_callback(struct GT_object *graphics_object, 
+int GT_object_add_callback(struct GT_object *graphics_object,
 	Graphics_object_callback callback, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 13 October 1998
@@ -4308,7 +4312,7 @@ Removes a callback which was added previously
 				{
 					previous->next = callback_data->next;
 					DEALLOCATE(callback_data);
-					return_code = 1;		
+					return_code = 1;
 				}
 			}
 			if (!return_code)
@@ -5692,7 +5696,7 @@ int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 	struct GT_object *graphics_object, struct GT_polyline_vertex_buffers *primitive)
 {
 	int return_code = 0;
-	
+
 	if (graphics_object && !graphics_object->primitive_lists)
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
@@ -6093,7 +6097,7 @@ DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
 /***************************************************************************//**
  * Merge the vertices from <voltex> into <existing_voltex>. These can be the
  * same voltex in which case shared vertices will be merged.
- * 
+ *
  * @param vertex_radius_tolerance  Absolute radius within which two vertices
  * are merged into one. Previous version had constant = 0.001.
  */
@@ -6103,7 +6107,7 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 	int i, j, k, number_of_triangles, return_code, vertex_count;
 	struct Octree_object *neighbour, *octree_vertex;
 	struct LIST(Octree_object) *neighbours;
-	struct VT_iso_vertex *existing_vertex, *vertex; 
+	struct VT_iso_vertex *existing_vertex, *vertex;
 	FE_value coordinates[3];
 
 	ENTER(GT_voltex_merge_GT_voltex);
@@ -6117,8 +6121,8 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 	else
 	{
 		vertex_count = existing_voltex->number_of_vertices;
-		REALLOCATE(existing_voltex->vertex_list, 
-			existing_voltex->vertex_list, struct VT_iso_vertex *, 
+		REALLOCATE(existing_voltex->vertex_list,
+			existing_voltex->vertex_list, struct VT_iso_vertex *,
 			vertex_count + voltex->number_of_vertices);
 	}
 	for (i = 0 ; i < voltex->number_of_vertices ; i++)
@@ -6200,8 +6204,8 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 	/* Update triangle pointers */
 	if (existing_voltex != voltex)
 	{
-		REALLOCATE(existing_voltex->triangle_list, 
-			existing_voltex->triangle_list, struct VT_iso_triangle *, 
+		REALLOCATE(existing_voltex->triangle_list,
+			existing_voltex->triangle_list, struct VT_iso_triangle *,
 			existing_voltex->number_of_triangles + voltex->number_of_triangles);
 		for (i = 0 ; i < voltex->number_of_triangles ; i++)
 		{
@@ -6216,8 +6220,8 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 		voltex->number_of_triangles = 0;
 		DEALLOCATE(voltex->triangle_list);
 	}
-	REALLOCATE(existing_voltex->vertex_list, 
-		existing_voltex->vertex_list, struct VT_iso_vertex *, 
+	REALLOCATE(existing_voltex->vertex_list,
+		existing_voltex->vertex_list, struct VT_iso_vertex *,
 		vertex_count);
 	existing_voltex->number_of_vertices = vertex_count;
 	DESTROY(LIST(Octree_object))(&neighbours);
@@ -6234,8 +6238,8 @@ LAST MODIFIED : 26 October 2005
 
 DESCRIPTION :
 If <graphics_object> does not already contain a GT_voltex then the <voltex> is
-added in the normal way.  If a GT_voltex is already contained in the 
-<graphics_object> then the new <voltex> is merged into the existing one and 
+added in the normal way.  If a GT_voltex is already contained in the
+<graphics_object> then the new <voltex> is merged into the existing one and
 any co-located vertices are merged, stitching the two voltexes together.
 ==============================================================================*/
 {
@@ -6253,7 +6257,7 @@ any co-located vertices are merged, stitching the two voltexes together.
 				existing_voltex = graphics_object->primitive_lists[time_number - 1].
 					gt_voltex.first;
 				return_code = GT_voltex_merge_GT_voltex(existing_voltex,
- 					voltex, /*vertex_radius_tolerance*/0.001f);
+					voltex, /*vertex_radius_tolerance*/0.001f);
 				DESTROY(GT_voltex)(&voltex);
 			}
 			else
@@ -6340,7 +6344,7 @@ static int GT_voltex_normalise_normals(struct GT_voltex *voltex)
 LAST MODIFIED : 28 October 2005
 
 DESCRIPTION :
-If a GT_voltex is contained in the <graphics_object> then normals are 
+If a GT_voltex is contained in the <graphics_object> then normals are
 calculated for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 {
@@ -6370,7 +6374,7 @@ int GT_object_normalise_GT_voltex_normals(struct GT_object *graphics_object)
 LAST MODIFIED : 28 October 2005
 
 DESCRIPTION :
-If a GT_voltex is contained in the <graphics_object> then normals are 
+If a GT_voltex is contained in the <graphics_object> then normals are
 normalised for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 {
@@ -6557,7 +6561,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		}
 	}
 	LEAVE;
-	
+
 	return (voltex);
 }
 
@@ -6635,7 +6639,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 			"GT_surface_create_from_GT_voltex.  Invalid argument(s)");
 	}
 	LEAVE;
-	
+
 	return (surface);
 }
 
@@ -6670,7 +6674,7 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 				{
 					vertex_radius_tolerance = 0.1*threshold_distance;
 				}
-			
+
 				GT_surface *old_surface =
 					graphics_object->primitive_lists[time_number - 1].gt_surface.first;
 				GT_voltex *voltex = GT_voltex_create_from_GT_surface(old_surface);
@@ -6839,7 +6843,7 @@ LAST MODIFIED : 19 September 2005
 
 DESCRIPTION :
 Gets the glyph_labels_function of the <graphics_object>.
-This function enables a custom, per compile, labelling for a graphics object 
+This function enables a custom, per compile, labelling for a graphics object
 ==============================================================================*/
 {
 	Graphics_object_glyph_labels_function glyph_labels_function;
@@ -6867,7 +6871,7 @@ LAST MODIFIED : 19 September 2005
 
 DESCRIPTION :
 Sets the glyph_labels_function of the <graphics_object>.
-This function enables a custom, per compile, labelling for a graphics object 
+This function enables a custom, per compile, labelling for a graphics object
 ==============================================================================*/
 {
 	int return_code;
@@ -7374,7 +7378,7 @@ Frees the memory for <**context> and sets <*context> to NULL.
 /*****************************************************************************//**
  * Creates a new Graphics_vertex_buffer.  Initially no memory is allocated
  * and no vertices stored.
- * 
+ *
  * @param type  Determines the format of this vertex buffers.
  * @return Newly created buffer.
 */
@@ -7384,7 +7388,7 @@ struct Graphics_vertex_buffer *
   unsigned int values_per_vertex)
 {
 	struct Graphics_vertex_buffer *buffer;
-	
+
 	if (ALLOCATE(buffer, struct Graphics_vertex_buffer, 1))
 	{
 		buffer->type = type;
@@ -7405,7 +7409,7 @@ struct Graphics_vertex_buffer *
 
 /*****************************************************************************//**
  * Destroys a Graphics_vertex_buffer.
- * 
+ *
  * @param buffer_address  Pointer to a buffer to be destroyed.
  * @return return_code. 1 for Success, 0 for failure.
 */
@@ -7451,7 +7455,7 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 		} break;
 	}
 	buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
-  		 (vertex_buffer_type, buffer_list);
+		 (vertex_buffer_type, buffer_list);
 	if (buffer)
 	{
 		if (buffer->values_per_vertex != values_per_vertex)
@@ -7469,12 +7473,12 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 				buffer_list))
 			{
 				DESTROY(Graphics_vertex_buffer)(&buffer);
-			}	
+			}
 		}
-	}	
+	}
 	return (buffer);
 }
-	
+
 Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer_for_attribute(
 	Graphics_vertex_array_attribute_type vertex_type)
 {
@@ -7484,16 +7488,16 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer_for_at
    switch (type)
    {
 		case GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS:
-    	{
-    		vertex_buffer_type = vertex_type;
-    	} break;
-    }
+		{
+			vertex_buffer_type = vertex_type;
+		} break;
+	}
 	buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
 		(vertex_buffer_type, buffer_list);
 
 	return (buffer);
 }
-	
+
 Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer(
 	Graphics_vertex_array_attribute_type vertex_type)
 {
@@ -7511,7 +7515,7 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 {
 	int return_code = 1;
 	Graphics_vertex_buffer *buffer;
-	
+
 	buffer = get_or_create_vertex_buffer(vertex_type, values_per_vertex);
 	if (buffer)
 	{
@@ -7567,7 +7571,7 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 			"Unable to create buffer.");
 		return_code = 0;
 	}
-	
+
 	return (return_code);
 }
 
@@ -7607,7 +7611,7 @@ template <class value_type> int Graphics_vertex_array_internal::get_attribute(
 
 template <class value_type> int Graphics_vertex_array_internal::get_vertex_buffer(
 		Graphics_vertex_array_attribute_type vertex_buffer_type,
-		value_type **vertex_buffer, unsigned int *values_per_vertex, 
+		value_type **vertex_buffer, unsigned int *values_per_vertex,
 		unsigned int *vertex_count)
 {
 	Graphics_vertex_buffer *buffer;
@@ -7671,7 +7675,7 @@ int Graphics_vertex_array::add_float_attribute(
 
 int Graphics_vertex_array::get_float_vertex_buffer(
 		Graphics_vertex_array_attribute_type vertex_buffer_type,
-		GLfloat **vertex_buffer, unsigned int *values_per_vertex, 
+		GLfloat **vertex_buffer, unsigned int *values_per_vertex,
 		unsigned int *vertex_count)
 {
 	return internal->get_vertex_buffer(vertex_buffer_type,
@@ -7716,7 +7720,7 @@ int Graphics_vertex_array::get_integer_attribute(
 		unsigned int number_of_values, int *values)
 {
 	return internal->get_attribute(vertex_type,
-		vertex_index, number_of_values, values);	
+		vertex_index, number_of_values, values);
 }
 
 unsigned int Graphics_vertex_array::get_number_of_vertices(
@@ -7741,7 +7745,7 @@ unsigned int Graphics_vertex_array::get_number_of_vertices(
  * Resets the number of vertices defined in the buffer to zero.  Does not actually
  * reset the allocated memory to zero as it is anticipated that the buffer will
  * recreated.
- * 
+ *
  * @param buffer  Buffer to be cleared.
  * @return return_code. 1 for Success, 0 for failure.
 */
@@ -7750,7 +7754,7 @@ int Graphics_vertex_buffer_clear(
 {
 	int return_code;
 	USE_PARAMETER(user_data_dummy);
-	
+
 	if (buffer)
 	{
 		buffer->vertex_count = 0;

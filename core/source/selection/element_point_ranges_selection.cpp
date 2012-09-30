@@ -44,12 +44,10 @@ highlighting.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 
-//-- extern "C" {
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "selection/element_point_ranges_selection.h"
 #include "general/message.h"
-//-- }
 
 /*
 Module types

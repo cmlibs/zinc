@@ -49,10 +49,12 @@ Wraps itk::ThresholdImageFilter
 
 struct Computed_field *Cmiss_field_module_create_threshold_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, 
-	enum General_threshold_filter_mode threshold_mode, 
+	struct Computed_field *source_field,
+	enum General_threshold_filter_mode threshold_mode,
 	double outside_value, double below_value, double above_value);
 
 Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
 
 #endif /* !defined (COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H) */

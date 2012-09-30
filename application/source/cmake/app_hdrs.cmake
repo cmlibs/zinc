@@ -1,5 +1,17 @@
 
 SET(APP_HDRS
+source/mesh/cmiss_element_private_app.hpp
+source/computed_field/computed_field_image_app.h
+source/computed_field/computed_field_integration_app.h
+source/computed_field/computed_field_alias_app.h
+source/computed_field/computed_field_coordinate_app.h
+source/finite_element/finite_element_app.h
+source/finite_element/finite_element_app.h
+source/graphics/graphic_app.h
+source/graphics/rendition_app.h
+source/general/geometry_app.h
+source/general/enumerator_private_app.h
+source/general/enumerator_app.h
 source/computed_field/computed_field_private_app.hpp
 source/three_d_drawing/graphics_buffer_app.h
 source/image_processing/computed_field_sigmoid_image_filter_app.h

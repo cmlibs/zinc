@@ -53,6 +53,7 @@ quadratic Lagrange, cubic Lagrange.
 #include <stdio.h>
 
 #include "curve/curve.h"
+#include "general/enumerator_private.hpp"
 #include "general/object.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -63,7 +64,6 @@ quadratic Lagrange, cubic Lagrange.
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-#include "general/enumerator_private.hpp"
 
 /*
 Global curves
@@ -73,45 +73,6 @@ Global curves
 Module types
 ------------
 */
-
-struct Curve
-/*******************************************************************************
-LAST MODIFIED : 22 November 1999
-
-DESCRIPTION :
-Stores a function returning a number or N-vector over a range of parameters.
-This structure is private; use functions to access its contents.
-It is designed to be flexible rather than fast.
-==============================================================================*/
-{
-	const char *name;
-	enum FE_basis_type fe_basis_type;
-	int number_of_components;
-	enum Curve_extend_mode extend_mode;
-	enum Curve_type type;
-	int value_nodes_per_element,value_derivatives_per_node;
-
-	/* each Curve is represented by fields in a private region */
-	struct Cmiss_region *region;
-	struct FE_region *fe_region;
-	struct FE_field *parameter_field,*value_field;
-	struct FE_node *template_node;
-	struct FE_element *template_element;
-
-	/* information useful for editing Curve */
-	FE_value *max_value,*min_value;
-	FE_value parameter_grid,value_grid;
-
-	/* cache for rapid parameter look-up */
-	FE_value *parameter_table;
-	int parameter_table_size;
-
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Curve) *manager;
-	int manager_change_status;
-
-	int access_count;
-}; /* struct Curve */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Curve);
 
@@ -466,7 +427,7 @@ but it is at least destroyable when returned from this function.
 
 			curve->parameter_table=(FE_value *)NULL;
 			curve->parameter_table_size=0;
-			
+
 			/* manager and status must only be modified by manager functions */
 			curve->manager = (struct MANAGER(Curve) *)NULL;
 			curve->manager_change_status = MANAGER_CHANGE_NONE(Curve);
@@ -837,7 +798,7 @@ Lists the contents of the curve.
 	int element_no,i,node_no,number_of_elements,return_code;
 	struct FE_element *element;
 	struct FE_node *node;
-	
+
 	ENTER(cc_list);
 	if (curve)
 	{
@@ -898,7 +859,7 @@ Lists the contents of the curve.
 } /* cc_list */
 #endif /* defined (DEBUG_CODE) */
 
-static int cc_copy_convert_without_name(struct Curve *destination,
+int cc_copy_convert_without_name(struct Curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,
 	struct Curve *source)
 /*******************************************************************************
@@ -1338,7 +1299,7 @@ value will be zero in its initial state.
 					{
 						node_field_creator = CREATE(FE_node_field_creator)(
 							/*number_of_components*/1);
-						FE_node_field_creator_define_derivative(node_field_creator, 
+						FE_node_field_creator_define_derivative(node_field_creator,
 							0, FE_NODAL_D_DS1);
 						if (!define_FE_field_at_node(curve->template_node,
 							curve->parameter_field,(struct FE_time_sequence *)NULL,
@@ -1351,7 +1312,7 @@ value will be zero in its initial state.
 						node_field_creator = CREATE(FE_node_field_creator)(
 							number_of_components);
 						for (i=0;i<number_of_components;i++)
-						{							
+						{
 							for (j=0;i<curve->value_derivatives_per_node;i++)
 							{
 								FE_node_field_creator_define_derivative(
@@ -1718,7 +1679,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Curve,name)
 	int return_code;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name));
-	return_code=0;		
+	return_code=0;
 	if (destination&&source)
 	{
 		/* check not changing number of components while curve is in use */
@@ -4367,22 +4328,6 @@ If there is an element in <curve> defined at <parameter>, returns the
 	return (return_code);
 } /* Curve_find_element_at_parameter */
 
-struct Curve_definition
-/*******************************************************************************
-LAST MODIFIED : 29 November 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *name;
-	enum FE_basis_type fe_basis_type;
-	int fe_basis_type_set;
-	int number_of_components;
-	int number_of_components_set;
-	struct Curve *curve,*curve_to_be_modified;
-	struct IO_stream_package *io_stream_package;
-}; /* struct Curve_definition */
-
 int list_Curve(struct Curve *curve,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
@@ -4521,7 +4466,7 @@ appropriateness to curve usage.
 				return_code=1;
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
 					(node_file=CREATE(IO_stream)(io_stream_package)) &&
-					(IO_stream_open_for_read(node_file, file_name)) && 
+					(IO_stream_open_for_read(node_file, file_name)) &&
 					sprintf(file_name,"%s.curve.exelem",file_name_stem) &&
 					(element_file=CREATE(IO_stream)(io_stream_package)) &&
 					(IO_stream_open_for_read(element_file, file_name)))

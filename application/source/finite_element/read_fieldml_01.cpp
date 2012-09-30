@@ -137,8 +137,8 @@ DESCRIPTION :
 
 	/* FIELDML_LABEL_TYPE_ELEMENT_INTERPOLATION */
 	struct FE_element *element_template;
-	struct LIST(Fieldml_label_name) *element_template_node_index_list;	
-	struct LIST(Fieldml_label_name) *element_template_element_lookup_list;	
+	struct LIST(Fieldml_label_name) *element_template_node_index_list;
+	struct LIST(Fieldml_label_name) *element_template_element_lookup_list;
 
 	/* FIELDML_LABEL_TYPE_ASSIGN_LABELS */
 	char *character_buffer;
@@ -221,7 +221,7 @@ DESCRIPTION :
 	int current_element_field_standard_map_node_index;
 	int current_element_field_standard_map_number_of_values;
 	int *current_element_field_standard_map_indices;
-	
+
 	int current_scale_factor_list_offset;
 	int current_scale_factor_list_size;
 
@@ -236,7 +236,7 @@ PROTOTYPE_LIST_FUNCTIONS(Fieldml_label_name);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Fieldml_label_name,name, \
 	char *);
 
-static struct Fieldml_label_name *CREATE(Fieldml_label_name)(char *name,
+static struct Fieldml_label_name *CREATE(Fieldml_label_name)(const char *name,
 	enum Fieldml_label_type type)
 /*******************************************************************************
 LAST MODIFIED : 24 February 2003
@@ -269,9 +269,9 @@ DESCRIPTION :
 			label_name->current_node_derivative_types =
 				(enum FE_nodal_value_type *)NULL;
 			label_name->element_template = (struct FE_element *)NULL;
-			label_name->element_template_node_index_list = 
+			label_name->element_template_node_index_list =
 				(struct LIST(Fieldml_label_name) *)NULL;
-			label_name->element_template_element_lookup_list = 
+			label_name->element_template_element_lookup_list =
 				(struct LIST(Fieldml_label_name) *)NULL;
 			label_name->character_buffer = (char *)NULL;
 			label_name->access_count = 0;
@@ -431,7 +431,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *component_name, *field_name;
-	enum FE_nodal_value_type derivative_type;	
+	enum FE_nodal_value_type derivative_type;
 	enum Value_type value_type;
 	int bytes_processed, j, k, length, node_number, number_of_components,
 		number_of_values, return_code, version_number;
@@ -478,7 +478,7 @@ DESCRIPTION :
 						number_of_components = get_FE_field_number_of_components(label->field);
 						if (!label->node_field_creator)
 						{
-							fieldml_data->current_node_field_creator = 
+							fieldml_data->current_node_field_creator =
 								CREATE(FE_node_field_creator)(number_of_components);
 						}
 						fieldml_data->current_component_number = 0;
@@ -608,7 +608,7 @@ DESCRIPTION :
 									fieldml_data->current_component_number,
 									FE_NODAL_UNKNOWN);
 							}
-						}				
+						}
 					}
 				}
 			}
@@ -641,7 +641,7 @@ DESCRIPTION :
 						{
 							/* Then define this field on the node */
 							define_FE_field_at_node(fieldml_data->current_node, label->field,
-								(struct FE_time_sequence *)NULL, 
+								(struct FE_time_sequence *)NULL,
 								label->node_field_creator);
 						}
 					}
@@ -653,7 +653,7 @@ DESCRIPTION :
 							{
 								/* Then define this field on the node */
 								define_FE_field_at_node(fieldml_data->current_node, label->field,
-									(struct FE_time_sequence *)NULL, 
+									(struct FE_time_sequence *)NULL,
 									fieldml_data->current_node_field_creator);
 							}
 						}
@@ -669,7 +669,7 @@ DESCRIPTION :
 							/* We no longer require the child fields as they are compiled into
 								the node field creator */
 							DESTROY(LIST(Fieldml_label_name))(&label->child_labels);
-							fieldml_data->current_node_field_creator = 
+							fieldml_data->current_node_field_creator =
 								(struct FE_node_field_creator *)NULL;
 						}
 					}
@@ -880,7 +880,7 @@ DESCRIPTION :
 			"Fieldml_label_name_process_label.  Missing fieldml data.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -968,7 +968,7 @@ DESCRIPTION :
 			"Missing label structures.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -992,7 +992,7 @@ DESCRIPTION :
 		label_type = *((enum Fieldml_label_type *)label_type_address_void);
 		if (label->type == label_type)
 		{
-			return_code = 1;			
+			return_code = 1;
 		}
 		else
 		{
@@ -1006,7 +1006,7 @@ DESCRIPTION :
 			"Missing label structures.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1042,7 +1042,7 @@ DESCRIPTION :
 			"Missing node number pointer.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1150,9 +1150,9 @@ DESCRIPTION :
 				}
 				else
 				{
-					/* If we got down to here then this is the correct label at 
+					/* If we got down to here then this is the correct label at
 						this level and so we always return 1 even if the label isn't
-						found so that the list iterators will not continue to look 
+						found so that the list iterators will not continue to look
 						through the list */
 					number_in_child_labels_one = NUMBER_IN_LIST(Fieldml_label_name)
 						(label->child_labels);
@@ -1196,7 +1196,7 @@ DESCRIPTION :
 			"Missing label structures.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1220,7 +1220,7 @@ DESCRIPTION :
 	{
 		/* Both the elements own list and the immediate children of the
 			elements interpolation are top level to the element */
-		if (label->child_labels && 
+		if (label->child_labels &&
 			(1 == NUMBER_IN_LIST(Fieldml_label_name)(label->child_labels)))
 		{
 			child_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)
@@ -1248,7 +1248,7 @@ DESCRIPTION :
 		{
 			display_message(ERROR_MESSAGE,
 				"Fieldml_label_name_resolve_element_lookup.  "
-				"Only exactly one child permitted in an element lookup.");			
+				"Only exactly one child permitted in an element lookup.");
 		}
 	}
 	else
@@ -1257,7 +1257,7 @@ DESCRIPTION :
 			"Fieldml_label_name_resolve_element_lookup.  "
 			"Missing label or fieldml_data.");
 	}
-	
+
 	LEAVE;
 
 	return(return_label);
@@ -1295,7 +1295,7 @@ DESCRIPTION :
 				Fieldml_label_references_same_value, (void *)label,
 				fieldml_data->element_lookup_list))
 			{
-				/* If we can resolve it now then the values are stored in 
+				/* If we can resolve it now then the values are stored in
 					the element */
 				if (Fieldml_label_name_resolve_element_lookup(
 					label, fieldml_data))
@@ -1323,7 +1323,7 @@ DESCRIPTION :
 			"Missing fieldml data.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1353,18 +1353,18 @@ DESCRIPTION :
 		{
 			returned_label->scale_factor_list_offset = label->scale_factor_list_offset;
 			returned_label->scale_factor_list_size = label->scale_factor_list_size;
-			returned_label->scale_factor_list_identifier = 
+			returned_label->scale_factor_list_identifier =
 				label->scale_factor_list_identifier;
 			fieldml_data->scale_factor_list_identifiers[
-				fieldml_data->number_of_scale_factor_lists] = 
+				fieldml_data->number_of_scale_factor_lists] =
 				returned_label->scale_factor_list_identifier;
 			fieldml_data->scale_factor_list_sizes[
-				fieldml_data->number_of_scale_factor_lists] = 
+				fieldml_data->number_of_scale_factor_lists] =
 				returned_label->scale_factor_list_size;
 			fieldml_data->number_of_scale_factor_lists++;
 			fieldml_data->scale_factor_list_offset += returned_label->scale_factor_list_size;
 		}
-		/* We always want to work through the whole list irrespective 
+		/* We always want to work through the whole list irrespective
 			of whether this label was resolved or not */
 		return_code = 1;
 	}
@@ -1375,7 +1375,7 @@ DESCRIPTION :
 			"Missing node number pointer.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1459,7 +1459,7 @@ DESCRIPTION :
 			if (fieldml_data->current_field_ref)
 			{
 				if (NULL != (component_name = get_FE_field_component_name(
-					fieldml_data->current_field_ref, 
+					fieldml_data->current_field_ref,
 					fieldml_data->current_component_number)))
 				{
 					if (!(strcmp(component_name, label->name)))
@@ -1519,9 +1519,9 @@ DESCRIPTION :
 				{
 					if (!fieldml_data->current_scale_factor_list_size)
 					{
-						fieldml_data->current_scale_factor_list_size = 
+						fieldml_data->current_scale_factor_list_size =
 							returned_label->scale_factor_list_size;
-						fieldml_data->current_scale_factor_list_offset = 
+						fieldml_data->current_scale_factor_list_offset =
 							returned_label->scale_factor_list_offset;
 					}
 				}
@@ -1566,7 +1566,7 @@ DESCRIPTION :
 								if (sub_label && sub_label->value &&
 									(1 == sscanf(sub_label->value, "%d", &node_number)))
 								{
-									if (NULL != (label->current_node = 
+									if (NULL != (label->current_node =
 										FE_region_get_FE_node_from_identifier(fieldml_data->current_fe_region,
 											node_number)))
 									{
@@ -1611,7 +1611,7 @@ DESCRIPTION :
 			}
 			if (label->current_node && fieldml_data->current_field_ref)
 			{
-				label->current_node_number_of_derivatives = 
+				label->current_node_number_of_derivatives =
 					get_FE_node_field_component_number_of_derivatives(
 						label->current_node, fieldml_data->current_field_ref,
 						fieldml_data->current_component_number);
@@ -1682,7 +1682,7 @@ DESCRIPTION :
 									{
 										if (sscanf(value_type_label->name, "version_%d", &version_number))
 										{
-											if ((version_number > 0) && (version_number <= 
+											if ((version_number > 0) && (version_number <=
 												node_index->current_node_number_of_versions))
 											{
 												/* Index from zero internally */
@@ -1692,7 +1692,7 @@ DESCRIPTION :
 											{
 												version_number = 0;
 											}
-											
+
 										}
 										else
 										{
@@ -1744,7 +1744,7 @@ DESCRIPTION :
 														 fieldml_data->current_element_field_standard_map,
 														 struct Standard_node_to_element_map *, fieldml_data->current_element_field_component_nodes+1)
 													&& (fieldml_data->current_element_field_standard_map[
-															 fieldml_data->current_element_field_component_nodes] = 
+															 fieldml_data->current_element_field_component_nodes] =
 														CREATE(Standard_node_to_element_map)(
 															fieldml_data->current_element_field_standard_map_node_index,
 															fieldml_data->current_element_field_standard_map_number_of_values)))
@@ -1754,7 +1754,7 @@ DESCRIPTION :
 														Standard_node_to_element_map_set_nodal_value_index(
 															fieldml_data->current_element_field_standard_map[
 																fieldml_data->current_element_field_component_nodes],
-															/*nodal_value_number*/j, 
+															/*nodal_value_number*/j,
 															fieldml_data->current_element_field_standard_map_indices[j]);
 													}
 													fieldml_data->current_element_field_component_nodes++;
@@ -1840,7 +1840,7 @@ DESCRIPTION :
 					struct Standard_node_to_element_map *,
 					fieldml_data->current_element_field_component_nodes+1);
 				fieldml_data->current_element_field_standard_map[
-					fieldml_data->current_element_field_component_nodes] = 
+					fieldml_data->current_element_field_component_nodes] =
 					CREATE(Standard_node_to_element_map)(
 						fieldml_data->current_element_field_standard_map_node_index,
 						fieldml_data->current_element_field_standard_map_number_of_values);
@@ -1849,7 +1849,7 @@ DESCRIPTION :
 					Standard_node_to_element_map_set_nodal_value_index(
 						fieldml_data->current_element_field_standard_map[
 							fieldml_data->current_element_field_component_nodes],
-						/*nodal_value_number*/j, 
+						/*nodal_value_number*/j,
 						fieldml_data->current_element_field_standard_map_indices[j]);
 				}
 				fieldml_data->current_element_field_standard_map_number_of_values = 0;
@@ -1915,8 +1915,8 @@ DESCRIPTION :
 			{
 				DEALLOCATE(fieldml_data->current_element_field_standard_map);
 			}
-				
-			fieldml_data->current_basis_mapping = 
+
+			fieldml_data->current_basis_mapping =
 				(struct Fieldml_label_name *)NULL;
 			fieldml_data->current_scale_factor_list_size = 0;
 			fieldml_data->current_scale_factor_list_offset = 0;
@@ -1928,7 +1928,7 @@ DESCRIPTION :
 			"Fieldml_label_name_process_label_in_element.  Missing fieldml data.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1959,7 +1959,7 @@ DESCRIPTION :
 			"Missing node number pointer.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -1990,7 +1990,7 @@ DESCRIPTION :
 			{
 				/* The element_lookup list is used as a template for
 					many elements so the offset must be fetched from there */
-				fieldml_data->scale_factor_list_offset = 
+				fieldml_data->scale_factor_list_offset =
 					label->scale_factor_list_offset;
 				Fieldml_label_name_set_scale_factors_in_element(
 					returned_label, fieldml_data_void);
@@ -2011,7 +2011,7 @@ DESCRIPTION :
 				set_FE_element_scale_factor(fieldml_data->current_element,
 					/*scale_factor_number*/fieldml_data->scale_factor_list_offset,
 					scale_factor);
-				fieldml_data->scale_factor_list_offset++;				
+				fieldml_data->scale_factor_list_offset++;
 			}
 		}
 		if (follow_children && label->child_labels)
@@ -2020,7 +2020,7 @@ DESCRIPTION :
 				Fieldml_label_name_set_scale_factors_in_element,
 				fieldml_data_void, label->child_labels);
 		}
-		/* We always want to work through the whole list irrespective 
+		/* We always want to work through the whole list irrespective
 			of whether this label was resolved or not */
 		return_code = 1;
 	}
@@ -2031,7 +2031,7 @@ DESCRIPTION :
 			"Missing fieldml data.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -2070,7 +2070,7 @@ DESCRIPTION :
 			"Missing label structures.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -2103,7 +2103,7 @@ DESCRIPTION :
 			{
 				return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 					Fieldml_label_names_check_equivalent_label_in_list,
-					label->child_labels, label_in_list->child_labels);	
+					label->child_labels, label_in_list->child_labels);
 			}
 			else
 			{
@@ -2122,7 +2122,7 @@ DESCRIPTION :
 			"Missing label structures.");
 		return_code = 0;
 	}
-	
+
 	LEAVE;
 
 	return(return_code);
@@ -2164,7 +2164,7 @@ DESCRIPTION :
 		if (0 > fieldml_data->fieldml_version)
 		{
 			display_message(WARNING_MESSAGE,
-				"fieldml_start_fieldml.  Unable to read version number, assuming version 0.1");		
+				"fieldml_start_fieldml.  Unable to read version number, assuming version 0.1");
 			fieldml_data->fieldml_version = 0; /* In fieldml but we don't know what version */
 			fieldml_data->fieldml_subversion = 0;
 		}
@@ -2172,9 +2172,9 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_start_fieldml.  Already in a fieldml block.");		
+			"fieldml_start_fieldml.  Already in a fieldml block.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_fieldml */
 
@@ -2190,20 +2190,20 @@ DESCRIPTION :
 
 	if (0 <= fieldml_data->fieldml_version)
 	{
- 		fieldml_data->fieldml_version = -1;
- 		fieldml_data->fieldml_subversion = -1;
+		fieldml_data->fieldml_version = -1;
+		fieldml_data->fieldml_subversion = -1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_fieldml.  Not in a fieldml block.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_fieldml */
 
 static struct Fieldml_label_name *fieldml_create_label_name_in_hierarchy(
-	char *name, enum Fieldml_label_type type, struct Fieldml_label_name *parent,
+	const char *name, enum Fieldml_label_type type, struct Fieldml_label_name *parent,
 	struct LIST(Fieldml_label_name) *label_name_stack)
 /*******************************************************************************
 LAST MODIFIED : 21 February 2003
@@ -2226,7 +2226,7 @@ DESCRIPTION :
 				parent->child_labels = CREATE(LIST(Fieldml_label_name))();
 			}
 			/* Add this label to the parent */
-			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, 
+			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
 				parent->child_labels);
 		}
 		/* Add this label to the stack */
@@ -2235,10 +2235,10 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE, "fieldml_create_label_name_in_hierarchy.  "
-			"Invalid arguments.");		
+			"Invalid arguments.");
 		label = (struct Fieldml_label_name *)NULL;
 	}
-	
+
 	return (label);
 
 	LEAVE;
@@ -2286,7 +2286,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_label_name.  Unable to parse label name.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_label_name */
 
@@ -2301,7 +2301,7 @@ DESCRIPTION :
 	char *attribute_name, *attribute_value, *label_name;
 	int i;
 	struct FE_field *field;
-	
+
 	ENTER(fieldml_start_field_ref);
 
 	label_name = (char *)NULL;
@@ -2325,7 +2325,7 @@ DESCRIPTION :
 			label_name)))
 		{
 			fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
-				label_name, FIELDML_LABEL_TYPE_FIELD_REF, 
+				label_name, FIELDML_LABEL_TYPE_FIELD_REF,
 				fieldml_data->current_label_name, fieldml_data->label_name_stack);
 			fieldml_data->current_label_name->field = field;
 		}
@@ -2340,7 +2340,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_field_ref.  Unable to parse field_ref ref.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_field_ref */
 
@@ -2383,7 +2383,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_component_ref.  Unable to parse component_ref ref.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_component_ref */
 
@@ -2434,7 +2434,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_element_interpolation.  Already working on a basis mapping.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_element_interpolation */
 
@@ -2476,7 +2476,7 @@ DESCRIPTION :
 			{
 				if (!fieldml_data->current_label_name->child_labels)
 				{
-					fieldml_data->current_label_name->child_labels = 
+					fieldml_data->current_label_name->child_labels =
 						CREATE(LIST(Fieldml_label_name))();
 				}
 				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
@@ -2502,7 +2502,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_mapping_ref.  Unable to parse mapping_ref ref.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_mapping_ref */
 
@@ -2524,7 +2524,7 @@ DESCRIPTION :
 	fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
 		"coefficients", FIELDML_LABEL_TYPE_COEFFICIENTS,
 		fieldml_data->current_label_name, fieldml_data->label_name_stack);
-	
+
 	LEAVE;
 } /* fieldml_start_coefficients */
 
@@ -2546,7 +2546,7 @@ DESCRIPTION :
 	fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
 		"product", FIELDML_LABEL_TYPE_PRODUCT,
 		fieldml_data->current_label_name, fieldml_data->label_name_stack);
-	
+
 	LEAVE;
 } /* fieldml_start_product */
 
@@ -2592,7 +2592,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_label_lookup.  Unable to parse label name.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_label_name */
 
@@ -2623,7 +2623,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_node_lookup.  Already working on a basis mapping.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_node_lookup */
 
@@ -2654,7 +2654,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_node_index.  Already working on a basis mapping.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_node_index */
 
@@ -2677,7 +2677,7 @@ DESCRIPTION :
 	fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
 		"field_lookup", FIELDML_LABEL_TYPE_FIELD_LOOKUP,
 		fieldml_data->current_label_name, fieldml_data->label_name_stack);
-	
+
 	LEAVE;
 } /* fieldml_start_field_lookup */
 
@@ -2700,7 +2700,7 @@ DESCRIPTION :
 	fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
 		"component_lookup", FIELDML_LABEL_TYPE_COMPONENT_LOOKUP,
 		fieldml_data->current_label_name, fieldml_data->label_name_stack);
-	
+
 	LEAVE;
 } /* fieldml_start_component_lookup */
 
@@ -2786,7 +2786,7 @@ DESCRIPTION :
 					{
 						ADD_OBJECT_TO_LIST(Fieldml_label_name)(
 							label, fieldml_data->current_label_name->child_labels);
-					}			
+					}
 				}
 				else
 				{
@@ -2831,7 +2831,7 @@ DESCRIPTION :
 			}
 		}
 		fieldml_data->expecting_characters = 0;
-			
+
 		if (1 < NUMBER_IN_LIST(Fieldml_label_name)(fieldml_data->label_name_stack))
 		{
 			REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
@@ -2841,7 +2841,7 @@ DESCRIPTION :
 		}
 		else
 		{
-			/* Then we are at the top, add this into the appropriate list 
+			/* Then we are at the top, add this into the appropriate list
 				BEFORE removing it from the label name stack */
 			if (FIELDML_LABEL_TYPE_ELEMENT_INTERPOLATION ==
 				fieldml_data->current_label_name->type)
@@ -2866,7 +2866,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_label_name.  Not in a label name.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_label_name */
 
@@ -2908,9 +2908,9 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_start_assign_labels.  Unable to parse label template name.");		
+			"fieldml_start_assign_labels.  Unable to parse label template name.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_assign_labels */
 
@@ -2947,7 +2947,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_assign_labels.  Not assigning a labels template.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_assign_labels */
 
@@ -2987,15 +2987,15 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"fieldml_start_labels_template.  Unable to parse label template name.");		
+				"fieldml_start_labels_template.  Unable to parse label template name.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_start_labels_template.  Already working on a label template.");		
+			"fieldml_start_labels_template.  Already working on a label template.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_labels_template */
 
@@ -3024,9 +3024,9 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_end_labels_template.  Not working on a labels template.");		
+			"fieldml_end_labels_template.  Not working on a labels template.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_labels_template */
 
@@ -3068,7 +3068,7 @@ DESCRIPTION :
 			{
 				if (!fieldml_data->current_label_name->child_labels)
 				{
-					fieldml_data->current_label_name->child_labels = 
+					fieldml_data->current_label_name->child_labels =
 						CREATE(LIST(Fieldml_label_name))();
 				}
 				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
@@ -3094,7 +3094,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_labels_template_ref.  Unable to parse labels_template_ref ref.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_labels_template_ref */
 
@@ -3120,7 +3120,7 @@ DESCRIPTION :
 		value_type_string = (char *)NULL;
 		coordinate_system_string = (char *)NULL;
 		coordinate_system_focus_string = (char *)NULL;
-		i = 0;	
+		i = 0;
 		if (attributes)
 		{
 			while (attributes[i])
@@ -3169,7 +3169,7 @@ DESCRIPTION :
 					coordinate_system.type=CYLINDRICAL_POLAR;
 				}
 				else if (fuzzy_string_compare_same_length(coordinate_system_string,
-               "spherical polar"))
+			   "spherical polar"))
 				{
 					coordinate_system.type=SPHERICAL_POLAR;
 				}
@@ -3192,7 +3192,7 @@ DESCRIPTION :
 				{
 					coordinate_system.type=UNKNOWN_COORDINATE_SYSTEM;
 					display_message(ERROR_MESSAGE, "fieldml_start_fieldml.  "
-						"Unable to parse coordinate system name.");		
+						"Unable to parse coordinate system name.");
 				}
 				coordinate_system.parameters.focus = 0;
 				if (coordinate_system_focus_string)
@@ -3207,15 +3207,15 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"fieldml_start_field.  Unable to parse field name.");		
+				"fieldml_start_field.  Unable to parse field name.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_start_field.  Already working on a field.");		
+			"fieldml_start_field.  Already working on a field.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_field */
 
@@ -3238,9 +3238,9 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_end_field.  Not working on a field.");		
+			"fieldml_end_field.  Not working on a field.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_field */
 
@@ -3272,13 +3272,13 @@ DESCRIPTION :
 		}
 		if (component_name)
 		{
-			fieldml_data->current_field_component_name = 
+			fieldml_data->current_field_component_name =
 				duplicate_string(component_name);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "fieldml_start_field_component.  "
-				"Unable to parse field component name.");		
+				"Unable to parse field component name.");
 		}
 	}
 	else
@@ -3286,7 +3286,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE, "fieldml_start_field_component.  "
 			"Not working on a field or already in a component.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_field_component */
 
@@ -3308,7 +3308,7 @@ DESCRIPTION :
 			component_number + 1);
 		set_FE_field_component_name(fieldml_data->current_field, component_number,
 			fieldml_data->current_field_component_name);
-		DEALLOCATE(fieldml_data->current_field_component_name);		
+		DEALLOCATE(fieldml_data->current_field_component_name);
 		fieldml_data->current_field_component_name = (char *)NULL;
 	}
 	else
@@ -3316,7 +3316,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_field_component.  Not working on a field component.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_field_component */
 
@@ -3359,15 +3359,15 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"fieldml_start_node.  Unable to parse node name.");		
+				"fieldml_start_node.  Unable to parse node name.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_start_node.  Already working on a node.");		
+			"fieldml_start_node.  Already working on a node.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_node */
 
@@ -3390,13 +3390,13 @@ DESCRIPTION :
 		if (node_number)
 		{
 			if (NULL != (equivalent_node_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-				Fieldml_label_names_define_equivalent_nodes, 
+				Fieldml_label_names_define_equivalent_nodes,
 				(void *)fieldml_data->current_label_name,
 				fieldml_data->node_label_templates)))
 			{
 				/* An equivalent node already exist so copy that one */
 				fieldml_data->current_node = CREATE(FE_node)(
-					node_number, (struct FE_region *)NULL, 
+					node_number, (struct FE_region *)NULL,
 					equivalent_node_label->current_node);
 				fieldml_data->fields_already_defined = 1;
 			}
@@ -3416,13 +3416,13 @@ DESCRIPTION :
 			{
 				display_message(ERROR_MESSAGE,
 					"fieldml_end_node.  Error defining node name %s.",
-					fieldml_data->current_label_name->name);		
+					fieldml_data->current_label_name->name);
 			}
 			if (!equivalent_node_label)
 			{
 				fieldml_data->current_label_name->current_node = fieldml_data->current_node;
 				ADD_OBJECT_TO_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
-					fieldml_data->node_label_templates);	
+					fieldml_data->node_label_templates);
 			}
 			fieldml_data->fields_already_defined = 0;
 			fieldml_data->current_node = (struct FE_node *)NULL;
@@ -3431,7 +3431,7 @@ DESCRIPTION :
 		{
 			display_message(ERROR_MESSAGE,
 				"fieldml_end_node.  Unable to parse node name %s.",
-				fieldml_data->current_label_name->name);		
+				fieldml_data->current_label_name->name);
 		}
 
 		REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
@@ -3442,9 +3442,9 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"fieldml_end_node.  Not working on a node.");		
+			"fieldml_end_node.  Not working on a node.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_node */
 
@@ -3457,8 +3457,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *index;
-	int component, dimension, i, j, *first_simplex, 
-		number_of_polygon_vertices, previous_component, return_code, *type, 
+	int component, dimension, i, j, *first_simplex,
+		number_of_polygon_vertices, previous_component, return_code, *type,
 		*temp_entry, *type_entry, xi_number;
 	struct FE_element_shape *shape = NULL;
 
@@ -3778,7 +3778,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_element.  Already working on a element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_element */
 
@@ -3803,17 +3803,17 @@ DESCRIPTION :
 		if (fieldml_data->current_element_interpolation_ref &&
 			fieldml_data->current_element_interpolation_ref->element_template)
 		{
-			element_template = 
+			element_template =
 				fieldml_data->current_element_interpolation_ref->element_template;
 			fieldml_data->current_element = CREATE(FE_element)(
-				&cm, (struct FE_element_shape *)NULL, 
+				&cm, (struct FE_element_shape *)NULL,
 				(struct FE_region *)NULL, element_template);
 		}
 		else
 		{
 			element_template = (struct FE_element *)NULL;
 			fieldml_data->current_element = CREATE(FE_element)(
-				&cm, fieldml_data->current_element_shape, 
+				&cm, fieldml_data->current_element_shape,
 				fieldml_data->current_fe_region, element_template);
 		}
 		if (fieldml_data->face_numbers)
@@ -3864,7 +3864,7 @@ DESCRIPTION :
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_set_nodes_in_element,
 						(void *)fieldml_data->current_element,
-						fieldml_data->current_element_interpolation_ref->element_template_node_index_list);					
+						fieldml_data->current_element_interpolation_ref->element_template_node_index_list);
 
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_set_scale_factors_in_element,
@@ -3885,7 +3885,7 @@ DESCRIPTION :
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_assign_local_index, (void *)&number_of_local_nodes,
 						fieldml_data->element_node_index_list);
-				
+
 					maximum_number_of_scale_factor_lists =
 						NUMBER_IN_LIST(Fieldml_label_name)(fieldml_data->element_lookup_list);
 					fieldml_data->scale_factor_list_identifiers = (void **)NULL;
@@ -3900,7 +3900,7 @@ DESCRIPTION :
 							fieldml_data->number_of_scale_factor_lists = 0;
 							fieldml_data->scale_factor_list_offset = 0;
 							FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
-								Fieldml_label_name_assign_scale_factor_lists, 
+								Fieldml_label_name_assign_scale_factor_lists,
 								(void *)fieldml_data, fieldml_data->element_lookup_list);
 							/* When we get Richard's API separate the node scale field
 								info call */
@@ -3910,7 +3910,7 @@ DESCRIPTION :
 					set_FE_element_number_of_nodes(fieldml_data->current_element,
 						number_of_local_nodes);
 					set_FE_element_number_of_scale_factor_sets(fieldml_data->current_element,
-						fieldml_data->number_of_scale_factor_lists, 
+						fieldml_data->number_of_scale_factor_lists,
 						fieldml_data->scale_factor_list_identifiers,
 						fieldml_data->scale_factor_list_sizes);
 
@@ -3937,7 +3937,7 @@ DESCRIPTION :
 						DEALLOCATE(fieldml_data->scale_factor_list_sizes);
 					}
 
-					/* Keep references to this element so we can use it for a 
+					/* Keep references to this element so we can use it for a
 						template */
 					fieldml_data->current_element_interpolation_ref->element_template =
 						fieldml_data->current_element;
@@ -3972,7 +3972,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_element.  Not working on a element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_element */
 
@@ -4002,7 +4002,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_element_faces.  Not working on an element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_element_faces */
 
@@ -4041,7 +4041,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_element_faces.  Not working on an element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_element_faces */
 
@@ -4202,7 +4202,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_start_mapping.  Already working on a basis mapping.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_mapping */
 
@@ -4222,7 +4222,7 @@ DESCRIPTION :
 			fieldml_data->current_basis_mapping, fieldml_data->basis_mappings)))
 		{
 			display_message(ERROR_MESSAGE, "fieldml_end_basis_mapping.  "
-				"Unable to add template to list, possibly duplicate name.");		
+				"Unable to add template to list, possibly duplicate name.");
 			DESTROY(Fieldml_label_name)(&fieldml_data->current_basis_mapping);
 		}
 		if (fieldml_data->current_label_name)
@@ -4238,7 +4238,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"fieldml_end_mapping.  Not working on an element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_mapping */
 
@@ -4306,7 +4306,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE, "fieldml_start_element_interpolation_ref.  "
 			"Already referencing an element interpolation for this element.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_element_interpolation_ref */
 
@@ -4330,11 +4330,11 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE, "fieldml_end_element_interpolation_ref.  "
 			"Not in an element interpolation reference.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_end_element_interpolation_ref */
 
-static void fieldml_start_xml_element(struct Fieldml_sax_data *fieldml_data, 
+static void fieldml_start_xml_element(struct Fieldml_sax_data *fieldml_data,
 	char *name, char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
@@ -4965,7 +4965,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE, "fieldml_start_group.  "
 			"Missing group name.");
 	}
-	
+
 	LEAVE;
 } /* fieldml_start_group */
 
@@ -5152,7 +5152,7 @@ DESCRIPTION :
 		if (characters && length)
 		{
 			new_allocate = 0;
-			while (fieldml_data->buffer_length + length > 
+			while (fieldml_data->buffer_length + length >
 				fieldml_data->buffer_allocated_length + new_allocate)
 			{
 				new_allocate += allocate_blocksize;
@@ -5190,7 +5190,7 @@ DESCRIPTION :
 				"fieldml_sax_characters.  Unexpected non whitespace characters.");
 		}
 	}
-	
+
 	LEAVE;
 } /* fieldml_sax_characters */
 
@@ -5318,7 +5318,7 @@ DESCRIPTION :
 	if (sax != NULL)
 		ctxt->sax = NULL;
 	xmlFreeParserCtxt(ctxt);
-    
+
 	return ret;
 } /* specialXmlSAXParseFile */
 #endif /* defined (OLD_CODE) */
@@ -5361,7 +5361,7 @@ merge incompatible data will leave the global region in a compromised state.
 		fieldml_data.buffer_length = 0;
 		fieldml_data.buffer_allocated_length = 0;
 		fieldml_data.expecting_characters = 0;
-	
+
 		fieldml_data.current_label_name = (struct Fieldml_label_name *)NULL;
 		fieldml_data.current_fe_region = fieldml_data.root_fe_region;
 		fieldml_data.current_field = (struct FE_field *)NULL;
@@ -5423,7 +5423,7 @@ merge incompatible data will leave the global region in a compromised state.
 		fieldml_handler.warning = fieldml_sax_warning;
 		fieldml_handler.error = fieldml_sax_error;
 		fieldml_handler.fatalError = fieldml_sax_fatalError;
-	
+
 		sax_result = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
 			filename);
 		return_code = !sax_result; /* SAX returns 0 for success */

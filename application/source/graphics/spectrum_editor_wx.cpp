@@ -2081,7 +2081,7 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	 struct Spectrum *spectrum,
 	 struct Graphics_font *font,
-	 struct Graphics_buffer_package *graphics_buffer_package,
+	 struct Graphics_buffer_app_package *graphics_buffer_package,
 	 struct User_interface *user_interface,
 	 struct Cmiss_graphics_module *graphics_module,
 	 struct MANAGER(Scene) *scene_manager,
@@ -2099,7 +2099,7 @@ Creates a spectrum_editor widget.
 	 struct Colour background_colour = {0.1, 0.1, 0.1},
 			ambient_colour = {0.2, 0.2, 0.2}, black ={0, 0, 0},
 			off_white = {0.9, 0.8, 0.8};
-	 struct Graphics_buffer *graphics_buffer;
+	 struct Graphics_buffer_app *graphics_buffer;
 	 struct Light *viewer_light;
 	 struct Light_model *viewer_light_model;
 	 Triple *points, *normalpoints;
@@ -2410,11 +2410,11 @@ Creates a spectrum_editor widget.
 								GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 								/*minimum_colour_buffer_depth*/8,
 								/*minimum_depth_buffer_depth*/8,
-								/*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer *)NULL);
+								/*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer_app *)NULL);
 							if (graphics_buffer)
 							{
 								 spectrum_editor->spectrum_editor_scene_viewer =
-										CREATE(Scene_viewer)(graphics_buffer,
+										CREATE(Scene_viewer)(Graphics_buffer_app_get_core_buffer(graphics_buffer),
 											&background_colour,
 											(struct MANAGER(Light) *)NULL,viewer_light,
 											 (struct MANAGER(Light_model) *)NULL,viewer_light_model,

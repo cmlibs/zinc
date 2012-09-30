@@ -398,7 +398,7 @@ c.f.  FE_field_order_info. Also store a current node, so can iterate, etc
 	int number_of_nodes,current_node_number;
 	struct FE_node **nodes;
 	int access_count;
-}; /* FE_node_order_info */ 
+}; /* FE_node_order_info */
 
 struct FE_element_order_info
 /*******************************************************************************
@@ -424,7 +424,7 @@ Used by FE_node_has_FE_field_and_string_data
 ==============================================================================*/
 {
 	struct FE_field *fe_field;
-	char *string;	
+	char *string;
 };
 
 struct Node_is_in_list_data
@@ -432,7 +432,7 @@ struct Node_is_in_list_data
 LAST MODIFIED : 17 October 2000
 
 DESCRIPTION :
-used by all_nodes_in_list 
+used by all_nodes_in_list
 ==============================================================================*/
 {
 	struct LIST(FE_node) *node_list;
@@ -482,7 +482,7 @@ int DESTROY(FE_node_field_creator)(
 LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
-Frees the memory for the node field creator and sets 
+Frees the memory for the node field creator and sets
 <*node_field_creator_address> to NULL.
 ==============================================================================*/
 
@@ -572,7 +572,7 @@ their FE_field listed in <fe_field_list>.
 ==============================================================================*/
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
-	struct FE_time_sequence *fe_time_seqence, 
+	struct FE_time_sequence *fe_time_seqence,
 	struct FE_node_field_creator *fe_node_field_creator);
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
@@ -1016,7 +1016,7 @@ int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
 /*******************************************************************************
 LAST MODIFIED : 1 August 2000
 
-DESCRIPTION 
+DESCRIPTION
 Given a <field> and <time>, checks that <field> has times defined and returns:
 <the_array_index>, the array index of <field> times closest to <time>.
 <the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
@@ -1035,7 +1035,7 @@ int get_FE_nodal_string_value(struct FE_node *node,
 LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
-Returns a copy of the string for <version>, <type> of <field><component_number> 
+Returns a copy of the string for <version>, <type> of <field><component_number>
 at the <node>. Up to the calling function to DEALLOCATE the returned string.
 Returned <*string> may be a valid NULL if that is what is in the node.
 ==============================================================================*/
@@ -1057,13 +1057,13 @@ int set_FE_nodal_field_double_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the doubles in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the doubles in values.
 Returns the number of doubles copied in number_of_values.
 Assumes that values is set up with the correct number of doubles.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
@@ -1081,13 +1081,13 @@ sum of (1+num_derivatives)*num_versions for each component.
  * Allocates and returns a copy of the <number_of_values>-length <values> array
  * stored at the <node> for all components derivatives and versions of <field>.
  * It is up to the calling function to DEALLOCATE the returned array. It will
- * return the values specified at <time> if time sequence is found on nodal 
- * field. If time is out of its range then it will return either the values at 
+ * return the values specified at <time> if time sequence is found on nodal
+ * field. If time is out of its range then it will return either the values at
  * minimum or maximum time.
  *
- * @param  field  fields value to be returned from. 
+ * @param  field  fields value to be returned from.
  * @param  node  the node which stores the field values.
- * @param  time  returns the values at <time> if nodal field has the concept of 
+ * @param  time  returns the values at <time> if nodal field has the concept of
  *    time, otherwise this argument is ignored.
  * @param  values  <number_of_values>-length <values> array to be returned, it
  *   stores all components derivatives and versions of <field> at <node>.
@@ -1103,13 +1103,13 @@ int set_FE_nodal_field_FE_value_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the FE_values in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the FE_values in values.
 Returns the number of FE_values copied in number_of_values.
 Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
@@ -1120,13 +1120,13 @@ int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
 LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
-Sets The Node Field'S Values Storage (At Node->Values_Storage, Not 
-Field->Values_Storage) With The Fe_Values In Values. 
+Sets The Node Field'S Values Storage (At Node->Values_Storage, Not
+Field->Values_Storage) With The Fe_Values In Values.
 Returns The Number Of Fe_Values Copied In Number_Of_Values.
 Assumes That Values Is Set Up With The Correct Number Of Fe_Values.
-Assumes That The Node->Values_Storage Has Been Allocated With Enough 
+Assumes That The Node->Values_Storage Has Been Allocated With Enough
 Memory To Hold All The Values.
-Assumes That The Nodal Fields Have Been Set Up, With Information To 
+Assumes That The Nodal Fields Have Been Set Up, With Information To
 Place The Values.
 ==============================================================================*/
 
@@ -1136,13 +1136,13 @@ int set_FE_nodal_field_float_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the floats in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the floats in values.
 Returns the number of floats copied in number_of_values.
 Assumes that values is set up with the correct number of floats.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
@@ -1150,13 +1150,13 @@ place the values.
  * Allocates and returns a copy of the <number_of_values>-length <values> array
  * stored at the <node> for all components derivatives and versions of <field>.
  * It is up to the calling function to DEALLOCATE the returned array. It will
- * return the values specified at <time> if time sequence is found on nodal 
- * field. If time is out of its range then it will return either the values at 
+ * return the values specified at <time> if time sequence is found on nodal
+ * field. If time is out of its range then it will return either the values at
  * minimum or maximum time.
  *
- * @param  field  fields value to be returned from. 
+ * @param  field  fields value to be returned from.
  * @param  node  the node which stores the field values.
- * @param  time  returns the values at <time> if nodal field has the concept of 
+ * @param  time  returns the values at <time> if nodal field has the concept of
  *   time, otherwise this argument is ignored.
  * @param  values  <number_of_values>-length <values> array to be returned, it
  *   stores all components derivatives and versions of <field> at <node>.
@@ -1171,13 +1171,13 @@ int set_FE_nodal_field_int_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the integers in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the integers in values.
 Returns the number of integers copied in number_of_values.
 Assumes that values is set up with the correct number of ints.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
@@ -1778,8 +1778,8 @@ LAST MODIFIED : 12 February 2003
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
 function allocates an array, <*element_field_nodes_array_address> to store the
-pointers to the ACCESS'd element nodes.  Components that are not node-based are 
-ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next 
+pointers to the ACCESS'd element nodes.  Components that are not node-based are
+ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
 fastest in xi2 and so on).
 The optional <top_level_element> forces inheritance from it as needed.
 NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
@@ -1873,8 +1873,8 @@ struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
-Requests from the <fe_region> for a shape with the specified <dimension> and 
-<type>.  If one is not found, a shape is created (with <type> duplicated) and 
+Requests from the <fe_region> for a shape with the specified <dimension> and
+<type>.  If one is not found, a shape is created (with <type> duplicated) and
 added to the region.  The shape is returned.
 <type> is analogous to the basis type array, except that the entries are 0 or 1.
 If <type> is omitted an "unspecified" shape of the given <dimension> is
@@ -2016,7 +2016,7 @@ DESCRIPTION :
 Checks that the <xi> location is valid for elements with <shape>.
 The <tolerance> allows the location to go slightly outside.  If the values for
 <xi> location are further than <tolerance> outside the element then the values
-are modified to put it on the nearest face.  
+are modified to put it on the nearest face.
 ==============================================================================*/
 
 const char *CM_element_type_string(enum CM_element_type cm_element_type);
@@ -2077,14 +2077,14 @@ int set_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape *shape);
 
 int adjacent_FE_element(struct FE_element *element,
-	int face_number, int *number_of_adjacent_elements, 
+	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements);
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the 
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the 
+Returns the list of <adjacent_elements> not including <element> which share the
+face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
 correct size and should be DEALLOCATED when finished with.
 ==============================================================================*/
 
@@ -2393,8 +2393,8 @@ Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 <element> to <scale_factor>.
 <element> must already have a shape and node_scale_field_information.
 Should only be called for unmanaged elements.
-This function is a bit naughty. Should really use 
-FE_element_set_scale_factor_for_nodal_value . 
+This function is a bit naughty. Should really use
+FE_element_set_scale_factor_for_nodal_value .
 ==============================================================================*/
 
 int define_FE_field_at_element(struct FE_element *element,
@@ -2973,8 +2973,8 @@ LAST MODIFIED : 9 June 1999
 
 DESCRIPTION :
 Sets the number of times stored with the <field>
-REALLOCATES the requires memory in field->value_storage, based upon the 
-field->time_value_type. 
+REALLOCATES the requires memory in field->value_storage, based upon the
+field->time_value_type.
 
 For non-array types, the contents of field->times_storage is:
    | data type (eg FE_value) | x number_of_times
@@ -3149,7 +3149,7 @@ LAST MODIFIED : 4 March 1999
 
 DESCRIPTION :
 Get the value_type and the number of array values for the array in
-field->values_storage specified by value_number. 
+field->values_storage specified by value_number.
 Give an error if field->values_storage isn't storing array types.
 ==============================================================================*/
 
@@ -3160,11 +3160,11 @@ LAST MODIFIED : 4 March 1999
 
 DESCRIPTION :
 Get the double array in field->values_storage specified by value_number, of
-of length number_of_array_values. If number_of_array_values > the stored arrays 
+of length number_of_array_values. If number_of_array_values > the stored arrays
 max length, gets the max length.
 MUST allocate space for the array before calling this function.
 
-Use get_FE_field_array_attributes() or get_FE_field_max_array_size() 
+Use get_FE_field_array_attributes() or get_FE_field_max_array_size()
 to get the size of an array.
 ==============================================================================*/
 
@@ -3173,13 +3173,13 @@ int set_FE_field_double_array_value(struct FE_field *field, int value_number,
 /*******************************************************************************
 
 DESCRIPTION :
-Finds any existing double array at the place specified by  value_number in 
+Finds any existing double array at the place specified by  value_number in
 field->values_storage.
 Frees it.
-Allocates a new array, according to number_of_array_values. 
+Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
 Copies number of array values, and the pointer to the allocated array to the
-specified place in the field->values_storage. 
+specified place in the field->values_storage.
 
 Therefore, should free the passed array, after passing it to this function
 
@@ -3285,7 +3285,7 @@ The field value MUST have been previously allocated with
 set_FE_field_number_of_times
 ==============================================================================*/
 
-char *get_FE_field_name(struct FE_field *field);
+const char *get_FE_field_name(struct FE_field *field);
 /*******************************************************************************
 LAST MODIFIED : 19 February 1999
 
@@ -3369,7 +3369,7 @@ on the dimension of element:top_level, ie.,
 NOTE: recursive to handle 1-D to 3-D case.
 ==============================================================================*/
 
-int FE_element_get_top_level_element_and_xi(struct FE_element *element, 
+int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
 	struct FE_element **top_level_element, FE_value *top_level_xi,
 	int *top_level_element_dimension);
@@ -3378,7 +3378,7 @@ LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
-for the given <element> and <xi>.  If <top_level_element> is already set it 
+for the given <element> and <xi>.  If <top_level_element> is already set it
 is checked and the <top_level_xi> calculated.
 ==============================================================================*/
 
@@ -3419,7 +3419,7 @@ int get_FE_element_discretization(struct FE_element *element,
  * Checks if the element is 2-D and exterior i.e. a face of exactly one parent
  * element, and if so whether the standard element/face mapping gives it an
  * inward normal.
- * 
+ *
  * @param element  The element to test.
  * @return  1 if element is an exterior face with inward normal, 0 otherwise.
  */
@@ -3755,7 +3755,7 @@ int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 int FE_element_field_is_grid_based(struct FE_element *element,
 	struct FE_field *field);
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999 
+LAST MODIFIED : 5 October 1999
 
 DESCRIPTION :
 Returns true if <field> is grid-based in <element>. Only checks the first
@@ -3901,7 +3901,7 @@ Notes:
 - only handles 1 version at nodes.
 ==============================================================================*/
 
-int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
+int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, int *face_number);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
@@ -3950,7 +3950,7 @@ int clear_FE_field_order_info(struct FE_field_order_info *field_order_info);
 /*******************************************************************************
 LAST MODIFIED : 4 September 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Clears the fields from <field_order_info>.
 ==============================================================================*/
 
@@ -3959,7 +3959,7 @@ int get_FE_field_order_info_number_of_fields(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <field_order_info> number_of_fields
 ==============================================================================*/
 
@@ -3968,7 +3968,7 @@ struct FE_field *get_FE_field_order_info_field(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <field_order_info> field at the specified field_number
 ==============================================================================*/
 
@@ -3991,8 +3991,8 @@ struct FE_node_order_info *CREATE(FE_node_order_info)(
 LAST MODIFIED : 13 July 1999
 
 DESCRIPTION :
-Allocate space for an array of pointers to nodes of length number_of_nodes, 
-set these to NULL, copy the number_of_nodes. 
+Allocate space for an array of pointers to nodes of length number_of_nodes,
+set these to NULL, copy the number_of_nodes.
 ==============================================================================*/
 
 int DESTROY(FE_node_order_info)(
@@ -4000,7 +4000,7 @@ int DESTROY(FE_node_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Frees them memory used by node_order_info.
 ==============================================================================*/
 
@@ -4012,7 +4012,7 @@ int get_FE_node_order_info_number_of_nodes(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> number_of_nodes
 ==============================================================================*/
 
@@ -4021,7 +4021,7 @@ struct FE_node *get_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the specified node_number
 ==============================================================================*/
 
@@ -4031,7 +4031,7 @@ int set_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> node at the specified node_number
 ==============================================================================*/
 
@@ -4040,7 +4040,7 @@ int get_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 gets the <node_order_info> <current_node_number>
 ==============================================================================*/
 
@@ -4049,7 +4049,7 @@ int set_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> <current_node_number>
 ==============================================================================*/
 
@@ -4058,7 +4058,7 @@ struct FE_node *get_FE_node_order_info_current_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the current_node_number
 ==============================================================================*/
 
@@ -4067,7 +4067,7 @@ struct FE_node *get_FE_node_order_info_next_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the end of the array, return null.
 ==============================================================================*/
@@ -4077,7 +4077,7 @@ struct FE_node *get_FE_node_order_info_prev_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the start of the array, return null.
 ==============================================================================*/
@@ -4088,7 +4088,7 @@ int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
 LAST MODIFIED : 6 July 1999
 
 DESCRIPTION :
-As FE_node to previously created FE_node_order_info 
+As FE_node to previously created FE_node_order_info
 ==============================================================================*/
 
 int fill_FE_node_order_info(struct FE_node *node,void *dummy);
@@ -4104,7 +4104,7 @@ int get_FE_node_order_info_number_of_nodes(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> number_of_nodes
 ==============================================================================*/
 
@@ -4113,7 +4113,7 @@ struct FE_node *get_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the specified node_number
 ==============================================================================*/
 
@@ -4123,7 +4123,7 @@ int set_FE_node_order_info_node(
 /*******************************************************************************
 LAST MODIFIED : 13 July 1999
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> node at the specified node_number
 ==============================================================================*/
 
@@ -4132,7 +4132,7 @@ int get_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 gets the <node_order_info> <current_node_number>
 ==============================================================================*/
 
@@ -4141,7 +4141,7 @@ int set_FE_node_order_info_current_node_number(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <node_order_info> <current_node_number>
 ==============================================================================*/
 
@@ -4150,7 +4150,7 @@ struct FE_node *get_FE_node_order_info_current_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> node at the current_node_number
 ==============================================================================*/
 
@@ -4159,7 +4159,7 @@ struct FE_node *get_FE_node_order_info_next_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the end of the array, return null.
 ==============================================================================*/
@@ -4169,7 +4169,7 @@ struct FE_node *get_FE_node_order_info_prev_node(
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <node_order_info> next node by incrementing the current_node_number,
 and returning the new current node. If at the start of the array, return null.
 ==============================================================================*/
@@ -4180,7 +4180,7 @@ int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
 LAST MODIFIED : 6 July 1999
 
 DESCRIPTION :
-As FE_node to previously created FE_node_order_info 
+As FE_node to previously created FE_node_order_info
 ==============================================================================*/
 
 int fill_FE_node_order_info(struct FE_node *node,void *dummy);
@@ -4198,8 +4198,8 @@ struct FE_element_order_info *CREATE(FE_element_order_info)(
 LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
-Allocate space for an array of pointers to elements of length number_of_elements, 
-set these to NULL, copy the number_of_elements. 
+Allocate space for an array of pointers to elements of length number_of_elements,
+set these to NULL, copy the number_of_elements.
 ==============================================================================*/
 
 int DESTROY(FE_element_order_info)(
@@ -4207,7 +4207,7 @@ int DESTROY(FE_element_order_info)(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Frees them memory used by element_order_info.
 ==============================================================================*/
 
@@ -4219,7 +4219,7 @@ int get_FE_element_order_info_number_of_elements(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> number_of_elements
 ==============================================================================*/
 
@@ -4228,7 +4228,7 @@ struct FE_element *get_FE_element_order_info_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> element at the specified element_number
 ==============================================================================*/
 
@@ -4238,7 +4238,7 @@ int set_FE_element_order_info_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <element_order_info> element at the specified element_number
 ==============================================================================*/
 
@@ -4247,7 +4247,7 @@ int get_FE_element_order_info_current_element_number(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 gets the <element_order_info> <current_element_number>
 ==============================================================================*/
 
@@ -4256,7 +4256,7 @@ int set_FE_element_order_info_current_element_number(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Sets the <element_order_info> <current_element_number>
 ==============================================================================*/
 
@@ -4265,7 +4265,7 @@ struct FE_element *get_FE_element_order_info_current_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> element at the current_element_number
 ==============================================================================*/
 
@@ -4274,7 +4274,7 @@ struct FE_element *get_FE_element_order_info_next_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> next element by incrementing the current_element_number,
 and returning the new current element. If at the end of the array, return null.
 ==============================================================================*/
@@ -4284,7 +4284,7 @@ struct FE_element *get_FE_element_order_info_prev_element(
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001
 
-DESCRIPTION : 
+DESCRIPTION :
 Gets the <element_order_info> next element by incrementing the current_element_number,
 and returning the new current element. If at the start of the array, return null.
 ==============================================================================*/
@@ -4295,7 +4295,7 @@ int add_elements_FE_element_order_info(int number_of_elements_to_add,
 LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
-As FE_element to previously created FE_element_order_info 
+As FE_element to previously created FE_element_order_info
 ==============================================================================*/
 
 int fill_FE_element_order_info(struct FE_element *element,void *dummy);
@@ -4306,7 +4306,7 @@ DESCRIPTION :
 As FE_element to previously created FE_element_order_info (passed in dummy)
 ==============================================================================*/
 
-int FE_element_get_scale_factor_for_nodal_value( 
+int FE_element_get_scale_factor_for_nodal_value(
 	struct FE_element *element, struct FE_node *node, struct FE_field *field,
 	int component_number,	enum FE_nodal_value_type nodal_value_type,
 	FE_value *scale_factor);
@@ -4314,7 +4314,7 @@ int FE_element_get_scale_factor_for_nodal_value(
 LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a 
+Given  <component_number>  and <nodal_value_type> of <field> at a
 <node> in an <element>, find the  corresponding <scale_factor>.
 ==============================================================================*/
 
@@ -4326,7 +4326,7 @@ int FE_element_set_scale_factor_for_nodal_value(
 LAST MODIFIED : 31 January 2001
 
 DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a 
+Given  <component_number>  and <nodal_value_type> of <field> at a
 <node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
 ==============================================================================*/
 
@@ -4362,7 +4362,7 @@ int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 LAST MODIFIED : 31 May 2006
 
 DESCRIPTION :
-Steps into the adjacent element through face <face_number>, updating the 
+Steps into the adjacent element through face <face_number>, updating the
 <element_address> location.
 If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
@@ -4370,7 +4370,7 @@ If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
-<permutation> is used to resolve the possible rotation and flipping of the 
+<permutation> is used to resolve the possible rotation and flipping of the
 local face xi coordinates between the two parents.
 The shape mapping from parents are reused for all elements of the same shape
 and do not take into account the relative orientation of the parents.  It would
@@ -4385,7 +4385,7 @@ LAST MODIFIED : 21 January 2004
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-if an adjacent element is found then the element and xi location are changed 
+if an adjacent element is found then the element and xi location are changed
 to this element and the stepping continues using the remaining increment.  If
 no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
@@ -4406,7 +4406,7 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 LAST MODIFIED : 1 December 2004
 
 DESCRIPTION :
-Defines a tensor product basis on <element> with the specified <dimension> 
+Defines a tensor product basis on <element> with the specified <dimension>
 and <basis_type>.  This does not support mixed basis types in the tensor product.
 ==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_H) */

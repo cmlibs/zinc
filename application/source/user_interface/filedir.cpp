@@ -47,7 +47,6 @@ the default button.
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
 
-extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +57,6 @@ extern "C" {
 #include "user_interface/user_interface.h"
 #include "general/mystring.h"
 #include "command/command.h"
-}
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>

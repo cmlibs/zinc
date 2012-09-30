@@ -123,7 +123,7 @@ class FE_region_FE_object_method_class( object_type ) \
 			return FE_region_ ## object_type ## _string_to_FE_ ## object_type(fe_region, string); \
 	 } \
 \
-    static inline FE_ ## object_type* get_first_object_that(struct FE_region *fe_region, \
+	static inline FE_ ## object_type* get_first_object_that(struct FE_region *fe_region, \
 			 LIST_CONDITIONAL_FUNCTION(FE_ ## object_type) *conditional_function, \
 			 void *user_data_void) \
 	 { \
@@ -136,8 +136,8 @@ class FE_region_FE_object_method_class( object_type ) \
 			return FE_region_contains_FE_ ## object_type(fe_region, object); \
 	 } \
 \
- 	 static inline int FE_object_to_string(struct FE_## object_type *object, char **string) \
- 	 {	\
+	 static inline int FE_object_to_string(struct FE_## object_type *object, char **string) \
+	 {	\
 			return FE_ ##object_type ## _to_ ##object_type## _string(object, string); \
 	 } \
 \
@@ -153,7 +153,7 @@ class FE_region_FE_object_method_class( object_type ) \
 				 change_log, object, change_address); \
 	 } \
 \
-}; 
+};
 
 /*
 Global functions
@@ -173,7 +173,7 @@ are ignored and along with all fields, nodes and elements the FE_region may addr
 will belong to the master region, and this FE_region will be merely a container
 for nodes and elements.
 If <master_fe_region> is not supplied, the FE_region will own all its own nodes,
-elements and fields.  If <basis_manager> or <element_shape_list> are not 
+elements and fields.  If <basis_manager> or <element_shape_list> are not
 supplied then a default empty object will be created for this region.  (Allowing
 them to be specified allows sharing across regions).
 ==============================================================================*/
@@ -412,7 +412,7 @@ LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Returns an <fe_field> which the <fe_region> considers to be its default
-coordinate field or returns 0 and sets *<fe_field> to NULL if it has no 
+coordinate field or returns 0 and sets *<fe_field> to NULL if it has no
 "coordinate" fields.
 ==============================================================================*/
 
@@ -720,6 +720,8 @@ Function is not recursive; returns only the master FE_region for <fe_region>
 without enquiring for that of its master.
 See also FE_region_get_ultimate_master_FE_region.
 ==============================================================================*/
+
+struct LIST(FE_field) *FE_region_get_FE_field_list(struct FE_region *fe_region);
 
 int FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region,
 	struct FE_region **master_fe_region_address);
@@ -1159,6 +1161,8 @@ struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region);
  * @return  The master Cmiss_region containing this fe_region.
  */
 struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region);
+
+struct FE_region *FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region);
 
 /***************************************************************************//**
  * Returns true if definitions of fields, nodes and elements in

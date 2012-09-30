@@ -1,4 +1,8 @@
 
+
+#if !defined (SCENE_VIEWER_APP_H_)
+#define SCENE_VIEWER_APP_H_
+
 #include "computed_field/computed_field.h"
 
 #include "interaction/interactive_tool.h"
@@ -35,3 +39,19 @@ Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	enum Cmiss_graphics_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection);
+
+int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
+	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
+	int *visual_id, int *colour_buffer_depth, int *depth_buffer_depth,
+	int *accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
+<opengl_extensions> strings are static pointers supplied from the driver and
+so should not be modified or deallocated.
+==============================================================================*/
+
+#endif
+

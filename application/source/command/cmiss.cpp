@@ -143,7 +143,6 @@
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
-#include "graphics/import_graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -159,6 +158,7 @@
 #include "finite_element/finite_element_helper.h"
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
+#include "graphics/import_graphics_object.h"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
@@ -240,6 +240,11 @@
 #endif /* defined (USE_OPENCASCADE) */
 
 // insert app headers here
+#include "computed_field/computed_field_image_app.h"
+#include "computed_field/computed_field_integration_app.h"
+#include "computed_field/computed_field_alias_app.h"
+#include "computed_field/computed_field_coordinate_app.h"
+#include "graphics/rendition_app.h"
 #include "image_processing/computed_field_sigmoid_image_filter_app.h"
 #include "image_processing/computed_field_mean_image_filter_app.h"
 #include "image_processing/computed_field_rescale_intensity_image_filter_app.h"
@@ -303,6 +308,7 @@
 #include "general/multi_range_app.h"
 #include "computed_field/computed_field_set_app.h"
 #include "context/context_app.h"
+#include "three_d_drawing/graphics_buffer_app.h"
 /*
 Module types
 ------------
@@ -352,7 +358,7 @@ DESCRIPTION :
 	struct LIST(FE_element_shape) *element_shape_list;
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
-	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Graphics_buffer_app_package *graphics_buffer_package;
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 	struct Graphics_font_package *graphics_font_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
@@ -3183,7 +3189,7 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth,
 	int number_of_bytes_per_component,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphics_buffer_app_package *graphics_buffer_package,
 	struct Graphical_material *fail_material)
 /*******************************************************************************
 LAST MODIFIED : 30 June 2006
@@ -3288,7 +3294,7 @@ Currently limited to 1 byte per component.
 			Set_cmiss_field_value_to_texture(field, texture_coordinate_field,
 				texture, spectrum,	fail_material, image_height, image_width, image_depth,
 				bytes_per_pixel, number_of_bytes_per_component, use_pixel_location,
-				storage,propagate_field,	graphics_buffer_package, search_mesh);
+				storage,propagate_field, Graphics_buffer_package_get_core_package(graphics_buffer_package), search_mesh);
 		}
 		else
 		{
@@ -17965,7 +17971,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->volume_texture_manager=(struct MANAGER(VT_volume_texture) *)NULL;
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
+		command_data->graphics_buffer_package=(struct Graphics_buffer_app_package *)NULL;
 		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
 		command_data->graphics_module = (struct Cmiss_graphics_module *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
@@ -18377,11 +18383,11 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->graphics_window_manager);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-			Computed_field_register_type_image(
+			Computed_field_register_types_image(
 				command_data->computed_field_package);
 			if (command_data->root_region)
 			{
-				Computed_field_register_type_integration(
+				Computed_field_register_types_integration(
 					command_data->computed_field_package,
 					command_data->root_region);
 			}

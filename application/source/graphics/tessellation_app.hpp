@@ -1,8 +1,4 @@
 
-extern "C" {
-
-}
-
 struct Option_table;
 struct Parse_state;
 

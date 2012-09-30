@@ -338,4 +338,6 @@ DESCRIPTION :
 Returns true if <light> is in <light_list>.
 ==============================================================================*/
 
+const char *get_Light_name(struct Light *light);
+
 #endif

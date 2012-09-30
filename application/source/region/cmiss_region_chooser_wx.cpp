@@ -41,12 +41,10 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 #include "region/cmiss_region_chooser_wx.hpp"
-extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-}
 
 wxRegionChooser::wxRegionChooser(wxWindow *parent,
 	Cmiss_region *root_region, const char *initial_path) :

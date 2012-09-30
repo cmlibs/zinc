@@ -120,8 +120,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	int return_code;
 	struct CM_element_information cm_information;
 	struct FE_element_shape *shape;
- 	unsigned int scaled_number;
-	
+	unsigned int scaled_number;
+
 	ENTER(Render_element_as_texture);
 	if (data)
 	{
@@ -130,17 +130,17 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
 		{
 			scaled_number = (unsigned int)((double)cm_information.number - data->minimum_element_number + 1);
-			blue = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) << 
+			blue = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) <<
 				(8 - data->bit_shift)) + 0.5) / 255.0;
 			scaled_number = scaled_number >> data->bit_shift;
-			green = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) << 
+			green = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) <<
 				(8 - data->bit_shift)) + 0.5) / 255.0;
 			scaled_number = scaled_number >> data->bit_shift;
-			red = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) << 
+			red = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) <<
 				(8 - data->bit_shift)) + 0.5) / 255.0;
 
 			glColor3f(red, green, blue);
-		  
+
 #if defined (DEBUG_CODE)
 			printf ( "%d %lf %lf %lf\n",  cm_information.number, red, green, blue);
 #endif /* defined (DEBUG_CODE) */
@@ -159,7 +159,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			/* Only need to check the first dimension as this is only working for 2D */
 			if (get_FE_element_shape(element, &shape) &&
 				get_FE_element_shape_xi_shape_type(shape,
-				/*xi_number*/0,  &shape_type) && 
+				/*xi_number*/0,  &shape_type) &&
 				(SIMPLEX_SHAPE == shape_type))
 			{
 				xi[0] = 0.0;
@@ -176,7 +176,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
-				
+
 				xi[0] = 0.0;
 				xi[1] = 1.0;
 				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
@@ -193,7 +193,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* Render_element_as_texture */
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
@@ -203,7 +203,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, Cmiss_mesh_id search_mesh,
-	struct Graphics_buffer_package *graphics_buffer_package,
+	Graphics_buffer_package *graphics_buffer_package,
 	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution)
 {
 	int return_code;
@@ -244,7 +244,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
 		pixel grab requires transfer across the network */
-	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution && 
+	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution &&
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
 		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh
@@ -418,9 +418,9 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 				py = (int)((values[1] - hint_minimums[1]) * hint_resolution[1] /
 					(hint_maximums[1] - hint_minimums[1]));
 				glReadPixels(px, py, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, colour);
-				scaled_number = (((unsigned int)colour[0] >> (8 - cache->bit_shift)) 
+				scaled_number = (((unsigned int)colour[0] >> (8 - cache->bit_shift))
 					<< (2 * cache->bit_shift)) +
-					(((unsigned int)colour[1] >> (8 - cache->bit_shift)) 
+					(((unsigned int)colour[1] >> (8 - cache->bit_shift))
 						<< cache->bit_shift) +
 					((unsigned int)colour[2] >> (8 - cache->bit_shift));
 				if (scaled_number)
@@ -438,7 +438,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 							for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
 							{
 								xi[i] = find_element_xi_data.xi[i];
-							}			
+							}
 						}
 						else
 						{
@@ -476,7 +476,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 							{
 								ny = (int)(hint_resolution[1] - py);
 							}
-							glReadPixels(px, py, nx, ny, GL_RGBA, GL_UNSIGNED_BYTE, 
+							glReadPixels(px, py, nx, ny, GL_RGBA, GL_UNSIGNED_BYTE,
 								colour_block);
 
 							while (scaled_number && (*element == (struct FE_element *)NULL))
@@ -513,9 +513,9 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 								colour[1] = next_colour[1];
 								colour[2] = next_colour[2];
 								colour[3] = next_colour[3];
-								scaled_number = (((unsigned int)colour[0] >> (8 - cache->bit_shift)) 
+								scaled_number = (((unsigned int)colour[0] >> (8 - cache->bit_shift))
 									<< (2 * cache->bit_shift)) +
-									(((unsigned int)colour[1] >> (8 - cache->bit_shift)) 
+									(((unsigned int)colour[1] >> (8 - cache->bit_shift))
 										<< cache->bit_shift) +
 									((unsigned int)colour[2] >> (8 - cache->bit_shift));
 								if (scaled_number)
@@ -529,7 +529,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 											for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
 											{
 												xi[i] = find_element_xi_data.xi[i];
-											}			
+											}
 										}
 										else
 										{
@@ -550,7 +550,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 									for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
 									{
 										xi[i] = find_element_xi_data.xi[i];
-									}			
+									}
 								}
 							}
 						}
@@ -568,7 +568,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 					*element = (struct FE_element *)NULL;
 				}
 				return_code = 1;
-				
+
 			}
 			else
 			{

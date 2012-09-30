@@ -67,7 +67,6 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_alias.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
-#include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_conditional.h"
 #include "computed_field/computed_field_coordinate.h"

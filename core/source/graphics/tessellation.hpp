@@ -104,4 +104,8 @@ int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
  */
 int string_to_divisions(const char *input, int **values_in, int *size_in);
 
+void list_divisions(int size, int *divisions);
+
+int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, void *dummy_void);
+
 #endif

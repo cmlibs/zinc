@@ -48,6 +48,7 @@ selected element point, or set it if entered in this dialog.
 #endif
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_app.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_value_index_ranges.h"
 #include "element/element_point_viewer_wx.h"

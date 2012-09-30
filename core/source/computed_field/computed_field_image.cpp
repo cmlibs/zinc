@@ -1,7 +1,7 @@
 /*****************************************************************************//**
  * FILE : computed_field_image.cpp
- * 
- * Implements a computed_field which maintains a graphics transformation 
+ *
+ * Implements a computed_field which maintains a graphics transformation
  * equivalent to the scene_viewer assigned to it.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -65,7 +65,8 @@ class Computed_field_image_package : public Computed_field_type_package
 
 namespace {
 
-char computed_field_image_type_string[] = "image";
+const char computed_field_image_type_string[] = "image";
+
 class Computed_field_image : public Computed_field_core
 {
 public:
@@ -74,7 +75,7 @@ public:
 	double maximum;
 	int native_texture;
 	int number_of_bytes_per_component;
-	/* Flag to indicate that the texture needs to be evaluated 
+	/* Flag to indicate that the texture needs to be evaluated
 		 due to changes on the source fields */
 	bool need_evaluate_texture;
 
@@ -91,7 +92,7 @@ public:
 		native_texture = 1;
 		number_of_bytes_per_component = 1;
 		need_evaluate_texture = false;
-	};
+	}
 
 	virtual bool attach_to_field(Computed_field *parent)
 	{
@@ -112,7 +113,7 @@ public:
 		}
 		return false;
 	}
-		
+
 	~Computed_field_image()
 	{
 		if (texture)
@@ -408,7 +409,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		display_message(ERROR_MESSAGE,
 			"Computed_field_image::evaluate_texture_from_source_field.  Invalid argument(s)");
 		return_code = 0;
-		
+
 	}
 
 	if (return_code)
@@ -759,7 +760,7 @@ Computed_field *Computed_field_create_image(
 				if (texture_coordinate_field == (struct Computed_field *)NULL &&
 					source_texture_coordinate_field == (struct Computed_field *)NULL)
 				{
-					struct Cmiss_region *field_region = 
+					struct Cmiss_region *field_region =
 						Computed_field_get_region(source_field);
 					if (field_region)
 					{
@@ -798,7 +799,7 @@ Computed_field *Computed_field_create_image(
 		}
 		check_source_field = false;
 	}
-	if (return_code && texture_coordinate_field && 
+	if (return_code && texture_coordinate_field &&
 		(3 >= texture_coordinate_field->number_of_components))
 	{
 		int number_of_components = 1;
@@ -830,6 +831,42 @@ Computed_field *Computed_field_create_image(
 	return (field);
 }
 
+int Cmiss_field_image_set_output_range(Cmiss_field_image_id image_field, double minimum, double maximum)
+{
+	int return_code = 0;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		return_code = image_core->set_output_range(minimum, maximum);
+	}
+
+	return return_code;
+}
+
+int Cmiss_field_image_set_number_of_bytes_per_component(Cmiss_field_image_id image_field, int number_of_bytes_per_component)
+{
+	int return_code = 0;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		return_code = image_core->set_number_of_bytes_per_component(number_of_bytes_per_component);
+	}
+
+	return return_code;
+}
+
+int Cmiss_field_image_set_native_texture_flag(Cmiss_field_image_id image_field, int native_texture_flag)
+{
+	int return_code = 0;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		return_code = image_core->set_native_texture_flag(native_texture_flag);
+	}
+
+	return return_code;
+}
+
 Cmiss_texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field)
 {
 	Cmiss_texture *cmiss_texture = 0;
@@ -842,7 +879,7 @@ Cmiss_texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field)
 }
 
 int Computed_field_get_type_image(struct Computed_field *field,
-	struct Computed_field **texture_coordinate_field, 
+	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **source_field,
 	struct Texture **texture,
 	double *minimum, double *maximum, int *native_texture)
@@ -866,7 +903,7 @@ returned.
 		if (field->number_of_source_fields > 1) // texture_is_evaluated_from_source_field()
 		{
 			*source_field = field->source_fields[1];
-			/* do not return a texture here as it is generated 
+			/* do not return a texture here as it is generated
 				 from the source field */
 			*texture = (struct Texture *)NULL;
 		}
@@ -1042,34 +1079,34 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 class Cmiss_field_image_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_image_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
-            enum_string = "RAW_WIDTH_PIXELS";
-            break;
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
-            enum_string = "RAW_HEIGHT_PIXELS";
-            break;
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
-            enum_string = "RAW_DEPTH_PIXELS";
-            break;
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
-            enum_string = "PHYSICAL_WIDTH_PIXELS";
-            break;
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
-            enum_string = "PHYSICAL_HEIGHT_PIXELS";
-            break;
-        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
-            enum_string = "PHYSICAL_DEPTH_PIXELS";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_image_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+			enum_string = "RAW_WIDTH_PIXELS";
+			break;
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+			enum_string = "RAW_HEIGHT_PIXELS";
+			break;
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
+			enum_string = "RAW_DEPTH_PIXELS";
+			break;
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
+			enum_string = "PHYSICAL_WIDTH_PIXELS";
+			break;
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
+			enum_string = "PHYSICAL_HEIGHT_PIXELS";
+			break;
+		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
+			enum_string = "PHYSICAL_DEPTH_PIXELS";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
@@ -1424,11 +1461,11 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 								{
 									 if (!spectrum)
 									 {
-									 	*two_bytes_ptr = (unsigned short)((rgba[0]) * multiplier);
+										*two_bytes_ptr = (unsigned short)((rgba[0]) * multiplier);
 									 }
 									 else
 									 {
-									 	*two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+										*two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
 									 }
 									 two_bytes_ptr++;
 								} break;
@@ -1436,17 +1473,17 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 								{
 									 if (!spectrum)
 									 {
-									 	*two_bytes_ptr = (unsigned short)((rgba[0]) * multiplier);
-									 	two_bytes_ptr++;
-									 	*two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
-									 	two_bytes_ptr++;
+										*two_bytes_ptr = (unsigned short)((rgba[0]) * multiplier);
+										two_bytes_ptr++;
+										*two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
+										two_bytes_ptr++;
 									 }
 									 else
 									 {
-									 	*two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
-									 	two_bytes_ptr++;
-									 	*two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
-									 	two_bytes_ptr++;
+										*two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+										two_bytes_ptr++;
+										*two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
+										two_bytes_ptr++;
 									 }
 								} break;
 								case TEXTURE_RGB:
@@ -1497,11 +1534,11 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 								{
 									 if (!spectrum)
 									 {
-									 	*ptr = (unsigned char)(rgba[0] * multiplier);
+										*ptr = (unsigned char)(rgba[0] * multiplier);
 									 }
 									 else
 									 {
-									 	*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+										*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
 									 }
 									 ptr++;
 								} break;
@@ -1509,17 +1546,17 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 								{
 									 if (!spectrum)
 									 {
-									 	*ptr = (unsigned char)(rgba[0] * multiplier);
+										*ptr = (unsigned char)(rgba[0] * multiplier);
 										ptr++;
-									 	*ptr = (unsigned char)(rgba[1] * multiplier);
-									 	ptr++;
+										*ptr = (unsigned char)(rgba[1] * multiplier);
+										ptr++;
 									 }
 									 else
 									 {
-									 	*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
-									 	ptr++;
-									 	*ptr = (unsigned char)(rgba[3] * multiplier);
-									 	ptr++;
+										*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+										ptr++;
+										*ptr = (unsigned char)(rgba[3] * multiplier);
+										ptr++;
 									 }
 								} break;
 								case TEXTURE_RGB:
@@ -1659,52 +1696,52 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 class Cmiss_field_image_combine_mode_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_image_combine_mode mode)
-    {
-        const char *enum_string = 0;
-        switch (mode)
-        {
-        case CMISS_FIELD_IMAGE_COMBINE_BLEND:
-            enum_string = "BLEND";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_DECAL:
-            enum_string = "DECAL";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_MODULATE:
-            enum_string = "MODULATE";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_ADD:
-            enum_string = "ADD";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED:
-            enum_string = "ADD_SIGNED";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4:
-            enum_string = "MODULATE_SCALE_4";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4:
-            enum_string = "BLEND_SCALE_4";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT:
-            enum_string = "SUBTRACT";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4:
-            enum_string = "ADD_SCALE_4";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4:
-            enum_string = "SUBTRACT_SCALE_4";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4:
-            enum_string = "INVERT_ADD_SCALE_4";
-            break;
-        case CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4:
-            enum_string = "INVERT_SUBTRACT_SCALE_4";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_image_combine_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+		case CMISS_FIELD_IMAGE_COMBINE_BLEND:
+			enum_string = "BLEND";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_DECAL:
+			enum_string = "DECAL";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_MODULATE:
+			enum_string = "MODULATE";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_ADD:
+			enum_string = "ADD";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED:
+			enum_string = "ADD_SIGNED";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4:
+			enum_string = "MODULATE_SCALE_4";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4:
+			enum_string = "BLEND_SCALE_4";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT:
+			enum_string = "SUBTRACT";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4:
+			enum_string = "ADD_SCALE_4";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4:
+			enum_string = "SUBTRACT_SCALE_4";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4:
+			enum_string = "INVERT_ADD_SCALE_4";
+			break;
+		case CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4:
+			enum_string = "INVERT_SUBTRACT_SCALE_4";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_enum_from_string(
@@ -1751,22 +1788,22 @@ int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_f
 class Cmiss_field_image_hardware_compression_mode_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_image_hardware_compression_mode mode)
-    {
-        const char *enum_string = 0;
-        switch (mode)
-        {
-        case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
-            enum_string = "UNCOMPRESSED";
-            break;
-        case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
-            enum_string = "AUTOMATIC";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_image_hardware_compression_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+		case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
+			enum_string = "UNCOMPRESSED";
+			break;
+		case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
+			enum_string = "AUTOMATIC";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_image_hardware_compression_mode

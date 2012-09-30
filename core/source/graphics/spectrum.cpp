@@ -67,30 +67,6 @@ Module types
 ------------
 */
 
-struct Spectrum
-/*******************************************************************************
-LAST MODIFIED : 14 May 1998
-
-DESCRIPTION :
-Spectrum type is private.
-==============================================================================*/
-{
-	ZnReal maximum,minimum;
-	char *name;
-	int clear_colour_before_settings;
-	struct LIST(Spectrum_settings) *list_of_settings;
-	
-	struct Texture *colour_lookup_texture;
-
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Spectrum) *manager;
-	int manager_change_status;
-	bool is_managed_flag;
-	/* the number of structures that point to this spectrum.  The spectrum
-		cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct Spectrum */
-
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_graphics_module, void *);
@@ -182,7 +158,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 		/* copy values */
 		destination->maximum = source->maximum;
 		destination->minimum = source->minimum;
-		destination->clear_colour_before_settings = 
+		destination->clear_colour_before_settings =
 			source->clear_colour_before_settings;
 
 		REACCESS(Texture)(&destination->colour_lookup_texture,
@@ -196,7 +172,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 			Spectrum_settings_copy_and_put_in_list,
 			(void *)destination->list_of_settings,source->list_of_settings);
 
-		return_code=1;		
+		return_code=1;
 	}
 	else
 	{
@@ -323,9 +299,9 @@ some predetermined simple types.
 		minimum = spectrum->minimum;
 		maximum = spectrum->maximum;
 		switch(type)
-		{				
+		{
 			case RED_TO_BLUE_SPECTRUM:
-			case BLUE_TO_RED_SPECTRUM:		
+			case BLUE_TO_RED_SPECTRUM:
 			{
 				spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 				number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
@@ -336,7 +312,7 @@ some predetermined simple types.
 				settings = CREATE(Spectrum_settings)();
 				Spectrum_settings_add(settings, /* end of list = 0 */0,
 					spectrum_settings_list);
-				
+
 				Spectrum_settings_set_type(settings, SPECTRUM_LINEAR);
 				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_RAINBOW);
 				Spectrum_settings_set_extend_above_flag(settings, 1);
@@ -357,7 +333,7 @@ some predetermined simple types.
 				}
 			} break;
 			case LOG_RED_TO_BLUE_SPECTRUM:
-			case LOG_BLUE_TO_RED_SPECTRUM:			
+			case LOG_BLUE_TO_RED_SPECTRUM:
 			{
 				spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 				number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
@@ -366,19 +342,19 @@ some predetermined simple types.
 					REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(spectrum_settings_list);
 				}
 				settings = CREATE(Spectrum_settings)();
-				second_settings = CREATE(Spectrum_settings)();				
+				second_settings = CREATE(Spectrum_settings)();
 				Spectrum_settings_add(settings, /* end of list = 0 */0,
 					spectrum_settings_list);
 				Spectrum_settings_add(second_settings, /* end of list = 0 */0,
 					spectrum_settings_list);
-			
-				
+
+
 				Spectrum_settings_set_type(settings, SPECTRUM_LOG);
 				Spectrum_settings_set_exaggeration(settings, 1.0);
 				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_RAINBOW);
 				Spectrum_settings_set_range_minimum(settings, -1.0);
 				Spectrum_settings_set_range_maximum(settings, 0.0);
-				
+
 				Spectrum_settings_set_type(second_settings, SPECTRUM_LOG);
 				Spectrum_settings_set_exaggeration(second_settings, -1.0);
 				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_RAINBOW);
@@ -411,7 +387,7 @@ some predetermined simple types.
 					default:
 					{
 					} break;
-				}			
+				}
 			} break;
 			case BLUE_WHITE_RED_SPECTRUM:
 			{
@@ -429,28 +405,28 @@ some predetermined simple types.
 					spectrum_settings_list);
 
 				Spectrum_settings_set_type(settings, SPECTRUM_LOG);
-				Spectrum_settings_set_exaggeration(settings, -10.0); 			
+				Spectrum_settings_set_exaggeration(settings, -10.0);
 				Spectrum_settings_set_range_minimum(settings, -1.0);
 				Spectrum_settings_set_range_maximum(settings, 0.0);
 				Spectrum_settings_set_reverse_flag(settings,1);
 				/* fix the maximum (white ) at zero */
 				Spectrum_settings_set_fix_maximum_flag(settings,1);
-				Spectrum_settings_set_extend_below_flag(settings, 1);			
+				Spectrum_settings_set_extend_below_flag(settings, 1);
 				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_WHITE_TO_BLUE);
 				Spectrum_settings_set_colour_value_minimum(settings, 0);
 				Spectrum_settings_set_colour_value_maximum(settings, 1);
-				
+
 				Spectrum_settings_set_type(second_settings, SPECTRUM_LOG);
-				Spectrum_settings_set_exaggeration(second_settings, 10.0);				
+				Spectrum_settings_set_exaggeration(second_settings, 10.0);
 				Spectrum_settings_set_range_minimum(second_settings, 0.0);
 				Spectrum_settings_set_range_maximum(second_settings, 1.0);
 				/* fix the minimum (white ) at zero */
 				Spectrum_settings_set_fix_minimum_flag(second_settings,1);
-				Spectrum_settings_set_extend_above_flag(second_settings, 1);			
+				Spectrum_settings_set_extend_above_flag(second_settings, 1);
 				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_WHITE_TO_RED);
 				Spectrum_settings_set_colour_value_minimum(second_settings, 0);
-				Spectrum_settings_set_colour_value_maximum(second_settings, 1);				
-			} break;		
+				Spectrum_settings_set_colour_value_maximum(second_settings, 1);
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -494,8 +470,8 @@ it returns UNKNOWN_SPECTRUM
 
 	if (spectrum)
 	{
-		type = UNKNOWN_SPECTRUM;	
-		
+		type = UNKNOWN_SPECTRUM;
+
 		spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 		number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
 		switch( number_in_list )
@@ -508,7 +484,7 @@ it returns UNKNOWN_SPECTRUM
 				settings_type = Spectrum_settings_get_type(settings);
 				reverse = Spectrum_settings_get_reverse_flag(settings);
 				colour_mapping = Spectrum_settings_get_colour_mapping(settings);
-				
+
 				if ( settings_type == SPECTRUM_LINEAR )
 				{
 					if ( colour_mapping == SPECTRUM_RAINBOW )
@@ -539,7 +515,7 @@ it returns UNKNOWN_SPECTRUM
 					second_reverse = Spectrum_settings_get_reverse_flag(second_settings);
 					second_colour_mapping = Spectrum_settings_get_colour_mapping
 						(second_settings);
-					
+
 					if((settings_type == SPECTRUM_LOG)
 						&& (second_settings_type == SPECTRUM_LOG))
 					{
@@ -587,27 +563,27 @@ LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 A convienience routine that interrogates a spectrum to see if it is one of the
-simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED) 
-added as an extra, last, setting If it does not comform exactly to one of the 
-simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM. 
+simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED)
+added as an extra, last, setting If it does not comform exactly to one of the
+simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM.
 See also Spectrum_get_simple_type.
 ==============================================================================*/
-{	
+{
 	enum Spectrum_settings_colour_mapping colour_mapping,second_colour_mapping;
 	enum Spectrum_settings_type settings_type, second_settings_type;
-	enum Spectrum_simple_type spectrum_simple_type;	
+	enum Spectrum_simple_type spectrum_simple_type;
 	int number_of_settings,reverse,second_reverse;
 	struct LIST(Spectrum_settings) *spectrum_settings_list=
-		(struct LIST(Spectrum_settings) *)NULL;	
+		(struct LIST(Spectrum_settings) *)NULL;
 	struct Spectrum_settings *settings,*second_settings,*spectrum_settings;
-	
+
 	ENTER(Spectrum_get_contoured_simple_type);
 	settings=(struct Spectrum_settings *)NULL;
 	second_settings=(struct Spectrum_settings *)NULL;
 	spectrum_settings=(struct Spectrum_settings *)NULL;
 	spectrum_simple_type=UNKNOWN_SPECTRUM;
 	if(spectrum)
-	{	
+	{
 		/* if spectrum is a simple type, nothing else to do*/
 		spectrum_simple_type=Spectrum_get_simple_type(spectrum);
 		if(spectrum_simple_type==UNKNOWN_SPECTRUM)
@@ -616,11 +592,11 @@ See also Spectrum_get_simple_type.
 			spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 			number_of_settings = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
 			spectrum_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
-				(number_of_settings, spectrum_settings_list);						
+				(number_of_settings, spectrum_settings_list);
 			colour_mapping=	Spectrum_settings_get_colour_mapping(spectrum_settings);
 			/*if so, proceed as for Spectrum_get_simple_type */
 			if(colour_mapping==SPECTRUM_BANDED)
-			{			
+			{
 				switch( number_of_settings )
 				{
 					case 2:
@@ -631,7 +607,7 @@ See also Spectrum_get_simple_type.
 						settings_type = Spectrum_settings_get_type(settings);
 						reverse = Spectrum_settings_get_reverse_flag(settings);
 						colour_mapping = Spectrum_settings_get_colour_mapping(settings);
-				
+
 						if ( settings_type == SPECTRUM_LINEAR )
 						{
 							if ( colour_mapping == SPECTRUM_RAINBOW )
@@ -662,7 +638,7 @@ See also Spectrum_get_simple_type.
 							second_reverse = Spectrum_settings_get_reverse_flag(second_settings);
 							second_colour_mapping = Spectrum_settings_get_colour_mapping
 								(second_settings);
-					
+
 							if((settings_type == SPECTRUM_LOG)
 								&& (second_settings_type == SPECTRUM_LOG))
 							{
@@ -677,7 +653,7 @@ See also Spectrum_get_simple_type.
 									{
 										spectrum_simple_type = LOG_RED_TO_BLUE_SPECTRUM;
 									}
-								}	
+								}
 								else if ((colour_mapping == SPECTRUM_WHITE_TO_BLUE)
 									&& (second_colour_mapping == SPECTRUM_WHITE_TO_RED))
 								{
@@ -690,7 +666,7 @@ See also Spectrum_get_simple_type.
 							display_message(ERROR_MESSAGE,
 								"Spectrum_set_simple_type.  Bad position numbers in settings");
 						}
-					}break;	
+					}break;
 				}/*switch( number_in_list ) */
 			}/* if(spectrum_settings_colour_mapping==SPECTRUM_BANDED) */
 			else
@@ -719,12 +695,12 @@ DESCRIPTION :
 Checks if the last spectrum setting is SPECTRUM_BANDED, removes it if it is,
 then adds a SPECTRUM_BANDED setting to the <spectrum> with <number_of_bands>,
 <band_proportions>. Setting is added at the end of the list.
-This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED 
+This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED
 settings holding for the contours.
 If <number_of_bands>==0, simply removes any existing contour band settings.
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
 	enum Spectrum_settings_colour_mapping spectrum_settings_colour_mapping;
 	FE_value min,max,number_of_settings;
 	struct LIST(Spectrum_settings) *spectrum_settings_list=
@@ -738,7 +714,7 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 	if(spectrum_manager&&spectrum)
 	{
 		if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
-		{	
+		{
 			return_code=1;
 			/* get the last settings */
 			spectrum_settings_list = get_Spectrum_settings_list(spectrum);
@@ -746,29 +722,29 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 				(spectrum_settings_list);
 			spectrum_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
 				 ((int)number_of_settings, spectrum_settings_list);
-			/*if a contour, SPECTRUM_BANDED, remove */			
+			/*if a contour, SPECTRUM_BANDED, remove */
 			spectrum_settings_colour_mapping=
 				Spectrum_settings_get_colour_mapping(spectrum_settings);
 			if(spectrum_settings_colour_mapping==SPECTRUM_BANDED)
 			{
 				Spectrum_settings_remove(spectrum_settings,spectrum_settings_list);
 				spectrum_settings=(struct Spectrum_settings *)NULL;
-			}	
+			}
 			spectrum_to_be_modified_copy=CREATE(Spectrum)("spectrum_modify_temp");
 			if (spectrum_to_be_modified_copy)
 			{
 				/* if required,generate and set the contours setting */
 				if(number_of_bands)
-				{					
+				{
 					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-						(spectrum_to_be_modified_copy,spectrum);				
+						(spectrum_to_be_modified_copy,spectrum);
 					spectrum_settings=CREATE(Spectrum_settings)();
 					max=get_Spectrum_maximum(spectrum);
 					min=get_Spectrum_minimum(spectrum);
 					Spectrum_settings_set_range_maximum(spectrum_settings,max);
 					Spectrum_settings_set_range_minimum(spectrum_settings,min);
 					Spectrum_settings_set_extend_below_flag(spectrum_settings,1);
-					Spectrum_settings_set_extend_above_flag(spectrum_settings,1);	
+					Spectrum_settings_set_extend_above_flag(spectrum_settings,1);
 					Spectrum_settings_set_type(spectrum_settings,SPECTRUM_LINEAR);
 					Spectrum_settings_set_number_of_bands(spectrum_settings,number_of_bands);
 					Spectrum_settings_set_black_band_proportion(spectrum_settings,
@@ -778,7 +754,7 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 						spectrum_to_be_modified_copy,spectrum_manager);
 					DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);
-				}			
+				}
 			}
 			else
 			{
@@ -792,7 +768,7 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 			display_message(ERROR_MESSAGE,
 				"Spectrum_overlay_contours. Spectrum is not in manager!");
 			return_code=0;
-		}								
+		}
 	}
 	else
 	{
@@ -1077,7 +1053,7 @@ Returns the number_of_components used by the spectrum.
 	return (number_of_components);
 } /* Spectrum_get_number_of_components */
 
-enum Spectrum_colour_components 
+enum Spectrum_colour_components
 	Spectrum_get_colour_components(struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
@@ -1299,7 +1275,7 @@ accordance with the spectrum.
 		return_code=0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* spectrum_renderGL_value */
 
@@ -1589,7 +1565,7 @@ it contains.  The ratios of the different settings are preserved.
 	ENTER(spectrum_set_minimum_and_maximum);
 	if (spectrum && (minimum <= maximum))
 	{
-		if ( minimum != spectrum->minimum 
+		if ( minimum != spectrum->minimum
 			|| maximum != spectrum->maximum )
 		{
 			data.old_min = spectrum->minimum;
@@ -1660,11 +1636,11 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 		render_data.rgba = rgba;
 		render_data.data = data;
 		render_data.number_of_data_components = number_of_data_components;
-		
+
 		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
-		
+
 		diffuse.red = rgba[0];
 		diffuse.green = rgba[1];
 		diffuse.blue = rgba[2];
@@ -1690,7 +1666,7 @@ int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_componen
 LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
-Uses the <spectrum> to calculate RGBA components to represent the 
+Uses the <spectrum> to calculate RGBA components to represent the
 <number_of_data_components> <data> values.
 <rgba> is assumed to be an array of four values for red, green, blue and alpha.
 ==============================================================================*/
@@ -1715,7 +1691,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 		CAST_TO_OTHER(fData,data,GLfloat,number_of_data_components);
 		render_data.data = fData;
 		render_data.number_of_data_components = number_of_data_components;
-		
+
 		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
@@ -1835,7 +1811,7 @@ Writes the properties of the <spectrum> to the command window.
 			case BLUE_WHITE_RED_SPECTRUM:
 			{
 				display_message(INFORMATION_MESSAGE,"  simple spectrum type: BLUE_WHITE_RED\n");
-			} break;			
+			} break;
 			default:
 			{
 				display_message(INFORMATION_MESSAGE,"  simple spectrum type: UNKNOWN\n");
@@ -1993,7 +1969,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	unsigned char *colour_table, *colour_table_ptr;
 	struct Spectrum_render_data render_data;
 	enum Texture_storage_type storage;
-		
+
 	ENTER(Spectrum_render_colour_lookup);
 	if (spectrum)
 	{
@@ -2002,7 +1978,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			the texture components in the material programs */
 		/* Could save memory by having a special treatment for MONOCHROME
 			spectrums */
-		if (colour_components & SPECTRUM_COMPONENT_ALPHA) 
+		if (colour_components & SPECTRUM_COMPONENT_ALPHA)
 		{
 			if (colour_components == SPECTRUM_COMPONENT_ALPHA)
 			{
@@ -2093,10 +2069,10 @@ Rebuilds the display_list for <spectrum> if it is not current.
 						colour_table_ptr++;
 						*colour_table_ptr = (unsigned char) (rgba[1] * 255.0);
 						colour_table_ptr++;
- 						*colour_table_ptr = (unsigned char) (rgba[2] * 255.0);
+						*colour_table_ptr = (unsigned char) (rgba[2] * 255.0);
 						colour_table_ptr++;
 					}
-					if (colour_components & SPECTRUM_COMPONENT_ALPHA) 
+					if (colour_components & SPECTRUM_COMPONENT_ALPHA)
 					{
 						/* Alpha with or without colour */
 						 *colour_table_ptr = (unsigned char) (rgba[3] * 255.0);
@@ -2107,7 +2083,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 				indices[0]++;
 				i = 0;
 				data[0] = (GLfloat)indices[0] / (GLfloat)(number_of_values - 1);
-				while ((i < number_of_data_components - 1) && 
+				while ((i < number_of_data_components - 1) &&
 					(indices[i] == number_of_values))
 				{
 					indices[i] = 0;
@@ -2122,7 +2098,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 				Spectrum_settings_disable,(void *)&render_data,
 				spectrum->list_of_settings);
-					
+
 			{
 				struct Texture *texture;
 
@@ -2148,29 +2124,29 @@ Rebuilds the display_list for <spectrum> if it is not current.
 							1, storage,
 							/*number_of_bytes_per_component*/1, "bob");
 						Texture_set_image_block(texture,
-							/*left*/0, /*bottom*/0, number_of_values, 1, 
+							/*left*/0, /*bottom*/0, number_of_values, 1,
 							/*depth_plane*/0, number_of_values * number_of_texture_components,
 							colour_table_ptr);
 					} break;
 					case 2:
 					{
 						Texture_allocate_image(texture, number_of_values, number_of_values,
-							1, storage, 
+							1, storage,
 							/*number_of_bytes_per_component*/1, "bob");
 						Texture_set_image_block(texture,
-							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
+							/*left*/0, /*bottom*/0, number_of_values, number_of_values,
 							/*depth_plane*/0, number_of_values * number_of_texture_components,
 							colour_table_ptr);
 					} break;
 					case 3:
 					{
 						Texture_allocate_image(texture, number_of_values, number_of_values,
-							number_of_values, storage, 
+							number_of_values, storage,
 							/*number_of_bytes_per_component*/1, "bob");
 						for (i = 0 ; i < number_of_values ; i++)
 						{
 							Texture_set_image_block(texture,
-								/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
+								/*left*/0, /*bottom*/0, number_of_values, number_of_values,
 								/*depth_plane*/i,
 								number_of_values * number_of_texture_components,
 								colour_table_ptr);
@@ -2220,7 +2196,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	if (spectrum)
 	{
 		Spectrum_render_colour_lookup(spectrum);
-		
+
 		return_code = renderer->Texture_compile(spectrum->colour_lookup_texture);
 	}
 	else
@@ -2426,19 +2402,19 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 class Cmiss_spectrum_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_spectrum_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        	case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
-        		enum_string = "IS_MANAGED";
-        		break;
-        	default:
-        		break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_spectrum_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
+				enum_string = "IS_MANAGED";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(

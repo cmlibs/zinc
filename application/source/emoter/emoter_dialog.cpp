@@ -102,7 +102,7 @@ DESCRIPTION :
 	struct Cmiss_region *region;
 	struct Emoter_slider *active_slider, **sliders;
 	struct Execute_command *execute_command;
-	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Graphics_buffer_app_package *graphics_buffer_package;
 	struct IO_stream_package *io_stream_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;

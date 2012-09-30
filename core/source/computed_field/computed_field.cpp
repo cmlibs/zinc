@@ -175,21 +175,6 @@ like the number of components.
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region, struct Cmiss_field_change_detail *);
 
-struct Computed_field_package
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Contains data for gfx define field commands.
-Also contains the computed_field_manger from the root region; this will be
-removed once code using it has been converted to get the field manager directly
-from the appropriate Cmiss_region.
-==============================================================================*/
-{
-	struct MANAGER(Computed_field) *computed_field_manager;
-	Computed_field_simple_package *simple_package;
-}; /* struct Computed_field_package */
-
 /*
 Module functions
 ----------------
@@ -346,7 +331,7 @@ then set values - that way the field will never be left in an invalid state.
 			}
 			DEALLOCATE(field->component_names);
 		}
-		
+
 		delete field->core;
 
 		if (field->source_fields)
@@ -388,7 +373,7 @@ int Computed_field_set_coordinate_system_from_sources(
 		return_code = 1;
 		if (field->number_of_source_fields > 0)
 		{
-			coordinate_system_ptr = 
+			coordinate_system_ptr =
 				Computed_field_get_coordinate_system(field->source_fields[0]);
 			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
 		}
@@ -430,7 +415,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->cache_index = 0;
 			/* By default the name and the command_string are the same */
 			field->command_string = (char *)field->name;
-			/* initialise all members of computed_field */	
+			/* initialise all members of computed_field */
 			field->number_of_components = 0;
 			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field->coordinate_system.parameters.focus = 1.0;
@@ -698,10 +683,10 @@ Cmiss_field_id Cmiss_field_iterator_next_non_access(Cmiss_field_iterator_id fiel
  * For safety, <destination> must be unmanaged or its contents must have been
  * copied to a temporary field while copying, otherwise clearing the type of
  * <destination> can cause objects to be cleaned up such as volatile source
- * fields. 
- * 
+ * fields.
+ *
  * @destination  Field being modified to have a copy of type-specific data.
- * @source  Field providing the type-specific data. 
+ * @source  Field providing the type-specific data.
  * @return  1 on success, 0 on failure.
  */
 int Computed_field_copy_type_specific(
@@ -813,7 +798,7 @@ int Computed_field_copy_type_specific(
 		return_code=0;
 	}
 
-	return (return_code);	
+	return (return_code);
 } /* Computed_field_copy_type_specific */
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
@@ -840,7 +825,7 @@ Do not allow copy if:
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
 				"Cannot make field depend on itself");
-			return_code=0;		
+			return_code=0;
 		}
 		if ((destination->manager) && (source->manager) &&
 			(destination->manager != source->manager))
@@ -894,7 +879,7 @@ Note: assumes caller is accessing field once!
 	return_code = 0;
 	if (manager && object)
 	{
-		if (manager == object->manager) 
+		if (manager == object->manager)
 		{
 			if ((2 >= object->access_count) ||
 				((MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status) &&
@@ -1249,7 +1234,7 @@ Computed_field *Computed_field_create_generic(
 	// replace_field must not be used for further field creates, so clear
 	Cmiss_field_module_set_replace_field(field_module, NULL);
 	LEAVE;
-	
+
 	return (field);
 }
 
@@ -1784,7 +1769,7 @@ Computed_field_set_values_in_[managed_]element.
 	if (field && element && number_in_xi &&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= get_FE_element_dimension(element)))
 	{
-		return_code = 
+		return_code =
 			field->core->get_native_discretization_in_element(element, number_in_xi);
 	}
 	else
@@ -1951,7 +1936,7 @@ It is up to the calling function to deallocate the returned string.
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_get_component_name.  Not enough memory");
-			}					
+			}
 		}
 		else
 		{
@@ -2102,7 +2087,7 @@ using as an identifier in the manager, such as spaces or punctuation.
 } /* Computed_field_set_command_string */
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-	int *dimension, int **sizes, 
+	int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2112,13 +2097,13 @@ Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_fi
 the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
-{       
+{
 	int return_code;
-	
+
 	ENTER(Computed_field_get_native_resolution);
 	if (field)
 	{
-		return_code = field->core->get_native_resolution(dimension, sizes, 
+		return_code = field->core->get_native_resolution(dimension, sizes,
 			texture_coordinate_field);
 	}
 	else
@@ -2132,7 +2117,7 @@ the <field>. These parameters will be used in image processing.
 } /* Computed_field_get_native_resolution */
 
 int Computed_field_core::get_native_resolution(
-	int *dimension, int **sizes, 
+	int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2152,7 +2137,7 @@ Inherits its result from the first source field that returns it-- if any.
 			do
 			{
 				return_code=Computed_field_get_native_resolution(
-					field->source_fields[i],dimension, sizes, 
+					field->source_fields[i],dimension, sizes,
 					texture_coordinate_field);
 				i++;
 			}
@@ -2447,7 +2432,7 @@ Conditional function returning true if <field> depends on time.
 	ENTER(Computed_field_has_multiple_times);
 	return_code=0;
 	if (field)
-	{	
+	{
 		return_code = field->core->has_multiple_times();
 	}
 	else
@@ -2514,9 +2499,9 @@ component coordinate field.
 The number of components controls how the field is interpreted:
 3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
 6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
-    from cross product);
+	from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
-    normal).
+	normal).
 ==============================================================================*/
 {
 	int return_code;
@@ -2787,7 +2772,7 @@ its name matches the contents of the <other_computed_field_void>.
 				for(i = 0 ; return_code && (i < field->number_of_source_values) ; i++)
 				{
 					return_code = (field->source_values[i]==
-						other_computed_field->source_values[i]);				
+						other_computed_field->source_values[i]);
 				}
 			}
 			if (return_code)
@@ -2970,137 +2955,6 @@ bool Computed_field_core::is_non_linear() const
 	}
 	return false;
 }
-
-struct Computed_field_package *CREATE(Computed_field_package)(
-	struct MANAGER(Computed_field) *computed_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 20 May 2008
-
-DESCRIPTION :
-Creates a Computed_field_package which is used by the rest of the program to
-access everything to do with computed fields.
-The root_region's computed_field_manager is passed in to support old code that
-expects it to be in the package. This is temporary until all code gets the true
-manager from the respective Cmiss_region.
-==============================================================================*/
-{
-	struct Computed_field_package *computed_field_package = NULL;
-
-	ENTER(CREATE(Computed_field_package));
-	if (computed_field_manager)
-	{
-		if (ALLOCATE(computed_field_package,struct Computed_field_package,1))
-		{
-			computed_field_package->computed_field_manager=computed_field_manager;
-			computed_field_package->simple_package =
-				new Computed_field_simple_package();
-			computed_field_package->simple_package->addref();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field_package).  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_package).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (computed_field_package);
-} /* CREATE(Computed_field_package) */
-
-int DESTROY(Computed_field_package)(
-	struct Computed_field_package **package_address)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Frees memory/deaccess objects in computed_field_package at <*package_address>.
-Cancels any further messages from managers.
-==============================================================================*/
-{
-	int return_code = 0;
-	struct Computed_field_package *computed_field_package;
-
-	ENTER(DESTROY(Computed_field_package));
-	if (package_address&&(computed_field_package= *package_address))
-	{
-		/* not destroying field manager as not owned by package */
-		computed_field_package->simple_package->removeref();
-		DEALLOCATE(*package_address);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_package).  Missing field");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Computed_field_package) */
-
-struct MANAGER(Computed_field)
-	*Computed_field_package_get_computed_field_manager(
-		struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Extracts the computed_field_manager from the computed_field_package. Note that
-the rest of the program should use this sparingly - it is really only here to
-allow interfacing to the choose_object widgets.
-==============================================================================*/
-{
-	struct MANAGER(Computed_field) *computed_field_manager
-
-	ENTER(Computed_field_package_get_computed_field_manager);
-	if (computed_field_package)
-	{
-		computed_field_manager=computed_field_package->computed_field_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_package_get_computed_field_manager.  "
-			"Missing computed_field_package");
-		computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	}
-	LEAVE;
-
-	return (computed_field_manager);
-} /* Computed_field_package_get_computed_field_manager */
-
-Computed_field_simple_package *Computed_field_package_get_simple_package(
-	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Returns a pointer to a sharable simple type package which just contains a
-function to access the Computed_field_package.
-==============================================================================*/
-{
-	Computed_field_simple_package* return_package;
-
-	ENTER(Computed_field_package_get_simple_package);
-	if (computed_field_package)
-	{
-		return_package = computed_field_package->simple_package;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_package_get_simple_package.  Invalid arguments");
-		return_package = (Computed_field_simple_package*)NULL;
-	}
-	LEAVE;
-
-	return (return_package);
-} /* Computed_field_package_get_simple_package */
 
 int Computed_field_broadcast_field_components(
 	struct Cmiss_field_module *field_module,

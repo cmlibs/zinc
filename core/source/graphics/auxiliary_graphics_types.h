@@ -146,12 +146,12 @@ for automatic creation of choose_enumerator widgets.
 {
 	STREAM_DATA_INVALID = 0,
 	STREAM_NO_DATA = 1,          /* The code relies on NODATA being zero as the
-										          field creation types test if(data_type) */
+												  field creation types test if(data_type) */
 	STREAM_FIELD_SCALAR = 2,     /* Generalised scalar as in other graphics objects */
 	STREAM_MAGNITUDE_SCALAR = 3, /* The vector is necessarily calculated already
-										          so can save computation by no using the scalar */
+												  so can save computation by no using the scalar */
 	STREAM_TRAVEL_SCALAR = 4     /* Integrate time along the curve so that you can
-										          see how long each bit is */
+												  see how long each bit is */
 };
 
 enum Xi_discretization_mode
@@ -204,5 +204,10 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_type);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Xi_discretization_mode);
+
+int check_Circle_discretization(int *circle_discretization);
+
+int check_Element_discretization(struct Element_discretization
+	*element_discretization);
 
 #endif /* AUXILIARY_GRAPHICS_TYPES_H */

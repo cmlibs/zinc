@@ -55,6 +55,23 @@ and real values in any order into a single vector field.
 #define Computed_field_create_component Cmiss_field_module_create_component
 #define Computed_field_create_concatenate Cmiss_field_module_create_concatenate
 
+struct Computed_field_composite_source_data
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Data structure filled by set_Computed_field_composite_source_data.
+==============================================================================*/
+{
+	int number_of_components;
+	int number_of_source_fields;
+	struct Computed_field **source_fields;
+	int number_of_source_values;
+	double *source_values;
+	int *source_field_numbers;
+	int *source_value_numbers;
+}; /* struct Computed_field_composite_source_data */
+
 /*******************************************************************************
  * Dangerous: only used for minimise; GRC would like to remove.
  * @param field  A constant field i.e. composite type with only values.

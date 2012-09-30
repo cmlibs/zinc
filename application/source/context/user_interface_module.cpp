@@ -57,6 +57,7 @@ DESCRIPTION :
 #include "interaction/interactive_tool.h"
 #include "node/node_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
+#include "three_d_drawing/graphics_buffer_app.h"
 #include "user_interface/event_dispatcher.h"
 #include "general/message.h"
 #include "context/user_interface_module.h"
@@ -189,8 +190,8 @@ struct User_interface_module *User_interface_module_create(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (UI_module->user_interface)
 		{
-			UI_module->graphics_buffer_package = CREATE(Graphics_buffer_package)();
-			Graphics_buffer_package_set_override_visual_id(UI_module->graphics_buffer_package,
+			UI_module->graphics_buffer_package = CREATE(Graphics_buffer_app_package)(UI_module->user_interface);
+			Graphics_buffer_package_set_override_visual_id(Graphics_buffer_package_get_core_package(UI_module->graphics_buffer_package),
 				visual_id);
 		}
 		/* graphics window manager.  Note there is no default window. */
@@ -337,7 +338,7 @@ int User_interface_module_destroy(
 			/* Must destroy the graphics_buffer_package after the windows which use it */
 			if (UI_module->graphics_buffer_package)
 			{
-				DESTROY(Graphics_buffer_package)(&UI_module->graphics_buffer_package);
+				DESTROY(Graphics_buffer_app_package)(&UI_module->graphics_buffer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 			DESTROY(MANAGER(Interactive_tool))(&(UI_module->interactive_tool_manager));

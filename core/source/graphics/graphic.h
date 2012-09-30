@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * cmiss_graphic.h
- */ 
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -54,7 +54,135 @@
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 
-struct Cmiss_graphic;
+/***************************************************************************//**
+ * Enumerator controlling how glyph orientation and scaling parameters are set.
+ * Modes other than GENERAL restrict the options available and their
+ * interpretation. For example, in GENERAL mode the base size can be a*b*c, but in
+ * VECTOR mode it is restricted to be 0*a*a.
+ * Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+ * incremented by 1. This pattern is expected by the ENUMERATOR macros.
+ * Must ensure the ENUMERATOR_STRING function returns a string for each value here.
+ */
+enum Graphic_glyph_scaling_mode
+{
+	GRAPHIC_GLYPH_SCALING_CONSTANT,
+	GRAPHIC_GLYPH_SCALING_SCALAR,
+	GRAPHIC_GLYPH_SCALING_VECTOR,
+	GRAPHIC_GLYPH_SCALING_AXES,
+	GRAPHIC_GLYPH_SCALING_GENERAL
+}; /* enum Glyph_scaling_mode */
+
+struct Cmiss_graphic
+/*******************************************************************************
+LAST MODIFIED : 14 March 2003
+
+DESCRIPTION :
+Stores one group of settings for a single line/surface/etc. part of the
+finite element group rendition.
+==============================================================================*/
+{
+	/* position identifier for ordering settings in list */
+	int position;
+
+	/* rendition which owns this graphic */
+	struct Cmiss_rendition *rendition;
+
+	/* name for identifying settings */
+	const char *name;
+
+// 	/* geometry settings */
+// 	/* for all graphic types */
+	enum Cmiss_graphic_type graphic_type;
+	struct Computed_field *coordinate_field;
+	enum Graphics_select_mode select_mode;
+
+	/* for 1-D and 2-D elements only */
+	char exterior;
+	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
+		 2 is xi2=0 etc. */
+	int face;
+	/* For surfaces only at the moment */
+	struct Computed_field *texture_coordinate_field;
+	/* for cylinders only */
+	/* use radius = constant_radius + scale_factor*radius_scalar_field */
+	GLfloat constant_radius,radius_scale_factor;
+	struct Computed_field *radius_scalar_field;
+	/* for iso_surfaces only */
+	struct Computed_field *iso_scalar_field;
+	int number_of_iso_values;
+	/* If the iso_values array is set then these values are used,
+		otherwise number_of_iso_values values are distributed from
+		first_iso_value to last_iso_value including these values for n>1 */
+	double *iso_values, first_iso_value, last_iso_value,
+		decimation_threshold;
+	/* for node_points, data_points and element_points only */
+	struct GT_object *glyph;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
+	struct Computed_field *orientation_scale_field;
+	struct Computed_field *variable_scale_field;
+	struct Computed_field *label_field;
+	struct Computed_field *label_density_field;
+	struct Computed_field *subgroup_field;
+	/* for element_points and iso_surfaces */
+	enum Use_element_type use_element_type;
+	/* for element_points only */
+	enum Xi_discretization_mode xi_discretization_mode;
+	struct Computed_field *xi_point_density_field;
+	struct FE_field *native_discretization_field;
+	struct Cmiss_tessellation *tessellation;
+	struct Element_discretization discretization;
+	int circle_discretization;
+	/* for volumes only */
+	struct VT_volume_texture *volume_texture;
+	/* SAB Added for text access only */
+	struct Computed_field *displacement_map_field;
+	int displacement_map_xi_direction;
+	int overlay_flag;
+	int overlay_order;
+	/* for settings starting in a particular element */
+	struct FE_element *seed_element;
+	/* for settings requiring an exact xi location */
+	Triple seed_xi;
+	enum Streamline_type streamline_type;
+	struct Computed_field *stream_vector_field;
+	int reverse_track;
+	GLfloat streamline_length, streamline_width;
+	enum Streamline_data_type streamline_data_type;
+	/* streamline seed nodeset and field giving mesh location */
+	Cmiss_nodeset_id seed_nodeset;
+	struct Computed_field *seed_node_mesh_location_field;
+
+	/* appearance settings */
+	/* for all graphic types */
+	bool visibility_flag;
+	struct Graphical_material *material, *selected_material,
+		*secondary_material;
+	struct Computed_field *data_field;
+	struct Spectrum *spectrum;
+	int autorange_spectrum_flag;
+	/* for glyphsets */
+	struct Graphics_font *font;
+	/* for surfaces */
+	enum Cmiss_graphics_render_type render_type;
+	/* for lines, a non zero line width overrides the default */
+	int line_width;
+
+	/* rendering information */
+	/* the graphics_object generated for this settings */
+	struct GT_object *graphics_object, *customised_graphics_object;
+	/* flag indicating the graphics_object needs rebuilding */
+	int graphics_changed;
+	/* flag indicating that selected graphics have changed */
+	int selected_graphics_changed;
+	/* flag indicating that this settings needs to be regenerated when time
+		changes */
+	int time_dependent;
+	enum Cmiss_graphics_coordinate_system coordinate_system;
+// 	/* for accessing objects */
+	int access_count;
+};
+
 struct Cmiss_graphics_module;
 
 typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
@@ -98,24 +226,6 @@ struct Cmiss_graphic_list_data
 	const char *line_prefix,*line_suffix;
 	enum Cmiss_graphic_string_details graphic_string_detail;
 }; /* Cmiss_graphic_list_data */
-
-/***************************************************************************//**
- * Enumerator controlling how glyph orientation and scaling parameters are set.
- * Modes other than GENERAL restrict the options available and their
- * interpretation. For example, in GENERAL mode the base size can be a*b*c, but in
- * VECTOR mode it is restricted to be 0*a*a.
- * Note: the first value will be 0 by the ANSI standard, with each subsequent entry
- * incremented by 1. This pattern is expected by the ENUMERATOR macros.
- * Must ensure the ENUMERATOR_STRING function returns a string for each value here.
- */
-enum Graphic_glyph_scaling_mode
-{
-	GRAPHIC_GLYPH_SCALING_CONSTANT,
-	GRAPHIC_GLYPH_SCALING_SCALAR,
-	GRAPHIC_GLYPH_SCALING_VECTOR,
-	GRAPHIC_GLYPH_SCALING_AXES,
-	GRAPHIC_GLYPH_SCALING_GENERAL
-}; /* enum Glyph_scaling_mode */
 
 struct Cmiss_graphic_update_time_behaviour_data
 {
@@ -234,7 +344,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 
 int DESTROY(Cmiss_graphic)(struct Cmiss_graphic **cmiss_graphic_address);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Adds the <settings> to <list_of_settings> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
  * last position in the list cause the settings to be added at its end, with a
@@ -266,7 +376,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphic);
 PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphic);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphic,position,int);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * Returns a string summarising the graphic type, name and subset field.
  * @param graphic  The graphic.
  * @return  Allocated string.
@@ -290,7 +400,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 /***************************************************************************//**
  * @return  1 if both graphic and its rendition visibility flags are set,
- * otherwise 0. 
+ * otherwise 0.
  */
 int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graphic);
 
@@ -370,7 +480,7 @@ int Cmiss_graphic_set_subgroup_field(
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is compiled.
  * @param graphic The graphic to be edit
@@ -386,7 +496,7 @@ int Cmiss_graphic_compile_visible_graphic(
 int Cmiss_graphic_glyph_change(
 	struct GT_object *glyph,void *graphic_void);
 
-/***************************************************************************//** 
+/***************************************************************************//**
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is executed, while the position of the settings in the list
  * is put out as a name to identify the object in OpenGL picking.
@@ -534,7 +644,7 @@ struct FE_field *Cmiss_graphic_get_native_discretization_field(
 	struct Cmiss_graphic *graphic);
 
 int Cmiss_graphic_set_native_discretization_field(
-      struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field);
+	  struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field);
 
 int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic);
 
@@ -573,7 +683,7 @@ int Cmiss_graphic_set_glyph_parameters(
 int Cmiss_graphic_get_iso_surface_parameters(
 	struct Cmiss_graphic *graphic,struct Computed_field **iso_scalar_field,
 	int *number_of_iso_values, double **iso_values,
-	double *first_iso_value, double *last_iso_value, 
+	double *first_iso_value, double *last_iso_value,
 	double *decimation_threshold);
 
 /***************************************************************************//**
@@ -698,8 +808,8 @@ int Cmiss_graphic_set_xi_discretization(
 int Cmiss_graphic_copy_without_graphics_object(
 	struct Cmiss_graphic *destination, struct Cmiss_graphic *source);
 
-/***************************************************************************//** 
- * Graphic iterator function returning true if <graphic> has the 
+/***************************************************************************//**
+ * Graphic iterator function returning true if <graphic> has the
  * specified <name>.  If the graphic doesn't have a name then the position
  * number is converted to a string and that is compared to the supplied <name>.
  * @param graphic The graphic

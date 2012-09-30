@@ -554,6 +554,11 @@ Sets whether lighting is on in <light_model>. On if <enabled> non-zero.
 	return (return_code);
 } /* Light_model_set_status */
 
+const char *Light_model_get_name(struct Light_model *light_model)
+{
+	return light_model->name;
+}
+
 int Light_model_get_side_mode(struct Light_model *light_model,
 	enum Light_model_side_mode *side_mode)
 /*******************************************************************************

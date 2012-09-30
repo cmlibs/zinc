@@ -71,19 +71,19 @@ DESCRIPTION :
 If the node we are looking at changes generate a computed field change message.
 ==============================================================================*/
 
-char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
+const char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
 
 class Computed_field_nodal_lookup : public Computed_field_core
 {
 public:
 	FE_node *lookup_node;
 
-	Computed_field_nodal_lookup(FE_node *lookup_node) : 
+	Computed_field_nodal_lookup(FE_node *lookup_node) :
 		Computed_field_core(),
 		lookup_node(ACCESS(FE_node)(lookup_node))
 	{
 	}
-		
+
 	virtual bool attach_to_field(Computed_field *parent)
 	{
 		if (Computed_field_core::attach_to_field(parent))
@@ -95,7 +95,7 @@ public:
 				if (!FE_region_contains_FE_node(fe_region, lookup_node))
 					fe_region = FE_region_get_data_FE_region(fe_region);
 				if (FE_region_add_callback(fe_region,
-					Computed_field_nodal_lookup_FE_region_change, 
+					Computed_field_nodal_lookup_FE_region_change,
 					(void *)parent))
 				{
 					return true;
@@ -104,7 +104,7 @@ public:
 		}
 		return false;
 	}
-	
+
 	~Computed_field_nodal_lookup();
 
 private:
@@ -386,7 +386,7 @@ If the node we are looking at changes generate a computed field change message.
 
 struct Computed_field *Computed_field_create_nodal_lookup(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, struct FE_node *lookup_node) 
+	struct Computed_field *source_field, struct FE_node *lookup_node)
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
@@ -445,7 +445,7 @@ DESCRIPTION :
 If the node we are looking at changes generate a computed field change message.
 ==============================================================================*/
 
-char computed_field_quaternion_SLERP_type_string[] = "quaternion_SLERP";
+const char computed_field_quaternion_SLERP_type_string[] = "quaternion_SLERP";
 
 class Computed_field_quaternion_SLERP : public Computed_field_core
 {
@@ -467,7 +467,7 @@ public:
 			if (!FE_region_contains_FE_node(fe_region, nodal_lookup_node))
 				fe_region = FE_region_get_data_FE_region(fe_region);
 			if (FE_region_add_callback(fe_region,
-				Computed_field_quaternion_SLERP_FE_region_change, 
+				Computed_field_quaternion_SLERP_FE_region_change,
 				(void *)parent))
 			{
 				return true;
@@ -475,9 +475,9 @@ public:
 		}
 		return false;
 	}
-	 
+
 	~Computed_field_quaternion_SLERP();
-	 
+
 private:
 
 	 Computed_field_core *copy();
@@ -486,7 +486,7 @@ private:
 	 {
 			return(computed_field_quaternion_SLERP_type_string);
 	 }
-	 
+
 	int compare(Computed_field_core* other_field);
 
 	virtual bool is_defined_at_location(Cmiss_field_cache& cache);

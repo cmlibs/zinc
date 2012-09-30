@@ -56,10 +56,11 @@ using namespace std;
 
 class Computed_field_nodeset_operators_package : public Computed_field_type_package
 {
-public:
 };
 
 namespace {
+
+const char computed_field_nodeset_operator_type_string[] = "nodeset_operator";
 
 class Computed_field_nodeset_operator : public Computed_field_core
 {
@@ -85,7 +86,12 @@ public:
 			Computed_field_set_coordinate_system_from_sources(field);
 		}
 	}
-	
+
+	const char *get_type_string()
+	{
+		return(computed_field_nodeset_operator_type_string);
+	}
+
 	Cmiss_nodeset_id get_nodeset()
 	{
 		return nodeset;

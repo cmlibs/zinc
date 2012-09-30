@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_region.h
- * 
+ *
  * Definition of Cmiss_region, container of fields for representing model data,
  * and child regions for building hierarchical models.
  */
@@ -189,8 +189,8 @@ Removes the callback calling <function> with <user_data> from <region>.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Returns the name of the region. 
- * 
+ * Returns the name of the region.
+ *
  * @param region  The region whose name is requested.
  * @return  On success: allocated string containing region name.
  */
@@ -201,8 +201,8 @@ char *Cmiss_region_get_name(struct Cmiss_region *region);
  * A valid region name must start with an alphanumeric character, contain only
  * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
  * and may not finish with a space.
- * Fails if the new name is already in use by another region in the same parent. 
- * 
+ * Fails if the new name is already in use by another region in the same parent.
+ *
  * @param region  The region to be named.
  * @param name  The new name for the region.
  * @return  1 on success, 0 on failure.
@@ -211,7 +211,7 @@ int Cmiss_region_set_name(struct Cmiss_region *region, const char *name);
 
 /***************************************************************************//**
  * Allocates and returns the path to the root_region ("/").
- * 
+ *
  * @return  Allocated string "/".
  */
 char *Cmiss_region_get_root_region_path(void);
@@ -219,7 +219,7 @@ char *Cmiss_region_get_root_region_path(void);
 /***************************************************************************//**
  * Returns the full path name from the root region to this region. Path name
  * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
- * 
+ *
  * @param region  The region whose path is requested.
  * @return  On success: allocated string containing full region path.
  */
@@ -228,7 +228,7 @@ char *Cmiss_region_get_path(struct Cmiss_region *region);
 /***************************************************************************//**
  * Returns the relative path name to this region from other_region. Path name
  * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
- * 
+ *
  * @param region  The region whose path is requested.
  * @param other_region  The region the path is relative to.
  * @return  On success: allocated string containing relative region path; on
@@ -239,7 +239,7 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
 
 /***************************************************************************//**
  * Returns a reference to the parent region of this region.
- * 
+ *
  * @param region  The child region.
  * @return  Accessed reference to parent region, or NULL if none.
  */
@@ -256,7 +256,7 @@ struct Cmiss_region *Cmiss_region_get_parent_internal(struct Cmiss_region *regio
 
 /***************************************************************************//**
  * Returns a reference to the first child region of this region.
- * 
+ *
  * @param region  The region whose first child is requested.
  * @return  Accessed reference to first child region, or NULL if none.
  */
@@ -264,7 +264,7 @@ struct Cmiss_region *Cmiss_region_get_first_child(struct Cmiss_region *region);
 
 /***************************************************************************//**
  * Returns a reference to this region's next sibling region.
- * 
+ *
  * @param region  The region whose next sibling is requested.
  * @return  Accessed reference to next sibling region, or NULL if none.
  */
@@ -272,7 +272,7 @@ struct Cmiss_region *Cmiss_region_get_next_sibling(struct Cmiss_region *region);
 
 /***************************************************************************//**
  * Returns a reference to this region's previous sibling region.
- * 
+ *
  * @param region  The region whose previous sibling is requested.
  * @return  Accessed reference to previous sibling region, or NULL if none.
  */
@@ -286,21 +286,21 @@ struct Cmiss_region *Cmiss_region_get_previous_sibling(struct Cmiss_region *regi
  *   Cmiss_region_destroy(region_address);
  *   *region_address = temp;
  * }
- * 
+ *
  * @param region_address  The address of the region reference to replace.
  */
 void Cmiss_region_reaccess_next_sibling(struct Cmiss_region **region_address);
 
 /***************************************************************************//**
  * Adds new_child to the end of the list of child regions of this region.
- * If the new_child is already in the region tree, it is first removed. 
+ * If the new_child is already in the region tree, it is first removed.
  * Fails if new_child contains this region.
  * Fails if new_child is unnamed or the name is already used by another child of
  * this region.
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to add.
- * @return  1 on success, 0 on failure. 
+ * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_append_child(struct Cmiss_region *region,
 	struct Cmiss_region *new_child);
@@ -308,14 +308,14 @@ int Cmiss_region_append_child(struct Cmiss_region *region,
 /***************************************************************************//**
  * Inserts new_child before the existing ref_child in the list of child regions
  * of this region. If ref_child is NULL new_child is added at the end of the
- * list. If the new_child is already in the region tree, it is first removed. 
+ * list. If the new_child is already in the region tree, it is first removed.
  * Fails if new_child contains this region.
  * Fails if new_child is unnamed or the name is already used by another child of
  * this region.
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to append.
- * @return  1 on success, 0 on failure. 
+ * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_insert_child_before(struct Cmiss_region *region,
 	struct Cmiss_region *new_child, struct Cmiss_region *ref_child);
@@ -326,14 +326,14 @@ int Cmiss_region_insert_child_before(struct Cmiss_region *region,
  *
  * @param region  The current parent region of old_child.
  * @param old_child  The child to remove.
- * @return  1 on success, 0 on failure. 
+ * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_remove_child(struct Cmiss_region *region,
 	struct Cmiss_region *old_child);
 
 /***************************************************************************//**
  * Returns true if region is or contains the subregion.
- * 
+ *
  * @param region  The region being tested as container.
  * @param subregion  The region being tested for containment.
  * @return  1 if this region is or contains subregion, 0 if not.
@@ -343,7 +343,7 @@ int Cmiss_region_contains_subregion(struct Cmiss_region *region,
 
 /***************************************************************************//**
  * Returns a reference to the child region with supplied name, if any.
- * 
+ *
  * @param region  The region to search.
  * @param name  The name of the child.
  * @return  Accessed reference to the named child, or NULL if no match.
@@ -357,7 +357,7 @@ struct Cmiss_region *Cmiss_region_find_child_by_name(
  * i.e. forward slash characters '/' are used as parent/child name separators.
  * Single leading and trailing separator characters are ignored.
  * Hence, both name="" and name="/" find the region itself.
- * 
+ *
  * @param region  The region to search.
  * @param path  The directory-style path to the subregion.
  * @return  Accessed reference to subregion, or NULL no match.
@@ -375,7 +375,7 @@ Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
 /***************************************************************************//**
  * Deprecated legacy version of Cmiss_region_find_subregion_at_path returning
  * non-ACCESSed region as final argument.
- * 
+ *
  * @param region  The region to search.
  * @param path  The directory-style path to the subregion.
  * @param subregion_address  Address to put region at path. Set to NULL if no
@@ -405,8 +405,8 @@ struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region);
  * "body/heart" -> heart region, "body/heart" and NULL name if root region
  *     contains body region contains heart region
  * "heart/bob/fred/" -> region heart, "heart" and "bob/fred" if region heart
- *     has no child region called bob 
- * 
+ *     has no child region called bob
+ *
  * @param root_region the starting region for path
  * @path string the input path
  * @param region_address on success, points to region partially matched by path

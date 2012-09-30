@@ -125,6 +125,9 @@ CACHE_VAR_WITH_DEFAULT( ZINC_PNG_DIR "${ZINC_TP_INSTALL_PREFIX}/lib/cmake"
 CACHE_VAR_WITH_DEFAULT( ZINC_fieldml_DIR "${ZINC_TP_INSTALL_PREFIX}/lib/cmake"
     PATH "Where is the fieldml CMake config file installed?" )
 OPTION( ZINC_BUILD_APPLICATION "Build Cmgui application." TRUE )
+IF(ZINC_BUILD_APPLICATION)
+    SET( ZINC_BUILD_LIBRARY_TYPE "STATIC" CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" FORCE )
+ENDIF()
 
 SET( PNG_DIR ${ZINC_PNG_DIR} CACHE INTERNAL "Internalise PNG_DIR, manipulate via ZINC_PNG_DIR" FORCE )
 SET( ImageMagick_DIR ${ZINC_ImageMagick_DIR} CACHE INTERNAL "Internalise ImageMagick_DIR, manipulate via ZINC_ImageMagick_DIR" FORCE )
@@ -517,7 +520,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/core/source/api )
 SET( ZINC_LIB_GROUP zinc )
 ADD_SUBDIRECTORY(core)
 IF( ZINC_BUILD_APPLICATION )
-	ADD_SUBDIRECTORY(application)
+    ADD_SUBDIRECTORY(application)
 ENDIF( ZINC_BUILD_APPLICATION )
 
 IF( TARGET_ZINC_LIB )

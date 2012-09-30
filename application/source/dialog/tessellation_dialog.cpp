@@ -39,13 +39,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <iterator>
 #include "dialog/tessellation_dialog.hpp"
 #include "icon/cmiss_icon.xpm"
-#include <iterator>
-extern "C" {
-#include <graphics/graphics_module.h>
+#include "graphics/graphics_module.h"
 #include "general/debug.h"
-}
 
 TessellationItem::TessellationItem(wxWindow* parent, MANAGER(Cmiss_tessellation) *tessellation_manager_in,
 	Cmiss_tessellation *tessellation_in) :

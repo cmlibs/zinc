@@ -1,14 +1,12 @@
 
+
+#if !defined (COMPUTED_FIELD_APP_H_)
+#define COMPUTED_FIELD_APP_H_
+
 #include "command/parser.h"
-
-
-
 #include "general/message.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-
+struct Computed_field_package;
 
 int define_Computed_field(struct Parse_state *state,void *field_copy_void,
 	void *define_field_package_void);
@@ -70,7 +68,46 @@ Note, must be cycled through as many times as it takes till listed_fields -> 0.
 Second argument is a struct List_Computed_field_commands_data.
 ==============================================================================*/
 
+struct Computed_field_package *CREATE(Computed_field_package)(
+	struct MANAGER(Computed_field) *computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 20 May 2008
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+DESCRIPTION :
+Creates a Computed_field_package which is used by the rest of the program to
+access everything to do with computed fields.
+The root_region's computed_field_manager is passed in to support old code that
+expects it to be in the package. This is temporary until all code gets the true
+manager from the respective Cmiss_region.
+==============================================================================*/
+
+int DESTROY(Computed_field_package)(
+	struct Computed_field_package **package_address);
+/*******************************************************************************
+LAST MODIFIED : 3 February 1999
+
+DESCRIPTION :
+Frees memory/deaccess objects in computed_field_package at <*package_address>.
+Cancels any further messages from the root_region.
+==============================================================================*/
+
+int Computed_field_package_remove_types(
+	struct Computed_field_package *computed_field_package);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Unregisters each of the computed field types added.
+==============================================================================*/
+
+struct MANAGER(Computed_field) * Computed_field_package_get_computed_field_manager(struct Computed_field_package *computed_field_package);
+/*******************************************************************************
+LAST MODIFIED : 3 February 1999
+
+DESCRIPTION :
+Extracts the computed_field_manager from the computed_field_package. Note that
+the rest of the program should use this sparingly - it is really only here to
+allow interfacing to the choose_object widgets.
+==============================================================================*/
+
+#endif

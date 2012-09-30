@@ -58,7 +58,7 @@ class Computed_field_fibres_package : public Computed_field_type_package
 
 namespace {
 
-char computed_field_fibre_axes_type_string[] = "fibre_axes";
+const char computed_field_fibre_axes_type_string[] = "fibre_axes";
 
 class Computed_field_fibre_axes : public Computed_field_core
 {

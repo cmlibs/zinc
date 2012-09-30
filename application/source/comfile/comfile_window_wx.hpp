@@ -44,7 +44,6 @@ Definitions for the comfile window and structures.
 #if !defined (COMFILE_WINDOW_WX_H)
 #define COMFILE_WINDOW_WX_H
 
-extern "C" {
 #include <stddef.h>
 #include "command/command.h"
 #include "command/parser.h"
@@ -53,7 +52,6 @@ extern "C" {
 #include "general/manager.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
-}
 /*
 Global types
 ------------

@@ -56,8 +56,6 @@ Calls the client-specified callback routine if a different object is chosen.
 
 struct FE_element;
 
-const char *emptystring = "";
-
 class wxFeElementTextChooser : public wxTextCtrl
 {
 private:
@@ -72,7 +70,7 @@ public:
 		 FE_element *initial_object,	FE_region *fe_region,
 		 LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
 		 void *conditional_function_user_data) :
-			wxTextCtrl(parent, /*id*/-1, wxString::FromAscii(emptystring) ,wxPoint(0,0), wxSize(-1,-1),wxTE_PROCESS_ENTER),
+			wxTextCtrl(parent, /*id*/-1, wxT("") ,wxPoint(0,0), wxSize(-1,-1),wxTE_PROCESS_ENTER),
 			fe_region(fe_region), conditional_function(conditional_function),
 			conditional_function_user_data(conditional_function_user_data)
 /*******************************************************************************

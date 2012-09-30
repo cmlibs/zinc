@@ -10,9 +10,7 @@ will process either list commands or write to comfile commands
 #if !defined (PROCESS_LIST_OR_WRITE_COMMAND_H)
 #define PROCESS_LIST_OR_WRITE_COMMAND_H
 
-extern "C" {
 #include <stdarg.h>
-}
 
 #define MESSAGE_STRING_SIZE 1000
 static char message_string[MESSAGE_STRING_SIZE];
@@ -24,7 +22,7 @@ public:
 	 Process_list_or_write_command_class()
 	 {
 	 };
-	 
+
 	 virtual int write_enabled() = 0;
 
 	 virtual int process_command(enum Message_type message_type,const char *format,...) = 0;
@@ -38,7 +36,7 @@ public:
 	 Process_list_command_class()
 	 {
 	 };
-	 
+
 	 int process_command(enum Message_type message_type,const char *format,...)
 	 {
 			int return_code;
@@ -75,7 +73,7 @@ public:
 			return_code = write_message_to_file(message_type, message_string,"");
 			va_end(ap);
 			return (return_code);
-	 } 
+	 }
 
 	 int write_enabled()
 	{

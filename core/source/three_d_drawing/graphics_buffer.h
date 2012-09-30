@@ -52,6 +52,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #     define GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS
 #  endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
+#if defined (USE_GLEW)
+#	include <GL/glew.h>
+#endif
 
 #include "general/callback.h"
 #include "three_d_drawing/abstract_graphics_buffer.h"
@@ -96,7 +99,38 @@ enum Graphics_buffer_stereo_mode
 	GRAPHICS_BUFFER_STEREO
 };
 
-struct Graphics_buffer;
+struct Graphics_buffer_package
+/*******************************************************************************
+LAST MODIFIED : 5 May 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int override_visual_id;
+	//-- wxGLContext* wxSharedContext;
+};
+
+
+struct Graphics_buffer
+{
+	unsigned int access_count;
+	unsigned int width;
+	unsigned int height;
+	unsigned int origin_x;
+	unsigned int origin_y;
+	Graphics_buffer_type type;
+	enum Graphics_buffer_buffering_mode buffering_mode;
+	enum Graphics_buffer_stereo_mode stereo_mode;
+	int *attrib_list;
+#if defined (OPENGL_API)
+	GLuint fbo, depthbuffer, img;
+#if defined (USE_MSAA)
+	GLuint msbuffer, multi_depthbuffer, multi_fbo;
+#endif
+#endif
+	Graphics_buffer_package *package;
+
+};
 
 struct Graphics_buffer_package *CREATE(Graphics_buffer_package)();
 /*******************************************************************************
@@ -159,5 +193,7 @@ LAST MODIFIED : 7 December 2006
 
 DESCRIPTION :
 ==============================================================================*/
+
+int DESTROY(Graphics_buffer)(struct Graphics_buffer **buffer_ptr);
 
 #endif /* !defined (GRAPHICS_BUFFER_H) */

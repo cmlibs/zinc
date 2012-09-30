@@ -1152,6 +1152,8 @@ pixels per unit enables zooming to be achieved.
 ???RC How to handle y axis pointing down?
 ==============================================================================*/
 
+struct Graphics_buffer *Cmiss_scene_viewer_get_graphics_buffer(Cmiss_scene_viewer_id scene_viewer);
+
 enum Scene_viewer_viewport_mode Scene_viewer_get_viewport_mode(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************
@@ -1189,19 +1191,6 @@ LAST MODIFIED : 24 March 1998
 
 DESCRIPTION :
 Returns the actual projection matrix applied to fill the window.
-==============================================================================*/
-
-int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
-	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
-	int *visual_id, int *colour_buffer_depth, int *depth_buffer_depth,
-	int *accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 9 August 2002
-
-DESCRIPTION :
-Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
-<opengl_extensions> strings are static pointers supplied from the driver and
-so should not be modified or deallocated.
 ==============================================================================*/
 
 int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,

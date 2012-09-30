@@ -4,7 +4,7 @@ FILE : computed_field_curve.c
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Implements a computed_field which maintains a graphics transformation 
+Implements a computed_field which maintains a graphics transformation
 equivalent to the scene_viewer assigned to it.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -69,7 +69,7 @@ about changes as stemming from computed_field_manager for fields of type
 COMPUTED_FIELD_CURVE_LOOKUP.
 ==============================================================================*/
 
-char computed_field_curve_lookup_type_string[] = "curve_lookup";
+const char computed_field_curve_lookup_type_string[] = "curve_lookup";
 
 class Computed_field_curve_lookup : public Computed_field_core
 {
@@ -97,7 +97,7 @@ public:
 		}
 		return false;
 	}
-		
+
 	~Computed_field_curve_lookup();
 
 private:

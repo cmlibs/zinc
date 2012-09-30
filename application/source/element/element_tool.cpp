@@ -44,7 +44,6 @@ Interactive tool for selecting elements with mouse and other devices.
 #if 1
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
-extern "C" {
 #include "api/cmiss_rendition.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
@@ -65,7 +64,6 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
 #include "general/message.h"
-}
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -645,7 +643,7 @@ class wxElementTool : public wxPanel
 	Element_tool *element_tool;
 	wxCheckBox *button_element;
 	wxCheckBox *button_face;
-	wxCheckBox *button_line;	
+	wxCheckBox *button_line;
 	wxCheckBox *elementcommandfieldcheckbox;
 	wxPanel *element_command_field_chooser_panel;
 
@@ -659,9 +657,9 @@ class wxElementTool : public wxPanel
 
 public:
 
-	wxElementTool(Element_tool *element_tool, wxPanel *parent): 
+	wxElementTool(Element_tool *element_tool, wxPanel *parent):
 	element_tool(element_tool)
-	{	 
+	{
 		wxXmlInit_element_tool();
 		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
 		elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
@@ -679,8 +677,8 @@ public:
 			new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 			(element_command_field_chooser_panel, element_tool->command_field, computed_field_manager,
 			Computed_field_has_string_value_type, (void *)NULL, element_tool->user_interface);
-		Callback_base< Computed_field* > *element_command_field_callback = 
-			new Callback_member_callback< Computed_field*, 
+		Callback_base< Computed_field* > *element_command_field_callback =
+			new Callback_member_callback< Computed_field*,
 			wxElementTool, int (wxElementTool::*)(Computed_field *) >
 			(this, &wxElementTool::element_command_field_callback);
 		element_command_field_chooser->set_callback(element_command_field_callback);
@@ -831,7 +829,7 @@ Global functions
 */
 static int Element_tool_copy_function(
 	void *destination_tool_void, void *source_tool_void,
-	struct MANAGER(Interactive_tool) *destination_tool_manager) 
+	struct MANAGER(Interactive_tool) *destination_tool_manager)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
@@ -953,7 +951,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Interactive_tool_element_type_string,
 				(Interactive_event_handler*)NULL,
 				(Interactive_tool_bring_up_dialog_function*)NULL,
-				(Interactive_tool_reset_function*)NULL,				
+				(Interactive_tool_reset_function*)NULL,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
 				Element_tool_copy_function,
 				(void *)element_tool);
@@ -1347,7 +1345,7 @@ struct Element_tool *element_tool)
 	return (interactive_tool);
 } /* Element_tool_get_interactive_tool */
 
-int Element_tool_set_execute_command(struct Element_tool *element_tool, 
+int Element_tool_set_execute_command(struct Element_tool *element_tool,
 struct Execute_command *execute_command)
 {
 	int return_code = 0;

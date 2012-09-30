@@ -78,7 +78,7 @@ class Computed_field_composite_package : public Computed_field_type_package
 
 namespace {
 
-char computed_field_composite_type_string[] = "composite";
+const char computed_field_composite_type_string[] = "composite";
 
 class Computed_field_composite : public Computed_field_core
 {
@@ -327,7 +327,7 @@ Zero is used for any source field values that aren't set from the composite fiel
 {
 	int i, number_of_source_values, return_code, source_field_number;
 	FE_value *source_values;
-	
+
 	ENTER(Computed_field_composite::propagate_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components))
 	{
@@ -706,7 +706,7 @@ Note returned fields are not allocated in arrays.
 	Computed_field_composite* composite_core;
 
 	ENTER(Computed_field_get_type_composite);
-	if (field && 
+	if (field &&
 		(composite_core = dynamic_cast<Computed_field_composite*>(field->core)) &&
 		number_of_components &&
 		number_of_source_fields && source_fields &&
@@ -763,23 +763,6 @@ Note returned fields are not allocated in arrays.
 
 	return (return_code);
 } /* Computed_field_get_type_composite */
-
-struct Computed_field_composite_source_data
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Data structure filled by set_Computed_field_composite_source_data.
-==============================================================================*/
-{
-	int number_of_components;
-	int number_of_source_fields;
-	struct Computed_field **source_fields;
-	int number_of_source_values;
-	double *source_values;
-	int *source_field_numbers;
-	int *source_value_numbers;
-}; /* struct Computed_field_composite_source_data */
 
 struct Computed_field *Computed_field_create_constant(
 	struct Cmiss_field_module *field_module,
@@ -921,7 +904,7 @@ the passed Computed_field_component.
 	if (field && (field_component =
 		(struct Computed_field_component *)field_component_void))
 	{
-		return_code = 
+		return_code =
 			(composite_core = dynamic_cast<Computed_field_composite*>(field->core)) &&
 			(1 == field->number_of_components) &&
 			(1 == field->number_of_source_fields) &&
@@ -1113,7 +1096,7 @@ struct Computed_field *Computed_field_create_concatenate(
 	int number_of_source_fields, struct Computed_field **source_fields)
 {
 	Computed_field *field = NULL;
-	
+
 	if (source_fields && number_of_source_fields > 0)
 	{
 		int *source_field_numbers, *source_value_numbers, i, j, k,
@@ -1123,7 +1106,7 @@ struct Computed_field *Computed_field_create_concatenate(
 		{
 			if (!(source_fields[i] && source_fields[i]->isNumerical()))
 				return 0;
-			number_of_components += 
+			number_of_components +=
 				Computed_field_get_number_of_components(source_fields[i]);
 		}
 		ALLOCATE(source_field_numbers, int, number_of_components);
@@ -1133,7 +1116,7 @@ struct Computed_field *Computed_field_create_concatenate(
 			k = 0;
 			for (i = 0; i < number_of_source_fields; i++)
 			{
-				number_of_components_per_field = 
+				number_of_components_per_field =
 					Computed_field_get_number_of_components(source_fields[i]);
 				for (j = 0; j < number_of_components_per_field; j++)
 				{

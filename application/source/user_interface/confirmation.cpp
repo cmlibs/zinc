@@ -45,7 +45,6 @@ Routines for waiting for user input.
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
 
-extern "C" {
 #if defined (UNIX)
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -61,7 +60,6 @@ extern "C" {
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
 #include "general/message.h"
-}
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>

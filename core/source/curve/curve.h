@@ -120,7 +120,60 @@ scale factors are zero.
 	CURVE_CONTINUITY_G1     /* G1 (slope) continuity */
 }; /* enum Curve_continuity_mode */
 
-struct Curve;
+struct Curve
+/*******************************************************************************
+LAST MODIFIED : 22 November 1999
+
+DESCRIPTION :
+Stores a function returning a number or N-vector over a range of parameters.
+This structure is private; use functions to access its contents.
+It is designed to be flexible rather than fast.
+==============================================================================*/
+{
+	const char *name;
+	enum FE_basis_type fe_basis_type;
+	int number_of_components;
+	enum Curve_extend_mode extend_mode;
+	enum Curve_type type;
+	int value_nodes_per_element,value_derivatives_per_node;
+
+	/* each Curve is represented by fields in a private region */
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
+	struct FE_field *parameter_field,*value_field;
+	struct FE_node *template_node;
+	struct FE_element *template_element;
+
+	/* information useful for editing Curve */
+	FE_value *max_value,*min_value;
+	FE_value parameter_grid,value_grid;
+
+	/* cache for rapid parameter look-up */
+	FE_value *parameter_table;
+	int parameter_table_size;
+
+	/* after clearing in create, following to be modified only by manager */
+	struct MANAGER(Curve) *manager;
+	int manager_change_status;
+
+	int access_count;
+}; /* struct Curve */
+
+struct Curve_definition
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *name;
+	enum FE_basis_type fe_basis_type;
+	int fe_basis_type_set;
+	int number_of_components;
+	int number_of_components_set;
+	struct Curve *curve,*curve_to_be_modified;
+	struct IO_stream_package *io_stream_package;
+}; /* struct Curve_definition */
 
 DECLARE_LIST_TYPES(Curve);
 DECLARE_MANAGER_TYPES(Curve);
@@ -720,4 +773,9 @@ temporary managers to use import_finite_element functions. Mesh is checked for
 appropriateness to curve usage.
 ???RC Later autorange
 ==============================================================================*/
+
+int cc_copy_convert_without_name(struct Curve *destination,
+	enum FE_basis_type fe_basis_type,int number_of_components,
+	struct Curve *source);
+
 #endif /* !defined (CURVE_H) */

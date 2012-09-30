@@ -43,10 +43,13 @@
 #define GRAPHICS_FILTER_HPP
 
 #include "api/cmiss_scene.h"
+#include "api/cmiss_graphics_module.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "general/debug.h"
+#include "general/cmiss_set.hpp"
 
 struct Cmiss_rendition;
 struct Cmiss_graphic;
@@ -62,6 +65,14 @@ enum Cmiss_graphics_filter_type
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR,
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND,
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR
+};
+
+struct Define_graphics_filter_data
+{
+	Cmiss_region *root_region;
+	Cmiss_graphics_module *graphics_module;
+	int number_of_filters;
+	Cmiss_graphics_filter **source_filters;
 };
 
 DECLARE_LIST_TYPES(Cmiss_graphics_filter);
@@ -148,7 +159,7 @@ public:
 		++access_count;
 		return this;
 	}
-	
+
 	enum Cmiss_graphics_filter_type getType()
 	{
 		return filter_type;
@@ -178,6 +189,52 @@ public:
 		return DEACCESS(Cmiss_graphics_filter)(graphics_filter_address);
 	}
 };
+
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class Cmiss_graphics_filter_identifier : private Cmiss_graphics_filter
+{
+public:
+	Cmiss_graphics_filter_identifier(const char *name)
+	{
+		// const_cast OK as must never be modified & cleared in destructor
+		Cmiss_graphics_filter::name = const_cast<char *>(name);
+		filter_type = CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER;
+	}
+
+	virtual ~Cmiss_graphics_filter_identifier()
+	{
+		Cmiss_graphics_filter::name = NULL;
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic)
+	{
+		USE_PARAMETER(graphic);
+		return false;
+	}
+
+	virtual void list_type_specific() const
+	{
+	}
+
+	Cmiss_graphics_filter *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<Cmiss_graphics_filter> by name */
+struct Cmiss_graphics_filter_compare_name
+{
+	bool operator() (const Cmiss_graphics_filter * graphics_filter1, const Cmiss_graphics_filter * graphics_filter2) const
+	{
+		return strcmp(graphics_filter1->name, graphics_filter2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<Cmiss_graphics_filter *,Cmiss_graphics_filter_compare_name> Cmiss_set_Cmiss_graphics_filter;
 
 int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
 	struct Cmiss_graphics_module *graphics_module);

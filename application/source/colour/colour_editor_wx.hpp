@@ -46,12 +46,11 @@ ranges between 0-1.
 #if !defined (COLOUR_EDITOR_WX_HPP)
 #define COLOUR_EDITOR_WX_HPP
 
-extern "C" {
 #include <math.h>
 #include "graphics/colour.h"
 #include "general/debug.h"
 #include "general/message.h"
-}
+
 #include "wx/wx.h"
 
 enum Colour_editor_mode
@@ -72,7 +71,7 @@ class Colour_editor : public wxPanel
 
 public:
 
-	 Colour_editor(wxPanel *parent, const char *panel_name, enum Colour_editor_mode mode, struct Colour *colour, 
+	 Colour_editor(wxPanel *parent, const char *panel_name, enum Colour_editor_mode mode, struct Colour *colour,
 			void *material_editor_temp);
 	 int colour_editor_wx_set_colour(struct Colour *colour);
 	 Colour colour_editor_wx_get_colour();
@@ -81,9 +80,9 @@ public:
 	 void colour_editor_wx_change_mode_from_choice();
 
 private:
-	 
-    void set_properties();
-    void do_layout();
+
+	void set_properties();
+	void do_layout();
 	 void colour_editor_wx_conversion(enum Colour_editor_mode old_mode,
 			enum Colour_editor_mode new_mode,struct Colour *old_data,
 			struct Colour *new_data);
@@ -91,8 +90,8 @@ private:
 			int item_num);
 	 void colour_editor_wx_update();
 	 void colour_editor_wx_update_panel_colour();
- 	 void OnColourEditorTextEntered(wxCommandEvent& event);
- 	 void OnColourEditorSliderChanged(wxCommandEvent& event);
+	 void OnColourEditorTextEntered(wxCommandEvent& event);
+	 void OnColourEditorSliderChanged(wxCommandEvent& event);
 	 void OnColourEditorColourModeChoiceChanged(wxCommandEvent& event);
 
 protected:

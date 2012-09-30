@@ -115,13 +115,50 @@ rendering.
 	int number_of_data_components;
 }; /* struct Spectrum_render_data */
 
-struct Spectrum_settings;
+struct Spectrum_settings
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
-Private
+Stores one group of settings for a single part of a spectrum rendition.
 ==============================================================================*/
+{
+	/* unique identifier for each settings */
+	int position;
+	int component_number; /* Which data component this settings uses (0 is first component)*/
+	int active; /* This corresponds to visiblity for graphical finite elements */
+	enum Spectrum_settings_type settings_type;
+	char settings_changed;
+	/* These specify the range of values over which the settings operates */
+	ZnReal maximum, minimum;
+	/* These flags control whether the maximum, minumum values can be changed */
+	int fix_maximum,fix_minimum;
+	/* These flags control whether a settings is transparent (has no effect)
+		or is clamped at its extreme values outside it's minimum and maximum */
+	int extend_above, extend_below;
+	/* These specify the limits of the converted value before it is rendered to
+		a colour, i.e. red varies from <min_value> red at the <minimum> to
+		<max_value> red at the <maximum> */
+	ZnReal max_value, min_value;
+	int reverse;
+	enum Spectrum_settings_colour_mapping colour_mapping;
+	ZnReal exaggeration, step_value;
+	/* The number of bands in a banded contour and the proportion (out of 1000)
+		of the black bands */
+	int number_of_bands, black_band_proportion;
+
+	/* SPECTRUM_FIELD type */
+	struct Computed_field *input_field;
+	struct Computed_field *output_field;
+
+#if defined (OPENGL_API)
+	/* Texture number for banded and step spectrums */
+	GLuint texture_id;
+#endif /* defined (OPENGL_API) */
+
+	/* For accessing objects */
+	int access_count;
+};
 
 enum Spectrum_settings_modify_command
 /*******************************************************************************
@@ -521,7 +558,7 @@ int Spectrum_settings_set_range_maximum(struct Spectrum_settings *settings,
 /*******************************************************************************
 LAST MODIFIED : 15 January 20001
 
-DESCRIPTION : 
+DESCRIPTION :
 If <settings> ->fix_maximum is NOT set, set <settings> ->maximum to <value>
 ==============================================================================*/
 

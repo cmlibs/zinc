@@ -80,7 +80,7 @@ DESCRIPTION :
 	struct IO_stream_package *io_stream_package;
 	struct Scene *viewer_scene;
 	struct Colour viewer_background_colour;
-	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Graphics_buffer_app_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	struct Emoter_dialog **emoter_dialog_address;

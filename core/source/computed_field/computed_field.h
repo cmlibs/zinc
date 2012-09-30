@@ -108,16 +108,6 @@ DECLARE_LIST_TYPES(Computed_field);
 
 DECLARE_MANAGER_TYPES(Computed_field);
 
-struct Computed_field_package;
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Contains all information for editing and maintaining Computed_fields, including
-the MANAGER(Computed_field).
-struct Computed_field_package is private.
-???RC Make macro PACKAGE(Computed_field) etc.?
-==============================================================================*/
 
 struct List_Computed_field_commands_data
 {
@@ -304,7 +294,7 @@ int Cmiss_field_evaluate_real_with_derivatives(Cmiss_field_id field,
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999 
+LAST MODIFIED : 28 October 1999
 
 DESCRIPTION :
 If the <field> or its source field is grid-based in <element>, returns in
@@ -318,7 +308,7 @@ Returns 0 with no errors if the field is not grid-based.
 ==============================================================================*/
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, 
+		int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field);
 /*******************************************************************************
 LAST MODIFIED : 03 February 2005
@@ -524,9 +514,9 @@ component coordinate field.
 The number of components controls how the field is interpreted:
 3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
 6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
-    from cross product);
+	from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
-    normal).
+	normal).
 ==============================================================================*/
 
 /***************************************************************************//**
@@ -641,50 +631,6 @@ Lists a single line about a computed field including just name, number of
 components, coordinate system and type.
 ==============================================================================*/
 
-struct Computed_field_package *CREATE(Computed_field_package)(
-	struct MANAGER(Computed_field) *computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 20 May 2008
-
-DESCRIPTION :
-Creates a Computed_field_package which is used by the rest of the program to
-access everything to do with computed fields.
-The root_region's computed_field_manager is passed in to support old code that
-expects it to be in the package. This is temporary until all code gets the true
-manager from the respective Cmiss_region.
-==============================================================================*/
-
-int DESTROY(Computed_field_package)(
-	struct Computed_field_package **package_address);
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Frees memory/deaccess objects in computed_field_package at <*package_address>.
-Cancels any further messages from the root_region.
-==============================================================================*/
-
-struct MANAGER(Computed_field)
-	*Computed_field_package_get_computed_field_manager(
-		struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Extracts the computed_field_manager from the computed_field_package. Note that
-the rest of the program should use this sparingly - it is really only here to
-allow interfacing to the choose_object widgets.
-==============================================================================*/
-
-int Computed_field_package_remove_types(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Unregisters each of the computed field types added.
-==============================================================================*/
-
 int Computed_field_can_be_destroyed(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
@@ -703,7 +649,7 @@ be destroyed, assuming it is only accessed by this field and its manager.
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
-/** 
+/**
  * Returns true if the field is a coordinate field, false otherwise
  *
  * @param field the field to determine whether or not it is a coordinate field
@@ -743,7 +689,7 @@ char *Cmiss_field_module_get_unique_field_name(
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.
- * 
+ *
  * @param field  The field.
  * @return  1 if field is not a source field of others otherwise 0.
  */

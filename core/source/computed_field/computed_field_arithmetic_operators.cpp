@@ -59,7 +59,7 @@ class Computed_field_arithmetic_operators_package : public Computed_field_type_p
 
 namespace {
 
-char computed_field_power_type_string[] = "power";
+const char computed_field_power_type_string[] = "power";
 
 class Computed_field_power : public Computed_field_core
 {
@@ -229,7 +229,7 @@ Computed_field *Computed_field_create_power(Cmiss_field_module *field_module,
 
 	ENTER(Computed_field_create_power);
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -269,7 +269,7 @@ int Computed_field_get_type_power(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_POWER, the 
+If the field is of type COMPUTED_FIELD_POWER, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -295,7 +295,7 @@ If the field is of type COMPUTED_FIELD_POWER, the
 
 namespace {
 
-char computed_field_multiply_components_type_string[] = "multiply_components";
+const char computed_field_multiply_components_type_string[] = "multiply_components";
 
 class Computed_field_multiply_components : public Computed_field_core
 {
@@ -455,7 +455,7 @@ Computed_field *Computed_field_create_multiply(
 
 	ENTER(Computed_field_create_multiply);
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -495,7 +495,7 @@ int Computed_field_get_type_multiply_components(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the 
+If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -521,7 +521,7 @@ If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 
 namespace {
 
-char computed_field_divide_components_type_string[] = "divide_components";
+const char computed_field_divide_components_type_string[] = "divide_components";
 
 class Computed_field_divide_components : public Computed_field_core
 {
@@ -684,7 +684,7 @@ Computed_field *Computed_field_create_divide(Cmiss_field_module *field_module,
 
 	ENTER(Computed_field_create_divide);
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -724,7 +724,7 @@ int Computed_field_get_type_divide_components(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the 
+If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -750,7 +750,7 @@ If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 
 namespace {
 
-char computed_field_add_type_string[] = "add";
+const char computed_field_add_type_string[] = "add";
 
 class Computed_field_add : public Computed_field_core
 {
@@ -914,7 +914,7 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_module *field_mod
 
 	ENTER(Computed_field_create_weighted_add);
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -948,7 +948,7 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_module *field_mod
 
 	return (field);
 } /* Computed_field_create_weighted_add */
- 
+
 Computed_field *Computed_field_create_add(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -972,7 +972,7 @@ int Computed_field_get_type_add(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ADD, the 
+If the field is of type COMPUTED_FIELD_ADD, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1000,7 +1000,7 @@ If the field is of type COMPUTED_FIELD_ADD, the
 
 namespace {
 
-char computed_field_scale_type_string[] = "scale";
+const char computed_field_scale_type_string[] = "scale";
 
 class Computed_field_scale : public Computed_field_core
 {
@@ -1267,7 +1267,7 @@ int Computed_field_get_type_scale(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SCALE, the 
+If the field is of type COMPUTED_FIELD_SCALE, the
 <source_field> and <scale_factors> used by it are returned.
 ==============================================================================*/
 {
@@ -1306,7 +1306,7 @@ If the field is of type COMPUTED_FIELD_SCALE, the
 
 namespace {
 
-char computed_field_clamp_maximum_type_string[] = "clamp_maximum";
+const char computed_field_clamp_maximum_type_string[] = "clamp_maximum";
 
 class Computed_field_clamp_maximum : public Computed_field_core
 {
@@ -1537,7 +1537,7 @@ int Computed_field_get_type_clamp_maximum(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the 
+If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1576,7 +1576,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 
 namespace {
 
-char computed_field_clamp_minimum_type_string[] = "clamp_minimum";
+const char computed_field_clamp_minimum_type_string[] = "clamp_minimum";
 
 class Computed_field_clamp_minimum : public Computed_field_core
 {
@@ -1805,7 +1805,7 @@ int Computed_field_get_type_clamp_minimum(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the 
+If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1844,7 +1844,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 
 namespace {
 
-char computed_field_offset_type_string[] = "offset";
+const char computed_field_offset_type_string[] = "offset";
 
 class Computed_field_offset : public Computed_field_core
 {
@@ -2095,9 +2095,9 @@ int Computed_field_get_type_offset(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field type_string matches computed_field_offset_type_string, 
-the source_field and offsets used by it are returned. Since the number of 
-offsets is equal to the number of components in the source_field (and you don't 
+If the field type_string matches computed_field_offset_type_string,
+the source_field and offsets used by it are returned. Since the number of
+offsets is equal to the number of components in the source_field (and you don't
 know this yet), this function returns in *offsets a pointer to an allocated array
 containing the FE_values.
 It is up to the calling function to DEALLOCATE the returned <*offsets>.
@@ -2138,7 +2138,7 @@ It is up to the calling function to DEALLOCATE the returned <*offsets>.
 
 namespace {
 
-char computed_field_sum_components_type_string[] = "sum_components";
+const char computed_field_sum_components_type_string[] = "sum_components";
 
 class Computed_field_sum_components : public Computed_field_core
 {
@@ -2317,7 +2317,7 @@ int Computed_field_get_type_sum_components(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the 
+If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the
 <source_field> and <weights> used by it are returned.
 ==============================================================================*/
 {
@@ -2356,7 +2356,7 @@ If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the
 
 namespace {
 
-char computed_field_edit_mask_type_string[] = "edit_mask";
+const char computed_field_edit_mask_type_string[] = "edit_mask";
 
 class Computed_field_edit_mask : public Computed_field_core
 {
@@ -2551,7 +2551,7 @@ int Computed_field_get_type_edit_mask(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EDIT_MASK, the 
+If the field is of type COMPUTED_FIELD_EDIT_MASK, the
 <source_field> and <edit_mask> used by it are returned. Since the number of
 edit_mask values is equal to the number of components in the source_field, and
 you don't know this yet, this function returns in *edit_mask a pointer to an
@@ -2593,7 +2593,7 @@ allocated array containing the FE_values.
 
 namespace {
 
-char computed_field_log_type_string[] = "log";
+const char computed_field_log_type_string[] = "log";
 
 class Computed_field_log : public Computed_field_core
 {
@@ -2763,7 +2763,7 @@ int Computed_field_get_type_log(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_LOG, the 
+If the field is of type COMPUTED_FIELD_LOG, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -2788,7 +2788,7 @@ If the field is of type COMPUTED_FIELD_LOG, the
 
 namespace {
 
-char computed_field_sqrt_type_string[] = "sqrt";
+const char computed_field_sqrt_type_string[] = "sqrt";
 
 class Computed_field_sqrt : public Computed_field_core
 {
@@ -2959,7 +2959,7 @@ int Computed_field_get_type_sqrt(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SQRT, the 
+If the field is of type COMPUTED_FIELD_SQRT, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -2984,7 +2984,7 @@ If the field is of type COMPUTED_FIELD_SQRT, the
 
 namespace {
 
-char computed_field_exp_type_string[] = "exp";
+const char computed_field_exp_type_string[] = "exp";
 
 class Computed_field_exp : public Computed_field_core
 {
@@ -3155,7 +3155,7 @@ int Computed_field_get_type_exp(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EXP, the 
+If the field is of type COMPUTED_FIELD_EXP, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {
@@ -3180,7 +3180,7 @@ If the field is of type COMPUTED_FIELD_EXP, the
 
 namespace {
 
-char computed_field_abs_type_string[] = "abs";
+const char computed_field_abs_type_string[] = "abs";
 
 class Computed_field_abs : public Computed_field_core
 {
@@ -3366,7 +3366,7 @@ int Computed_field_get_type_abs(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EXP, the 
+If the field is of type COMPUTED_FIELD_EXP, the
 <source_field> used by it are returned.
 ==============================================================================*/
 {

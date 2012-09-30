@@ -63,17 +63,36 @@ Global types
 */
 
 #define Spectrum Cmiss_spectrum
-struct Spectrum;
+struct Spectrum
 /*******************************************************************************
-LAST MODIFIED : 18 October 1997
+LAST MODIFIED : 14 May 1998
 
 DESCRIPTION :
 Spectrum type is private.
 ==============================================================================*/
+{
+	ZnReal maximum,minimum;
+	char *name;
+	int clear_colour_before_settings;
+	struct LIST(Spectrum_settings) *list_of_settings;
+
+	struct Texture *colour_lookup_texture;
+
+	/* after clearing in create, following to be modified only by manager */
+	struct MANAGER(Spectrum) *manager;
+	int manager_change_status;
+	bool is_managed_flag;
+	/* the number of structures that point to this spectrum.  The spectrum
+		cannot be destroyed while this is greater than 0 */
+	int access_count;
+}; /* struct Spectrum */
 
 DECLARE_LIST_TYPES(Spectrum);
 
 DECLARE_MANAGER_TYPES(Spectrum);
+struct Cmiss_graphics_module;
+#include "general/manager_private.h"
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct Cmiss_graphics_module);
 
 enum Spectrum_colour_components
 /*******************************************************************************
@@ -154,9 +173,9 @@ LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 A convienience routine that interrogates a spectrum to see if it is one of the
-simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED) 
-added as an extra, last, setting If it does not comform exactly to one of the 
-simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM. 
+simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED)
+added as an extra, last, setting If it does not comform exactly to one of the
+simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM.
 See also Spectrum_get_simple_type.
 ==============================================================================*/
 
@@ -169,7 +188,7 @@ DESCRIPTION :
 Checks if the last spectrum setting is SPECTRUM_BANDED, removes it if it is,
 then adds a SPECTRUM_BANDED setting to the <spectrum> with <number_of_bands>,
 <band_proportions>. Setting is added at the end of the list.
-This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED 
+This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED
 settings holding for the contours.
 If <number_of_bands>==0, simply removes any existing contour band settings.
 ==============================================================================*/
@@ -253,7 +272,7 @@ DESCRIPTION :
 Returns the number_of_components used by the spectrum.
 ==============================================================================*/
 
-enum Spectrum_colour_components 
+enum Spectrum_colour_components
 Spectrum_get_colour_components(struct Spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
@@ -364,7 +383,7 @@ int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_componen
 LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
-Uses the <spectrum> to calculate RGBA components to represent the 
+Uses the <spectrum> to calculate RGBA components to represent the
 <number_of_data_components> <data> values.
 <rgba> is assumed to be an array of four values for red, green, blue and alpha.
 ==============================================================================*/

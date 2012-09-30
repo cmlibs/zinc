@@ -57,7 +57,7 @@ class Computed_field_logical_operators_package : public Computed_field_type_pack
 
 namespace {
 
-char computed_field_or_type_string[] = "or";
+const char computed_field_or_type_string[] = "or";
 
 class Computed_field_or : public Computed_field_core
 {
@@ -119,7 +119,7 @@ Computed_field *Cmiss_field_module_create_or(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -158,7 +158,7 @@ int Computed_field_get_type_or(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_XYZ, the 
+If the field is of type COMPUTED_FIELD_XYZ, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -184,7 +184,7 @@ If the field is of type COMPUTED_FIELD_XYZ, the
 
 namespace {
 
-char computed_field_and_type_string[] = "and";
+const char computed_field_and_type_string[] = "and";
 
 class Computed_field_and : public Computed_field_core
 {
@@ -246,7 +246,7 @@ Computed_field *Cmiss_field_module_create_and(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -285,7 +285,7 @@ int Computed_field_get_type_and(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_AND, the 
+If the field is of type COMPUTED_FIELD_AND, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -311,7 +311,7 @@ If the field is of type COMPUTED_FIELD_AND, the
 
 namespace {
 
-char computed_field_xor_type_string[] = "xor";
+const char computed_field_xor_type_string[] = "xor";
 
 class Computed_field_xor : public Computed_field_core
 {
@@ -379,7 +379,7 @@ Computed_field *Cmiss_field_module_create_xor(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -418,7 +418,7 @@ int Computed_field_get_type_xor(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_XOR, the 
+If the field is of type COMPUTED_FIELD_XOR, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -444,7 +444,7 @@ If the field is of type COMPUTED_FIELD_XOR, the
 
 namespace {
 
-char computed_field_equal_to_type_string[] = "equal_to";
+const char computed_field_equal_to_type_string[] = "equal_to";
 
 class Computed_field_equal_to : public Computed_field_core
 {
@@ -530,7 +530,7 @@ Computed_field *Cmiss_field_module_create_equal_to(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -569,7 +569,7 @@ int Computed_field_get_type_equal_to(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EQUAL_TO, the 
+If the field is of type COMPUTED_FIELD_EQUAL_TO, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -595,7 +595,7 @@ If the field is of type COMPUTED_FIELD_EQUAL_TO, the
 
 namespace {
 
-char computed_field_less_than_type_string[] = "less_than";
+const char computed_field_less_than_type_string[] = "less_than";
 
 class Computed_field_less_than : public Computed_field_core
 {
@@ -656,7 +656,7 @@ Computed_field *Computed_field_create_less_than(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -695,7 +695,7 @@ int Computed_field_get_type_less_than(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_LESS_THAN, the 
+If the field is of type COMPUTED_FIELD_LESS_THAN, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -721,7 +721,7 @@ If the field is of type COMPUTED_FIELD_LESS_THAN, the
 
 namespace {
 
-char computed_field_greater_than_type_string[] = "greater_than";
+const char computed_field_greater_than_type_string[] = "greater_than";
 
 class Computed_field_greater_than : public Computed_field_core
 {
@@ -782,7 +782,7 @@ Computed_field *Computed_field_create_greater_than(
 {
 	Computed_field *field = NULL;
 	/* Access and broadcast before checking components match,
-		the local source_field_one and source_field_two will 
+		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
@@ -821,7 +821,7 @@ int Computed_field_get_type_greater_than(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_GREATER_THAN, the 
+If the field is of type COMPUTED_FIELD_GREATER_THAN, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -847,7 +847,7 @@ If the field is of type COMPUTED_FIELD_GREATER_THAN, the
 
 namespace {
 
-char computed_field_is_defined_type_string[] = "is_defined";
+const char computed_field_is_defined_type_string[] = "is_defined";
 
 class Computed_field_is_defined : public Computed_field_core
 {
@@ -899,7 +899,7 @@ int Computed_field_is_defined::evaluate(Cmiss_field_cache& cache, FieldValueCach
 /*****************************************************************************//**
  * Creates a scalar field whose value is 1 wherever the source field is defined,
  * and 0 elsewhere (without error).
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to check whether defined.
  * @return Newly created field
@@ -924,7 +924,7 @@ int Computed_field_get_type_is_defined(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_IS_DEFINED, the 
+If the field is of type COMPUTED_FIELD_IS_DEFINED, the
 <source_field>  used by it are returned.
 ==============================================================================*/
 {
@@ -949,7 +949,7 @@ If the field is of type COMPUTED_FIELD_IS_DEFINED, the
 
 namespace {
 
-char computed_field_not_type_string[] = "not";
+const char computed_field_not_type_string[] = "not";
 
 class Computed_field_not : public Computed_field_core
 {

@@ -58,28 +58,6 @@ Module types
 ------------
 */
 
-struct Environment_map
-/*******************************************************************************
-LAST MODIFIED : 25 July 1995
-
-DESCRIPTION :
-The properties of a environment map.
-==============================================================================*/
-{
-	/* the name of the environment map */
-	const char *name;
-	/* the graphical materials to use for each face of the cube */
-	struct Graphical_material *face_material[6];
-
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Environment_map) *manager;
-	int manager_change_status;
-
-	/* the number of structures that point to this environment map. The
-		environment map cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct Environment_map */
-
 FULL_DECLARE_LIST_TYPE(Environment_map);
 
 FULL_DECLARE_MANAGER_TYPE(Environment_map);

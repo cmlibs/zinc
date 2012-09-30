@@ -214,49 +214,6 @@ struct Cmiss_graphics_module *Cmiss_context_app_create_graphics_module(struct Cm
 	return graphics_module;
 }
 
-struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
-{
-	struct Cmiss_region *root_region = 0;
-
-	if (context)
-	{
-		if (!context->root_region)
-		{
-			context->root_region = Cmiss_region_create_internal();
-		}
-		root_region = ACCESS(Cmiss_region)(context->root_region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_region.  Missing context");
-	}
-
-	return root_region;
-}
-
-struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
-{
-	Cmiss_region *region = NULL;
-
-	if (context)
-	{
-		// all regions share the element shapes and bases from the default_region
-		if (!context->root_region)
-		{
-			Cmiss_region *default_region = Cmiss_context_get_default_region(context);
-			Cmiss_region_destroy(&default_region);
-		}
-		region = Cmiss_region_create_region(context->root_region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_create_region.  Missing context");
-	}
-	return region;
-}
-
 struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct Cmiss_context_app *context)
 {
 	struct Cmiss_command_data *command_data = NULL;
@@ -333,68 +290,6 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 
 	return UI_module;
 }
-
-struct Any_object_selection *Cmiss_context_get_any_object_selection(
-	struct Context *context)
-{
-	struct Any_object_selection *any_object_selection = NULL;
-	if (context)
-	{
-		if (!context->any_object_selection)
-		{
-			context->any_object_selection = CREATE(Any_object_selection)();
-		}
-		any_object_selection = context->any_object_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_any_object_selection.  Missing context.");
-	}
-	return any_object_selection;
-}
-
-struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_selection(
-	struct Context *context)
-{
-	struct Element_point_ranges_selection *element_point_ranges_selection = NULL;
-	if (context)
-	{
-		if (!context->element_point_ranges_selection)
-		{
-			context->element_point_ranges_selection = CREATE(Element_point_ranges_selection)();
-		}
-		element_point_ranges_selection = context->element_point_ranges_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_element_point_ranges_selection.  Missing context.");
-	}
-	return element_point_ranges_selection;
-}
-
-struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
-	struct Context *context)
-{
-	struct IO_stream_package *io_stream_package = NULL;
-	if (context)
-	{
-		if (!context->io_stream_package)
-		{
-			context->io_stream_package = CREATE(IO_stream_package)();
-		}
-		io_stream_package = context->io_stream_package;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_IO_stream_package.  Missing context.");
-	}
-
-	return io_stream_package;
-}
-
 
 struct Event_dispatcher *Cmiss_context_app_get_default_event_dispatcher(struct Cmiss_context_app *context)
 {
