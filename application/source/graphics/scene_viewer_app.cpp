@@ -12,6 +12,9 @@
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_coordinate_system.hpp"
 
+int Scene_viewer_app_input_select(struct Scene_viewer_app *scene_viewer,
+	struct Graphics_buffer_input *input);
+
 int Scene_viewer_app_default_input_callback(struct Scene_viewer_app *scene_viewer,
 	struct Graphics_buffer_input *input, void *dummy_void);
 
@@ -343,10 +346,10 @@ about which the scene is turning relative to its lookat point and the
 		/* Repost the idle callback */
 		if(!scene_viewer->idle_update_callback_id)
 		{
-			//-- scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-			//-- 	User_interface_get_event_dispatcher(scene_viewer->user_interface),
-			//-- 	Scene_viewer_idle_update_callback, (void *)scene_viewer,
-			//-- 	EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				Scene_viewer_app_idle_update_callback, (void *)scene_viewer,
+				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 		}
 		return_code=1;
 	}
@@ -368,10 +371,10 @@ int Scene_viewer_app_sleep(struct Scene_viewer_app *scene_viewer)
 	{
 		if (scene_viewer->idle_update_callback_id)
 		{
-			//-- Event_dispatcher_remove_idle_callback(
-			//-- 	User_interface_get_event_dispatcher(scene_viewer->user_interface),
-			//-- 	scene_viewer->idle_update_callback_id);
-			//-- scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
+			Event_dispatcher_remove_idle_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		return_code = Scene_viewer_sleep(scene_viewer->core_scene_viewer);
 	}
@@ -425,7 +428,7 @@ SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 		if (scene_viewer->interactive_tool &&
 			(scene_viewer->interactive_tool != interactive_tool))
 		{
-			//-- Interactive_tool_reset(scene_viewer->interactive_tool);
+			Interactive_tool_reset(scene_viewer->interactive_tool);
 		}
 		scene_viewer->interactive_tool=interactive_tool;
 		return_code=1;
@@ -713,11 +716,11 @@ int Scene_viewer_app_default_input_callback(struct Scene_viewer_app *scene_viewe
 			else
 			{
 				/*???RC temporary until all tools are Interactive_tools */
-				if (1)//-- scene_viewer->interactive_tool)
+				if (scene_viewer->interactive_tool)
 				{
-					//-- Scene_viewer_input_select(scene_viewer, input);
-					display_message(ERROR_MESSAGE,
-						"Scene_viewer_default_input_callback.  Input selection not implemented.");
+					Scene_viewer_app_input_select(scene_viewer, input);
+					//display_message(ERROR_MESSAGE,
+					//	"Scene_viewer_default_input_callback.  Input selection not implemented.");
 				}
 				else
 				{
@@ -808,38 +811,38 @@ Requests a full redraw immediately.
 ==============================================================================*/
 {
 	int return_code = 0;
-	//-- struct Event_dispatcher *event_dispatcher;
+	struct Event_dispatcher *event_dispatcher = 0;
 
 	ENTER(Scene_viewer_redraw_now);
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		//-- event_dispatcher = 0;//-- User_interface_get_event_dispatcher(
-			//-- scene_viewer->user_interface);
-		//-- if (scene_viewer->idle_update_callback_id)
-		//-- {
-			//-- Event_dispatcher_remove_idle_callback(
-			//-- 	event_dispatcher, scene_viewer->idle_update_callback_id);
-		//-- 	scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		//-- }
-		//-- if (scene_viewer->tumble_active)
-		//-- {
-		//-- 	Scene_viewer_automatic_tumble(scene_viewer);
-		//-- 	if(!scene_viewer->idle_update_callback_id)
-		//-- 	{
-		//-- 		scene_viewer->idle_update_callback_id =  Event_dispatcher_add_idle_callback(
-		//-- 			event_dispatcher, Scene_viewer_idle_update_callback, scene_viewer,
-		//-- 			EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
-		//-- 	}
-		//-- }
-		//-- scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		event_dispatcher = User_interface_get_event_dispatcher(
+			scene_viewer->user_interface);
+		if (scene_viewer->idle_update_callback_id)
+		{
+			Event_dispatcher_remove_idle_callback(
+				event_dispatcher, scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+		}
+		if (scene_viewer->core_scene_viewer->tumble_active)
+		{
+			Scene_viewer_automatic_tumble(scene_viewer);
+			if(!scene_viewer->idle_update_callback_id)
+			{
+				scene_viewer->idle_update_callback_id =  Event_dispatcher_add_idle_callback(
+					event_dispatcher, Scene_viewer_app_idle_update_callback, scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+			}
+		}
+		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->core_scene_viewer->fast_changing=0;
 		return_code = Scene_viewer_render_scene(scene_viewer->core_scene_viewer);
-		//-- if (scene_viewer->swap_buffers)
-		//-- {
-		//-- 	scene_viewer->graphics_buffer->swap_buffers();//-- Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
-		//-- }
+		if (scene_viewer->core_scene_viewer->swap_buffers)
+		{
+			Graphics_buffer_app_swap_buffers(scene_viewer->graphics_buffer);
+		}
 		//-- CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 		//-- 	scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 	}
@@ -864,40 +867,40 @@ and <transparency_layers> are used for just this render.
 ==============================================================================*/
 {
 	int return_code = 0;
-	//-- struct Event_dispatcher *event_dispatcher;
+	struct Event_dispatcher *event_dispatcher = 0;
 
 	ENTER(Scene_viewer_redraw_now);
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		//-- event_dispatcher = 0;//User_interface_get_event_dispatcher(
-			//scene_viewer->user_interface);
-		//-- if (scene_viewer->idle_update_callback_id)
-		//-- {
-			//-- Event_dispatcher_remove_idle_callback(
-			//-- 	event_dispatcher, scene_viewer->idle_update_callback_id);
-		//-- 	scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		//-- }
-		//-- if (scene_viewer->tumble_active)
-		//-- {
-		//-- 	Scene_viewer_automatic_tumble(scene_viewer);
-		//-- 	if(!scene_viewer->idle_update_callback_id)
-		//-- 	{
-		//-- 		scene_viewer->idle_update_callback_id = 0;//-- Event_dispatcher_add_idle_callback(
-					//-- event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					//-- EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
-		//-- 	}
-		//-- }
-		//-- scene_viewer->graphics_buffer->make_current();//-- Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		event_dispatcher = User_interface_get_event_dispatcher(
+			scene_viewer->user_interface);
+		if (scene_viewer->idle_update_callback_id)
+		{
+			Event_dispatcher_remove_idle_callback(
+				event_dispatcher, scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+		}
+		if (scene_viewer->core_scene_viewer->tumble_active)
+		{
+			Scene_viewer_automatic_tumble(scene_viewer);
+			if(!scene_viewer->idle_update_callback_id)
+			{
+				scene_viewer->idle_update_callback_id = 0;Event_dispatcher_add_idle_callback(
+					event_dispatcher, Scene_viewer_app_idle_update_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+			}
+		}
+		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->core_scene_viewer->fast_changing=0;
 		return_code = Scene_viewer_render_scene_in_viewport_with_overrides(
 			scene_viewer->core_scene_viewer, /*left*/0, /*bottom*/0, /*right*/0, /*top*/0,
 			antialias, transparency_layers, /*drawing_offscreen*/0);
-		//-- if (scene_viewer->swap_buffers)
-		//-- {
-		//-- 	scene_viewer->graphics_buffer->swap_buffers();//-- Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
-		//-- }
+		if (scene_viewer->core_scene_viewer->swap_buffers)
+		{
+			Graphics_buffer_app_swap_buffers(scene_viewer->graphics_buffer);
+		}
 	}
 	else
 	{
@@ -1597,4 +1600,141 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer_app *scene_vie
 
 	return return_code;
 }
+
+int Scene_viewer_app_input_select(struct Scene_viewer_app *scene_viewer,
+	struct Graphics_buffer_input *input)
+/*******************************************************************************
+LAST MODIFIED : 27 April 2000
+
+DESCRIPTION :
+Creates abstract interactive events relating to the mouse input to the
+<scene_viewer> <event> and sends them to the current interactive_tool for the
+scene_viewer.
+==============================================================================*/
+{
+	double centre_x = 0.0,centre_y = 0.0,size_x,size_y,viewport_bottom,viewport_height,
+		viewport_left,viewport_width;
+	enum Interactive_event_type interactive_event_type = INTERACTIVE_EVENT_BUTTON_PRESS;
+	int button_number = 0,i,input_modifier,j,modifier_state = 0,mouse_event,return_code;
+	GLdouble temp_modelview_matrix[16], temp_projection_matrix[16];
+	GLint viewport[4];
+	struct Interactive_event *interactive_event;
+	struct Interaction_volume *interaction_volume;
+
+	ENTER(Scene_viewer_input_select);
+	if (scene_viewer && scene_viewer->interactive_tool && input)
+	{
+		return_code=1;
+		mouse_event=0;
+		glGetIntegerv(GL_VIEWPORT,viewport);
+		viewport_left   = (double)(viewport[0]);
+		viewport_bottom = (double)(viewport[1]);
+		viewport_width  = (double)(viewport[2]);
+		viewport_height = (double)(viewport[3]);
+		switch (input->type)
+		{
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_BUTTON_PRESS;
+				centre_x=(double)(input->position_x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(input->position_y)-1.0;
+				button_number=input->button_number;
+				/* Keep position for automatic tumbling update */
+				scene_viewer->core_scene_viewer->previous_pointer_x = input->position_x;
+				scene_viewer->core_scene_viewer->previous_pointer_y = input->position_y;
+				modifier_state=input->input_modifier;
+				mouse_event=1;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
+				centre_x=(double)(input->position_x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(input->position_y)-1.0;
+				button_number=-1;
+				/* Keep position for automatic tumbling update */
+				scene_viewer->core_scene_viewer->previous_pointer_x = input->position_x;
+				scene_viewer->core_scene_viewer->previous_pointer_y = input->position_y;
+				modifier_state=input->input_modifier;
+				mouse_event=1;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_BUTTON_RELEASE;
+				centre_x=(double)(input->position_x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(input->position_y)-1.0;
+				button_number=input->button_number;
+				modifier_state=input->input_modifier;
+				mouse_event=1;
+			}
+			case CMISS_SCENE_VIEWER_INPUT_KEY_PRESS:
+			{
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE:
+			{
+			} break;
+			default:
+			{
+				printf("Scene_viewer_input_select.  Invalid X event");
+				return_code=0;
+			} break;
+		}
+		if (return_code&&mouse_event)
+		{
+			/*???RC Picking sensitivity should not be hardcoded - read from
+				defaults file and/or set from text command */
+			size_x = SCENE_VIEWER_PICK_SIZE;
+			size_y = SCENE_VIEWER_PICK_SIZE;
+			input_modifier=0;
+			if (GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_SHIFT;
+			}
+			/* note that control key currently overrides to transform mode */
+			if (GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_CONTROL;
+			}
+			if (GRAPHICS_BUFFER_INPUT_MODIFIER_ALT&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_ALT;
+			}
+			for (i=0;i<4;i++)
+			{
+				for (j=0;j<4;j++)
+				{
+					temp_modelview_matrix[i*4+j] =
+						scene_viewer->core_scene_viewer->modelview_matrix[j*4+i];
+					temp_projection_matrix[i*4+j] =
+						scene_viewer->core_scene_viewer->window_projection_matrix[j*4+i];
+				}
+			}
+
+			interaction_volume=create_Interaction_volume_ray_frustum(
+				temp_modelview_matrix,temp_projection_matrix,
+				viewport_left,viewport_bottom,viewport_width,viewport_height,
+				centre_x,centre_y,size_x,size_y);
+			ACCESS(Interaction_volume)(interaction_volume);
+			interactive_event=CREATE(Interactive_event)(interactive_event_type,
+				button_number,input_modifier,interaction_volume,scene_viewer->core_scene_viewer->scene);
+			ACCESS(Interactive_event)(interactive_event);
+			return_code=Interactive_tool_handle_interactive_event(
+				scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event,
+				scene_viewer->core_scene_viewer->graphics_buffer);
+			DEACCESS(Interactive_event)(&interactive_event);
+			DEACCESS(Interaction_volume)(&interaction_volume);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_input_select.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_input_select */
 

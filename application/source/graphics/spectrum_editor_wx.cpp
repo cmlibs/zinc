@@ -2007,7 +2007,7 @@ DESCRIPTION :
 	return (return_code);
 } /* spectrum_editor_wx_update_scene_viewer */
 
-static int spectrum_editor_viewer_input_callback(
+int spectrum_editor_viewer_input_callback(
 	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input,
 	void *spectrum_editor_void)
 /*******************************************************************************

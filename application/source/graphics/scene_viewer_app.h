@@ -146,6 +146,7 @@ Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
 <opengl_extensions> strings are static pointers supplied from the driver and
 so should not be modified or deallocated.
 ==============================================================================*/
+int Scene_viewer_app_idle_update_callback(void *scene_viewer_void);
 
 int Scene_viewer_app_redraw(struct Scene_viewer_app *scene_viewer);
 
