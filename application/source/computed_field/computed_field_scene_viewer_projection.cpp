@@ -204,10 +204,10 @@ DESCRIPTION :
 				 projection matrix exists */
 			if (!scene_viewer_callback_flag)
 			{
-				scene_viewer_callback_flag =
-					Scene_viewer_add_transform_callback(scene_viewer,
-						Computed_field_scene_viewer_projection_scene_viewer_callback,
-						(void *)field);
+				scene_viewer_callback_flag = 0;
+				//-- 	Scene_viewer_add_transform_callback(scene_viewer,
+				//-- 		Computed_field_scene_viewer_projection_scene_viewer_callback,
+				//-- 		(void *)field);
 			}
 			if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
 				(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
@@ -232,9 +232,9 @@ DESCRIPTION :
 				}
 				return return_code;
 			}
-			if (Scene_viewer_get_transformation_to_window(scene_viewer, from_coordinate_system,
+			if (Scene_viewer_get_transformation_to_window(0 /* //-- scene_viewer*/, from_coordinate_system,
 				current_local_transformation, from_projection) &&
-				Scene_viewer_get_transformation_to_window(scene_viewer, to_coordinate_system,
+				Scene_viewer_get_transformation_to_window(0 /* //-- scene_viewer */, to_coordinate_system,
 					current_local_transformation, inverse_to_projection))
 			{
 				double lu_d, temp;
@@ -486,9 +486,9 @@ Clear the type specific data used by this type.
 		}
 		if (scene_viewer_callback_flag)
 		{
-			Scene_viewer_remove_transform_callback(scene_viewer,
-			  Computed_field_scene_viewer_projection_scene_viewer_callback,
-			  (void *)field);
+		//-- 	Scene_viewer_remove_transform_callback(scene_viewer,
+		//-- 	  Computed_field_scene_viewer_projection_scene_viewer_callback,
+		//-- 	  (void *)field);
 			scene_viewer_callback_flag = 0;
 		}
 		remove_transformation_callback();
@@ -860,9 +860,9 @@ Clear the scene viewer reference when it is no longer valid.
 	{
 		if (core->scene_viewer_callback_flag)
 		{
-			Scene_viewer_remove_transform_callback(scene_viewer,
-			  Computed_field_scene_viewer_projection_scene_viewer_callback,
-			  (void *)field);
+			//-- Scene_viewer_remove_transform_callback(scene_viewer,
+			//--   Computed_field_scene_viewer_projection_scene_viewer_callback,
+			//--   (void *)field);
 			core->scene_viewer_callback_flag = 0;
 		}
 		if (core->graphics_window_name)
@@ -1067,7 +1067,7 @@ already) and allows its contents to be modified.
 	Computed_field_modify_data *field_modify;
 	struct Graphics_window *graphics_window;
 	struct Option_table *option_table;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer_app *scene_viewer = 0;
 
 	ENTER(define_Computed_field_type_scene_viewer_projection);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
@@ -1085,7 +1085,7 @@ already) and allows its contents to be modified.
 			(NULL != dynamic_cast<Computed_field_scene_viewer_projection*>(field_modify->get_field()->core)))
 		{
 			return_code=Computed_field_get_type_scene_viewer_projection(field_modify->get_field(),
-				&scene_viewer, &graphics_window_name, &pane_number,
+				&(scene_viewer->core_scene_viewer), &graphics_window_name, &pane_number,
 				&from_coordinate_system, &to_coordinate_system);
 			pane_number++;
 			if (graphics_window_name)
@@ -1188,7 +1188,7 @@ already) and allows its contents to be modified.
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_scene_viewer_projection_with_window_name(
 						field_modify->get_field_module(),
-						scene_viewer, graphics_window_name, pane_number - 1,
+						scene_viewer->core_scene_viewer, graphics_window_name, pane_number - 1,
 						from_coordinate_system, to_coordinate_system));
 				DEALLOCATE(graphics_window_name);
 			}

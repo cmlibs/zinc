@@ -70,6 +70,8 @@ manager from the respective Cmiss_region.
 		if (ALLOCATE(computed_field_package,struct Computed_field_package,1))
 		{
 			computed_field_package->computed_field_manager=computed_field_manager;
+			computed_field_package->computed_field_type_list =
+				CREATE(LIST(Computed_field_type_data))();
 			computed_field_package->simple_package =
 				new Computed_field_simple_package();
 			computed_field_package->simple_package->addref();

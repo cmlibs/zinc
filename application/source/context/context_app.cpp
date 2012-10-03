@@ -366,22 +366,22 @@ Cmiss_time_keeper_id Cmiss_context_app_get_default_time_keeper(
 	return time_keeper;
 }
 
-Cmiss_scene_viewer_package_id Cmiss_context_app_get_default_scene_viewer_package(
-	Cmiss_context_app *context)
-{
-	Cmiss_scene_viewer_package *scene_viewer_package = NULL;
-	if (context && context->UI_module && context->UI_module->scene_viewer_package)
-	{
-		scene_viewer_package = context->UI_module->scene_viewer_package;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_scene_viewer_package.  "
-			"Missing context or user interface");
-	}
-	return scene_viewer_package;
-}
+//-- Cmiss_scene_viewer_package_id Cmiss_context_app_get_default_scene_viewer_package(
+//-- 	Cmiss_context_app *context)
+//-- {
+//-- 	Cmiss_scene_viewer_package *scene_viewer_package = NULL;
+//-- 	if (context && context->UI_module && context->UI_module->scene_viewer_package)
+//-- 	{
+//-- 		scene_viewer_package = context->UI_module->scene_viewer_package;
+//-- 	}
+//-- 	else
+//-- 	{
+//-- 		display_message(ERROR_MESSAGE,
+//-- 			"Cmiss_context_get_default_scene_viewer_package.  "
+//-- 			"Missing context or user interface");
+//-- 	}
+//-- 	return scene_viewer_package;
+//-- }
 
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 int Cmiss_context_app_enable_user_interface(Cmiss_context_app *context, void *user_interface_instance)

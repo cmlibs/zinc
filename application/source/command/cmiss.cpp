@@ -359,7 +359,7 @@ DESCRIPTION :
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct Graphics_buffer_app_package *graphics_buffer_package;
-	struct Cmiss_scene_viewer_package *scene_viewer_package;
+	struct Cmiss_scene_viewer_app_package *scene_viewer_package;
 	struct Graphics_font_package *graphics_font_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
@@ -17972,7 +17972,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_app_package *)NULL;
-		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_app_package *)NULL;
 		command_data->graphics_module = (struct Cmiss_graphics_module *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
@@ -19054,7 +19054,7 @@ Gets the user_interface for this <command_data>
 	return (user_interface);
 } /* Cmiss_command_data_get_user_interface */
 
-struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
+struct Cmiss_scene_viewer_app_package *Cmiss_command_data_get_scene_viewer_package(
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -19063,10 +19063,10 @@ DESCRIPTION :
 Returns the scene viewer data from the <command_data>.
 ==============================================================================*/
 {
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package;
+	struct Cmiss_scene_viewer_app_package *cmiss_scene_viewer_package;
 
 	ENTER(Cmiss_command_package_get_scene_viewer_package);
-	cmiss_scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+	cmiss_scene_viewer_package=(struct Cmiss_scene_viewer_app_package *)NULL;
 	if (command_data)
 	{
 		cmiss_scene_viewer_package = command_data->scene_viewer_package;

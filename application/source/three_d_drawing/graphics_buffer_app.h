@@ -8,6 +8,7 @@
 #include "general/callback.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
+#include "graphics/scene_viewer.h"
 
 #if defined (GTK_USER_INTERFACE)
 /* #define GTK_USE_GTKGLAREA */
@@ -21,27 +22,15 @@ enum Graphics_buffer_input_modifier
 	GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1 = 8
 };
 
-enum Graphics_buffer_input_event_type
-{
-	GRAPHICS_BUFFER_INVALID_INPUT,
-	GRAPHICS_BUFFER_MOTION_NOTIFY,
-	GRAPHICS_BUFFER_BUTTON_PRESS,
-	GRAPHICS_BUFFER_BUTTON_RELEASE,
-	GRAPHICS_BUFFER_KEY_PRESS,
-	GRAPHICS_BUFFER_KEY_RELEASE
-};
-
-struct Graphics_buffer_input
-{
-	enum Graphics_buffer_input_event_type type;
-	int button_number;
-	int key_code;
-	int position_x;
-	int position_y;
-	/* flags indicating the state of the shift, control and alt keys - use
-		 logical OR with GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT etc. */
-	enum Graphics_buffer_input_modifier input_modifier;
-};
+//enum Graphics_buffer_input_event_type
+//{
+//	GRAPHICS_BUFFER_INVALID_INPUT,
+//	GRAPHICS_BUFFER_MOTION_NOTIFY,
+//	GRAPHICS_BUFFER_BUTTON_PRESS,
+//	GRAPHICS_BUFFER_BUTTON_RELEASE,
+//	GRAPHICS_BUFFER_KEY_PRESS,
+//	GRAPHICS_BUFFER_KEY_RELEASE
+//};
 
 struct Graphics_buffer_expose_data
 {
@@ -206,13 +195,13 @@ DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (WX_USER_INTERFACE) && defined (__cplusplus) */
 
-int Graphics_buffer_make_current(Graphics_buffer_app *buffer);
+int Graphics_buffer_app_make_current(Graphics_buffer_app *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 DESCRIPTION :
 ==============================================================================*/
 
-int Graphics_buffer_get_visual_id(Graphics_buffer_app *buffer, int *visual_id);
+int Graphics_buffer_app_get_visual_id(Graphics_buffer_app *buffer, int *visual_id);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -228,6 +217,21 @@ DESCRIPTION :
 Returns the buffering mode being used by the graphics buffer.
 ==============================================================================*/
 
+int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer_app *buffer, int preferred_antialias);
+
+void Graphics_buffer_blit_framebuffer(struct Graphics_buffer_app *buffer);
+
+void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer_app *buffer);
+
+int Graphics_buffer_app_awaken(struct Graphics_buffer_app *buffer);
+
+int Graphics_buffer_app_add_expose_callback(struct Graphics_buffer_app *buffer,
+	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) expose_callback, void *user_data);
+
+int Graphics_buffer_app_add_input_callback(struct Graphics_buffer_app *buffer,
+	CMISS_CALLBACK_FUNCTION(Graphics_buffer_input_callback) input_callback,
+	void *user_data);
+
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -241,11 +245,11 @@ DESCRIPTION :
 Returns the stereo mode being used by the graphics buffer.
 ==============================================================================*/
 
-int Graphics_buffer_get_colour_buffer_depth(Graphics_buffer_app *buffer,
+int Graphics_buffer_app_get_colour_buffer_depth(Graphics_buffer_app *buffer,
 	int *colour_buffer_depth);
 
 
-int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_get_depth_buffer_depth(struct Graphics_buffer_app *buffer,
 	int *depth_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -254,7 +258,7 @@ DESCRIPTION :
 Returns the depth of the depth buffer used by the graphics buffer.
 ==============================================================================*/
 
-int Graphics_buffer_get_accumulation_buffer_depth(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_get_accumulation_buffer_depth(struct Graphics_buffer_app *buffer,
 	int *accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -263,14 +267,14 @@ DESCRIPTION :
 Returns the depth of the accumulation buffer used by the graphics buffer.
 ==============================================================================*/
 
-int Graphics_buffer_swap_buffers(struct Graphics_buffer_app *buffer);
+int Graphics_buffer_app_swap_buffers(struct Graphics_buffer_app *buffer);
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
 
-int Graphics_buffer_make_read_current(struct Graphics_buffer_app *buffer);
+int Graphics_buffer_app_make_read_current(struct Graphics_buffer_app *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 DESCRIPTION :
@@ -278,7 +282,7 @@ Sets this buffer to be the source and the current ThreeDWindow (the one last
 made current) to be the destination.
 ==============================================================================*/
 
-int Graphics_buffer_set_width(struct Graphics_buffer_app *buffer, int width);
+int Graphics_buffer_app_set_width(struct Graphics_buffer_app *buffer, int width);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -286,7 +290,7 @@ DESCRIPTION :
 Sets the width of buffer represented by <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_set_height(struct Graphics_buffer_app *buffer, int height);
+int Graphics_buffer_app_set_height(struct Graphics_buffer_app *buffer, int height);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -294,7 +298,7 @@ DESCRIPTION :
 Sets the height of buffer represented by <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_is_visible(struct Graphics_buffer_app *buffer);
+int Graphics_buffer_app_is_visible(struct Graphics_buffer_app *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -304,7 +308,7 @@ routine it will not bother rendering into it, allowing us to avoid rendering
 into unmanaged or invisible widgets.
 ==============================================================================*/
 
-int Graphics_buffer_awaken(struct Graphics_buffer_app *buffer);
+int Graphics_buffer_app_awaken(struct Graphics_buffer_app *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -312,7 +316,7 @@ DESCRIPTION :
 Activates the graphics <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_add_initialise_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_initialise_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -321,7 +325,7 @@ DESCRIPTION :
 Adds an initialise callback to the graphics <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_add_resize_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_resize_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) resize_callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -330,7 +334,7 @@ DESCRIPTION :
 Adds an resize callback to the graphics <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_add_expose_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_expose_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) expose_callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -339,7 +343,7 @@ DESCRIPTION :
 Adds an expose callback to the graphics <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_add_input_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_input_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_input_callback) input_callback, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -382,10 +386,10 @@ respect.
 
 
 #if defined (OPENGL_API) && defined (USE_MSAA)
-void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer_app *buffer);
+void Graphics_buffer_app_reset_multisample_framebuffer(struct Graphics_buffer_app *buffer);
 
-void Graphics_buffer_blit_framebuffer(struct Graphics_buffer_app *buffer);
+void Graphics_buffer_app_blit_framebuffer(struct Graphics_buffer_app *buffer);
 
-int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer_app *buffer, int preferred_antialias);
+int Graphics_buffer_app_set_multisample_framebuffer(struct Graphics_buffer_app *buffer, int preferred_antialias);
 #endif /* defined (USE_MSAA) */
 

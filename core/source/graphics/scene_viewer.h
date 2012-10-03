@@ -64,6 +64,7 @@ translating and zooming with mouse button press and motion events.
 
 struct Graphics_buffer;
 #define Graphics_buffer_input Cmiss_scene_viewer_input
+#define Graphics_buffer_input_event_type Cmiss_scene_viewer_input_event_type
 
 /*
 struct Scene;
@@ -117,7 +118,7 @@ and the functions given their public names.
 #define Scene_viewer_get_perturb_lines Cmiss_scene_viewer_get_perturb_lines
 #define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
 #define Scene_viewer_view_all Cmiss_scene_viewer_view_all
-#define Scene_viewer_redraw_now Cmiss_scene_viewer_redraw_now
+//-- #define Scene_viewer_redraw_now Cmiss_scene_viewer_redraw_now
 #define Scene_viewer_get_freespin_tumble_angle Cmiss_scene_viewer_get_freespin_tumble_angle
 #define Scene_viewer_set_freespin_tumble_angle Cmiss_scene_viewer_set_freespin_tumble_angle
 #define Scene_viewer_get_freespin_tumble_axis Cmiss_scene_viewer_get_freespin_tumble_axis
@@ -147,6 +148,11 @@ and the functions given their public names.
 Global types
 ------------
 */
+
+#include "api/new/cmiss_scene_viewer_input.h"
+
+#define MAX_CLIP_PLANES (6)
+#define SCENE_VIEWER_PICK_SIZE 7.0
 
 struct Scene_viewer_rendering_data;
 /*******************************************************************************
@@ -240,14 +246,211 @@ Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
 	SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
 };
 
+
+enum Scene_viewer_drag_mode
+{
+	SV_DRAG_NOTHING,
+	SV_DRAG_TUMBLE,
+	SV_DRAG_TRANSLATE,
+	SV_DRAG_ZOOM
+};
+
+struct Cmiss_scene_viewer_package
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION:
+The default data used to create Cmiss_scene_viewers.
+==============================================================================*/
+{
+	int access_count;
+	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Colour *background_colour;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct MANAGER(Light) *light_manager;
+	struct Light *default_light;
+	struct MANAGER(Light_model) *light_model_manager;
+	struct Light_model *default_light_model;
+	struct MANAGER(Scene) *scene_manager;
+	struct Scene *scene;
+	//-- struct User_interface *user_interface;
+	/* List of scene_viewers created with this package,
+		generally all scene_viewers that are not in graphics windows */
+	struct LIST(Scene_viewer) *scene_viewer_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback))
+		*destroy_callback_list;
+};
+
+struct Scene_viewer_image_texture
+{
+	struct Texture *texture;
+	struct MANAGER(Computed_field) *manager;
+	Cmiss_field_image_id field;
+	void *callback_id;
+	struct Scene_viewer *scene_viewer;
+};
+
+struct Cmiss_scene_viewer_input
+{
+	int access_count;
+	enum Cmiss_scene_viewer_input_event_type type;
+	int button_number;
+	int key_code;
+	int position_x;
+	int position_y;
+	/* flags indicating the state of the shift, control and alt keys - use
+	 * logical OR with CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
+	Cmiss_scene_viewer_input_modifier input_modifier;
+};
+
+struct Scene_viewer
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int access_count;
+	/* The buffer into which this scene viewer is rendering */
+	struct Graphics_buffer *graphics_buffer;
+	enum Scene_viewer_input_mode input_mode;
+	/* following flag forces the scene_viewer temporarily into transform mode
+		 when the control key is held down */
+	int temporary_transform_mode;
+	/* scene to be viewed */
+	struct Scene *scene;
+	/* The projection mode. PARALLEL and PERSPECTIVE projections get their
+		 modelview matrix using gluLookat, and their projection matrix from the
+		 viewing volume. CUSTOM projection requires both matrices to be read-in */
+	enum Scene_viewer_projection_mode projection_mode;
+	/* Viewing transformation defined by eye pos, look-at point and up-vector */
+	double eyex,eyey,eyez;
+	double lookatx,lookaty,lookatz;
+	double upx,upy,upz;
+	/* Viewing volume for PARALLEL and PERSPECTIVE projections. */
+	double left,right,bottom,top,near_plane,far_plane;
+	/* Scale factors for controlling how rate of translate, tumble and zoom
+		 transformations in relation to mouse movements. Setting a value to
+		 zero turns off that transform capability. */
+	double translate_rate,tumble_rate,zoom_rate;
+	/* For CUSTOM projection only: 4X4 projection and modelview matrices.
+		These are now stored internally in OpenGL format.
+		ie. m0 m4 m8 m12 would be the first row, m1 m5 m9 m13 the second, etc. */
+	double projection_matrix[16],modelview_matrix[16],
+		window_projection_matrix[16];
+	/* The projection matrix, whether set directly for CUSTOM projection or
+		 calculated for PARALLEL and PERSPECTIVE projections using the viewing
+		 volume, converts 3-D positions into Normalized Device Coordinates (NDCs) in
+		 a cube from -1 to +1 in each direction.  In the z (depth) direction the
+		 values from -1 (=near_plane plane) to +1 (=far plane) are already where we want
+		 and need no further processing.  In general, however, the real x,y size and
+		 origin in user coordinates are needed to display the image in an
+		 undistorted manner. The following NDC_ variables are used for this purpose.
+		 In a CUSTOM projection they must be read-in. PARALLEL and PERSPECTIVE
+		 projections calculate them from the viewing volume.  Note that these values
+		 must be given in user coordinates. */
+	double NDC_left,NDC_top,NDC_width,NDC_height;
+	/* The viewport mode specifies whether the NDCs, adjusted to the aspect
+		 ratio from NDC_width/NDC_height are made as large as possible in the
+		 physical viewport (RELATIVE_VIEWPORT), or whether an exact mapping from
+		 user coordinates to pixels is used (ABSOLUTE_VIEWPORT), or whether the
+		 aspect ratio from NDC_width/NDC_height is ignored and the NDCs are made
+		 as large as possible(DISTORTING_RELATIVE_VIEWPORT).
+	*/
+	enum Scene_viewer_viewport_mode viewport_mode;
+	/* Specifies the offset and scale of user coordinates in the physical
+		 viewport, by supplying the user coordinate of the top,left position in
+		 and the number of pixels plotted for a change of 1 in user units. Note
+		 that these are in no way restricted to integer values.
+		 ???RC.  Write how to handle y increasing down the screen? */
+	double user_viewport_left,user_viewport_top,user_viewport_pixels_per_unit_x,
+		user_viewport_pixels_per_unit_y;
+	/* specifies the quality of transparency rendering */
+	enum Scene_viewer_transparency_mode transparency_mode;
+	/* number of layers used in layered transparency mode */
+	int transparency_layers;
+	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
+		 position and scale of the image relative to user coordinates. In the
+		 RELATIVE_VIEWPORT and DISTORTING_RELATIVE_VIEWPORT modes, these values
+		 are ignored and the image is
+		 drawn behind the normalized device coordinate range.
+		 ???RC.  Allow texture to be cropped as well? */
+	double bk_texture_left,bk_texture_top,bk_texture_width,
+		bk_texture_height,bk_texture_max_pixels_per_polygon;
+	int bk_texture_undistort_on;
+	/* the scene_viewer must always have a light model */
+	struct Light_model *light_model;
+	/* lights in this list are oriented relative to the viewer */
+	struct LIST(Light) *list_of_lights;
+	/* managers and callback IDs for automatic updates */
+	struct MANAGER(Light) *light_manager;
+	void *light_manager_callback_id;
+	struct MANAGER(Light_model) *light_model_manager;
+	void *light_model_manager_callback_id;
+	struct MANAGER(Scene) *scene_manager;
+	void *scene_manager_callback_id;
+	/* For interpreting mouse events */
+	enum Scene_viewer_interact_mode interact_mode;
+	enum Scene_viewer_drag_mode drag_mode;
+	int previous_pointer_x, previous_pointer_y;
+	/* kept tumble axis and angle for spinning scene viewer */
+	double tumble_axis[3], tumble_angle;
+	int tumble_active;
+	/* background */
+	struct Colour background_colour;
+	enum Scene_viewer_buffering_mode buffering_mode;
+	enum Scene_viewer_stereo_mode stereo_mode;
+	int pixel_height,pixel_width,update_pixel_image;
+	void *pixel_data;
+	int antialias;
+	int perturb_lines;
+	enum Scene_viewer_blending_mode blending_mode;
+	double depth_of_field;  /* depth_of_field, 0 == infinite */
+	double focal_depth;
+	/* set between fast changing operations since the first fast-change will
+		 copy from the front buffer to the back; subsequent changes will copy
+		 saved buffer from back to front. */
+	int first_fast_change;
+	/* flag is cleared as soon as a change to the scene is not fast_changing */
+	int fast_changing;
+	/* flag indicating that the viewer should swap buffers at the next
+		 appropriate point */
+	int swap_buffers;
+	/* Flag that indicates the update includes a change of the projection matrices */
+	int transform_flag;
+	/* Clip planes */
+	char clip_planes_enable[MAX_CLIP_PLANES];
+	double clip_planes[MAX_CLIP_PLANES * 4];
+	/* The distance between the two stereo views in world space */
+	double stereo_eye_spacing;
+	/* Special persistent data for order independent transparency */
+	struct Scene_viewer_order_independent_transparency_data
+	   *order_independent_transparency_data;
+	/* The connection to the systems user interface system */
+	//-- struct User_interface *user_interface;
+#if defined (WIN32_SYSTEM)
+	/* Clear twice, if set then the glClear in the background will be called
+		twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
+	int clear_twice_flag;
+#endif /* defined (WIN32_SYSTEM) */
+	/* Keeps a counter of the frame redraws */
+	unsigned int frame_count;
+	Scene_viewer_image_texture image_texture;
+	/* The host application should register these callbacks
+		and respond with a full repaint. */
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
+	/* list of callbacks requested by other objects when scene viewer destroyed */
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
+}; /* struct Scene_viewer */
+
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
 	struct Cmiss_scene_viewer_package *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *, void);
 
-DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
-	struct Scene_viewer *, struct Graphics_buffer_input *, int);
+DECLARE_LIST_TYPES(Scene_viewer);
+PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 
 /*
 Global functions
@@ -546,26 +749,6 @@ LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 Returns the stereo mode - mono/stereo - of the Scene_viewer.
-==============================================================================*/
-
-struct Interactive_tool *Scene_viewer_get_interactive_tool(
-	struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2000
-
-DESCRIPTION :
-Returns the interactive_tool used by the Scene_viewer.
-The interactive_tool may be NULL, indicating that no tool is in use.
-==============================================================================*/
-
-int Scene_viewer_set_interactive_tool(struct Scene_viewer *scene_viewer,
-	struct Interactive_tool *interactive_tool);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2000
-
-DESCRIPTION :
-Sets the interactive tool that will receive input if the Scene_viewer is in
-SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 ==============================================================================*/
 
 enum Scene_viewer_input_mode Scene_viewer_get_input_mode(
@@ -904,42 +1087,6 @@ DESCRIPTION :
 Sets the scene viewer zoom rate.
 ==============================================================================*/
 
-int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_viewer_remove_sync_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-
-int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
@@ -1261,51 +1408,6 @@ The previous fast_changing state is kept so that the onscreen graphics are
 kept in a sensible state.
 ==============================================================================*/
 
-int Scene_viewer_redraw(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 14 July 2000
-
-DESCRIPTION :
-Call this after changing viewing parameters or display lists to have the
-Scene_viewer redraw the image. Does this by putting a WorkProc on the queue
-(if not already done for this Scene_viewer) which will force a redraw at the
-next idle moment. If the scene_viewer is changed again before it is updated,
-a new WorkProc will not be put in the queue, but the old one will update the
-window to the new state.
-Forces a full redraw rather than a fast_changing update.
-==============================================================================*/
-
-int Scene_viewer_redraw_now(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 14 July 2000
-
-DESCRIPTION :
-Forces a redraw of the given scene viewer to take place immediately - ie.
-not just at the next idle moment as Scene_viewer_redraw does.
-Forces a full redraw rather than a fast_changing update.
-==============================================================================*/
-
-int Scene_viewer_redraw_now_with_overrides(struct Scene_viewer *scene_viewer,
-	int antialias, int transparency_layers);
-/*******************************************************************************
-LAST MODIFIED : 23 September 2002
-
-DESCRIPTION :
-Requests a full redraw immediately.  If non_zero then the supplied <antialias>
-and <transparency_layers> are used for just this render.
-==============================================================================*/
-
-int Scene_viewer_redraw_now_without_swapbuffers(
-	struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 12 June 1998
-
-DESCRIPTION :
-Forces a redraw of the given scene viewer to take place immediately but does
-not swap the back and front buffers so that utilities such as the movie
-extensions can get the undated frame from the backbuffer.
-==============================================================================*/
-
 struct Cmgui_image *Scene_viewer_get_image(struct Scene_viewer *scene_viewer,
 	int force_onscreen, int preferred_width, int preferred_height,
 	int preferred_antialias, int preferred_transparency_layers,
@@ -1390,9 +1492,9 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 
-int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
-	void *user_data, int add_first);
+//-- int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
+//-- 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+//-- 	void *user_data, int add_first);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
 
@@ -1406,9 +1508,9 @@ callback function returns true, so to stop processing and not call any more
 of the callbacks registered after your handler then return false.
 ==============================================================================*/
 
-int Scene_viewer_remove_input_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
-	void *user_data);
+//-- int Scene_viewer_remove_input_callback(struct Scene_viewer *scene_viewer,
+//-- 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+//-- 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
 
@@ -1554,5 +1656,9 @@ int Scene_viewer_set_background_image_field(
 
 Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 	Scene_viewer_rendering_data *rendering_data);
+
+int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input);
+
 
 #endif /* !defined (SCENE_VIEWER_H) */

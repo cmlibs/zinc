@@ -967,9 +967,9 @@ Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 
-//-- ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
-//-- 	Cmiss_scene_viewer_id scene_viewer,
-//-- 	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 September 2007
 
@@ -1015,8 +1015,6 @@ ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
 
 ZINC_API Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package);
 ZINC_API int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address);
-
-
 
 #ifdef __cplusplus
 }

@@ -55,6 +55,7 @@
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
+#include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "three_d_drawing/graphics_buffer_app.h"
 #if defined (UNIX) && !defined (DARWIN)
@@ -437,6 +438,9 @@ public:
 		// this is also necessary to update the context on some platforms
 		wxGLCanvas::OnSize(event);
 
+		Graphics_buffer_set_height(graphics_buffer->core_buffer, event.GetSize().GetHeight());
+		Graphics_buffer_set_width(graphics_buffer->core_buffer, event.GetSize().GetWidth());
+
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
 	}
@@ -458,7 +462,7 @@ public:
 	void OnKeyUp( wxKeyEvent& event )
 	{
 		struct Graphics_buffer_input input;
-		input.type = GRAPHICS_BUFFER_KEY_RELEASE;
+		input.type = CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE;
 		key_code = event.GetKeyCode();
 		input.key_code = key_code;
 		int input_modifier = 0;
@@ -483,7 +487,7 @@ public:
 	void OnKeyDown( wxKeyEvent& event )
 	{
 		struct Graphics_buffer_input input;
-		input.type = GRAPHICS_BUFFER_KEY_PRESS;
+		input.type = CMISS_SCENE_VIEWER_INPUT_KEY_PRESS;
 		key_code = event.GetKeyCode();
 		input.key_code = key_code;
 		int input_modifier = 0;
@@ -510,7 +514,7 @@ public:
 		int input_modifier, return_code = 1;
 		struct Graphics_buffer_input input;
 
-		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+		input.type = CMISS_SCENE_VIEWER_INPUT_INVALID;
 		input.button_number = 0;
 		input.key_code = key_code;
 		cursor_x = input.position_x = event.GetX();
@@ -536,7 +540,7 @@ public:
 
 		if (event.Dragging())
 		{
-			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+			input.type = CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY;
 			if (event.LeftIsDown())
 			{
 				input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
@@ -549,7 +553,7 @@ public:
 				input.key_code = 0;
 				this->SetFocus();
 			}
-			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+			input.type = CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS;
 			switch (event.GetButton())
 			{
 				case wxMOUSE_BTN_LEFT:
@@ -575,7 +579,7 @@ public:
 		}
 		else if (event.ButtonUp())
 		{
-			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+			input.type = CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE;
 			switch (event.GetButton())
 			{
 				case wxMOUSE_BTN_LEFT:
@@ -699,9 +703,6 @@ void Graphics_buffer_blit_framebuffer(struct Graphics_buffer_app *buffer)
 	}
 #endif /* defined (GL_EXT_framebuffer_blit) */
 }
-
-
-
 
 int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer_app *buffer, int preferred_antialias)
 {
@@ -4343,7 +4344,7 @@ Graphics_buffer_app *create_Graphics_buffer_wx(
 
 #endif /* defined (WX_USER_INTERFACE) */
 
-int Graphics_buffer_make_current(struct Graphics_buffer_app *buffer)
+int Graphics_buffer_app_make_current(struct Graphics_buffer_app *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
 
@@ -4352,12 +4353,12 @@ DESCRIPTION :
 {
 	int return_code = 0;
 
-	ENTER(Graphics_buffer_make_current);
+	ENTER(Graphics_buffer_app_make_current);
 
 	if (buffer)
 	{
 #if defined (DEBUG_CODE)
-		printf("Graphics_buffer_make_current\n");
+		printf("Graphics_buffer_app_make_current\n");
 #endif /* defined (DEBUG_CODE) */
 		switch (buffer->core_buffer->type)
 		{
@@ -4372,7 +4373,7 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 			{
 #if defined (DEBUG_CODE)
-				printf("Graphics_buffer_make_current %p %p\n",
+				printf("Graphics_buffer_app_make_current %p %p\n",
 					buffer->gldrawable, buffer->glcontext);
 #endif /* defined (DEBUG_CODE) */
 				gdk_gl_drawable_make_current(buffer->gldrawable, buffer->glcontext);
@@ -4393,7 +4394,7 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
 #if defined (DEBUG_CODE)
-				printf("Graphics_buffer_make_current %p %p\n",
+				printf("Graphics_buffer_app_make_current %p %p\n",
 					buffer->hDC, buffer->hRC);
 #endif /* defined (DEBUG_CODE) */
 				wglMakeCurrent( buffer->hDC, buffer->hRC );
@@ -4462,7 +4463,7 @@ DESCRIPTION :
 							case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
 							{
 								display_message(ERROR_MESSAGE,
-									"Graphics_buffer_make_current."
+									"Graphics_buffer_app_make_current."
 									"Framebuffer object format not supported.\n");
 								return_code = 0;
 							}
@@ -4470,7 +4471,7 @@ DESCRIPTION :
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Graphics_buffer_make_current."
+									"Graphics_buffer_app_make_current."
 									"Framebuffer object not supported.\n");
 								return_code = 0;
 							}
@@ -4486,7 +4487,7 @@ DESCRIPTION :
 #endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
-				display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
+				display_message(ERROR_MESSAGE,"Graphics_buffer_app_make_current.  "
 					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
@@ -4494,14 +4495,14 @@ DESCRIPTION :
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
+		display_message(ERROR_MESSAGE,"Graphics_buffer_app_make_current.  "
 			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphics_buffer_make_current */
+} /* Graphics_buffer_app_make_current */
 
 int Graphics_buffer_get_visual_id(Graphics_buffer_app *buffer, int *visual_id)
 /*******************************************************************************
@@ -5092,7 +5093,7 @@ Returns the stereo mode used by the graphics buffer.
 	return (return_code);
 } /* Graphics_buffer_get_stereo_mode */
 
-int Graphics_buffer_swap_buffers(struct Graphics_buffer_app *buffer)
+int Graphics_buffer_app_swap_buffers(struct Graphics_buffer_app *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
 
@@ -5513,7 +5514,7 @@ into unmanaged or invisible widgets.
 	return (return_code);
 } /* Graphics_buffer_is_visible */
 
-int Graphics_buffer_awaken(struct Graphics_buffer_app *buffer)
+int Graphics_buffer_app_awaken(struct Graphics_buffer_app *buffer)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -5640,7 +5641,7 @@ Adds an resize callback to the graphics <buffer>.
 	return (return_code);
 } /* Graphics_buffer_add_resize_callback */
 
-int Graphics_buffer_add_expose_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_expose_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) expose_callback, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -5669,7 +5670,7 @@ Adds an expose callback to the graphics <buffer>.
 	return (return_code);
 } /* Graphics_buffer_add_expose_callback */
 
-int Graphics_buffer_add_input_callback(struct Graphics_buffer_app *buffer,
+int Graphics_buffer_app_add_input_callback(struct Graphics_buffer_app *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_input_callback) input_callback,
 	void *user_data)
 /*******************************************************************************
@@ -5850,4 +5851,66 @@ x==============================================================================*
 
 	return (return_code);
 } /* DESTROY(Graphics_buffer) */
+
+int Graphics_buffer_app_is_visible(struct Graphics_buffer_app *buffer)
+{
+	return Graphics_buffer_is_visible(buffer->core_buffer);
+}
+
+int Graphics_buffer_app_add_initialise_callback(struct Graphics_buffer_app *buffer,
+	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 1 July 2002
+
+DESCRIPTION :
+Adds an initialise callback to the graphics <buffer>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_awaken);
+	if (buffer)
+	{
+		return_code = CMISS_CALLBACK_LIST_ADD_CALLBACK(Graphics_buffer_callback)(
+			buffer->initialise_callback_list, initialise_callback,
+			user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_add_initialise_callback.  Invalid buffer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_add_initialise_callback */
+
+int Graphics_buffer_app_add_resize_callback(struct Graphics_buffer_app *buffer,
+	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) resize_callback, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 1 July 2002
+
+DESCRIPTION :
+Adds an resize callback to the graphics <buffer>.
+==============================================================================*/
+{
+	int return_code;
+
+	if (buffer)
+	{
+		return_code = CMISS_CALLBACK_LIST_ADD_CALLBACK(Graphics_buffer_callback)(
+			buffer->resize_callback_list, resize_callback,
+			user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_add_resize_callback.  Invalid buffer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_add_resize_callback */
 

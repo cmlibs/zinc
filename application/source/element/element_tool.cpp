@@ -657,8 +657,8 @@ class wxElementTool : public wxPanel
 
 public:
 
-	wxElementTool(Element_tool *element_tool, wxPanel *parent):
-	element_tool(element_tool)
+	wxElementTool(Element_tool *element_tool, wxPanel *parent)
+		: element_tool(element_tool)
 	{
 		wxXmlInit_element_tool();
 		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
@@ -703,16 +703,18 @@ public:
 		button_element->SetValue(element_tool->select_elements_enabled);
 		button_face->SetValue(element_tool->select_faces_enabled);
 		button_line->SetValue(element_tool->select_lines_enabled);
-	};
+	}
 
 	wxElementTool()
 	{
-	};
+	}
 
 	~ wxElementTool()
 	{
-		delete element_command_field_chooser;
-	};
+		if (element_command_field_chooser)
+			delete element_command_field_chooser;
+	}
+
 	int element_command_field_callback(Computed_field *command_field)
 	{
 		Element_tool_set_command_field(element_tool, command_field);

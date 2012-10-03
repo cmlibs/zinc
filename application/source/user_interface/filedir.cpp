@@ -233,6 +233,10 @@ frees the memory for <**file_open_data> and changes <*file_open_data> to NULL.
 		{
 			 DEALLOCATE((*file_open_data)->filter_extension);
 		}
+		if ((*file_open_data)->file_name)
+		{
+			DEALLOCATE((*file_open_data)->file_name);
+		}
 		DEALLOCATE(*file_open_data);
 		*file_open_data=(struct File_open_data *)NULL;
 	}
@@ -360,11 +364,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 		} break;
 	}
 	wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,wxString::FromAscii(shell_title),wxT(""),wxT(""),
-		 wxString::FromAscii(extension),wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
+											   wxT("*.com"),wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
 	if (ReadData->ShowModal() == wxID_OK)
 	{
 		 wxString file_name=ReadData->GetPath();
-		 file_open_data->file_name=file_name.mb_str(wxConvUTF8);
+		 file_open_data->file_name=duplicate_string(file_name.mb_str(wxConvUTF8));
 #if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
 		 char *first = NULL;
@@ -642,7 +646,7 @@ specified file.
  if (SaveData->ShowModal() == wxID_OK)
 	{
 	  wxString file_name=SaveData->GetPath();
-		file_open_data->file_name=file_name.mb_str(wxConvUTF8);
+		file_open_data->file_name=duplicate_string(file_name.mb_str(wxConvUTF8));
 #if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
 		 char *first = NULL;

@@ -93,7 +93,7 @@ Module functions
 */
 
 #define DEFINE_CREATE_CMISS_CALLBACK_FUNCTION( callback_type ) \
-static struct CMISS_CALLBACK_ITEM(callback_type) *CREATE(CMISS_CALLBACK_ITEM(callback_type))( \
+struct CMISS_CALLBACK_ITEM(callback_type) *CREATE(CMISS_CALLBACK_ITEM(callback_type))( \
 	CMISS_CALLBACK_FUNCTION(callback_type) *function,void *user_data) \
 /***************************************************************************** \
 LAST MODIFIED : 20 March 2000 \
@@ -102,7 +102,7 @@ DESCRIPTION : \
 Creates a callback containing <function> and <user_data>. \
 ============================================================================*/ \
 { \
-  struct CMISS_CALLBACK_ITEM(callback_type) *callback; \
+	struct CMISS_CALLBACK_ITEM(callback_type) *callback; \
 \
 	ENTER(CREATE(CMISS_CALLBACK_ITEM(callback_type))); \
 	if (function) \
@@ -131,7 +131,7 @@ Creates a callback containing <function> and <user_data>. \
 } /* CREATE(CMISS_CALLBACK_ITEM(callback_type)) */
 
 #define DEFINE_DESTROY_CMISS_CALLBACK_FUNCTION( callback_type ) \
-static int DESTROY(CMISS_CALLBACK_ITEM(callback_type))( \
+	int DESTROY(CMISS_CALLBACK_ITEM(callback_type))( \
 	struct CMISS_CALLBACK_ITEM(callback_type) **callback_address) \
 /***************************************************************************** \
 LAST MODIFIED : 20 March 2000 \
@@ -166,7 +166,7 @@ Destroys the callback at <*callback_address>. \
 #endif
 
 #define DEFINE_CMISS_CALLBACK_CALL_FUNCTIONvoid( callback_type ) \
-	static int CMISS_CALLBACK_CALL(callback_type)( \
+	int CMISS_CALLBACK_CALL(callback_type)( \
 	struct CMISS_CALLBACK_ITEM(callback_type) *callback,void *callback_data_void) \
 /***************************************************************************** \
 LAST MODIFIED : 11 September 2007 \
@@ -200,7 +200,7 @@ Version for callback_function_return_type == void.
 } /* CMISS_CALLBACK_CALL(callback_type) */ \
 
 #define DEFINE_CMISS_CALLBACK_CALL_FUNCTIONint( callback_type ) \
-	static int CMISS_CALLBACK_CALL(callback_type)( \
+	int CMISS_CALLBACK_CALL(callback_type)( \
 	struct CMISS_CALLBACK_ITEM(callback_type) *callback,void *callback_data_void) \
 /***************************************************************************** \
 LAST MODIFIED : 11 September 2007 \
@@ -239,7 +239,7 @@ Version for callback_function_return_type == int.
 #endif
 
 #define DEFINE_CMISS_CALLBACK_MATCHES_FUNCTION( callback_type ) \
-static int CMISS_CALLBACK_MATCHES(callback_type)( \
+	int CMISS_CALLBACK_MATCHES(callback_type)( \
 	struct CMISS_CALLBACK_ITEM(callback_type) *callback,void *other_callback_void) \
 /***************************************************************************** \
 LAST MODIFIED : 20 March 2000 \

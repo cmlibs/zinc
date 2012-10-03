@@ -507,6 +507,7 @@ into unmanaged or invisible widgets.
 	{
 		switch (buffer->type)
 		{
+			case GRAPHICS_BUFFER_WX_TYPE:
 			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				return_code = 1;

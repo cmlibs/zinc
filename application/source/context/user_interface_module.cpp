@@ -65,6 +65,7 @@ DESCRIPTION :
 #include "cad/cad_tool.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "context/context_app.h"
+#include "graphics/scene_viewer_app.h"
 
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface_module *User_interface_module_create(
@@ -276,12 +277,13 @@ struct User_interface_module *User_interface_module_create(
 					Cmiss_graphics_module_get_default_light_model(graphics_module);
 				struct Scene *default_scene =
 					Cmiss_graphics_module_get_default_scene(graphics_module);
-				UI_module->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
-					(&UI_module->background_colour,
+				UI_module->scene_viewer_package = CREATE(Cmiss_scene_viewer_app_package)
+					(UI_module->graphics_buffer_package,
+						&UI_module->background_colour,
 						UI_module->interactive_tool_manager,
 						Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
 						Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
-						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene);
+						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene, UI_module->user_interface);
 				DEACCESS(Light_model)(&default_light_model);
 				DEACCESS(Light)(&default_light);
 				DEACCESS(Scene)(&default_scene);
@@ -330,7 +332,7 @@ int User_interface_module_destroy(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (UI_module->scene_viewer_package)
 			{
-				//-- DESTROY(Cmiss_scene_viewer_package)(&UI_module->scene_viewer_package);
+				//-- DESTROY(Cmiss_scene_viewer_app_package)(&UI_module->scene_viewer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)

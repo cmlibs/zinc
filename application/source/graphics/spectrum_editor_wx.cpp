@@ -34,7 +34,7 @@ Provides the wxWidgets interface to manipulate spectrum settings.
 #include "user_interface/user_interface.h"
 // insert app headers here
 #include "three_d_drawing/graphics_buffer_app.h"
-
+#include "graphics/scene_viewer_app.h"
 
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the spectrum editor is modifying it's primitives quite a bit . */
@@ -70,7 +70,7 @@ Contains all the information carried by the graphical element editor widget.
 	 struct User_interface *user_interface;
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address;
 	 struct Scene *spectrum_editor_scene, *autorange_scene;
-	 struct Scene_viewer *spectrum_editor_scene_viewer;
+	 struct Scene_viewer_app *spectrum_editor_scene_viewer;
 	 struct GT_object *graphics_object, *tick_lines_graphics_object,
 			*tick_labels_graphics_object;
 	 int viewer_type;
@@ -1990,7 +1990,7 @@ DESCRIPTION :
 		GT_object_changed(spectrum_editor->tick_labels_graphics_object);
 		Cmiss_rendition_begin_change(spectrum_editor->rendition);
 		Cmiss_rendition_end_change(spectrum_editor->rendition);
-		Scene_viewer_redraw(spectrum_editor->spectrum_editor_scene_viewer);
+		Scene_viewer_app_redraw(spectrum_editor->spectrum_editor_scene_viewer);
 		if (spectrum_editor->spectrum_panel)
 		{
 			 spectrum_editor->spectrum_panel->Update();
@@ -2025,7 +2025,7 @@ Callback for when input is received by the scene_viewer.
 	spectrum_editor=(struct Spectrum_editor *)spectrum_editor_void;
 	if (spectrum_editor != 0)
 	{
-		if (GRAPHICS_BUFFER_BUTTON_PRESS==input->type)
+		if (CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS==input->type)
 		{
 			/* Increment the type */
 			spectrum_editor->viewer_type++;
@@ -2137,7 +2137,7 @@ Creates a spectrum_editor widget.
 				spectrum_editor->tick_labels_graphics_object = (struct GT_object *)NULL;
 				spectrum_editor->autorange_scene = (struct Scene*)NULL;
 				spectrum_editor->spectrum_editor_scene = (struct Scene *)NULL;
-				spectrum_editor->spectrum_editor_scene_viewer = (struct Scene_viewer *)NULL;
+				spectrum_editor->spectrum_editor_scene_viewer = (struct Scene_viewer_app *)NULL;
 				spectrum_editor->viewer_type = 0;
 				spectrum_editor->scene_manager = scene_manager;
 				spectrum_editor->spectrum_range_min_text = NULL;
@@ -2414,12 +2414,12 @@ Creates a spectrum_editor widget.
 							if (graphics_buffer)
 							{
 								 spectrum_editor->spectrum_editor_scene_viewer =
-										CREATE(Scene_viewer)(Graphics_buffer_app_get_core_buffer(graphics_buffer),
+										CREATE(Scene_viewer_app)(graphics_buffer,
 											&background_colour,
 											(struct MANAGER(Light) *)NULL,viewer_light,
 											 (struct MANAGER(Light_model) *)NULL,viewer_light_model,
 											(struct MANAGER(Scene) *)NULL,
-											spectrum_editor->spectrum_editor_scene);
+											spectrum_editor->spectrum_editor_scene, spectrum_editor->user_interface);
 								 ADD_OBJECT_TO_MANAGER(GT_object)(spectrum_editor->graphics_object,
 									 Cmiss_graphics_module_get_default_glyph_manager(graphics_module));
 								 if (spectrum_editor->rendition && spectrum_editor->graphics_object)
@@ -2428,21 +2428,21 @@ Creates a spectrum_editor widget.
 										 spectrum_editor->graphics_object, "spectrum_default");
 								 }
 								 Scene_viewer_set_input_mode(
-										spectrum_editor->spectrum_editor_scene_viewer,
+										spectrum_editor->spectrum_editor_scene_viewer->core_scene_viewer,
 										SCENE_VIEWER_NO_INPUT );
-								 Scene_viewer_add_input_callback(
-										spectrum_editor->spectrum_editor_scene_viewer,
-										spectrum_editor_viewer_input_callback,
-										(void *)spectrum_editor, /*add_first*/0);
+								//-- Scene_viewer_app_add_input_callback(
+								//-- 		spectrum_editor->spectrum_editor_scene_viewer,
+								//-- 		spectrum_editor_viewer_input_callback,
+								//-- 		(void *)spectrum_editor, /*add_first*/0);
 								 Cmiss_scene_viewer_set_viewport_size(
-										spectrum_editor->spectrum_editor_scene_viewer,400,150);
+										spectrum_editor->spectrum_editor_scene_viewer->core_scene_viewer,400,150);
 								 Scene_viewer_set_lookat_parameters(
-										spectrum_editor->spectrum_editor_scene_viewer,0,-1,0,0,0,
+										spectrum_editor->spectrum_editor_scene_viewer->core_scene_viewer,0,-1,0,0,0,
 										0,0,0,1);
 								 Scene_viewer_set_view_simple(
-										spectrum_editor->spectrum_editor_scene_viewer,0,0,0,2.3,
+										spectrum_editor->spectrum_editor_scene_viewer->core_scene_viewer,0,0,0,2.3,
 										46,10);
-								 Scene_viewer_redraw(
+								 Scene_viewer_app_redraw(
 										spectrum_editor->spectrum_editor_scene_viewer);
 							}
 					 }
@@ -2601,7 +2601,7 @@ Destroys the <*spectrum_editor_address> and sets
 		{
 			DEACCESS(Scene)(&spectrum_editor->spectrum_editor_scene);
 		}
-		DESTROY(Scene_viewer)(&spectrum_editor->spectrum_editor_scene_viewer);
+		DESTROY(Scene_viewer_app)(&spectrum_editor->spectrum_editor_scene_viewer);
 		/* destroy edit_spectrum */
 		if (spectrum_editor->current_spectrum)
 		{

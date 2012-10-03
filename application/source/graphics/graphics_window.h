@@ -368,7 +368,7 @@ DESCRIPTION :
 Returns the Scene for the <graphics_window>.
 ==============================================================================*/
 
-struct Scene_viewer *Graphics_window_get_Scene_viewer(
+struct Scene_viewer_app *Graphics_window_get_Scene_viewer(
 	struct Graphics_window *window,int pane_no);
 /*******************************************************************************
 LAST MODIFIED : 5 October 1998

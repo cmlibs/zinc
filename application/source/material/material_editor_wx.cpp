@@ -72,6 +72,7 @@ Widgets for editing a graphical material.
 #include "material/material_editor_wx.xrch"
 #include "graphics/render_gl.h"
 #include "three_d_drawing/graphics_buffer_app.h"
+#include "graphics/scene_viewer.h"
 
 class wxMaterialEditor;
 
@@ -327,9 +328,9 @@ Updates the picture with the changed material.
 	ENTER(material_editor_update_picture);
 	if (material_editor)
 	{
-		 Graphics_buffer_make_current(material_editor->graphics_buffer);
+		 Graphics_buffer_app_make_current(material_editor->graphics_buffer);
 		 return_code=material_editor_draw_sphere(material_editor);
-		 Graphics_buffer_swap_buffers(material_editor->graphics_buffer);
+		 Graphics_buffer_app_swap_buffers(material_editor->graphics_buffer);
 	}
 	else
 	{
@@ -419,7 +420,7 @@ Increments the background pattern.
 	material_editor = (struct Material_editor *)material_editor_void;
 	if (material_editor != NULL)
 	{
-		if (GRAPHICS_BUFFER_BUTTON_PRESS == input->type)
+		if (CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS == input->type)
 		{
 			(material_editor->background)++;
 			if (material_editor->background>2)
@@ -1032,7 +1033,7 @@ current material.
 } /* Materia_editor_material_change */
 
 int Material_editor_build_widgets(struct Material_editor *material_editor,
-	struct Graphics_buffer_app_package *graphics_buffer_package)
+								  struct Graphics_buffer_app_package *graphics_buffer_package)
 {
 	struct Graphical_material *temp_material;
 	int init_widgets, return_code = 1;
@@ -1044,85 +1045,85 @@ int Material_editor_build_widgets(struct Material_editor *material_editor,
 			wxLogNull logNo;
 			material_editor->wx_material_editor = new wxMaterialEditor(material_editor);
 			material_editor->material_editor_ambient_colour_panel = XRCCTRL(
-				 *material_editor->wx_material_editor, "MaterialEditorPanel1", wxPanel);
+				*material_editor->wx_material_editor, "MaterialEditorPanel1", wxPanel);
 			material_editor->ambient_colour_editor = new Colour_editor(
-				 material_editor->material_editor_ambient_colour_panel, "Ambient Colour:",
-				 COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
+				material_editor->material_editor_ambient_colour_panel, "Ambient Colour:",
+				COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
 			material_editor->material_editor_diffuse_colour_panel = XRCCTRL(
-				 *material_editor->wx_material_editor, "MaterialEditorPanel2", wxPanel);
+				*material_editor->wx_material_editor, "MaterialEditorPanel2", wxPanel);
 			material_editor->diffuse_colour_editor = new Colour_editor(
-				 material_editor->material_editor_diffuse_colour_panel, "Diffuse Colour:",
-				 COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
+				material_editor->material_editor_diffuse_colour_panel, "Diffuse Colour:",
+				COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
 			material_editor->material_editor_emitted_colour_panel = XRCCTRL(
-				 *material_editor->wx_material_editor, "MaterialEditorPanel3", wxPanel);
+				*material_editor->wx_material_editor, "MaterialEditorPanel3", wxPanel);
 			material_editor->emitted_colour_editor = new Colour_editor(
-				 material_editor->material_editor_emitted_colour_panel, "Emitted Colour:",
-				 COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
+				material_editor->material_editor_emitted_colour_panel, "Emitted Colour:",
+				COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
 			material_editor->material_editor_specular_colour_panel = XRCCTRL(
-				 *material_editor->wx_material_editor, "MaterialEditorPanel4", wxPanel);
+				*material_editor->wx_material_editor, "MaterialEditorPanel4", wxPanel);
 			material_editor->specular_colour_editor = new Colour_editor(
-				 material_editor->material_editor_specular_colour_panel, "Specular Colour:",
-				 COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
+				material_editor->material_editor_specular_colour_panel, "Specular Colour:",
+				COLOUR_EDITOR_RGB, (struct Colour *)NULL, (void*)material_editor);
 			material_editor->material_editor_sample_panel = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorSamplePanel", wxPanel);
+				, "MaterialEditorSamplePanel", wxPanel);
 			material_editor->material_editor_alpha_slider = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorAlphaSlider", wxSlider);
-				 material_editor->material_editor_shininess_slider = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorShininessSlider", wxSlider);
+				, "MaterialEditorAlphaSlider", wxSlider);
+			material_editor->material_editor_shininess_slider = XRCCTRL(*material_editor->wx_material_editor
+				, "MaterialEditorShininessSlider", wxSlider);
 			material_editor->material_editor_alpha_text_ctrl = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorAlphaTextCtrl", wxTextCtrl);
+				, "MaterialEditorAlphaTextCtrl", wxTextCtrl);
 			material_editor->material_editor_shininess_text_ctrl = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorShininessTextCtrl", wxTextCtrl);
+				, "MaterialEditorShininessTextCtrl", wxTextCtrl);
 			material_editor->material_editor_per_pixel_checkbox = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorPerPixelLightingCheckBox", wxCheckBox);
+				, "MaterialEditorPerPixelLightingCheckBox", wxCheckBox);
 			material_editor->material_editor_bump_mapping_checkbox = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorBumpMappingCheckBox", wxCheckBox);
+				, "MaterialEditorBumpMappingCheckBox", wxCheckBox);
 			temp_material=FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
 				(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,(void *)NULL,
 				material_editor->graphical_material_manager);
 			make_current_material(material_editor, temp_material);
 			material_editor->material_manager_callback_id =
-				 MANAGER_REGISTER(Graphical_material)(
-				 Material_editor_material_change, (void *)material_editor,
-				 material_editor->graphical_material_manager);
+				MANAGER_REGISTER(Graphical_material)(
+					Material_editor_material_change, (void *)material_editor,
+					material_editor->graphical_material_manager);
 			/* now bring up a 3d drawing widget */
 			init_widgets = 1;
 			if (!(material_editor->graphics_buffer=
-						create_Graphics_buffer_wx(graphics_buffer_package,
-							 material_editor->material_editor_sample_panel,
-							 GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
-							 GRAPHICS_BUFFER_ANY_STEREO_MODE,
-							 /*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
-							 /*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer_app *)NULL)))
+				  create_Graphics_buffer_wx(graphics_buffer_package,
+											material_editor->material_editor_sample_panel,
+											GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
+											GRAPHICS_BUFFER_ANY_STEREO_MODE,
+											/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
+											/*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer_app *)NULL)))
 			{
-				 display_message(ERROR_MESSAGE,
-						"CREATE(Material_editor).  Could not create 3d widget.");
-				 init_widgets=0;
+				display_message(ERROR_MESSAGE,
+								"CREATE(Material_editor).  Could not create 3d widget.");
+				init_widgets=0;
 			}
 			material_editor->wx_material_editor->Show();
 			material_editor->wx_material_editor->Fit();
 			if (init_widgets)
 			{
-				 Graphics_buffer_awaken(material_editor->graphics_buffer);
-				 material_editor_wx_set_material(material_editor, temp_material);
-				 Graphics_buffer_add_expose_callback(material_editor->graphics_buffer,
-						material_editor_expose_picture_callback, (void *)material_editor);
-				 Graphics_buffer_add_input_callback(material_editor->graphics_buffer,
-						material_editor_change_background, (void *)material_editor);
+				Graphics_buffer_app_awaken(material_editor->graphics_buffer);
+				material_editor_wx_set_material(material_editor, temp_material);
+				Graphics_buffer_app_add_expose_callback(material_editor->graphics_buffer,
+					material_editor_expose_picture_callback, (void *)material_editor);
+				Graphics_buffer_app_add_input_callback(material_editor->graphics_buffer,
+					material_editor_change_background, (void *)material_editor);
 			}
 		}
 		else
 		{
-			 display_message(ERROR_MESSAGE,"Material_editor_build_widgets.  "
-					"Material editor widgets already exists.");
-			 return_code = 0;
+			display_message(ERROR_MESSAGE,"Material_editor_build_widgets.  "
+							"Material editor widgets already exists.");
+			return_code = 0;
 		}
 	}
 	else
 	{
-		 display_message(ERROR_MESSAGE,"Material_editor_build_widgets.  "
-				"Invalid argument(s).");
-		 return_code = 0;
+		display_message(ERROR_MESSAGE,"Material_editor_build_widgets.  "
+						"Invalid argument(s).");
+		return_code = 0;
 	}
 
 	return return_code;
@@ -1353,7 +1354,7 @@ Sets the <material> to be edited by the <material_editor>.
 				}
 
 				/* need to check window is there the first time else error occurs */
-				if (Graphics_buffer_is_visible(material_editor->graphics_buffer))
+				if (Graphics_buffer_app_is_visible(material_editor->graphics_buffer))
 				{
 					material_editor_update_picture(material_editor);
 				}
