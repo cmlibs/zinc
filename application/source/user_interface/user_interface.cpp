@@ -1051,30 +1051,8 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 		while (TRUE==GetMessage(&message,NULL,0,0))
 		{
-#if defined (OLD_CODE)
-			/*???DB.  Glen had this.  IsDialogMessage checks if the message is for the
-				specified dialog and if it is, processes the message.  The reason for
-				doing it was that, if you don't keystrokes such as up arrow and tab get
-				translated into change of focus messages rather than being left as
-				keystroke messages.  There should be another way of doing this,
-				otherwise we're going to have to have similar code for other dialogs
-				here */
-			/*???DB.  Find out more about TranslateAccelerator */
-			/*???DB.  Find out more about dialogs */
-			/*???DB.  IsDialogMessage translates arrow keys and tabs into selections,
-				but checks to make sure the application wants this via a WM_GETDLGCODE
-				message.  Shouldn't this mean that the translations are not done if
-				IsDialogMessage is not called ? */
-			/*???DB.  Should the command window be a dialog ? */
-			if (!global_Command_window||
-				(TRUE!=IsDialogMessage(global_Command_window->dialog,&message)))
-			{
-#endif /* defined (OLD_CODE) */
 				TranslateMessage(&message);
 				DispatchMessage(&message);
-#if defined (OLD_CODE)
-			}
-#endif /* defined (OLD_CODE) */
 		}
 		return_code=message.wParam;
 #endif /* defined (WIN32_USER_INTERFACE) */

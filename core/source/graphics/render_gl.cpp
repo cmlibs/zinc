@@ -68,7 +68,7 @@ GL rendering calls - API specific.
 																			 * could be split for different types or virtual methods or function callbacks
 																			 * added but much of the code would be repeated with the first strategy and
 																			 * there are a number of different points where the behaviour changes which would
-																			 * need over-riding for the second.  So the current plan is to keep a single 
+																			 * need over-riding for the second.  So the current plan is to keep a single
 																			 * routine and switch on this type.
 																			 */
 enum Graphics_object_rendering_type
@@ -455,7 +455,7 @@ public:
 				  int (Render_graphics_opengl_display_list::*)(GT_object*) >
 				  execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
 				  &Render_graphics_opengl_display_list::Graphics_object_execute_parent);
-			  return_code = ::Graphics_object_compile_opengl_display_list(graphics_object, 
+			  return_code = ::Graphics_object_compile_opengl_display_list(graphics_object,
 				  &execute_method, this);
 		  }
 		  return (return_code);
@@ -482,7 +482,7 @@ public:
 				  int (Render_graphics_opengl_display_list::*)(Graphical_material*) >
 				  execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
 				  &Render_graphics_opengl_display_list::Material_execute_parent);
-			  return_code = Material_compile_opengl_display_list(material, 
+			  return_code = Material_compile_opengl_display_list(material,
 				  &execute_method, this);
 		  }
 		  return (return_code);
@@ -551,7 +551,7 @@ struct GT_object *glyph, char **labels,
 	int number_of_data_components, GLfloat *data, int *names,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,
-struct Graphical_material *material, struct Graphical_material *secondary_material, 
+struct Graphical_material *material, struct Graphical_material *secondary_material,
 struct Spectrum *spectrum, struct Graphics_font *font,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
@@ -691,7 +691,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 						{
 							label++;
 						}
-					}					
+					}
 				}
 				else if (0 == strcmp(glyph->name, "point"))
 				{
@@ -1363,7 +1363,7 @@ struct Graphics_font *font)
 				default:
 					{
 						/* Do nothing, satisfy warnings */
-					} break;					
+					} break;
 				}
 			}
 			/* output text at each point, if supplied */
@@ -1493,7 +1493,7 @@ struct Graphics_font *font)
 				default:
 					{
 						/* Do nothing, satisfy warnings */
-					} break;					
+					} break;
 				}
 				glPopName();
 			}
@@ -1553,7 +1553,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 	if (point_list&&(0<n_pts)&&((!data)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
 	{
-#if defined (OPENGL_API)		
+#if defined (OPENGL_API)
 		point=point_list;
 		if (normal_list)
 		{
@@ -1561,7 +1561,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 		}
 		if (data)
 		{
-			datum=data;			
+			datum=data;
 		}
 		glBegin(GL_LINE_STRIP);
 		for (i=n_pts;i>0;i--)
@@ -1604,7 +1604,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 	return (return_code);
 } /* draw_polylineGL */
 
-static int draw_dc_polylineGL(Triple *point_list,Triple *normal_list, int n_pts, 
+static int draw_dc_polylineGL(Triple *point_list,Triple *normal_list, int n_pts,
 	int number_of_data_components, GLfloat *data,
 struct Graphical_material *material,struct Spectrum *spectrum)
 	/*******************************************************************************
@@ -1696,7 +1696,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 */
 static int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangentpoints,
 	Triple *texturepoints, int npts1, int npts2, gtPolygonType polygon_type,
-	int number_of_data_components, GLfloat *data, 
+	int number_of_data_components, GLfloat *data,
 struct Graphical_material *material, struct Spectrum *spectrum,
 struct Spectrum_render_data *render_data)
 {
@@ -1707,7 +1707,7 @@ struct Spectrum_render_data *render_data)
 	USE_PARAMETER(tangentpoints);
 #endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
-	if (surfpts && (1<npts1) &&(1<npts2) && 
+	if (surfpts && (1<npts1) &&(1<npts2) &&
 		((NULL == data) || (NULL != render_data)))
 	{
 #if defined (OPENGL_API)
@@ -1832,7 +1832,7 @@ struct Spectrum_render_data *render_data)
 		default:
 			{
 				/* Do nothing, satisfy warnings */
-			} break;					
+			} break;
 		}
 #endif /* defined (OPENGL_API) */
 		return_code=1;
@@ -1855,8 +1855,8 @@ struct Spectrum_render_data *render_data)
 	return (return_code);
 } /* draw_surfaceGL */
 
-static int draw_dc_surfaceGL(Triple *surfpts, Triple *normal_points, 
-	Triple *tangent_points, Triple *texture_points, 
+static int draw_dc_surfaceGL(Triple *surfpts, Triple *normal_points,
+	Triple *tangent_points, Triple *texture_points,
 	int npolys,int npp,gtPolygonType polygon_type,int strip,
 #if defined (OPENGL_API)
 	GLenum& gl_surface_mode,
@@ -1883,7 +1883,7 @@ struct Spectrum_render_data *render_data)
 
 	ENTER(draw_data_dc_surfaceGL);
 	USE_PARAMETER(tangent_points);
-	if (surfpts&&(0<npolys)&&(2<npp) && ((NULL == data) || (NULL != render_data))) 
+	if (surfpts&&(0<npolys)&&(2<npp) && ((NULL == data) || (NULL != render_data)))
 	{
 		if (data)
 		{
@@ -1955,7 +1955,7 @@ struct Spectrum_render_data *render_data)
 				{
 					glTexCoord3fv(*texture_point);
 					texture_point++;
-				}				
+				}
 				glVertex3fv(*point);
 				point++;
 
@@ -2082,12 +2082,6 @@ static int draw_nurbsGL(struct GT_nurbs *nurbptr)
 			}
 			the_nurb=gluNewNurbsRenderer();
 			/* set the maximum sampled pixel size */
-#if defined (OLD_CODE)
-			gluNurbsProperty(the_nurb,GLU_DISPLAY_MODE,GLU_OUTLINE_POLYGON);
-			gluNurbsProperty(the_nurb,GLU_SAMPLING_TOLERANCE,5000.);
-			gluNurbsProperty(the_nurb,GLU_SAMPLING_TOLERANCE,
-				(GLfloat)nurbptr->nurbsprop);
-#endif /* defined (OLD_CODE) */
 			/* start the nurbs surface */
 			gluBeginSurface(the_nurb);
 			/* draw the nurbs surface */
@@ -2257,7 +2251,7 @@ struct Graphical_material *default_material, struct Spectrum *spectrum)
 	return (return_code);
 } /* draw_voltexGL */
 
-/** Routine that uses the objects material and spectrum to convert 
+/** Routine that uses the objects material and spectrum to convert
 * an array of data to corresponding colour data.
 */
 static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
@@ -2358,9 +2352,9 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 					vertex_buffer, &position_values_per_vertex, &position_vertex_count);
 
-				glEnableClientState(GL_VERTEX_ARRAY);							
+				glEnableClientState(GL_VERTEX_ARRAY);
 				glVertexPointer(position_values_per_vertex, GL_FLOAT,
-					/*Packed vertices*/0, /*Client vertex array*/*vertex_buffer);							
+					/*Packed vertices*/0, /*Client vertex array*/*vertex_buffer);
 
 				unsigned int colour_values_per_vertex, colour_vertex_count;
 				*colour_buffer = (GLfloat *)NULL;
@@ -2369,9 +2363,9 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 				{
 					if (colour_vertex_count == position_vertex_count)
 					{
-						glEnableClientState(GL_COLOR_ARRAY);							
+						glEnableClientState(GL_COLOR_ARRAY);
 						glColorPointer(colour_values_per_vertex, GL_FLOAT,
-							/*Packed vertices*/0, /*Client vertex array*/*colour_buffer);						
+							/*Packed vertices*/0, /*Client vertex array*/*colour_buffer);
 					}
 					else
 					{
@@ -2386,9 +2380,9 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
 					&& (3 == normal_values_per_vertex))
 				{
-					glEnableClientState(GL_NORMAL_ARRAY);							
+					glEnableClientState(GL_NORMAL_ARRAY);
 					glNormalPointer(GL_FLOAT, /*Packed vertices*/0,
-						/*Client vertex array*/*normal_buffer);					
+						/*Client vertex array*/*normal_buffer);
 				}
 
 				*texture_coordinate0_buffer = NULL;
@@ -2403,7 +2397,7 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 					glTexCoordPointer(texture_coordinate0_values_per_vertex,
 						GL_FLOAT, /*Packed vertices*/0,
-						/*Client vertex array*/*texture_coordinate0_buffer);					
+						/*Client vertex array*/*texture_coordinate0_buffer);
 				}
 			} break;
 		default:
@@ -2437,7 +2431,7 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 			{
 				if (vertex_buffer)
 				{
-					glDisableClientState(GL_VERTEX_ARRAY);					
+					glDisableClientState(GL_VERTEX_ARRAY);
 				}
 				if (colour_buffer)
 				{
@@ -2539,14 +2533,14 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		{
 			GLfloat *temp_position_array, *temp_pointer;
 			glBindBuffer(GL_ARRAY_BUFFER, object->multipass_vertex_buffer_object);
-			/* Initialise the size to hold the original vertex data and the 
+			/* Initialise the size to hold the original vertex data and the
 			* pass 1 frame buffer positions.
 			*/
 			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*
 				(position_values_per_vertex + 3)*position_vertex_count,
 				NULL, GL_STATIC_DRAW);
 
-			/* Calculate and store the tex1 texture coordinates which are 
+			/* Calculate and store the tex1 texture coordinates which are
 			* the positions that each vertex must have in the frame buffer. */
 			ALLOCATE(temp_position_array, GLfloat,3*position_vertex_count);
 			temp_pointer = temp_position_array;
@@ -2559,9 +2553,9 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 					//full range of the image coordinates.
 					*temp_pointer = (GLfloat)i * ((GLfloat)tex_width/(GLfloat)(tex_width - 1));
 					temp_pointer++;
-					*temp_pointer = (GLfloat)j + 0.5; 
+					*temp_pointer = (GLfloat)j + 0.5;
 					temp_pointer++;
-					*temp_pointer = 0.0; 
+					*temp_pointer = 0.0;
 					temp_pointer++;
 				}
 			}
@@ -2593,7 +2587,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		glClientActiveTexture(GL_TEXTURE0);
 
 		/* Load the position vertex buffer into the first half of the array
-		* as it will be bound with the standard vertex buffer object 
+		* as it will be bound with the standard vertex buffer object
 		* rendering code as the position vertex buffer.
 		*/
 #if !defined (GL_PIXEL_PACK_BUFFER_EXT) && defined (GL_PIXEL_PACK_BUFFER_ARB)
@@ -2604,7 +2598,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 			/*offset*/0,
 			/*size*/sizeof(GLfloat)*position_values_per_vertex*position_vertex_count,
 			position_vertex_buffer);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);						
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);
 		glBufferData(GL_PIXEL_PACK_BUFFER_EXT, sizeof(GLfloat)*
 			4*tex_width*tex_height,
 			/*position_vertex_buffer*/NULL, GL_STATIC_DRAW);
@@ -2622,12 +2616,12 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		* these to other buffers.  Currently no way to determine which attributes
 		* should be set by the secondary material and used in the final render. */
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, fbo_tex_normals, 0);
-		GLenum dbuffers[] = 
+		GLenum dbuffers[] =
 		{GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT};
 		glDrawBuffers(2, dbuffers);
 #endif /* defined (NEW_CODE) */
 
-		GLenum dbuffers[] = 
+		GLenum dbuffers[] =
 		{GL_COLOR_ATTACHMENT0_EXT};
 		glDrawBuffers(1, dbuffers);
 
@@ -2643,30 +2637,13 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		glClearColor(1, 0.5, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-#if defined (OLD_CODE)
-		/* There seems to be code binding these textures in samples I have seen,
-		* I don't think I should need to do this, these textures are just targets
-		* for the framebuffer extension (and they may interfere with any real textures
-		* I want to bind), but I've kept this code here in case it is necessary on some other platfrom.
-		*/
-		glActiveTextureARB( GL_TEXTURE0_ARB );
-		glBindTexture(GL_TEXTURE_2D,fbo_tex_vertices);
-
-		glActiveTextureARB( GL_TEXTURE1_ARB );
-		glBindTexture(GL_TEXTURE_2D,fbo_tex_normals);
-#endif /* defined (OLD_CODE) */
-
-		glMatrixMode(GL_PROJECTION); 
-		glLoadIdentity(); 
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 		glOrtho(0.0,tex_width,0.0,tex_height,-1.0,1.0);
-		glMatrixMode(GL_MODELVIEW); 
-		glLoadIdentity(); 
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
-#if defined (OLD_CODE)
-		int viewport[4];
-		glGetIntegerv(GL_VIEWPORT, viewport);
-#endif /* defined (OLD_CODE) */
-		glViewport(0,0,tex_width,tex_height); 
+		glViewport(0,0,tex_width,tex_height);
 
 		//Not available on my implementation, maybe we should be setting this
 		//if available to ensure the results aren't clamped.
@@ -2700,7 +2677,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 #if defined (NEW_CODE)
 		case ALL_VALUES_CALCULATED:
 			{
-				glBegin(GL_QUADS); 
+				glBegin(GL_QUADS);
 				glColor3f(1,1,1);
 				glMultiTexCoord4f( GL_TEXTURE0, 0.0, 0.0, 0.0, 1.0);
 				glVertex2f(0, 0);
@@ -2767,25 +2744,6 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		//Set back to the normal screen
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
-#if defined (OLD_CODE)
-		// We don't need to reset all this state as we are in the compile stage and
-		// the rendering setup is still to occur.
-		glViewport(viewport[0],viewport[1],viewport[2],viewport[3]); 
-		glDrawBuffer(GL_BACK);
-
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE);
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_ALPHA_TEST);
-		glEnable(GL_STENCIL_TEST);
-		glEnable(GL_BLEND);
-
-		/* Note that the corresponding glPushMatrix has been removed. */
-		glMatrixMode(GL_PROJECTION); 
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		glPopMatrix();
-#endif /* defined (OLD_CODE) */
 
 		renderer->Material_execute((Graphical_material *)NULL);
 	}
@@ -2825,7 +2783,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 
 					if (object->secondary_material)
 					{
-						/* Defer to lower in this function as we may want to use the contents of 
+						/* Defer to lower in this function as we may want to use the contents of
 						* some of the other buffers in our first pass calculation.
 						*/
 					}
@@ -3249,7 +3207,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 											interpolate_glyph_set->names,
 											/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 											/*label_density*/NULL,
-											material, secondary_material, spectrum, 
+											material, secondary_material, spectrum,
 											interpolate_glyph_set->font,
 											draw_selected, renderer->highlight_functor,
 											renderer, glyph_set->object_name,
@@ -3278,8 +3236,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										glyph_set->data, glyph_set->names,
 										glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
 										glyph_set->label_bounds, glyph_set->label_density_list,
-										material, secondary_material, 
-										spectrum, glyph_set->font, 
+										material, secondary_material,
+										spectrum, glyph_set->font,
 										draw_selected, renderer->highlight_functor,
 										renderer, glyph_set->object_name,
 										&lighting_off);
@@ -3311,7 +3269,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						{
 							draw_pointsetGL(1, point->position, &(point->text),
 								point->marker_type,
-								point->marker_size, /*names*/(int *)NULL, 
+								point->marker_size, /*names*/(int *)NULL,
 								point->n_data_components, point->data,
 								material,spectrum,point->font);
 							return_code=1;
@@ -3390,7 +3348,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							if (voltex->voltex_type == g_VOLTEX_WIREFRAME_SHADED_TEXMAP)
 							{
 								glPushAttrib(GL_TRANSFORM_BIT | GL_POLYGON_BIT);
-								glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);							
+								glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 							}
 							else
 							{
@@ -3608,7 +3566,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													/* put out name for picking - cast to GLuint */
 													glLoadName((GLuint)line->object_name);
 												}
-												draw_dc_polylineGL(line->pointlist,line->normallist, 
+												draw_dc_polylineGL(line->pointlist,line->normallist,
 													line->n_pts,line->n_data_components,line->data,
 													material,spectrum);
 											}
@@ -3662,7 +3620,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								glPushName(0);
 							}
 							return_code = 1;
-							GLenum mode; 
+							GLenum mode;
 							switch (line->polyline_type)
 							{
 							case g_PLAIN:
@@ -3943,7 +3901,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													if (object->texture_tiling &&
 														interpolate_surface->texturelist)
 													{
-														tile_surface = tile_GT_surface(interpolate_surface, 
+														tile_surface = tile_GT_surface(interpolate_surface,
 															object->texture_tiling);
 														while(tile_surface)
 														{
@@ -4021,7 +3979,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 												if (object->texture_tiling &&
 													surface->texturelist)
 												{
-													tile_surface = tile_GT_surface(surface, 
+													tile_surface = tile_GT_surface(surface,
 														object->texture_tiling);
 													while(tile_surface)
 													{
@@ -4159,7 +4117,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													glLoadName((GLuint)surface->object_name);
 #endif /* defined (OPENGL_API) */
 												}
-												draw_dc_surfaceGL(surface->pointlist,surface->normallist,  
+												draw_dc_surfaceGL(surface->pointlist,surface->normallist,
 													surface->tangentlist,
 
 													surface->texturelist,surface->n_pts1,surface->n_pts2,
@@ -4574,7 +4532,7 @@ struct GT_object *graphics_object,
 					renderer->Material_execute((Graphical_material *)NULL);
 				}
 			}
-		}		
+		}
 		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPopName();

@@ -547,20 +547,6 @@ DESCRIPTION :
 		renderer->Texture_compile(scene_viewer->image_texture.texture);
 		renderer->Texture_execute(scene_viewer->image_texture.texture);
 
-#if defined (OLD_CODE)
-		/* simple, un-corrected texture */
-		glBegin(GL_QUADS);
-		glTexCoord2d(0.0,(double)texture_height);
-		glVertex3d(0.0,height_texels,-0.999);
-		glTexCoord2d((double)texture_width,(double)texture_height);
-		glVertex3d(width_texels,height_texels,-0.999);
-		glTexCoord2d((double)texture_width,0.0);
-		glVertex3d(width_texels,0,-0.999);
-		glTexCoord2d(0.0,0.0);
-		glVertex3d(0,0,-0.999);
-		glEnd();
-#endif /* defined (OLD_CODE) */
-
 		/* get texels per polygon */
 		texels_per_polygon_x=1;
 		while ((2*texels_per_polygon_x*
@@ -1283,13 +1269,7 @@ This function determines whether to draw the main scene or whether to just
 update the fastchanging objects.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
-	GLdouble obj_x,obj_y,obj_z;
-#endif /* defined (OLD_CODE) */
 	int return_code;
-#if defined (OLD_CODE)
-	static GLint viewport[4]={0,0,1,1};
-#endif /* defined (OLD_CODE) */
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_handle_fastchanging);
@@ -1328,37 +1308,6 @@ update the fastchanging objects.
 			/* do not write into the depth buffer */
 			glDepthMask(GL_FALSE);
 
-#if defined (OLD_CODE)
-			if (rendering_data->rendering_double_buffered)
-			{
-				/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
-				if (GL_TRUE==gluUnProject(0.0001,0.0001,0.0001,
-						 scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,viewport,
-						 &obj_x,&obj_y,&obj_z))
-				{
-					if (scene_viewer->first_fast_change &&
-						scene_viewer->fast_changing)
-					{
-						/* copy front buffer to the back buffer */
-						glReadBuffer(GL_FRONT);
-						glDrawBuffer(GL_BACK);
-					}
-					else
-					{
-						/* copy back buffer to the front buffer */
-						glReadBuffer(GL_BACK);
-						glDrawBuffer(GL_FRONT);
-					}
-					/* Copy all the pixels irrespective of their alpha values */
-					glDisable(GL_BLEND);
-					glRasterPos3d(obj_x,obj_y,obj_z);
-					glCopyPixels(0,0,rendering_data->viewport_width,
-						rendering_data->viewport_height,GL_COLOR);
-				}
-				glDrawBuffer(GL_FRONT);
-				glEnable(GL_BLEND);
-			}
-#endif /* defined (OLD_CODE) */
 			rendering_data->renderer->fast_changing = 1;
 			rendering_data->renderer->Scene_execute(scene_viewer->scene);
 			rendering_data->renderer->fast_changing = 0;

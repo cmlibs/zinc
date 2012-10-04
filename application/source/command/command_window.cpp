@@ -160,7 +160,7 @@ DESCRIPTION :
 	wxListBox *history_window;
 	char *command_prompt;
 //#	if defined(WIN32_SYSTEM)
-//		wxIcon icon(wxIcon(cmiss_icon));
+	wxIcon icon(wxIcon(cmiss_icon));
 //#	endif
 #endif
 	FILE *out_file;
@@ -365,28 +365,6 @@ DESCRIPTION:
 							(LPARAM) 0);
 					}
 				}
-#if defined (OLD_CODE)
-				case EN_CHANGE:
-				{
-					char buffer[1000];
-					int length;
-
-					length = (WORD) SendMessage(control_window,
-						EM_LINELENGTH,
-						(WPARAM) 0,
-						(LPARAM) 0);
-					*((LPWORD)buffer) = 999;
-					SendMessage(control_window,
-						EM_GETLINE,
-						(WPARAM) 0,   /* line 0 */
-						(LPARAM) buffer);
-					buffer[length] = 0;
-					MessageBox(window,
-						buffer,
-						"Did it work?",
-						MB_OK);
-				} break;
-#endif /* defined (OLD_CODE) */
 			}
 		} break;
 	}
@@ -814,11 +792,11 @@ public:
 				wxMouseEventHandler(wxCommandWindow::OnOutputLeftClick), NULL, this);
 		 output_list->Connect(wxEVT_LEFT_DCLICK,
 				wxMouseEventHandler(wxCommandWindow::OnOutputDClick), NULL, this);
-  };
+  }
 
   wxCommandWindow()
   {
-  };
+  }
 
 
   ~wxCommandWindow()
@@ -847,7 +825,7 @@ public:
 		{
 			DEALLOCATE(revision_string);
 		}
-  };
+	}
 
 	 void OutputListTripleClickEvent()
 	 {
@@ -1421,14 +1399,6 @@ Create the structures and retrieve the command window from the uil file.
 							dw, lpMsgBuf);
 
 						MessageBox(NULL, szBuf, "Error", MB_OK);
-
-#if defined (OLD_CODE)
-						LocalFree(lpMsgBuf);
-						ExitProcess(dw);
-						display_message(ERROR_MESSAGE,
-							"CREATE(Command_window).  Could not create dialog");
-						DEALLOCATE(command_window);
-#endif /* defined (OLD_CODE) */
 					}
 				}
 				else

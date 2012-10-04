@@ -269,10 +269,6 @@ release.
 								picked_element_point);
 							clear_selection = !shift_pressed;
 							if (clear_selection)
-#if defined (OLD_CODE)
-								&&((!picked_element_point)||
-									(element_point_tool->picked_element_point_was_unselected))))
-#endif /*defined (OLD_CODE) */
 							{
 								Element_point_ranges_selection_begin_cache(
 									element_point_tool->element_point_ranges_selection);

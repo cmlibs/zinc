@@ -835,54 +835,6 @@ coordinates from face coordinates.
 
 FULL_DECLARE_LIST_TYPE(FE_element_shape);
 
-#if defined (OLD_CODE)
-/*???DB.  Some ideas, but best to keep it simple at present */
-	/* the structure description.  Similar to type for a FE_basis, but doesn't
-		have the dimension in the first position (type[0]).  There are two versions,
-		the "external" which is passed to CREATE(FE_element_shape) and the
-		"internal" which is calculated by CREATE(FE_element_shape) and stored here.
-		external
-		- the diagonal entry is the shape type
-		- non-zero off-diagonal entries indicate that the dimensions are linked.
-			For a polygon, it is the number of vertices
-		internal
-		- diagonal entries
-			- zero.  Then linear in this dimension
-			- negative.  Then the last in a sub-shape of linked dimensions.  This is
-				the offset to the previous linked dimension
-			- positive.  Then not the last in a sub-shape of linked dimensions.  This
-				is the offset to the next linked dimension
-		- off-diagonal entries
-			- zero.  Then the dimensions are not linked
-			- negative.  Then the dimensions are linked and there is another linked
-				dimension before the row dimension.  This is the offset to the previous
-				linked dimension
-			- positive.  Then the dimensions are linked and the row dimension is the
-				first dimension in the linked sub-shape.
-				- 1 simplex
-				- 2 reserved for future developments
-				- >=3 polygon.  This is the number of vertices
-				is the offset to the next linked dimension
-		eg. linear in xi1 and a 5-gon in xi2 and xi3
-			external
-				LINE_SHAPE  0             0
-										POLYGON_SHAPE 5
-																	POLYGON_SHAPE
-			internal
-				0 0  0
-					1  5
-						-1
-		eg. tetrahedron
-			external
-			SIMPLEX_SHAPE 1             1
-										SIMPLEX_SHAPE 1
-																	SIMPLEX_SHAPE
-			internal
-				1 1  1
-					1 -1
-						-1 */
-#endif /* defined (OLD_CODE) */
-
 struct FE_element
 /*******************************************************************************
 LAST MODIFIED : 10 October 2002
@@ -3190,63 +3142,6 @@ in the node, adjusted for word alignment, is added on to <*values_storage_size>.
 
 	return (return_code);
 } /* FE_node_field_add_values_storage_size */
-
-#if defined (OLD_CODE)
-static int FE_node_field_initialise_value_storage(
-	struct FE_node_field *new_node_field, void *values_storage_void)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Initialise the time arrays in FE_node_field's values_storage.
-Assumes values_storage has already been allocated.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int i, number_of_values,offset,return_code,size;
-	struct FE_field *field;
-	struct FE_node_field_component *component;
-	Value_storage *destination, *values_storage;
-
-	ENTER(FE_node_field_initialise_value_storage);
-	if (new_node_field && (field = new_node_field->field) &&
-		(values_storage = (Value_storage *)values_storage_void))
-	{
-		/* only GENERAL_FE_FIELD has values stored with node and only
-		   time based fields need initialising */
-		if ((GENERAL_FE_FIELD == field->fe_field_type) &&
-			(new_node_field->time_sequence))
-		{
-			value_type = field->value_type;
-			size=get_Value_storage_size(value_type,new_node_field->time_sequence);
-			number_of_values = FE_node_field_get_number_of_values(new_node_field);
-			/* start at first component->value */
-			component = new_node_field->components;
-			offset = component->value;
-			destination = values_storage + offset;
-			for (i = 0 ; i < number_of_values ; i++)
-			{
-				allocate_time_values_storage_array(value_type,
-					new_node_field->time_sequence, destination);
-				destination += size;
-			}
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_initialise_value_storage.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_initialise_value_storage */
-#endif /* defined (OLD_CODE) */
 
 static int FE_node_field_free_values_storage_arrays(
 	struct FE_node_field *node_field, void *start_of_values_storage_void)
@@ -5979,9 +5874,6 @@ obtained from the node_field_component for the field at the node.
 								/* retrieve the scaled nodal values */
 								standard_node_map= *standard_node_map_address;
 								node=nodes[standard_node_map->node_index];
-#if defined (OLD_CODE)
-								global_values=node->values;
-#endif /* defined (OLD_CODE) */
 								number_of_global_values=node->fields->number_of_values;
 								global_value_index=standard_node_map->nodal_value_indices;
 								scale_factor_index=standard_node_map->scale_factor_indices;
@@ -6205,9 +6097,6 @@ obtained from the node_field_component for the field at the node.
 								/* retrieve the scaled nodal values */
 								general_node_map= *general_node_map_address;
 								node=nodes[general_node_map->node_index];
-#if defined (OLD_CODE)
-								global_values=node->values;
-#endif /* defined (OLD_CODE) */
 								number_of_global_values=node->fields->number_of_values;
 								linear_combination_address=general_node_map->element_values;
 								/* get node_field_component for absolute offsets into nodes */
@@ -13554,108 +13443,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_nodal_value_type)
 
-#if defined (OLD_CODE)
-/* superceded by  get_FE_nodal_value_type,get_FE_nodal_array_number_of_elements */
-int get_FE_nodal_array_attributes(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,enum Value_type *value_type,
-	int *number_of_array_values)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Get the value_type and the number of array values for the array in the nodal
-values_storage for the given node, component, version,type.
-
-Give an error if field->values_storage isn't storing array types.
-==============================================================================*/
-{
-	enum FE_nodal_value_type *nodal_value_type;
-	int i,length,return_code,size;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	Value_storage *values_storage;
-
-	ENTER(get_FE_nodal_array_attributes);
-	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
-	{
-		if (node_field = FE_node_get_FE_node_field(node, component->field))
-		{
-			if ((node_field_component=node_field->components)&&
-				(nodal_value_type=node_field_component->nodal_value_types))
-			{
-				/* get the value type*/
-				*value_type	= node_field->field->value_type;
-				switch (node_field->field->value_type)
-				{
-					case DOUBLE_ARRAY_VALUE:
-					case FE_VALUE_ARRAY_VALUE:
-					case FLT_ARRAY_VALUE:
-					case SHORT_ARRAY_VALUE:
-					case INT_ARRAY_VALUE:
-					case UNSIGNED_ARRAY_VALUE:
-					case STRING_VALUE:
-					{
-						node_field_component += component->number;
-						if (version<node_field_component->number_of_versions)
-						{
-							length=1+(node_field_component->number_of_derivatives);
-							i=0;
-							while ((i<length)&&(type!=nodal_value_type[i]))
-							{
-								i++;
-							}
-							if (i<length)
-							{
-								size = get_Value_storage_size(*value_type);
-								/* get the offset into nodal values_storage*/
-								values_storage = node->values_storage+(node_field_component->value)+
-									((version*length+i)*size);
-								if (node_field->field->value_type!=STRING_VALUE)
-								{
-								/*copy in the number_of_array_values  */
-								*number_of_array_values = *((int *)(values_storage));
-								}
-								else
-								{
-									char *the_string,**str_address;
-									str_address = (char **)(values_storage);
-									the_string = *str_address;
-									*number_of_array_values = strlen(the_string)+1;/* +1 for NULL term.*/
-								}
-								return_code=1;
-							}
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"get_FE_nodal_array_attributes. Not an array type");
-					} break;
-				}
-
-
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_array_attributes. Invalid node/field");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_nodal_array_attributes."
-			" Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /*get_FE_nodal_array_attributes */
-#endif /* OLD_CODE*/
-
 int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
 	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
 	int *the_array_index,int *the_index_high,int *the_index_low)
@@ -20850,25 +20637,6 @@ it is given a proper shape.
 										}
 										i++;
 									}
-#if defined (OLD_CODE)
-									type_entry=shape_type+((i-1)*(2*dimension-i+2))/2;
-									j=dimension-xi_coordinate+1;
-									k=shape_type-type_entry;
-									type_entry=shape_type;
-									i++;
-									while (no_error&&(i<xi_coordinate))
-									{
-										j++;
-										k -= j;
-										type_entry++;
-										if (((0== *type_entry)&&(0!=type_entry[k]))||
-											((0!= *type_entry)&&(0==type_entry[k])))
-										{
-											no_error=0;
-										}
-										i++;
-									}
-#endif /* defined (OLD_CODE) */
 								}
 								number_of_faces++;
 								/* check succeeding dimensions */
@@ -21483,75 +21251,6 @@ if (POLYGON_SHAPE== *type_entry) \
 												type_entry += dimension-j;
 											}
 										}
-#if defined (OLD_CODE)
-/*???DB.  Didn't make sure that k wasn't indexing a coordinate in the simplex */
-										if (0<(linked_offset=linked_offsets[xi_coordinate]))
-										{
-											while (linked_offsets[xi_coordinate+linked_offset]>0)
-											{
-												linked_offset +=
-													linked_offsets[xi_coordinate+linked_offset];
-											}
-											face[linked_offset] += offset;
-										}
-										else
-										{
-											/* last simplex dimension */
-											*face += offset+1;
-											face++;
-										}
-										k=xi_coordinate+1;
-										if (k>=dimension)
-										{
-											k=1;
-										}
-										for (j=0;j<dimension;j++)
-										{
-											if (j!=xi_coordinate)
-											{
-												face_to_element[k]=1;
-												k++;
-												if (k>=dimension)
-												{
-													k=1;
-												}
-											}
-											face_to_element += dimension;
-										}
-										if (linked_offset<0)
-										{
-											/* last simplex dimension */
-											k=xi_coordinate+1;
-											if (k>=dimension)
-											{
-												k=1;
-											}
-											for (j=0;j<dimension;j++)
-											{
-												if (j==xi_coordinate)
-												{
-													face_to_element[0]=1;
-													do
-													{
-														face_to_element[xi_coordinate+1+linked_offset]= -1;
-														linked_offset +=
-															linked_offsets[xi_coordinate+linked_offset];
-													} while
-														(0<linked_offsets[xi_coordinate+linked_offset]);
-												}
-												else
-												{
-													face_to_element[k]=1;
-													k++;
-													if (k>=dimension)
-													{
-														k=1;
-													}
-												}
-												face_to_element += dimension;
-											}
-										}
-#endif /* defined (OLD_CODE) */
 									} break;
 								}
 								shape_type += dimension-xi_coordinate;
@@ -22079,10 +21778,6 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 							polygon_face=1;
 						}
 					}
-#if defined (OLD_CODE)
-					face_code /= number_of_polygon_vertices;
-					if (face_code & 2)
-#endif /* defined (OLD_CODE) */
 					if (polygon_face)
 					{
 						/* face has a polygon shape */
@@ -23304,11 +22999,6 @@ column of the <coordinate_transformation> matrix.
 				}
 				else
 				{
-#ifdef OLD_CODE
-					// API shouldn't write these errors
-					display_message(ERROR_MESSAGE,
-						"inherit_FE_element_field.  Field not defined for parent");
-#endif
 					return_code=0;
 				}
 			}
@@ -25836,44 +25526,6 @@ nine values returned, regardless of the element dimension.
 	{
 		coordinate_system = get_FE_field_coordinate_system(
 			 coordinate_element_field_values->field);
-#if defined (OLD_CODE)
-		/* set up storage for the basis function values */
-		basis_function_values=preallocated_basis_function_values;
-		if (!basis_function_values)
-		{
-			i=coordinate_element_field_values->number_of_components-1;
-			component_number_of_values=
-				coordinate_element_field_values->component_number_of_values;
-			max_basis_function_values= *component_number_of_values;
-			while (i>0)
-			{
-				i--;
-				component_number_of_values++;
-				if (*component_number_of_values>max_basis_function_values)
-				{
-					max_basis_function_values= *component_number_of_values;
-				}
-			}
-			i=anatomical_element_field_values->number_of_components;
-			component_number_of_values=
-				anatomical_element_field_values->component_number_of_values;
-			while (i>0)
-			{
-				if (*component_number_of_values>max_basis_function_values)
-				{
-					max_basis_function_values= *component_number_of_values;
-				}
-				component_number_of_values++;
-				i--;
-			}
-			if (max_basis_function_values>0)
-			{
-				ALLOCATE(basis_function_values,FE_value,max_basis_function_values);
-			}
-		}
-		if (basis_function_values)
-		{
-#endif /* defined (OLD_CODE) */
 			/* calculate the coordinate field */
 			if (calculate_FE_element_field(-1,coordinate_element_field_values,
 				xi_coordinates,coordinates,derivative_xi))
@@ -26006,47 +25658,6 @@ nine values returned, regardless of the element dimension.
 				f31=f12*f23-f22*f13;
 				f32=f13*f21-f23*f11;
 				f33=f11*f22-f21*f12;
-#if defined (OLD_CODE)
-				switch (coordinate_system->type)
-				{
-					case CYLINDRICAL_POLAR:
-					case SPHERICAL_POLAR:
-					{
-						/* f1 is the intersection of the xi1-xi2 plane with the
-							x-y plane, with f1.(xi1 base vector) positive */
-						if (0<f11*f33-f13*f31)
-						{
-							f11=f32;
-							f12= -f31;
-							f13=0;
-						}
-						else
-						{
-							f11= -f32;
-							f12=f31;
-							f13=0;
-						}
-					} break;
-					case RECTANGULAR_CARTESIAN:
-					case PROLATE_SPHEROIDAL:
-					{
-						/* f1 is the intersection of the xi1-xi2 plane with the
-							y-z plane, with f1.(xi1 base vector) positive */
-						if (0<f12*f33-f13*f32)
-						{
-							f11=0;
-							f12=f33;
-							f13= -f32;
-						}
-						else
-						{
-							f11=0;
-							f12= -f33;
-							f13=f32;
-						}
-					} break;
-				}
-#endif /* defined (OLD_CODE) */
 				/* f1 is in the xi1 direction */
 				/* f2 is in the xi1-xi2 plane normal to f1 */
 				f21=f32*f13-f12*f33;
@@ -26092,11 +25703,6 @@ nine values returned, regardless of the element dimension.
 						}
 						else
 						{
-#if defined (OLD_CODE)
-							/* default gamma is pi/2 */
-							sin_gamma=1;
-							cos_gamma=0;
-#endif /* defined (OLD_CODE) */
 							/* default gamma is 0 */
 							sin_gamma=0;
 							cos_gamma=1;
@@ -26107,11 +25713,6 @@ nine values returned, regardless of the element dimension.
 						/* default beta is 0 */
 						sin_beta=0;
 						cos_beta=1;
-#if defined (OLD_CODE)
-						/* default gamma is pi/2 */
-						sin_gamma=1;
-						cos_gamma=0;
-#endif /* defined (OLD_CODE) */
 						/* default gamma is 0 */
 						sin_gamma=0;
 						cos_gamma=1;
@@ -26131,14 +25732,6 @@ nine values returned, regardless of the element dimension.
 					f23=b_z;
 					/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
 						rotate anticlockwise about axis2, not -axis2 */
-#if defined (OLD_CODE)
-					a_x=cos_beta*f11+sin_beta*f31;
-					a_y=cos_beta*f12+sin_beta*f32;
-					a_z=cos_beta*f13+sin_beta*f33;
-					c_x= -sin_beta*f11+cos_beta*f31;
-					c_y= -sin_beta*f12+cos_beta*f32;
-					c_z= -sin_beta*f13+cos_beta*f33;
-#endif /* defined (OLD_CODE) */
 					c_x=cos_beta*f31+sin_beta*f11;
 					c_y=cos_beta*f32+sin_beta*f12;
 					c_z=cos_beta*f33+sin_beta*f13;
@@ -26148,17 +25741,6 @@ nine values returned, regardless of the element dimension.
 					f31=c_x;
 					f32=c_y;
 					f33=c_z;
-#if defined (OLD_CODE)
-					/* note rearrangement of sin/cos to give equivalent rotation of
-						gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
-						stage */
-					b_x=sin_gamma*f21-cos_gamma*f31;
-					b_y=sin_gamma*f22-cos_gamma*f32;
-					b_z=sin_gamma*f23-cos_gamma*f33;
-					c_x=cos_gamma*f21+sin_gamma*f31;
-					c_y=cos_gamma*f22+sin_gamma*f32;
-					c_z=cos_gamma*f23+sin_gamma*f33;
-#endif /* defined (OLD_CODE) */
 					b_x=cos_gamma*f21+sin_gamma*f31;
 					b_y=cos_gamma*f22+sin_gamma*f32;
 					b_z=cos_gamma*f23+sin_gamma*f33;
@@ -26188,19 +25770,6 @@ nine values returned, regardless of the element dimension.
 				"calculate_FE_element_anatomical.  Error calculating coordinate field");
 				return_code=0;
 			}
-#if defined (OLD_CODE)
-			if (!preallocated_basis_function_values)
-			{
-				DEALLOCATE(basis_function_values);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-	"calculate_FE_element_anatomical.  Could not allocate basis_function_values");
-			return_code=0;
-		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -27360,19 +26929,6 @@ Should only be called for unmanaged elements.
 			{
 				/* no longer perform this check since it prevents us from reading in
 					 indexed fields when the indexer is not in the same header */
-#if defined (OLD_CODE)
-				/* check that the indexer field is defined at the element */
-				if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-					field->indexer_field,
-					existing_element_field_info->element_field_list))
-				{
-					display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
-						"Indexer field %s for field %s not defined at %s %d",
-						field->indexer_field->name,field->name,
-						CM_element_type_string(element->identifier.type), element->identifier.number);
-					return_code = 0;
-				}
-#endif /* defined (OLD_CODE) */
 			} break;
 			case GENERAL_FE_FIELD:
 			{
@@ -28821,24 +28377,6 @@ int list_FE_element(struct FE_element *element)
 				}
 				display_message(INFORMATION_MESSAGE, "\n");
 			}
-#if defined (OLD_CODE)
-			/*???debug */
-			{
-				int i,number_of_nodes;
-				struct FE_node **nodes_in_element;
-
-				if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-					&number_of_nodes,&nodes_in_element,(struct FE_element *)NULL))
-				{
-					for (i=0;i<number_of_nodes;i++)
-					{
-						list_FE_node(nodes_in_element[i],(void *)NULL);
-						DEACCESS(FE_node)(nodes_in_element+i);
-					}
-					DEALLOCATE(nodes_in_element);
-				}
-			}
-#endif
 		}
 		else
 		{
@@ -29658,112 +29196,6 @@ Find the first time based field at a node
 	LEAVE;
 	return (time_field);
 } /* find_first_time_field_at_FE_node */
-
-#if defined (OLD_CODE)
-int FE_element_get_top_level_xi_number(struct FE_element *element,int xi_number)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Returns the xi_number of the parent or parent's parent that changes with the
-<xi_number> (0..dimension-1) of <element>.  If there is no parent, then
-<xi_number> is returned, or 0 if there is an error.
-???RC Could stuff up for graphical finite elements if parent is not in same
-element_group and xi directions are different for neighbouring elements.
-==============================================================================*/
-{
-	FE_value *face_to_element;
-	int dimension,face_number,top_level_xi_number;
-	struct FE_element *parent;
-	struct FE_element_parent *element_parent;
-
-	ENTER(FE_element_get_top_level_xi_number);
-	if (element&&(element->shape)&&(0<=xi_number)&&
-		(xi_number<element->shape->dimension))
-	{
-		switch (element->shape->dimension)
-		{
-			case 1:
-			{
-				if ((element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					(LIST_ITERATOR_FUNCTION(FE_element_parent) *)NULL,(void *)NULL,
-					element->parent_list))&&(parent=element_parent->parent))
-				{
-					face_number=element_parent->face_number;
-					dimension=parent->shape->dimension;
-					face_to_element=(parent->shape->face_to_element)+
-						(face_number*dimension*dimension+1);
-					if (*face_to_element)
-					{
-						top_level_xi_number=FE_element_get_top_level_xi_number(parent,0);
-					}
-					else
-					{
-						top_level_xi_number=FE_element_get_top_level_xi_number(parent,1);
-					}
-				}
-				else
-				{
-					top_level_xi_number=0;
-				}
-			} break;
-			case 2:
-			{
-				if ((element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					(LIST_ITERATOR_FUNCTION(FE_element_parent) *)NULL,(void *)NULL,
-					element->parent_list))&&(parent=element_parent->parent))
-				{
-					face_number=element_parent->face_number;
-					dimension=parent->shape->dimension;
-					face_to_element=(parent->shape->face_to_element)+
-						(face_number*dimension*dimension+1);
-					/* look in column of face_to_element for this xi_number */
-					if (face_to_element[xi_number])
-					{
-						top_level_xi_number=0;
-					}
-					else
-					{
-						if (face_to_element[dimension+xi_number])
-						{
-							top_level_xi_number=1;
-						}
-						else
-						{
-							top_level_xi_number=2;
-						}
-					}
-				}
-				else
-				{
-					/* no parents */
-					top_level_xi_number=xi_number;
-				}
-			} break;
-			case 3:
-			{
-				/* 3-D: no parents */
-				top_level_xi_number=xi_number;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_get_top_level_xi_number.  Invalid dimension");
-				top_level_xi_number=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_top_level_xi_number.  Invalid argument(s)");
-		top_level_xi_number=0;
-	}
-	LEAVE;
-
-	return (top_level_xi_number);
-} /* FE_element_get_top_level_xi_number */
-#endif /* defined (OLD_CODE) */
 
 struct FE_element_field_info *FE_element_get_FE_element_field_info(
 	struct FE_element *element)

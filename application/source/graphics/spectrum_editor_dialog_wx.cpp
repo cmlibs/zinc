@@ -131,10 +131,6 @@ the spectrums contained in the global list.
 											"CREATE(Spectrum_editor_dialog).  "
 											"Could not create spectrum editor");
 				}
-#if defined (OLD_CODE)
-				spectrum_editor_dialog_set_spectrum(
-					 spectrum_editor_dialog,init_data);
-#endif /* defined (OLD_CODE) */
 			}
 			else
 			{
@@ -182,58 +178,6 @@ Returns the spectrum edited by the <spectrum_editor_dialog>.
 
 	return (spectrum);
 } /* spectrum_editor_dialog_get_spectrum */
-
-#if defined (OLD_CODE)
-int spectrum_editor_dialog_set_spectrum(
-	struct Spectrum_editor_dialog *spectrum_editor_dialog,
-	struct Spectrum *spectrum)
-/*******************************************************************************
-LAST MODIFIED : 23 August 2007
-
-DESCRIPTION :
-Set the <spectrum> for the <spectrum_editor_dialog>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(spectrum_editor_dialog_set_spectrum);
-	return_code=0;
-	/* check arguments */
-	if (spectrum_editor_dialog)
-	{
-		return_code=1;
-		if (spectrum)
-		{
-			if (!IS_MANAGED(Spectrum)(spectrum,
-				spectrum_editor_dialog->spectrum_manager))
-			{
-				display_message(ERROR_MESSAGE,
-					"spectrum_editor_dialog_set_spectrum.  Spectrum not managed");
-				spectrum=(struct Spectrum *)NULL;
-				return_code=0;
-			}
-		}
-		if (!spectrum)
-		{
-			spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
-				(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
-				(void *)NULL,
-				spectrum_editor_dialog->spectrum_manager);
-		}
-		spectrum_editor_dialog->current_value=spectrum;
-		spectrum_editor_wx_bring_up_editor(spectrum_editor_dialog->spectrum_editor);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"spectrum_editor_dialog_set_spectrum.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* spectrum_editor_dialog_set_spectrum */
-#endif /* defined (OLD_CODE) */
 
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,

@@ -52,31 +52,6 @@ Functions for performing coordinate transformations.
 #include "general/mystring.h"
 #include "general/message.h"
 
-#if defined (OLD_CODE)
-/*
-Module constants
-----------------
-*/
-static double pi;
-static char geometry_initialized='\0';
-
-/*
-Module functions
-----------------
-*/
-static void initialize_geometry(void)
-/*******************************************************************************
-LAST MODIFIED : 20 May 1992
-
-DESCRIPTION :
-Initializes pi.
-==============================================================================*/
-{
-	pi=4*atan(1);
-	geometry_initialized='\1';
-} /* initialize_geometry */
-#endif /* defined (OLD_CODE) */
-
 /*
 Global functions
 ----------------
@@ -345,12 +320,6 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 
 	ENTER(cartesian_to_prolate_spheroidal);
 	return_code=1;
-#if defined (OLD_CODE)
-	if (!geometry_initialized)
-	{
-		initialize_geometry();
-	}
-#endif /* defined (OLD_CODE) */
 	/* normalize the cartesian coordianates */
 	x_norm=(double)x/(double)focus;
 	y_norm=(double)y/(double)focus;
@@ -541,12 +510,6 @@ coordinates.
 	double a1,a2,a3,a4,a5,a6,a7,k;
 
 	ENTER(Hammer_projection);
-#if defined (OLD_CODE)
-	if (!geometry_initialized)
-	{
-		initialize_geometry();
-	}
-#endif /* defined (OLD_CODE) */
 	a1=(double)mu-(PI/2);
 	a2=cos(a1);
 	a3=fmod((double)theta,2*PI);

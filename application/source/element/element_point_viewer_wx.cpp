@@ -475,14 +475,6 @@ Furthermore, if the <element_point_viewer>
 							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
 								Element_point_ranges_grid_to_multi_range,
 								(void *)&grid_to_multi_range_data,element_point_ranges_list);
-#if defined (OLD_CODE)
-							/* warning will be given later anyway */
-							if (!grid_to_multi_range_data.all_points_native)
-							{
-								display_message(WARNING_MESSAGE,
-									"Values can not be set at element points not on grid");
-							}
-#endif /* defined (OLD_CODE) */
 							if (return_code)
 							{
 								/* add all points with match_grid_field value in multi-range

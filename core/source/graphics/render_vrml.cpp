@@ -45,16 +45,13 @@ Renders gtObjects to VRML file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
-#if defined (OLD_CODE)
-#include "graphics/light.h"
-#include "graphics/light_model.h"
-#endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
 #include "graphics/render_vrml.h"
 #include "graphics/scene.h"
@@ -434,7 +431,7 @@ DESCRIPTION :
 					fprintf(vrml_file,"DEF %s ",material_name);
 					return_code=write_material_node_vrml(vrml_file,material,emissive_only);
 					ADD_OBJECT_TO_LIST(VRML_prototype)(vrml_prototype,vrml_prototype_list);
-					fprintf(vrml_file,"#END DEF %s\n",material_name);					
+					fprintf(vrml_file,"#END DEF %s\n",material_name);
 				}
 				DEALLOCATE(material_name);
 			}
@@ -621,8 +618,8 @@ LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
-points  given by the positions in <point_list> and oriented and scaled by 
-<axis1_list>, <axis2_list> and <axis3_list>. 
+points  given by the positions in <point_list> and oriented and scaled by
+<axis1_list>, <axis2_list> and <axis3_list>.
 ==============================================================================*/
 {
 	char **label, *label_token;
@@ -1108,7 +1105,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 								fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
 									b_angle);
 							}
-							fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);					
+							fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);
 							fprintf(vrml_file,"    children [\n");
 
 							/* set the spectrum for this datum, if any */
@@ -1593,7 +1590,7 @@ LAST MODIFIED : 9 May 1999
 
 DESCRIPTION :
 Writes VRML code to the file handle which represents the given
-continuous polyline. If data or spectrum are NULL they are ignored.  
+continuous polyline. If data or spectrum are NULL they are ignored.
 ==============================================================================*/
 {
 	int i,number_of_points,return_code;
@@ -1850,7 +1847,7 @@ DESCRIPTION :
 					fprintf(vrml_file,"    }\n");
 				}
 			}
-			/* polygon definitions */	
+			/* polygon definitions */
 			fprintf(vrml_file,"    coordIndex [\n");
 			switch (surface_type)
 			{
@@ -2022,7 +2019,7 @@ DESCRIPTION :
 } /* draw_surface_vrml */
 
 static int draw_voltex_vrml(FILE *vrml_file,
-	int number_of_vertices, struct VT_iso_vertex **vertex_list, 
+	int number_of_vertices, struct VT_iso_vertex **vertex_list,
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
 	int number_of_data_components,
 	struct Graphical_material *default_material,
@@ -2267,23 +2264,6 @@ Only writes the geometry field.
 				} break;
 				case g_NURBS:
 				{
-#if defined (OLD_CODE)
-					if (nurbs = primitive_list1->gt_nurbs.first)
-					{
-						/*???SAB.  To be done */
-						return_code = 1;
-						while(return_code && nurbs)
-						{
-							return_code = drawnurbsGL(nurbs);
-							nurbs=nurbs->ptrnext;							
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makevrml.  Missing nurbs");
-						return_code=0;
-					}
-#endif /* defined (OLD_CODE) */
 				} break;
 				case g_POINT:
 				{
@@ -2338,7 +2318,7 @@ Only writes the geometry field.
 						}
 						else
 						{
-							draw_point_set_vrml(vrml_file, 
+							draw_point_set_vrml(vrml_file,
 								point_set->n_pts,point_set->pointlist,
 								point_set->text,point_set->marker_type,point_set->marker_size,
 								point_set->n_data_components,point_set->data,
@@ -2442,7 +2422,7 @@ Only writes the geometry field.
 						object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 							&data_buffer, &data_values_per_vertex, &data_vertex_count);
-						
+
 						normal_buffer = 0;
 						object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
@@ -2457,7 +2437,7 @@ Only writes the geometry field.
 
 							unsigned int index_start, index_count;
 							GLfloat *position_vertex, *data_vertex;
-							
+
 							object->vertex_array->get_unsigned_integer_attribute(
 								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 								line_index, 1, &index_start);
@@ -2624,9 +2604,6 @@ DESCRIPTION :
 	struct GT_object *temp_gt_object;
 	struct VRML_prototype *vrml_prototype;
   /* DPN 21 June 2001 - Using fgetpos() like this is wrong! */
-#if defined (OLD_CODE)
-	fpos_t file_pointer, save_file_pointer;
-#endif
 	long file_pointer,save_file_pointer = 0L;
 
 	ENTER(write_graphics_object_vrml);
@@ -2675,7 +2652,7 @@ DESCRIPTION :
 			{
 				vrml_prototype=CREATE(VRML_prototype)(prototype_name,(struct Texture *)NULL,
 					default_material, gt_object,/*time*/0);
-				if (gt_object_already_prototyped || 
+				if (gt_object_already_prototyped ||
 					FIRST_OBJECT_IN_LIST_THAT(VRML_prototype)(VRML_prototype_is_identical,
 					(void *)vrml_prototype,vrml_prototype_list))
 				{
@@ -2688,10 +2665,7 @@ DESCRIPTION :
 				{
 					fprintf(vrml_file,"DEF %s\n", prototype_name);
 					/* save file pointer so we can see if anything was output */
-#if defined (OLD_CODE)
-					fgetpos(vrml_file, &save_file_pointer);
-#endif
-          save_file_pointer = ftell(vrml_file);
+					save_file_pointer = ftell(vrml_file);
 					in_def = 1;
 					ADD_OBJECT_TO_LIST(VRML_prototype)(vrml_prototype,vrml_prototype_list);
 				}
@@ -2729,10 +2703,7 @@ DESCRIPTION :
 				if (in_def)
 				{
 					/* check if anything was output; if not, add a dummy node */
-#if defined (OLD_CODE)
-					fgetpos(vrml_file, &file_pointer);
-#endif
-          file_pointer = ftell(vrml_file);
+					file_pointer = ftell(vrml_file);
 					if (file_pointer == save_file_pointer)
 					{
 						fprintf(vrml_file,"Group {\n");
@@ -2833,9 +2804,6 @@ DESCRIPTION :
 Renders the visible objects to a VRML file.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
-	double angle,magnitude,vector_x,vector_y,vector_z;
-#endif /* defined (OLD_CODE) */
 	double centre_x, centre_y, centre_z, radius, size_x, size_y, size_z;
 	FILE *vrml_file;
 	int return_code;
@@ -2869,58 +2837,8 @@ Renders the visible objects to a VRML file.
 			{
 				fprintf(vrml_file,"    Viewpoint {\n");
 				fprintf(vrml_file,"      description \"default\"\n");
-				fprintf(vrml_file,"      position %f %f %f\n", 
+				fprintf(vrml_file,"      position %f %f %f\n",
 					centre_x, centre_y, centre_z + radius);
-#if defined (OLD_CODE)
-				/* SAB As the vrml routines no longer are associated with a 
-					 scene_viewer no particular orientation is specified */
-				/* SAB The orientation is specified by giving a 3D vector and
-					 a rotation angle about this vector.  The initial direction
-					 is -z. */
-				vector_x= - scene->eyey+scene->yview;
-				vector_y=scene->eyex-scene->xview;
-				vector_z=scene->eyez-scene->zview;
-				magnitude=sqrt(vector_x*vector_x+vector_y*vector_y);
-				if (magnitude)
-				{
-					vector_x /= magnitude;
-					vector_y /= magnitude;
-					if (vector_z)
-					{
-						if (vector_z>0.0)
-						{
-							angle=atan(magnitude/vector_z);
-						}
-						else
-						{
-							angle=PI/2.0+atan(magnitude/vector_z);
-						}
-					}
-					else
-					{
-						vector_x /= magnitude;
-						vector_y /= magnitude;
-						angle=PI/2.0;
-					}
-				}
-				else
-				{
-					if ((scene->eyez-scene->zview)>0.0)
-					{
-						vector_x=0;
-						vector_y=0;
-						angle=0;
-					}
-					else
-					{
-						vector_x=1;
-						vector_y=0;
-						angle=PI;
-					}
-				}
-				fprintf(vrml_file,"      orientation %f %f %f %f\n",vector_x,vector_y,
-					0,angle); 
-#endif /* defined (OLD_CODE) */
 				fprintf(vrml_file,"    } #Viewpoint\n");
 			}
 			fprintf(vrml_file,"    NavigationInfo {\n");

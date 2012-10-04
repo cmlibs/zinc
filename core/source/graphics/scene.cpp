@@ -1774,21 +1774,6 @@ Iterates through every material used by the scene.
 	int return_code = 0;
 
 	ENTER(Scene_for_each_material);
-#if defined (OLD_CODE)
-	if (scene && iterator_function && scene->graphical_material_manager)
-	{
-		/* Could be smarter if there was a reduced number used by the
-			scene, however for now just do every material in the manager */
-		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-			iterator_function, user_data,scene->graphical_material_manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_for_each_material.  Invalid arguments.");
-		return_code=0;
-	}
-#else
 	if (scene && iterator_function && scene->region)
 	{
 		/* Could be smarter if there was a reduced number used by the
@@ -1808,7 +1793,6 @@ Iterates through every material used by the scene.
 			"Scene_for_each_material.  Invalid arguments.");
 		return_code=0;
 	}
-#endif
 	LEAVE;
 
 	return (return_code);
@@ -3471,9 +3455,6 @@ Returns a list of all the graphical entities in the <interaction_volume> of
 understood for the type of <interaction_volume> passed.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
-	double depth,normalised_z;
-#endif /* defined (OLD_CODE) */
 	double modelview_matrix[16],projection_matrix[16];
 	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
 	GLuint *select_buffer,*select_buffer_ptr;
@@ -3842,23 +3823,6 @@ int build_Scene(struct Scene *scene)
 
 			scene->build = 0;
 			return_code = renderer.Scene_compile(scene);
-#if defined (OLD_CODE)
-			// GRC not sure why this is done here
-			if (return_code && scene->spectrum_manager)
-			{
-				return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-					Scene_expand_data_range_for_autoranging_spectrum,
-					(void *)scene, scene->spectrum_manager);
-			}
-			if (return_code && scene->build)
-			{
-				/* The autoranging spectrum could possibly have had some side effect
-					like changing contours and therefore some settings may have changed.
-				   I haven't put it in a while loop as I don't want to make a possible
-				   infinite loop */
-				return_code = renderer.Scene_compile(scene);
-			}
-#endif /* defined (OLD_CODE) */
 		}
 		else
 		{
@@ -3895,25 +3859,6 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 			}
 		}
 		glPopName();
-#ifdef OLD_CODE
-		if (Scene_has_fast_changing_objects(scene))
-		{
-			renderer->fast_changing = 1;
-			glPushName(0);
-		if (scene->region)
-		{
-			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
-				scene->region);
-			if (rendition)
-			{
-				renderer->Cmiss_rendition_execute(rendition);
-				Cmiss_rendition_destroy(&rendition);
-			}
-		}
-			renderer->fast_changing = 0;
-			glPopName();
-		}
-#endif // OLD_CODE
 	}
 	else
 	{

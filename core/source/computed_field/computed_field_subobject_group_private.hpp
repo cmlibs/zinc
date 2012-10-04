@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : computed_field_subobject_group_private.hpp
- * 
+ *
  * Implements region sub object groups, e.g. node group, element group.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -166,10 +166,6 @@ public:
 	}
 
 };
-
-#ifdef OLD_CODE
-namespace {
-#endif // OLD_CODE
 
 	template <typename T>
 	class Computed_field_sub_group_object : public Computed_field_subobject_group
@@ -347,14 +343,6 @@ namespace {
 		}
 
 	};
-
-#ifdef OLD_CODE
-} // namespace
-#endif // OLD_CODE
-
-#ifdef OLD_CODE
-namespace {
-#endif // OLD_CODE
 
 	class Computed_field_element_group : public Computed_field_subobject_group
 	{
@@ -547,16 +535,16 @@ namespace {
 			if (element_xi_location)
 			{
 				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	 			Cmiss_element_id element = element_xi_location->get_element();
-	 			if (Cmiss_element_get_dimension(element) == dimension)
-	 			{
-	 				valueCache.values[0] = containsObject(element);
-	 			}
-	 			else
-	 			{
-	 				valueCache.values[0] = 0;
-	 			}
-	 			return 1;
+				Cmiss_element_id element = element_xi_location->get_element();
+				if (Cmiss_element_get_dimension(element) == dimension)
+				{
+					valueCache.values[0] = containsObject(element);
+				}
+				else
+				{
+					valueCache.values[0] = 0;
+				}
+				return 1;
 			}
 			return 0;
 		};
@@ -631,14 +619,6 @@ namespace {
 		}
 
 	};
-
-#ifdef OLD_CODE
-} // namespace
-#endif // OLD_CODE
-
-#ifdef OLD_CODE
-namespace {
-#endif // OLD_CODE
 
 	class Computed_field_node_group : public Computed_field_subobject_group
 	{
@@ -812,8 +792,8 @@ namespace {
 			{
 				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 				Cmiss_node_id node = node_location->get_node();
-	 			valueCache.values[0] = containsObject(node);
-	 			return 1;
+				valueCache.values[0] = containsObject(node);
+				return 1;
 			}
 			return 0;
 		};
@@ -886,16 +866,12 @@ namespace {
 
 	};
 
-#ifdef OLD_CODE
-} // namespace
-#endif // OLD_CODE
-
 template <typename ObjectType, typename FieldType>
 Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_core_cast(
- 	FieldType object_group_field)
+	FieldType object_group_field)
  {
 	return (static_cast<Computed_field_sub_group_object<ObjectType>*>(
- 		reinterpret_cast<Computed_field*>(object_group_field)->core));
+		reinterpret_cast<Computed_field*>(object_group_field)->core));
  }
 
 inline Computed_field_element_group *Computed_field_element_group_core_cast(

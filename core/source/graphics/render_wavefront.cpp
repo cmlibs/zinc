@@ -157,7 +157,7 @@ Y and the Z.
 		}
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* compare_position */
 
@@ -173,7 +173,7 @@ DESCRIPTION :
 	struct Wavefront_vertex_position *vertex_position;
 
 	ENTER(CREATE(Wavefront_vertex));
-	
+
 	if (ALLOCATE(vertex,struct Wavefront_vertex,1)&&
 		 (ALLOCATE(vertex_position,struct Wavefront_vertex_position,1)))
 	{
@@ -300,8 +300,8 @@ LAST MODIFIED : 11 May 1999
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
-points  given by the positions in <point_list> and oriented and scaled by 
-<axis1_list>, <axis2_list> and <axis3_list>. 
+points  given by the positions in <point_list> and oriented and scaled by
+<axis1_list>, <axis2_list> and <axis3_list>.
 ==============================================================================*/
 {
 	ZnReal transformation[16];
@@ -475,24 +475,6 @@ DESCRIPTION :
 						vertex_index++;
 					}
 				}
-#if defined (OLD_CODE)
-				/* Normals are not used well by Maya so not bothering to put
-					them out */
-				if (normalpts)
-				{
-					for (i=0;i<npts1;i++)
-					{
-						for (j=0;j<npts2;j++)
-						{
-							fprintf(file, "vn %f %f %f\n",
-								normalpts[i+npts1*j][0],
-								normalpts[i+npts1*j][1],
-								normalpts[i+npts1*j][2]);
-							file_normal_vertex_index++;
-						}
-					}
-				}
-#endif /* defined (OLD_CODE) */
 				if (texturepts)
 				{
 					for (i=0;i<npts1;i++)
@@ -833,7 +815,7 @@ DESCRIPTION :
 				fprintf(file, " %d/%d", file_vertex_index + i + 1,
 					file_vertex_index + i + 1);
 			}
-		}			
+		}
 		fprintf(file, "\nparm u");
 		for( i = 0 ; i < nurbptr->sknotcnt ; i++)
 		{
@@ -845,7 +827,7 @@ DESCRIPTION :
 			fprintf(file, " %f", nurbptr->tknots[i]);
 		}
 		fprintf(file, "\nend\n");
-  
+
 		file_vertex_index += number_of_control_points;
 
 		if (nurbptr->cknotcnt>0)
@@ -1023,7 +1005,7 @@ Convert graphical object into Wavefront object file.
 							drawvoltexwavefront(wavefront_file, full_comments,
 								voltex->number_of_vertices, voltex->vertex_list,
 								voltex->number_of_triangles, voltex->triangle_list,
-								voltex->n_data_components, 
+								voltex->n_data_components,
 								object->default_material, object->spectrum);
 							voltex=voltex->ptrnext;
 						}
@@ -1280,7 +1262,7 @@ Write the window object to the <wavefront_file_void>.
 					append_string(&file_name, system_dir_seperator, &error);
 				}
 				append_string(&file_name, file_basename, &error);
-					
+
 				wavefront_object_file = fopen(file_name, "w");
 				if ( wavefront_object_file != 0)
 				{
@@ -1361,13 +1343,13 @@ Renders the visible objects to Wavefront object files.
 			/*???debug */
 			display_message(WARNING_MESSAGE,
 				"export_to_wavefront.  Not fully implemented");
-			
+
 			fprintf(wavefront_global_file,
 				"# CMGUI Wavefront Object file generator\n");
 			/* Transform.... */
-			
+
 			/* Draw objects */
-			
+
 			export_to_wavefront_data.wavefront_file = wavefront_global_file;
 			export_to_wavefront_data.scene = scene;
 			extension = strrchr ( file_name, '.' );
@@ -1394,7 +1376,7 @@ Renders the visible objects to Wavefront object files.
 
 			return_code=for_each_graphics_object_in_scene(scene,
 				graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
-			
+
 			if (export_to_wavefront_data.file_path)
 				DEALLOCATE(export_to_wavefront_data.file_path);
 			if (export_to_wavefront_data.file_basename)

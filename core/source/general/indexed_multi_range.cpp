@@ -736,7 +736,7 @@ not in the same state in the <index_multi_range>, ie. one is in and one is out.
 {
 	int return_code;
 	struct Index_multi_range_value_pair *value_pair;
-	
+
 	ENTER(Index_multi_range_value_pair_have_different_status);
 	if (index_multi_range&&
 		(value_pair=(struct Index_multi_range_value_pair *)value_pair_void))
@@ -1217,11 +1217,6 @@ index_multi_range_list.
 				{
 					if ((buff[0] != '#')&&(buff[0] != '!'))
 					{
-#if defined (OLD_CODE)
-						int view_no;
-						if (5==sscanf(buff,"%c %d %d %d %d",&type,&index_number,&view_no,
-							&start,&stop))
-#endif /* defined (OLD_CODE) */
 						if (4==sscanf(buff,"%c %d %d %d",&type,&index_number,&start,&stop))
 						{
 							index_multi_range = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(

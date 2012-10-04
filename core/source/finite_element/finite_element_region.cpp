@@ -597,67 +597,6 @@ Callback from <master_fe_region> with its <changes>.
 		(fe_region->change_level)++;
 		CHANGE_LOG_MERGE(FE_field)(fe_region->fe_field_changes,
 			changes->fe_field_changes);
-#ifdef OLD_CODE // removed group regions
-		if (!fe_region->top_data_hack)
-		{
-			CHANGE_LOG_MERGE(FE_node)(fe_region->fe_node_changes,
-				changes->fe_node_changes);
-			int fe_node_change_summary;
-			if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(fe_region->fe_node_changes,
-				&fe_node_change_summary))
-			{
-				/* remove nodes removed from this fe_region */
-				if (fe_node_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
-				{
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_list,
-						(void *)master_fe_region->fe_node_list,
-						fe_region->fe_node_list);
-				}
-			}
-			for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
-			{
-				CHANGE_LOG_MERGE(FE_element)(fe_region->fe_element_changes[dim],
-					changes->fe_element_changes[dim]);
-				int fe_element_change_summary;
-				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(
-					fe_region->fe_element_changes[dim], &fe_element_change_summary))
-				{
-					/* remove elements removed from this fe_region */
-					if (fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
-					{
-						REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_list,
-							(void *)master_fe_region->fe_element_list[dim],
-							fe_region->fe_element_list[dim]);
-					}
-					if (dim < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1)
-					{
-						/* add faces new to this fe_region; this is indicated by elements changing
-						 * and lower dimension elements being added to master_fe_region */
-						int element_change_summary = 0;
-						CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim + 1],
-							&element_change_summary);
-						int face_change_summary = 0;
-						CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
-							&face_change_summary);
-						if ((element_change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)) &&
-							(face_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_element)))
-						{
-							struct FE_element_add_faces_not_in_list_data data;
-							data.current_element_list = fe_region->fe_element_list[dim];
-							data.add_element_list = CREATE(LIST(FE_element))();
-							FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								FE_element_add_faces_not_in_list, (void *)&data,
-								fe_region->fe_element_list[dim + 1]);
-							FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								FE_region_merge_FE_element_iterator, (void *)fe_region,
-								data.add_element_list);
-							DESTROY(LIST(FE_element))(&data.add_element_list);
-						}
-					}
-				}
-			}
-		}
-#endif // def OLD_CODE
 		/* restore change_level again */
 		(fe_region->change_level)--;
 		/* send message to clients if any changes have occurred */
@@ -1121,47 +1060,6 @@ Called when the access_count of <fe_element_field_info> drops to 1 so that
 
 	return (return_code);
 } /* FE_region_remove_FE_element_field_info */
-
-#if defined (OLD_CODE)
-int FE_node_field_info_list_has_field_with_multiple_times(
-	struct LIST(FE_node_field_info) *node_field_info_list,
-	struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 7 October 2002
-
-DESCRIPTION :
-Returns true if any node field info in <node_field_info_list> has a node field
-for <field> that has multiple times.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_node_field_info_list_has_field_with_multiple_times);
-	if (node_field_info_list && field)
-	{
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-			FE_node_field_info_has_field_with_multiple_times,	(void *)field,
-			node_field_info_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_info_list_has_field_with_multiple_times.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_info_list_has_field_with_multiple_times */
-#endif /* defined (OLD_CODE) */
 
 /*
 Global functions

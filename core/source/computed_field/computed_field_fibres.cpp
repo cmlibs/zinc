@@ -216,11 +216,6 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			}
 			else
 			{
-#if defined (OLD_CODE)
-				/* default gamma is pi/2 */
-				sin_gamma = 1;
-				cos_gamma = 0;
-#endif /* defined (OLD_CODE) */
 				/* default gamma is 0 */
 				sin_gamma = 0;
 				cos_gamma = 1;
@@ -240,14 +235,6 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			f23 = b_z;
 			/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
 				rotate anticlockwise about axis2, not -axis2 */
-#if defined (OLD_CODE)
-			a_x =  cos_beta*f11 + sin_beta*f31;
-			a_y =  cos_beta*f12 + sin_beta*f32;
-			a_z =  cos_beta*f13 + sin_beta*f33;
-			c_x = -sin_beta*f11 + cos_beta*f31;
-			c_y = -sin_beta*f12 + cos_beta*f32;
-			c_z = -sin_beta*f13 + cos_beta*f33;
-#endif /* defined (OLD_CODE) */
 			c_x =  cos_beta*f31 + sin_beta*f11;
 			c_y =  cos_beta*f32 + sin_beta*f12;
 			c_z =  cos_beta*f33 + sin_beta*f13;
@@ -257,17 +244,6 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			f31 = c_x;
 			f32 = c_y;
 			f33 = c_z;
-#if defined (OLD_CODE)
-			/* note rearrangement of sin/cos to give equivalent rotation of
-				gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
-				stage */
-			b_x = sin_gamma*f21 - cos_gamma*f31;
-			b_y = sin_gamma*f22 - cos_gamma*f32;
-			b_z = sin_gamma*f23 - cos_gamma*f33;
-			c_x = cos_gamma*f21 + sin_gamma*f31;
-			c_y = cos_gamma*f22 + sin_gamma*f32;
-			c_z = cos_gamma*f23 + sin_gamma*f33;
-#endif /* defined (OLD_CODE) */
 			b_x =  cos_gamma*f21 + sin_gamma*f31;
 			b_y =  cos_gamma*f22 + sin_gamma*f32;
 			b_z =  cos_gamma*f23 + sin_gamma*f33;

@@ -1258,18 +1258,8 @@ this gets tricky when done on all axes consistently.
 					nearest_glyph_set->object_name, names);
 				if (glyph_set)
 				{
-#if defined (OLD_CODE)
-/*???DB.  Have to be recursive on destroy_ and morph_ or neither */
-					/* go recursive in case it is a linked list */
-					if (initial->ptrnext&&final->ptrnext)
-					{
-						if (!(glyph_set->ptrnext=morph_GT_glyph_set(proportion,
-							initial->ptrnext,final->ptrnext)))
-						{
-							DESTROY(GT_glyph_set)(&glyph_set);
-						}
-					}
-#endif /* defined (OLD_CODE) */
+					display_message(ERROR_MESSAGE,
+						"morph_GT_glyph_set.  Not going recursive on possible linked list.");
 				}
 				else
 				{
@@ -1440,19 +1430,8 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 					morph_names,initial->font);
 				if (point_set)
 				{
-#if defined (OLD_CODE)
-/*???DB.  Have to be recursive on destroy_ and morph_ or neither */
-					/* go recursive in case it is a linked list */
-					if (initial->ptrnext&&final->ptrnext)
-					{
-						point_set->ptrnext=morph_GT_pointset(proportion,
-													initial->ptrnext,final->ptrnext);
-						if (!(point_set->ptrnext))
-						{
-							DESTROY(GT_pointset)(&point_set);
-						}
-					}
-#endif /* defined (OLD_CODE) */
+					display_message(ERROR_MESSAGE,
+						"morph_GT_pointset.  Not going recursive on possible linked list.");
 				}
 				else
 				{
@@ -1601,21 +1580,8 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 					initial->n_data_components,data);
 				if (polyline)
 				{
-#if defined (OLD_CODE)
-/*???DB.  Have to be recursive on destroy_ and morph_ or neither */
-					/* go recursive in case it is a linked list */
-					if (initial->ptrnext&&final->ptrnext)
-					{
-						polyline->ptrnext=morph_GT_polyline(proportion,
-							initial->ptrnext,final->ptrnext);
-						if (!(polyline->ptrnext))
-						{
-							DEALLOCATE(polyline->pointlist);
-							DEALLOCATE(polyline->data);
-							DESTROY(GT_polyline)(&polyline);
-						}
-					}
-#endif /* defined (OLD_CODE) */
+					display_message(ERROR_MESSAGE,
+						"morph_GT_polyline.  Not going recursive on possible linked list.");
 				}
 				else
 				{
@@ -1848,17 +1814,8 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					/* go recursive in case it is a linked list */
 					if (initial->ptrnext&&final->ptrnext)
 					{
-#if defined (OLD_CODE)
-/*???DB.  Have to be recursive on DESTROY and morph_ or neither */
-						surface->ptrnext=morph_GT_surface(proportion,
-							initial->ptrnext,final->ptrnext;
-						if (!(surface->ptrnext))
-						{
-							DEALLOCATE(surface->pointlist);
-							DEALLOCATE(surface->data);
-							DESTROY(GT_surface)(&surface);
-						}
-#endif /* defined (OLD_CODE) */
+						display_message(ERROR_MESSAGE,
+							"morph_GT_surface.  Going recusive not implemented.");
 					}
 				}
 				else
@@ -2255,22 +2212,14 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				/* go recursive in case it is a linked list */
 				if (initial->ptrnext)
 				{
-#if defined (OLD_CODE)
-					/*???DB.  Have to be recursive on DESTROY and transform_ or neither */
-					if (!(surface->ptrnext=transform_GT_surface(proportion,
-						initial->ptrnext,final->ptrnext)))
-					{
-						DEALLOCATE(surface->pointlist);
-						DEALLOCATE(surface->data);
-						DESTROY(GT_surface)(&surface);
-					}
-#endif /* defined (OLD_CODE) */
+					display_message(ERROR_MESSAGE,
+						"transform_GT_surface.  Going recusive not implemented.");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"transform_GT_surface.  Could not create surface");
+					"transform_GT_surface.  Could not create surface.");
 				DEALLOCATE(data);
 				DEALLOCATE(point);
 				if (normallist)
@@ -2332,15 +2281,6 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 					primitive_list = object->primitive_lists + i;
 					switch (object->object_type)
 					{
-#if defined (OLD_CODE)
-						/* To be done, wavefront files don't do points or lines anyway */
-						case g_POINTSET:
-						{
-						} break;
-						case g_POLYLINE:
-						{
-						} break;
-#endif /* defined (OLD_CODE) */
 						case g_SURFACE:
 						{
 							surface_input = primitive_list->gt_surface.first;

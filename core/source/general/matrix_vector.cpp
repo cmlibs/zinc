@@ -807,10 +807,6 @@ Adapted from "Numerical Recipes in C".
 			}
 			else
 			{
-#if defined (OLD_CODE)				
-				/* Allow the calling routine to decide what to do now */
-				display_message(ERROR_MESSAGE,"LU_decompose.  Singular matrix");
-#endif /* defined (OLD_CODE) */
 			}
 			DEALLOCATE(vv);
 		}
@@ -1204,11 +1200,11 @@ Calculates and returns in <result> the matrix product of 3x3 FE_value matrices
 		result[0] = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
 		result[1] = a[0]*b[1] + a[1]*b[4] + a[2]*b[7];
 		result[2] = a[0]*b[2] + a[1]*b[5] + a[2]*b[8];
-		
+
 		result[3] = a[3]*b[0] + a[4]*b[3] + a[5]*b[6];
 		result[4] = a[3]*b[1] + a[4]*b[4] + a[5]*b[7];
 		result[5] = a[3]*b[2] + a[4]*b[5] + a[5]*b[8];
-		
+
 		result[6] = a[6]*b[0] + a[7]*b[3] + a[8]*b[6];
 		result[7] = a[6]*b[1] + a[7]*b[4] + a[8]*b[7];
 		result[8] = a[6]*b[2] + a[7]*b[5] + a[8]*b[8];
@@ -1267,7 +1263,7 @@ FE_value vectors <a>, <b> and <c>.
 ==============================================================================*/
 {
 	double  A, B, C, D, E, F;       /* Intermediate Values */
- 	int return_code;
+	int return_code;
 
 	ENTER(cross_product_FE_value_vector4);
 	if (a&&b&&result)

@@ -8379,10 +8379,6 @@ Executes a GFX EXPORT command.
 			command_data_void, gfx_export_cm);
 		Option_table_add_entry(option_table,"iges",NULL,
 			command_data_void, gfx_export_iges);
-#if defined (OLD_CODE)
-		Option_table_add_entry(option_table,"node",NULL,
-			command_data_void, gfx_export_node);
-#endif /* defined (OLD_CODE) */
 		Option_table_add_entry(option_table,"stl",NULL,
 			command_data_void, gfx_export_stl);
 		Option_table_add_entry(option_table,"vrml",NULL,
@@ -8933,52 +8929,6 @@ int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 
 	return (return_code);
 }
-
-#if defined (OLD_CODE)
-static int execute_command_gfx_filter(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 26 June 1997
-
-DESCRIPTION :
-Executes a GFX FILTER command.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"node",NULL,NULL,gfx_filter_node},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_gfx_filter);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-		{
-			(option_table[0]).user_data=(void *)(command_data->node_group_manager);
-			return_code=process_option(state,option_table);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_filter.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_filter.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_gfx_filter */
-#endif /* defined (OLD_CODE) */
 
 static int gfx_list_all_commands(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -16465,10 +16415,6 @@ Executes a GFX command.
 				command_data_void, gfx_evaluate);
 			Option_table_add_entry(option_table, "export", NULL,
 				command_data_void, execute_command_gfx_export);
-#if defined (OLD_CODE)
-			Option_table_add_entry(option_table, "filter", NULL,
-				command_data_void, execute_command_gfx_filter);
-#endif /* defined (OLD_CODE) */
 #if defined (USE_OPENCASCADE)
 			Option_table_add_entry(option_table, "import", NULL,
 				command_data_void, execute_command_gfx_import);
@@ -17199,11 +17145,6 @@ DESCRIPTION:
 			/* check for comment */
 			if (i>0)
 			{
-#if defined (OLD_CODE)
-				/* add command to command history */
-				display_message(INFORMATION_MESSAGE,
-					"%s\n", command_string);
-#endif /* defined (OLD_CODE) */
 				/* check for a "<" as one of the of the tokens */
 					/*???DB.  Include for backward compatability.  Remove ? */
 				token=state->tokens;
@@ -18207,17 +18148,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		   new_examples_string[1] = ':';
 		   new_examples_string[2] = '\\';
 		   strcpy(new_examples_string + 3, command_data->examples_directory + 12);
-#if defined (OLD_CODE)
-		   /* Replace all / with \,
-			  actually it doesn't seem to be necessary, left in case we need it */
-		   char* dirchar;
-		   dirchar=strchr(new_examples_string,'/');
-		   while (dirchar!=NULL)
-		   {
-			*dirchar = '\\';
-			dirchar=strchr(dirchar+1,'/');
-		   }
-#endif /* defined (OLD_CODE) */
 		   DEALLOCATE(command_data->examples_directory);
 		   command_data->examples_directory = new_examples_string;
 		}
@@ -18453,13 +18383,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 
-#if defined (OLD_CODE)
-		if(command_data->default_scene)
-		{
-			Scene_enable_time_behaviour(command_data->default_scene,
-				command_data->default_time_keeper);
-		}
-#endif /* defined (OLD_CODE) */
 		if (command_data->computed_field_package && command_data->default_time_keeper)
 		{
 			Computed_field_register_types_time(command_data->computed_field_package,

@@ -81,7 +81,7 @@ xi1 xi2... xiDIMENSION
 The REGION_PATH is the path relative to the <root_region>, using forward slashes
 for separators, to the cmiss_region containing the fe_region the element is in.
 Omitting the region path is equivalent to having a "/" and means the fe_region
-is in the root_region itself. The REGION_PATH must end in 
+is in the root_region itself. The REGION_PATH must end in
 <xi> should have space for up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values.
 ==============================================================================*/
 {
@@ -342,7 +342,7 @@ by the escape/backslash character in the input file.
 						location);
 					DEALLOCATE(the_string);
 					DEALLOCATE(location);
-					reading_token = 0;					
+					reading_token = 0;
 					return_code = 0;
 				}
 			}
@@ -949,14 +949,6 @@ the <field_order_info>.
 						}
 					}
 				}
-#if defined (OLD_CODE)
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_field_values.  Invalid field #%d", i + 1);
-					return_code = 0;
-				}
-#endif /* defined (OLD_CODE) */
 			}
 		}
 		else
@@ -996,7 +988,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	struct FE_field *field, *merged_fe_field;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_time_sequence *fe_time_sequence;
-	
+
 	ENTER(read_FE_node_field);
 	return_code = 0;
 	if (field_address)
@@ -1097,7 +1089,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													end_of_names = (')' == *derivative_type_name);
 													end_of_string = ('\0' == *derivative_type_name);
 												}
-												enum FE_nodal_value_type derivative_type;	
+												enum FE_nodal_value_type derivative_type;
 												if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(
 													nodal_value_type_string, &derivative_type))
 												{
@@ -1147,7 +1139,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 											location);
 										DEALLOCATE(location);
 									}
-									/* Make sure we declare any derivatives that weren't 
+									/* Make sure we declare any derivatives that weren't
 										given types */
 									while (0 < i)
 									{
@@ -1220,7 +1212,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			{
 				/* first try to retrieve matching field from fe_region */
 				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
-				{	
+				{
 					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,"read_FE_node_field.  "
 						"Could not merge field '%s' into finite element region.  %s",
@@ -1589,7 +1581,7 @@ static struct FE_node *read_FE_node(struct IO_stream *input_file,
 
 										if (number_of_values == number_of_components)
 										{
- 											for (k = 0; (k < number_of_values) && return_code; k++)
+											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
 												if (read_string_value(input_file, &the_string))
 												{
@@ -2288,10 +2280,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																		node_index - 1, number_of_values)))
 															{
 																/* read the value indices */
- 																/* Use a %1[:] so that a successful read will return 1 */
+																/* Use a %1[:] so that a successful read will return 1 */
 																if (1 != IO_stream_scan(input_file," Value indices%1[:] ", test_string))
 																{
-																	display_message(WARNING_MESSAGE, 
+																	display_message(WARNING_MESSAGE,
 																		"Truncated read of required \" Value indices: \" token in element file.");
 																}
 																for (j = 0; (j < number_of_values) &&
@@ -2317,7 +2309,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																	/* Use a %1[:] so that a successful read will return 1 */
 																	if (1 != IO_stream_scan(input_file," Scale factor indices%1[:] ", test_string))
 																	{
-																		display_message(WARNING_MESSAGE, 
+																		display_message(WARNING_MESSAGE,
 																			"Truncated read of required \" Scale factor indices: \" token in element file.");
 																	}
 																	for (j = 0; (j < number_of_values) &&
@@ -2873,7 +2865,7 @@ in a grid field.
 				element_identifier.number = element_num;
 				element_identifier.type = CM_ELEMENT;
 			}
-			else if (face_num) 
+			else if (face_num)
 			{
 				element_identifier.number = face_num;
 				element_identifier.type = CM_FACE;
@@ -2910,7 +2902,7 @@ in a grid field.
 					{
 						for (i = 0; (i < number_of_faces) && return_code; i++)
 						{
-							/* file input */			 
+							/* file input */
 							if (3 == IO_stream_scan(input_file, "%d %d %d",
 								&element_num, &face_num, &line_num))
 							{
@@ -2919,7 +2911,7 @@ in a grid field.
 									face_identifier.number = element_num;
 									face_identifier.type = CM_ELEMENT;
 								}
-								else if (face_num) 
+								else if (face_num)
 								{
 									face_identifier.number = face_num;
 									face_identifier.type = CM_FACE;
@@ -2928,7 +2920,7 @@ in a grid field.
 								{
 									face_identifier.number = line_num;
 									face_identifier.type = CM_LINE;
-								}								
+								}
 								return_code =1;
 							}
 							else
@@ -2994,7 +2986,7 @@ in a grid field.
 					/* Use a %1[:] so that a successful read will return 1 */
 					if (1 != IO_stream_scan(input_file," Values %1[:] ", test_string))
 					{
-						display_message(WARNING_MESSAGE, 
+						display_message(WARNING_MESSAGE,
 							"Truncated read of required \" Values :\" token in element file.");
 					}
 					number_of_fields =
@@ -3141,7 +3133,7 @@ in a grid field.
 							if (1 != IO_stream_scan(input_file," Nodes%1[:]", test_string))
 							{
 								location = IO_stream_get_location_string(input_file);
-								display_message(WARNING_MESSAGE, 
+								display_message(WARNING_MESSAGE,
 									"Truncated read of required \" Nodes:\" token in element file.  %s", location);
 								DEALLOCATE(location);
 							}
@@ -3206,7 +3198,7 @@ in a grid field.
 							/* Use a %1[:] so that a successful read will return 1 */
 							if (1 != IO_stream_scan(input_file," Scale factors%1[:]", test_string))
 							{
-								display_message(WARNING_MESSAGE, 
+								display_message(WARNING_MESSAGE,
 									"Truncated read of required \" Scale factors:\" token in element file.");
 							}
 							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
@@ -3296,7 +3288,7 @@ in a grid field.
  * Embedding elements are located by a region path starting at the root region
  * in the file; if no path is supplied they are placed in the root region.
  * If objects are repeated in the file, they are merged correctly.
- * 
+ *
  * @param root_region  The region into which data is read which will be the
  *   root of a region hierarchy when sub-regions and groups are read in.
  * @param input_file  The stream from which EX data is read.
@@ -3306,8 +3298,8 @@ in a grid field.
  *   array.
  * @param use_data  Flag, if set indicates nodes are to be read into separate
  *   data regions, otherwise nodes and elements are read normally.
- * @return  1 on success, 0 on failure. 
- */ 
+ * @return  1 on success, 0 on failure.
+ */
 static int read_exregion_file_private(struct Cmiss_region *root_region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index,
 	int use_data)
@@ -3651,7 +3643,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						{
 							/* ensure we have node field information */
 							if (template_node)
-							{	
+							{
 								/* read node */
 								if (NULL != (node = read_FE_node(input_file, template_node, fe_region,
 									root_region, region, field_order_info, time_index)))
@@ -3717,7 +3709,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						{
 							/* ensure we have element field information */
 							if (template_element)
-							{	
+							{
 								/* read element */
 								if (NULL != (element = read_FE_element(input_file, template_element,
 									fe_region, field_order_info)))

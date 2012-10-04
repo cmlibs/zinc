@@ -11,5 +11,7 @@
 #cmakedefine USE_GTK_MAIN_STEP
 #cmakedefine TARGET_API_MAC_CARBON
 
+#cmakedefine USE_PERL_INTERPRETER
+
 #endif
 

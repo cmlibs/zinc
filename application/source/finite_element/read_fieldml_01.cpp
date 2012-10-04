@@ -4935,16 +4935,6 @@ DESCRIPTION :
 		if (NULL == region)
 		{
 			// GRC: Changed to create full regions as group regions removed
-#if defined OLD_CODE
-			region = Cmiss_region_create_group(fieldml_data->root_region);
-			Cmiss_region_set_name(region, name);
-			if (!Cmiss_region_append_child(fieldml_data->root_region, region))
-			{
-				display_message(ERROR_MESSAGE,
-					"fieldml_start_group.  Could not add child region");
-				DEACCESS(Cmiss_region)(&region);
-			}
-#endif // defined OLD_CODE
 			region = Cmiss_region_create_child(fieldml_data->root_region, name);
 			if (!region)
 			{
@@ -5289,39 +5279,6 @@ DESCRIPTION :
 
 	LEAVE;
 } /* fieldml_sax_fatalError */
-
-#if defined (OLD_CODE)
-Now there is a function to use in libxml2 (although this has also been deprecated
-	by SAX2).
-static int specialXmlSAXParseFile(xmlSAXHandlerPtr sax, void *user_data, char *filename)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int ret = 0;
-	xmlParserCtxtPtr ctxt;
-
-	ctxt = xmlCreateFileParserCtxt(filename);
-	if (ctxt == NULL) return -1;
-	ctxt->sax = sax;
-	ctxt->userData = user_data;
-
-	xmlParseDocument(ctxt);
-
-	if (ctxt->wellFormed)
-		ret = 0;
-
-	else
-		ret = -1;
-	if (sax != NULL)
-		ctxt->sax = NULL;
-	xmlFreeParserCtxt(ctxt);
-
-	return ret;
-} /* specialXmlSAXParseFile */
-#endif /* defined (OLD_CODE) */
 
 int parse_fieldml_01_file(struct Cmiss_region *region, const char *filename)
 /*******************************************************************************

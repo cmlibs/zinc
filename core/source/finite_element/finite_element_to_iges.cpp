@@ -722,9 +722,9 @@ LAST MODIFIED : 5 August 2003
 
 DESCRIPTION :
 SAB This function uses a template bicubic element patch to generate an IGES
-representation of any 2D element.  The actual element is evaluated for nodal 
+representation of any 2D element.  The actual element is evaluated for nodal
 positions and  derivatives at each corner and these are just put into the template
-nodes. This means that the iges code does not need to be implemented for each 
+nodes. This means that the iges code does not need to be implemented for each
 basis type, however every element type will be converted to a cubic.
 ==============================================================================*/
 {
@@ -770,20 +770,6 @@ basis type, however every element type will be converted to a cubic.
 						 /*number_of_components*/3);
 				if (node_field_creator != NULL)
 				{
-#if defined (OLD_CODE)
-					for (i = 0 ; i < 3 ; i++)
-					{
-						FE_node_field_creator_define_derivative(
-							node_field_creator, /*component_number*/i,
-							FE_NODAL_D_DS1);
-						FE_node_field_creator_define_derivative(
-							node_field_creator, /*component_number*/i,
-							FE_NODAL_D_DS2);
-						FE_node_field_creator_define_derivative(
-							node_field_creator, /*component_number*/i,
-							FE_NODAL_D2_DS1DS2);
-					}
-#endif /* defined (OLD_CODE) */
 					for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
 					{
 						get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
@@ -916,10 +902,10 @@ basis type, however every element type will be converted to a cubic.
 		}
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* get_iges_entity_as_cubic_from_any_2D_element */
-	
+
 /*
 Global functions
 ----------------
@@ -1121,21 +1107,21 @@ Write bicubic elements to an IGES file.
 			iges_entity_info_data.fe_region=fe_region;
 			iges_entity_info_data.element=(struct FE_element *)NULL;
 			iges_entity_info_data.extra_line_number = 999000; /* Start somewhere random although
-							                              we will still check that it doesn't conflict */
-         for (i = 0 ; i < NUMBER_OF_NODES ; i++)
-         {
+														  we will still check that it doesn't conflict */
+		 for (i = 0 ; i < NUMBER_OF_NODES ; i++)
+		 {
 				iges_entity_info_data.nodes[i]=(struct FE_node *)NULL;
 			}
 #if defined (NEW_CODE)
-         FE_region_get_default_coordinate_FE_field(
+		 FE_region_get_default_coordinate_FE_field(
 				fe_region,&(iges_entity_info_data.fe_field));
 			FE_region_for_each_FE_element(fe_region, get_iges_entity_info,
 				&iges_entity_info_data);
-         USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
+		 USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
 #endif /* defined (NEW_CODE) */
 			FE_region_for_each_FE_element(fe_region, get_iges_entity_as_cubic_from_any_2D_element,
 				&iges_entity_info_data);
-         Computed_field_end_wrap(&(iges_entity_info_data.field));
+		 Computed_field_end_wrap(&(iges_entity_info_data.field));
 			if (iges_entity_info_data.fe_field)
 			{
 				DEACCESS(FE_field)(&iges_entity_info_data.fe_field);
@@ -1144,8 +1130,8 @@ Write bicubic elements to an IGES file.
 			{
 				DEACCESS(FE_element)(&iges_entity_info_data.element);
 			}
-         for (i = 0 ; i < NUMBER_OF_NODES ; i++)
-         {
+		 for (i = 0 ; i < NUMBER_OF_NODES ; i++)
+		 {
 				DEACCESS(FE_node)(&iges_entity_info_data.nodes[i]);
 			}
 			/* We no longer require the template element and nodes */

@@ -171,11 +171,6 @@ and allows its contents to be modified.
 					"The update_time_integration code has not been updated"
 					"with the latest changes.");
 				return_code=0;
-#if defined (OLD_CODE)
-				return_code=Computed_field_update_integration_scheme(field,
-					Cmiss_region_get_FE_region(region),
-					integrand, coordinate_field, time_update);
-#endif /* defined (OLD_CODE) */
 			}
 			else
 			{

@@ -2302,15 +2302,6 @@ DESCRIPTION :
 							glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 						}
 						glEnable(GL_TEXTURE_1D);
-#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
-						glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
-							pixels);
-						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
-						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-						glEnable(GL_TEXTURE_1D);
-#endif /* defined (OLD_CODE) */
 #if defined (DEBUG_CODE)
 						while (0 != (error=glGetError()))
 						{
@@ -2369,14 +2360,6 @@ DESCRIPTION :
 						glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 					}
 					glEnable(GL_TEXTURE_1D);
-#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
-					glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
-					glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
-					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-					glEnable(GL_TEXTURE_1D);
-#endif /* defined (OLD_CODE) */
 #if defined (DEBUG_CODE)
 					while (0 != (error=glGetError()))
 					{

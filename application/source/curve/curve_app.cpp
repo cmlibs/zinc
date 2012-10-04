@@ -343,18 +343,6 @@ DESCRIPTION :
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-#if defined (OLD_CODE)
-				/*???RC Currently can't handle these optional tokens that also know if
-					set, hence leave with old parsing stuff for now */
-				/* basis type */
-				fe_basis_type_string=
-					FE_basis_type_string(curve_definition->fe_basis_type);
-				valid_strings=Curve_FE_basis_type_get_valid_strings(
-					&number_of_valid_strings);
-				Option_table_add_enumerator(option_table,number_of_valid_strings,
-					valid_strings,&fe_basis_type_string);
-				DEALLOCATE(valid_strings);
-#endif /* defined (OLD_CODE) */
 				/* read the optional fe_basis_type parameter */
 				if (fuzzy_string_compare(current_token,"c.Hermite"))
 				{

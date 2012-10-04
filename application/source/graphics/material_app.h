@@ -31,17 +31,6 @@ int set_material_program_type(struct Graphical_material *material_to_be_modified
 from the modify_graphical_material.
 ******************************************************************************/
 
-
-#if defined (OLD_CODE)
-int activate_Graphical_material(struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 17 November 1994
-
-DESCRIPTION :
-Activates the <material> as part of the rendering loop.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 int compile_Graphical_material_for_order_independent_transparency(
 	struct Graphical_material *material,
 	void *material_order_independent_data_void);

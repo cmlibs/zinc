@@ -135,10 +135,6 @@ the list of all volume textures.
 	struct VT_volume_texture *texture;
 
 	ENTER(CREATE(VT_volume_texture));
-#if defined (OLD_CODE)
-	/*???DB.  Is there a better place for this ? */
-	load_mc_tables();
-#endif /* defined (OLD_CODE) */
 	/* allocate memory for structure */
 	if (ALLOCATE(texture,struct VT_volume_texture,1)&&
 		ALLOCATE(texture->scalar_field,struct VT_scalar_field,1)&&
@@ -328,13 +324,6 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 /*???SAB.						number_of_scalar_fields++;*/
 
 					}
-#if defined (OLD_CODE)
-/*???DB.  Doesn't seem to create a triangle list for the clip_field2 ? */
-					if (texture->clip_field2)
-					{
-						number_of_scalar_fields++;
-					}
-#endif /* defined (OLD_CODE) */
 					clean_mc_iso_surface(number_of_scalar_fields,texture->mc_iso_surface);
 				}
 				if (texture->scalar_field)
@@ -475,11 +464,6 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 		*source_triangle,**source_triangle_ptr,*triangle,**triangle_ptr;
 	struct MC_vertex **compiled_vertex,**source_compiled_vertex,
 		*source_vertex,*vertex;
-#if defined (OLD_CODE)
-/*???DB.  Needs to be replaced by new iso surface structure */
-	struct VT_iso_surface *iso_surface,*source_iso_surface;
-	struct VT_iso_vertex *destination_iso_vertex,*source_iso_vertex;
-#endif /* defined (OLD_CODE) */
 	struct VT_node_group **destination_node_groups,**node_groups,
 		**source_node_groups;
 	struct VT_scalar_field *clip_field,*clip_field2,*scalar_field;
@@ -509,10 +493,6 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 		grid_spacing=(double *)NULL;
 		node_groups=(struct VT_node_group **)NULL;
 
-#if defined (OLD_CODE)
-/*???DB.  Needs to be replaced by new iso surface structure */
-		iso_surface=(struct VT_iso_surface *)NULL;
-#endif /* defined (OLD_CODE) */
 		if (source->file_name)
 		{
 			if (ALLOCATE(file_name,char,strlen(source->file_name)+1))
@@ -1628,34 +1608,6 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 												}
 												destination->mc_iso_surface=iso_surface;
 
-#if defined (OLD_CODE)
-												if (destination->iso_surface=iso_surface)
-												{
-													for (i=3*(iso_surface->n_iso_polys)-1;i>0;i--)
-													{
-														(destination->iso_poly_material)[i]=
-															ACCESS(Graphical_material)(
-															&((source->iso_poly_material)[i][0]));
-														(destination->iso_poly_cop)[i][0]=
-															(source->iso_poly_cop)[i][0];
-														(destination->iso_poly_cop)[i][1]=
-															(source->iso_poly_cop)[i][1];
-														(destination->iso_poly_cop)[i][2]=
-															(source->iso_poly_cop)[i][2];
-														(destination->texturemap_coord)[i][0]=
-															(source->texturemap_coord)[i][0];
-														(destination->texturemap_coord)[i][1]=
-															(source->texturemap_coord)[i][1];
-														(destination->texturemap_coord)[i][2]=
-															(source->texturemap_coord)[i][2];
-														(destination->texturemap_index)[i]=
-															(source->texturemap_index)[i];
-														(destination->iso_env_map)[i]=
-															ACCESS(Environment_map)(
-															&((source->iso_env_map)[i][0]));
-													}
-												}
-#endif /* defined (OLD_CODE) */
 												/*???RC these parameters copied after dynamic members
 													deallocated, since they need information such as
 													original destination->dimension */
@@ -1959,7 +1911,7 @@ Creates/Updates isosurface for basic volume_texture
 		isovalue_list[n_scalar_fields] = texture->cutting_plane[3];
 		n_scalar_fields++;
 	}
- 	if (texture->hollow_mode_on)
+	if (texture->hollow_mode_on)
 	{
 		scalar_field_list[n_scalar_fields] = texture->clip_field2;
 		isovalue_list[n_scalar_fields] = texture->hollow_isovalue*texture->isovalue;
@@ -2125,7 +2077,7 @@ struct VT_iso_vertex *VT_iso_vertex_create_and_set(
 {
 	int i;
 	struct VT_iso_vertex *vertex;
-	
+
 	vertex = CREATE(VT_iso_vertex)();
 	if ((NULL != vertex) && (NULL != coordinates) && (NULL != normal) &&
 		((0 == n_data_components) || (NULL != data)))
@@ -2251,7 +2203,7 @@ struct VT_iso_triangle *VT_iso_triangle_create_and_set(
 	struct VT_iso_triangle *triangle;
 	struct VT_iso_triangle **temp_vt_triangles;
 	struct VT_iso_vertex *vertex;
-	
+
 	triangle = CREATE(VT_iso_triangle)();
 	if ((NULL != triangle) && (NULL != vertices))
 	{
@@ -2286,6 +2238,6 @@ struct VT_iso_triangle *VT_iso_triangle_create_and_set(
 	{
 		DESTROY(VT_iso_triangle)(&triangle);
 	}
-	
+
 	return (triangle);
 }

@@ -510,146 +510,6 @@ time is supplied in the workingCache
 	return(return_code);
 } /* Computed_field_integration_integrate_path */
 
-#if defined (OLD_CODE)
-int Computed_field_integration_calculate_mapping_update(
-	Computed_field_element_integration_mapping *mapping_item,
-	int face, Computed_field *integrand, Computed_field *coordinate_field,
-	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
-	Computed_field_element_integration_mapping *seed_mapping_item,
-	ZnReal time_step, ZnReal time)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Calculates the differentials and offsets across the element for a special
-upwind difference time integration.
-==============================================================================*/
-{
-	FE_value
-		/* These two arrays are lower left diagonals matrices which for each row
-			have the positions and weights of a gauss point scheme for integrating
-			with the number of points corresponding to the row. */
-		gauss_positions[2][2] = {{0.5, 0},
-										 {0.25, 0.75}},
-		gauss_weights[2][2] = {{1, 0},
-									  {0.5, 0.5}},
-			length, flow_step, *temp, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int derivative_magnitude, k, m, n, element_dimension,
-		number_of_gauss_points, return_code;
-	Computed_field_element_integration_mapping *previous_mapping_item;
-
-	ENTER(Computed_field_integration_calculate_mapping_update);
-	if (mapping_item && mapping_item->element	&&
-		(get_FE_element_dimension(mapping_item->element) == 1) && (previous_mapping_item =
-		FIND_BY_IDENTIFIER_IN_LIST(Computed_field_element_integration_mapping, element)
-			(mapping_item->element, previous_texture_mapping)))
-	{
-		return_code = 1;
-		number_of_gauss_points = 2;
-		element_dimension = get_FE_element_dimension(mapping_item->element);
-		for (k = 0;return_code&&(k<element_dimension);k++)
-		{
-			flow_step = 0.0;
-			length = 0.0;
-			for (m = 0 ; m < number_of_gauss_points ; m++)
-			{
-				xi[0] = 0.0;
-				xi[1] = 0.0;
-				xi[2] = 0.0;
-				xi[k] = gauss_positions[number_of_gauss_points - 1][m];
-				/* Integrand elements should always be top level */
-				Computed_field_evaluate_cache_in_element(integrand,
-					mapping_item->location, mapping_item->element,
-					/*calculate_derivatives*/0);
-				Computed_field_evaluate_cache_in_element(coordinate_field,
-					mapping_item->location, mapping_item->element,
-					/*calculate_derivatives*/1);
-#if defined (DEBUG_CODE)
-				printf("Coordinate %d:  %g %g %g    %g %g %g\n", m,
-					coordinate_field->values[0], coordinate_field->values[1],
-					coordinate_field->values[2], coordinate_field->derivatives[0],
-					coordinate_field->derivatives[1], coordinate_field->derivatives[2]);
-#endif /* defined (DEBUG_CODE) */
-				flow_step = time_step * integrand->values[0] *
-					gauss_weights[number_of_gauss_points - 1][m];
-				if (coordinate_field->number_of_components > 1)
-				{
-					derivative_magnitude = 0.0;
-					temp=coordinate_field->derivatives+k;
-					for (n = 0 ; n < coordinate_field->number_of_components ; n++)
-					{
-						derivative_magnitude += *temp * *temp;
-						temp+=element_dimension;
-					}
-					length += sqrt(derivative_magnitude) *
-						gauss_weights[number_of_gauss_points - 1][m];
-				}
-				else
-				{
-					length += coordinate_field->derivatives[k] *
-						gauss_weights[number_of_gauss_points - 1][m];
-				}
-			}
-		}
-		switch (face)
-		{
-			case 0:
-			{
-				if (length)
-				{
-					mapping_item->offset[0] = previous_mapping_item->offset[0] -
-						(flow_step / length) *
-						previous_mapping_item->differentials[0];
-				}
-				else
-				{
-					mapping_item->offset[0] = seed_mapping_item->offset[0];
-				}
-				mapping_item->differentials[0] = seed_mapping_item->offset[0] -
-					mapping_item->offset[0];
-			} break;
-			case 1:
-			{
-				mapping_item->offset[0] = seed_mapping_item->offset[0] +
-					seed_mapping_item->differentials[0];
-#if defined (DEBUG_CODE)
-				if (mapping_item->offset[0] < previous_mapping_item->offset[0])
-				{
-					printf("Regression\n");
-				}
-#endif /* defined (DEBUG_CODE) */
-				if (length)
-				{
-					mapping_item->differentials[0] = previous_mapping_item->offset[0]
-						+ previous_mapping_item->differentials[0] -
-						(flow_step / length) * previous_mapping_item->differentials[0]
-						- mapping_item->offset[0];
-				}
-				else
-				{
-					mapping_item->differentials[0] = 0.0;
-				}
-
-			} break;
-		}
-
-#if defined (DEBUG_CODE)
-			printf("Differential:  %g\n",
-				mapping_item->differentials[0]);
-#endif /* defined (DEBUG_CODE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_calculate_mapping_differentials.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return(return_code);
-	LEAVE;
-} /* Computed_field_integration_calculate_mapping_update */
-#endif /* defined (OLD_CODE) */
-
 int Computed_field_integration::add_neighbours(Cmiss_field_cache& workingCache,
 	Computed_field_element_integration_mapping *mapping_item,
 	LIST(Computed_field_element_integration_mapping) *texture_mapping,
@@ -774,49 +634,35 @@ time is supplied in the workingCache.
 								CREATE(Computed_field_element_integration_mapping)(
 									neighbour_elements[j], number_of_components)))
 						{
-#if defined (OLD_CODE)
-							if (!previous_texture_mapping)
+							for (k = 0 ; k < element_dimension ; k++)
 							{
-#endif /* defined (OLD_CODE) */
-								for (k = 0 ; k < element_dimension ; k++)
+								initial_xi[k] = 0.0;
+								final_xi[k] = 0.0;
+							}
+							switch (i)
+							{
+								case 0:
+								case 2:
+								case 4:
 								{
-									initial_xi[k] = 0.0;
-									final_xi[k] = 0.0;
-								}
-								switch (i)
+									initial_xi[i / 2] = 1.0;
+									integrate_element = mapping_neighbour->element;
+								} break;
+								case 1:
+								case 3:
+								case 5:
 								{
-									case 0:
-									case 2:
-									case 4:
-									{
-										initial_xi[i / 2] = 1.0;
-										integrate_element = mapping_neighbour->element;
-									} break;
-									case 1:
-									case 3:
-									case 5:
-									{
-										final_xi[(i - 1)/ 2] = 1.0;
-										integrate_element = mapping_item->element;
-									} break;
-								}
-								integrate_path(integrate_element,
-									mapping_item->values, initial_xi, final_xi,
-									/*number_of_gauss_points*/2, workingCache, integrand,
-									magnitude_coordinates, coordinate_field,
-									mapping_neighbour->values);
+									final_xi[(i - 1)/ 2] = 1.0;
+									integrate_element = mapping_item->element;
+								} break;
+							}
+							integrate_path(integrate_element,
+								mapping_item->values, initial_xi, final_xi,
+								/*number_of_gauss_points*/2, workingCache, integrand,
+								magnitude_coordinates, coordinate_field,
+								mapping_neighbour->values);
 							USE_PARAMETER(previous_texture_mapping);
 							USE_PARAMETER(time_step);
-#if defined (OLD_CODE)
-							}
-							else
-							{
-								/* Special time integration update step */
-								Computed_field_integration_calculate_mapping_update(
-									mapping_neighbour, i, integrand, coordinate_field,
-									previous_texture_mapping, mapping_item, time_step, time);
-							}
-#endif /* defined (OLD_CODE) */
 							if (ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)(
 								mapping_neighbour, texture_mapping))
 							{
@@ -1220,7 +1066,7 @@ Compare the type specific data
 bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache)
 {
 	return (0 != field->evaluate(cache));
-#if defined (OLD_CODE)
+#if defined (TODO_CODE)
 	// @TODO: resurrect the slightly more efficient old code?
 	FE_value element_to_top_level[9];
 	int return_code;
@@ -1335,7 +1181,7 @@ bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache
 	LEAVE;
 
 	return (return_code);
-#endif // defined (OLD_CODE)
+#endif // defined (TODO_CODE)
 }
 
 int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
@@ -1673,11 +1519,6 @@ int Computed_field_integration::propagate_find_element_xi(
 				}
 				else
 				{
-#if defined (OLD_CODE)
-					display_message(ERROR_MESSAGE,
-						"Computed_field_integration::propagate_find_element_xi.  "
-						"Unable to find mapping for given values");
-#endif /* defined (OLD_CODE) */
 					return_code=0;
 				}
 			}
@@ -1817,135 +1658,6 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_integration::get_command_string */
-
-#if defined (OLD_CODE)
-int Computed_field_update_integration_scheme(
-	FE_region *fe_region,
-	Computed_field *integrand, Computed_field *coordinate_field,
-	ZnReal time_step)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-This is a special method for updating with a time integration step for flow
-problems.  It takes a current integration field and updates it to the next
-timestep.
-=============================================================================*/
-{
-	int return_code;
-	Computed_field_element_integration_mapping *mapping_item, *previous_mapping_item,
-		*seed_mapping_item;
-	Computed_field_element_integration_mapping_fifo *fifo_node,
-		*first_to_be_checked, *last_to_be_checked;
-	LIST(Computed_field_element_integration_mapping) *texture_mapping;
-	LIST(Index_multi_range) *node_element_list;
-
-	ENTER(Computed_field_update_integration_scheme);
-	if (field&&Computed_field_is_type_integration(field) && (data =
-		(Computed_field_integration_type_specific_data *)
-		field->type_specific_data)&&integrand&&coordinate_field)
-	{
-		return_code=1;
-		first_to_be_checked=last_to_be_checked=
-			(Computed_field_element_integration_mapping_fifo *)NULL;
-		node_element_list=(LIST(Index_multi_range) *)NULL;
-		texture_mapping = CREATE_LIST(Computed_field_element_integration_mapping)();
-		if (ALLOCATE(fifo_node,
-			Computed_field_element_integration_mapping_fifo,1)&&
-			(mapping_item=CREATE(Computed_field_element_integration_mapping)(
-				 seed_element, field->number_of_components)))
-		{
-			previous_mapping_item = FIND_BY_IDENTIFIER_IN_LIST
-				(Computed_field_element_integration_mapping,element)
-				(seed_element, texture_mapping);
-			seed_mapping_item = CREATE(Computed_field_element_integration_mapping)(
-				(FE_element *)NULL, field->number_of_components);
-			seed_mapping_item->values[0] = previous_mapping_item->values[0];
-			seed_mapping_item->differentials[0] = time_step;
-			Computed_field_integration_calculate_mapping_update(
-				mapping_item, 1, integrand, coordinate_field,
-				texture_mapping, seed_mapping_item, time_step, /*time*/0);
-			DESTROY(Computed_field_element_integration_mapping)(&seed_mapping_item);
-			ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)
-				(mapping_item, texture_mapping);
-			/* fill the fifo_node for the mapping_item; put at end of list */
-			fifo_node->mapping_item=mapping_item;
-			fifo_node->next=
-				(Computed_field_element_integration_mapping_fifo *)NULL;
-			first_to_be_checked=last_to_be_checked=fifo_node;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_integration.  "
-				"Unable to allocate member");
-			DEALLOCATE(fifo_node);
-			return_code=0;
-		}
-		if (return_code)
-		{
-			while (return_code && first_to_be_checked)
-			{
-				return_code = Computed_field_integration_add_neighbours(
-					first_to_be_checked->mapping_item, texture_mapping,
-					&last_to_be_checked, integrand,
-					magnitude_coordinates, coordinate_field,
-					&node_element_list, fe_region, texture_mapping,
-					time_step, /*time*/0,
-					(LIST(Computed_field_node_integration_mapping) *)NULL);
-
-				/* remove first_to_be_checked */
-				fifo_node=first_to_be_checked;
-				if (!(first_to_be_checked=first_to_be_checked->next))
-				{
-					last_to_be_checked=
-						(Computed_field_element_integration_mapping_fifo *)NULL;
-				}
-				DEALLOCATE(fifo_node);
-			}
-			/* clean up to_be_checked list */
-			while (first_to_be_checked)
-			{
-				fifo_node = first_to_be_checked;
-				first_to_be_checked = first_to_be_checked->next;
-				DEALLOCATE(fifo_node);
-			}
-			/* free cache on source fields */
-			Computed_field_clear_cache(integrand);
-			Computed_field_clear_cache(coordinate_field);
-			if (!return_code)
-			{
-				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
-			}
-			if (node_element_list)
-			{
-				DESTROY_LIST(Index_multi_range)(&node_element_list);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_integration.  Unable to create list");
-			return_code=0;
-		}
-		if(return_code)
-		{
-			/* Replace old mapping with new one */
-			DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
-			texture_mapping = texture_mapping;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_integration.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_update_integration_scheme */
-#endif /* defined (OLD_CODE) */
 
 } //namespace
 

@@ -92,14 +92,6 @@ DESCRIPTION :
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 }; /* struct Modify_environment_map_data */
 
-#if defined (OLD_CODE)
-/*
-Global variables
-----------------
-*/
-extern struct LIST(Environment_map) *all_environment_maps;
-#endif
-
 /*
 Global functions
 ----------------

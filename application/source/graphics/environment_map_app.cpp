@@ -93,31 +93,6 @@ Set the <environment_map> to face materials.
 	return (return_code);
 } /* set_Environment_map_face_materials */
 
-
-#if defined (OLD_CODE)
-	static char *default_Environment_map_command=
-		"face_materials default default default default default,default";
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-	struct Parse_state *state;
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-			if (state=create_Parse_state(default_Environment_map_command))
-			{
-				modify_Environment_map(state,(void *)environment_map,(void *)NULL);
-				destroy_Parse_state(&state);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Environment_map).  Could not create state");
-				DESTROY(Environment_map)(&environment_map);
-			}
-#endif /* defined (OLD_CODE) */
-
-
 int modify_Environment_map(struct Parse_state *state,void *environment_map_void,
 	void *modify_environment_map_data_void)
 /*******************************************************************************
@@ -280,67 +255,6 @@ DESCRIPTION :
 			display_parse_state_location(state);
 			return_code=0;
 		}
-#if defined (OLD_CODE)
-		if (environment_map_to_be_modified=
-			(struct Environment_map *)environment_map_void)
-		{
-			return_code=1;
-		}
-		else
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (environment_map_manager=
-						(struct MANAGER(Environment_map) *)environment_map_manager_void)
-					{
-						if (environment_map_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
-							Environment_map,name)(current_token,environment_map_manager))
-						{
-							return_code=shift_Parse_state(state,1);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unknown environment map");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"modify_Environment_map.  Missing environment map manager");
-						return_code=0;
-					}
-				}
-				else
-				{
-					environment_map_to_be_modified=(struct Environment_map *)NULL;
-					return_code=1;
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"Missing environment_map_name");
-				display_parse_state_location(state);
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			if (environment_map_to_be_modified)
-			{
-				(option_table[0]).to_be_modified=environment_map_to_be_modified;
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,"ENVIRONMENT_MAP_NAME\n");
-			}
-			return_code=process_multiple_options(state,option_table);
-			/*???DB.  Set flag to say that changed ? */
-		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{

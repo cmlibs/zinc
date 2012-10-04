@@ -1122,7 +1122,7 @@ Sorts out the tricky 'double contour' cases - returns gradient in grads
 			fn[5]=rqs(scalar_field,in,jn-1,kn);
 			fn[6]=rqs(scalar_field,in-1,jn,kn);
 			fn[7]=rqs(scalar_field,in,jn,kn);
-		
+
 			f1 = fn[facnod[iface - 1][0] - 1];
 			f2 = fn[facnod[iface - 1][1] - 1];
 			f3 = fn[facnod[iface - 1][2] - 1];
@@ -2247,22 +2247,6 @@ intersections with the boundary.
 							clip_flag=0;
 						}
 					}
-#if defined (OLD_CODE)
-					for (m=0;m<n_scalar_fields;m++)
-					{
-						if ((icase[m]>1)&&(icase[m]<256))
-						{
-							clip_flag=1;
-						}
-					}
-					for (m=0;m<n_scalar_fields;m++)
-					{
-						if (icase[m]==1)
-						{
-							clip_flag=0;
-						}
-					}
-#endif /* defined (OLD_CODE) */
 					/* dont need to consider cases wholly inside or outside surface, or
 						wholly clipped */
 					/* if [ (not out & not in & not fully clipped) OR (in and partially
@@ -2598,12 +2582,6 @@ intersections with the boundary.
 							{
 								display_message(ERROR_MESSAGE,"Delete failed for mc_cell");
 							}
-#if defined (OLD_CODE)
-							for (a=0;a<n_scalar_fields;a++)
-							{
-								/* The first scalar is the isosurface we are generating,
-									clipped by the other scalars. */
-#endif /* defined (OLD_CODE) */
 								a=0;
 								n_triangles2=n_triangles[a];
 								/* n_triangles[a] represents the polys before clipping,
@@ -2777,9 +2755,6 @@ intersections with the boundary.
 										x_min,x_max,y_min,y_max,z_min,z_max,mcnx,mcny,mcnz,
 										n_scalar_fields+6);
 								} /* for m < n_triangles2 */
-#if defined (OLD_CODE)
-							} /* a */
-#endif /* defined (OLD_CODE) */
 						} /* if border flag !=6 or 7*/
 					} /*if clip_flag */
 				} /*i*/

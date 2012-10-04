@@ -242,11 +242,6 @@ graphics_objects that don't come from finite_elements?
 				datum=data + component_number;
 				for (i=0;i<points_along_bar;i++)
 				{
-#if defined (OLD_CODE)
-					point=points+i;
-					normal=point+points_along_bar*points_around_bar;
-					datum=data+i;
-#endif /* defined (OLD_CODE) */
 					/* get factor ranging from 0.0 to 1.0 over extended length */
 					unit_factor=(GLfloat)i/(GLfloat)(points_along_bar-1);
 					/* get factor ranging from -1 to +1 along bar */

@@ -2496,51 +2496,6 @@ are passed to this function.
 						(*output_node_indices)[i] = i;
 					}
 				}
-
-#if defined (OLD_CODE)
-				/* work out the number of scale factor sets to output */
-				output_number_of_scale_factor_sets = 0;
-				for (j = 0; j < number_of_scale_factor_sets; j++)
-				{
-					if (scale_factor_set_in_use[j])
-					{
-						output_number_of_scale_factor_sets++;
-					}
-				}
-				/* output scale factor sets and work out scale_factor renumbering
-					information */
-				fprintf(output_file, " #Scale factor sets=%d\n",
-					output_number_of_scale_factor_sets);
-				*output_number_of_scale_factors = 0;
-				output_scale_factor_index=scale_factor_index = 0;
-				for (j = 0; j < number_of_scale_factor_sets; j++)
-				{
-					if (scale_factor_set_in_use[j])
-					{
-						fprintf(output_file," ");
-						get_FE_element_scale_factor_set_identifier(element, j,
-							&scale_factor_set_identifier);
-						get_FE_element_numbers_in_scale_factor_set(element, j,
-							&numbers_in_scale_factor_set);
-						fprintf(output_file,", #Scale factors=%d\n",
-							numbers_in_scale_factor_set);
-						/* set output scale factor indices */
-						for (i = numbers_in_scale_factor_set; 0 < i; i--)
-						{
-							(*output_scale_factor_indices)[scale_factor_index]=
-								output_scale_factor_index;
-							scale_factor_index++;
-							output_scale_factor_index++;
-						}
-						*output_number_of_scale_factors += numbers_in_scale_factor_set;
-					}
-					else
-					{
-						scale_factor_index += numbers_in_scale_factor_set;
-					}
-				}
-#endif /* defined (OLD_CODE) */
-
 				/* Write the element_interpolation */
 				indent_fprintf(output_file, indent,
 					"<element_interpolation name=\"%s\">\n",
