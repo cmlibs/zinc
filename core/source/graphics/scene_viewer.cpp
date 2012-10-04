@@ -8821,6 +8821,98 @@ scene viewer on screen.
 	return (return_code);
 }
 
+int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
+	enum Cmiss_graphics_coordinate_system coordinate_system,
+	gtMatrix *local_transformation_matrix, double *projection)
+{
+	int return_code = 1;
+	if (scene_viewer)
+	{
+		double viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		double viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		switch (coordinate_system)
+		{
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+			{
+				double sum;
+				int i, j, k;
+				for (i = 0; i < 4; i++)
+				{
+					for (j = 0; j < 4; j++)
+					{
+						sum = 0.0;
+						for (k = 0; k < 4; k++)
+						{
+							sum += scene_viewer->window_projection_matrix[k*4 + i]*scene_viewer->modelview_matrix[j*4 + k];
+						}
+						projection[i*4 + j] = sum;
+					}
+				}
+				// convert from left-handed NDC to right-handed normalised window coordinates
+				for (i = 8; i < 12; i++)
+				{
+					projection[i] = -projection[i];
+				}
+				if (coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL)
+				{
+					double sum;
+					// apply local transformation if there is one
+					if (local_transformation_matrix)
+					{
+						double world_to_ndc_projection[16];
+						memcpy(world_to_ndc_projection, projection, 16*sizeof(double));
+						for (i = 0 ; i < 4 ; i++)
+						{
+							for (j = 0 ; j < 4 ; j++)
+							{
+								sum = 0.0;
+								for (k = 0; k < 4; k++)
+								{
+									sum += world_to_ndc_projection[i*4 + k] * (*(local_transformation_matrix))[j][k];
+								}
+								projection[i*4 + j] = sum;
+							}
+						}
+					}
+				}
+				break;
+			}
+			default:
+			{
+				static double identity[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+				memcpy(projection, identity, 16*sizeof(double));
+				if (coordinate_system != CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
+				{
+					double left, right, bottom, top;
+					if (Cmiss_graphics_coordinate_system_get_viewport(
+						coordinate_system, viewport_width, viewport_height,
+						&left, &right, &bottom, &top))
+					{
+						double scale_x = 2.0 / (right - left);
+						double scale_y = 2.0 / (top - bottom);
+						projection[0] = scale_x;
+						projection[3] = -0.5*(left + right)*scale_x;
+						projection[5] = scale_y;
+						projection[7] = -0.5*(bottom + top)*scale_y;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				break;
+			}
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
 //-- Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
 //-- 	Cmiss_scene_viewer_id scene_viewer)
 //-- {

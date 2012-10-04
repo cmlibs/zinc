@@ -48,8 +48,8 @@ DESCRIPTION :
 #include "api/types/cmiss_scene_viewer_id.h"
 #include "api/types/cmiss_graphics_coordinate_system.h"
 
-int Computed_field_register_type_scene_viewer_projection(
-	struct Computed_field_package *computed_field_package, 
+int Computed_field_register_types_scene_viewer_projection(
+	struct Computed_field_package *computed_field_package,
 	struct MANAGER(Graphics_window) *graphics_window_manager);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000

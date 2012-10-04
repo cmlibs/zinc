@@ -18378,7 +18378,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (command_data->graphics_window_manager)
 			{
-				Computed_field_register_type_scene_viewer_projection(
+				Computed_field_register_types_scene_viewer_projection(
 					command_data->computed_field_package,
 					command_data->graphics_window_manager);
 			}

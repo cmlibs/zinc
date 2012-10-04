@@ -101,7 +101,7 @@ SET(APP_SRCS
     source/colour/colour_editor_wx.cpp
     source/comfile/comfile_window_wx.cpp
     source/command/command_window.cpp
-    source/computed_field/computed_field_scene_viewer_projection.cpp
+    source/computed_field/computed_field_scene_viewer_projection_app.cpp
     source/graphics/graphics_window.cpp
     source/material/material_editor_wx.cpp
     source/node/node_viewer_wx.cpp
