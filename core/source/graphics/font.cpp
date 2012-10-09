@@ -76,6 +76,9 @@ This provides a Cmgui interface to the font contexts of many types.
 #include <wx/dcmemory.h>
 #include <wx/font.h>
 #endif /* defined (WX_USER_INTERFACE) */
+#include <FTGL/ftgl.h>
+#include <ttf/font_types.h>
+
 /*
 Module types
 ------------
@@ -126,6 +129,8 @@ DESCRIPTION :
 	int manager_change_status;
 
 	int access_count;
+
+	FTFont *ftFont;
 
 #if defined (WX_USER_INTERFACE)
 	 wxFont *font_settings;
@@ -507,6 +512,8 @@ DESCRIPTION :
 		font->manager = (struct MANAGER(Graphics_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(Graphics_font);
 
+		font->ftFont = 0;
+
 		font->access_count = 0;
 
 	}
@@ -544,6 +551,10 @@ DESCRIPTION :
 		if (font->display_list_offset)
 		{
 			glDeleteLists(font->display_list_offset, font->number_of_bitmaps);
+		}
+		if (font->ftFont)
+		{
+			delete font->ftFont;
 		}
 
 		DEALLOCATE(*font_address);
@@ -593,7 +604,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 		{
 			font->first_bitmap = 0;
 			font->number_of_bitmaps = 256;
-			font->display_list_offset = glGenLists (font->number_of_bitmaps);
+//ALAN: font->display_list_offset = glGenLists (font->number_of_bitmaps);
 
 			/* Can have multiple types compiled in at the same time (X and gtk) */
 			switch (Graphics_buffer_get_type(buffer))
@@ -811,6 +822,23 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #endif /* defined (WX_USER_INTERFACE) */
 				case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 				{
+					if (font->ftFont == 0)
+					{
+						FTBitmapFont *ftFont = new FTBitmapFont(OpenSans_Regular_ttf, OpenSans_Regular_ttf_len);
+						//FTExtrudeFont *ftFont = new FTExtrudeFont(OpenSans_Regular_ttf, OpenSans_Regular_ttf_len);
+						if(ftFont->Error())
+						{
+							return_code = 0;
+						}
+						else
+						{
+							ftFont->FaceSize(15);
+							//only for extrude font
+							//ftFont->Depth(0.1);
+							font->ftFont = ftFont;
+							font->ftFont->UseDisplayList(true);
+						}
+					}
 				}break;
 				default:
 				{
@@ -832,7 +860,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 	return (return_code);
 } /* Graphics_font_compile */
 
-int Graphics_font_rendergl_text(struct Graphics_font *font, char *text)
+int Graphics_font_rendergl_text(struct Graphics_font *font, char *text,
+	float x, float y, float z)
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -845,6 +874,24 @@ DESCRIPTION :
 
 	if (font && text)
 	{
+		if (font->ftFont)
+		{
+			glRasterPos3f(x, y, z);
+			font->ftFont->Render(text);
+			//glMatrixMode(GL_MODELVIEW);
+			//glPushMatrix();
+			//font->ftFont->Render(text, -1, FTPoint(x, y, z));
+			//glPopMatrix();
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_font_rendergl_text.  "
+				"Font is being used to render text before being compiled.");
+		}
+
+#if defined (ALAN)
 		if (font->display_list_offset)
 		{
 			glBitmap(0, 0, 0, 0, font->offset_x, font->offset_y, NULL);
@@ -867,6 +914,7 @@ DESCRIPTION :
 				"Graphics_font_rendergl_text.  "
 				"Font is being used to render text before being compiled.");
 		}
+#endif
 	}
 	else
 	{

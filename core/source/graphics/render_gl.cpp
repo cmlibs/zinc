@@ -674,8 +674,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 							}
 							if (labels && *label)
 							{
-								glRasterPos3f(x, y, z);
-								Graphics_font_rendergl_text(font, *label);
+								Graphics_font_rendergl_text(font, *label, x, y, z);
 							}
 						}
 						point++;
@@ -733,8 +732,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 								glEnd();
 								if (labels && *label)
 								{
-									glRasterPos3f(x, y, z);
-									Graphics_font_rendergl_text(font, *label);
+									Graphics_font_rendergl_text(font, *label, x, y, z);
 								}
 							}
 							/* advance pointers */
@@ -821,8 +819,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 								}
 								if (labels && *label)
 								{
-									glRasterPos3f(x,y,z);
-									Graphics_font_rendergl_text(font, *label);
+									Graphics_font_rendergl_text(font, *label, x, y, z);
 								}
 								glBegin(GL_LINES);
 								glVertex3f(x,y,z);
@@ -927,8 +924,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 								z = temp_point[2];
 								if (labels && *label)
 								{
-									glRasterPos3f(x,y,z);
-									Graphics_font_rendergl_text(font, *label);
+									Graphics_font_rendergl_text(font, *label, x, y, z);
 								}
 								glBegin(GL_LINES);
 								/* x-line */
@@ -1172,10 +1168,7 @@ struct Spectrum *spectrum, struct Graphics_font *font,
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-
-								/* Default is to draw the label value near the origin */
-								glRasterPos3f(x,y,z);
-								Graphics_font_rendergl_text(font, *label);
+								Graphics_font_rendergl_text(font, *label, x, y, z);
 							}
 							/* advance pointers */
 							point++;
@@ -1392,10 +1385,9 @@ struct Graphics_font *font)
 						spectrum_renderGL_value(spectrum,material,render_data,datum);
 						datum += number_of_data_components;
 					}
-					glRasterPos3f(x,y,z);
 					if (*text_string)
 					{
-						Graphics_font_rendergl_text(font, *text_string);
+						Graphics_font_rendergl_text(font, *text_string, x, y, z);
 					}
 					text_string++;
 				}

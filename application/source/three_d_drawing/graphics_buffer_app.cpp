@@ -1065,7 +1065,7 @@ void Graphics_buffer_create_buffer_wx(
 				wxTestingBuffer *testingbuffer;
 				struct Graphics_buffer_app *temp_buffer;
 				temp_buffer = CREATE(Graphics_buffer_app)(graphics_buffer_package,
-					GRAPHICS_BUFFER_WX_TYPE, GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE);
+					GRAPHICS_BUFFER_ONSCREEN_TYPE, GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE);
 				temp_buffer->parent = temp;
 				temp_buffer->core_buffer->attrib_list = NULL;
 				testingbuffer = new wxTestingBuffer(temp, temp_buffer,
@@ -4323,7 +4323,7 @@ Graphics_buffer_app *create_Graphics_buffer_wx(
 
 	ENTER(create_Graphics_buffer_wx);
 	buffer = CREATE(Graphics_buffer_app)(graphics_buffer_package,
-		GRAPHICS_BUFFER_WX_TYPE, buffering_mode, stereo_mode);
+		GRAPHICS_BUFFER_ONSCREEN_TYPE, buffering_mode, stereo_mode);
 	if (buffer != NULL)
 	{
 		 Graphics_buffer_create_buffer_wx(buffer, graphics_buffer_package,
@@ -4420,7 +4420,7 @@ DESCRIPTION :
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				 if (buffer->canvas)
 				 {
@@ -4552,7 +4552,7 @@ Returns the visual id used by the graphics buffer.
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 #if defined (__WXGTK__)
 				*visual_id = (int)((XVisualInfo*)buffer->canvas->m_vi)
@@ -4601,7 +4601,7 @@ Returns the depth of the colour buffer used by the graphics buffer.
 		switch (buffer->core_buffer->type)
 		{
 #if defined (WX_USER_INTERFACE)
-			 case GRAPHICS_BUFFER_WX_TYPE:
+			 case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				 GLint colour_buffer_bits;
 				 glGetIntegerv(GL_RED_BITS, &colour_buffer_bits);
@@ -4702,7 +4702,7 @@ int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer_app *buffer,
 		switch (buffer->core_buffer->type)
 		{
 #if defined (WX_USER_INTERFACE)
-			 case GRAPHICS_BUFFER_WX_TYPE:
+			 case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 
 			} break;
@@ -4785,7 +4785,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 		switch (buffer->core_buffer->type)
 		{
 #if defined (WX_USER_INTERFACE)
-			 case GRAPHICS_BUFFER_WX_TYPE:
+			 case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 
 			} break;
@@ -4953,7 +4953,7 @@ Returns the buffering mode used by the graphics buffer.
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 				return_code = 1;
@@ -5066,7 +5066,7 @@ Returns the stereo mode used by the graphics buffer.
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				*stereo_mode = GRAPHICS_BUFFER_MONO;
 				return_code = 1;
@@ -5136,7 +5136,7 @@ DESCRIPTION :
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				buffer->canvas->SwapBuffers();
 				return_code = 1;
@@ -5249,7 +5249,7 @@ int Graphics_buffer_get_width(struct Graphics_buffer_app *buffer)
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				int height;
 				buffer->canvas->GetClientSize(&width, &height);
@@ -5294,7 +5294,7 @@ int Graphics_buffer_set_width(struct Graphics_buffer_app *buffer, int width)
 		switch (buffer->core_buffer->type)
 		{
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				int old_width, height;
 				buffer->canvas->GetClientSize(&old_width, &height);
@@ -5371,7 +5371,7 @@ int Graphics_buffer_get_height(struct Graphics_buffer_app *buffer)
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				int width;
 				buffer->canvas->GetClientSize(&width, &height);
@@ -5417,7 +5417,7 @@ int Graphics_buffer_set_height(struct Graphics_buffer_app *buffer, int height)
 		switch (buffer->core_buffer->type)
 		{
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				int width, old_height;
 				buffer->canvas->GetClientSize(&width, &old_height);
@@ -5486,7 +5486,7 @@ into unmanaged or invisible widgets.
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				return_code = 1;
 			} break;
@@ -5553,7 +5553,7 @@ Activates the graphics <buffer>.
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WX_TYPE:
+			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
 				return_code = 1;
 			} break;

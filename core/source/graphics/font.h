@@ -146,7 +146,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required as the Win32 API requires a window context.
 ==============================================================================*/
 
-int Graphics_font_rendergl_text(struct Graphics_font *font, char *text);
+int Graphics_font_rendergl_text(struct Graphics_font *font, char *text,
+	float x, float y, float z);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
