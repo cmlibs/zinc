@@ -47,19 +47,6 @@ Implements computed fields which interface to finite element fields.
 #include "api/cmiss_field_finite_element.h"
 
 /*
-Global types
-------------
-*/
-
-struct Computed_field_finite_element_package;
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Private package
-==============================================================================*/
-
-/*
 Global functions
 ----------------
 */

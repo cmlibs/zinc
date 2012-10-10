@@ -371,14 +371,12 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 file_open_data->file_name=duplicate_string(file_name.mb_str(wxConvUTF8));
 #if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
-		 char *first = NULL;
-		 char *last = NULL;
 		 char *temp_directory_name,*directory_name, *temp_name;
 		 int lastlength;
 		 filename = file_open_data->file_name;
 		 directory_name = NULL;
-		 first = strchr(filename, '\\');
-		 last = strrchr(filename, '\\');
+		 const char *first = strchr(filename, '\\');
+		 const char *last = strrchr(filename, '\\');
 		 lastlength = last - filename +1;
 		 length = first - filename +1;
 		 if ((length>0))
@@ -398,7 +396,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					 DEALLOCATE(drive_name);
 					 if (length == lastlength)
 					 {
-							temp_name = &filename[lastlength];
+							temp_name = const_cast<char *>(&filename[lastlength]);
 					 }
 				}
 				if (lastlength>length)
@@ -417,7 +415,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 										strcat(temp_string, "\'");
 										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
-										temp_name=&filename[lastlength];
+										temp_name=const_cast<char *>(&filename[lastlength]);
 										if (file_open_data->operation)
 										{
 											(file_open_data->operation)((temp_name)
@@ -649,13 +647,11 @@ specified file.
 		file_open_data->file_name=duplicate_string(file_name.mb_str(wxConvUTF8));
 #if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
-		 char *first = NULL;
-		 char *last = NULL;
-		 char *temp_directory_name,*directory_name, *temp_name, *filename;
+		 char *temp_directory_name,*directory_name, *temp_name;
 		 int lastlength, length;
-		 filename = file_open_data->file_name;
-		 first = strchr(filename, '\\');
-		 last = strrchr(filename, '\\');
+		 const char *filename = file_open_data->file_name;
+		 const char *first = strchr(filename, '\\');
+		 const char *last = strrchr(filename, '\\');
 		 lastlength = last - filename +1;
 		 length = first - filename +1;
 		 if ((length>0))
@@ -675,7 +671,7 @@ specified file.
 					 DEALLOCATE(drive_name);
 					 if (length == lastlength)
 					 {
-							temp_name = &filename[lastlength];
+							temp_name = const_cast<char *>(&filename[lastlength]);
 					 }
 				}
 				if (lastlength>length)
@@ -694,7 +690,7 @@ specified file.
 										strcat(temp_string, "\'");
 										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
-										temp_name=&filename[lastlength];
+										temp_name = const_cast<char *>(&filename[lastlength]);
 										DEALLOCATE(temp_string);
 								 }
 							}

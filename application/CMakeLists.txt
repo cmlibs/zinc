@@ -10,6 +10,10 @@ OPTION( WX_USER_INTERFACE "use wx for interface." )
 OPTION( GTK_USER_INTERFACE "use gtk for interface." )
 OPTION( WIN32_USER_INTERFACE "use win32 for interface." )
 
+IF(WIN32)
+	SET( WIN32_SYSTEM TRUE )
+ENDIF()
+
 IF( WX_USER_INTERFACE )
     SET( CMAKE_PREFIX_PATH ${wxWidgets_DIR} )
     FIND_PACKAGE( wxWidgets QUIET COMPONENTS xrc adv html gl xml core base )

@@ -13,5 +13,7 @@
 
 #cmakedefine USE_PERL_INTERPRETER
 
+#cmakedefine WIN32_SYSTEM
+
 #endif
 

@@ -1002,8 +1002,7 @@ FE_field being made and/or modified.
 
 
 
-Computed_field_finite_element_package *
-Computed_field_register_types_finite_element(
+int Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2008
@@ -1012,7 +1011,7 @@ DESCRIPTION :
 This function registers the finite_element related types of Computed_fields.
 ==============================================================================*/
 {
-	Computed_field_finite_element_package *return_ptr = 0;
+	int return_code;
 	Computed_field_finite_element_package
 		*computed_field_finite_element_package =
 		new Computed_field_finite_element_package;
@@ -1020,37 +1019,37 @@ This function registers the finite_element related types of Computed_fields.
 	ENTER(Computed_field_register_types_finite_element);
 	if (computed_field_package)
 	{
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,
 			define_Computed_field_type_finite_element,
 			computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cmiss_number_type_string,
 			define_Computed_field_type_cmiss_number,
 			computed_field_finite_element_package);
 #if defined (COMPUTED_FIELD_ACCESS_COUNT)
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_access_count_type_string,
 			define_Computed_field_type_access_count,
 			computed_field_finite_element_package);
 #endif /* defined (COMPUTED_FIELD_ACCESS_COUNT) */
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_xi_coordinates_type_string,
 			define_Computed_field_type_xi_coordinates,
 			computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_node_value_type_string,
 			define_Computed_field_type_node_value,
 			computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_find_mesh_location_type_string,
 			define_Computed_field_type_find_mesh_location,
 			computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_embedded_type_string,
 			define_Computed_field_type_embedded,
 			computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
+		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_basis_derivative_type_string,
 			define_Computed_field_type_basis_derivative,
 			computed_field_finite_element_package);
@@ -1059,9 +1058,9 @@ This function registers the finite_element related types of Computed_fields.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_register_types_finite_element.  Invalid argument(s)");
-		return_ptr = (Computed_field_finite_element_package *)NULL;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (return_ptr);
+	return (return_code);
 } /* Computed_field_register_types_finite_element */

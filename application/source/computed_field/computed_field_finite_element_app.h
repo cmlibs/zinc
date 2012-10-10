@@ -1,6 +1,5 @@
 
-struct Computed_field_finite_element_package *
-	Computed_field_register_types_finite_element(
+int Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 24 July 2008
