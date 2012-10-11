@@ -58,7 +58,7 @@ extern "C" {
  */
 enum Cmiss_time_keeper_play_direction
 {
-	CMISS_TIME_KEEPER_PLAY_INVALD = 0,
+	CMISS_TIME_KEEPER_PLAY_INVALID = 0,
 	CMISS_TIME_KEEPER_PLAY_FORWARD = 1,
 	CMISS_TIME_KEEPER_PLAY_BACKWARD = 2
 };

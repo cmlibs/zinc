@@ -47,7 +47,7 @@
  */
 enum Cmiss_graphics_render_type
 {
-	CMISS_GRAPHICS_RENDER_TYPE_INVALD = 0,
+	CMISS_GRAPHICS_RENDER_TYPE_INVALID = 0,
 	CMISS_GRAPHICS_RENDER_TYPE_SHADED = 1, /*!< Draw colour filled vertexes. */
 	CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME = 2/*!< Draw boundary of each vertex. */
 };
