@@ -48,26 +48,33 @@ namespace Zn
 
 class FieldCoordinateTransformation: public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldCoordinateTransformation FieldModule::createCoordinateTransformation(
+		Field& sourceField);
 public:
 
 	FieldCoordinateTransformation() : Field(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
 
 class FieldVectorCoordinateTransformation: public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldVectorCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTransformation(
+		Field& vectorField, Field& coordinateField);
+
 public:
 
 	FieldVectorCoordinateTransformation() : Field(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldVectorCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };

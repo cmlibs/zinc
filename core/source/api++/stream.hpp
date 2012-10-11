@@ -99,9 +99,9 @@ class StreamResourceFile : public StreamResource
 
 public:
 
-	// takes ownership of C-style region reference
 	StreamResourceFile(StreamResource& streamResource) :
-		StreamResource(streamResource)
+		StreamResource(reinterpret_cast<Cmiss_stream_resource_id>(
+			Cmiss_stream_resource_cast_file(streamResource.getId())))
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -122,9 +122,9 @@ class StreamResourceMemory : public StreamResource
 
 public:
 
-	// takes ownership of C-style region reference
 	StreamResourceMemory(StreamResource& streamResource) :
-		StreamResource(streamResource)
+		StreamResource(reinterpret_cast<Cmiss_stream_resource_id>(
+			Cmiss_stream_resource_cast_memory(streamResource.getId())))
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it

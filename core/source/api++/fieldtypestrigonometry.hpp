@@ -48,92 +48,114 @@ namespace Zn
 
 class FieldSin : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSin(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldSin FieldModule::createSin(Field& sourceField);
+
 public:
 
 	FieldSin() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSin(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldCos : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCos(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldCos FieldModule::createCos(Field& sourceField);
+
 public:
 
 	FieldCos() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCos(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldTan : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTan(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldTan FieldModule::createTan(Field& sourceField);
+
 public:
 
 	FieldTan() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldAsin : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAsin(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldAsin FieldModule::createAsin(Field& sourceField);
+
 public:
 
 	FieldAsin() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAsin(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldAcos : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAcos(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldAcos FieldModule::createAcos(Field& sourceField);
+
 public:
 
 	FieldAcos() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAcos(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldAtan : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAtan(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldAtan FieldModule::createAtan(Field& sourceField);
+
 public:
 
 	FieldAtan() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAtan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldAtan2 : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAtan2(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
 public:
 
 	FieldAtan2() : Field(0)
 	{	}
 
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAtan2(Cmiss_field_id field_id) : Field(field_id)
-	{	}
+	friend FieldAtan2 FieldModule::createAtan2(Field& sourceField1,
+		Field& sourceField2);
 
 };
 

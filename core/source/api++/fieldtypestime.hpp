@@ -48,26 +48,33 @@ namespace Zn
 
 class FieldTimeLookup : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTimeLookup(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField,
+		Field& timeField);
+
 public:
 
 	FieldTimeLookup() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeLookup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldTimeValue : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTimeValue(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper);
+
 public:
 
 	FieldTimeValue() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeValue(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

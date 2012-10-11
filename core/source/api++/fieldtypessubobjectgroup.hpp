@@ -50,13 +50,16 @@ namespace Zn
 
 class FieldElementGroup : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldElementGroup(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldElementGroup FieldModule::createElementGroup(Mesh& mesh);
+
 public:
 
 	FieldElementGroup() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldElementGroup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -77,13 +80,16 @@ public:
 
 class FieldNodeGroup : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeGroup(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset);
+
 public:
 
 	FieldNodeGroup() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeGroup(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -111,7 +117,6 @@ inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
 {
 	return FieldNodeGroup(Cmiss_field_module_create_node_group(id, nodeset.getId()));
 }
-
 
 }  // namespace Zn
 

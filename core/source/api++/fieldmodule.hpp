@@ -73,6 +73,7 @@ class FieldEmbedded;
 class FieldFindMeshLocation;
 class FieldNodeValue;
 class FieldStoredMeshLocation;
+class FieldStoredString;
 class FieldGroup;
 class FieldImage;
 class FieldAnd;
@@ -270,6 +271,8 @@ public:
 		Node::ValueType valueType, int versionNumber);
 
 	FieldStoredMeshLocation createStoredMeshLocation(Mesh& mesh);
+
+	FieldStoredString createStoredString();
 
 	FieldGroup createGroup();
 

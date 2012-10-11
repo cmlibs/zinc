@@ -48,52 +48,67 @@ namespace Zn
 
 class FieldNodesetSum : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetSum(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodesetSum FieldModule::createNodesetSum(Field& sourceField, Nodeset& nodeset);
+
 public:
 
 	FieldNodesetSum() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSum(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldNodesetMean : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetMean(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodesetMean FieldModule::createNodesetMean(Field& sourceField,
+		Nodeset& nodeset);
+
 public:
 
 	FieldNodesetMean() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMean(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldNodesetSumSquares : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetSumSquares(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodesetSumSquares FieldModule::createNodesetSumSquares(
+		Field& sourceField, Nodeset& nodeset);
+
 public:
 
 	FieldNodesetSumSquares() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSumSquares(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldNodesetMeanSquares : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetMeanSquares(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
+		Field& sourceField, Nodeset& nodeset);
+
 public:
 
 	FieldNodesetMeanSquares() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMeanSquares(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

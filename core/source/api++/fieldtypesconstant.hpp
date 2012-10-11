@@ -48,26 +48,32 @@ namespace Zn
 
 class FieldConstant : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldConstant(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldConstant FieldModule::createConstant(int numberOfValues, double *values);
+
 public:
 
 	FieldConstant() : Field(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConstant(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
 
 class FieldStringConstant : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStringConstant(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldStringConstant FieldModule::createStringConstant(const char *stringConstant);
+
 public:
 
 	FieldStringConstant() : Field(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStringConstant(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };

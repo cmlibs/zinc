@@ -46,92 +46,21 @@
 
 namespace Zn
 {
-
-class StreamInformationImage : public StreamInformation
-{
-
-public:
-
-	StreamInformationImage(StreamInformation& streamInformation) :
-		StreamInformation(streamInformation)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamInformationImage(Cmiss_stream_information_image_id stream_information_image_id) :
-		StreamInformation(reinterpret_cast<Cmiss_stream_information_id>(stream_information_image_id))
-	{ }
-
-	enum ImageAttribute
-	{
-		IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
-		IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
-		IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT,
-		IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY,
-	};
-
-	enum ImageFileFormat
-	{
-		IMAGE_FILE_FORMAT_INVALID = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID,
-		IMAGE_FILE_FORMAT_BMP = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP,
-		IMAGE_FILE_FORMAT_DICOM = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM,
-		IMAGE_FILE_FORMAT_JPG = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG,
-		IMAGE_FILE_FORMAT_GIF = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF,
-		IMAGE_FILE_FORMAT_PNG = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG,
-		IMAGE_FILE_FORMAT_SGI = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI,
-		IMAGE_FILE_FORMAT_TIFF = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF,
-	};
-
-	enum ImagePixelFormat
-	{
-		IMAGE_PIXEL_FORMAT_INVALID = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_INVALID,
-		IMAGE_PIXEL_FORMAT_LUMINANCE = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE,
-		IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
-		IMAGE_PIXEL_FORMAT_RGB = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB,
-		IMAGE_PIXEL_FORMAT_RGBA = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA,
-		IMAGE_PIXEL_FORMAT_ABGR = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR,
-		IMAGE_PIXEL_FORMAT_BGR = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR,
-	};
-
-	int setAttributeInteger(ImageAttribute imageAttribute, int value)
-	{
-		return Cmiss_stream_information_image_set_attribute_integer(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
-	}
-
-	int setAttributeReal(ImageAttribute imageAttribute, double value)
-	{
-		return Cmiss_stream_information_image_set_attribute_real(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
-	}
-
-	int setFileFormat(ImageFileFormat imageFileFormat)
-	{
-		return Cmiss_stream_information_image_set_file_format(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_file_format>(imageFileFormat));
-	}
-
-	int setPixelFormat(ImagePixelFormat imagePixelFormat)
-	{
-		return Cmiss_stream_information_image_set_pixel_format(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_pixel_format>(imagePixelFormat));
-	}
-
-};
+class StreamInformationImage;
 
 class FieldImage : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImage(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldImage FieldModule::createImage(Field& domain_field, Field& source_field);
+
 public:
 
 	FieldImage() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldImage(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldImage(Cmiss_field_image_id field_image_id) :
@@ -268,15 +197,94 @@ public:
 			reinterpret_cast<Cmiss_field_image_id>(id), property);
 	}
 
-	StreamInformationImage createStreamInformation()
+	StreamInformationImage createStreamInformation();
+
+};
+
+class StreamInformationImage : public StreamInformation
+{
+private:
+	StreamInformationImage(StreamInformation& streamInformation) :
+		StreamInformation(streamInformation)
+	{ }
+
+	friend StreamInformationImage FieldImage::createStreamInformation();
+
+public:
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit StreamInformationImage(Cmiss_stream_information_image_id stream_information_image_id) :
+		StreamInformation(reinterpret_cast<Cmiss_stream_information_id>(stream_information_image_id))
+	{ }
+
+	enum ImageAttribute
 	{
-		return StreamInformationImage(
-			reinterpret_cast<Cmiss_stream_information_image_id>(
-				Cmiss_field_image_create_stream_information(
-					reinterpret_cast<Cmiss_field_image_id>(id))));
+		IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
+		IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
+		IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT,
+		IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY,
+	};
+
+	enum ImageFileFormat
+	{
+		IMAGE_FILE_FORMAT_INVALID = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID,
+		IMAGE_FILE_FORMAT_BMP = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP,
+		IMAGE_FILE_FORMAT_DICOM = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM,
+		IMAGE_FILE_FORMAT_JPG = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG,
+		IMAGE_FILE_FORMAT_GIF = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF,
+		IMAGE_FILE_FORMAT_PNG = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG,
+		IMAGE_FILE_FORMAT_SGI = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI,
+		IMAGE_FILE_FORMAT_TIFF = CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF,
+	};
+
+	enum ImagePixelFormat
+	{
+		IMAGE_PIXEL_FORMAT_INVALID = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_INVALID,
+		IMAGE_PIXEL_FORMAT_LUMINANCE = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE,
+		IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
+		IMAGE_PIXEL_FORMAT_RGB = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB,
+		IMAGE_PIXEL_FORMAT_RGBA = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA,
+		IMAGE_PIXEL_FORMAT_ABGR = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR,
+		IMAGE_PIXEL_FORMAT_BGR = CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR,
+	};
+
+	int setAttributeInteger(ImageAttribute imageAttribute, int value)
+	{
+		return Cmiss_stream_information_image_set_attribute_integer(
+			reinterpret_cast<Cmiss_stream_information_image_id>(id),
+			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
+	}
+
+	int setAttributeReal(ImageAttribute imageAttribute, double value)
+	{
+		return Cmiss_stream_information_image_set_attribute_real(
+			reinterpret_cast<Cmiss_stream_information_image_id>(id),
+			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
+	}
+
+	int setFileFormat(ImageFileFormat imageFileFormat)
+	{
+		return Cmiss_stream_information_image_set_file_format(
+			reinterpret_cast<Cmiss_stream_information_image_id>(id),
+			static_cast<Cmiss_stream_information_image_file_format>(imageFileFormat));
+	}
+
+	int setPixelFormat(ImagePixelFormat imagePixelFormat)
+	{
+		return Cmiss_stream_information_image_set_pixel_format(
+			reinterpret_cast<Cmiss_stream_information_image_id>(id),
+			static_cast<Cmiss_stream_information_image_pixel_format>(imagePixelFormat));
 	}
 
 };
+
+inline StreamInformationImage FieldImage::createStreamInformation()
+{
+	return StreamInformationImage(
+		reinterpret_cast<Cmiss_stream_information_image_id>(
+			Cmiss_field_image_create_stream_information(
+				reinterpret_cast<Cmiss_field_image_id>(id))));
+}
 
 inline FieldImage FieldModule::createImage(Field& domain_field, Field& source_field)
 {

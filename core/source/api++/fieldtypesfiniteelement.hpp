@@ -49,14 +49,18 @@ namespace Zn
 
 class FieldFiniteElement : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFiniteElement(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldFiniteElement FieldModule::createFiniteElement(
+		int numberOfComponents);
+
 public:
 
 	FieldFiniteElement() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldFiniteElement(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	FieldFiniteElement(Field& field) :
 		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_finite_element(field.getId())))
@@ -66,27 +70,35 @@ public:
 
 class FieldEmbedded : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEmbedded(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldEmbedded FieldModule::createEmbedded(Field& sourceField,
+		Field& embeddedLocationField);
+
 public:
 
 	FieldEmbedded() : Field(0)
 	{ }
 
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEmbedded(Cmiss_field_id field_id) : Field(field_id)
-	{	}
-
 };
 
 class FieldFindMeshLocation : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFindMeshLocation(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldFindMeshLocation FieldModule::createFindMeshLocation(
+		Field& sourceField, Field& meshField, Mesh& mesh);
+
 public:
 
 	FieldFindMeshLocation() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldFindMeshLocation(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	FieldFindMeshLocation(Field& field) :
 		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_find_mesh_location(field.getId())))
@@ -120,27 +132,34 @@ public:
 
 class FieldNodeValue : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeValue(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodeValue FieldModule::createNodeValue(Field& sourceField,
+		Node::ValueType valueType, int versionNumber);
+
 public:
 
 	FieldNodeValue() : Field(0)
 	{ }
 
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeValue(Cmiss_field_id field_id) : Field(field_id)
-	{	}
-
 };
 
 class FieldStoredMeshLocation : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredMeshLocation(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh& mesh);
+
 public:
 
 	FieldStoredMeshLocation() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStoredMeshLocation(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	FieldStoredMeshLocation(Field& field) :
 		Field(reinterpret_cast<Cmiss_field_id>(
@@ -150,14 +169,17 @@ public:
 
 class FieldStoredString : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredString(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldStoredString FieldModule::createStoredString();
+
 public:
 
 	FieldStoredString() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStoredString(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	FieldStoredString(Field& field) :
 		Field(reinterpret_cast<Cmiss_field_id>(
@@ -196,6 +218,11 @@ inline FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh& mesh)
 {
 	return FieldStoredMeshLocation(Cmiss_field_module_create_stored_mesh_location(id,
 		mesh.getId()));
+}
+
+inline FieldStoredString FieldModule::createStoredString()
+{
+	return FieldStoredString(Cmiss_field_module_create_stored_string(id));
 }
 
 }  // namespace Zn

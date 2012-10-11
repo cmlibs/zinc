@@ -186,10 +186,10 @@ public:
 		return Cmiss_scene_viewer_set_scene(id, scene.getId());
 	}
 
-	int redrawNow()
-	{
-		return Cmiss_scene_viewer_redraw_now(id);
-	}
+//	int redrawNow()
+//	{
+//		return Cmiss_scene_viewer_redraw_now(id);
+//	}
 
 	int setGraphicsBufferWidth(int width)
 	{
@@ -211,10 +211,10 @@ public:
 		return SceneViewerInput(Cmiss_scene_viewer_get_input(id));
 	}
 
-	int defaultInputCallback(SceneViewerInput input)
-	{
-		return Cmiss_scene_viewer_default_input_callback(id, input.getId());
-	}
+//	int defaultInputCallback(SceneViewerInput input)
+//	{
+//		return Cmiss_scene_viewer_default_input_callback(id, input.getId());
+//	}
 
 };
 

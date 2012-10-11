@@ -48,93 +48,116 @@ namespace Zn
 
 class FieldDeterminant : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDeterminant(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldDeterminant FieldModule::createDeterminant(Field& sourceField);
+
 public:
 
 	FieldDeterminant() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDeterminant(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldEigenvalues : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEigenvalues(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldEigenvalues FieldModule::createEigenvalues(Field& sourceField);
+
 public:
 
 	FieldEigenvalues() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEigenvalues(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldEigenvectors : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEigenvectors(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldEigenvectors FieldModule::createEigenvectors(
+		FieldEigenvalues& eigenValuesField);
+
 public:
 
 	FieldEigenvectors() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEigenvectors(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldMatrixInvert : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMatrixInvert(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldMatrixInvert FieldModule::createMatrixInvert(Field& sourceField);
+
 public:
 
 	FieldMatrixInvert() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMatrixInvert(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldMatrixMultiply : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMatrixMultiply(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldMatrixMultiply FieldModule::createMatrixMultiply(int numberOfRows,
+		Field sourceField1, Field& sourceField2);
+
 public:
 
 	FieldMatrixMultiply() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMatrixMultiply(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldProjection : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldProjection(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldProjection FieldModule::createProjection(Field& sourceField,
+		Field& projectionMatrixField);
+
 public:
 
 	FieldProjection() : Field(0)
-	{	}
-
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldProjection(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldTranspose : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTranspose(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldTranspose FieldModule::createTranspose(int sourceNumberOfRows,
+		Field& sourceField);
+
 public:
 
 	FieldTranspose() : Field(0)
-	{	}
-
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTranspose(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

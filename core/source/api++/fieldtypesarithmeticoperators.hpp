@@ -48,13 +48,16 @@ namespace Zn
 
 class FieldAdd : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAdd(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldAdd FieldModule::createAdd(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldAdd() : Field(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAdd(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
 };
@@ -67,27 +70,33 @@ inline FieldAdd operator+(Field& operand1, Field& operand2)
 
 class FieldPower : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldPower(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldPower FieldModule::createPower(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldPower() : Field(0)
 	{ }
 
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldPower(Cmiss_field_id field_id) : Field(field_id)
-	{	}
-
 };
 
 class FieldMultiply : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMultiply(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldMultiply FieldModule::createMultiply(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldMultiply() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMultiply(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 };
 
@@ -99,13 +108,16 @@ inline FieldMultiply operator*(Field& operand1, Field& operand2)
 
 class FieldDivide : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDivide(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldDivide FieldModule::createDivide(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldDivide() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDivide(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -118,12 +130,16 @@ inline FieldDivide operator/(Field& operand1, Field& operand2)
 
 class FieldSubtract : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSubtract(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldSubtract FieldModule::createSubtract(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldSubtract() : Field(0)
-	{	}
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSubtract(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -136,26 +152,32 @@ inline FieldSubtract operator-(Field& operand1, Field& operand2)
 
 class FieldSumComponents : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldSumComponents FieldModule::FieldModule::createSumComponents(Field& sourceField, double *weights);
+
 public:
 
 	FieldSumComponents() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldLog : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldLog(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldLog FieldModule::createLog(Field& sourceField);
+
 public:
 
 	FieldLog() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldLog(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -168,13 +190,16 @@ inline FieldLog log(Field& sourceField)
 
 class FieldSqrt : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSqrt(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldSqrt FieldModule::createSqrt(Field& sourceField);
+
 public:
 
 	FieldSqrt() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSqrt(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -187,13 +212,16 @@ inline FieldSqrt sqrt(Field& sourceField)
 
 class FieldExp : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldExp(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldExp FieldModule::createExp(Field& sourceField);
+
 public:
 
 	FieldExp() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldExp(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -206,13 +234,16 @@ inline FieldExp exp(Field& sourceField)
 
 class FieldAbs : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAbs(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldAbs FieldModule::createAbs(Field& sourceField);
+
 public:
 
 	FieldAbs() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAbs(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

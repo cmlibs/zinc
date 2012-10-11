@@ -48,13 +48,17 @@ namespace Zn
 
 class FieldAnd : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldAnd(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldAnd FieldModule::createAnd(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldAnd() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAnd(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -67,26 +71,34 @@ inline FieldAnd operator&&(Field& operand1, Field& operand2)
 
 class FieldEqualTo : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEqualTo(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldEqualTo FieldModule::createEqualTo(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldEqualTo() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEqualTo(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldGreaterThan : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGreaterThan(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldGreaterThan FieldModule::createGreaterThan(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldGreaterThan() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGreaterThan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -99,13 +111,16 @@ inline FieldGreaterThan operator>(Field& operand1, Field& operand2)
 
 class FieldLessThan : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldLessThan(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldLessThan FieldModule::createLessThan(Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldLessThan() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldLessThan(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -118,13 +133,17 @@ inline FieldLessThan operator<(Field& operand1, Field& operand2)
 
 class FieldOr : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldOr(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldOr FieldModule::createOr(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldOr() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldOr(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -137,13 +156,16 @@ inline FieldOr operator||(Field& operand1, Field& operand2)
 
 class FieldNot : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNot(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNot FieldModule::createNot(Field& sourceField);
+
 public:
 
 	FieldNot() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNot(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
@@ -156,13 +178,17 @@ inline FieldNot operator!(Field& operand)
 
 class FieldXor : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldXor(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldXor FieldModule::createXor(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldXor() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldXor(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

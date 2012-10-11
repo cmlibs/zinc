@@ -48,14 +48,17 @@ namespace Zn
 
 class FieldIf : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIf(Cmiss_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
+
 public:
 
 	FieldIf() : Field(0)
 	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIf(Cmiss_field_id field_id) : Field(field_id)
-	{ }
 
 };
 

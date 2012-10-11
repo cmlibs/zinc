@@ -48,52 +48,69 @@ namespace Zn
 
 class FieldCrossProduct : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldCrossProduct FieldModule::createCrossProduct(int dimension,
+		Field* sourceFields);
+
+	friend FieldCrossProduct FieldModule::createCrossProduct3D(
+		Field& sourceField1, Field& sourceField2);
+
 public:
 
 	FieldCrossProduct() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldDotProduct : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDotProduct(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldDotProduct FieldModule::createDotProduct(Field& sourceField1,
+		Field& sourceField2);
+
 public:
 
 	FieldDotProduct() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDotProduct(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldMagnitude : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMagnitude(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldMagnitude FieldModule::createMagnitude(Field& sourceField);
+
 public:
 
 	FieldMagnitude() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMagnitude(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldNormalise : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNormalise(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNormalise FieldModule::createNormalise(Field& sourceField);
+
 public:
 
 	FieldNormalise() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNormalise(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };

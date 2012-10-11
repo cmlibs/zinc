@@ -52,14 +52,17 @@ namespace Zn
 
 class FieldGroup : public Field
 {
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGroup(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldGroup FieldModule::createGroup();
+
 public:
 
 	FieldGroup() : Field(0)
 	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGroup(Cmiss_field_id field_id) : Field(field_id)
-	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldGroup(Cmiss_field_group_id field_group_id) :

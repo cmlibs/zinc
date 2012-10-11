@@ -49,39 +49,53 @@ namespace Zn
 
 class FieldIdentity : public Field
 {
+
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIdentity(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldIdentity FieldModule::createIdentity(Field& sourceField);
+
 public:
 
 	FieldIdentity() : Field(0)
-	{	}
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIdentity(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
 };
 
 class FieldComponent : public Field
 {
+
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldComponent(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex);
+
 public:
 
 	FieldComponent() : Field(0)
 	{	}
 
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldComponent(Cmiss_field_id field_id) : Field(field_id)
-	{	}
+
 
 };
 
 class FieldConcatenate : public Field
 {
-public:
-
-	FieldConcatenate() : Field(0)
-	{	}
+private:
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldConcatenate(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldConcatenate FieldModule::createConcatenate(int numberOfSourceFields, Field *sourceFields);
+
+public:
+
+	FieldConcatenate() : Field(0)
 	{	}
 
 };
