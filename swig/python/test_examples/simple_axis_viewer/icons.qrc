@@ -1,7 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file>axes.png</file>
-    <file>cmiss_icon.ico</file>
-    <file>configure_icon.png</file>
-  </qresource>
-</RCC>
