@@ -1,0 +1,44 @@
+
+# Defines IMAGE_PROCESSING_SRCS
+
+SET( IMAGE_PROCESSING_SRCS
+	source/image_processing/computed_field_image_resample.cpp )
+SET( IMAGE_PROCESSING_HDRS
+	source/image_processing/computed_field_image_resample.h )
+
+IF( USE_ITK )
+	SET( IMAGE_PROCESSING_SRCS ${IMAGE_PROCESSING_SRCS}
+		source/image_processing/computed_field_threshold_image_filter.cpp
+		source/image_processing/computed_field_binary_threshold_image_filter.cpp
+		source/image_processing/computed_field_canny_edge_detection_filter.cpp
+		source/image_processing/computed_field_mean_image_filter.cpp
+		source/image_processing/computed_field_sigmoid_image_filter.cpp
+		source/image_processing/computed_field_discrete_gaussian_image_filter.cpp
+		source/image_processing/computed_field_curvature_anisotropic_diffusion_image_filter.cpp
+		source/image_processing/computed_field_derivative_image_filter.cpp
+		source/image_processing/computed_field_rescale_intensity_image_filter.cpp
+		source/image_processing/computed_field_connected_threshold_image_filter.cpp
+		source/image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp
+		source/image_processing/computed_field_fast_marching_image_filter.cpp
+		source/image_processing/computed_field_binary_dilate_image_filter.cpp
+		source/image_processing/computed_field_binary_erode_image_filter.cpp
+		source/image_processing/computed_field_histogram_image_filter.cpp
+		source/image_processing/computed_field_image_filter.cpp )
+	SET( IMAGE_PROCESSING_HDRS ${IMAGE_PROCESSING_HDRS}
+		source/image_processing/computed_field_binary_dilate_image_filter.h
+		source/image_processing/computed_field_binary_erode_image_filter.h
+		source/image_processing/computed_field_binary_threshold_image_filter.h
+		source/image_processing/computed_field_canny_edge_detection_filter.h
+		source/image_processing/computed_field_connected_threshold_image_filter.h
+		source/image_processing/computed_field_curvature_anisotropic_diffusion_image_filter.h
+		source/image_processing/computed_field_derivative_image_filter.h
+		source/image_processing/computed_field_discrete_gaussian_image_filter.h
+		source/image_processing/computed_field_fast_marching_image_filter.h
+		source/image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h
+		source/image_processing/computed_field_histogram_image_filter.h
+		source/image_processing/computed_field_image_filter.h
+		source/image_processing/computed_field_mean_image_filter.h
+		source/image_processing/computed_field_rescale_intensity_image_filter.h
+		source/image_processing/computed_field_sigmoid_image_filter.h
+		source/image_processing/computed_field_threshold_image_filter.h )
+ENDIF( USE_ITK )

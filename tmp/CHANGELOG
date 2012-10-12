@@ -1,0 +1,363 @@
+# **************************************************************************
+# FILE : CHANGELOG
+#
+# LAST MODIFIED : 18 Oct 2011
+# ==========================================================================
+
+This software is the cmgui part of CMISS.
+It is released under the Mozilla Public License v1.1
+
+Further information, help pages, a tracker and a wiki is available at 
+http://www.cmiss.org/cmgui/
+
+v2.9.0
+
+API Changes:
+(New) Add CMISS_SCENE_VIEWER_INPUT_MODIFIER_NONE mode
+(New) Enable more field types for create/define fields APIs
+
+Added Features (some incomplete):
+3133 FieldML 0.5 import, replaces FieldML 0.4 import.
+3184 Allowed reading data into a specific region.
+
+Bugs fixed:
+Fixed several bugs causing occasional crashes.
+3115 Key presses now get sent to scene viewer callbacks
+3160 Fixed crashes caused when passing a null field to Cmiss_field_module_create_abs
+3167 Fixed setting linear filter for image field has no effect
+3181 Fixed crashes when passing null context to Cmiss_context_get_default_region
+3207 Fixed streamlines not showing on 2D models
+
+Improvements:
+2512 Remove group regions, replaced by group fields
+3213 Improved field evaluation/assignment caching
+
+Miscellaneous:
+Removed cmgui-motif from current build
+
+v2.8.0
+
+API Changes:
+(New) Optimisation API
+(New) Graphics material API
+(New) Field evaluation and assignment API
+(New) Scene graphics filtering API
+(New) Cmgui Input/Output (Stream) APIs for regions and image field
+(New) Graphics tessellation API
+(New)API to support external wx main loop
+(New) Image field API
+(Break) Remove cmiss_timer API
+(Break) Remove texture API
+
+Added Features (some incomplete):
+1047 Merge scene and region hierarchies.
+1699 Print out antialiasing images using cmgui-wx
+1776 Region-capable selection and groups.
+1844 Implement fitting and optimisation.
+2549 FieldML 0.2 import.
+2624 Scene graphics filtering           
+2680 Added graphics coordinate system
+2683 Export points with wavefront format
+2684 Improve spectrum rainbow
+2749 Graphics tessellation objects and editor
+2775 Add xi discretization modes to streamlines
+2842 Read fieldML 0.4 format into Cmgui
+
+Bugs fixed:
+Fixed numerous occasional crashes.
+2769 gfx read elements generate option works for root region
+
+Improvemnets:
+2365 New mechanism for static graphics in scene
+2702 Hierarchical transformation
+2817 Visibility flag to work hierarchically
+3026 Improved performance when rendering element points
+
+Others:
+2529: Simplify changes for buulding third_party on different windows platforms
+
+v2.7.1 (In development)
+
+Added Features (some incomplete):
+1047 Merge scene and region hierarchies.
+1776 Region-capable selection and groups.
+1805 Use double precision for real fields. 
+2549 FieldML 0.2 import.
+
+v2.7.0
+12 Apr 2010
+
+This is an official release of cmgui.
+
+API Changes:
+(Break) Context API replaces command data. User interface must be enabled explicitly before using graphics, time and execute_command.
+(Break) Region API. New methods for creating regions and finding subregions. New method to get field module. Removed obsolete Cmiss_region_add_field.
+(Break) Field API. New Field_module API has factory methods for creating fields owned by a region; no need to call Cmiss_region_add_field. New get_name function.
+(Break) Object persistence API. New ~set_persistent methods for field, material must be called for objects to persist in owning module when no external references held.
+(New) Graphical material API.
+(New) Time API. 
+
+Added Features:
+1037 Field API
+1630 Time object and time keeper API
+1788 Added information in about dialog
+1854 Support write exnode function at specific time
+1990 New isosurface code including tetrahedra support
+1992 Surfaces made from exterior faces should now have outward normals 
+2091 Support texture tiling on special case for orthogonal aligned texture coordinates
+2096 Graphical material API
+2105 Support per-element constant fields
+2387 Region API
+2417 Replaced command data with context as main object in API
+2458 Added more discretization modes to simplex
+2491 Object persistent API
+
+Bugs fixed:
+995 Remove CREATE and DESTROY macros from API
+1023 Fixed missing geometry in tiled element
+2037 Fixed crash when when closing the scene editor while the focus is on the isovalue text box
+2092 Texture properties are no longer merged when a texture is modified by reading in a new image file 
+2377 FixedIntel drivers incorrectly clip new graphics buffers
+2427 Fixed image field API not working properly due to restriction on modifying number of components
+2451 Fixed strange name when saving png file
+
+Improvement:
+2064 Rendering optimisation for picking, spectrum, glBegin/glEnd
+
+v2.6.2
+20 Jan 2010
+
+This is an intermediate release of cmgui, parts of the software may or may 
+not work.
+
+Added Functions (selected list):
+1626 Field dependent visibility
+1837 Added glyphs that have texture coordinates
+1917 Width option for isolines
+1989 Triangular meshing
+2050 Tetrahedral meshing
+
+Bugs fixed:
+949  Cmgui now prints out extra large images correctly
+1789 Timekeeper's time has been tweak to work correctly
+1791 Fixed cmgui does not evaluate field value at the right time in rare occasion
+1833 Fixed antialiasing not applied to other scene viewer panels except the first one
+     in rare occasion
+1854 Allow user to output ex format file at a specified time
+
+Improvement:
+1738 Better CMake support.
+1788 Added more information to the about box.
+1990 New isosurface algorithem which should improve performance and it now handles tetrahedron
+2012 Use 16bit storage for 16bit grey scale image when rendering using OpenGL
+
+Others:
+More api functions have been exposed for api user and have started work on the c++ api but note that the api functions are not yet finalised.
+
+
+v2.6
+5 May 2009
+
+Breaks:
+1609 Command "gfx write nodes/elements/data" 'fields' option now requires field names to be separated by ampersands (&)
+
+Added Functions (selected list):
+866 Added quadratic simplex (tetrahedron) element basis functions.
+883 Implemented offscreen printing for cmgui-wx. (Anti-aliasing not supported yet)
+901 Improved time dependent transformation interface.
+948 Greater support of different DICOM formats using GDCM.
+976 Rendering of full resolution textures about GPU supported sizes by tiling (in certain cases...)
+990 Added scene chooser on graphics windows.
+1019 Added transformation editor of scene objects.
+1022 Added graphics font support in cmgui-wx.
+1026 Added Opengl GLSL support.
+1030 Added 'function' field type for reusing another field's function with a different source field.
+1035 Optimized basis function calculations.
+1037 (Ongoing) Introducing new field API.
+1067 Fields owned by region - can now define computed fields in sub-regions.
+1129 Complete wx interface
+1130 Allowed user-defined shading programs.
+1323 Enforced field ownership and relationships within region.
+1447 (Ongoing) Using environment variable overrides for OpenGL extensions. 
+1486 Added 'alias' field type for importing a field from another region.
+1522 Added absolute value field.
+1527 Beginnings of SWIG API support. 
+1609 Added support for regions and comments in EX file format - read and write.
+1630 Added time notifier and time keeper API.
+1733 Windows support for the -example command line option
+Added cmgui user documentation in docs folder and wiki including 1534 EX file format guide.
+
+Bugs fixed (selected list)
+844 Fixed sub-regions not supporting time
+910 Fixed if a node is labelled with a field that is not defined for the node then it is not rendered.
+1020 Fixed 'gfx destroy lines all' destroys elements too. 
+1069 Fixed merging element fields with no scale factors crashes.
+1580 Fixed set_values on composite field can lead to undefined values.
+1623 Fixed time_keeper fails to notify clients when t = 0.
+1643 Fixed file dialog title text is garbled for open com file dialog.
+1654 Fixed CMGUI fails to continue playing time keeper.
+1785 Fixed CMGUI fails to render all child scenes of a scene.
+
+25 June 2008
+API changes:
+cmiss_scene_viewer.h
+Cmiss_scene_viewer_get_frame_pixels now takes a 
+   enum Cmiss_field_image_storage_pixel_format storage
+   rather than a Texture_format enumerator.
+cmiss_field_image.h New interface.
+
+v2.5
+17 Dec 2007
+
+Third release of cmgui-wx.
+
+Fixes:
+Fixed user interface resizing issue.
+Fixed a number of memoryleak.
+Fixed a number of bugs.
+
+Added interface components:
+Element point viewer, Spectrum editor, Time editor, Material editor.
+
+Added functions:
+Time dependent transformation using quaternion.
+Write out a total comfile.
+Save all (reproduce the exnode, exelem and com file).
+List all (List of commands used to construct the current model).
+A number of image filters.
+The ability to specify a sequence of iso values with a number, first and last value.
+Added a new parameter for scaling the lit volume control.
+
+Others:
+cmgui-wx will use the best graphics settings available.
+Offscreen buffering of cmgui-wx.
+Enables order independent transparency in win32.
+
+v2.4
+11 May 2007
+Releasing wx version.
+Lots of new ITK filters.
+Add support for a Graphics_library_tentative_check_extension which is true until we are sure whether
+ or not an extension works.  This can be used for commands, which may be called before OpenGL is 
+ initialised but we would like them to fail if they aren't working after it has been initialised.
+Graphics_library_check_extension should be tested before actually using any extension, it will be 
+ false unless we know the extension really works.  By now the display should have been initialised.
+Use this new tentative check for bump_mapping and colour_lookup_spectra in materials.
+Update perl modules to work with CMGUI without global variables.
+Add image_resample computed field to commands.
+No longer need to specify_width, specify_height, specify_depth or texture coordinate when working 
+ using evaluate_image, the default values are retrieved from the source field.
+Respect clear colour setting on spectrum when requesting rgb value.
+Add support for bzip memory streams.
+Each graphics window has its own interactive tools and settings of different interactive tools can now
+ be triggered using commands and apply to all current graphics windows.
+Add gfx define font to allow font objects to be created and most
+ importantly to allow the default font to be redefined.
+List the total number when nodes or elements are listed with gfx list node.
+Allow the font to be specified when creating a colour_bar.
+Allow a colour bar to be created for a specific data component.
+Cmgui-wx now remember the directory where you previously open the file from.
+Add a spectrum_settings that uses computed_fields to calculate the colour tranformation.
+Add Option_table_add_help and try this function with the compose computed field.
+Fix a bug passing the array of variables for matches and tidy up the regular expressions.
+Fix a memory leak with the swizzle string for the material dependent texture program.
+Node viewer now allows user to show variables from all fields at the same time.
+
+v2.3.3
+18 December 2006
+Shifted to externally visible subversion server.
+Added Cmiss_scene_viewer_set_depth_of_field and Cmiss_scene_viewer_get_depth_of_field.
+Add Cmiss_scene_viewer_set_background_texture_info.
+Fix bug calling get_FE_element_dimension when there is no element.
+Fix bug in derivative computed field.
+Stop segfault if source field not specified for derivative computed field.
+Add a natural logarithm computed field "log".
+Registered command for threshold filter computed field
+Changes for initial support for WX_USER_INTERFACE and conversion of files to C++.
+Enable element_tool and element_point_tool without dialog in all versions.
+
+v2.3.2
+5 October 2006
+Added colour_lookup_spectrums to materials for doing colour space transformations
+in the graphics hardware.
+
+v2.3.1
+30 August 2006
+Started adding in ITK.
+
+v2.3.0
+29 August 2006
+Changed internal structure of Computed_fields to use a C++ class rather than 
+imitating this in C with function pointers.  Reduced the number of virtual methods by
+consolidating the set/get functions with a generic location rather than separate
+functions for nodes and elements.
+Removed legacy image processing computed fields as we plan to replace them with ITK.
+Fix some typos where data groups propogated incorrectly to the node parent.
+
+v2.2.3
+Enabled emoter to work without motif gui and enabled command only version for all non
+motif builds.
+Internally renamed Control_curve to just Curve.
+
+v2.2.2
+Support the OpenGL extension GL_ARB_texture_non_power_of_two and delay the 
+expansion of textures that are not power of two till render time so it can be
+avoided when not required.
+Add support for conversion of lines (isolines) to node points in "gfx convert graphics".
+Fix for reading in of wavefront obj files.
+
+v2.2.1
+Added node_offset/data_offset to gfx read nodes and data respectively.
+Added node_offset, element_offset, face_offset and line offset to gfx read elements.
+Added generate_faces_and_lines to gfx read elements.
+Calculate winding order left or right handed at element centres for isosurfaces.
+Added string_constant computed field.
+Change equal_to computed_field so that it can operate on string values if either
+field is defined but does not have numerical components.
+Use CMISS_EXAMPLES environment variable to determine where the example tree is
+rather than the Cmgui motif/X setting file.
+
+v2.2
+Removed computed variables by default.  To put it back in change USE_COMPUTED_VARIABLES to true in the makefile or by specifying it on the make command line.
+Added new texture wrap modes edge_clamp_wrap, border_clamp_wrap and
+mirrored_repeat_wrap from recent versions of OpenGL.
+Fixed problems with methods not being fully set correctly for some computed fields.
+Changes to support streamlines in tetrahedral meshes.
+Changes to support isosurface generation in tetrahedral meshes.
+Added code so that triangles for isosurfaces are generated with a consistent winding
+order even in meshes which have inconsistent lefthanded and righthanded coordinate systems.
+Fixed to grid point evaluation.
+Allowing streamlines to be seeded from the nodes in a region.
+
+v2.1.1
+Large speed improvements for "gfx select nodes" and "gfx select elements".
+Get regions to cache get_next_element_id so that it can be kept over multiple commands.
+Image resampling improvements.
+Started 'gfx export cm'
+Reenabled automatic monochrome storage of images.
+Added a weighting field to "gfx create snake".
+Added a few more logical operators for less_than, greater_than and equal_to in computed fields. 
+
+v2.1
+Fix comfile script: cmgui-2.1/fixcom.pl
+Added support for fitting multiple fields with "gfx create snake"
+Began "gfx export cm" to write files for the old cm.
+Added gfx convert elements (and changed the old gfx convert to be gfx convert graphics) which converts one form of elements to another. The only conversion I have implemented so far is the conversion of any 2D element surfaces to true toplevel 2D bicubic hermite elements. The cross-derivatives are not correct and need to think about how to fix this.
+
+v2.0.2
+Fixed gfx unselect data.
+Fixed contour bands on iso_surfaces.
+Fixed code for allocation of large arrays to use long ints where necessary.
+Added code so that node changes propogate through a nodal_lookup computed field to a computed_field change.
+Fixed a couple of bugs in cmgui with the scene editor and an iso_values list.
+Many minor fixes of leaks or use of uninitialised values as detected by the new valgrind testing.
+
+v2.0.1
+Added glyph functionality to create graph axes
+Added first pass at iso_surface_decimation.
+Added a new coordinate system where objects are displayed relative to screen coordinates.
+
+v2.0.0
+First open source release.  License updated to Mozilla Public License.
+Lots of tidying up.
+Added README, INSTALL, RELEASE_NOTES and CHANGELOG.

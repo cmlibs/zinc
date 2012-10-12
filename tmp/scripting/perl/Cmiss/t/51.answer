@@ -1,0 +1,4 @@
+node=1 coordinates [3,1]((4),(5),(6))
+node=2 coordinates [3,1]((8),(9),(10))
+element=1001 xi=[1](0.3) coordinates [3,1]((5.2),(6.2),(7.2))
+element=1001 xi=[1](0.8) coordinates [3,1]((7.2),(8.2),(9.2))
