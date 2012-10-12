@@ -64,12 +64,6 @@
 	    Zn::FieldModule fieldModule(*($self));
  		return fieldModule.createDivide(*($self), operand);
 	}
-	
-	Zn::FieldEqualTo operator==(Zn::Field& operand)
-	{
-    	Zn::FieldModule fieldModule(*($self));
-    	return fieldModule.createEqualTo(*($self), operand);
-	}
 
 	Zn::FieldGreaterThan operator>(Zn::Field& operand)
 	{

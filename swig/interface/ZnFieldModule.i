@@ -43,6 +43,37 @@
 %include "ZnDoubleValuesArrayTypemap.i"
 %include "ZnFieldArrayTypemap.i"
 
+/* Interestingly, swig does not recognise the typemap to Field **, 
+	therefore using the following to wrap it around*/
+%extend Zn::FieldModule
+{
+	Zn::FieldConcatenate createConcatenate(int numberOfSourceFields, void **sourceFieldsVoid)
+	{
+		Zn::Field **temp = (Zn::Field **)sourceFieldsVoid;
+		Zn::Field *fieldsArray = new Zn::Field[numberOfSourceFields];
+		for (int i = 0; i < numberOfSourceFields; i++)
+		{
+			fieldsArray[i] = *temp[i];
+		}
+    	Zn::FieldConcatenate return_field = ($self)->createConcatenate(numberOfSourceFields, fieldsArray);
+    	delete[] fieldsArray;
+    	return return_field;
+	}
+	
+	Zn::FieldCrossProduct createCrossProduct(int numberOfSourceFields, void **sourceFieldsVoid)
+	{
+		Zn::Field **temp = (Zn::Field **)sourceFieldsVoid;
+		Zn::Field *fieldsArray = new Zn::Field[numberOfSourceFields];
+		for (int i = 0; i < numberOfSourceFields; i++)
+		{
+			fieldsArray[i] = *temp[i];
+		}
+    	Zn::FieldCrossProduct return_field = ($self)->createCrossProduct(numberOfSourceFields + 1, fieldsArray);
+    	delete[] fieldsArray;
+    	return return_field;
+	}
+};
+
 %ignore FieldAdd;
 %ignore FieldPower;
 %ignore FieldMultiply;
@@ -98,7 +129,6 @@
 %ignore FieldAtan;
 %ignore FieldAtan2;
 %ignore FieldCrossProduct;
-%ignore FieldCrossProduct3D;
 %ignore FieldDotProduct;
 %ignore FieldMagnitude;
 %ignore FieldNormalise;
@@ -157,18 +187,6 @@
 #include "api++/fieldtypesvectoroperators.hpp"
 #include "api++/fieldmodule.hpp"
 %}
-
-/* Interestingly, swig does not recognise the typemap to Field **, 
-	therefore using the following to wrap it around*/
-%extend Zn::FieldModule
-{
-	Zn::FieldConcatenate createConcatenate(int numberOfSourceFields, void **sourceFieldsVoid)
-	{
-		Zn::Field **sourceFields = (Zn::Field **)sourceFieldsVoid;
-    	return ($self)->createConcatenate(numberOfSourceFields, sourceFields);
-	}
-};
-
 
 %include "api++/fieldcache.hpp"
 %include "api++/field.hpp"

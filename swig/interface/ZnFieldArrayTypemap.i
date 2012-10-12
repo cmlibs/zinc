@@ -41,7 +41,6 @@
 
 %typemap(in) (int numberOfSourceFields, void **sourceFieldsVoid)
 {
-	printf("called here\n");
 	/* Check if is a list */
 	if (PyList_Check($input)) 
 	{
