@@ -1,2 +1,0 @@
-typedef Cmiss_scene_viewer_id Cmiss__Scene_viewer;
-
