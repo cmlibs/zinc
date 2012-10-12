@@ -1,0 +1,6 @@
+#if ! defined (PERL_CMISS_VARIABLE_NEW_INPUT_COMPOSITE_TYPEMAP_H)
+#define PERL_CMISS_VARIABLE_NEW_INPUT_COMPOSITE_TYPEMAP_H
+
+#include "perl/Cmiss/Variable_new_input/typemap.h"
+
+#endif /* ! defined (PERL_CMISS_VARIABLE_NEW_INPUT_COMPOSITE_TYPEMAP_H) */

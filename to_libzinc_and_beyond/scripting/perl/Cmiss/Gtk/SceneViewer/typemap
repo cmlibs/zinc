@@ -1,0 +1,5 @@
+TYPEMAP
+Cmiss::Gtk::SceneViewer					T_GtkPTROBJ
+Cmiss::Gtk::SceneViewer_Sink			T_GtkPTROBJSink
+Cmiss::Gtk::SceneViewer_OrNULL		T_GtkPTROBJOrNULL
+Cmiss::scene_viewer						T_PTROBJ

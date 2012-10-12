@@ -1,0 +1,12 @@
+use Cmiss::Value;
+use Cmiss::Value::Matrix;
+use Cmiss::Value::Derivative_matrix;
+use Cmiss::Variable;
+$dfdx=new Cmiss::Value::Matrix(values=>[11,12],n_columns=>2);
+$dfdy=new Cmiss::Value::Matrix(values=>[7,8,9,10],n_columns=>2);
+$d2fdxdy=new Cmiss::Value::Matrix(values=>[1,2,3,4,5,6],n_columns=>2);
+$f=new Cmiss::Variable(name=>'f');
+$x=new Cmiss::Variable(name=>'x');
+$y=new Cmiss::Variable(name=>'y');
+$bob=new Cmiss::Value::Derivative_matrix(dependent=>$f,independent=>[$x,$y],matrices=>[$dfdx,$dfdy,$d2fdxdy]);
+print "$bob\n";

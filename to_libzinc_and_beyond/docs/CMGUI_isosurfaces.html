@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<title>Visualizing element fields using iso-surfaces</title>
+</head>
+<body>
+<div class="document" id="visualizing-element-fields-using-iso-surfaces">
+<h1 class="title">Visualizing element fields using iso-surfaces</h1>
+<p><em>Iso-surfaces</em> are graphical representations used to visualize 3D or 2D objects that connect every point where the value of a certain field is the same.  This idea is analogous to the contour lines on a map, where a line connects every point of a certain height.  In 3D this means that a surface connects every point of a certain value.  An example of this is in <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html">example a7</a> where an iso-surface is used to show the surface where every point is at 100 degrees Celsius.  For a simpler example, <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example a2</a> shows the creation of an iso-surface at x=0.5 within the simple cube mesh.</p>
+
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div align="center" class="figure">
+<object width="640" height="480"><param name="movie" value="http://www.youtube.com/v/ldFvsK_JLUA&ap=%2526fmt%3D18"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/ldFvsK_JLUA&ap=%2526fmt%3D18" type="application/x-shockwave-flash" wmode="transparent" width="640" height="480"></embed></object>
+<p class="caption"><strong>Figure 1: Iso-surfaces:</strong> This video shows some of the basics of working with iso-surfaces in cmgui, using the mesh from <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html">example a7</a>.</p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>As with <a class="reference" href="http://www.cmiss.org/cmgui/wiki/VisualizingElementFieldsUsingSurfaces">surfaces</a>, the detail level of iso-surfaces is determined by the <em>element discretization</em> setting in the <em>general settings</em> area of the <a class="reference" href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene editor</a>.</p>
+
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div align="center" class="figure">
+<img alt="discretization_iso_surfaces.png" src="discretization_iso_surfaces.png" />
+<p class="caption"><strong>Figure 2: How discretization affects iso-surface detail:</strong>  The <em>element discretization</em> setting in the <em>general settings</em> section of the scene editor sets the number of divisions in each xi direction within each element.  Here, an iso-surface is used to connect every point within the element cube where &quot;temperature&quot; is 20.  The &quot;temperature&quot; field is shown on the surface of the element cube using a spectrum in panel A.  In B, the iso-surface is shown in wireframe (green) and a single face of the cube is divided up according to the <em>element discretization</em> setting.  You can see that the iso-surface links the discretization divisions at points where the iso-scalar is at the chosen value.  These intersections are indicated by yellow circles. Panel C shows how different <em>element discretization</em> settings affect this iso-surface; settings of 2, 3, 4, and 8 are shown.</p>
+
+</div>
+</div>
+</body>
+</html>

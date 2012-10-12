@@ -1,0 +1,166 @@
+Scenes and graphics filters
+===========================
+
+The biggest change in cmgui 2.8 is that graphics are now associated with regions and not stored in a separate 'scene graph'. The Scene Editor displays the region tree, and each region has a graphical 'rendition' consisting of a list of graphics (lines, surfaces, node_points etc.) which visualize the fields of that region. This change should not affect most users, because previous versions of cmgui made the scene graph mirror the flat list of regions and groups used in most models and the commands to set up these graphics should work as before.
+
+However, if your command file created new scenes (or modified certain attributes of scene 'default'), or your model consisted of more than just a simple list of regions and groups (i.e. regions within regions within the root region) you will need to make some changes.
+
+Rendition or 'graphical element'
+--------------------------------
+
+Since graphics now belong to a region, the commands to create them now take the region path instead of the name of the 'graphical element' (now termed 'rendition') on a particular scene::
+
+  gfx modify g_element REGION_PATH ...
+
+Argument ``scene NAME`` is now redundant and ignored. Since the automatic name for the 'g_element' was the region or group name, most previous commands work as before.
+
+Scenes
+------
+
+Scenes remain as the objects determining which graphics are displayed in a window or exported by various commands. However they are considerably simplified in that their main attributes are (1) the top region they show graphics for and (2) A graphics 'filter' object which controls which graphics from the region tree are visible (see later).
+
+The command for creating or modifying a scene is as follows::
+
+  Usage : gfx define scene ??
+    SCENE_NAME
+  <add_light LIGHT_NAME|none[none]>
+  <region PATH_TO_REGION[/]>
+  <remove_light LIGHT_NAME|none[none]>
+  <filter GRAPHICS_FILTER_NAME|none[none]>
+
+(``gfx modify scene`` is the same as ``gfx define scene``. Note future plans are to remove lights from scenes and list them as special graphics as part of a rendition.)
+
+The ``gfx create scene`` command has been removed because invariably the command file must be manually updated to replace it, and it is now no longer necessary to create 'child' scenes to make hierarchical graphics. Cmgui developers are happy to help with migration.
+
+Graphics filters
+----------------
+
+Graphics filters are new objects which control which graphics are shown in a scene. Each filter has a criterion for matching attributes of a graphic or region/rendition, and if the result is true the graphic is shown. The initial graphics types include:
+
+- matching visibility flags
+- matching graphic name
+- matching (within) region path
+- logical operator OR
+- logical operator AND
+
+Furthermore, all criteria can be inverted to create logical not::
+
+  Usage : gfx define graphics_filter ??
+    GRAPHICS_FILTER_NAME
+        *  Filter to set up what will be and what will not be
+        *  included in a scene. The optional inverse_match flag
+        *  will invert the filter's match criterion. The behaviour
+        *  is to show matching graphic with the matching criteria.
+        * <match_graphic_name> filters graphic with the matching
+        *  name. <match_visibility_flags> filters graphic with
+        *  the setting on the visibility flag. <match_region_path>
+        *  filters graphic in the specified region or its subregion.
+        * <operator_or> filters the scene using the logical operation
+        *  'or' on a collective of filters. <operator_and> filters
+        *  the scene using the logical operation 'and' on a collective
+        *  of filters. Filters created earlier can be added or
+        *  removed from the <operator_or> and <operator_and> filter.
+  <operator_or
+    <add_filters[add_filters]|remove_filters>
+        FILTER_NAMES >
+  <operator_and
+    <add_filters[add_filters]|remove_filters>
+        FILTER_NAMES >
+  <match_graphic_name MATCH_NAME>
+  <match_visibility_flags>
+  <match_region_path REGION_PATH>
+  <inverse_match|normal_match[normal_match]>
+
+The default filter matches the familiar visibility flags of the region/rendition and each graphic::
+
+  gfx define graphics_filter default normal_match match_visibility_flags;
+
+The following makes a filter that shows all graphics satisfying the above default OR if graphics is named "bob"::
+
+  gfx define graphics_filter bob normal_match match_graphic_name "bob";
+  gfx define graphics_filter default_or_bob normal_match operator_or add_filters default bob;
+  gfx define scene default filter default_or_bob;
+
+Note it is easy for us to add new filter types as needed by users. 
+
+Drawing static graphics
+-----------------------
+
+Cmgui now associates all graphics with a region rather than a separate 'scene graph', so all previous commands to create and draw 'static' graphics on a scene are removed or changed. The equivalent functionality is achieved by adding a 'point' graphic to a region rendition in the scene editor, which can show any glyph with controllable scale, offset, material and optional label. The commands for reproducing the graphics can be obtained using ``gfx list g_element REGION_PATH commands``.
+
+- ``gfx create axes`` now just writes a migration note as it is redundant. Several axes objects are predefined in the glyph list to be used with point graphics. See comment on ``gfx draw`` below.
+- ``gfx create annotation`` has been removed. You must now define a string field in the respective region with the required text (``gfx define field ![REGION_PATH/]NAME string constant "Your text here"``) and use it as a label, probably with glyph none, on a point graphic.
+- ``gfx create colour_bar`` works as before but the colour bar is now put in the list of glyphs able to be shown with any point graphic.
+- ``gfx create lines/surfaces/node_points ...`` have been removed altogether. You must now use ``gfx modify g_element REGION_PATH lines/surfaces/node_points ...``.
+- 'gfx draw' now creates a point graphic in the root region rendition with the glyph matching the graphics name specified. If you had previously created axes with the default name "axes" it finds the glyph however the scaling, offset and material are lost: edit these in the scene editor. The scene is ignored by this command so you will need to make changes if you were drawing to multiple scenes, particularly an overlay scene (see migration notes for overlay graphics below).
+- 'gfx erase' has been removed.
+
+
+Overlay graphics and coordinate systems
+---------------------------------------
+
+Previous versions of cmgui required an 'overlay scene' attribute to be set for each graphics window. Any graphics drawn in the selected overlay scene were drawn in a window-relative coordinate system on that window.
+
+This has been replaced by a far simpler and more powerful mechanism. Each graphic in the scene editor has a 'graphics coordinate system' which can be:
+
+- LOCAL = subject to the graphical transformations of the renditions in the region tree relative to world (the default).
+- WORLD = in the world coordinate system of the top region of the scene
+- NORMALISED_WINDOW_FILL = ranges from ![-1,+1] across all dimension of window so distorting if window is non-square. This was the mode used by the overlay scene.
+- NORMALISED_WINDOW_FIT_LEFT/RIGHT/BOTTOM/TOP = ranges from ![-1,+1] in the largest square fitting in the window, aligned to the specified side. Non-distorting so perferable to NORMALISED_WINDOW_FILL.
+- WINDOW_PIXEL_BOTTOM_LEFT/TOP_LEFT = In screen pixels from (0,0) at the specified origin of the window, with +x to the right, +y up. TOP_LEFT has negative y coordinates on screen.
+
+Choosing any window-relative coordinate system causes the graphic to be drawn as an overlay, i.e. on top of all non-overlay graphics, on rendering windows. Window-relative graphics cannot be exported to VRML and other formats without a viewport.
+
+Future plans are to allow layers to be specified independently from the graphics coordinate system, with layers 'background', 'default' and 'overlay' predefined and the ability to add more layers and control whether the depth buffer is cleared between layers.
+
+Removal of 'general settings' for graphics
+------------------------------------------
+
+In previous versions of cmgui, the graphical rendition of a region (``g_element`` commands) had a set of 'general settings' controlling the 'discretisation' (number of line segments used to approximate curved element boundaries), and also a default coordinate field to apply to graphics which do not have the coordinate field specified.
+
+For cmgui 2.8 all these general settings have been removed and must be specified for each graphic in the rendition. This has the benefit of allowing different graphics to use different discretisations, which are now set via 'tessellation' objects (see later).
+
+To minimize migration issues, all previous ``gfx modify g_element REGION_PATH general ...`` options are read and become defaults for subsequent g_element commands to add graphics. If the general 'element_discretization' attribute is set then on creating new graphics requiring a tessellation it finds or creates one giving the same effect as the discretization; it will have an automatically generated name such as 'temp2'. Changing these general options now has no effect on graphics that have already been created. The only non-deprecated ``g_element general`` command option is to clear all graphics from the rendition.
+
+Note that region renditions still have transformation attributes which give the 4x4 transformation from local to parent coordinate systems.
+
+Tessellation
+------------
+
+Tessellation objects have been introduced to replace the general 'element_discretization' attribute and solve several problems:
+
+- they allow any number of graphics -- and not just from the same region -- to share tessellation settings, allowing graphics quality across complicated model visualisations to be changed from a few controls.
+- they allow tessellation quality to automatically switch from minimum for linear basis functions to fine for non-linear bases and coordinate systems. (Note: bilinear and trilinear Lagrange are considered linear even though they have a few quadratic or cubic product terms.)
+- we anticipate adding more options in future e.g. adaptive curvature-dependent triangulation, but graphics will still only require one object to be chosen.
+
+However, tessellation objects do not solve one problem, that choosing a very large number causes Cmgui to lock up while all affected graphics are regenerated: take care when setting large values!
+
+Note that elements_points and streamlines do not have a tessellation object set by default. Instead they have a separate fixed 'discretization' setting which defaults to "1*1*1" (i.e. 1 point or streamline per element), but you may add a tessellation which then acts as a multiplier on the discretization. The optional native_discretization field also acts as a multiplier.
+
+Commands for defining tessellations are::
+
+  Usage : gfx define tessellation ??
+    TESSELLATION_NAME
+        * Defines tessellation objects which control how finite
+        *  elements are subdivided into graphics. The minimum_divisions
+        *  option gives the minimum number of linear segments
+        *  approximating geometry in each xi dimension of the
+        *  element. If the coordinate field of a graphic uses
+        *  non-linear basis functions the minimum_divisions is
+        *  multiplied by the refinement_factors to give the refined
+        *  number of segments. Both minimum_divisions and refinement_factors
+        *  use the last supplied number for all higher dimensions,
+        *  so "4" = "4*4" and so on.
+  <minimum_divisions "#*#*..."["1"]{>=0}>
+  <refinement_factors "#*#*..."["1"]{>=0}>
+
+You can also list all available tessellations with::
+
+  gfx list tessellation
+
+The default tessellation exists from start-up, but can be edited::
+
+  gfx define tessellation default minimum_divisions "1" refinement_factors "4";
+
+A tessellation editor dialog can be opened by clicking on the "Edit..." button beside the tessellation chooser in the scene editor.
+
