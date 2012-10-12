@@ -1,0 +1,169 @@
+===============================
+Migrating to upcoming Cmgui 2.9
+===============================
+
+For the upcoming Cmgui 2.9 release, pre-released within the ABI, significant changes have been made to the way 'groups' are handled. We have also removed the automatic creation of default lines on reading a model.
+
+While we've taken every effort to minimise the impact of the changes, usually by making commands do the nearest equivalent behaviour, some breaks are unavoidable. So if your command files are not working as before, please try to see why in the following explanation, but if that doesn't help, see the Cmgui development team. As always, if you find what looks like a bug in the software, please report it on our tracker.
+
+
+Removal of 'group regions'
+==========================
+
+Background
+----------
+
+A Cmgui model is made up of a tree of objects called regions, each of which owns a set of nodes, elements, data points (an extra set of nodes) and fields defined on them, plus 0 or more child regions. Regions are like the folders in a file system; fields (and other 'intra region' objects such as sets of nodes and meshes) are like files in the folder. The root region is denoted by "/", and region names in a path are separated by "/".
+
+A 'group' is a subset of the nodes, elements and data points owned by a region. Prior to this release, each group was created as a pseudo region, what we called a 'group region'. This meant they looked like a region except they contained a subset of the objects of the parent/master region, and listed all fields of the master region (but could only address those defined over its subset). This also meant every group could individually have graphics associated with it. For users, the downsides of group regions were that they hid away the definitions of their subgroups so it was not possible to intersect or union them in field expressions, it was not possible to make invisible subgroups (they all had a graphical rendition), and it was impossible to make hierarchical groups and groups containing whole regions. For developers they have been a maintenance hazard and a feature we did not wish to expose to our API.
+
+The Change
+----------
+
+From Cmgui 2.9, groups are implemented as fields. A group field returns 1 at any location in the domain (at nodes, in elements etc.) which is in the group, 0 elsewhere. From the API you can add the whole region to a group, but this is not available through gfx commands. Group fields can have subregion groups in child regions, so a group tree can contain an arbitrary subset of a region tree. The group field can have zero or more 'subobject group fields' representing subsets of specific object types that are present in the group, each of which give the value 1 on the respective object type in the group, 0 otherwise. For example, if you read cube example a2 and write "gfx list fields" you will now see 5 new fields::
+
+  cube : group = generic group object
+  cube.cmiss_mesh_1d : sub_group_object = subset of "cmiss_mesh_1d" in group cube
+  cube.cmiss_mesh_2d : sub_group_object = subset of "cmiss_mesh_2d" in group cube
+  cube.cmiss_mesh_3d : sub_group_object = subset of "cmiss_mesh_3d" in group cube
+  cube.cmiss_nodes : sub_group_object = subset of "cmiss_nodes" in group cube
+
+.. note::
+
+  In several new commands, "cmiss_nodes" is the name you use to reference the set of nodes in the region, "cmiss_data" references the set of data points, and "cmiss_mesh_Nd" references the 1, 2 and 3-D meshes owned by that region. In future we anticipate allowing any number of meshes to be created with their own names.
+
+Since Cmgui 2.8, when you select objects in the graphics window, you are making a group which is automatically given the name "cmiss_selection", and any selected objects are added to subobject groups coordinated under it. For example, selecting a face element of the cube creates::
+
+  cmiss_selection : group
+  cmiss_selection.cmiss_mesh_2d : sub_group_object
+
+There is now only one type of group; the previous group regions and the selection have been merged into the same class.
+
+Prefer Regions to Groups
+------------------------
+
+Shortly we will explain several of the workarounds that make most existing command files work as before, most of the time. But first we wish to recommend using regions instead of groups whenever possible, and if you can do this your command files will likely work just as before. Needlessly using a group means all your objects are listed twice, once for the region and once for the group, which consumes more memory. To migrate to regions, just change lines in EX files from::
+
+  Group name: NAME
+
+  to (and the leading "/" is required):
+
+  Region: /NAME
+
+(The Region can have a full path e.g. /bob/fred; the group is just a name which is within the namespace of the surrounding region. At the start of parsing EX files, the file's root region "/" is active.)
+
+Another approach is to specify the region on the read command "gfx read node/element/data region PATH", but bear in mind this will continue to create groups at the named path. This effectively maps the file's root region to the named region.
+
+.. warning::
+
+  Be aware that there are still cases where you can't use regions, so ontinued use of groups will be necessary:
+
+  1. Whenever several element groups share common nodes. Elements can only reference nodes from the same region.
+  2. Certain features such as the compose/find_mesh_location fields that do not work inter-region.
+
+  We certainly wish to remedy these in time. We need to hear user input about what functionality they need to work between regions.
+
+Possible breaks with the removal of group regions
+-------------------------------------------------
+
+**1. Groups no longer have a rendition**
+
+Each region has a 'rendition' which is the set of graphics for visualising its fields. When groups were presented as regions, they too had their own rendition. We now interpret existing commands in the form::
+
+  gfx modify g_element [REGION_PATH]/GROUP_NAME ...
+
+as::
+
+  gfx modify g_element [REGION_PATH]/ ... subgroup GROUP_NAME
+
+Hence the graphics now belong to the parent region. All graphics now have an optional subgroup field and when supplied only shows primitives for which the field is non-zero. Hence the new group fields are all usable, but so is any other scalar field expressions (e.g. less_than(mag(coordinates), 100.0). When you re-list graphics with "gfx list g_element" you will see the new form. Note: this also replaces the "visibility_field" option on node_points and data_points so you will need to rename this.
+
+The "gfx modify g_element [REGION_PATH]/GROUP_NAME" command clears only graphics using the group of the GROUP_NAME as the subgroup field. Beware that clearing the graphics of the parent region will also clear those referencing any subgroup.
+
+**2. Groups no longer have a rendition, hence have no individual 'default' arguments**
+
+Cmgui 2.8 (the last public release) deprecated all arguments to the "general" command for modifying graphics except for the clear command.
+
+gfx modify g_element PATH general clear default_coordinate NAME element_discretization "#*#*..." ...
+
+To keep old command files working, the options specified in the g_element command are stored and used as defaults when new graphics are created. With the removal of group regions, these no longer have independent defaults from each other and from the parent region. Continuing to rely on these defaults can produce spurious results; Cmgui now warns whenever these defaults change.
+
+Conclusion: always prefer to specify coordinate field, tessellation object etc. for each individual graphic. Never use the general defaults: remove them from your command files.
+
+**3. Groups no longer have a rendition, hence no transformation**
+
+Each region rendition has a transformation attribute which transforms all graphics relative to the parent region rendition, but groups no longer have either. There is no workaround here except to use a child region instead. Please talk to Cmgui developers if you have particular needs here.
+
+**4. Can't have a group and field of same name**
+
+Groups are now fields, and no two fields can have the same name. You will have to change the name of one of them.
+
+
+Workaround for particular commands
+----------------------------------
+
+A number of commands inconsistently use the keyword region or group followed by a region path. Many of these commands have been migrated to identity if the path is to a group and work with it as before, however, we haven't fixed the inconsistent keywords.
+
+**1. gfx create|modify dgroup|ngroup|egroup**
+
+These all create or modify the new group fields but should otherwise work as before.
+
+For egroup these now have an option to manage_subobjects which means when you add an element to the group, all faces, lines and nodes are added to the related group. This is the default so as to reproduce previous behaviour, but can also be turned off by specifying <no_manage_subobjects> (as managing subobjects is expensive and may be unnecessary).
+
+**2. gfx define field integration|xi_texture_coordinates**
+
+Added option to specify mesh as cmiss_mesh_1d, cmiss_mesh_2d or cmiss_mesh_3d, or group_name.cmiss_mesh_Nd for a subset of the mesh.
+Removed region option since node must be from current region.
+
+**3. gfx define field nodal_lookup|quaternion_SLERP**
+
+Removed region option since node must be from current region.
+Added option to specify nodeset cmiss_nodes|cmiss_data, so a node or data point can be used.
+
+**4. gfx list data|elements|faces|lines|nodes**
+
+Added conditional FIELD_NAME option. Use a group field as the conditional to list only objects in the group (previously used region path).
+
+**5. gfx list dgroup|egroup|ngroup**
+
+Removed. Use gfx list data|elements|faces|lines|nodes conditional GROUP_NAME instead. See point 4.
+
+**6. gfx list g_element**
+
+A new feature! Omit the region to list commands for all region renditions with new default recursive option. Default is now to list commands rather than the wordy description.
+
+**7. gfx list group**
+
+A new command: lists the groups in a region.
+
+
+No default line graphics
+========================
+
+Prior to this release, when you read in a model into cmgui, line graphics for all 1-D elements in any region under the root region were automatically added. However, lines were not added to regions created empty which included the root region itself. Particularly with the removal of 'group regions', there is no way that this behaviour can be sensibly maintained. The automatic lines feature was about as annoying to some users as it was beneficial to others.
+
+Hence, we have removed this 'feature'. Now, in order to see any model you read in, you must open the scene editor and manually add any graphics. After you have created graphics you may need to click 'View All' in the graphics window to ensure they are in view.
+
+Some users' command files will have been written assuming lines are automatically present; these now need to be modified to explicitly add lines, e.g. using the 'gfx modify g_element PATH_TO_REGION lines coordinate NAME ...'. You can do this interactively by adding the lines in the scene editor and using this command to list all commands to reproduce the graphics for all regions::
+
+  gfx list g_element
+
+Another partial workaround is to add lines to the root region after your model has been read::
+
+  gfx modify g_element "/" lines coordinate coordinates;
+
+(or whatever your coordinate field is called.)
+
+.. note::
+
+  Alternative approaches to creating a default view of a model have been investigated but they are complex, hence they haven't been tried. However, we'd appreciate feedback and ideas from users in this area.
+
+
+Simplified creation of nodal derivatives
+========================================
+
+The specification of nodal derivatives and versions with commands:
+
+gfx modify nodes|data ...
+
+have been changed to match the derivative names and limitations of the external API, since this code has been changed to test the external API internally. Users needing the removed functionality (different derivatives and versions per component) should talk to the Cmgui developers.

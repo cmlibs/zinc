@@ -1,0 +1,7 @@
+
+#include "general/enumerator_private_app.h"
+#include "finite_element/export_finite_element_app.h"
+
+DEFINE_DEFAULT_OPTION_TABLE_ADD_ENUMERATOR_FUNCTION(FE_write_criterion)
+DEFINE_DEFAULT_OPTION_TABLE_ADD_ENUMERATOR_FUNCTION(FE_write_recursion)
+

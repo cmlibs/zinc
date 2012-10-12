@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxAboutBox" name="AboutBox" title="Cmgui About Box">
+  </object>
+</resource>

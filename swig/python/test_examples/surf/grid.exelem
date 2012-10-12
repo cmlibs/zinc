@@ -1,0 +1,146 @@
+Group name: grid
+Shape. Dimension=1
+Element: 0 0   1
+Element: 0 0   2
+Element: 0 0   3
+Element: 0 0   4
+Element: 0 0   5
+Element: 0 0   6
+Element: 0 0   7
+Element: 0 0   8
+Element: 0 0   9
+Element: 0 0   10
+Element: 0 0   11
+Element: 0 0   12
+Element: 0 0   13
+Element: 0 0   14
+Element: 0 0   15
+Element: 0 0   16
+Element: 0 0   17
+Element: 0 0   18
+Element: 0 0   19
+Element: 0 0   20
+Element: 0 0   21
+Element: 0 0   22
+Element: 0 0   23
+Element: 0 0   24
+Shape. Dimension=2
+#Scale factor sets= 0
+#Nodes= 4
+#Fields= 2
+1) coordinates, coordinate, rectangular cartesian, #Components=2
+x.  l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes= 4
+    1.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 1
+    2.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 2
+    3.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 3
+    4.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 4
+y.  l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes= 4
+    1.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 1
+    2.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 2
+    3.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 3
+    4.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 4
+2) general, field, rectangular cartesian, #Components=1
+value.  l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes= 4
+    1.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 1
+    2.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 2
+    3.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 3
+    4.   #Values= 1
+       Value indices:  1
+       Scale factor indices: 4
+ Element:     1 0 0
+   Faces:
+     0  0   4
+     0  0   5
+     0  0   1
+     0  0   8
+   Nodes:
+  1 2 5 6
+ Element:     2 0 0
+   Faces:
+     0  0   5
+     0  0   6
+     0  0   2
+     0  0   9
+   Nodes:
+  2 3 6 7
+ Element:     3 0 0
+   Faces:
+     0  0   6
+     0  0   7
+     0  0   3
+     0  0   10
+   Nodes:
+  3 4 7 8
+ Element:     4 0 0
+   Faces:
+     0  0   11
+     0  0   12
+     0  0   8
+     0  0   15
+   Nodes:
+  5 6 9 10
+ Element:     5 0 0
+   Faces:
+     0  0   12
+     0  0   13
+     0  0   9
+     0  0   16
+   Nodes:
+  6 7 10 11
+ Element:     6 0 0
+   Faces:
+     0  0   13
+     0  0   14
+     0  0   10
+     0  0   17
+   Nodes:
+  7 8 11 12
+ Element:     7 0 0
+   Faces:
+     0  0   18
+     0  0   19
+     0  0   15
+     0  0   22
+   Nodes:
+  9 10 13 14
+ Element:     8 0 0
+   Faces:
+     0  0   19
+     0  0   20
+     0  0   16
+     0  0   23
+   Nodes:
+  10 11 14 15
+ Element:     9 0 0
+   Faces:
+     0  0   20
+     0  0   21
+     0  0   17
+     0  0   24
+   Nodes:
+  11 12 15 16
