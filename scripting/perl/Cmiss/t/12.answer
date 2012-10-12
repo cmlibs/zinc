@@ -1,0 +1,16 @@
+[43.8826,14.6142,6.58309]
+d(prolate_spheroidal_to_rectangular_cartesian)/d(prolate_spheroidal_coordinates)=[30.7904,-22.8439,0
+20.8283,28.0737,-6.58309
+9.38223,12.646,14.6142]
+d(prolate_spheroidal_to_rectangular_cartesian)/d(spheroidal_coordinates_focus)=[1.2449
+0.414588
+0.186754]
+d2(prolate_spheroidal_to_rectangular_cartesian)/d(prolate_spheroidal_coordinates)d(prolate_spheroidal_coordinates)=[43.8826,-16.0285,0,-16.0285,-43.8826,0,0,0,0
+14.6142,40.0107,-9.38223,40.0107,-14.6142,-12.646,-9.38223,-12.646,-14.6142
+6.58309,18.0231,20.8283,18.0231,-6.58309,28.0737,20.8283,28.0737,-6.58309]
+d2(prolate_spheroidal_to_rectangular_cartesian)/d(prolate_spheroidal_coordinates)d(spheroidal_coordinates_focus)=[0.873487,-0.648053,0
+0.590872,0.796416,-0.186754
+0.266163,0.358751,0.414588]
+d2(prolate_spheroidal_to_rectangular_cartesian)/d(spheroidal_coordinates_focus)d(spheroidal_coordinates_focus)=[0
+0
+0]
