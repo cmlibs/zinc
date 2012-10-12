@@ -1,0 +1,23 @@
+#Terminal command to define the cmgui-wx-debug library path
+
+export LD_LIBRARY_PATH=$CMISS_ROOT/cmgui/lib/i686-linux/cmgui-wx-debug/
+octave -q
+
+#Simple octave commands to test the execute_command file
+
+execute_command
+a = execute_command.new_Cmiss_command_data()
+execute_command.Cmiss_command_data_execute_command(a, "gfx cre axes length 20")
+
+#Loads a simple example node and element file named cube
+
+execute_command.Cmiss_command_data_execute_command(a, "gfx re no cube")
+execute_command.Cmiss_command_data_execute_command(a, "gfx re elem cube")
+
+#Creating a new cmiss window and edit the scene viewer(not working; octave console and cmgui window freezes)
+
+execute_command.Cmiss_command_data_execute_command(a, "gfx cre win 1")
+execute_command.Cmiss_command_data_execute_command(a, "gfx edit scene")
+
+
+
