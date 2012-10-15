@@ -620,7 +620,6 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_filter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_material.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_module.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ui/source/api/cmiss_idle.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_node.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_optimisation.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_region.h

@@ -42,6 +42,12 @@
 #ifndef CMISS_GRAPHIC_RENDER_TYPE_H_
 #define CMISS_GRAPHIC_RENDER_TYPE_H_
 
+#include "cmiss_shared_object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * An enum type to define the render type of a cmiss_graphic.
  */
@@ -59,7 +65,7 @@ enum Cmiss_graphics_render_type
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
+ZINC_API enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
@@ -69,6 +75,10 @@ enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_graphics_render_type_enum_to_string(enum Cmiss_graphics_render_type type);
+ZINC_API char *Cmiss_graphics_render_type_enum_to_string(enum Cmiss_graphics_render_type type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CMISS_GRAPHIC_RENDER_TYPE_H_ */
