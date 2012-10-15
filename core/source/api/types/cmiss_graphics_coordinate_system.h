@@ -42,6 +42,12 @@
 #ifndef CMISS_GRAPHICS_COORDINATE_SYSTEM_H
 #define CMISS_GRAPHICS_COORDINATE_SYSTEM_H
 
+#include "cmiss_shared_object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************//**
  * Enumerated type for identifying graphics coordinate spaces.
  * Cmiss_graphic objects are given in one of these coordinate systems.
@@ -98,7 +104,7 @@ enum Cmiss_graphics_coordinate_system
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_graphics_coordinate_system
+ZINC_API enum Cmiss_graphics_coordinate_system
 	Cmiss_graphics_coordinate_system_enum_from_string(const char *string);
 
 /***************************************************************************//**
@@ -108,7 +114,11 @@ enum Cmiss_graphics_coordinate_system
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-char *Cmiss_graphics_coordinate_system_enum_to_string(
+ZINC_API char *Cmiss_graphics_coordinate_system_enum_to_string(
 	enum Cmiss_graphics_coordinate_system system);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CMISS_GRAPHICS_COORDINATE_SYSTEM_H */

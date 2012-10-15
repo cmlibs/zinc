@@ -7126,7 +7126,7 @@ public:
 	}
 };
 
-enum Cmiss_graphics_render_type	Cmiss_graphics_render_type_enum_from_string(
+enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
 	const char *string)
 {
 	return string_to_enum<enum Cmiss_graphics_render_type,

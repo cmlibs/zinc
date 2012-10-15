@@ -41,6 +41,7 @@
 
 #include "api/cmiss_field_image.h"
 #include "api++/field.hpp"
+#include "api++/fieldmodule.hpp"
 #include "api++/stream.hpp"
 
 
