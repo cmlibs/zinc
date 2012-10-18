@@ -44,10 +44,6 @@
 
 #include "cmiss_shared_object.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /***************************************************************************//**
  * Enumerated type for identifying graphics coordinate spaces.
  * Cmiss_graphic objects are given in one of these coordinate systems.
@@ -97,6 +93,9 @@ enum Cmiss_graphics_coordinate_system
 	 * near = +1. Y coordinates are negative going down the window. */
 }; /* enum Cmiss_graphics_coordinate_system */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.

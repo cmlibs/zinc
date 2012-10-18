@@ -47,7 +47,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #if defined (WIN32_SYSTEM)
 #  include <direct.h>
 #else /* !defined (WIN32_SYSTEM) */
@@ -287,6 +287,7 @@
 #include "graphics/rendition_app.h"
 #include "finite_element/finite_element_region_app.h"
 #include "graphics/scene_viewer_app.h"
+#include "graphics/graphics_font_app.h"
 #include "graphics/graphics_object_app.h"
 #include "graphics/tessellation_app.hpp"
 #include "graphics/tessellation_app.hpp"
@@ -360,7 +361,6 @@ DESCRIPTION :
 		not be available on this implementation */
 	struct Graphics_buffer_app_package *graphics_buffer_package;
 	struct Cmiss_scene_viewer_app_package *scene_viewer_package;
-	struct Graphics_font_package *graphics_font_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -371,7 +371,7 @@ DESCRIPTION :
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
 	struct Material_package *material_package;
-	struct Graphics_font *default_font;
+	struct Cmiss_graphics_font *default_font;
 	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
@@ -780,7 +780,7 @@ with tick marks and labels for showing the scale of a spectrum.
 	int number_of_components,return_code,tick_divisions;
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
-	struct Graphics_font *font;
+	struct Cmiss_graphics_font *font;
 	struct GT_object *graphics_object = NULL;
 	struct Option_table *option_table;
 	struct Spectrum *spectrum;
@@ -868,10 +868,10 @@ with tick marks and labels for showing the scale of a spectrum.
 					display_message(WARNING_MESSAGE,"Limited to 100 tick_divisions");
 					tick_divisions=100;
 				}
-				if (!(font_name && (font = ACCESS(Graphics_font)
-					(Graphics_font_package_get_font(command_data->graphics_font_package, font_name)))))
+				if (!(font_name && (0 != (font = Cmiss_graphics_module_find_font_by_name(
+					command_data->graphics_module, font_name)))))
 				{
-					font = ACCESS(Graphics_font)(command_data->default_font);
+					font = ACCESS(Cmiss_graphics_font)(command_data->default_font);
 				}
 				/* try to find existing colour_bar for updating */
 				graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
@@ -904,7 +904,7 @@ with tick marks and labels for showing the scale of a spectrum.
 						"gfx_create_colour_bar.  Could not create colour bar");
 					return_code=0;
 				}
-				DEACCESS(Graphics_font)(&font);
+				DEACCESS(Cmiss_graphics_font)(&font);
 			} /* parse error, help */
 			DESTROY(Option_table)(&option_table);
 			DEACCESS(Graphical_material)(&label_material);
@@ -5725,78 +5725,6 @@ static int gfx_define_faces(struct Parse_state *state,
 	return (return_code);
 }
 
-static int gfx_define_font(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2008
-
-DESCRIPTION :
-Executes a GFX DEFINE FONT command.
-==============================================================================*/
-{
-	const char *current_token, *font_name;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_define_font);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				font_name = current_token;
-				if (shift_Parse_state(state,1)&&
-					(current_token=state->current_token))
-				{
-					return_code = Graphics_font_package_define_font(
-						command_data->graphics_font_package,
-						font_name, current_token);
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"Missing font string.");
-					display_parse_state_location(state);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,
-					" FONT_NAME FONT_STRING\n");
-#if defined (WX_USER_INTERFACE)
-				display_message(INFORMATION_MESSAGE,
-					"To setup a new font in cmgui-wx, user is required to enter "
-					"[FONT STRING] in the following format (including the \"): \n"
-					"\"[font size] [font family] [font style] [font weight]\" \n"
-					"available font families are: default, decorative, roman, script,"
-					"swiss, modern and teletype.\n"
-					"available font style are: normal, slant and italic. \n"
-					 "available font weight are: normal, light and bold. \n"
-					"example: gfx define font new_font \"12 roman italic bold\" \n"
-					"Note that user must follow the order as described otherwise it will not work");
-#endif /*defined (WX_USER_INTERFACE)*/
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing font name");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "gfx_define_font.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_define_font */
 
 static int execute_command_gfx_define(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -5836,7 +5764,7 @@ Executes a GFX DEFINE command.
 					command_data->computed_field_package, define_Computed_field);
 				/* font */
 				Option_table_add_entry(option_table, "font", NULL,
-					command_data_void, gfx_define_font);
+					command_data->graphics_module, gfx_define_font);
 				/* scene */
 				Define_scene_data define_scene_data;
 				define_scene_data.light_manager=command_data->light_manager;
@@ -7142,7 +7070,6 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 						command_data->spectrum_manager,
 						command_data->default_spectrum,
 						command_data->volume_texture_manager,
-						command_data->graphics_font_package,
 						command_data->user_interface)))
 				{
 					display_message(ERROR_MESSAGE, "gfx_edit_scene.  "
@@ -18202,8 +18129,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Graphical_material_set_alpha(material, 1.0);
 			}
 		}
-		command_data->graphics_font_package = Cmiss_graphics_module_get_font_package(
-			command_data->graphics_module);
 		command_data->default_font = Cmiss_graphics_module_get_default_font(
 			command_data->graphics_module);
 
@@ -18670,7 +18595,7 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		command_data->spectrum_manager=NULL;
 		DEACCESS(Material_package)(&command_data->material_package);
-		DEACCESS(Graphics_font)(&command_data->default_font);
+		DEACCESS(Cmiss_graphics_font)(&command_data->default_font);
 		DESTROY(MANAGER(VT_volume_texture))(&command_data->volume_texture_manager);
 		DESTROY(MANAGER(Environment_map))(&command_data->environment_map_manager);
 		DEACCESS(Light_model)(&(command_data->default_light_model));

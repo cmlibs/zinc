@@ -2343,7 +2343,7 @@ DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	struct Graphics_font *font, char **labels, int n_data_components, GLfloat *data,
+	struct Cmiss_graphics_font *font, char **labels, int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names)
 {
@@ -2366,9 +2366,9 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 			else
 				glyph_set->glyph = (GT_object *)NULL;
 			if (font)
-				glyph_set->font = ACCESS(Graphics_font)(font);
+				glyph_set->font = ACCESS(Cmiss_graphics_font)(font);
 			else
-				glyph_set->font = (Graphics_font *)NULL;
+				glyph_set->font = (Cmiss_graphics_font *)NULL;
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
 			glyph_set->data = data;
@@ -2421,7 +2421,7 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		DEACCESS(GT_object)(&(glyph_set->glyph));
 		if (glyph_set->font)
 		{
-			DEACCESS(Graphics_font)(&(glyph_set->font));
+			DEACCESS(Cmiss_graphics_font)(&(glyph_set->font));
 		}
 		labels = glyph_set->labels;
 		if (labels)
@@ -2855,7 +2855,7 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
-	int object_name, GLfloat *data, struct Graphics_font *font)
+	int object_name, GLfloat *data, struct Cmiss_graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -2882,11 +2882,11 @@ derivative in that xi direction.
 			point->data=data;
 			if (font)
 			{
-				point->font = ACCESS(Graphics_font)(font);
+				point->font = ACCESS(Cmiss_graphics_font)(font);
 			}
 			else
 			{
-				point->font = (struct Graphics_font *)NULL;
+				point->font = (struct Cmiss_graphics_font *)NULL;
 			}
 			point->object_name = object_name;
 			point->ptrnext=(struct GT_point *)NULL;
@@ -2930,7 +2930,7 @@ Frees the frees the memory for <**point> and sets <*point> to NULL.
 			{
 				DEALLOCATE((*point)->data);
 			}
-			DEACCESS(Graphics_font)(&((*point)->font));
+			DEACCESS(Cmiss_graphics_font)(&((*point)->font));
 			DEALLOCATE(*point);
 		}
 		return_code=1;
@@ -2974,7 +2974,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
-	int *names, struct Graphics_font *font)
+	int *names, struct Cmiss_graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -3002,11 +3002,11 @@ point it is assumed that there isn't a derivative in that xi direction.
 			point_set->data=data;
 			if (font)
 			{
-				point_set->font = ACCESS(Graphics_font)(font);
+				point_set->font = ACCESS(Cmiss_graphics_font)(font);
 			}
 			else
 			{
-				point_set->font = (struct Graphics_font *)NULL;
+				point_set->font = (struct Cmiss_graphics_font *)NULL;
 			}
 			point_set->ptrnext=(struct GT_pointset *)NULL;
 			point_set->object_name = 0;
@@ -3062,7 +3062,7 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 			}
 			if ((*pointset)->font)
 			{
-				DEACCESS(Graphics_font)(&((*pointset)->font));
+				DEACCESS(Cmiss_graphics_font)(&((*pointset)->font));
 			}
 			DEALLOCATE(*pointset);
 		}

@@ -86,7 +86,7 @@ the arrow points in.
 
 struct GT_object *make_glyph_axes(const char *name, int make_solid, ZnReal head_length,
 	ZnReal half_head_width,const char **labels, ZnReal label_offset,
-	struct Graphics_font *font);
+	struct Cmiss_graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -204,7 +204,7 @@ into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
 twice <number_of_segments_down> look remotely spherical.
 ==============================================================================*/
 
-struct MANAGER(GT_object) *make_standard_glyphs(struct Graphics_font *font);
+struct MANAGER(GT_object) *make_standard_glyphs(struct Cmiss_graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 

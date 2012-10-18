@@ -49,6 +49,7 @@ SET(APP_SRCS
     source/finite_element/finite_element_region_app.cpp
     source/graphics/graphics_object_app.cpp
     source/graphics/graphic_app.cpp
+    source/graphics/graphics_font_app.cpp
     source/graphics/rendition_app.cpp
     source/computed_field/computed_field_conditional_app.cpp
     source/graphics/tessellation_app.cpp

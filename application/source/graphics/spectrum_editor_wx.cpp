@@ -2080,7 +2080,7 @@ current spectrum.
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	 struct Spectrum *spectrum,
-	 struct Graphics_font *font,
+	 struct Cmiss_graphics_font *font,
 	 struct Graphics_buffer_app_package *graphics_buffer_package,
 	 struct User_interface *user_interface,
 	 struct Cmiss_graphics_module *graphics_module,
