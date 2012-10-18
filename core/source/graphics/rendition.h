@@ -246,6 +246,13 @@ int Cmiss_rendition_spectrum_change(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message);
 
+/***************************************************************************//**
+ * Private method for informing rendition of font manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_rendition_font_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message);
+
 int for_each_rendition_in_Cmiss_rendition(
 	struct Cmiss_rendition *rendition,
 	int (*cmiss_rendition_tree_iterator_function)(struct Cmiss_rendition *rendition,

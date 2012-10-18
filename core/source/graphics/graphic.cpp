@@ -49,6 +49,7 @@ DESCRIPTION :
 #include <math.h>
 #include "api/cmiss_element.h"
 #include "api/cmiss_graphic.h"
+#include "api/cmiss_graphics_font.h"
 #include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_node.h"
@@ -443,7 +444,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->customised_graphics_object =(struct GT_object *)NULL;
 			graphic->autorange_spectrum_flag = 0;
 			/* for glyphsets */
-			graphic->font = (struct Graphics_font *)NULL;
+			graphic->font = NULL;
 			/* for cylinders, surfaces and volumes */
 			graphic->render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
 			/* for streamlines only */
@@ -590,7 +591,7 @@ int DESTROY(Cmiss_graphic)(
 		}
 		if (graphic->font)
 		{
-			DEACCESS(Graphics_font)(&(graphic->font));
+			DEACCESS(Cmiss_graphics_font)(&(graphic->font));
 		}
 		if (graphic->seed_element)
 		{
@@ -2044,7 +2045,7 @@ int Cmiss_graphic_set_material(struct Cmiss_graphic *graphic,
 
 int Cmiss_graphic_set_label_field(
 	struct Cmiss_graphic *graphic,struct Computed_field *label_field,
-	struct Graphics_font *font)
+	struct Cmiss_graphics_font *font)
 {
 	int return_code;
 
@@ -2057,7 +2058,7 @@ int Cmiss_graphic_set_label_field(
 		(!label_field || font))
 	{
 		REACCESS(Computed_field)(&(graphic->label_field), label_field);
-		REACCESS(Graphics_font)(&(graphic->font), font);
+		REACCESS(Cmiss_graphics_font)(&(graphic->font), font);
 		return_code=1;
 	}
 	else
@@ -2476,7 +2477,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				if (graphic->font)
 				{
 					append_string(&graphic_string," font ",&error);
-					if (GET_NAME(Graphics_font)(graphic->font, &name))
+					if (GET_NAME(Cmiss_graphics_font)(graphic->font, &name))
 					{
 						append_string(&graphic_string,name,&error);
 						DEALLOCATE(name);
@@ -5063,7 +5064,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
-		REACCESS(Graphics_font)(&(destination->font), source->font);
+		REACCESS(Cmiss_graphics_font)(&(destination->font), source->font);
 
 		/* ensure destination graphics object is cleared */
 		REACCESS(GT_object)(&(destination->graphics_object),
@@ -5987,7 +5988,7 @@ int Cmiss_graphic_get_radius_parameters(
 } /* Cmiss_graphic_get_radius_parameters */
 
 int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **label_field, struct Graphics_font **font)
+	struct Computed_field **label_field, struct Cmiss_graphics_font **font)
 {
 	int return_code;
 
@@ -6844,6 +6845,41 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 	return return_code;
 }
 
+int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
+	void *font_manager_message_void)
+{
+	int return_code;
+	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message =
+		(struct MANAGER_MESSAGE(Cmiss_graphics_font) *)font_manager_message_void;
+	if (graphic && manager_message)
+	{
+		return_code = 1;
+		if (graphic->font)
+		{
+			if ((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+				(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
+				(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+				(graphic->graphic_type == CMISS_GRAPHIC_POINT) && graphic->label_field)
+			{
+				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_font)(
+					manager_message, graphic->font);
+				// GRC: following could be smarter, e.g. by checking if actual discretization is changing
+				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_font))
+				{
+					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_tessellation_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
+
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object)
 {
@@ -7162,7 +7198,7 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		}
 		if (rendition_command_data.default_font)
 		{
-			DEACCESS(Graphics_font)(&rendition_command_data.default_font);
+			DEACCESS(Cmiss_graphics_font)(&rendition_command_data.default_font);
 		}
 		if (rendition_command_data.default_spectrum)
 		{

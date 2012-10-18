@@ -449,7 +449,7 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
 			}
 			if (rendition_command_data.default_font)
 			{
-				DEACCESS(Graphics_font)(&rendition_command_data.default_font);
+				DEACCESS(Cmiss_graphics_font)(&rendition_command_data.default_font);
 			}
 			if (rendition_command_data.default_spectrum)
 			{

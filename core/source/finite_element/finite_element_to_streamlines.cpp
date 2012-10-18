@@ -1963,7 +1963,7 @@ created with the given timestamp.
 		{
 			if ((pointset=CREATE(GT_pointset)(number_of_points,particle_positions,
 				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GLfloat *)NULL,(int *)NULL,
-				(struct Graphics_font *)NULL))&&
+				(struct Cmiss_graphics_font *)NULL))&&
 				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,ZnReal(time),pointset))
 			{
 				/* copy point positions and then point to new position space */

@@ -47,6 +47,7 @@
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_point_ranges.h"
+#include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "general/enumerator.h"
 #include "general/list.h"
@@ -162,7 +163,7 @@ finite element group rendition.
 	struct Spectrum *spectrum;
 	int autorange_spectrum_flag;
 	/* for glyphsets */
-	struct Graphics_font *font;
+	struct Cmiss_graphics_font *font;
 	/* for surfaces */
 	enum Cmiss_graphics_render_type render_type;
 	/* for lines, a non zero line width overrides the default */
@@ -307,8 +308,7 @@ struct Rendition_command_data
 	struct Cmiss_graphics_module *graphics_module;
 	struct Cmiss_rendition *rendition;
 	struct Graphical_material *default_material;
-	struct Graphics_font *default_font;
-	struct Graphics_font_package *graphics_font_package;
+	struct Cmiss_graphics_font *default_font;
 	struct MANAGER(GT_object *) glyph_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
@@ -464,12 +464,12 @@ enum Use_element_type Cmiss_graphic_get_use_element_type(
  * CMISS_GRAPHIC_ELEMENT_POINTS only.
  */
 int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **label_field, struct Graphics_font **font);
+	struct Computed_field **label_field, struct Cmiss_graphics_font **font);
 
 
 int Cmiss_graphic_set_label_field(
 	struct Cmiss_graphic *graphic,struct Computed_field *label_field,
-	struct Graphics_font *font);
+	struct Cmiss_graphics_font *font);
 
 int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
 	struct Computed_field **subgroup_field);
@@ -987,6 +987,16 @@ int Cmiss_graphic_spectrum_change(struct Cmiss_graphic *graphic,
  */
 int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 	void *tessellation_manager_message_void);
+
+/***************************************************************************//**
+ * Inform graphic of changes in the font manager. Marks affected
+ * graphics for rebuilding and sets flag for informing clients of rendition.
+ *
+ * @param font_manager_message_void  Pointer to
+ * struct MANAGER_MESSAGE(Cmiss_graphics_font).
+ */
+int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
+	void *font_manager_message_void);
 
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object);

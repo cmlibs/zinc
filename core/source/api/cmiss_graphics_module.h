@@ -37,6 +37,7 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
+#include "types/cmiss_graphics_font_id.h"
 #include "types/cmiss_graphics_filter_id.h"
 #include "types/cmiss_graphics_material_id.h"
 #include "types/cmiss_graphics_module_id.h"
@@ -204,6 +205,28 @@ ZINC_API int Cmiss_graphics_module_define_standard_materials(
  */
 ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
+
+/***************************************************************************//**
+ * Create and return a handle to a new font.
+ *
+ * @param graphics_module  The handle to the graphics module the font will
+ * belong to.
+ * @return  Handle to the newly created font if successful, otherwise NULL.
+ */
+ZINC_API Cmiss_graphics_font_id Cmiss_graphics_module_create_font(
+	Cmiss_graphics_module_id graphics_module);
+
+/***************************************************************************//**
+ * Find the font with the supplied name in graphics module, if any.
+ *
+ * @param graphics_module  The handle to the graphics module to find the
+ * spectrum in.
+ * @param name  The name of the font.
+ * @return  Handle to the font with that name, or NULL if not found.
+ */
+ZINC_API Cmiss_graphics_font_id Cmiss_graphics_module_find_font_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
+
 
 #ifdef __cplusplus
 }

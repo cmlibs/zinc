@@ -56,6 +56,7 @@ SET(APP_HDRS
     source/graphics/environment_map_app.h
     source/graphics/rendition_app.h
     source/finite_element/finite_element_region_app.h
+    source/graphics/graphics_font_app.h
     source/graphics/scene_viewer_app.h
     source/graphics/graphics_object_app.h
     source/graphics/tessellation_app.hpp

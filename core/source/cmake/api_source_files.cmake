@@ -27,6 +27,7 @@ SET( API_HDRS
     source/api/cmiss_field_vector_operators.h
     source/api/cmiss_graphic.h
     source/api/cmiss_graphics_filter.h
+    source/api/cmiss_graphics_font.h
     source/api/cmiss_graphics_material.h
     source/api/cmiss_graphics_module.h
     source/api/cmiss_interactive_tool.h

@@ -617,6 +617,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_trigonometry.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_vector_operators.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphic.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_font.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_filter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_material.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_module.h
@@ -654,6 +655,7 @@ SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_subobject_group_id.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphic_id.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_coordinate_system.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_font_id.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_filter_id.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_material_id.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_module_id.h

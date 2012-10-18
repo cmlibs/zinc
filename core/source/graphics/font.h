@@ -44,91 +44,48 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_FONT_H)
 #define GRAPHICS_FONT_H
 
+#include "api/types/cmiss_graphics_font_id.h"
 #include "general/callback.h"
 #include "general/manager.h"
-#include "general/object.h"
+#include "general/enumerator.h"
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_font_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_font_true_type);
 
 /*
 Global types
 ------------
 */
 
-struct Graphics_font_package;
+struct Cmiss_graphics_font;
 
-struct Graphics_font;
+DECLARE_LIST_TYPES(Cmiss_graphics_font);
 
-DECLARE_LIST_TYPES(Graphics_font);
+DECLARE_MANAGER_TYPES(Cmiss_graphics_font);
 
-DECLARE_MANAGER_TYPES(Graphics_font);
+struct Cmiss_graphics_module;
+#include "general/manager_private.h"
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Cmiss_graphics_font, struct Cmiss_graphics_module);
 
 /*
 Global functions
 ----------------
 */
 
-struct Graphics_font_package *CREATE(Graphics_font_package)(void);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphics_font);
 
-DESCRIPTION :
-==============================================================================*/
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_graphics_font);
 
+PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphics_font);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphics_font,name,const char *);
 
-int DESTROY(Graphics_font_package)(struct Graphics_font_package **package_address);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Cmiss_graphics_font,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_font);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_font,name,const char *);
 
-DESCRIPTION :
-==============================================================================*/
+struct Cmiss_graphics_font *CREATE(Cmiss_graphics_font)(const char *name);
 
-
-
-struct MANAGER(Graphics_font)
-	 *Graphics_font_package_get_font_manager(
-		 struct Graphics_font_package *font_package);
-/*******************************************************************************
-LAST MODIFIED : 17 May 2007
-
-DESCRIPTION :
-Extracts the font_manager from the graphics_font_package. Note that
-the rest of the program should use this sparingly - it is really only here to
-allow interfacing to the choose_object widgets.
-==============================================================================*/
-
-int Graphics_font_package_define_font(
-	struct Graphics_font_package *font_package,
-	const char *font_name, const char *font_string);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Defines font named <font_name> in the <font_package> using the
-user interface dependent <font_string>.
-==============================================================================*/
-
-struct Graphics_font *Graphics_font_package_get_font(
-	struct Graphics_font_package *font_package, const char *font_name);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Finds a Graphics_font with name <font_name> in the <font_package>.
-If it doesn't exist then a font is created using the <font_name>
-as the user interface dependent font string.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
-
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
-
-PROTOTYPE_LIST_FUNCTIONS(Graphics_font);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *);
-
-int DESTROY(Graphics_font)(struct Graphics_font **font_address);
+int DESTROY(Cmiss_graphics_font)(struct Cmiss_graphics_font **font_address);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -136,7 +93,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 
-int Graphics_font_compile(struct Graphics_font *font,
+int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font,
 	struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -146,12 +103,15 @@ Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required as the Win32 API requires a window context.
 ==============================================================================*/
 
-int Graphics_font_rendergl_text(struct Graphics_font *font, char *text,
+int Cmiss_graphics_font_rendergl_text(struct Cmiss_graphics_font *font, char *text,
 	float x, float y, float z);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
 ==============================================================================*/
+
+int Cmiss_graphics_font_manager_set_owner(struct MANAGER(Cmiss_graphics_font) *manager,
+	struct Cmiss_graphics_module *graphics_module);
 #endif /* !defined (GRAPHICS_FONT_H) */
 

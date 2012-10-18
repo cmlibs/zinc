@@ -240,7 +240,7 @@ static int draw_glyph_axes_general(Triple *coordinate_scaling,
 	ZnReal minor_cross_min, ZnReal minor_cross_max, FE_value minor_grid_size,
 	int minor_grids_per_major, FE_value min_minor_grid, FE_value min_major_grid,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, Render_graphics *renderer)
+	struct Cmiss_graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -553,7 +553,7 @@ static int draw_glyph_axes_ticks(Triple *coordinate_scaling,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, Render_graphics *renderer)
+	struct Cmiss_graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -593,7 +593,7 @@ static int draw_glyph_grid_lines(Triple *coordinate_scaling,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, Render_graphics *renderer)
+	struct Cmiss_graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -844,7 +844,7 @@ the arrow points in.
 
 struct GT_object *make_glyph_axes(const char *name, int make_solid, ZnReal head_length,
 	ZnReal half_head_width,const char **labels, ZnReal label_offset,
-	struct Graphics_font *font)
+	struct Cmiss_graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -1802,7 +1802,7 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 			(*points)[1]=0.0;
 			(*points)[2]=0.0;
 			if (!(pointset=CREATE(GT_pointset)(1,points,(char **)NULL,marker_type,
-				marker_size,g_NO_DATA,(GLfloat *)NULL,(int *)NULL, (struct Graphics_font *)NULL)))
+				marker_size,g_NO_DATA,(GLfloat *)NULL,(int *)NULL, (struct Cmiss_graphics_font *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -2083,7 +2083,7 @@ twice <number_of_segments_down> look remotely spherical.
 	return (glyph);
 } /* make_glyph_sphere */
 
-struct MANAGER(GT_object) *make_standard_glyphs(struct Graphics_font *font)
+struct MANAGER(GT_object) *make_standard_glyphs(struct Cmiss_graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 

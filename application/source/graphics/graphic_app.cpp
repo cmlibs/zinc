@@ -3,6 +3,8 @@
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
+#include "api/cmiss_graphics_module.h"
+#include "api/cmiss_graphics_font.h"
 #include "general/enumerator.h"
 #include "general/enumerator_private.hpp"
 #include "general/message.h"
@@ -697,11 +699,12 @@ int gfx_modify_rendition_graphic(struct Parse_state *state,
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
 		{
-			Graphics_font *new_font = 0;
-			if (font_name && (new_font = Graphics_font_package_get_font
-					(rendition_command_data->graphics_font_package, font_name)))
+			Cmiss_graphics_font *new_font = 0;
+			if (font_name && (0 != (new_font = Cmiss_graphics_module_find_font_by_name(
+				rendition_command_data->graphics_module, font_name))))
 			{
-				REACCESS(Graphics_font)(&graphic->font, new_font);
+				REACCESS(Cmiss_graphics_font)(&graphic->font, new_font);
+				Cmiss_graphics_font_destroy(&new_font);
 			}
 		}
 

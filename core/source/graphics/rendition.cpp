@@ -858,9 +858,9 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
 		{
-			Graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
+			Cmiss_graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 			Cmiss_graphic_set_label_field(graphic, (Cmiss_field *)NULL, font);
-			DEACCESS(Graphics_font)(&font);
+			DEACCESS(Cmiss_graphics_font)(&font);
 		}
 
 		// default to point glyph for fastest possible display
@@ -1525,6 +1525,27 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_rendition_tessellation_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
+
+int Cmiss_rendition_font_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message)
+{
+	int return_code = 1;
+	if (rendition && manager_message)
+	{
+		Cmiss_rendition_begin_change(rendition);
+		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_font_change, (void *)manager_message,
+			rendition->list_of_graphics);
+		Cmiss_rendition_end_change(rendition);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_font_change.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;
@@ -3570,8 +3591,6 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 		rendition_command_data->rendition = rendition;
 		rendition_command_data->default_material =
 			Material_package_get_default_material(material_package);
-		rendition_command_data->graphics_font_package =
-			Cmiss_graphics_module_get_font_package(rendition->graphics_module);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 		rendition_command_data->glyph_manager =
