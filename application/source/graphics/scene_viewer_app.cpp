@@ -100,6 +100,38 @@ struct Cmiss_scene_viewer_app_package *CREATE(Cmiss_scene_viewer_app_package)(
 	return (scene_viewer_package);
 } /* CREATE(Cmiss_scene_viewer_package) */
 
+int DESTROY(Cmiss_scene_viewer_app_package)(
+	struct Cmiss_scene_viewer_app_package **scene_viewer_app_package_address)
+{
+	int return_code = 0;
+	struct Cmiss_scene_viewer_app_package *scene_viewer_app_package = 0;
+	if (scene_viewer_app_package_address &&
+		( 0 != (scene_viewer_app_package = *scene_viewer_app_package_address)))
+	{
+		return_code = 1;
+		/* send the destroy callbacks */
+		if (scene_viewer_app_package->destroy_callback_list)
+		{
+			CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_app_package_callback)(
+				scene_viewer_app_package->destroy_callback_list,scene_viewer_app_package,NULL);
+			DESTROY( LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_app_package_callback)))(
+				&scene_viewer_app_package->destroy_callback_list);
+		}
+		if (scene_viewer_app_package->core_scene_viewer_package)
+		{
+			Cmiss_scene_viewer_package_destroy(&scene_viewer_app_package->core_scene_viewer_package);
+		}
+		if (scene_viewer_app_package->scene_viewer_app_list)
+		{
+			DESTROY(LIST(Scene_viewer_app))(
+				&scene_viewer_app_package->scene_viewer_app_list);
+		}
+		DEALLOCATE(*scene_viewer_app_package_address);
+	}
+
+	return return_code;
+}
+
 void My_Cmiss_scene_viewer_callback(Cmiss_scene_viewer_id /* scene_viewer */,
 		void * /*callback_data*/, void *user_data)
 {
@@ -199,6 +231,7 @@ int DESTROY(Scene_viewer_app)(struct Scene_viewer_app **scene_viewer_app_address
 		{
 			DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);
 		}
+		DEALLOCATE(*scene_viewer_app_address);
 	}
 
 	return return_code;

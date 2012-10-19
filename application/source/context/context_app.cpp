@@ -151,10 +151,9 @@ int Cmiss_context_app_destroy(struct Cmiss_context_app **context_address)
 	if (context_address && NULL != (context = *context_address))
 	{
 		context->access_count--;
+
 		if (0 == context->access_count)
 		{
-			if (context->context)
-				Cmiss_context_destroy(&context->context);
 			if (context->default_command_data)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
@@ -163,6 +162,8 @@ int Cmiss_context_app_destroy(struct Cmiss_context_app **context_address)
 			{
 				DESTROY(Event_dispatcher)(&context->event_dispatcher);
 			}
+			if (context->context)
+				Cmiss_context_destroy(&context->context);
 			DEALLOCATE(*context_address);
 		}
 		*context_address = NULL;
@@ -270,11 +271,15 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 				previous_instance, command_line, initial_main_window_state);
 #endif
 			struct Cmiss_graphics_module *graphics_module = Cmiss_context_get_default_graphics_module(context->context);
-			if (context->UI_module && context->UI_module->default_time_keeper &&
-				graphics_module)
+			if (graphics_module)
 			{
-				Cmiss_graphics_module_set_time_keeper_internal(graphics_module,
-					context->UI_module->default_time_keeper );
+				if (context->UI_module && context->UI_module->default_time_keeper &&
+					graphics_module)
+				{
+					Cmiss_graphics_module_set_time_keeper_internal(graphics_module,
+						context->UI_module->default_time_keeper );
+				}
+				Cmiss_graphics_module_destroy(&graphics_module);
 			}
 		}
 		if (context->UI_module)

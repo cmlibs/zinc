@@ -159,6 +159,8 @@ struct Cmiss_scene_viewer_app_package *CREATE(Cmiss_scene_viewer_app_package)(
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
 	struct User_interface *user_interface);
 
+int DESTROY(Cmiss_scene_viewer_app_package)(struct Cmiss_scene_viewer_app_package **scene_viewer_app_package_address);
+
 struct Scene_viewer_app *CREATE(Scene_viewer_app)(struct Graphics_buffer_app *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,

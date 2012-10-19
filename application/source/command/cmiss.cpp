@@ -18924,22 +18924,6 @@ Returns the scene viewer data from the <command_data>.
 	return (cmiss_scene_viewer_package);
 }
 
-struct Cmiss_graphics_module *Cmiss_command_data_get_graphics_module(
-	struct Cmiss_command_data *command_data)
-{
-	struct Cmiss_graphics_module *graphics_module;
-
-	ENTER(Cmiss_command_package_get_graphics_module);
-	graphics_module=(struct Cmiss_graphics_module *)NULL;
-	if (command_data)
-	{
-		graphics_module = Cmiss_graphics_module_access(command_data->graphics_module);
-	}
-	LEAVE;
-
-	return (graphics_module);
-}
-
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************

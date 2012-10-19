@@ -110,6 +110,7 @@ Cancels any further messages from managers.
 	{
 		/* not destroying field manager as not owned by package */
 		computed_field_package->simple_package->removeref();
+		DESTROY(LIST(Computed_field_type_data))(&computed_field_package->computed_field_type_list);
 		DEALLOCATE(*package_address);
 		return_code = 1;
 	}
