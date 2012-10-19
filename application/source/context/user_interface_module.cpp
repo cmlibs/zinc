@@ -332,7 +332,7 @@ int User_interface_module_destroy(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (UI_module->scene_viewer_package)
 			{
-				//-- DESTROY(Cmiss_scene_viewer_app_package)(&UI_module->scene_viewer_package);
+				DESTROY(Cmiss_scene_viewer_app_package)(&UI_module->scene_viewer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)

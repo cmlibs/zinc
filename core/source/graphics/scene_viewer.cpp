@@ -2932,6 +2932,7 @@ Destroys the scene_viewer_package.
 		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_package,
 			scene_viewer_package, scene_viewer_package->scene_viewer_list);
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_package->scene_viewer_list);
+		DESTROY(Graphics_buffer_package)(&scene_viewer_package->graphics_buffer_package);
 		DEACCESS(Light)(&scene_viewer_package->default_light);
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
 		DEACCESS(Scene)(&scene_viewer_package->scene);
