@@ -3709,6 +3709,7 @@ it.
 							 DESTROY(Graphics_window)(&window);
 							 window = (struct Graphics_window *)NULL;
 						}
+						DEACCESS(Graphics_buffer_app)(&graphics_buffer);
 				 }
 				 else
 				 {
@@ -3905,6 +3906,17 @@ Graphics_window_destroy_CB.
 #if defined (WX_USER_INTERFACE)
 		/* In this version each graphics window has it's own interactive
 			 tool manager so we need to destroy it. */
+		if (window->scene_viewer_array)
+		{
+			int pane_no;
+			/* close the Scene_viewer(s) */
+			for (pane_no=0;pane_no<window->number_of_scene_viewers;pane_no++)
+			{
+				DESTROY(Scene_viewer_app)(&(window->scene_viewer_array[pane_no]));
+			}
+			DEALLOCATE(window->scene_viewer_array);
+		}
+
 		if (window->interactive_tool_manager)
 		{
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);

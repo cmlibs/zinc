@@ -227,6 +227,10 @@ int DESTROY(Scene_viewer_app)(struct Scene_viewer_app **scene_viewer_app_address
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_app_input_callback)))(
 				&scene_viewer->input_callback_list);
 		}
+		if (scene_viewer->graphics_buffer)
+		{
+			DEACCESS(Graphics_buffer_app)(&scene_viewer->graphics_buffer);
+		}
 		if (scene_viewer->interactive_tool_manager)
 		{
 			DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);

@@ -292,6 +292,7 @@ contained in the this module only.
 	if (ALLOCATE(buffer, struct Graphics_buffer_app, 1))
 	{
 		buffer->access_count = 1;
+		buffer->package = package;
 		buffer->core_buffer = CREATE(Graphics_buffer)(package->core_package, type, buffering_mode, stereo_mode);
 		buffer->initialise_callback_list=
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback)))();
@@ -974,10 +975,10 @@ void Graphics_buffer_create_buffer_wx(
 							buffer->core_buffer->attrib_list = visual_attributes;
 						}
 					}
-					if (test_canvas)
-					{
-						delete test_canvas;
-					}
+				}
+				if (test_canvas)
+				{
+					delete test_canvas;
 				}
 			}
 			else
