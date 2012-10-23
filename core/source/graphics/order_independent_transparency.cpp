@@ -6,7 +6,7 @@ LAST MODIFIED : 19 March 2008
 DESCRIPTION :
 Implements in NVIDIA and ATI hardware and Mesa software a depth sorting
 algorithm where each depth layer is peeled off and then composited back
-together from back to front at the end.  
+together from back to front at the end.
 
 HISTORY :
   Based on algorithm from NVIDIA using SGIS_shadow and NV_texture_shader to
@@ -110,7 +110,7 @@ The private user data for this order independent transparency rendering pass.
 	int number_of_layers;
 	int maximum_number_of_layers;
 
-	GLuint *zbuffer;	
+	GLuint *zbuffer;
 
 	GLenum depth_format;
 
@@ -296,7 +296,7 @@ Draws one peeled layer of the scene.
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
 		}
 
-	}	
+	}
 #if defined (DEBUG_CODE)
 	else
 	{
@@ -307,8 +307,8 @@ Draws one peeled layer of the scene.
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
 		memset(data->zbuffer, 0, sizeof(GLuint) * data->viewport_width * data->viewport_height);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format, 
-			data->viewport_width, data->viewport_height, 0, 
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format,
+			data->viewport_width, data->viewport_height, 0,
 			GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, data->zbuffer);
 
 	}
@@ -431,7 +431,7 @@ Draw a textured quad for each layer and blend them all together correctly.
 
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[i]);
 		glEnable(GL_TEXTURE_RECTANGLE_ARB);
-		
+
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0);
 		glVertex2f(0, 0);
@@ -532,7 +532,7 @@ Returns true if the current display is capable of order independent transparency
 		}
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
- 	display_message(ERROR_MESSAGE,
+	display_message(ERROR_MESSAGE,
 		"Order independent transparency not compiled into this executable.  \n"
 		"It requries at least 8 alpha bits, 16 or 24 bit depth buffer and "
 		"these OpenGL extensions: ");
@@ -588,7 +588,7 @@ Initialises the order independent transparency extension.
 
 		glGetIntegerv(GL_DEPTH_BITS, &depth_bits);
 		glGetIntegerv(GL_ALPHA_BITS, &alpha_bits);
-		
+
 		switch (depth_bits)
 		{
 			case 16:
@@ -678,14 +678,14 @@ Initialises per rendering parts of this extension.
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
-		
+
 		if (REALLOCATE(data->zbuffer, data->zbuffer, GLuint, width * height))
 		{
 			memset(data->zbuffer, 0, sizeof(GLuint) * width * height);
 			data->viewport_width = width;
 			data->viewport_height = height;
-			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format, 
-				width, height, 0, 
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format,
+				width, height, 0,
 				GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, data->zbuffer);
 		}
 		else
@@ -722,7 +722,7 @@ Initialises per rendering parts of this extension.
 			for (i = 0 ; i < data->maximum_number_of_layers ; i++)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[i]);
-				glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, width, height, 0, 
+				glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, width, height, 0,
 					GL_RGBA, GL_UNSIGNED_BYTE, data->zbuffer);
 				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -780,16 +780,16 @@ Actually preforms the rendering pass.
 	USE_PARAMETER(data);
 	USE_PARAMETER(projection_matrix);
 	USE_PARAMETER(modelview_matrix);
-	
-	for(layer = 0; layer < data->number_of_layers - 1 ; layer++) 
+
+	for(layer = 0; layer < data->number_of_layers - 1 ; layer++)
 	{
 		/* Recompile the materials for order_independent_transaprency */
 		{
 			struct Material_order_independent_transparency material_data;
-			
+
 			material_data.layer = layer + 1;
 			material_data.renderer = Scene_viewer_rendering_data_get_renderer(rendering_data);
-			
+
 			Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
 				compile_Graphical_material_for_order_independent_transparency,
 				(void *)&material_data);
@@ -804,9 +804,9 @@ Actually preforms the rendering pass.
 	/* Recompile the materials back to the original state */
 	{
 		struct Material_order_independent_transparency material_data;
-	 
+
 		material_data.layer = 0;
-		
+
 		Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
 			compile_Graphical_material_for_order_independent_transparency,
 			(void *)&material_data);
@@ -848,7 +848,7 @@ Frees the memory associated with the <data_address> and sets <data_address> to N
 	int return_code;
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	int i;
-	struct Scene_viewer_order_independent_transparency_data *data;	
+	struct Scene_viewer_order_independent_transparency_data *data;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 
 	ENTER(order_independent_finalise);
