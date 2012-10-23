@@ -420,7 +420,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 								else
 								{
 									font->ftFont->FaceSize(font->size);
-									font->ftFont->UseDisplayList(true);
+									font->ftFont->UseDisplayList(false);
 								}
 							} break;
 							case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
@@ -441,7 +441,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 								{
 									font->ftFont->FaceSize(font->size,144);
 									font->ftFont->Depth((float)font->depth);
-									font->ftFont->UseDisplayList(true);
+									font->ftFont->UseDisplayList(false);
 								}
 							} break;
 							default :
