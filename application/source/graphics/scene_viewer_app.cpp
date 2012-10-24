@@ -700,6 +700,40 @@ void Scene_viewer_app_set_transform_flag(struct Scene_viewer_app *scene_viewer)
 	}
 }
 
+int Scene_viewer_app_input_transform(struct Scene_viewer_app *scene_viewer_app,
+	struct Graphics_buffer_input *input)
+{
+	//ALAN: This can be done properly with proper APIs registering and getting the state
+	// of tumble.
+	if (scene_viewer_app && scene_viewer_app->core_scene_viewer && input)
+	{
+		switch (input->type)
+		{
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
+			{
+				if ((scene_viewer_app->core_scene_viewer->drag_mode == SV_DRAG_TUMBLE) &&
+					scene_viewer_app->core_scene_viewer->tumble_angle)
+				{
+					scene_viewer_app->core_scene_viewer->tumble_active = 1;
+					if (!scene_viewer_app->idle_update_callback_id)
+					 {
+						scene_viewer_app->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+					 			User_interface_get_event_dispatcher(scene_viewer_app->user_interface),
+					 			Scene_viewer_app_idle_update_callback, (void *)scene_viewer_app,
+					 			EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+					 }
+				}
+			} break;
+			default:
+			{
+			} break;
+		}
+		return 1;
+	}
+
+	return 0;
+} /* Scene_viewer_app_input_transform */
+
 int Scene_viewer_app_default_input_callback(struct Scene_viewer_app *scene_viewer,
 	struct Graphics_buffer_input *input, void *dummy_void)
 {
@@ -742,6 +776,7 @@ int Scene_viewer_app_default_input_callback(struct Scene_viewer_app *scene_viewe
 				{
 					if (SCENE_VIEWER_CUSTOM != scene_viewer->core_scene_viewer->projection_mode)
 					{
+						Scene_viewer_app_input_transform(scene_viewer, input);
 						Scene_viewer_input_transform(scene_viewer->core_scene_viewer, input);
 					}
 				}
@@ -786,6 +821,7 @@ int Scene_viewer_app_default_input_callback(struct Scene_viewer_app *scene_viewe
 			{
 				if (SCENE_VIEWER_CUSTOM != scene_viewer->core_scene_viewer->projection_mode)
 				{
+					Scene_viewer_app_input_transform(scene_viewer, input);
 					Scene_viewer_input_transform(scene_viewer->core_scene_viewer, input);
 				}
 			}
