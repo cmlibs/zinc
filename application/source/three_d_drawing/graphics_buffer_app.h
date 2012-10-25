@@ -393,3 +393,14 @@ void Graphics_buffer_app_blit_framebuffer(struct Graphics_buffer_app *buffer);
 int Graphics_buffer_app_set_multisample_framebuffer(struct Graphics_buffer_app *buffer, int preferred_antialias);
 #endif /* defined (USE_MSAA) */
 
+int Graphics_buffer_get_visual_id(Graphics_buffer_app *buffer, int *visual_id);
+
+int Graphics_buffer_get_colour_buffer_depth(struct Graphics_buffer_app *buffer,
+	int *colour_buffer_depth);
+
+int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer_app *buffer,
+	int *depth_buffer_depth);
+
+int Graphics_buffer_get_accumulation_buffer_depth(struct Graphics_buffer_app *buffer,
+	int *accumulation_buffer_depth);
+

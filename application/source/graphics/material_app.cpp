@@ -395,6 +395,8 @@ DESCRIPTION :
 				}
 				if (process)
 				{
+					float material_alpha = (float)material_to_be_modified_copy->alpha;
+					float material_shininess = (float)material_to_be_modified_copy->shininess;
 					bump_mapping_flag = 0;
 					normal_mode_flag = 0;
 					per_pixel_mode_flag = 0;
@@ -490,7 +492,7 @@ DESCRIPTION :
 						"any arbitrary program to be set. At the moment only float type is supported.");
 
 					Option_table_add_entry(option_table, "alpha",
-						&(material_to_be_modified_copy->alpha), NULL,
+						&(material_alpha), NULL,
 						set_float_0_to_1_inclusive);
 					Option_table_add_entry(option_table, "ambient",
 						&(material_to_be_modified_copy->ambient), NULL,
@@ -570,6 +572,8 @@ DESCRIPTION :
 					return_code=Option_table_multi_parse(option_table, state);
 					if (return_code)
 					{
+						material_to_be_modified_copy->alpha = material_alpha;
+						material_to_be_modified_copy->shininess = material_shininess;
 						if (normal_mode_flag + per_pixel_mode_flag > 1)
 						{
 							display_message(ERROR_MESSAGE,
