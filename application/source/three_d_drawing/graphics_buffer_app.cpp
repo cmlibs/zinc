@@ -4705,7 +4705,10 @@ int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer_app *buffer,
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
-
+				 GLint depth_bits;
+				 glGetIntegerv(GL_DEPTH_BITS, &depth_bits);
+				 *depth_buffer_depth = depth_bits;
+				 return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
@@ -4788,7 +4791,16 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_ONSCREEN_TYPE:
 			{
-
+				 GLint accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_RED_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth = accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_BLUE_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_GREEN_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_ALPHA_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)

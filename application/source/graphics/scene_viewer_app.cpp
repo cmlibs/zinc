@@ -512,13 +512,13 @@ so should not be modified or deallocated.
 		*colour_buffer_depth = 0;
 		*depth_buffer_depth = 0;
 		*accumulation_buffer_depth = 0;
-		//-- Graphics_buffer_get_visual_id(Cmiss_scene_viewer_get_graphics_buffer(scene_viewer), visual_id);
-		//-- Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
-		//-- 	colour_buffer_depth);
-		//-- Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
-		//-- 	depth_buffer_depth);
-		//-- Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
-		//-- 	accumulation_buffer_depth);
+		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
+		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
+			colour_buffer_depth);
+		Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
+		 	depth_buffer_depth);
+		Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
+			accumulation_buffer_depth);
 
 		return_code=1;
 	}
