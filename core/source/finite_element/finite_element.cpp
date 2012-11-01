@@ -131,7 +131,7 @@ the point and the Xi coordinates of the point within the element.
 ==============================================================================*/
 {
 	/* the name of the field, which is its identifier */
-	char *name;
+	const char *name;
 	/* shared info for this FE_field including the FE_region it belongs to */
 	struct FE_field_info *info;
 	/* CMISS field type and number */
@@ -190,8 +190,7 @@ class FE_field_identifier : private FE_field
 public:
 	FE_field_identifier(const char *name)
 	{
-		// const_cast OK as must never be modified & cleared in destructor
-		FE_field::name = const_cast<char *>(name);
+		FE_field::name = name;
 	}
 
 	~FE_field_identifier()
@@ -13713,7 +13712,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 
 int set_FE_nodal_string_value(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,char *string)
+	enum FE_nodal_value_type type,const char *string)
 /*******************************************************************************
 LAST MODIFIED : 22 September 1999
 

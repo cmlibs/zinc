@@ -308,7 +308,7 @@ namespace {
 
 class Cmiss_graphics_filter_graphic_name : public Cmiss_graphics_filter
 {
-	char *matchName;
+	const char *matchName;
 
 public:
 	Cmiss_graphics_filter_graphic_name(const char *inMatchName) :
