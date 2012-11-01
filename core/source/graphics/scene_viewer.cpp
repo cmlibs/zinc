@@ -57,7 +57,7 @@ November 97 Created from rendering part of Drawing.
 #include <map>
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
-#include "api/new/cmiss_scene_viewer_input.h"
+#include "api/cmiss_scene_viewer_input.h"
 //#include "api/cmiss_graphic.h"
 //#include "computed_field/computed_field.h"
 //#include "computed_field/computed_field_composite.h"

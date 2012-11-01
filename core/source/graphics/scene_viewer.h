@@ -149,7 +149,7 @@ Global types
 ------------
 */
 
-#include "api/new/cmiss_scene_viewer_input.h"
+#include "api/cmiss_scene_viewer_input.h"
 
 #define MAX_CLIP_PLANES (6)
 #define SCENE_VIEWER_PICK_SIZE 7.0
