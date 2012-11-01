@@ -37,7 +37,7 @@
 #define __SCENE_VIEWER_HPP__
 
 #include "api/cmiss_scene_viewer.h"
-#include "api/new/cmiss_scene_viewer_input.h"
+#include "api/cmiss_scene_viewer_input.h"
 #include "api++/scene.hpp"
 
 namespace Zn
