@@ -1041,8 +1041,8 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 ==============================================================================*/
 
 int set_FE_nodal_string_value(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,char *string);
+	struct FE_field *field, int component_number, int version,
+	enum FE_nodal_value_type type, const char *string);
 /*******************************************************************************
 LAST MODIFIED : 3 September 1999
 

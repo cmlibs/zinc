@@ -3277,7 +3277,7 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 		{
 			manager_field_list = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
-					 const_cast<char *>(name), field->manager))
+				name, field->manager))
 			{
 				display_message(ERROR_MESSAGE, "Cmiss_field_set_name.  "
 					"Field named \"%s\" already exists in this field manager.",

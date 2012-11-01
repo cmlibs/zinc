@@ -1029,7 +1029,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cac
 		if (cache.assignInCacheOnly() ||
 			set_FE_nodal_string_value(node_location->get_node(),
 				fe_field, /*component_number*/0, /*version*/0,
-				FE_NODAL_VALUE, const_cast<char *>(valueCache.stringValue)))
+				FE_NODAL_VALUE, valueCache.stringValue))
 		{
 			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		}

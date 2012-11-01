@@ -96,7 +96,7 @@ private:
 
 public:
 	enum Cmiss_graphics_filter_type filter_type;
-	char *name;
+	const char *name;
 	int access_count;
 	struct MANAGER(Cmiss_graphics_filter) *manager;
 	int manager_change_status;
@@ -200,7 +200,7 @@ public:
 	Cmiss_graphics_filter_identifier(const char *name)
 	{
 		// const_cast OK as must never be modified & cleared in destructor
-		Cmiss_graphics_filter::name = const_cast<char *>(name);
+		Cmiss_graphics_filter::name = name;
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER;
 	}
 

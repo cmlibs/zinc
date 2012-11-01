@@ -6856,10 +6856,10 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 		return_code = 1;
 		if (graphic->font)
 		{
-			if ((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+			if (((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
 				(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
 				(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic->graphic_type == CMISS_GRAPHIC_POINT) && graphic->label_field)
+				(graphic->graphic_type == CMISS_GRAPHIC_POINT)) && graphic->label_field)
 			{
 				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_font)(
 					manager_message, graphic->font);

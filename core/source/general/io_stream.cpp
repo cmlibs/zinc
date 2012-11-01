@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_stream.cpp
 
-LAST MODIFIED : 
+LAST MODIFIED :
 
 DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
@@ -55,14 +55,10 @@ streams.
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#if defined (USE_IMAGEMAGICK)
-/* Should probably separate the inclusion of these libraries from the 
-   rest of Imagemagick, do this internally but could put that up to makefile */
 #define HAVE_ZLIB
 #include <zlib.h>
 #define HAVE_BZLIB
 #include <bzlib.h>
-#endif /* defined (USE_IMAGEMAGICK) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/indexed_list_private.h"
@@ -79,7 +75,7 @@ streams.
 /* SAB 2 December 2004
 	Turning this on all the time, cause if you are given a memory stream
 	it may not be NULL terminated at all so there is no delimiter to stop
-	running into memory that shouldn't be accessed, so copying in chunks 
+	running into memory that shouldn't be accessed, so copying in chunks
 	guarantees a NULL delimiter. */
 #define IO_STREAM_SPEED_UP_SSCANF
 
@@ -88,7 +84,7 @@ Module types
 ------------
 */
 
-enum IO_stream_type 
+enum IO_stream_type
 /*******************************************************************************
 LAST MODIFIED : 23 August 2004
 
@@ -474,7 +470,7 @@ DESCRIPTION :
 
 			/* IO_STREAM_FILE_TYPE */
 			io_stream->file_handle = (FILE *)NULL;
-			
+
 #if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
 			io_stream->gzip_file_handle = (gzFile *)NULL;
@@ -521,8 +517,8 @@ LAST MODIFIED : 23 March 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	const char *filename;
-	char *colon, *uri_type;
+	const char *filename, *colon;
+	char *uri_type;
 	int file_uri_specifier, return_code;
 
 	ENTER(IO_stream_open);
@@ -567,7 +563,7 @@ DESCRIPTION :
 						return_code = 0;
 					}
 #else /* defined (HAVE_BZLIB) */
-				        display_message(ERROR_MESSAGE,
+						display_message(ERROR_MESSAGE,
 							"IO_stream_open. Support for bz2 memory stream not compiled in.");
 					return_code = 0;
 #endif /* defined (HAVE_BZLIB) */
@@ -597,7 +593,7 @@ DESCRIPTION :
 			/* Look for a colon operator, fail if not file: or d: etc. */
 			int dos_file_uri_specifier = (stream_uri[1] == ':');
 			file_uri_specifier = !strncmp("file:", stream_uri, 5);
-			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(const_cast<char *>(stream_uri), ':'))))
+			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(stream_uri, ':'))))
 			{
 				if (file_uri_specifier)
 				{
@@ -622,12 +618,12 @@ DESCRIPTION :
 						return_code = 1;
 					}
 				}
-				else 
+				else
 #endif /* defined (HAVE_ZLIB) */
 #if defined (HAVE_BZLIB)
 				if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
 				{
-     				stream->bz2_file_handle = BZ2_bzopen(filename, "rb");
+					stream->bz2_file_handle = BZ2_bzopen(filename, "rb");
 					if (NULL != stream->bz2_file_handle)
 					{
 						stream->type = IO_STREAM_BZ2_FILE_TYPE;
@@ -728,14 +724,14 @@ DESCRIPTION :
 							"IO_stream_scan. memcpy with overlapping memory.");
 						return_code = 0;
 					}
-					memcpy(stream->buffer, stream->buffer + stream->buffer_index, 
+					memcpy(stream->buffer, stream->buffer + stream->buffer_index,
 						stream->buffer_valid_index - stream->buffer_index);
 					stream->buffer_valid_index -= stream->buffer_index;
 					stream->buffer_index = 0;
 				}
 
 				switch (stream->type)
-				{		
+				{
 #if defined (HAVE_ZLIB)
 					case IO_STREAM_GZIP_FILE_TYPE:
 					{
@@ -748,7 +744,7 @@ DESCRIPTION :
 					{
 						read_characters = BZ2_bzread(stream->bz2_file_handle, stream->buffer + stream->buffer_valid_index,
 							stream->buffer_chunk_size);
-				
+
 					} break;
 #endif /* defined (HAVE_BZLIB) */
 #if defined (IO_STREAM_SPEED_UP_SSCANF)
@@ -766,7 +762,7 @@ DESCRIPTION :
 						if (copy_size)
 						{
 							memcpy(stream->buffer + stream->buffer_valid_index,
-								((char *)stream->memory_block->memory_ptr) 
+								((char *)stream->memory_block->memory_ptr)
 								+ stream->memory_block_index,
 								copy_size);
 						}
@@ -964,8 +960,8 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 						temp = stream->buffer[temp_offset];
 						stream->buffer[temp_offset] = 0;
 #endif /* defined IO_STREAM_SPEED_UP_SSCANF */
-					
-						if ((0 <= sscanf(stream->buffer + stream->buffer_index, 
+
+						if ((0 <= sscanf(stream->buffer + stream->buffer_index,
 									local_buffer, &count)) && (count != -1))
 						{
 							stream->buffer_index += count;
@@ -975,7 +971,7 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 						{
 							keep_scanning = 0;
 						}
-					
+
 #if defined IO_STREAM_SPEED_UP_SSCANF
 						stream->buffer[temp_offset] = temp;
 
@@ -1025,9 +1021,9 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 
 							temp_offset = stream->buffer_index + stream->buffer_lookahead;
 							temp = stream->buffer[temp_offset];
-							stream->buffer[temp_offset] = 0;			
+							stream->buffer[temp_offset] = 0;
 #endif /* defined IO_STREAM_SPEED_UP_SSCANF */
-							if ((0 <= sscanf(stream->buffer + stream->buffer_index, 
+							if ((0 <= sscanf(stream->buffer + stream->buffer_index,
 										local_buffer, &count)) && (count != -1))
 							{
 								stream->buffer_index += count;
@@ -1063,9 +1059,9 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 
 							temp_offset = stream->buffer_index + stream->buffer_lookahead;
 							temp = stream->buffer[temp_offset];
-							stream->buffer[temp_offset] = 0;			
+							stream->buffer[temp_offset] = 0;
 #endif /* defined IO_STREAM_SPEED_UP_SSCANF */
-							if ((0 <= sscanf(stream->buffer + stream->buffer_index, 
+							if ((0 <= sscanf(stream->buffer + stream->buffer_index,
 										local_buffer, va_pointer, &count)) && (count != -1))
 							{
 								if (local_buffer[1] == 'n')
@@ -1082,11 +1078,11 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 							else
 							{
 								/* consume white space */
-								if (0 <= sscanf(stream->buffer + stream->buffer_index, 
+								if (0 <= sscanf(stream->buffer + stream->buffer_index,
 										" %n", &count))
 								{
 									stream->buffer_index += count;
-									local_counter += count;								
+									local_counter += count;
 								}
 								keep_scanning = 0;
 							}
@@ -1159,8 +1155,8 @@ Equivalent to a standard C fgetc on the stream.
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
- 			case IO_STREAM_BZ2_FILE_TYPE:
- 			case IO_STREAM_BZ2_MEMORY_TYPE:
+			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
 				return_code = stream->buffer[stream->buffer_index];
@@ -1211,7 +1207,7 @@ parameters so the stream is first).
 			case IO_STREAM_MEMORY_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
- 			case IO_STREAM_BZ2_MEMORY_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				eof = 0;
 				items_to_read = nmemb;
@@ -1221,7 +1217,7 @@ parameters so the stream is first).
 					IO_stream_read_to_internal_buffer(stream);
 					if (stream->buffer_valid_index > stream->buffer_index)
 					{
-					
+
 						if ((unsigned)(stream->buffer_valid_index - stream->buffer_index) >=
 							(size * items_to_read))
 						{
@@ -1229,7 +1225,7 @@ parameters so the stream is first).
 						}
 						else
 						{
-							items_this_copy = 
+							items_this_copy =
 								(stream->buffer_valid_index - stream->buffer_index) / size;
 						}
 						bytes_this_copy = items_this_copy * size;
@@ -1484,8 +1480,8 @@ DESCRIPTION :
 		{
 			case IO_STREAM_FILE_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
- 			case IO_STREAM_BZ2_FILE_TYPE:
- 			case IO_STREAM_BZ2_MEMORY_TYPE:
+			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				total_read = 0;
 				while (return_code && !IO_stream_end_of_stream(stream))
@@ -1620,7 +1616,7 @@ DESCRIPTION :
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
 			{
-				/* Memory is allocated by memory block, don't free until the 
+				/* Memory is allocated by memory block, don't free until the
 					memory block is removed or the IO_stream_package is DESTROYed */
 			} break;
 			default:
@@ -1714,7 +1710,7 @@ Implements the stdio function fseek on stream where possible.
 					{
 						display_message(ERROR_MESSAGE,
 							"IO_stream_seek. Attempt to seek out of memory block.");
-						return_code = 0;	
+						return_code = 0;
 					}
 				}
 			} break;

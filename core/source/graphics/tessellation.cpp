@@ -73,7 +73,7 @@ void list_divisions(int size, int *divisions)
  */
 struct Cmiss_tessellation
 {
-	char *name;
+	const char *name;
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Cmiss_tessellation) *manager;
 	int manager_change_status;
@@ -252,8 +252,7 @@ class Cmiss_tessellation_identifier : private Cmiss_tessellation
 public:
 	Cmiss_tessellation_identifier(const char *name)
 	{
-		// const_cast OK as must never be modified & cleared in destructor
-		Cmiss_tessellation::name = const_cast<char *>(name);
+		Cmiss_tessellation::name = name;
 	}
 
 	~Cmiss_tessellation_identifier()
