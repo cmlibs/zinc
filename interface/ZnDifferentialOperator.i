@@ -41,7 +41,7 @@
 %module DifferentialOperator
 
 %{
-#include "api++/differentialoperator.hpp"
+#include "zinc/differentialoperator.hpp"
 %}
 
-%include "api++/differentialoperator.hpp"
+%include "zinc/differentialoperator.hpp"

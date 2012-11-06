@@ -43,9 +43,9 @@
 %ignore Field;
 
 %{
-#include "api++/node.hpp"
-#include "api++/field.hpp"
+#include "zinc/node.hpp"
+#include "zinc/field.hpp"
 %}
 
-%include "api++/field.hpp"
-%include "api++/node.hpp"
+%include "zinc/field.hpp"
+%include "zinc/node.hpp"

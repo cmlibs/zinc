@@ -55,10 +55,10 @@
 %ignore NodesetGroup;
 
 %{
-#include "api++/fieldcache.hpp"
+#include "zinc/fieldcache.hpp"
 %}
 
-%include "api++/field.hpp"
-%include "api++/element.hpp"
-%include "api++/node.hpp"
-%include "api++/fieldcache.hpp"
+%include "zinc/field.hpp"
+%include "zinc/element.hpp"
+%include "zinc/node.hpp"
+%include "zinc/fieldcache.hpp"

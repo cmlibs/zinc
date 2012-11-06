@@ -53,14 +53,14 @@
 %ignore Tessellation;
 
 %{
-#include "api++/graphicsmodule.hpp"
+#include "zinc/graphicsmodule.hpp"
 %}
 
-%include "api++/graphicsfilter.hpp"
-%include "api++/graphicsmaterial.hpp"
-%include "api++/region.hpp"
-%include "api++/rendition.hpp"
-%include "api++/scene.hpp"
-%include "api++/spectrum.hpp"
-%include "api++/tessellation.hpp"
-%include "api++/graphicsmodule.hpp"
+%include "zinc/graphicsfilter.hpp"
+%include "zinc/graphicsmaterial.hpp"
+%include "zinc/region.hpp"
+%include "zinc/rendition.hpp"
+%include "zinc/scene.hpp"
+%include "zinc/spectrum.hpp"
+%include "zinc/tessellation.hpp"
+%include "zinc/graphicsmodule.hpp"

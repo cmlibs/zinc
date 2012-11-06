@@ -43,8 +43,8 @@
 %ignore Graphic;
 
 %{
-#include "api++/graphicsfilter.hpp"
+#include "zinc/graphicsfilter.hpp"
 %}
 
-%include "api++/graphic.hpp"
-%include "api++/graphicsfilter.hpp"
+%include "zinc/graphic.hpp"
+%include "zinc/graphicsfilter.hpp"

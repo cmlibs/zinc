@@ -41,7 +41,7 @@
 %module Spectrum
 
 %{
-#include "api++/spectrum.hpp"
+#include "zinc/spectrum.hpp"
 %}
 
-%include "api++/spectrum.hpp"
+%include "zinc/spectrum.hpp"

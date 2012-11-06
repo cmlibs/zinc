@@ -45,10 +45,10 @@
 %ignore Tessellation;
 
 %{
-#include "api++/graphic.hpp"
+#include "zinc/graphic.hpp"
 %}
 
-%include "api++/field.hpp"
-%include "api++/graphicsmaterial.hpp"
-%include "api++/tessellation.hpp"
-%include "api++/graphic.hpp"
+%include "zinc/field.hpp"
+%include "zinc/graphicsmaterial.hpp"
+%include "zinc/tessellation.hpp"
+%include "zinc/graphic.hpp"

@@ -41,7 +41,7 @@
 %module TimeSequence
 
 %{
-#include "api++/timesequence.hpp"
+#include "zinc/timesequence.hpp"
 %}
 
-%include "api++/timesequence.hpp"
+%include "zinc/timesequence.hpp"

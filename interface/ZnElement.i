@@ -49,10 +49,10 @@
 %ignore NodesetGroup;
 
 %{
-#include "api++/element.hpp"
+#include "zinc/element.hpp"
 %}
 
-%include "api++/field.hpp"
-%include "api++/differentialoperator.hpp"
-%include "api++/node.hpp"
-%include "api++/element.hpp"
+%include "zinc/field.hpp"
+%include "zinc/differentialoperator.hpp"
+%include "zinc/node.hpp"
+%include "zinc/element.hpp"

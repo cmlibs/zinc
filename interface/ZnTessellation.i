@@ -43,7 +43,7 @@
 %include "ZnIntegerValuesArrayTypemap.i"
 
 %{
-#include "api++/tessellation.hpp"
+#include "zinc/tessellation.hpp"
 %}
 
-%include "api++/tessellation.hpp"
+%include "zinc/tessellation.hpp"

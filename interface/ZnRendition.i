@@ -45,10 +45,10 @@
 %ignore SelectionHandler;
 
 %{
-#include "api++/rendition.hpp"
+#include "zinc/rendition.hpp"
 %}
 
-%include "api++/fieldtypesgroup.hpp"
-%include "api++/graphic.hpp"
-%include "api++/selection.hpp"
-%include "api++/rendition.hpp"
+%include "zinc/fieldtypesgroup.hpp"
+%include "zinc/graphic.hpp"
+%include "zinc/selection.hpp"
+%include "zinc/rendition.hpp"

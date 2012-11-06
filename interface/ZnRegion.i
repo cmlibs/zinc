@@ -47,9 +47,9 @@
 %ignore StreamResourceMemory;
 
 %{
-#include "api++/region.hpp"
+#include "zinc/region.hpp"
 %}
 
-%include "api++/fieldmodule.hpp"
-%include "api++/stream.hpp"
-%include "api++/region.hpp"
+%include "zinc/fieldmodule.hpp"
+%include "zinc/stream.hpp"
+%include "zinc/region.hpp"

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * CmissSelection.i
- * 
+ *
  * Swig interface file for cmgui selection API.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -41,47 +41,47 @@
 
 %module Selection
 
-%extend Zn::SelectionHandler {
+%extend zinc::SelectionHandler {
 
-	int setCallback(PyObject *callbackObject)
-	{
-		PyObject *my_callback = NULL;
+    int setCallback(PyObject *callbackObject)
+    {
+        PyObject *my_callback = NULL;
         if (!PyCallable_Check(callbackObject))
         {
-           	PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
-           	return NULL;
+            PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
+            return NULL;
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-    	return Cmiss_selection_handler_set_callback(($self)->getId(), selectionCallbackToPython, (void *)my_callback);
+        return Cmiss_selection_handler_set_callback(($self)->getId(), selectionCallbackToPython, (void *)my_callback);
     }
-    
+
     int clearCallback()
-	{
-		// Py_XDECREF(callbackObject); 
-    	return Cmiss_selection_handler_clear_callback(($self)->getId());
+    {
+        // Py_XDECREF(callbackObject);
+        return Cmiss_selection_handler_clear_callback(($self)->getId());
     }
 }
 
 %{
-#include "api++/selection.hpp"
+#include "zinc/selection.hpp"
 
 static void selectionCallbackToPython(Cmiss_selection_event_id selection_event,	void *user_data)
 {
-	PyObject *arglist = NULL;
-	PyObject *result = NULL;
-	PyObject *my_callback = (PyObject *)user_data;
-	/* convert time_notifier to python object */
-	PyObject *obj = NULL;
-	Zn::SelectionEvent *selectionEvent = new Zn::SelectionEvent(Cmiss_selection_event_access(selection_event));
-	obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_Zn__SelectionEvent, 1);
-	/* Time to call the callback */
-	arglist = Py_BuildValue("(N)", obj);
-	result = PyObject_CallObject(my_callback, arglist);
-	Py_DECREF(arglist);
-	if (result)
-		Py_DECREF(result);
+    PyObject *arglist = NULL;
+    PyObject *result = NULL;
+    PyObject *my_callback = (PyObject *)user_data;
+    /* convert time_notifier to python object */
+    PyObject *obj = NULL;
+    zinc::SelectionEvent *selectionEvent = new zinc::SelectionEvent(Cmiss_selection_event_access(selection_event));
+    obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_zinc__SelectionEvent, 1);
+    /* Time to call the callback */
+    arglist = Py_BuildValue("(N)", obj);
+    result = PyObject_CallObject(my_callback, arglist);
+    Py_DECREF(arglist);
+    if (result)
+        Py_DECREF(result);
 }
 %}
 
-%include "api++/selection.hpp"
+%include "zinc/selection.hpp"

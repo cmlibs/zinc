@@ -41,7 +41,7 @@
 %module Stream
 
 %{
-#include "api++/stream.hpp"
+#include "zinc/stream.hpp"
 %}
 
-%include "api++/stream.hpp"
+%include "zinc/stream.hpp"

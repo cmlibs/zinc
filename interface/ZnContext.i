@@ -1,6 +1,6 @@
 /*******************************************************************************
  * CmissContext.i
- * 
+ *
  * Swig interface file for cmgui context.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -43,20 +43,20 @@
 
 %ignore GraphicsModule;
 %ignore Region;
-%ignore TimeKeeper; 
+%ignore TimeKeeper;
 %ignore StreamInformationRegion;
 %ignore StreamInformation;
 %ignore SceneViewerPackage;
 %ignore Scene;
 
 %{
-#include "api++/context.hpp"
+#include "zinc/context.hpp"
 %}
 
-%include "api++/scene.hpp"
-%include "api++/sceneviewer.hpp"
-%include "api++/timekeeper.hpp"
-%include "api++/region.hpp"
-%include "api++/graphicsmodule.hpp"
-%include "api++/context.hpp"
+%include "zinc/scene.hpp"
+%include "zinc/sceneviewer.hpp"
+%include "zinc/timekeeper.hpp"
+%include "zinc/region.hpp"
+%include "zinc/graphicsmodule.hpp"
+%include "zinc/context.hpp"
 

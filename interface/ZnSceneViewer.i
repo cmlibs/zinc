@@ -42,9 +42,9 @@
 %ignore Scene;
 
 %{
-#include "api++/sceneviewer.hpp"
+#include "zinc/sceneviewer.hpp"
 %}
 
-%include "api++/scene.hpp"
-%include "api++/sceneviewer.hpp"
+%include "zinc/scene.hpp"
+%include "zinc/sceneviewer.hpp"
 

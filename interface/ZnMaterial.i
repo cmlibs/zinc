@@ -110,7 +110,7 @@
 }
 
 %{
-#include "api++/graphicsmaterial.hpp"
+#include "zinc/graphicsmaterial.hpp"
 %}
 
-%include "api++/graphicsmaterial.hpp"
+%include "zinc/graphicsmaterial.hpp"

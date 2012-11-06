@@ -43,10 +43,10 @@
 %ignore Field;
 
 %{
-#include "api++/optimisation.hpp"
-#include "api++/field.hpp"
+#include "zinc/optimisation.hpp"
+#include "zinc/field.hpp"
 %}
 
-%include"api++/field.hpp"
-%include "api++/optimisation.hpp"
+%include "zinc/field.hpp"
+%include "zinc/optimisation.hpp"
 

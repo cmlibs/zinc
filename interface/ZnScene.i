@@ -47,9 +47,9 @@
 %ignore Region;
 
 %{
-#include "api++/scene.hpp"
+#include "zinc/scene.hpp"
 %}
 
-%include "api++/graphicsfilter.hpp"
-%include "api++/region.hpp"
-%include "api++/scene.hpp"
+%include "zinc/graphicsfilter.hpp"
+%include "zinc/region.hpp"
+%include "zinc/scene.hpp"
