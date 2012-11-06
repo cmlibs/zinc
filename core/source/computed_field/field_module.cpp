@@ -39,9 +39,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <string>
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_time_sequence.h"
+#include "zinc/field.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/timesequence.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_alias.h"
@@ -193,7 +193,7 @@ struct Computed_field *Cmiss_field_module_find_field_by_name(
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(Cmiss_field_module_find_field_by_name);
-	if (field_module && field_name && 
+	if (field_module && field_name &&
 		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
 	{
 		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -321,7 +321,7 @@ int Cmiss_field_module_set_replace_field(
 	struct Computed_field *replace_field)
 {
 	int return_code;
-	
+
 	if (field_module && ((NULL == replace_field) ||
 		(field_module->region == Computed_field_get_region(replace_field))))
 	{
@@ -346,10 +346,10 @@ int Cmiss_field_module_set_replace_field(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_set_replace_field.  Invalid arguments");		
+			"Cmiss_field_module_set_replace_field.  Invalid arguments");
 		return_code = 0;
 	}
-	
+
 	return (return_code);
 }
 

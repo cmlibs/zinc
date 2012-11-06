@@ -43,8 +43,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <cstdio>
-	#include "api/cmiss_field.h"
-	#include "api/cmiss_region.h"
+	#include "zinc/field.h"
+	#include "zinc/region.h"
 	#include "computed_field/computed_field.h"
 	#include "computed_field/computed_field_composite.h"
 	#include "computed_field/computed_field_finite_element.h"

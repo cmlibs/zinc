@@ -45,7 +45,7 @@ cannot reside in finite element modules.
 #include <stdlib.h>
 #include <math.h>
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "general/debug.h"
 #include "node/node_operations.h"
 #include "general/message.h"

@@ -47,11 +47,11 @@ appearance of spectrums.
 #include <math.h>
 #include <stdlib.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #include <stdio.h>
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/list.h"

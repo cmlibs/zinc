@@ -39,8 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/graphicsmodule.h"
 #include "context/context.h"
 #include "curve/curve.h"
 #include "general/debug.h"

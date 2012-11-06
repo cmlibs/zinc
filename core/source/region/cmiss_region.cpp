@@ -39,11 +39,11 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
+#include "zinc/element.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/node.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"

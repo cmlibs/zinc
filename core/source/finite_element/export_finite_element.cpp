@@ -41,12 +41,12 @@ Functions for exporting finite element data to a file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_element.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
+#include "zinc/element.h"
+#include "zinc/field.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"

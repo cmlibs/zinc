@@ -45,8 +45,8 @@ lookup of the element.
 #include <stdio.h>
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_element.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"

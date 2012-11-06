@@ -46,7 +46,7 @@ Spectrum functions and support code.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "api/cmiss_spectrum.h"
+#include "zinc/spectrum.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"

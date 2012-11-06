@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (computed_field_rescale_intensity_image_filter_H)
 #define computed_field_rescale_intensity_image_filter_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK rescale intensity image filter on scalar

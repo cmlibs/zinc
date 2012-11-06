@@ -72,9 +72,9 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_H
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
-#include "api/cmiss_graphic.h"
+#include "zinc/graphic.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -84,7 +84,7 @@ Used to be gtypes.h
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "zinc/field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 /*

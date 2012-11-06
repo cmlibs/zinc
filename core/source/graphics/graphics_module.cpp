@@ -37,7 +37,7 @@ FILE : graphics_module.cpp
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_graphics_material.h"
+#include "zinc/graphicsmaterial.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -398,10 +398,10 @@ int Cmiss_graphics_module_destroy(
 			}
 			if (graphics_module->default_scene)
 				DEACCESS(Scene)(&graphics_module->default_scene);
- 			if (graphics_module->scene_manager)
- 				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
- 			if (graphics_module->glyph_manager)
- 				DESTROY(MANAGER(GT_object))(&graphics_module->glyph_manager);
+			if (graphics_module->scene_manager)
+				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
+			if (graphics_module->glyph_manager)
+				DESTROY(MANAGER(GT_object))(&graphics_module->glyph_manager);
 			if (graphics_module->default_light)
 				DEACCESS(Light)(&graphics_module->default_light);
 			if (graphics_module->light_manager)

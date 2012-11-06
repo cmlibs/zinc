@@ -49,7 +49,7 @@ Utilities for handling images.
 #include <sys/stat.h>
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include "general/debug.h"
 #include "general/image_utilities.h"

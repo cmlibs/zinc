@@ -42,7 +42,7 @@
 #if !defined (CMISS_NODE_PRIVATE_HPP)
 #define CMISS_NODE_PRIVATE_HPP
 
-#include "api/cmiss_node.h"
+#include "zinc/node.h"
 
 struct FE_region;
 

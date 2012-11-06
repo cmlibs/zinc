@@ -46,12 +46,12 @@
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_rendition.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/rendition.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/rendition.h"
-#include "api/cmiss_field_cad.h"
+#include "zinc/field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

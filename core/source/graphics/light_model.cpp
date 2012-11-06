@@ -59,7 +59,7 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #include "general/debug.h"

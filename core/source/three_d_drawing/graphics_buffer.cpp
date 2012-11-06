@@ -42,7 +42,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #if defined (WIN32)
 //#	define WINDOWS_LEAN_AND_MEAN

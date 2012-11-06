@@ -60,10 +60,10 @@ return to direct rendering, as described with these routines.
 #include <string.h>
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_graphics_material.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/graphicsmaterial.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"

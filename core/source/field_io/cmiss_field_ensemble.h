@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_field_ensemble.h
- * 
+ *
  * Implements a domain field consisting of set of indexed entries.
  * Warning: prototype!
  */
@@ -41,16 +41,16 @@
 #if !defined (CMISS_FIELD_ENSEMBLE_H)
 #define CMISS_FIELD_ENSEMBLE_H
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_field_id.h"
+#include "zinc/zincsharedobject.h"
+#include "zinc/types/fieldid.h"
 #include "field_io/cmiss_field_ensemble_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "zinc/types/fieldmoduleid.h"
 
 Cmiss_field_id Cmiss_field_module_create_ensemble(Cmiss_field_module_id field_module);
 
 Cmiss_field_ensemble_id Cmiss_field_cast_ensemble(Cmiss_field_id field);
 
-CMISS_C_INLINE Cmiss_field_id Cmiss_field_ensemble_base_cast(Cmiss_field_ensemble_id ensemble)
+ZINC_C_INLINE Cmiss_field_id Cmiss_field_ensemble_base_cast(Cmiss_field_ensemble_id ensemble)
 {
 	return (Cmiss_field_id)(ensemble);
 }

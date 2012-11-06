@@ -40,7 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_stream.h"
+#include "zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "stream/cmiss_stream_private.hpp"

@@ -37,7 +37,7 @@
 #if !defined (SELECTION_HPP)
 #define SELECTION_HPP
 
-#include "api/cmiss_selection.h"
+#include "zinc/selection.h"
 
 struct Cmiss_selection_event;
 

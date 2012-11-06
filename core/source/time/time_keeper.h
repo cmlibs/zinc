@@ -11,7 +11,7 @@ This is intended to be multithreaded......
 #if !defined (TIME_KEEPER_H)
 #define TIME_KEEPER_H
 
-#include "api/cmiss_time_keeper.h"
+#include "zinc/timekeeper.h"
 
 #define Time_keeper Cmiss_time_keeper
 #define Time_object Cmiss_time_notifier

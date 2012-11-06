@@ -47,12 +47,12 @@
 #include <map>
 #include <vector>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
-#include "api/cmiss_scene.h"
-#include "api/cmiss_graphics_filter.h"
-#include "api/cmiss_rendition.h"
+#include "zinc/scene.h"
+#include "zinc/graphicsfilter.h"
+#include "zinc/rendition.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_set.h"

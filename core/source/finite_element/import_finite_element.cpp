@@ -43,9 +43,9 @@ interface to CMISS.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"

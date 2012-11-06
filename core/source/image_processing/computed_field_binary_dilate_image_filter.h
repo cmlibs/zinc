@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYDILATEFILTER_H)
 #define COMPUTED_FIELD_BINARYDILATEFILTER_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK binary dilate image filter on scalar source

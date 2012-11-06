@@ -40,7 +40,7 @@
 #ifndef GRAPHICS_COORDINATE_SYSTEM_HPP
 #define GRAPHICS_COORDINATE_SYSTEM_HPP
 
-#include "api/types/cmiss_graphics_coordinate_system.h"
+#include "zinc/types/graphicscoordinatesystem.h"
 #include "general/enumerator.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_coordinate_system);

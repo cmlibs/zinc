@@ -42,7 +42,7 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #if defined (WIN32_SYSTEM)

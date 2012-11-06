@@ -44,7 +44,7 @@ Functions used for managers and lists.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (COMPARE_H)
 
-#include "api/cmiss_shared_object.h"
+#include "zinc/zincsharedobject.h"
 
 /*
 Global functions

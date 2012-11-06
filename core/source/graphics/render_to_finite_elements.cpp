@@ -42,11 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
+#include "zinc/element.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field.h"

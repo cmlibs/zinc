@@ -45,8 +45,8 @@ data points.
 #if !defined (SNAKE_H)
 #define SNAKE_H
 
-#include "api/cmiss_element.h"
-#include "api/cmiss_node.h"
+#include "zinc/element.h"
+#include "zinc/node.h"
 
 int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,

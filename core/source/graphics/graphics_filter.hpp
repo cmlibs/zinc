@@ -42,8 +42,8 @@
 #ifndef GRAPHICS_FILTER_HPP
 #define GRAPHICS_FILTER_HPP
 
-#include "api/cmiss_scene.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/scene.h"
+#include "zinc/graphicsmodule.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/mystring.h"

@@ -44,7 +44,7 @@ Implements a number of basic trigonometry operations on computed fields.
 #if !defined (COMPUTED_FIELD_TRIGONOMETRY_H)
 #define COMPUTED_FIELD_TRIGONOMETRY_H
 
-#include "api/cmiss_field_trigonometry.h"
+#include "zinc/fieldtrigonometry.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_create_sin Cmiss_field_module_create_sin

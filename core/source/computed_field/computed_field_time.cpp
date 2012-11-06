@@ -42,7 +42,7 @@ Implements a number of basic component wise operations on computed fields.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
-#include "api/cmiss_field_time.h"
+#include "zinc/fieldtime.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
@@ -272,7 +272,7 @@ int Computed_field_get_type_time_lookup(struct Computed_field *field,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the 
+If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the
 <source_field> and <time_field> used by it are returned.
 ==============================================================================*/
 {
@@ -303,15 +303,15 @@ char computed_field_time_value_type_string[] = "time_value";
 class Computed_field_time_value : public Computed_field_core
 {
 public:
-	
+
 	Time_object *time_object;
 
-	Computed_field_time_value(Time_keeper* time_keeper) : 
+	Computed_field_time_value(Time_keeper* time_keeper) :
 		Computed_field_core(),
 		time_object(NULL)
 	{
 		time_object = Time_object_create_regular(
-			/*update_frequency*/10.0, /*time_offset*/0.0); 
+			/*update_frequency*/10.0, /*time_offset*/0.0);
 		if (!Time_keeper_add_time_object(time_keeper, time_object))
 		{
 			DEACCESS(Time_object)(&time_object);
@@ -338,7 +338,7 @@ public:
 private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_time_value( 
+		return new Computed_field_time_value(
 			Time_object_get_time_keeper(time_object));
 	}
 
@@ -371,7 +371,7 @@ DESCRIPTION :
 	ENTER(Computed_field_time_value::compare);
 	if (field && (other = dynamic_cast<Computed_field_time_value*>(other_core)))
 	{
-		if (Time_object_get_time_keeper(time_object) == 
+		if (Time_object_get_time_keeper(time_object) ==
 			Time_object_get_time_keeper(other->time_object))
 		{
 			return_code = 1;

@@ -42,7 +42,7 @@
 #if !defined (COMPUTED_FIELD_SUBOBJECT_GROUP_INTERNAL_HPP)
 #define COMPUTED_FIELD_SUBOBJECT_GROUP_INTERNAL_HPP
 
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldsubobjectgroup.h"
 
 /***************************************************************************//**
  * List statistics about btree structure of node_group.

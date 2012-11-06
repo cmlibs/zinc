@@ -43,8 +43,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_image_processing.h"
+#include "zinc/field.h"
+#include "zinc/fieldimageprocessing.h"
 
 struct Computed_field *Cmiss_field_module_create_binary_threshold_image_filter(
 	struct Cmiss_field_module *field_module,
@@ -52,8 +52,8 @@ struct Computed_field *Cmiss_field_module_create_binary_threshold_image_filter(
 	double upper_threshold);
 
 /*****************************************************************************//**
- * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER, 
- * the source_field and thresholds used by it are returned - 
+ * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER,
+ * the source_field and thresholds used by it are returned -
  * otherwise an error is reported.
  *
  * @return Return code indicating success (1) or failure (0)

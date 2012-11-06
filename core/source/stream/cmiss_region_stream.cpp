@@ -40,7 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_region.h"
+#include "zinc/region.h"
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"

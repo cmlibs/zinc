@@ -47,7 +47,7 @@ Functions for converting one finite_element representation to another.
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

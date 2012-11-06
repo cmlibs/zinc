@@ -45,7 +45,7 @@ therefore cannot reside in finite element modules.
 #if !defined (ELEMENT_OPERATIONS_H)
 #define ELEMENT_OPERATIONS_H
 
-#include "api/cmiss_field_finite_element.h"
+#include "zinc/fieldfiniteelement.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

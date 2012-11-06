@@ -41,7 +41,7 @@
 #if !defined (FIELD_MODULE_H)
 #define FIELD_MODULE_H
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.

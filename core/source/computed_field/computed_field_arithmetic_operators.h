@@ -45,8 +45,8 @@ Implements a number of basic component wise operators on computed fields.
 #define COMPUTED_FIELD_ARITHMETIC_OPERATORS_H
 
 #include "general/value.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_arithmetic_operators.h"
+#include "zinc/field.h"
+#include "zinc/fieldarithmeticoperators.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_create_sum_components Cmiss_field_module_create_sum_components
@@ -69,7 +69,7 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_POWER with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
@@ -83,7 +83,7 @@ LAST MODIFIED : 14 May 2008
 
 DESCRIPTION :
 Creates a field of type COMPUTED_FIELD_MULTIPLY with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
@@ -97,7 +97,7 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DIVIDE with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
@@ -111,7 +111,7 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
@@ -125,7 +125,7 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
@@ -139,7 +139,7 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
+fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/

@@ -45,8 +45,8 @@ Implements computed fields which conditionally calculate their inputs.
 #define COMPUTED_FIELD_CONDITIONAL_H
 
 #include "general/value.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_conditional.h"
+#include "zinc/field.h"
+#include "zinc/fieldconditional.h"
 
 #define Computed_field_create_if Cmiss_field_module_create_if
 
@@ -55,7 +55,7 @@ Implements computed fields which conditionally calculate their inputs.
  * source_fields. For each component, if the value of source_field_one is TRUE
  * (non-zero) then the result will be the value of source_field_two, otherwise the
  * component result will be taken from source_field_three.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  Conditional field.
  * @param source_field_two  TRUE = non-zero conditional component results.

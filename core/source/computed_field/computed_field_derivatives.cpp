@@ -43,7 +43,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"

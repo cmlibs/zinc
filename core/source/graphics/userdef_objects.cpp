@@ -48,7 +48,7 @@ Used to be in graphics_object.h
 #include <stdio.h>
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #include "general/debug.h"

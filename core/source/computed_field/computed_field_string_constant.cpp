@@ -42,7 +42,7 @@ Implements a constant string field.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
-#include "api/cmiss_field_constant.h"
+#include "zinc/fieldconstant.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "general/debug.h"

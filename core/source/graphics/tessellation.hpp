@@ -43,7 +43,7 @@
 #if !defined (TESSELLATION_HPP)
 #define TESSELLATION_HPP
 
-#include "api/cmiss_tessellation.h"
+#include "zinc/tessellation.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

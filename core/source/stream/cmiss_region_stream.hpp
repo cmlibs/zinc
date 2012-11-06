@@ -43,7 +43,7 @@
 #if !defined (CMISS_REGION_STREAM_HPP)
 #define CMISS_REGION_STREAM_HPP
 
-#include "api/cmiss_region.h"
+#include "zinc/region.h"
 #include "stream/cmiss_stream_private.hpp"
 
 struct Cmiss_region_resource_properties : Cmiss_resource_properties

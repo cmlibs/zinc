@@ -48,7 +48,7 @@ Functions for reading graphics object data from a file.
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/cmiss_graphics_material.h"
+#include "zinc/graphicsmaterial.h"
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"
@@ -261,7 +261,7 @@ DESCRIPTION :
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have file keyword\n"
-							"Valid header is 'CMISS exobj File Version 3'\n");						
+							"Valid header is 'CMISS exobj File Version 3'\n");
 					}
 					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"version")))
@@ -814,7 +814,7 @@ DESCRIPTION :
 		vertex1[3], vertex2[3];
 	ZnReal *new_coordinate_vertices, *coordinate_vertices,
 		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
-	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number, 
+	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number,
 		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
 		n_obj_normal_vertices, n_obj_texture_vertices, n_texture_coordinates, return_code,
 		*vertex_reindex, warning_multiple_normals;
@@ -894,7 +894,7 @@ DESCRIPTION :
 					return_code = 0;
 				} break;
 			}
-				
+
 			if (return_code)
 			{
 				warning_multiple_normals = 0;
@@ -946,7 +946,7 @@ DESCRIPTION :
 							word=strtok(NULL," \n");
 							if (word)
 							{
-								if (number_of_vertices && vertex_list && 
+								if (number_of_vertices && vertex_list &&
 									number_of_triangles && triangle_list)
 								{
 									/* Add the voltex we currently have and reset the vertex and triangle lists */
@@ -1030,13 +1030,13 @@ DESCRIPTION :
 						else if (0==strcmp(word, "v"))
 						{
 							/* process vertices */
-							if(REALLOCATE(new_coordinate_vertices, coordinate_vertices, ZnReal, 
+							if(REALLOCATE(new_coordinate_vertices, coordinate_vertices, ZnReal,
 									3 * (n_obj_coordinate_vertices + 1)) &&
-								REALLOCATE(vertex_reindex, vertex_reindex, int, 
+								REALLOCATE(vertex_reindex, vertex_reindex, int,
 									(n_obj_coordinate_vertices + 1)))
 							{
 								coordinate_vertices = new_coordinate_vertices;
-								
+
 								vertex_reindex[n_obj_coordinate_vertices] = -1;
 								new_coordinate_vertices = coordinate_vertices + 3 * n_obj_coordinate_vertices;
 								i=0;
@@ -1056,11 +1056,11 @@ DESCRIPTION :
 						else if (0==strcmp(word,"vt"))
 						{
 							/* process texture vertices */
-							if(REALLOCATE(new_texture_vertices, texture_vertices, ZnReal, 
+							if(REALLOCATE(new_texture_vertices, texture_vertices, ZnReal,
 									3 * (n_obj_texture_vertices + 1)))
 							{
 								texture_vertices = new_texture_vertices;
-								
+
 								new_texture_vertices = texture_vertices + 3 * n_obj_texture_vertices;
 								i=0;
 								while (NULL != (word=strtok(NULL," ")))
@@ -1074,16 +1074,16 @@ DESCRIPTION :
 									i++;
 								}
 								n_obj_texture_vertices++;
-							}							
+							}
 						}
 						else if (0==strcmp(word,"vn"))
 						{
 							/* process vertex normals */
-							if(REALLOCATE(new_normal_vertices, normal_vertices, ZnReal, 
+							if(REALLOCATE(new_normal_vertices, normal_vertices, ZnReal,
 									3 * (n_obj_normal_vertices + 1)))
 							{
 								normal_vertices = new_normal_vertices;
-								
+
 								new_normal_vertices = normal_vertices + 3 * n_obj_normal_vertices;
 								i=0;
 								while (NULL != (word=strtok(NULL," ")))
@@ -1209,12 +1209,12 @@ DESCRIPTION :
 													{
 														vertex_list[number_of_vertices] = vertex;
 														vertex->index = number_of_vertices;
-												
-														vertex->coordinates[0] = 
+
+														vertex->coordinates[0] =
 															coordinate_vertices[3 * (face_vertex[face_index][0] - 1)];
-														vertex->coordinates[1] = 
+														vertex->coordinates[1] =
 															coordinate_vertices[3 * (face_vertex[face_index][0] - 1) + 1];
-														vertex->coordinates[2] = 
+														vertex->coordinates[2] =
 															coordinate_vertices[3 * (face_vertex[face_index][0] - 1) + 2];
 
 														vertex_reindex[face_vertex[face_index][0] - 1] = number_of_vertices;
@@ -1239,7 +1239,7 @@ DESCRIPTION :
 												if (REALLOCATE(vertex->triangles, vertex->triangles,
 														struct VT_iso_triangle *, vertex->number_of_triangles + 1))
 												{
-													vertex->triangles[vertex->number_of_triangles] = 
+													vertex->triangles[vertex->number_of_triangles] =
 														triangle;
 													vertex->number_of_triangles++;
 												}
@@ -1265,11 +1265,11 @@ DESCRIPTION :
 												if((face_vertex[face_index][1] > 0) &&
 													(face_vertex[face_index][1] <= n_obj_texture_vertices))
 												{
-													vertex->texture_coordinates[0] = 
+													vertex->texture_coordinates[0] =
 														texture_vertices[3 * (face_vertex[face_index][1] - 1)];
-													vertex->texture_coordinates[1] = 
+													vertex->texture_coordinates[1] =
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 1];
-													vertex->texture_coordinates[2] = 
+													vertex->texture_coordinates[2] =
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 2];
 
 													n_texture_coordinates = 3;
@@ -1292,11 +1292,11 @@ DESCRIPTION :
 													if(vertex->normal[0] || vertex->normal[1]
 														|| vertex->normal[2])
 													{
-														if ((vertex->normal[0] != 
+														if ((vertex->normal[0] !=
 																normal_vertices[3 * (face_vertex[face_index][2] - 1)])
-															|| (vertex->normal[1] != 
+															|| (vertex->normal[1] !=
 																normal_vertices[3 * (face_vertex[face_index][2] - 1) + 1])
-															|| (vertex->normal[2] != 
+															|| (vertex->normal[2] !=
 																normal_vertices[3 * (face_vertex[face_index][2] - 1) + 2]))
 														{
 															if(!warning_multiple_normals)
@@ -1425,7 +1425,7 @@ DESCRIPTION :
 				}
 			}
 			IO_stream_close(file);
-			DESTROY(IO_stream)(&file);			
+			DESTROY(IO_stream)(&file);
 		}
 		else
 		{

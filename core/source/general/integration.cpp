@@ -45,7 +45,7 @@ elements.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"

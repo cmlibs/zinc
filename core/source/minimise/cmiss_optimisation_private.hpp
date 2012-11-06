@@ -48,7 +48,7 @@
 
 #include <list>
 #include <sstream>
-#include "api/cmiss_optimisation.h"
+#include "zinc/optimisation.h"
 #include "computed_field/field_module.hpp"
 
 typedef std::list<Cmiss_field_id> FieldList;

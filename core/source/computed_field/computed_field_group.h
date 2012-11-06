@@ -43,8 +43,8 @@
 #if !defined (COMPUTED_FIELD_GROUP_H)
 #define COMPUTED_FIELD_GROUP_H
 
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_group.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldgroup.h"
 
 /*****************************************************************************//**
  * Sets up command data for group field.

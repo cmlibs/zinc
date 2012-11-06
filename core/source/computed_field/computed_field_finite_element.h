@@ -44,7 +44,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "api/cmiss_field_finite_element.h"
+#include "zinc/fieldfiniteelement.h"
 
 /*
 Global functions
@@ -125,8 +125,8 @@ DESCRIPTION :
 
 /*****************************************************************************//**
  * Creates a cmiss_number type fields whose value is the number of the element
- * or node location. 
- * 
+ * or node location.
+ *
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
@@ -185,7 +185,7 @@ DESCRIPTION :
  * Creates a field whose return values are the xi coordinate location.
  * Currently fixed at 3 components, padding with zeros for lower dimension
  * elements.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */

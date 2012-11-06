@@ -38,7 +38,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <cstdio>
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "finite_element/finite_element.h"
 #include "general/mystring.h"

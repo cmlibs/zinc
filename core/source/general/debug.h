@@ -47,8 +47,8 @@ Function definitions for debugging.
 
 #include <stdarg.h>
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_shared_object.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/zincsharedobject.h"
 
 /*
 Macros

@@ -42,7 +42,7 @@
 #if !defined (DIFFERENTIAL_OPERATOR_HPP)
 #define DIFFERENTIAL_OPERATOR_HPP
 
-#include "api/cmiss_differential_operator.h"
+#include "zinc/differentialoperator.h"
 #include "finite_element/finite_element_region.h"
 
 /**

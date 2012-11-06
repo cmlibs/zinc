@@ -42,7 +42,7 @@ Functions for interfacing with the graphics library.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #if defined (OPENGL_API)
 #if defined (USE_GLEW)

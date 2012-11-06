@@ -41,13 +41,19 @@
 # This is the project name and shows up in ides
 PROJECT( ZincCore )
 
-SET( CMISS_ZINC_CONFIGURE ${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h )
-SET( CMISS_SHARED_OBJECT ${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
-CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_zinc_configure.h.cmake
-    ${CMISS_ZINC_CONFIGURE} )
-CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/cmiss_shared_object.h.cmake
-    ${CMISS_SHARED_OBJECT} )
-SET( CONFIGURE_HDRS ${CMISS_ZINC_CONFIGURE} ${CMISS_SHARED_OBJECT} )
+IF( MSVC )
+    SET( ZINC_C_INLINE __inline )
+ELSE()
+    SET( ZINC_C_INLINE "static inline" )
+ENDIF()
+
+SET( ZINC_CONFIGURE ${PROJECT_BINARY_DIR}/source/api/zinc/zincconfigure.h )
+SET( ZINC_SHARED_OBJECT ${PROJECT_BINARY_DIR}/source/api/zinc/zincsharedobject.h )
+CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
+    ${ZINC_CONFIGURE} )
+CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
+    ${ZINC_SHARED_OBJECT} )
+SET( CONFIGURE_HDRS ${ZINC_CONFIGURE} ${ZINC_SHARED_OBJECT} )
 
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from
@@ -92,10 +98,6 @@ INCLUDE( source/cmake/zinc_lib_source_files.cmake )
 
 PRINT_LIST_DUPLICATIONS( ZINC_LIB_SRCS )
 PRINT_LIST_DUPLICATIONS( ZINC_LIB_HDRS )
-
-SET( CONFIGURE_HDRS
-    ${PROJECT_BINARY_DIR}/source/api/cmiss_zinc_configure.h
-    ${PROJECT_BINARY_DIR}/source/api/cmiss_shared_object.h )
 
 INCLUDE_DIRECTORIES( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
     ${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS} )

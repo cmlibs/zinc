@@ -55,10 +55,10 @@ November 97 Created from rendering part of Drawing.
 #include <cmath>
 #include <cstdio>
 #include <map>
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_scene_viewer_input.h"
-//#include "api/cmiss_graphic.h"
+#include "zinc/field.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/sceneviewerinput.h"
+//#include "zinc/graphic.h"
 //#include "computed_field/computed_field.h"
 //#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"

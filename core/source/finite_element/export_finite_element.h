@@ -45,7 +45,7 @@ Functions for exporting finite element data to a file.
 #define EXPORT_FINITE_ELEMENT_H
 
 #include <stdio.h>
-#include "api/cmiss_field_group.h"
+#include "zinc/fieldgroup.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
 #include "region/cmiss_region.h"

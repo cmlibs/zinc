@@ -1,9 +1,9 @@
 /*****************************************************************************//**
  * FILE : computed_field_alias.h
- * 
+ *
  * Implements a cmiss field which is an alias for another field, commonly from a
  * different region to make it available locally.
- * 
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -43,11 +43,11 @@
 #if !defined (COMPUTED_FIELD_ALIAS_H)
 #define COMPUTED_FIELD_ALIAS_H
 
-#include "api/cmiss_field_alias.h"
+#include "zinc/fieldalias.h"
 
 /*****************************************************************************//**
  * Sets up command data for alias field.
- * 
+ *
  * @param computed_field_package  Container for command data.
  * @param root_region  Root region for getting paths to fields in other regions.
  * @return 1 on success, 0 on failure.
