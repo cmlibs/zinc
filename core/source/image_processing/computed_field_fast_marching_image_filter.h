@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_FAST_MARCHING_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_FAST_MARCHING_IMAGE_FILTER_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK fast marching image filter on scalar source field

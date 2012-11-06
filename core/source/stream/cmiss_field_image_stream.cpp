@@ -40,7 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_field_image.h"
+#include "zinc/fieldimage.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"
 #include "general/mystring.h"

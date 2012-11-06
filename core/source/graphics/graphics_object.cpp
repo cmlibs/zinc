@@ -52,11 +52,11 @@ gtObject/gtWindow management routines.
 #include <stdio.h>
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/field.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 #include "general/compare.h"
@@ -75,7 +75,7 @@ gtObject/gtWindow management routines.
 #include "graphics/volume_texture.h"
 #include "general/message.h"
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "zinc/field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"

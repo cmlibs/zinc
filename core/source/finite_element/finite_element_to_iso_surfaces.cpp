@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : finite_element_to_iso_surfaces.cpp
- * 
+ *
  * Functions for creating graphical iso-surfaces from finite element fields.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -40,7 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 #include <list>
 #include <map>
-#include "api/cmiss_differential_operator.h"
+#include "zinc/differentialoperator.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -107,7 +107,7 @@ public:
 		exact_xi(true), xi1(xi[0]), xi2(xi[1]), xi3(xi[2]), scalar(scalar)
 	{
 	}
-	
+
 	void set(int in_i, int in_j, int in_k)
 	{
 		exact_xi = false;
@@ -193,7 +193,7 @@ public:
 		texture_coordinates[1] = 0.0;
 		texture_coordinates[2] = 0.0;
 	}
-	
+
 	~Iso_vertex()
 	{
 		delete[] data;
@@ -229,7 +229,7 @@ class Iso_triangle
 {
 public:
 	const Iso_vertex *v1, *v2, *v3;
-	
+
 	Iso_triangle(const Iso_vertex *v1, const Iso_vertex *v2, const Iso_vertex *v3) :
 		v1(v1), v2(v2), v3(v3)
 	{
@@ -245,7 +245,7 @@ class Iso_mesh
 public:
 	Iso_vertex_map vertex_map;
 	Iso_triangle_list triangle_list;
-	
+
 	Iso_mesh() :
 		vertex_map(Point_index_pair_compare()),
 		triangle_list()
@@ -264,7 +264,7 @@ public:
 			delete (vertex);
 		}
 	}
-	
+
 	const Iso_vertex *get_vertex(const Point_index_pair& pp) const
 	{
 		Iso_vertex_map_const_iterator iter = vertex_map.find(pp);
@@ -281,7 +281,7 @@ public:
 		vertex_map[pp] = vertex;
 		return vertex;
 	}
-	
+
 	/**
 	 *      3
 	 *     / \
@@ -454,17 +454,17 @@ class Marching_cube
 
 public:
 	Marching_cube();
-	
+
 	unsigned char final_case(unsigned char unrotated_case)
 	{
 		return cases[unrotated_case][0];
 	}
-	
+
 	unsigned char rotated_vertex(unsigned char unrotated_case, unsigned char unrotated_vertex)
 	{
 		return cases[unrotated_case][unrotated_vertex + 1];
 	}
-	
+
 	bool inverse(unsigned char unrotated_case)
 	{
 		return (0 != cases[unrotated_case][9]);
@@ -480,27 +480,27 @@ Marching_cube::Marching_cube()
 			{ 2, 3, 6, 7, 0, 1, 4, 5 },
 			{ 6, 7, 4, 5, 2, 3, 0, 1 },
 			{ 4, 5, 0, 1, 6, 7, 2, 3 },
-			
+
 			{ 3, 2, 1, 0, 7, 6, 5, 4 },
 			{ 1, 0, 5, 4, 3, 2, 7, 6 },
 			{ 5, 4, 7, 6, 1, 0, 3, 2 },
 			{ 7, 6, 3, 2, 5, 4, 1, 0 },
-			
+
 			{ 1, 3, 0, 2, 5, 7, 4, 6 },
 			{ 0, 2, 4, 6, 1, 3, 5, 7 },
 			{ 4, 6, 5, 7, 0, 2, 1, 3 },
 			{ 5, 7, 1, 3, 4, 6, 0, 2 },
-			
+
 			{ 2, 0, 3, 1, 6, 4, 7, 5 },
 			{ 3, 1, 7, 5, 2, 0, 6, 4 },
 			{ 7, 5, 6, 4, 3, 1, 2, 0 },
 			{ 6, 4, 2, 0, 7, 5, 3, 1 },
-			
+
 			{ 0, 4, 1, 5, 2, 6, 3, 7 },
 			{ 1, 5, 3, 7, 0, 4, 2, 6 },
 			{ 3, 7, 2, 6, 1, 5, 0, 4 },
 			{ 2, 6, 0, 4, 3, 7, 1, 5 },
-			
+
 			{ 5, 1, 4, 0, 7, 3, 6, 2 },
 			{ 4, 0, 6, 2, 5, 1, 7, 3 },
 			{ 6, 2, 7, 3, 4, 0, 5, 1 },
@@ -525,7 +525,7 @@ Marching_cube::Marching_cube()
 			{ 195, 0 }
 	};
 	static const unsigned char power2[8] =	{ 1, 2, 4, 8, 16, 32, 64, 128 };
-	
+
 	ENTER(Marching_cube::Marching_cube);
 	memset(cases, 0, sizeof(cases));
 	for (int f = 0; f < 14; f++)
@@ -641,7 +641,7 @@ private:
 			Iso_mesh_map_iterator iter = mesh_map.find(current_iso_value_number);
 			if (iter != mesh_map.end())
 			{
-				last_mesh = iter->second;				
+				last_mesh = iter->second;
 			}
 			else
 			{
@@ -651,7 +651,7 @@ private:
 		}
 		return *last_mesh;
 	}
-	
+
 	const Iso_vertex *compute_line_crossing(const Point_index_pair& pp);
 
 	const Iso_vertex *get_line_crossing(const Point_index_pair& pp)
@@ -679,12 +679,12 @@ private:
 	{
 		plane_scalars[(k & 1)*plane_size + j*(number_in_xi1 + 1) + i] = scalar_value;
 	}
-	
+
 	/***************************************************************************//**
 	 * Evaluate the scalar field at the centre of the quad and return true if it
 	 * exceeds current iso-value.
 	 * @param p1, p2, p3, p4  Point indexes of ambiguous quad corners.
-	 * @return  true if scalar at quad centre is greater than current iso-value. 
+	 * @return  true if scalar at quad centre is greater than current iso-value.
 	 */
 	bool ambiguous_quad_resolves_over(const Point_index& p1, const Point_index& p2,
 		const Point_index& p3, const Point_index& p4)
@@ -770,7 +770,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, Cmiss_field_cache_id
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0, &shape_type1);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1, &shape_type2);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/2, &shape_type3);
-	
+
 	simplex12 = (SIMPLEX_SHAPE == shape_type1) && (SIMPLEX_SHAPE == shape_type2);
 	simplex13 = (SIMPLEX_SHAPE == shape_type3) && (SIMPLEX_SHAPE == shape_type1);
 	simplex23 = (SIMPLEX_SHAPE == shape_type2) && (SIMPLEX_SHAPE == shape_type3);
@@ -812,7 +812,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, Cmiss_field_cache_id
 			// better: number_in_xi2 *= number_of_polygon_vertices;
 		}
 	}
-	
+
 	// precalculate scalings from index to xi
 	delta_xi1 = 1.0 / number_in_xi1;
 	delta_xi2 = 1.0 / number_in_xi2;
@@ -863,13 +863,13 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	}
 	const Iso_vertex* new_vertex = get_mesh().add_vertex(pp, vertex);
 	LEAVE;
-	
+
 	return (new_vertex);
 }
 
 /***************************************************************************//**
- * @param p0..p3  Point index locations of tetrahedron vertices with winding: 
- * 
+ * @param p0..p3  Point index locations of tetrahedron vertices with winding:
+ *
  *       3---2
  *      / \.'|
  *     / .'\ |
@@ -901,9 +901,9 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p0,
 		{ 1, 0, 1, 2, 3, 1 }, // 14 : 1,2,3 over = case 1 inverse
 		{ 0, 0, 0, 0, 0, 0 }  // 15
 	};
-	
+
 	ENTER(Isosurface_builder::cross_tetrahedron);
-	int unrotated_case =	
+	int unrotated_case =
 		((get_scalar(p0) > current_iso_value) ? 1 : 0) +
 		((get_scalar(p1) > current_iso_value) ? 2 : 0) +
 		((get_scalar(p2) > current_iso_value) ? 4 : 0) +
@@ -968,7 +968,7 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 	p[5].set(i + 1, j    , k + 1);
 	p[6].set(i    , j + 1, k + 1);
 	p[7].set(i + 1, j + 1, k + 1);
-	int unrotated_case =	
+	int unrotated_case =
 		((get_scalar(p[0]) > current_iso_value) ?   1 : 0) +
 		((get_scalar(p[1]) > current_iso_value) ?   2 : 0) +
 		((get_scalar(p[2]) > current_iso_value) ?   4 : 0) +
@@ -1134,7 +1134,7 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 
 /***************************************************************************//**
  * @param i, j, k  Index location origin A of unit cube containing octahedron,
- * vertices 0..5 used with following numbering and winding: 
+ * vertices 0..5 used with following numbering and winding:
  *
  *     5-------B
  *    /:      /|
@@ -1143,8 +1143,8 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
  *   | 1- - -|-2
  *   |:      |/
  *   A-------0
- *   
- * Octahedron is cube with A and B corner tetrahedra removed. 
+ *
+ * Octahedron is cube with A and B corner tetrahedra removed.
  */
 int Isosurface_builder::cross_octahedron(int i, int j, int k)
 {
@@ -1158,7 +1158,7 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 		{  1, 1, 2, 0, 5, 3, 4, 0 }, //  2
 		{  3, 0, 1, 2, 3, 4, 5, 0 }, //  3 : 0,1 over (adj) = standard case
 		{  1, 2, 0, 1, 4, 5, 3, 0 }, //  4
-		{  3, 0, 2, 4, 1, 3, 5, 0 }, //  5 
+		{  3, 0, 2, 4, 1, 3, 5, 0 }, //  5
 		{  3, 1, 2, 0, 5, 3, 4, 0 }, //  6
 		{  7, 0, 1, 2, 3, 4, 5, 0 }, //  7 : 0,1,2 over (adj) = standard case
 		{  1, 3, 1, 0, 5, 4, 2, 0 }, //  8
@@ -1228,7 +1228,7 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 	p[3].set(i    , j    , k + 1);
 	p[4].set(i + 1, j    , k + 1);
 	p[5].set(i    , j + 1, k + 1);
-	int unrotated_case =	
+	int unrotated_case =
 		((get_scalar(p[0]) > current_iso_value) ?  1 : 0) +
 		((get_scalar(p[1]) > current_iso_value) ?  2 : 0) +
 		((get_scalar(p[2]) > current_iso_value) ?  4 : 0) +
@@ -1316,8 +1316,8 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 
 /***************************************************************************//**
  * @param p0..p4  Point index locations of pyramid vertices with winding:
- *  
- *        4\ 
+ *
+ *        4\
  *       /.\ \
  *      /.  \  \
  *     /2 . .\. 3
@@ -1337,7 +1337,7 @@ int Isosurface_builder::cross_pyramid(
 		{  1, 0, 1, 2, 3, 4, 0 }, //  1 : 0 over = standard case
 		{  1, 1, 3, 0, 2, 4, 0 }, //  2
 		{  3, 0, 1, 2, 3, 4, 0 }, //  3 : 0,1 over = standard case
-		{  1, 2, 0, 3, 1, 4, 0 }, //  4 
+		{  1, 2, 0, 3, 1, 4, 0 }, //  4
 		{  3, 2, 0, 3, 1, 4, 0 }, //  5
 		{  9, 1, 3, 0, 2, 4, 0 }, //  6
 		{  7, 0, 1, 2, 3, 4, 0 }, //  7 : 0,1,2 over = standard case
@@ -1362,14 +1362,14 @@ int Isosurface_builder::cross_pyramid(
 		{  3, 2, 0, 3, 1, 4, 1 }, // 26
 		{  1, 2, 0, 3, 1, 4, 1 }, // 27
 		{  3, 0, 1, 2, 3, 4, 1 }, // 28 : 2,3,4 over = case 3 inverse
-		{  1, 1, 3, 0, 2, 4, 1 }, // 29 
+		{  1, 1, 3, 0, 2, 4, 1 }, // 29
 		{  1, 0, 1, 2, 3, 4, 1 }, // 30 : 1,2,3,4 over = case 1 inverse
 		{  0, 0, 0, 0, 0, 0, 0 }  // 31
 	};
-	
+
 	ENTER(Isosurface_builder::cross_pyramid);
 	int return_code = 1;
-	int unrotated_case =	
+	int unrotated_case =
 		((get_scalar(p0) > current_iso_value) ?  1 : 0) +
 		((get_scalar(p1) > current_iso_value) ?  2 : 0) +
 		((get_scalar(p2) > current_iso_value) ?  4 : 0) +
@@ -1531,10 +1531,10 @@ int Isosurface_builder::cross_triangle_wedge(
 		{  1, 0, 1, 2, 3, 4, 5, 1 }, // 62 : 1,2,3,4,5 over = case 1 inverse
 		{  0, 0, 0, 0, 0, 0, 0, 0 }  // 63
 	};
-	
+
 	ENTER(Isosurface_builder::cross_triangle_wedge);
 	int return_code = 1;
-	int unrotated_case =	
+	int unrotated_case =
 		((get_scalar(p0) > current_iso_value) ?  1 : 0) +
 		((get_scalar(p1) > current_iso_value) ?  2 : 0) +
 		((get_scalar(p2) > current_iso_value) ?  4 : 0) +
@@ -1706,13 +1706,13 @@ int Isosurface_builder::sweep()
 
 			for (int i = mod_number_in_xi1; i >= 0; i--)
 			{
-				xi[0] = i*delta_xi1; 
+				xi[0] = i*delta_xi1;
 				if (Cmiss_field_cache_set_mesh_location(field_cache, element, 3, xi) &&
 					Cmiss_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value))
 				{
 					scalar_value = static_cast<double>(scalar_FE_value);
 					set_scalar(i, j, k, scalar_value);
-					
+
 					for (int v = 0; v < number_of_iso_values; v++)
 					{
 						current_iso_value_number = v;
@@ -1793,7 +1793,7 @@ int Isosurface_builder::sweep()
 		}
 	}
 	LEAVE;
-	
+
 	return (return_code);
 }
 
@@ -1811,7 +1811,7 @@ bool Isosurface_builder::reverse_winding()
 	number_in_xi[0] = 1;
 	number_in_xi[1] = 1;
 	number_in_xi[2] = 1;
-	if (FE_element_shape_get_xi_points_cell_centres(shape, 
+	if (FE_element_shape_get_xi_points_cell_centres(shape,
 			number_in_xi, number_of_xi_points_created, &xi_points))
 	{
 		Cmiss_differential_operator_id d_dxi1 = Cmiss_mesh_get_chart_differential_operator(mesh, /*order*/1, 1);
@@ -1824,8 +1824,8 @@ bool Isosurface_builder::reverse_winding()
 		{
 			cross_product_FE_value_vector3(winding_coordinate_derivative1, winding_coordinate_derivative2, result);
 			if ((result[0] * winding_coordinate_derivative3[0] +
-			     result[1] * winding_coordinate_derivative3[1] +
-			     result[2] * winding_coordinate_derivative3[2]) < 0)
+				 result[1] * winding_coordinate_derivative3[1] +
+				 result[2] * winding_coordinate_derivative3[2]) < 0)
 			{
 				reverse_winding = true;
 			}
@@ -1878,16 +1878,16 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					const Iso_vertex* v1 = triangle->v1;
 					const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
 					const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
-					(*point)[0] = (ZnReal)v1->coordinates[0]; 
-					(*point)[1] = (ZnReal)v1->coordinates[1]; 
+					(*point)[0] = (ZnReal)v1->coordinates[0];
+					(*point)[1] = (ZnReal)v1->coordinates[1];
 					(*point)[2] = (ZnReal)v1->coordinates[2];
 					point++;
-					(*point)[0] = (ZnReal)v2->coordinates[0]; 
-					(*point)[1] = (ZnReal)v2->coordinates[1]; 
+					(*point)[0] = (ZnReal)v2->coordinates[0];
+					(*point)[1] = (ZnReal)v2->coordinates[1];
 					(*point)[2] = (ZnReal)v2->coordinates[2];
 					point++;
-					(*point)[0] = (ZnReal)v3->coordinates[0]; 
-					(*point)[1] = (ZnReal)v3->coordinates[1]; 
+					(*point)[0] = (ZnReal)v3->coordinates[0];
+					(*point)[1] = (ZnReal)v3->coordinates[1];
 					(*point)[2] = (ZnReal)v3->coordinates[2];
 					point++;
 					// calculate facet normal:
@@ -1909,16 +1909,16 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					}
 					if (NULL != texture)
 					{
-						(*texture)[0] = (ZnReal)v1->texture_coordinates[0]; 
-						(*texture)[1] = (ZnReal)v1->texture_coordinates[1]; 
+						(*texture)[0] = (ZnReal)v1->texture_coordinates[0];
+						(*texture)[1] = (ZnReal)v1->texture_coordinates[1];
 						(*texture)[2] = (ZnReal)v1->texture_coordinates[2];
 						texture++;
-						(*texture)[0] = (ZnReal)v2->texture_coordinates[0]; 
-						(*texture)[1] = (ZnReal)v2->texture_coordinates[1]; 
+						(*texture)[0] = (ZnReal)v2->texture_coordinates[0];
+						(*texture)[1] = (ZnReal)v2->texture_coordinates[1];
 						(*texture)[2] = (ZnReal)v2->texture_coordinates[2];
 						texture++;
-						(*texture)[0] = (ZnReal)v3->texture_coordinates[0]; 
-						(*texture)[1] = (ZnReal)v3->texture_coordinates[1]; 
+						(*texture)[0] = (ZnReal)v3->texture_coordinates[0];
+						(*texture)[1] = (ZnReal)v3->texture_coordinates[1];
 						(*texture)[2] = (ZnReal)v3->texture_coordinates[2];
 						texture++;
 					}
@@ -1989,7 +1989,7 @@ struct Iso_surface_specification *Iso_surface_specification_create(
 	ENTER(Iso_surface_specification_create);
 	struct Iso_surface_specification *specification = NULL;
 	if (Computed_field_has_3_components(coordinate_field, NULL) &&
-		(0 <= number_of_iso_values) && 
+		(0 <= number_of_iso_values) &&
 		(1 == Computed_field_get_number_of_components(scalar_field)) &
 		((NULL == texture_coordinate_field) ||
 			(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))

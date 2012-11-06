@@ -42,9 +42,9 @@
 #if !defined (CMISS_ELEMENT_PRIVATE_HPP)
 #define CMISS_ELEMENT_PRIVATE_HPP
 
-#include "api/cmiss_element.h"
-#include "api/cmiss_region.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/element.h"
+#include "zinc/region.h"
+#include "zinc/fieldsubobjectgroup.h"
 
 struct FE_region;
 

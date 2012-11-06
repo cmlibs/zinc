@@ -43,10 +43,10 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_SCENE_VIEWER_PROJECTION_H)
 #define COMPUTED_FIELD_SCENE_VIEWER_PROJECTION_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_scene_viewer_id.h"
-#include "api/types/cmiss_graphics_coordinate_system.h"
+#include "zinc/types/fieldid.h"
+#include "zinc/types/fieldmoduleid.h"
+#include "zinc/types/sceneviewerid.h"
+#include "zinc/types/graphicscoordinatesystem.h"
 
 int Computed_field_register_types_scene_viewer_projection(
 	struct Computed_field_package *computed_field_package,

@@ -1,8 +1,8 @@
 
 #include <math.h>
 
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_scene_viewer_projection.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsceneviewerprojection.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_image.h"

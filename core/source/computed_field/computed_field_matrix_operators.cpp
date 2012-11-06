@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
-#include "api/cmiss_field_matrix_operators.h"
+#include "zinc/fieldmatrixoperators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_private.hpp"

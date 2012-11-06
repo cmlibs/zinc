@@ -50,7 +50,7 @@ longjmp .
 #include <setjmp.h>
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include "general/error_handler.h"
 

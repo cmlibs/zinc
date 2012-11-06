@@ -42,17 +42,17 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 #include <string>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_graphic.h"
-#include "api/cmiss_graphics_font.h"
-#include "api/cmiss_graphics_filter.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
+#include "zinc/element.h"
+#include "zinc/graphic.h"
+#include "zinc/graphicsfont.h"
+#include "zinc/graphicsfilter.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/node.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/indexed_list_private.h"

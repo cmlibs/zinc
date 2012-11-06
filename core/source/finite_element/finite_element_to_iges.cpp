@@ -49,7 +49,7 @@ to file.
 #include <string.h>
 #include <time.h>
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"

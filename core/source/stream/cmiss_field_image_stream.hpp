@@ -43,8 +43,8 @@
 #if !defined (CMISS_REGION_STREAM_HPP)
 #define CMISS_REGION_STREAM_HPP
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_image.h"
+#include "zinc/field.h"
+#include "zinc/fieldimage.h"
 #include "general/image_utilities.h"
 #include "stream/cmiss_stream_private.hpp"
 

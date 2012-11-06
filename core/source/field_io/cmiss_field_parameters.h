@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_field_parameters.h
- * 
+ *
  * Implements a field storing parameters as a semi-dense array indexed by
  * N ensembles.
  * Warning: prototype!
@@ -42,9 +42,8 @@
 #if !defined (CMISS_FIELD_PARAMETERS_H)
 #define CMISS_FIELD_PARAMETERS_H
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "zinc/types/fieldid.h"
+#include "zinc/types/fieldmoduleid.h"
 #include "field_io/cmiss_field_ensemble_id.h"
 #include "field_io/cmiss_field_parameters_id.h"
 
@@ -56,12 +55,12 @@
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
-Cmiss_field *Cmiss_field_module_create_real_parameters(Cmiss_field_module_id field_module, 
+Cmiss_field *Cmiss_field_module_create_real_parameters(Cmiss_field_module_id field_module,
 	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
 
 Cmiss_field_real_parameters_id Cmiss_field_cast_real_parameters(Cmiss_field_id field);
 
-CMISS_C_INLINE Cmiss_field_id Cmiss_field_real_parameters_base_cast(
+ZINC_C_INLINE Cmiss_field_id Cmiss_field_real_parameters_base_cast(
 	Cmiss_field_real_parameters_id real_parameters_field)
 {
 	return (Cmiss_field_id)(real_parameters_field);
@@ -116,7 +115,7 @@ Cmiss_field *Cmiss_field_module_create_integer_parameters(Cmiss_field_module_id 
 
 Cmiss_field_integer_parameters_id Cmiss_field_cast_integer_parameters(Cmiss_field_id field);
 
-CMISS_C_INLINE Cmiss_field_id Cmiss_field_integer_parameters_base_cast(
+ZINC_C_INLINE Cmiss_field_id Cmiss_field_integer_parameters_base_cast(
 	Cmiss_field_integer_parameters_id integer_parameters_field)
 {
 	return (Cmiss_field_id)(integer_parameters_field);

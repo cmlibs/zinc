@@ -45,7 +45,7 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #if defined (UNIX)
@@ -225,7 +225,7 @@ isn't recieved in the <timeout> limit then the function returns NULL.
 	ssize_t number_read;
 	struct timeval timeout_struct;
 #endif /* defined (UNIX) */
- 
+
 	ENTER(Child_process_get_line_from_stdout);
 	if (child_process)
 	{

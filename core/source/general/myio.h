@@ -46,7 +46,7 @@ Some additions/modifications to stdio.
 
 #include <stdio.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #if defined (UNIX) && defined (GENERIC_PC)

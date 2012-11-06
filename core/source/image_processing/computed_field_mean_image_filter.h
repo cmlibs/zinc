@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (computed_field_mean_image_filter_H)
 #define computed_field_mean_image_filter_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Create field performing ITK mean image filter on source_field image.

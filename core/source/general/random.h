@@ -45,7 +45,7 @@ Standard macros for returning random numbers.
 #define RANDOM_H
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */

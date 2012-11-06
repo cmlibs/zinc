@@ -43,7 +43,7 @@ and real values in any order into a single vector field.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.hpp"

@@ -46,7 +46,7 @@ indexed_multi_range.
 #if !defined (FINITE_ELEMENT_ADJACENT_ELEMENTS_H)
 #define FINITE_ELEMENT_ADJACENT_ELEMENTS_H
 
-#include "api/cmiss_element.h"
+#include "zinc/element.h"
 #include "general/indexed_multi_range.h"
 
 int adjacent_FE_element(struct FE_element *element,

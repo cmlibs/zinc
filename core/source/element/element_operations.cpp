@@ -46,8 +46,8 @@
 #include <cmath>
 #include <cstdlib>
 #include "computed_field/computed_field.h"
-#include "api/cmiss_field_logical_operators.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldlogicaloperators.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"

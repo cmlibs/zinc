@@ -75,7 +75,7 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_PRIVATE_H
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include "general/geometry.h"
 #include "general/list.h"

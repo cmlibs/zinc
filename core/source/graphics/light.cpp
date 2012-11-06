@@ -59,7 +59,7 @@ problem.
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include "general/debug.h"
 #include "general/list_private.h"

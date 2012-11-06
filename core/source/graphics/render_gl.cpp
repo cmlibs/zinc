@@ -42,7 +42,7 @@ GL rendering calls - API specific.
 #include <stdio.h>
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"

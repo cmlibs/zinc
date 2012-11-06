@@ -43,7 +43,7 @@ streams.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 #if defined (GENERIC_PC) && defined (UNIX)

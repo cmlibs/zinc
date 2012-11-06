@@ -43,8 +43,8 @@ DESCRIPTION :
 #if !defined (GRAPHICS_MODULE_H)
 #define GRAPHICS_MODULE_H
 
-#include "api/cmiss_graphics_font.h"
-#include "api/cmiss_graphics_filter.h"
+#include "zinc/graphicsfont.h"
+#include "zinc/graphicsfilter.h"
 #include "general/object.h"
 #include "context/context.h"
 #include "graphics/font.h"

@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <list>
-#include "api/cmiss_rendition.h"
+#include "zinc/rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/manager_private.h"

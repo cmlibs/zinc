@@ -45,8 +45,8 @@ interface to CMISS.
 #if !defined (FINITE_ELEMENT_H)
 #define FINITE_ELEMENT_H
 
-#include "api/cmiss_node.h"
-#include "api/cmiss_element.h"
+#include "zinc/node.h"
+#include "zinc/element.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"

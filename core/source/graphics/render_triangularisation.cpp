@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_rendition.h"
+#include "zinc/rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/rendition.h"

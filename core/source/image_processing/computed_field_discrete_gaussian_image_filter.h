@@ -44,8 +44,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_image_processing.h"
+#include "zinc/field.h"
+#include "zinc/fieldimageprocessing.h"
 
 struct Computed_field *Cmiss_field_module_create_discrete_gaussian_image_filter(
 	struct Cmiss_field_module *field_module,

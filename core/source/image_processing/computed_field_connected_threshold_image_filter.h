@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK connected threshold image filter on scalar

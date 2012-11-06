@@ -46,10 +46,10 @@
 
 #include <set>
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_shared_object.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/zincsharedobject.h"
 
-#include "api/cmiss_scene.h"
+#include "zinc/scene.h"
 #include "general/any_object.h"
 #include "general/callback.h"
 #include "general/enumerator.h"

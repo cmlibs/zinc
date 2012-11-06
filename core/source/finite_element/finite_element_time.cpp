@@ -43,7 +43,7 @@ Representing time in finite elements.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 
-#include "api/cmiss_time_sequence.h"
+#include "zinc/timesequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -89,7 +89,7 @@ DESCRIPTION :
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(FE_time_sequence) *manager;
 	int manager_change_status;
-	
+
 	int access_count;
 }; /* struct FE_time_sequence */
 
@@ -102,7 +102,7 @@ Module functions
 ----------------
 */
 DECLARE_OBJECT_FUNCTIONS(FE_time_sequence_package)
- 
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_time_sequence,self,struct FE_time_sequence *,
 	compare_FE_time_sequence)
 
@@ -119,7 +119,7 @@ int compare_FE_time_sequence(struct FE_time_sequence *fe_time_sequence_1,
 LAST MODIFIED : 17 November 2004
 
 DESCRIPTION :
-Returns -1 if fe_time_sequence_1 < fe_time_sequence_2, 
+Returns -1 if fe_time_sequence_1 < fe_time_sequence_2,
 0 if fe_time_sequence_1 = fe_time_sequence_2 and 1 if
 fe_time_sequence_1 > fe_time_sequence_2.
 ==============================================================================*/
@@ -135,7 +135,7 @@ fe_time_sequence_1 > fe_time_sequence_2.
 			{
 				case FE_TIME_SEQUENCE:
 				{
-					if (fe_time_sequence_1->number_of_times == 
+					if (fe_time_sequence_1->number_of_times ==
 						fe_time_sequence_2->number_of_times)
 					{
 						/* Using a char based memcmp for speed.  I think that
@@ -162,7 +162,7 @@ fe_time_sequence_1 > fe_time_sequence_2.
 					}
 					else
 					{
-						if (fe_time_sequence_1->number_of_times > 
+						if (fe_time_sequence_1->number_of_times >
 							fe_time_sequence_2->number_of_times)
 						{
 							return_code = 1;
@@ -216,7 +216,7 @@ Creates FE_time_sequence_package.
 
 	ENTER(CREATE(FE_time_sequence_package));
 
-	if (ALLOCATE(fe_time, struct FE_time_sequence_package,1) && 
+	if (ALLOCATE(fe_time, struct FE_time_sequence_package,1) &&
 		(fe_time->fe_time_sequence_manager = CREATE(MANAGER(FE_time_sequence))()))
 	{
 		fe_time->access_count=0;
@@ -289,7 +289,7 @@ Creates a basic FE_time_sequence.
 		fe_time_sequence->times = (FE_value *)NULL;
 
 		fe_time_sequence->self = fe_time_sequence;
-		
+
 		fe_time_sequence->manager = (struct MANAGER(FE_time_sequence) *)NULL;
 		fe_time_sequence->manager_change_status = MANAGER_CHANGE_NONE(FE_time_sequence);
 
@@ -443,7 +443,7 @@ Returns the number of times that a particular FE_time_sequence references to.
 		number_of_times = 0;
 	}
 	LEAVE;
-	
+
 	return (number_of_times);
 } /* FE_time_sequence_get_number_of_times */
 
@@ -453,7 +453,7 @@ int FE_time_sequence_get_index_for_time(
 LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
-Returns the integer <time_index> into the time array contained in this version 
+Returns the integer <time_index> into the time array contained in this version
 that corresponds to the <time>.  Returns 0 if that exact time is not found
 and 1 if it is.
 ==============================================================================*/
@@ -462,13 +462,13 @@ and 1 if it is.
 	FE_value xi;
 	const FE_value xi_tolerance = 1e-5;
 
-	
+
 	ENTER(FE_time_sequence_get_index_for_time);
-	
+
 	if (fe_time_sequence)
 	{
 		return_code = 0;
-		if (FE_time_sequence_get_interpolation_for_time(fe_time_sequence, 
+		if (FE_time_sequence_get_interpolation_for_time(fe_time_sequence,
 			time, &time_index_one, &time_index_two, &xi))
 		{
 			if (xi < (0.0 + xi_tolerance))
@@ -503,17 +503,17 @@ LAST MODIFIED : 20 November 2001
 DESCRIPTION :
 Returns the two integers <time_index_one> and <time_index_two> which index into
 the time array bracketing the supplied <time>, the <xi> value is set between 0
-and 1 to indicate what fraction of the way between <time_index_one> and 
+and 1 to indicate what fraction of the way between <time_index_one> and
 <time_index_two> the value is found.  Returns 0 if time is outside the range
 of the time index array however sets <time_index_one> and <time_index_two> to
 be either the minimum or maximum value as appropriate.
 ==============================================================================*/
 {
-	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
+	int array_index,done,index_high,index_low,number_of_times,return_code,step;
 	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
-	
+
 	ENTER(FE_time_sequence_get_index_for_time);
-	
+
 	if (fe_time_sequence)
 	{
 		return_code = 0;
@@ -525,7 +525,7 @@ be either the minimum or maximum value as appropriate.
 		time_high=0;
 		if ((time >= first_time) && (time <= last_time))
 		{
-			/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+			/*Initial est. of the array index, assuming times evenly spaced, no gaps */
 			/*This assumption and hence estimate is true for most signal files. */
 			if (last_time>first_time)
 			{
@@ -543,24 +543,24 @@ be either the minimum or maximum value as appropriate.
 			/* adjacent array element, as index estimate may be slightly off due to*/
 			/* rounding error. This avoids unnecessarily long search from end of array */
 			while(!done)
-			{	
+			{
 				if ((array_index >= 0) && (array_index < number_of_times))
 				{
 					this_time = fe_time_sequence->times[array_index];
 					if (this_time>time)
-					{ 
-						index_high=array_index;					
+					{
+						index_high=array_index;
 						if (array_index>0)
 						{
 							/* get adjacent array element*/
 							time_low = fe_time_sequence->times[array_index - 1];
 							/* are we between elements?*/
 							if (time_low<time)
-							{			
+							{
 								index_low=array_index-1;
 								return_code=1;
 								done=1;
-							}	
+							}
 							else
 							{
 								time_low=0;
@@ -584,11 +584,11 @@ be either the minimum or maximum value as appropriate.
 							time_high = fe_time_sequence->times[array_index + 1];
 							/* are we between elements?*/
 							if (time_high>time)
-							{		
+							{
 								index_high=array_index+1;
 								return_code=1;
 								done=1;
-							}	
+							}
 							else
 							{
 								time_high=0;
@@ -614,19 +614,19 @@ be either the minimum or maximum value as appropriate.
 						done=1;
 					}
 					if (!done)
-					{	
-						step=(index_high-index_low)/2;	
+					{
+						step=(index_high-index_low)/2;
 						/* No exact match, can't subdivide further, must do interpolation.*/
-						if (step==0)												
-						{	
-							done=1;	
-							return_code=1;														
+						if (step==0)
+						{
+							done=1;
+							return_code=1;
 						}
 						else
 						{
 							array_index=index_low+step;
 						}
-						
+
 					}/* if (!done)	*/
 				}
 				else
@@ -654,7 +654,7 @@ be either the minimum or maximum value as appropriate.
 		}
 		else
 		{
-			/* Outside range of sequence so return_code is zero but we 
+			/* Outside range of sequence so return_code is zero but we
 			 still set the indices */
 			return_code = 0;
 			if (time < first_time)
@@ -694,7 +694,7 @@ be either the minimum or maximum value as appropriate.
 			"FE_time_sequence_get_interpolation_for_time.  "
 			"Invalid arguments time out of range");
 		return_code=0;
-	}	
+	}
 	LEAVE;
 
 	return (return_code);
@@ -710,9 +710,9 @@ If the <time_index> is valid returns the corresponding <time>.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(FE_time_sequence_get_index_for_time);
-	
+
 	if (fe_time_sequence)
 	{
 		if ((time_index >= 0) && (time_index < fe_time_sequence->number_of_times))
@@ -744,7 +744,7 @@ int FE_time_sequence_set_time_and_index(
 LAST MODIFIED : 18 November 2004
 
 DESCRIPTION :
-Sets the <time> for the given <time_index> in the <fe_time_sequence>.  This 
+Sets the <time> for the given <time_index> in the <fe_time_sequence>.  This
 should only be done for unmanaged time sequences (as otherwise this sequence
 may be shared by many other objects which are not expecting changes).
 If the sequence does not have as many times as the <time_index> then it will
@@ -753,9 +753,9 @@ be expanded and the unspecified times also set to <time>.
 {
 	FE_value *new_times;
 	int i, return_code;
-	
+
 	ENTER(FE_time_sequence_set_time_and_index);
-	
+
 	if (fe_time_sequence)
 	{
 		if (time_index >= 0)
@@ -763,11 +763,11 @@ be expanded and the unspecified times also set to <time>.
 			return_code = 1;
 			if (time_index >= fe_time_sequence->number_of_times)
 			{
-				if (REALLOCATE(new_times, fe_time_sequence->times, 
+				if (REALLOCATE(new_times, fe_time_sequence->times,
 					FE_value, time_index + 1))
 				{
 					fe_time_sequence->times = new_times;
-					for (i = fe_time_sequence->number_of_times ; 
+					for (i = fe_time_sequence->number_of_times ;
 						i <= time_index ; i++)
 					{
 						new_times[i] = time;
@@ -894,7 +894,7 @@ struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Searches <fe_time> for a fe_time_sequence which has the time series specified. 
+Searches <fe_time> for a fe_time_sequence which has the time series specified.
 If no equivalent fe_time_sequence is found one is created and returned.
 ==============================================================================*/
 {
@@ -904,9 +904,9 @@ If no equivalent fe_time_sequence is found one is created and returned.
 	fe_time_sequence=(struct FE_time_sequence *)NULL;
 	if (fe_time&&fe_time->fe_time_sequence_manager&&number_of_times&&times)
 	{
-		/* Create a FE_time_sequence into which we will poke a reference to this 
+		/* Create a FE_time_sequence into which we will poke a reference to this
 			number of times and times array so that we can look for another one the
-			same.  I really want to avoid copying the array unnecessarily but if 
+			same.  I really want to avoid copying the array unnecessarily but if
 			the CREATE(FE_time_sequence) routine was changed to allocate the times array
 			by default then this would leak.*/
 		local_fe_time_sequence = CREATE(FE_time_sequence)();
@@ -1011,7 +1011,7 @@ by merging the two time_sequences supplied.
 					}
 				}
 			}
-			else 
+			else
 			{
 				if (time_sequence_two->number_of_times < TIME_SEQUENCE_MERGING_SMALL_COUNT)
 				{
@@ -1031,7 +1031,7 @@ by merging the two time_sequences supplied.
 			}
 			if (!fe_time_sequence)
 			{
-				maximum_number_of_times = time_sequence_one->number_of_times + 
+				maximum_number_of_times = time_sequence_one->number_of_times +
 					time_sequence_two->number_of_times;
 				if (ALLOCATE(times, FE_value, maximum_number_of_times))
 				{
@@ -1123,14 +1123,14 @@ enum FE_time_sequence_mapping FE_time_sequences_mapping(
 LAST MODIFIED : 13 July 2005
 
 DESCRIPTION :
-Attempts to deduce a mapping that goes from the <source_sequence> to the 
+Attempts to deduce a mapping that goes from the <source_sequence> to the
 <destination_sequence> and returns an enumerator describing that mapping.
-If the change isn't recognised then it will return 
+If the change isn't recognised then it will return
 FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
 ==============================================================================*/
 {
 	enum FE_time_sequence_mapping mapping;
-	
+
 	ENTER(FE_time_sequences_mapping);
 	if (source_sequence && destination_sequence)
 	{
@@ -1154,7 +1154,7 @@ FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
 			&& !memcmp(source_sequence->times, destination_sequence->times,
 				source_sequence->number_of_times * sizeof(FE_value)))
 		{
-			mapping = FE_TIME_SEQUENCE_MAPPING_APPEND;			
+			mapping = FE_TIME_SEQUENCE_MAPPING_APPEND;
 		}
 	}
 	else
@@ -1178,7 +1178,7 @@ Returns true if <fe_time> contains the <fe_time_sequence>.
 ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(FE_time_has_FE_time_sequence);
 	if (fe_time && fe_time_sequence)
 	{

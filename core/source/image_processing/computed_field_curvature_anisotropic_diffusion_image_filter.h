@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (computed_field_curvature_anisotropic_diffusion_image_filter_H)
 #define computed_field_curvature_anisotropic_diffusion_image_filter_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK curvature anisotropic diffusion image filter

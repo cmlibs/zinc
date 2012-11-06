@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (computed_field_canny_edge_detection_filter_H)
 #define computed_field_canny_edge_detection_filter_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field returning result of ITK canny edge detection filter on the

@@ -42,8 +42,8 @@
 #if !defined (CMISS_REGION_H)
 #define CMISS_REGION_H
 
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_region.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"

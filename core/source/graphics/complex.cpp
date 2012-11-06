@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 #define NRANSI
 #include "graphics/complex.h"
 #undef NRANSI

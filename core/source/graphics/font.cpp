@@ -43,8 +43,8 @@ This provides a Cmgui interface to the font contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 #include <string.h>
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_graphics_font.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/graphicsfont.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
@@ -793,31 +793,31 @@ int Cmiss_graphics_font_destroy(Cmiss_graphics_font_id *font_address)
 class Cmiss_graphics_font_type_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphics_font_type font_type)
-    {
-        const char *enum_string = 0;
-        switch (font_type)
-        {
-        case CMISS_GRAPHICS_FONT_TYPE_BITMAP:
-            enum_string = "BITMAP";
-            break;
-        case CMISS_GRAPHICS_FONT_TYPE_PIXMAP:
-            enum_string = "PIXMAP";
-            break;
-        case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
-            enum_string = "POLYGON";
-            break;
-        case CMISS_GRAPHICS_FONT_TYPE_OUTLINE:
-            enum_string = "OUTLINE";
-            break;
-        case CMISS_GRAPHICS_FONT_TYPE_EXTRUDE:
-            enum_string = "EXTRUDE";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphics_font_type font_type)
+	{
+		const char *enum_string = 0;
+		switch (font_type)
+		{
+		case CMISS_GRAPHICS_FONT_TYPE_BITMAP:
+			enum_string = "BITMAP";
+			break;
+		case CMISS_GRAPHICS_FONT_TYPE_PIXMAP:
+			enum_string = "PIXMAP";
+			break;
+		case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
+			enum_string = "POLYGON";
+			break;
+		case CMISS_GRAPHICS_FONT_TYPE_OUTLINE:
+			enum_string = "OUTLINE";
+			break;
+		case CMISS_GRAPHICS_FONT_TYPE_EXTRUDE:
+			enum_string = "EXTRUDE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphics_font_type Cmiss_graphics_font_type_enum_from_string(
@@ -844,19 +844,19 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphics_font_type)
 class Cmiss_graphics_font_true_type_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_graphics_font_true_type true_type)
-    {
-        const char *enum_string = 0;
-        switch (true_type)
-        {
-        case CMISS_GRAPHICS_FONT_TRUE_TYPE_OpenSans:
-            enum_string = "OpenSans";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_graphics_font_true_type true_type)
+	{
+		const char *enum_string = 0;
+		switch (true_type)
+		{
+		case CMISS_GRAPHICS_FONT_TRUE_TYPE_OpenSans:
+			enum_string = "OpenSans";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_graphics_font_true_type Cmiss_graphics_font_true_type_enum_from_string(

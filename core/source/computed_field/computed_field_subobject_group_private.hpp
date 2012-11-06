@@ -42,7 +42,7 @@
 #if !defined (COMPUTED_FIELD_SUBOBJECT_GROUP_HPP)
 #define COMPUTED_FIELD_SUBOBJECT_GROUP_HPP
 #include <stdlib.h>
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

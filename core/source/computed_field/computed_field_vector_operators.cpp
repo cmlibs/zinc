@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
-#include "api/cmiss_field_vector_operators.h"
+#include "zinc/fieldvectoroperators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"
@@ -223,7 +223,7 @@ int Computed_field_get_type_normalise(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NORMALISE, the 
+If the field is of type COMPUTED_FIELD_NORMALISE, the
 <source_field> used by it is returned.
 ==============================================================================*/
 {
@@ -533,7 +533,7 @@ struct Computed_field *Cmiss_field_module_create_cross_product(
 		int return_code = 1;
 		for (int i = 0 ; return_code && (i < dimension - 1) ; i++)
 		{
-			if (!source_fields[i] || 
+			if (!source_fields[i] ||
 				(source_fields[i]->number_of_components != dimension))
 			{
 				display_message(ERROR_MESSAGE,
@@ -552,7 +552,7 @@ struct Computed_field *Cmiss_field_module_create_cross_product(
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_cross_product());
 		}
-	}	
+	}
 	return (field);
 }
 
@@ -572,7 +572,7 @@ int Computed_field_get_type_cross_product(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the 
+If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 <dimension> and <source_fields> used by it are returned.
 ==============================================================================*/
 {
@@ -807,7 +807,7 @@ int Computed_field_get_type_dot_product(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the 
+If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1025,7 +1025,7 @@ int Computed_field_get_type_magnitude(struct Computed_field *field,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MAGNITUDE, the 
+If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 <source_field> used by it is returned.
 ==============================================================================*/
 {

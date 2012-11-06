@@ -42,7 +42,7 @@
 #if !defined (CONTEXT_H)
 #define CONTEXT_H
 
-#include "api/cmiss_context.h"
+#include "zinc/context.h"
 #include "general/manager.h"
 
 #define Context Cmiss_context

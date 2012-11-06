@@ -44,7 +44,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_FONT_H)
 #define GRAPHICS_FONT_H
 
-#include "api/types/cmiss_graphics_font_id.h"
+#include "zinc/types/graphicsfontid.h"
 #include "general/callback.h"
 #include "general/manager.h"
 #include "general/enumerator.h"

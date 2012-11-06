@@ -41,9 +41,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <stdarg.h>
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_node.h"
-#include "api/cmiss_time_sequence.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/node.h"
+#include "zinc/timesequence.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"

@@ -67,7 +67,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 
 /* #define DEBUG_CODE */
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 
 

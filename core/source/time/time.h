@@ -44,7 +44,7 @@ This provides an object which supplies a concept of time to Cmgui
 #if !defined (TIME_TIME_H) /* Distinguish general/time.h and time/time.h */
 #define TIME_TIME_H
 
-#include "api/cmiss_time.h"
+#include "zinc/time.h"
 #include "general/object.h"
 #include "time/time_keeper.h"
 

@@ -44,8 +44,8 @@ Functions and structures for interfacing with the graphics library.
 #if !defined (GRAPHICS_LIBRARY_H)
 #define GRAPHICS_LIBRARY_H
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_shared_object.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/zincsharedobject.h"
 
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES

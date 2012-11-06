@@ -46,7 +46,7 @@
 #include <list>
 #include <stdio.h>
 #include <string.h>
-#include "api/cmiss_stream.h"
+#include "zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 

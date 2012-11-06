@@ -40,9 +40,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_stream.h"
-#include "api/cmiss_field_module.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/stream.h"
+#include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_find_xi_graphics.h"

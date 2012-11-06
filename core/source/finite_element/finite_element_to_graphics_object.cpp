@@ -42,8 +42,8 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <cmath>
 #include <cstdlib>
-#include "api/cmiss_differential_operator.h"
-#include "api/cmiss_element.h"
+#include "zinc/differentialoperator.h"
+#include "zinc/element.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

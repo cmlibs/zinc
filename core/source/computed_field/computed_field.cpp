@@ -145,7 +145,7 @@ like the number of components.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_status.h"
+#include "zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_composite.h"

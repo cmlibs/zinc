@@ -34,7 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cstdlib>
-#include "api/cmiss_field_group.h"
+#include "zinc/fieldgroup.h"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/mystring.h"

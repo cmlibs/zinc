@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H
 
-#include "api/cmiss_field.h"
+#include "zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK histogram image filter on source field image.

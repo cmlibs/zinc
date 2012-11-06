@@ -39,13 +39,13 @@
 *
 * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_node.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/element.h"
+#include "zinc/node.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "zinc/field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 #include "computed_field/computed_field_subobject_group_internal.hpp"

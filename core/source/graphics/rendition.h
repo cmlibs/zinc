@@ -44,7 +44,7 @@ DESCRIPTION :
 #define RENDITION_H
 
 #include <list>
-#include "api/cmiss_rendition.h"
+#include "zinc/rendition.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
 #include "general/any_object_prototype.h"

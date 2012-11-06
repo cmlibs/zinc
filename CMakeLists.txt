@@ -589,111 +589,150 @@ CONFIGURE_FILE( cmake/ZincBuildTreeSettings.cmake.in
 EXPORT( TARGETS ${TARGET_ZINC_LIB} ${TARGET_ZINC_INTERFACE_LIB} FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
 EXPORT( PACKAGE ${ZINC_PROJECT_NAME} )
 
-INSTALL( EXPORT ${ZINC_LIB_GROUP}-targets DESTINATION lib/cmake )
+INSTALL( EXPORT ${ZINC_LIB_GROUP}-targets DESTINATION lib/cmake/zinc )
 
-INSTALL( FILES ${CONFIG_FILE_NAME} DESTINATION lib/cmake )
+INSTALL( FILES ${CONFIG_FILE_NAME} DESTINATION lib/cmake/zinc )
 
 # Install headers for Zinc
 SET( ZINC_LIB_API_INSTALL_HDRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_context.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_core.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_differential_operator.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_element.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_alias.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_arithmetic_operators.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_composite.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_conditional.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_finite_element.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_group.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_image.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_image_processing.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_logical_operators.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_matrix_operators.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_module.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_nodeset_operators.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_scene_viewer_projection.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_subobject_group.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_time.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_trigonometry.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_vector_operators.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphic.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_font.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_filter.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_material.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_graphics_module.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_node.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_optimisation.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_region.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_rendition.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_scene.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_scene_viewer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_selection.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_spectrum.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_status.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_stream.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_tessellation.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time_keeper.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_time_sequence.h )
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/context.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/core.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/differentialoperator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/element.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/field.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldalias.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldarithmeticoperators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcomposite.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldconditional.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldfiniteelement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldgroup.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldimage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldimageprocessing.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldlogicaloperators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldmatrixoperators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldmodule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldnodesetoperators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldsceneviewerprojection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldsubobjectgroup.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtime.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtrigonometry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldvectoroperators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphic.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsfont.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsfilter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmaterial.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmodule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/node.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/optimisation.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/region.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/rendition.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scene.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/selection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/spectrum.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/status.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/stream.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/tessellation.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/time.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timekeeper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timesequence.h )
 IF( USE_OPENCASCADE )
     SET( ZINC_LIB_API_INSTALL_HDRS ${ZINC_LIB_API_INSTALL_HDRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/cmiss_field_cad.h )
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcad.h )
 ENDIF( USE_OPENCASCADE )
 
+SET( ZINC_LIB_APIPP_INSTALL_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/context.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/differentialoperator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/element.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/field.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcache.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldmodule.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesarithmeticoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypescomposite.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesconditional.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesconstant.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypescoordinatetransformation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesfiniteelement.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesgroup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesimage.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypeslogicaloperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesmatrixoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesnodesetoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypessubobjectgroup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypestime.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypestrigonometry.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtypesvectoroperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphic.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsfilter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmaterial.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmodule.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/node.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/optimisation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/region.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/rendition.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scene.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/selection.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/spectrum.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/stream.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/tessellation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/time.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timekeeper.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timesequence.hpp )
+
 SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_c_inline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_context_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_differential_operator_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_element_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_alias_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_finite_element_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_group_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_image_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_image_processing_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_module_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_subobject_group_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphic_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_coordinate_system.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_font_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_filter_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_material_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_module_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_graphics_render_type.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_interactive_tool_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_node_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_optimisation_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_region_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_rendition_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_scene_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_scene_viewer_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_selection_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_spectrum_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_stream_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_tessellation_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_keeper_id.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_time_sequence_id.h )
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/contextid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/differentialoperatorid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/elementid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldaliasid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldfiniteelementid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldgroupid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldimageid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldimageprocessingid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldmoduleid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldsubobjectgroupid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicscoordinatesystem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfontid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfilterid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsmaterialid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsmoduleid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsrendertype.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/interactivetoolid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/nodeid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/optimisationid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/regionid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/renditionid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/sceneid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/sceneviewerid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/selectionid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/spectrumid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/streamid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/tessellationid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/timeid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/timekeeperid.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/timesequenceid.h )
 IF( USE_OPENCASCADE )
     SET( ZINC_LIB_API_TYPES_INSTALL_HDRS ${ZINC_LIB_API_TYPES_INSTALL_HDRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/types/cmiss_field_cad_id.h )
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldcadid.h )
 ENDIF( USE_OPENCASCADE )
 
 # Files that always need to be installed
-INSTALL( FILES ${PROJECT_BINARY_DIR}/core/source/api/cmiss_zinc_configure.h
-    ${PROJECT_BINARY_DIR}/core/source/api/cmiss_shared_object.h
-    DESTINATION include/zn/ )
+INSTALL( FILES ${PROJECT_BINARY_DIR}/core/source/api/zinc/zincconfigure.h
+    ${PROJECT_BINARY_DIR}/core/source/api/zinc/zincsharedobject.h
+    DESTINATION include/zinc/ )
 
 # Api directory installs
 INSTALL( FILES ${ZINC_LIB_API_TYPES_INSTALL_HDRS}
-    DESTINATION include/zn/types )
+    DESTINATION include/zinc/types )
 
 INSTALL( FILES ${ZINC_LIB_API_INSTALL_HDRS}
-    ${GENERAL_LIB_API_INSTALL_HDRS}
-    ${CORE_FIELDS_LIB_API_INSTALL_HDRS}
-    ${PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS}
-    DESTINATION include/zn/ )
+    ${ZINC_LIB_APIPP_INSTALL_HDRS}
+    DESTINATION include/zinc/ )
+
+INCLUDE(cmake/ZincPackaging.cmake)
 
 # Output configuration information if requested
 IF( ZINC_PRINT_CONFIG_SUMMARY )

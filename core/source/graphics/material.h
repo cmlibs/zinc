@@ -45,10 +45,10 @@ The data structures used for representing graphical materials.
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_image.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/field.h"
+#include "zinc/fieldimage.h"
+#include "zinc/graphicsmodule.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

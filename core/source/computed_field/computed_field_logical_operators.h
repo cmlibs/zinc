@@ -44,8 +44,8 @@ Implements logical operations on computed fields.
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_logical_operators.h"
+#include "zinc/field.h"
+#include "zinc/fieldlogicaloperators.h"
 
 #define Computed_field_create_greater_than Cmiss_field_module_create_greater_than
 #define Computed_field_create_less_than Cmiss_field_module_create_less_than
@@ -54,7 +54,7 @@ Implements logical operations on computed fields.
  * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -69,7 +69,7 @@ struct Computed_field *Computed_field_create_less_than(
  * Creates a field whose component values are 1 if that component of
  * source_field_one is greater than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
@@ -83,7 +83,7 @@ struct Computed_field *Computed_field_create_greater_than(
 /***************************************************************************//**
  * Creates a scalar field whose value is 1 wherever the source field is defined,
  * and 0 elsewhere (without error).
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to check whether defined.
  * @return Newly created field
