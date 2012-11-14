@@ -69,7 +69,7 @@ IF( ZINC_DEPENDENCIES_INSTALL_PREFIX_CHANGED )
     SET( ZINC_OCE_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake" CACHE PATH "Where is the OCE CMake config file installed?" FORCE)
     SET( ZINC_OpenCASCADE_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake" CACHE PATH "Where is the OpenCASCADE CMake config file installed?" FORCE)
     SET( ZINC_ITK_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake" CACHE PATH "Where are the ITK libraries installed" FORCE)
-    SET( ZINC_MODULE_PATH "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules" CACHE PATH "The location of the Cmiss CMake Modules." FORCE )
+    SET( ZINC_MODULE_PATH "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/share/cmiss/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules" CACHE PATH "The location of the Cmiss CMake Modules." FORCE )
 ENDIF()
 
 CACHE_VAR_WITH_DEFAULT( ZINC_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}"
@@ -96,7 +96,7 @@ FOREACH( p LIB BIN INC CMAKE )
 ENDFOREACH()
 
 CACHE_VAR_WITH_DEFAULT( ZINC_DEPENDENCIES_INSTALL_PREFIX "${ZINC_DEPENDENCIES_INSTALL_PREFIX}" PATH "Where are the Zinc third party libraries installed?" )
-CACHE_VAR_WITH_DEFAULT( ZINC_MODULE_PATH "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules" PATH "The location of the Cmiss CMake Modules." )
+CACHE_VAR_WITH_DEFAULT( ZINC_MODULE_PATH "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/share/cmiss/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules" PATH "The location of the Cmiss CMake Modules." )
 
 CACHE_VAR_WITH_DEFAULT( ZINC_BUILD_TYPE "Release"
     STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
@@ -125,7 +125,7 @@ CACHE_VAR_WITH_DEFAULT( ZINC_PNG_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cm
     PATH "Where is the png CMake config file installed?" )
 CACHE_VAR_WITH_DEFAULT( ZINC_fieldml_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake"
     PATH "Where is the fieldml CMake config file installed?" )
-OPTION( ZINC_BUILD_APPLICATION "Build Cmgui application." TRUE )
+OPTION( ZINC_BUILD_APPLICATION "Build Cmgui application." FALSE )
 IF(ZINC_BUILD_APPLICATION)
     SET( ZINC_BUILD_LIBRARY_TYPE "STATIC" CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" FORCE )
 ENDIF()

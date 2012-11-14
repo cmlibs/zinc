@@ -816,7 +816,7 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 		found=0;
 		//USE_PARAMETER(jj);
 		//USE_PARAMETER(kk);
-		USE_PARAMETER(check_mc_vertex);
+		//USE_PARAMETER(check_mc_vertex);
 		if (!found)
 		{
 			if (ALLOCATE(v[n], struct MC_vertex, 1))
