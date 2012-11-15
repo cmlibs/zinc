@@ -1,6 +1,6 @@
 
-#include "api/cmiss_graphics_filter.h"
-#include "api/cmiss_region.h"
+#include "zinc/graphicsfilter.h"
+#include "zinc/region.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

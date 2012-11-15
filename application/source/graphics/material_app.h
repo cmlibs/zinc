@@ -1,6 +1,6 @@
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/field.h"
+#include "zinc/graphicsmodule.h"
 /*???DB.  Make consistent with finite_element.h ? */
 //#define MATERIAL_PRECISION float
 #define MATERIAL_PRECISION_STRING "lf"

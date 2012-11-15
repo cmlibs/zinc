@@ -43,9 +43,9 @@
 #if !defined (NODE_VIEWER_WX_H)
 #define NODE_VIEWER_WX_H
  
-#include "api/types/cmiss_graphics_module_id.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_time_keeper_id.h"
+#include "zinc/types/graphicsmoduleid.h"
+#include "zinc/types/regionid.h"
+#include "zinc/types/timekeeperid.h"
 
 /*
 Global Types

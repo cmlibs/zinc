@@ -1,6 +1,6 @@
 
-#include "api/cmiss_core.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/core.h"
+#include "zinc/graphicsmodule.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

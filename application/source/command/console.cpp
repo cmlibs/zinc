@@ -44,8 +44,7 @@ Management routines for the main command window.
 #include <stdio.h>
 #include <stdlib.h>
 #if 1
-#include "cmiss_zinc_configure.h"
-#include "configure/cmgui_configure.h"
+#include "zinc/zincconfigure.h"
 #endif /* defined (1) */
 
 #if defined (WIN32_SYSTEM)
@@ -59,7 +58,7 @@ Management routines for the main command window.
 #include <sgtty.h>
 #endif /* defined (UNIX) */
 
-#include "api/cmiss_fdio.h"
+#include "zinc/fdio.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "command/console.h"

@@ -46,7 +46,7 @@ selected element point, or set it if entered in this dialog.
 #if 1
 #include "configure/cmgui_configure.h"
 #endif
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_app.h"
 #include "computed_field/computed_field_finite_element.h"

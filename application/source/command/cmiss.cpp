@@ -55,16 +55,16 @@
 #endif /* !defined (WIN32_SYSTEM) */
 #include <math.h>
 #include <time.h>
-#include "api/cmiss_context.h"
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_graphics_module.h"
-#include "api/cmiss_region.h"
-#include "api/cmiss_rendition.h"
-#include "api/cmiss_scene.h"
-#include "api/cmiss_scene_viewer.h"
-#include "api/cmiss_stream.h"
+#include "zinc/context.h"
+#include "zinc/element.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/graphicsmodule.h"
+#include "zinc/region.h"
+#include "zinc/rendition.h"
+#include "zinc/scene.h"
+#include "zinc/sceneviewer.h"
+#include "zinc/stream.h"
 #include "comfile/comfile.h"
 #if defined (WX_USER_INTERFACE)
 #include "comfile/comfile_window_wx.h"

@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_image_processing.h"
+#include "zinc/fieldimageprocessing.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

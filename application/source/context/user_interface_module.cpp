@@ -41,7 +41,7 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "api/cmiss_graphic.h"
+#include "zinc/graphic.h"
 #include "time/time_keeper.h"
 #include "comfile/comfile.h"
 #include "command/command_window.h"

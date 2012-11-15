@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_trigonometry.h"
+#include "zinc/fieldtrigonometry.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_nodeset_operators.h"
+#include "zinc/fieldnodesetoperators.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

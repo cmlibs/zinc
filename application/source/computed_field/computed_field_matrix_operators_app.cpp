@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_matrix_operators.h"
+#include "zinc/fieldmatrixoperators.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

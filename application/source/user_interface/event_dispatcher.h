@@ -207,7 +207,7 @@ LAST MODIFIED : 13 November 2002
 DESCRIPTION :
 This function is only implemented when using the GENERIC_EVENT_DISPATCHER.
 Using this interface to get a read or write callback is deprecated, you should
-instead use the fdio API(api/cmiss_fdio.h).
+instead use the fdio API(zinc/fdio.h).
 ==============================================================================*/
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 

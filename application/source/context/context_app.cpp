@@ -40,8 +40,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "time/time_keeper.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/fieldgroup.h"
+#include "zinc/graphicsmodule.h"
 #include "command/cmiss.h"
 #include "context/context.h"
 #include "context/context_app.h"

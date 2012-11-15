@@ -44,12 +44,12 @@ Interactive tool for selecting elements with mouse and other devices.
 #if 1
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
-#include "api/cmiss_rendition.h"
+#include "zinc/rendition.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
 #include "finite_element/finite_element_discretization.h"

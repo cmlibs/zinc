@@ -47,7 +47,7 @@ Scene input.
 
 #include <math.h>
 
-#include "api/cmiss_rendition.h"
+#include "zinc/rendition.h"
 #include "time/time_keeper.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
@@ -55,7 +55,7 @@ Scene input.
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"

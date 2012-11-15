@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_constant.h"
+#include "zinc/fieldconstant.h"
 
 #include "general/debug.h"
 #include "general/message.h"

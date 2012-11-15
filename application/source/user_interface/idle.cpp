@@ -41,7 +41,6 @@ This provides code for handling idle events.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_idle.h"
 #include "idle.h"
 #include "general/debug.h"
 

@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/list.h"

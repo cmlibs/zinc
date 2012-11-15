@@ -1,7 +1,7 @@
 
 
-#include "api/cmiss_zinc_configure.h"
-#include "api/cmiss_graphics_material.h"
+#include "zinc/zincconfigure.h"
+#include "zinc/graphicsmaterial.h"
 #if 1
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */

@@ -1,6 +1,6 @@
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 
 int set_Graphics_object(struct Parse_state *state,
 	void *graphics_object_address_void,void *dummy_void);
