@@ -37,7 +37,7 @@
 #if !defined __CMISS_INTERACTIVE_TOOL_H__
 #define __CMISS_INTERACTIVE_TOOL_H__
 
-#include "types/interactive_toolid.h"
+#include "types/interactivetoolid.h"
 
 #ifdef __cplusplus
 extern "C" {

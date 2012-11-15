@@ -75,7 +75,7 @@ gtObject/gtWindow management routines.
 #include "graphics/volume_texture.h"
 #include "general/message.h"
 #if defined (USE_OPENCASCADE)
-#include "zinc/field_cad.h"
+#include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"

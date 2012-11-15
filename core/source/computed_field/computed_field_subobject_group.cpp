@@ -45,7 +45,7 @@
 #include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
-#include "zinc/field_cad.h"
+#include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 #include "computed_field/computed_field_subobject_group_internal.hpp"

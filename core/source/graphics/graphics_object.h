@@ -84,7 +84,7 @@ Used to be gtypes.h
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
-#include "zinc/field_cad.h"
+#include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 /*

@@ -3,7 +3,7 @@
  *
  * The Cmiss_optimisation object.
  *
- * @see-also api/cmiss_optimisation.h
+ * @see-also api/zinc/optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
