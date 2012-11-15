@@ -4,7 +4,7 @@
  * The private methods for the Cmiss_optimisation object. Required to allow creation
  * of optimisation objects.
  *
- * @see-also api/cmiss_optimisation.h
+ * @see-also api/zinc/optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

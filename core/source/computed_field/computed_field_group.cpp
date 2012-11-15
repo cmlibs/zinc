@@ -51,7 +51,7 @@
 #include "zinc/rendition.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/rendition.h"
-#include "zinc/field_cad.h"
+#include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

@@ -75,7 +75,7 @@ struct Cmiss_scene_viewer_package;
 /*
 The Cmiss_scene_viewer which is Public is currently the same object as the
 cmgui internal Scene_viewer.  The Public interface is contained in
-api/cmiss_scene_viewer.h however most of the functions come directly from
+zinc/sceneviewer.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 struct Scene_viewer is declared to be the same as Cmiss_scene_viewer here
 and the functions given their public names.

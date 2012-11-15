@@ -4,7 +4,7 @@
  * Implementation of Minimisation object for performing optimisation algorithm
  * from description in Cmiss_optimisation.
  *
- * @see-also api/cmiss_optimisation.h
+ * @see-also api/zinc/optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

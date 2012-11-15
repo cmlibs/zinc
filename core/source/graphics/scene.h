@@ -72,7 +72,7 @@
 #include "graphics/rendition.h"
 /* #include "graphics/texture.h" */
 #if defined(USE_OPENCASCADE)
-#	include "api/cmiss_field_cad.h"
+#	include "zinc/fieldcad.h"
 #endif /* defined(USE_OPENCASCADE) */
 
 /*
@@ -117,7 +117,7 @@ DECLARE_LIST_TYPES(Scene_picked_object);
 /*
 The Cmiss_scene which is Public is currently the same object as the
 cmgui internal Scene.  The Public interface is contained in
-api/cmiss_scene.h however most of the functions come directly from
+zinc/scene.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 struct Scene is declared to be the same as Cmiss_scene here
 and the functions given their public names.
