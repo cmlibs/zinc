@@ -48,9 +48,9 @@ codes used to build scene editor with wxWidgets.
 #include <string>
 #include <stdio.h>
 
-#include "api/cmiss_rendition.h"
-#include "api/cmiss_graphic.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/rendition.h"
+#include "zinc/graphic.h"
+#include "zinc/graphicsmodule.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"

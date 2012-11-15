@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_coordinate_transformation.h"
+#include "zinc/fieldcoordinatetransformation.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

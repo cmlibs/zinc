@@ -2,8 +2,8 @@
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include <string>
-#include "api/cmiss_graphics_font.h"
-#include "api/cmiss_graphics_module.h"
+#include "zinc/graphicsfont.h"
+#include "zinc/graphicsmodule.h"
 #include "general/enumerator.h"
 #include "general/enumerator_private.hpp"
 #include "general/message.h"

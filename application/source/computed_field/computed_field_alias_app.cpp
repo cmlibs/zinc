@@ -1,5 +1,5 @@
 
-#include "api/cmiss_field_alias.h"
+#include "zinc/fieldalias.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "command/parser.h"

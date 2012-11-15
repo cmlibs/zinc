@@ -2,9 +2,9 @@
 #if !defined (RENDER_TO_FINITE_ELEMENTS_APP_H_)
 #define RENDER_TO_FINITE_ELEMENTS_APP_H_
 
-#include "api/cmiss_region.h"
-#include "api/cmiss_scene.h"
-#include "api/cmiss_field_group.h"
+#include "zinc/region.h"
+#include "zinc/scene.h"
+#include "zinc/fieldgroup.h"
 #include "general/debug.h"
 #include "general/enumerator_app.h"
 #include "general/message.h"

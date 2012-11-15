@@ -54,7 +54,7 @@ interest and set scene_viewer values directly.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "command/parser.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"

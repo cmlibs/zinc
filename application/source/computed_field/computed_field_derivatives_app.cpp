@@ -1,6 +1,6 @@
 
 
-#include "api/cmiss_zinc_configure.h"
+#include "zinc/zincconfigure.h"
 #if 1
 #include "configure/cmgui_configure.h"
 #endif

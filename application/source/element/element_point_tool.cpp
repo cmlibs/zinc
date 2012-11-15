@@ -45,7 +45,7 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "configure/cmgui_configure.h"
 #endif /* defined (1) */
 
-#include "api/cmiss_field_module.h"
+#include "zinc/fieldmodule.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"

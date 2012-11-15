@@ -50,7 +50,7 @@ Widgets for editing a graphical material.
 #endif /* defined (1) */
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
-#include "api/cmiss_graphics_material.h"
+#include "zinc/graphicsmaterial.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"

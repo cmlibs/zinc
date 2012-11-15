@@ -50,9 +50,9 @@ group of nodes
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "zinc/element.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "command/command.h"
 	/*???DB.  For Execute_command */
 #include "command/parser.h"
