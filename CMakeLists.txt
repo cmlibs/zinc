@@ -39,9 +39,12 @@
 # The FATAL_ERROR is needed if using cmake < 2.4
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.1 FATAL_ERROR )
 
-# This is the project name and shows up in ides
+# This is the project name and shows up in IDEs
 SET( ZINC_PROJECT_NAME ZincLibraries )
 PROJECT( ${ZINC_PROJECT_NAME} )
+
+# The name for the project seen in directory paths
+SET( ZINC_BASE_NAME zinc )
 
 INCLUDE( cmake/MacroDefinitions.cmake )
 INCLUDE( cmake/FunctionDefinitions.cmake )
@@ -83,7 +86,7 @@ CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_INC_DIR "include" PATH "Installation directo
 IF(WIN32 AND NOT CYGWIN)
     SET(DEFAULT_INSTALL_CMAKE_DIR cmake)
 ELSE()
-    SET(DEFAULT_INSTALL_CMAKE_DIR lib/cmake)
+    SET(DEFAULT_INSTALL_CMAKE_DIR lib/cmake/${ZINC_BASE_NAME})
 ENDIF()
 CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_CMAKE_DIR ${DEFAULT_INSTALL_CMAKE_DIR} PATH "Installation directory for CMake files")
 
@@ -271,7 +274,7 @@ SET_GRAPHICS_DEFINES( )
 # fieldml, opt++
 SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${FIELDML_LIBRARIES} ${OPTPP_LIBRARIES} ${FTGL_LIBRARIES} )
 SET( INCLUDE_DIRS ${FIELDML_INCLUDE_DIRS} ${OPTPP_INCLUDE_DIRS} ${FTGL_INCLUDE_DIR} )
-SET( EXTRA_COMPILER_DEFINITIONS ${OPTPP_DEFINITIONS} ${FIELDML_DEFINITIONS} ${FTGL_DEFINITIONS} )
+SET( DEPENDENT_DEFINITIONS ${OPTPP_DEFINITIONS} ${FIELDML_DEFINITIONS} ${FTGL_DEFINITIONS} )
 SET( USE_FIELDML TRUE )
 SET( USE_OPTPP TRUE )
 SET( USE_FTGL TRUE )
@@ -360,7 +363,7 @@ IF( ZINC_USE_OCE )
     IF( OCE_FOUND )
         MARK_AS_ADVANCED( OCE_DIR )
         SET( USE_OPENCASCADE TRUE )
-        SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} USE_CAD_FIELDS HAVE_CONFIG_H )
+        SET( DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} USE_CAD_FIELDS HAVE_CONFIG_H )
         SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OCE_LIBRARIES} )
         SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${OCE_INCLUDE_DIRS} )
         PRN_MSG( "=================" )
@@ -418,10 +421,7 @@ IF( ZINC_USE_OPENCASCADE )
         #SET( OPENCASCADE_LIBRARY_DIRS ${OPENCASCADE_PATH}/lib/OpenCASCADE )
         PRN_MSG( "OCC LIB: ${OPENCASCADE_LIBRARIES}" )
         SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENCASCADE_CXX_FLAGS}" )
-        SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} ${OPENCASCADE_DEFINITIONS} )
-        #IF( NOT WIN32 )
-        #	SET( OPENCASCADE_X_LIBRARIES /usr/lib64/libXmu.so )
-        #ENDIF( NOT WIN32 )
+
         SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENCASCADE_LIBRARIES} )
         SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${OPENCASCADE_INCLUDE_DIRS} )
         SET( DEPENDENT_CONFIGS "${DEPENDENT_CONFIGS}\nINCLUDE(${OpenCASCADE_DIR}/opencascade-config.cmake)" )
@@ -479,15 +479,20 @@ IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
     ENDIF( ${CMAKE_BUILD_TYPE} MATCHES [Rr]elease )
 ELSEIF( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
     IF( DEFINED MSVC )
-        SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _CRTDBG_MAP_ALLOC )
+        SET( PLATFORM_COMPILER_DEFINITIONS ${PLATFORM_COMPILER_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _CRTDBG_MAP_ALLOC )
     ENDIF( DEFINED MSVC )
 ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 
 TEST_FOR_VFSCANF( HAVE_VFSCANF )
 
-FOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} ${DEPENDENT_DEFINITIONS} )
+FOREACH( DEF ${DEPENDENT_DEFINITIONS} ${PLATFORM_COMPILER_DEFINITIONS} )
     ADD_DEFINITIONS( -D${DEF} )
-ENDFOREACH( DEF ${EXTRA_COMPILER_DEFINITIONS} ${DEPENDENT_DEFINITIONS} )
+ENDFOREACH()
+SET( ZINC_STATIC_DEFINITIONS )
+FOREACH( DEF ${DEPENDENT_DEFINITIONS} )
+    LIST( APPEND ZINC_STATIC_DEFINITIONS -D${DEF} )
+ENDFOREACH()
+SET( ZINC_SHARED_DEFINITIONS )
 
 # Used in the generate version string cmake script at compile time.
 SET( ZINC_SVN_REPOSITORY_DIR "${CMAKE_SOURCE_DIR}" )
@@ -496,74 +501,57 @@ PRN_MSG("svn repo revision is '${ZINC_REVISION}'")
 
 INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/core/source/api )
 
-SET( ZINC_LIB_GROUP zinc )
+SET( ZINC_LIBRARY_DEPENDS_GROUP "ZincLibraryDepends" )
 ADD_SUBDIRECTORY(core) # Defines ZINC_LIBRARY_TARGETS
 IF( ZINC_BUILD_APPLICATION )
     ADD_SUBDIRECTORY(application)
 ENDIF( ZINC_BUILD_APPLICATION )
 
-# Create the FooBarConfig.cmake and FooBarConfigVersion files
-FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR}"
-    "${ZINC_INSTALL_INC_DIR}" )
-CONFIGURE_FILE( cmake/ZincConfigVersion.cmake.in
-    "${PROJECT_BINARY_DIR}/ZincConfigVersion.cmake" @ONLY )
-
 LIST( REMOVE_DUPLICATES INCLUDE_DIRS )
 STRING( REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 STRING( REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}" )
-STRING( REGEX REPLACE ";" " " EXTRA_COMPILER_DEFINITIONS "${EXTRA_COMPILER_DEFINITIONS}" )
-SET( CONFIG_FILE_CONTENTS
-    "\n#"
-    "\n# - Zinc Config File."
-    "\n# Defines:"
-    "\n#"
-    "\n#  ZINC_INCLUDE_DIRS - Where to find the Zinc header files"
-    "\n#  ZINC_LIBRARIES    - List of libraries for using Zinc"
-    "\n#  ZINC_DEFINITIONS  - List of definitions that *must* be set"
-    "\n#  ZINC_FOUND        - Set to TRUE to conform like other FIND_PACKAGE calls"
-    "\n#"
-    "\n# The ZINC_DEFINITIONS need to be added to your project like so:"
-    "\n#"
-    "\n#  FOREACH(DEF \${ZINC_DEFINITIONS}"
-    "\n#      ADD_DEFINTIONS( -D\${DEF} )"
-    "\n#  ENDFORECH(DEF \${ZINC_DEFINITIONS}"
-    "\n#"
-    "\nIF( NOT DEFINED _ZINC_CONFIG_CMAKE )"
-    "\nSET( _ZINC_CONFIG_CMAKE TRUE )"
-    "${DEPENDENT_CONFIGS}"
-    "\nGET_FILENAME_COMPONENT( SELF_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH )"
-    "\nIF(EXISTS \"\${SELF_DIR}/CMakeCache.txt\")"
-    "\n  # In build tree"
-    "\n  INCLUDE(\"\${SELF_DIR}/ZincBuildTreeSettings.cmake\")"
-    "\nELSE()"
-    "\n  SET(ZINC_INCLUDE_DIRS \"\${SELF_DIR}/@CONF_REL_INCLUDE_DIR@\")"
-    "\nENDIF()"
-    "\n"
-    "\n#INCLUDE( \${SELF_DIR}/${ZINC_LIB_GROUP}-targets.cmake )"
-    "\n# Our library dependencies (contains definitions for IMPORTED targets)"
-    "\nINCLUDE("\${SELF_DIR}/ZincLibraryDepends.cmake")"
-    "\n#GET_FILENAME_COMPONENT( ZINC_INCLUDE_DIRS \"\${SELF_DIR}/../../include\" ABSOLUTE )"
-    "\nSET( ZINC_INCLUDE_DIRS \${ZINC_INCLUDE_DIRS} ${INCLUDE_DIRS} )"
-    "\nSET( ZINC_LIBRARIES ${ZINC_LIBRARY_TARGETS} )"
-    "\nSET( ZINC_DEFINITIONS ${DEPENDENT_DEFINITIONS} ${EXTRA_COMPILER_DEFINITIONS} )"
-    "${MY_LIB_TARGET_PROPERTIES}"
-    "\nSET( ZINC_FOUND TRUE )"
-    "\nENDIF( NOT DEFINED _ZINC_CONFIG_CMAKE )"
-    "\n\n" )
-SET( CONFIG_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake )
-FILE( WRITE ${CONFIG_FILE_NAME} ${CONFIG_FILE_CONTENTS} )
 
+# Create the ZincConfig.cmake and ZincConfigVersion.cmake files
+FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR}"
+    "${ZINC_INSTALL_INC_DIR}" )
+SET( ZINC_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake" )
+CONFIGURE_FILE( cmake/ZincConfig.in.cmake
+    "${ZINC_CONFIG_FILE_NAME}" @ONLY )
+SET( ZINC_CONFIG_VERSION_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfigVersion.cmake" )
+CONFIGURE_FILE( cmake/ZincConfigVersion.in.cmake
+    "${ZINC_CONFIG_VERSION_FILE_NAME}" @ONLY )
 # Create a ZincBuildTreeSettings.cmake file for the use from the build tree
-CONFIGURE_FILE( cmake/ZincBuildTreeSettings.cmake.in
-  "${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
+CONFIGURE_FILE( cmake/ZincBuildTreeSettings.in.cmake
+    "${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
+# Create a ZincLibrarySetup.cmake file for defining the available libraries
+SET( ZINC_LIBRARY_SETUP_FILE_NAME "${PROJECT_BINARY_DIR}/ZincLibrarySetup.cmake" )
+IF( ZINC_SHARED_TARGET AND ZINC_STATIC_TARGET )
+    CONFIGURE_FILE( cmake/ZincLibrarySetup.both.in.cmake
+        "${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
+ELSE()
+    IF( ZINC_SHARED_TARGET )
+        CONFIGURE_FILE( cmake/ZincLibrarySetup.shared.in.cmake
+            "${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
+    ENDIF()
+    IF( ZINC_STATIC_TARGET )
+        CONFIGURE_FILE( cmake/ZincLibrarySetup.static.in.cmake
+            "${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
+    ENDIF()
+ENDIF()
 
+#SET( ZINC_LIBRARY_DEPENDS_FILE_NAME "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
+# Create the build tree imported targets
+EXPORT( TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
 
-EXPORT( TARGETS ${ZINC_LIBRARY_TARGETS} FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
-EXPORT( PACKAGE ${ZINC_PROJECT_NAME} )
+# Register the Zinc project with the CMake database
+EXPORT( PACKAGE ${ZINC_BASE_NAME} )
 
-INSTALL( EXPORT ${ZINC_LIB_GROUP}-targets DESTINATION lib/cmake/zinc )
+# Install ZincLibraryDepends.cmake to the install destination
+INSTALL( EXPORT ${ZINC_LIBRARY_DEPENDS_GROUP} DESTINATION "${ZINC_INSTALL_CMAKE_DIR}" )
 
-INSTALL( FILES ${CONFIG_FILE_NAME} DESTINATION lib/cmake/zinc )
+# Install Zinc config files to the install location
+INSTALL( FILES "${ZINC_CONFIG_FILE_NAME}" "${ZINC_CONFIG_VERSION_FILE_NAME}" "${ZINC_LIBRARY_SETUP_FILE_NAME}"
+    DESTINATION "${ZINC_INSTALL_CMAKE_DIR}" )
 
 # Install headers for Zinc
 SET( ZINC_LIB_API_INSTALL_HDRS
@@ -600,6 +588,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/rendition.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scene.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewerinput.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/selection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/spectrum.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/status.h
@@ -691,18 +680,15 @@ IF( USE_OPENCASCADE )
         ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldcadid.h )
 ENDIF( USE_OPENCASCADE )
 
-# Files that always need to be installed
-INSTALL( FILES ${PROJECT_BINARY_DIR}/core/source/api/zinc/zincconfigure.h
-    ${PROJECT_BINARY_DIR}/core/source/api/zinc/zincsharedobject.h
-    DESTINATION include/zinc/ )
-
 # Api directory installs
 INSTALL( FILES ${ZINC_LIB_API_TYPES_INSTALL_HDRS}
-    DESTINATION include/zinc/types )
+    DESTINATION "${ZINC_INSTALL_INC_DIR}/zinc/types" )
 
-INSTALL( FILES ${ZINC_LIB_API_INSTALL_HDRS}
+INSTALL( FILES "${PROJECT_BINARY_DIR}/core/source/api/zinc/zincconfigure.h"
+    "${PROJECT_BINARY_DIR}/core/source/api/zinc/zincsharedobject.h"
+    ${ZINC_LIB_API_INSTALL_HDRS}
     ${ZINC_LIB_APIPP_INSTALL_HDRS}
-    DESTINATION include/zinc/ )
+    DESTINATION "${ZINC_INSTALL_INC_DIR}/zinc" )
 
 INCLUDE(cmake/ZincPackaging.cmake)
 

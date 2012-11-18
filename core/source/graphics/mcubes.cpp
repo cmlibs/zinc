@@ -733,7 +733,7 @@ if (vertex_index > mc_iso_surface->n_vertices || vertex_index < 0)
 } /* compile_mc_vertex_triangle_lists */
 
 #if defined (USE_PARAMETER_ON) // ==++
-static struct MC_vertex *check_mc_vertex(struct MC_cell *mc_cell,ZnReal v[3],
+struct MC_vertex *check_mc_vertex(struct MC_cell *mc_cell,ZnReal v[3],
 	int a)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
