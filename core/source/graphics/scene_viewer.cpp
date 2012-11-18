@@ -3319,6 +3319,9 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->repaint_required_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 
+				scene_viewer->destroy_callback_list =
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
+
 				/* add callbacks to the graphics buffer */
 				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
 				//-- 	Scene_viewer_initialise_callback, scene_viewer);
