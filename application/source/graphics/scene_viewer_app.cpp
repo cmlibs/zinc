@@ -516,7 +516,7 @@ so should not be modified or deallocated.
 		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
 			colour_buffer_depth);
 		Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
-		 	depth_buffer_depth);
+			depth_buffer_depth);
 		Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
 			accumulation_buffer_depth);
 
@@ -718,9 +718,9 @@ int Scene_viewer_app_input_transform(struct Scene_viewer_app *scene_viewer_app,
 					if (!scene_viewer_app->idle_update_callback_id)
 					 {
 						scene_viewer_app->idle_update_callback_id = Event_dispatcher_add_idle_callback(
-					 			User_interface_get_event_dispatcher(scene_viewer_app->user_interface),
-					 			Scene_viewer_app_idle_update_callback, (void *)scene_viewer_app,
-					 			EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
+								User_interface_get_event_dispatcher(scene_viewer_app->user_interface),
+								Scene_viewer_app_idle_update_callback, (void *)scene_viewer_app,
+								EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 					 }
 				}
 			} break;
@@ -911,7 +911,7 @@ Requests a full redraw immediately.
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->core_scene_viewer->fast_changing=0;
-		return_code = Scene_viewer_render_scene(scene_viewer->core_scene_viewer);
+		return_code = Cmiss_scene_viewer_render_scene(scene_viewer->core_scene_viewer);
 		if (scene_viewer->core_scene_viewer->swap_buffers)
 		{
 			Graphics_buffer_app_swap_buffers(scene_viewer->graphics_buffer);
@@ -1004,7 +1004,7 @@ extensions can get the updated frame from the backbuffer.
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
 		scene_viewer->core_scene_viewer->fast_changing=0;
-		return_code = Scene_viewer_render_scene(scene_viewer->core_scene_viewer);
+		return_code = Cmiss_scene_viewer_render_scene(scene_viewer->core_scene_viewer);
 	}
 	else
 	{
@@ -1052,7 +1052,7 @@ Updates the scene_viewer.
 			scene_viewer->core_scene_viewer->tumble_angle = 0.0;
 		}
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
-		Scene_viewer_render_scene(scene_viewer->core_scene_viewer);
+		Cmiss_scene_viewer_render_scene(scene_viewer->core_scene_viewer);
 		if (scene_viewer->core_scene_viewer->swap_buffers)
 		{
 			Graphics_buffer_app_swap_buffers(scene_viewer->graphics_buffer);

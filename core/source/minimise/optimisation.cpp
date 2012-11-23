@@ -43,27 +43,27 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-	#include <stdio.h>
-	#include <math.h>
-	#include "zinc/field.h"
-	#include "zinc/fieldmodule.h"
-	#include "computed_field/computed_field.h"
-	#include "computed_field/computed_field_composite.h"
-	#include "computed_field/computed_field_set.h"
-	#include "computed_field/computed_field_finite_element.h"
-	#include "finite_element/finite_element.h"
-	#include "finite_element/finite_element_private.h"
-	#include "finite_element/finite_element_region.h"
-	#include "finite_element/finite_element_region_private.h"
-	#include "general/any_object_private.h"
-	#include "general/any_object_definition.h"
-	#include "general/callback_private.h"
-	#include "general/compare.h"
-	#include "general/debug.h"
-	#include "general/indexed_list_private.h"
-	#include "general/object.h"
-	#include "time/time_keeper.h"
-	#include "general/message.h"
+#include <stdio.h>
+#include <math.h>
+#include "zinc/field.h"
+#include "zinc/fieldmodule.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_private.h"
+#include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
+#include "general/any_object_private.h"
+#include "general/any_object_definition.h"
+#include "general/callback_private.h"
+#include "general/compare.h"
+#include "general/debug.h"
+#include "general/indexed_list_private.h"
+#include "general/object.h"
+#include "time/time_keeper.h"
+#include "general/message.h"
 #include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"
 #include "general/enumerator_private.hpp"
@@ -79,6 +79,7 @@ using namespace std;
 #include <NLP.h>
 #include <OptQNewton.h>
 #include <OptNewton.h>
+
 using NEWMAT::ColumnVector;
 using namespace ::OPTPP;
 
