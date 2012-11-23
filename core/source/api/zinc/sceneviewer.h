@@ -584,7 +584,7 @@ near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_redraw_now(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int Cmiss_scene_viewer_render_scene(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
