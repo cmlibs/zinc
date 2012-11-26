@@ -45,30 +45,30 @@
 
 /* Interestingly, swig does not recognise the typemap to Field **, 
 	therefore using the following to wrap it around*/
-%extend Zn::FieldModule
+%extend zinc::FieldModule
 {
-	Zn::FieldConcatenate createConcatenate(int numberOfSourceFields, void **sourceFieldsVoid)
+	zinc::FieldConcatenate createConcatenate(int numberOfSourceFields, void **sourceFieldsVoid)
 	{
-		Zn::Field **temp = (Zn::Field **)sourceFieldsVoid;
-		Zn::Field *fieldsArray = new Zn::Field[numberOfSourceFields];
+		zinc::Field **temp = (zinc::Field **)sourceFieldsVoid;
+		zinc::Field *fieldsArray = new zinc::Field[numberOfSourceFields];
 		for (int i = 0; i < numberOfSourceFields; i++)
 		{
 			fieldsArray[i] = *temp[i];
 		}
-    	Zn::FieldConcatenate return_field = ($self)->createConcatenate(numberOfSourceFields, fieldsArray);
+    	zinc::FieldConcatenate return_field = ($self)->createConcatenate(numberOfSourceFields, fieldsArray);
     	delete[] fieldsArray;
     	return return_field;
 	}
 	
-	Zn::FieldCrossProduct createCrossProduct(int numberOfSourceFields, void **sourceFieldsVoid)
+	zinc::FieldCrossProduct createCrossProduct(int numberOfSourceFields, void **sourceFieldsVoid)
 	{
-		Zn::Field **temp = (Zn::Field **)sourceFieldsVoid;
-		Zn::Field *fieldsArray = new Zn::Field[numberOfSourceFields];
+		zinc::Field **temp = (zinc::Field **)sourceFieldsVoid;
+		zinc::Field *fieldsArray = new zinc::Field[numberOfSourceFields];
 		for (int i = 0; i < numberOfSourceFields; i++)
 		{
 			fieldsArray[i] = *temp[i];
 		}
-    	Zn::FieldCrossProduct return_field = ($self)->createCrossProduct(numberOfSourceFields + 1, fieldsArray);
+    	zinc::FieldCrossProduct return_field = ($self)->createCrossProduct(numberOfSourceFields + 1, fieldsArray);
     	delete[] fieldsArray;
     	return return_field;
 	}
@@ -147,20 +147,20 @@
 %ignore Optimisation;
 %ignore TimeSequence;
 %ignore TimeKeeper;
-%ignore Zn::operator+;
-%ignore Zn::operator*;
-%ignore Zn::operator/;
-%ignore Zn::operator-;
-%ignore Zn::log;
-%ignore Zn::sqrt;
-%ignore Zn::exp;
-%ignore Zn::abs;
-%ignore Zn::operator&&;
-%ignore Zn::operator==;
-%ignore Zn::operator>;
-%ignore Zn::operator<;
-%ignore Zn::operator||;
-%ignore Zn::operator!;
+%ignore zinc::operator+;
+%ignore zinc::operator*;
+%ignore zinc::operator/;
+%ignore zinc::operator-;
+%ignore zinc::log;
+%ignore zinc::sqrt;
+%ignore zinc::exp;
+%ignore zinc::abs;
+%ignore zinc::operator&&;
+%ignore zinc::operator==;
+%ignore zinc::operator>;
+%ignore zinc::operator<;
+%ignore zinc::operator||;
+%ignore zinc::operator!;
 %ignore Region;
 %ignore StreamInformationImage;
 %ignore StreamInformationRegion;

@@ -49,7 +49,7 @@
         if (!PyCallable_Check(callbackObject))
         {
             PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
-            return NULL;
+            return 0;
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */

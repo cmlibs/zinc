@@ -40,6 +40,7 @@
 
 %module Rendition
 
+%ignore Field;
 %ignore FieldGroup;
 %ignore Graphic;
 %ignore SelectionHandler;
@@ -48,6 +49,7 @@
 #include "zinc/rendition.hpp"
 %}
 
+%include "zinc/field.hpp"
 %include "zinc/fieldtypesgroup.hpp"
 %include "zinc/graphic.hpp"
 %include "zinc/selection.hpp"

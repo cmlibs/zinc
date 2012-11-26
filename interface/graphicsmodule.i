@@ -50,12 +50,16 @@
 %ignore Spectrum;
 %ignore StreamInformationRegion;
 %ignore StreamInformation;
+%ignore StreamResource;
+%ignore StreamResourceFile;
+%ignore StreamResourceMemory;
 %ignore Tessellation;
 
 %{
 #include "zinc/graphicsmodule.hpp"
 %}
 
+%include "zinc/stream.hpp"
 %include "zinc/graphicsfilter.hpp"
 %include "zinc/graphicsmaterial.hpp"
 %include "zinc/region.hpp"

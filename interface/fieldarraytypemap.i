@@ -50,7 +50,7 @@
 		{
 			void *temp_pointer;
 			PyObject *o = PyList_GetItem($input,i);
-			if (SWIG_ConvertPtr(o, (void **) &temp_pointer, $descriptor(Zn::Field *), SWIG_POINTER_EXCEPTION) == 0)
+			if (SWIG_ConvertPtr(o, (void **) &temp_pointer, $descriptor(zinc::Field *), SWIG_POINTER_EXCEPTION) == 0)
 				$2[i] = temp_pointer;
 			else
 			{

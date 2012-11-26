@@ -63,7 +63,7 @@
 %ignore StreamResourceFile;
 %ignore StreamResourceMemory;
 %ignore TimeKeeper;
-%ignore Zn::operator+;
+%ignore zinc::operator+;
 
 %{
 #include "zinc/field.hpp"

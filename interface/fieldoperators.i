@@ -39,41 +39,41 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
- %extend Zn::Field
+ %extend zinc::Field
 {
-	Zn::FieldAdd operator+(Zn::Field& operand)
+	zinc::FieldAdd operator+(zinc::Field& operand)
 	{
-    	Zn::FieldModule fieldModule(*($self));
+    	zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createAdd(*($self), operand);
 	}
 	
-	Zn::FieldSubtract operator-(Zn::Field& operand)
+	zinc::FieldSubtract operator-(zinc::Field& operand)
 	{
-    	Zn::FieldModule fieldModule(*($self));
+    	zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createSubtract(*($self), operand);
 	}
 	
-	Zn::FieldMultiply operator*(Zn::Field& operand)
+	zinc::FieldMultiply operator*(zinc::Field& operand)
 	{
-	    Zn::FieldModule fieldModule(*($self));
+	    zinc::FieldModule fieldModule(*($self));
  		return fieldModule.createMultiply(*($self), operand);
 	}
 	
-	Zn::FieldDivide operator/(Zn::Field& operand)
+	zinc::FieldDivide operator/(zinc::Field& operand)
 	{
-	    Zn::FieldModule fieldModule(*($self));
+	    zinc::FieldModule fieldModule(*($self));
  		return fieldModule.createDivide(*($self), operand);
 	}
 
-	Zn::FieldGreaterThan operator>(Zn::Field& operand)
+	zinc::FieldGreaterThan operator>(zinc::Field& operand)
 	{
-    	Zn::FieldModule fieldModule(*($self));
+    	zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createGreaterThan(*($self), operand);
 	}
 
-	Zn::FieldLessThan operator<(Zn::Field& operand)
+	zinc::FieldLessThan operator<(zinc::Field& operand)
 	{
-    	Zn::FieldModule fieldModule(*($self));
+    	zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createLessThan(*($self), operand);
 	}
 

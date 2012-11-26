@@ -46,6 +46,9 @@
 %ignore TimeKeeper;
 %ignore StreamInformationRegion;
 %ignore StreamInformation;
+%ignore StreamResource;
+%ignore StreamResourceFile;
+%ignore StreamResourceMemory;
 %ignore SceneViewerPackage;
 %ignore Scene;
 
@@ -53,6 +56,7 @@
 #include "zinc/context.hpp"
 %}
 
+%include "zinc/stream.hpp"
 %include "zinc/scene.hpp"
 %include "zinc/sceneviewer.hpp"
 %include "zinc/timekeeper.hpp"

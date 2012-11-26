@@ -42,6 +42,7 @@
 %module Region
 
 %ignore FieldModule;
+%ignore StreamInformation;
 %ignore StreamResource;
 %ignore StreamResourceFile;
 %ignore StreamResourceMemory;
