@@ -14,8 +14,8 @@ SET( PATH_SUFFIXES cmake )
 FIND_PACKAGE(Zinc)
 INCLUDE_DIRECTORIES(${ZINC_INCLUDE_DIRS})
 
+# Suppress the assignment operator overload warning for Python.
 SET(CMAKE_SWIG_FLAGS "-w362")
-
 
 SET(INTERFACE_SRCS
     ../interface/context.i
