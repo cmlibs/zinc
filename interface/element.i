@@ -1,10 +1,9 @@
 /*******************************************************************************
- * ZnFieldOperators.i
+ * Element.i
  * 
- * Swig interface file for wrapping overloading operators of fields
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -38,43 +37,22 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
- %extend Zn::Field
-{
-	Zn::FieldAdd operator+(Zn::Field& operand)
-	{
-    	Zn::FieldModule fieldModule(*($self));
-    	return fieldModule.createAdd(*($self), operand);
-	}
-	
-	Zn::FieldSubtract operator-(Zn::Field& operand)
-	{
-    	Zn::FieldModule fieldModule(*($self));
-    	return fieldModule.createSubtract(*($self), operand);
-	}
-	
-	Zn::FieldMultiply operator*(Zn::Field& operand)
-	{
-	    Zn::FieldModule fieldModule(*($self));
- 		return fieldModule.createMultiply(*($self), operand);
-	}
-	
-	Zn::FieldDivide operator/(Zn::Field& operand)
-	{
-	    Zn::FieldModule fieldModule(*($self));
- 		return fieldModule.createDivide(*($self), operand);
-	}
 
-	Zn::FieldGreaterThan operator>(Zn::Field& operand)
-	{
-    	Zn::FieldModule fieldModule(*($self));
-    	return fieldModule.createGreaterThan(*($self), operand);
-	}
+%module Element
+%include "integervaluesarraytypemap.i"
 
-	Zn::FieldLessThan operator<(Zn::Field& operand)
-	{
-    	Zn::FieldModule fieldModule(*($self));
-    	return fieldModule.createLessThan(*($self), operand);
-	}
+%ignore DifferentialOperator;
+%ignore Field;
+%ignore Node;
+%ignore NodeIterator;
+%ignore Nodeset;
+%ignore NodesetGroup;
 
-};
+%{
+#include "zinc/element.hpp"
+%}
+
+%include "zinc/field.hpp"
+%include "zinc/differentialoperator.hpp"
+%include "zinc/node.hpp"
+%include "zinc/element.hpp"

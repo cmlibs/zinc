@@ -20,28 +20,28 @@ SET(CMAKE_SWIG_FLAGS "")
 
 
 SET(INTERFACE_SRCS
-    ../interface/ZnContext.i
-    ../interface/ZnRegion.i
-    ../interface/ZnFieldModule.i
-    ../interface/ZnGraphicsModule.i
-    ../interface/ZnMaterial.i
-    ../interface/ZnRendition.i
-    ../interface/ZnField.i
-    ../interface/ZnStream.i
-    ../interface/ZnElement.i
-    ../interface/ZnNode.i
-    ../interface/ZnDifferentialOperator.i
-    ../interface/ZnFieldCache.i
-    ../interface/ZnTessellation.i
-    ../interface/ZnGraphic.i
-    ../interface/ZnSelection.i
-    ../interface/ZnGraphicsFilter.i
-    ../interface/ZnScene.i
-    ../interface/ZnSceneViewer.i
-    ../interface/ZnSpectrum.i
-    ../interface/ZnOptimisation.i
-    ../interface/ZnTime.i
-    ../interface/ZnTimeSequence.i)
+    ../interface/context.i
+    ../interface/region.i
+    ../interface/fieldmodule.i
+    ../interface/graphicsmodule.i
+    ../interface/material.i
+    ../interface/rendition.i
+    ../interface/field.i
+    ../interface/stream.i
+    ../interface/element.i
+    ../interface/node.i
+    ../interface/differentialoperator.i
+    ../interface/fieldcache.i
+    ../interface/tessellation.i
+    ../interface/graphic.i
+    ../interface/selection.i
+    ../interface/graphicsfilter.i
+    ../interface/scene.i
+    ../interface/sceneviewer.i
+    ../interface/spectrum.i
+    ../interface/optimisation.i
+    ../interface/time.i
+    ../interface/timesequence.i)
 
 SET(ZINC_PYTHON_MODULE zinc)
 SET(CMAKE_SWIG_OUTDIR ${ZINC_PYTHON_MODULE})

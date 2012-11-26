@@ -1,10 +1,9 @@
 /*******************************************************************************
- * ZnRegion.i
- * 
- * Swig interface file for cmgui region API.
+ * Tessellation.i
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -20,7 +19,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2010
+ * Portions created by the Initial Developer are Copyright (C) 2012
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -39,17 +38,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Region
+%module Tessellation
 
-%ignore FieldModule;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
+%include "integervaluesarraytypemap.i"
 
 %{
-#include "zinc/region.hpp"
+#include "zinc/tessellation.hpp"
 %}
 
-%include "zinc/fieldmodule.hpp"
-%include "zinc/stream.hpp"
-%include "zinc/region.hpp"
+%include "zinc/tessellation.hpp"

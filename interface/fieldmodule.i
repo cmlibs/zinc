@@ -1,5 +1,5 @@
 /*******************************************************************************
- * ZnFieldModule.i
+ * FieldModule.i
  * 
  * Swig interface file for wrapping api functions in api/fieldmodule.hpp
  */
@@ -40,8 +40,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 %module FieldModule
-%include "ZnDoubleValuesArrayTypemap.i"
-%include "ZnFieldArrayTypemap.i"
+%include "doublevaluesarraytypemap.i"
+%include "fieldarraytypemap.i"
 
 /* Interestingly, swig does not recognise the typemap to Field **, 
 	therefore using the following to wrap it around*/

@@ -1,9 +1,10 @@
 /*******************************************************************************
- * ZnSceneViewer.i
- *
+ * FieldCache.i
+ * 
+ * Swig interface file for wrapping api functions in api/fieldcache.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -38,13 +39,26 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module SceneViewer
-%ignore Scene;
+%module FieldCache
+%include "doublevaluesarraytypemap.i"
+
+%ignore Field;
+%ignore ElementBasis;
+%ignore ElementTemplate;
+%ignore Element;
+%ignore ElementIterator;
+%ignore Mesh;
+%ignore MeshGroup;
+%ignore Node;
+%ignore NodeIterator;
+%ignore Nodeset;
+%ignore NodesetGroup;
 
 %{
-#include "zinc/sceneviewer.hpp"
+#include "zinc/fieldcache.hpp"
 %}
 
-%include "zinc/scene.hpp"
-%include "zinc/sceneviewer.hpp"
-
+%include "zinc/field.hpp"
+%include "zinc/element.hpp"
+%include "zinc/node.hpp"
+%include "zinc/fieldcache.hpp"

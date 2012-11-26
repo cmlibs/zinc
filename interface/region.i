@@ -1,9 +1,10 @@
 /*******************************************************************************
- * ZnNode.i
+ * Region.i
  * 
+ * Swig interface file for cmgui region API.
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -19,7 +20,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,14 +39,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Node
+%module Region
 
-%ignore Field;
+%ignore FieldModule;
+%ignore StreamResource;
+%ignore StreamResourceFile;
+%ignore StreamResourceMemory;
 
 %{
-#include "zinc/node.hpp"
-#include "zinc/field.hpp"
+#include "zinc/region.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/node.hpp"
+%include "zinc/fieldmodule.hpp"
+%include "zinc/stream.hpp"
+%include "zinc/region.hpp"

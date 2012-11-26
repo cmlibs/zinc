@@ -1,9 +1,9 @@
 /*******************************************************************************
- * ZnTimeSequence.i
+ * Node.i
  * 
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -38,10 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module TimeSequence
+%module Node
+
+%ignore Field;
 
 %{
-#include "zinc/timesequence.hpp"
+#include "zinc/node.hpp"
+#include "zinc/field.hpp"
 %}
 
-%include "zinc/timesequence.hpp"
+%include "zinc/field.hpp"
+%include "zinc/node.hpp"

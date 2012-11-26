@@ -1,5 +1,5 @@
 /*******************************************************************************
- * ZnOptimisation.i
+ * SceneViewer.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,15 +38,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Optimisation
-
-%ignore Field;
+%module SceneViewer
+%ignore Scene;
 
 %{
-#include "zinc/optimisation.hpp"
-#include "zinc/field.hpp"
+#include "zinc/sceneviewer.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/optimisation.hpp"
+%include "zinc/scene.hpp"
+%include "zinc/sceneviewer.hpp"
 

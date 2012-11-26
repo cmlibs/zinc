@@ -1,5 +1,5 @@
 /*******************************************************************************
- * ZnGraphicsFilter.i
+ * Graphic.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -15,7 +15,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is libZinc.
+ * The Original Code is cmgui.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
@@ -38,13 +38,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module GraphicsFilter
+%module Graphic
 
-%ignore Graphic;
+%ignore Field;
+%ignore GraphicsMaterial;
+%ignore Tessellation;
 
 %{
-#include "zinc/graphicsfilter.hpp"
+#include "zinc/graphic.hpp"
 %}
 
+%include "zinc/field.hpp"
+%include "zinc/graphicsmaterial.hpp"
+%include "zinc/tessellation.hpp"
 %include "zinc/graphic.hpp"
-%include "zinc/graphicsfilter.hpp"

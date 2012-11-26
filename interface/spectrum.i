@@ -1,6 +1,6 @@
 /*******************************************************************************
- * ZnElement.i
- * 
+ * Spectrum.i
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
@@ -38,21 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Element
-%include "ZnIntegerValuesArrayTypemap.i"
-
-%ignore DifferentialOperator;
-%ignore Field;
-%ignore Node;
-%ignore NodeIterator;
-%ignore Nodeset;
-%ignore NodesetGroup;
+%module Spectrum
 
 %{
-#include "zinc/element.hpp"
+#include "zinc/spectrum.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/differentialoperator.hpp"
-%include "zinc/node.hpp"
-%include "zinc/element.hpp"
+%include "zinc/spectrum.hpp"

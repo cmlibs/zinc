@@ -1,6 +1,7 @@
 /*******************************************************************************
- * ZnRendition.i
+ * FieldOperators.i
  * 
+ * Swig interface file for wrapping overloading operators of fields
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -19,7 +20,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2010
+ * Portions created by the Initial Developer are Copyright (C) 2012
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -37,18 +38,43 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+ 
+ %extend Zn::Field
+{
+	Zn::FieldAdd operator+(Zn::Field& operand)
+	{
+    	Zn::FieldModule fieldModule(*($self));
+    	return fieldModule.createAdd(*($self), operand);
+	}
+	
+	Zn::FieldSubtract operator-(Zn::Field& operand)
+	{
+    	Zn::FieldModule fieldModule(*($self));
+    	return fieldModule.createSubtract(*($self), operand);
+	}
+	
+	Zn::FieldMultiply operator*(Zn::Field& operand)
+	{
+	    Zn::FieldModule fieldModule(*($self));
+ 		return fieldModule.createMultiply(*($self), operand);
+	}
+	
+	Zn::FieldDivide operator/(Zn::Field& operand)
+	{
+	    Zn::FieldModule fieldModule(*($self));
+ 		return fieldModule.createDivide(*($self), operand);
+	}
 
-%module Rendition
+	Zn::FieldGreaterThan operator>(Zn::Field& operand)
+	{
+    	Zn::FieldModule fieldModule(*($self));
+    	return fieldModule.createGreaterThan(*($self), operand);
+	}
 
-%ignore FieldGroup;
-%ignore Graphic;
-%ignore SelectionHandler;
+	Zn::FieldLessThan operator<(Zn::Field& operand)
+	{
+    	Zn::FieldModule fieldModule(*($self));
+    	return fieldModule.createLessThan(*($self), operand);
+	}
 
-%{
-#include "zinc/rendition.hpp"
-%}
-
-%include "zinc/fieldtypesgroup.hpp"
-%include "zinc/graphic.hpp"
-%include "zinc/selection.hpp"
-%include "zinc/rendition.hpp"
+};

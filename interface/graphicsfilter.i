@@ -1,5 +1,5 @@
 /*******************************************************************************
- * ZnTessellation.i
+ * GraphicsFilter.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,12 +38,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Tessellation
+%module GraphicsFilter
 
-%include "ZnIntegerValuesArrayTypemap.i"
+%ignore Graphic;
 
 %{
-#include "zinc/tessellation.hpp"
+#include "zinc/graphicsfilter.hpp"
 %}
 
-%include "zinc/tessellation.hpp"
+%include "zinc/graphic.hpp"
+%include "zinc/graphicsfilter.hpp"

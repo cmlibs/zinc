@@ -1,7 +1,6 @@
 /*******************************************************************************
- * ZnFieldArrayTypemap.i
+ * Stream.i
  * 
- * Swig interface file for void to field array.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,39 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%typemap(in) (int numberOfSourceFields, void **sourceFieldsVoid)
-{
-	/* Check if is a list */
-	if (PyList_Check($input)) 
-	{
-		$1 = PyList_Size($input);
-		$2 = (void **) malloc(($1)*sizeof(void *));
-		for (int i = 0; i < $1; i++) 
-		{
-			void *temp_pointer;
-			PyObject *o = PyList_GetItem($input,i);
-			if (SWIG_ConvertPtr(o, (void **) &temp_pointer, $descriptor(Zn::Field *), SWIG_POINTER_EXCEPTION) == 0)
-				$2[i] = temp_pointer;
-			else
-			{
-				PyErr_SetString(PyExc_TypeError,"Failed to convert type");
-				return NULL;
-			}
-		}
-	}
-	else
-	{
-		PyErr_SetString(PyExc_TypeError,"not a list");
-		return NULL;
-	}
-}
+%module Stream
 
-%typemap(freearg) (int numberOfSourceFields, void **sourceFieldsVoid)
-{
-	free($2);
-}
+%{
+#include "zinc/stream.hpp"
+%}
 
-%typemap(typecheck) (int numberOfSourceFields, void **sourceFieldsVoid)
-{
-	$1 = PyList_Check($input) ? 1 : 0;
-}
+%include "zinc/stream.hpp"

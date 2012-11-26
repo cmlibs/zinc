@@ -1,9 +1,9 @@
 /*******************************************************************************
- * ZnGraphic.i
- *
+ * Rendition.i
+ * 
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -15,11 +15,11 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is cmgui.
+ * The Original Code is libZinc.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,17 +38,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Graphic
+%module Rendition
 
-%ignore Field;
-%ignore GraphicsMaterial;
-%ignore Tessellation;
+%ignore FieldGroup;
+%ignore Graphic;
+%ignore SelectionHandler;
 
 %{
-#include "zinc/graphic.hpp"
+#include "zinc/rendition.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/graphicsmaterial.hpp"
-%include "zinc/tessellation.hpp"
+%include "zinc/fieldtypesgroup.hpp"
 %include "zinc/graphic.hpp"
+%include "zinc/selection.hpp"
+%include "zinc/rendition.hpp"

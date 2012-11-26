@@ -1,5 +1,5 @@
 /*******************************************************************************
- * ZnField.i
+ * Field.i
  * 
  * Swig interface file for wrapping api functions in api/field.hpp
  */
@@ -40,9 +40,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 %module Field
-%include "ZnFieldArrayTypemap.i"
-%include "ZnDoubleValuesArrayTypemap.i"
-%include "ZnFieldOperators.i"
+%include "fieldarraytypemap.i"
+%include "doublevaluesarraytypemap.i"
+%include "fieldoperators.i"
 
 %ignore FieldCache;
 %ignore ElementBasis;
