@@ -51,7 +51,7 @@
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/rendition.h"
 #include "zinc/status.h"
-#include "zinc/time.h"
+#include "zinc/timenotifier.h"
 #include "zinc/timekeeper.h"
 #include "zinc/timesequence.h"
 // GRC want to eliminate following 2 includes

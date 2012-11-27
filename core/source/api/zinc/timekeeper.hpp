@@ -40,7 +40,7 @@
 #define __ZN_TIME_KEEPER_HPP__
 
 #include "zinc/timekeeper.h"
-#include "zinc/time.hpp"
+#include "zinc/timenotifier.hpp"
 
 namespace zinc
 {

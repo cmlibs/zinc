@@ -41,7 +41,7 @@ SET( API_HDRS
     source/api/zinc/status.h
     source/api/zinc/stream.h
     source/api/zinc/tessellation.h
-    source/api/zinc/time.h
+    source/api/zinc/timenotifier.h
     source/api/zinc/timekeeper.h
     source/api/zinc/timesequence.h
     source/api/zinc/types/contextid.h

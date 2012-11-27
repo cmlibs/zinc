@@ -120,11 +120,6 @@ public:
 		return Cmiss_spectrum_set_name(id, name);
 	}
 
-	int executeCommand(const char *commandString)
-	{
-		return Cmiss_spectrum_execute_command(id, commandString);
-	}
-
 };
 
 }  // namespace zinc
