@@ -1259,75 +1259,6 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_viewer_apply_modelview_lights_and_clip_planes */
 
-static int Scene_viewer_handle_fastchanging(
-	struct Scene_viewer_rendering_data *rendering_data)
-/*******************************************************************************
-LAST MODIFIED : 8 April 2003
-
-DESCRIPTION :
-This function determines whether to draw the main scene or whether to just
-update the fastchanging objects.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_handle_fastchanging);
-	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
-	{
-		return_code = 1;
-		if ((!rendering_data->rendering_double_buffered) || (!scene_viewer->fast_changing))
-		{
-			Scene_viewer_call_next_renderer(rendering_data);
-		}
-
-		if (scene_viewer->fast_changing ||
-			Scene_has_fast_changing_objects(scene_viewer->scene))
-		{
-			scene_viewer->swap_buffers=0;
-			/* Set up projection */
-			glMatrixMode(GL_PROJECTION);
-			glLoadMatrixd(scene_viewer->window_projection_matrix);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-			reset_Lights();
-			/* turn on lights that are part of the Scene_viewer,
-				ie. headlamps */
-			FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
-				scene_viewer->list_of_lights);
-			glLoadMatrixd(scene_viewer->modelview_matrix);
-			/* turn on lights that are part of the Scene and fixed relative
-				to it. Note the scene will have compiled them already. */
-			for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
-				(void *)NULL);
-
-			glViewport((GLint)rendering_data->viewport_left,
-				(GLint)rendering_data->viewport_bottom,
-				(GLint)rendering_data->viewport_width,
-				(GLint)rendering_data->viewport_height);
-			/* do not write into the depth buffer */
-			glDepthMask(GL_FALSE);
-
-			rendering_data->renderer->fast_changing = 1;
-			rendering_data->renderer->Scene_execute(scene_viewer->scene);
-			rendering_data->renderer->fast_changing = 0;
-			glFlush();
-			scene_viewer->first_fast_change=0;
-		}
-		else
-		{
-			scene_viewer->first_fast_change=1;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_handle_fastchanging */
-
 static int Scene_viewer_render_background(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -2181,14 +2112,6 @@ access this function.
 						rendering_data.render_callstack);
 				}
 
-				if (rendering_data.rendering_double_buffered)
-				{
-					render_object = CREATE(Scene_viewer_render_object)(
-						Scene_viewer_handle_fastchanging);
-					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-						rendering_data.render_callstack);
-				}
-
 				/* Initialise the matricies and handle the double buffer flag */
 				render_object = CREATE(Scene_viewer_render_object)(
 					Scene_viewer_initialise_matrices_and_swap_buffers);
@@ -2414,7 +2337,6 @@ access this function.
 			DESTROY(LIST(Scene_viewer_render_object))(&rendering_data.render_callstack);
 			delete rendering_data.renderer;
 		}
-		scene_viewer->fast_changing=1;
 		scene_viewer->frame_count++;
 	}
 	else
@@ -2499,28 +2421,15 @@ Called to redraw the Scene_viewer scene after changes in the display lists or
 viewing transformations.  Uses the specified viewport to draw into (unless
 all the dimensions are zero).  If non_zero then the supplied <antialias> and
 <transparency_layers> are used for just this render.
-The <drawing_offscreen> flag is used by offscreen buffers to force the scene
-viewer to do a full Scene execute despite the current fast_changing state.
-The previous fast_changing state is kept so that the onscreen graphics are
-kept in a sensible state.
 ==============================================================================*/
 {
-	int keep_fast_changing_state = 0, return_code = 1;
+	int return_code = 1;
 
 	ENTER(Scene_viewer_render_scene_in_viewport);
 	if (scene_viewer)
 	{
-		if (drawing_offscreen)
-		{
-			keep_fast_changing_state = scene_viewer->fast_changing;
-			scene_viewer->fast_changing = 0;
-		}
 		return_code=Scene_viewer_render_scene_private(scene_viewer,
 			left, bottom, right, top, antialias, transparency_layers);
-		if (drawing_offscreen)
-		{
-			scene_viewer->fast_changing = keep_fast_changing_state;
-		}
 	}
 	else
 	{
@@ -3229,8 +3138,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->focal_depth=0.0;
 				scene_viewer->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
 				scene_viewer->transform_flag=0;
-				scene_viewer->first_fast_change=1;
-				scene_viewer->fast_changing=0;
 				scene_viewer->stereo_eye_spacing=0.25;
 				scene_viewer->swap_buffers=0;
 				if (default_light)

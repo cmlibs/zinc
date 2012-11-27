@@ -407,12 +407,6 @@ DESCRIPTION :
 	enum Scene_viewer_blending_mode blending_mode;
 	double depth_of_field;  /* depth_of_field, 0 == infinite */
 	double focal_depth;
-	/* set between fast changing operations since the first fast-change will
-		 copy from the front buffer to the back; subsequent changes will copy
-		 saved buffer from back to front. */
-	int first_fast_change;
-	/* flag is cleared as soon as a change to the scene is not fast_changing */
-	int fast_changing;
 	/* flag indicating that the viewer should swap buffers at the next
 		 appropriate point */
 	int swap_buffers;
@@ -1413,10 +1407,6 @@ Called to redraw the Scene_viewer scene after changes in the display lists or
 viewing transformations.  Uses the specified viewport to draw into (unless
 all the dimensions are zero).  If non_zero then the supplied <antialias> and
 <transparency_layers> are used for just this render.
-The <drawing_offscreen> flag is used by offscreen buffers to force the scene
-viewer to do a full Scene execute despite the current fast_changing state.
-The previous fast_changing state is kept so that the onscreen graphics are
-kept in a sensible state.
 ==============================================================================*/
 
 struct Cmgui_image *Scene_viewer_get_image(struct Scene_viewer *scene_viewer,

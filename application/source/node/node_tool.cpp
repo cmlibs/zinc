@@ -1899,11 +1899,6 @@ release.
 											"node_tool_rubber_band",g_POLYLINE,
 											node_tool->rubber_band_material);
 										ACCESS(GT_object)(node_tool->rubber_band);
-#if defined (USE_GRAPHICS_OBJECT)
-										Scene_add_graphics_object(scene,node_tool->rubber_band,
-											/*position*/0,"node_tool_rubber_band",
-											/*fast_changing*/1);
-#endif
 									}
 									Interaction_volume_make_polyline_extents(
 										temp_interaction_volume,node_tool->rubber_band);
