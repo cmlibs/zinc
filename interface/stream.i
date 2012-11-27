@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Stream
+%module stream
 
 %{
 #include "zinc/stream.hpp"

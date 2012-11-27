@@ -39,32 +39,19 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module GraphicsModule
+%module graphicsmodule
 
-%ignore GraphicsFilter;
-%ignore GraphicsFilterOperator;
-%ignore Material;
-%ignore Region;
-%ignore Rendition;
-%ignore Scene;
-%ignore Spectrum;
-%ignore StreamInformationRegion;
-%ignore StreamInformation;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
-%ignore Tessellation;
+%import "region.i"
+%import "rendition.i"
+%import "graphicsmaterial.i"
+%import "graphicsfilter.i"
+%import "scene.i"
+%import "spectrum.i"
+%import "tessellation.i"
 
 %{
 #include "zinc/graphicsmodule.hpp"
 %}
 
-%include "zinc/stream.hpp"
-%include "zinc/graphicsfilter.hpp"
-%include "zinc/graphicsmaterial.hpp"
-%include "zinc/region.hpp"
-%include "zinc/rendition.hpp"
-%include "zinc/scene.hpp"
-%include "zinc/spectrum.hpp"
-%include "zinc/tessellation.hpp"
 %include "zinc/graphicsmodule.hpp"
+

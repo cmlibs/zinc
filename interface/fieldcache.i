@@ -39,26 +39,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module FieldCache
+%module fieldcache
 %include "doublevaluesarraytypemap.i"
 
-%ignore Field;
-%ignore ElementBasis;
-%ignore ElementTemplate;
-%ignore Element;
-%ignore ElementIterator;
-%ignore Mesh;
-%ignore MeshGroup;
-%ignore Node;
-%ignore NodeIterator;
-%ignore Nodeset;
-%ignore NodesetGroup;
+%import "field.i"
+%import "element.i"
+%import "node.i"
 
 %{
+#include "zinc/fieldtypesarithmeticoperators.hpp"
 #include "zinc/fieldcache.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/element.hpp"
-%include "zinc/node.hpp"
 %include "zinc/fieldcache.hpp"
+

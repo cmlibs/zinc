@@ -38,13 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module GraphicsFilter
+%module graphicsfilter
 
-%ignore Graphic;
+%import "graphic.i"
 
 %{
 #include "zinc/graphicsfilter.hpp"
+#include "zinc/fieldtypesconditional.hpp"
 %}
 
-%include "zinc/graphic.hpp"
 %include "zinc/graphicsfilter.hpp"
+

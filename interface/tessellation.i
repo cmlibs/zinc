@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Tessellation
+%module tessellation
 
 %include "integervaluesarraytypemap.i"
 

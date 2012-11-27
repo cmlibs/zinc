@@ -39,28 +39,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Context
+%module context
 
-%ignore GraphicsModule;
-%ignore Region;
-%ignore TimeKeeper;
-%ignore StreamInformationRegion;
-%ignore StreamInformation;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
-%ignore SceneViewerPackage;
-%ignore Scene;
+%import "graphicsmodule.i"
+%import "rendition.i"
+%import "scene.i"
+%import "sceneviewer.i"
+%import "field.i"
 
 %{
 #include "zinc/context.hpp"
 %}
 
-%include "zinc/stream.hpp"
-%include "zinc/scene.hpp"
-%include "zinc/sceneviewer.hpp"
-%include "zinc/timekeeper.hpp"
-%include "zinc/region.hpp"
-%include "zinc/graphicsmodule.hpp"
 %include "zinc/context.hpp"
 

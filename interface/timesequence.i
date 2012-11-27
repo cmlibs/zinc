@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module TimeSequence
+%module timesequence
 
 %{
 #include "zinc/timesequence.hpp"

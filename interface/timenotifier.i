@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Time
+%module timenotifier
 
 %extend zinc::TimeNotifier {
 
@@ -69,12 +69,8 @@
     }
 }
 
-%ignore addCallback;
-%ignore removeCallback;
-
 %{
-#include "zinc/time.hpp"
-#include "zinc/timekeeper.hpp"
+#include "zinc/timenotifier.hpp"
 
 struct TimeNotifierPyDataObject
 {
@@ -102,5 +98,5 @@ static int callbackToPython(Cmiss_time_notifier_id time_notifier,
 }
 %}
 
-%include "zinc/time.hpp"
-%include "zinc/timekeeper.hpp"
+%include "zinc/timenotifier.hpp"
+

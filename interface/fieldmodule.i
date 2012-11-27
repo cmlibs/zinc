@@ -39,7 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module FieldModule
+%module fieldmodule
+
 %include "doublevaluesarraytypemap.i"
 %include "fieldarraytypemap.i"
 
@@ -74,102 +75,11 @@
 	}
 };
 
-%ignore FieldAdd;
-%ignore FieldPower;
-%ignore FieldMultiply;
-%ignore FieldDivide;
-%ignore FieldSubtract;
-%ignore FieldSumComponents;
-%ignore FieldLog;
-%ignore FieldSqrt;
-%ignore FieldExp;
-%ignore FieldAbs;
-%ignore FieldIdentity;
-%ignore FieldComponent;
-%ignore FieldConcatenate;
-%ignore FieldIf;
-%ignore FieldConstant;
-%ignore FieldStringConstant;
-%ignore FieldCoordinateTransformation;
-%ignore FieldVectorCoordinateTransformation;
-%ignore FieldFiniteElement;
-%ignore FieldEmbedded;
-%ignore FieldFindMeshLocation;
-%ignore FieldNodeValue;
-%ignore FieldStoredMeshLocation;
-%ignore FieldGroup;
-%ignore FieldImage;
-%ignore FieldAnd;
-%ignore FieldEqualTo;
-%ignore FieldGreaterThan;
-%ignore FieldLessThan;
-%ignore FieldOr;
-%ignore FieldNot;
-%ignore FieldXor;
-%ignore FieldDeterminant;
-%ignore FieldEigenvalues;
-%ignore FieldEigenvectors;
-%ignore FieldMatrixInvert;
-%ignore FieldMatrixMultiply;
-%ignore FieldProjection;
-%ignore FieldTranspose;
-%ignore FieldNodesetSum;
-%ignore FieldNodesetMean;
-%ignore FieldNodesetSumSquares;
-%ignore FieldNodesetMeanSquares;
-%ignore FieldElementGroup;
-%ignore FieldNodeGroup;
-%ignore FieldTimeLookup;
-%ignore FieldTimeValue;
-%ignore FieldSin;
-%ignore FieldCos;
-%ignore FieldTan;
-%ignore FieldAsin;
-%ignore FieldAcos;
-%ignore FieldAtan;
-%ignore FieldAtan2;
-%ignore FieldCrossProduct;
-%ignore FieldDotProduct;
-%ignore FieldMagnitude;
-%ignore FieldNormalise;
-%ignore ElementBasis;
-%ignore ElementTemplate;
-%ignore Element;
-%ignore ElementIterator;
-%ignore Field;
-%ignore FieldCache;
-%ignore Mesh;
-%ignore MeshGroup;
-%ignore Node;
-%ignore NodeIterator;
-%ignore Nodeset;
-%ignore NodesetGroup;
-%ignore Optimisation;
-%ignore TimeSequence;
-%ignore TimeKeeper;
-%ignore zinc::operator+;
-%ignore zinc::operator*;
-%ignore zinc::operator/;
-%ignore zinc::operator-;
-%ignore zinc::log;
-%ignore zinc::sqrt;
-%ignore zinc::exp;
-%ignore zinc::abs;
-%ignore zinc::operator&&;
-%ignore zinc::operator==;
-%ignore zinc::operator>;
-%ignore zinc::operator<;
-%ignore zinc::operator||;
-%ignore zinc::operator!;
-%ignore Region;
-%ignore StreamInformationImage;
-%ignore StreamInformationRegion;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
+%import "timesequence.i"
+%import "optimisation.i"
+%import "field.i"
 
 %{
-#include "zinc/field.hpp"
 #include "zinc/fieldtypesarithmeticoperators.hpp"
 #include "zinc/fieldtypescomposite.hpp"
 #include "zinc/fieldtypesconditional.hpp"
@@ -188,10 +98,5 @@
 #include "zinc/fieldmodule.hpp"
 %}
 
-%include "zinc/fieldcache.hpp"
-%include "zinc/field.hpp"
-%include "zinc/element.hpp"
-%include "zinc/node.hpp"
-%include "zinc/timesequence.hpp"
-%include "zinc/optimisation.hpp"
 %include "zinc/fieldmodule.hpp"
+

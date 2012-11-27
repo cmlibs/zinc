@@ -38,22 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Scene
+%module scene
 
-%ignore GraphicsFilter;
-%ignore GraphicsFilterOperator;
-%ignore StreamInformationRegion;
-%ignore StreamInformation;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
-%ignore Region;
+%import "region.i"
+%import "graphicsfilter.i"
 
 %{
 #include "zinc/scene.hpp"
 %}
 
-%include "zinc/graphicsfilter.hpp"
-%include "zinc/stream.hpp"
-%include "zinc/region.hpp"
 %include "zinc/scene.hpp"
+

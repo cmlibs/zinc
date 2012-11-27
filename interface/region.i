@@ -39,18 +39,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Region
+%module region
 
-%ignore FieldModule;
-%ignore StreamInformation;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
+%import "fieldmodule.i"
 
 %{
+#include "zinc/fieldtypesimage.hpp"
 #include "zinc/region.hpp"
 %}
 
-%include "zinc/fieldmodule.hpp"
-%include "zinc/stream.hpp"
 %include "zinc/region.hpp"
+

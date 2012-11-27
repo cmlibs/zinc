@@ -38,13 +38,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module SceneViewer
-%ignore Scene;
+%module sceneviewer
+
+%import "scene.i"
 
 %{
 #include "zinc/sceneviewer.hpp"
 %}
 
-%include "zinc/scene.hpp"
 %include "zinc/sceneviewer.hpp"
 

@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
- %extend zinc::Field
+%extend zinc::Field
 {
 	zinc::FieldAdd operator+(zinc::Field& operand)
 	{

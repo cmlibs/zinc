@@ -39,34 +39,18 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Field
+%module field
+
 %include "fieldarraytypemap.i"
 %include "doublevaluesarraytypemap.i"
 %include "fieldoperators.i"
 
-%ignore FieldCache;
-%ignore ElementBasis;
-%ignore ElementTemplate;
-%ignore Element;
-%ignore ElementIterator;
-%ignore Mesh;
-%ignore MeshGroup;
-%ignore Node;
-%ignore NodeIterator;
-%ignore Nodeset;
-%ignore NodesetGroup;
-%ignore DifferentialOperator;
-%ignore Region;
-%ignore FieldModule;
-%ignore StreamInformationRegion;
-%ignore StreamResource;
-%ignore StreamResourceFile;
-%ignore StreamResourceMemory;
-%ignore TimeKeeper;
-%ignore zinc::operator+;
+%import "differentialoperator.i"
+%import "element.i"
+%import "stream.i"
+%import "fieldmodule.i"
 
 %{
-#include "zinc/field.hpp"
 #include "zinc/fieldtypesarithmeticoperators.hpp"
 #include "zinc/fieldtypescomposite.hpp"
 #include "zinc/fieldtypesconditional.hpp"
@@ -82,18 +66,12 @@
 #include "zinc/fieldtypesvectoroperators.hpp"
 #include "zinc/fieldtypestime.hpp"
 #include "zinc/fieldtypestrigonometry.hpp"
+#include "zinc/field.hpp"
+#include "zinc/fieldmodule.hpp"
+using namespace zinc;
 %}
 
-%include "zinc/differentialoperator.hpp"
-%include "zinc/timekeeper.hpp"
-%include "zinc/stream.hpp"
-%include "zinc/region.hpp"
-%include "zinc/fieldcache.hpp"
 %include "zinc/field.hpp"
-%include "zinc/element.hpp"
-%include "zinc/node.hpp"
-%include "zinc/fieldmodule.hpp"
-%include "zinc/fieldtypesarithmeticoperators.hpp"
 %include "zinc/fieldtypescomposite.hpp"
 %include "zinc/fieldtypesconditional.hpp"
 %include "zinc/fieldtypesconstant.hpp"
@@ -108,3 +86,5 @@
 %include "zinc/fieldtypesvectoroperators.hpp"
 %include "zinc/fieldtypestime.hpp"
 %include "zinc/fieldtypestrigonometry.hpp"
+%include "zinc/fieldtypesarithmeticoperators.hpp"
+

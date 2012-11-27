@@ -38,14 +38,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Node
+%module node
 
-%ignore Field;
+%import "field.i"
 
 %{
 #include "zinc/node.hpp"
 #include "zinc/field.hpp"
+#include "zinc/fieldtypesconditional.hpp"
 %}
 
-%include "zinc/field.hpp"
 %include "zinc/node.hpp"
+

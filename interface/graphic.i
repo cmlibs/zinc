@@ -38,17 +38,16 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Graphic
+%module graphic
 
-%ignore Field;
-%ignore GraphicsMaterial;
-%ignore Tessellation;
+%import "field.i"
+%import "tessellation.i"
+%import "graphicsmaterial.i"
 
 %{
 #include "zinc/graphic.hpp"
+#include "zinc/fieldtypesconditional.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/graphicsmaterial.hpp"
-%include "zinc/tessellation.hpp"
 %include "zinc/graphic.hpp"
+

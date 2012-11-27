@@ -38,19 +38,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Rendition
+%module rendition
 
-%ignore Field;
-%ignore FieldGroup;
-%ignore Graphic;
-%ignore SelectionHandler;
+%import "graphic.i"
+%import "selection.i"
 
 %{
+#include "zinc/fieldtypesgroup.hpp"
 #include "zinc/rendition.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/fieldtypesgroup.hpp"
-%include "zinc/graphic.hpp"
-%include "zinc/selection.hpp"
 %include "zinc/rendition.hpp"
+

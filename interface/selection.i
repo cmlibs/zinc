@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Selection
+%module selection
 
 %extend zinc::SelectionHandler {
 

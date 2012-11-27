@@ -38,21 +38,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Element
+%module element
+
 %include "integervaluesarraytypemap.i"
 
-%ignore DifferentialOperator;
-%ignore Field;
-%ignore Node;
-%ignore NodeIterator;
-%ignore Nodeset;
-%ignore NodesetGroup;
+%import "field.i"
+%import "node.i"
 
 %{
+#include "zinc/fieldtypesimage.hpp"
 #include "zinc/element.hpp"
 %}
 
-%include "zinc/field.hpp"
-%include "zinc/differentialoperator.hpp"
-%include "zinc/node.hpp"
 %include "zinc/element.hpp"
+

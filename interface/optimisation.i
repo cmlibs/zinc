@@ -38,15 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module Optimisation
+%module optimisation
 
-%ignore Field;
+%import "field.i"
 
 %{
 #include "zinc/optimisation.hpp"
-#include "zinc/field.hpp"
+#include "zinc/fieldtypesarithmeticoperators.hpp"
 %}
 
-%include "zinc/field.hpp"
 %include "zinc/optimisation.hpp"
 

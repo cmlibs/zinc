@@ -15,14 +15,14 @@ FIND_PACKAGE(Zinc)
 INCLUDE_DIRECTORIES(${ZINC_INCLUDE_DIRS})
 
 # Suppress the assignment operator overload warning for Python.
-SET(CMAKE_SWIG_FLAGS "-w362")
+SET(CMAKE_SWIG_FLAGS -w362 -py3)
 
 SET(INTERFACE_SRCS
     ../interface/context.i
     ../interface/region.i
     ../interface/fieldmodule.i
     ../interface/graphicsmodule.i
-    ../interface/material.i
+    ../interface/graphicsmaterial.i
     ../interface/rendition.i
     ../interface/field.i
     ../interface/stream.i
@@ -38,23 +38,15 @@ SET(INTERFACE_SRCS
     ../interface/sceneviewer.i
     ../interface/spectrum.i
     ../interface/optimisation.i
-    ../interface/time.i
+    ../interface/timenotifier.i
+    ../interface/timekeeper.i
     ../interface/timesequence.i)
 
-SET(ZINC_PYTHON_MODULE zinc)
-SET(CMAKE_SWIG_OUTDIR ${ZINC_PYTHON_MODULE})
 SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)
-# SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES SWIG_FLAGS "-includeall")
 
 FOREACH(SWIG_INTERFACE ${INTERFACE_SRCS})
-    #GET_FILENAME_COMPONENT(SWIG_INTERFACE ${SWIG_INTERFACE} ABSOLUTE)
     GET_FILENAME_COMPONENT(MODULE ${SWIG_INTERFACE} NAME_WE)
     SWIG_ADD_MODULE(${MODULE} python ${SWIG_INTERFACE})
     SWIG_LINK_LIBRARIES(${MODULE} ${PYTHON_LIBRARIES} ${ZINC_LIBRARIES})
-    SET_TARGET_PROPERTIES(${SWIG_MODULE_${MODULE}_REAL_NAME} PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE}
-        RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE})
 ENDFOREACH()
-
-FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "# Cmiss Python package initialisation file.\n")
 
