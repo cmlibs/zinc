@@ -564,6 +564,8 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldarithmeticoperators.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcomposite.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldconditional.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldconstant.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcoordinatetransformation.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldfiniteelement.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldgroup.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldimage.h
@@ -594,7 +596,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/status.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/stream.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/tessellation.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/time.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timenotifier.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timekeeper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timesequence.h )
 IF( USE_OPENCASCADE )
@@ -638,7 +640,7 @@ SET( ZINC_LIB_APIPP_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/spectrum.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/stream.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/tessellation.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/time.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timenotifier.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timekeeper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/timesequence.hpp )
 

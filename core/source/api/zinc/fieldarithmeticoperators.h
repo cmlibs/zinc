@@ -46,6 +46,7 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 #define __CMISS_FIELD_ARITHMETIC_OPERATORS_H__
 
 #include "types/fieldid.h"
+#include "types/fieldmoduleid.h"
 
 #include "zinc/zincsharedobject.h"
 

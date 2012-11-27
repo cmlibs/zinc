@@ -2042,7 +2042,6 @@ access this function.
 			rendering_data.viewport_width, rendering_data.viewport_height);
 #endif /* defined (DEBUG_CODE) */
 
-
 		rendering_data.scene_viewer = scene_viewer;
 		rendering_data.render_callstack =
 			(struct LIST(Scene_viewer_render_object) *)NULL;
@@ -2106,8 +2105,7 @@ access this function.
 					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=1533
 					 */
 					&& ((Graphics_library_vendor_nvidia == Graphics_library_get_vendor_id())
-					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id()))
-				)
+					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())))
 				{
 					rendering_data.renderer =
 						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(

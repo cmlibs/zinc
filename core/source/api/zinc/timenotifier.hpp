@@ -39,7 +39,7 @@
 #ifndef __ZN_TIME_HPP__
 #define __ZN_TIME_HPP__
 
-#include "zinc/time.h"
+#include "zinc/timenotifier.h"
 
 namespace zinc
 {

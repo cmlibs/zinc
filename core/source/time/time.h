@@ -44,7 +44,7 @@ This provides an object which supplies a concept of time to Cmgui
 #if !defined (TIME_TIME_H) /* Distinguish general/time.h and time/time.h */
 #define TIME_TIME_H
 
-#include "zinc/time.h"
+#include "zinc/timenotifier.h"
 #include "general/object.h"
 #include "time/time_keeper.h"
 
@@ -70,12 +70,12 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Time_object);
  *
  * @param update_frequency  The number of times which time notifier will receive
  *    callback per unit of time in the time keeper.
- * @param time_offset  the offset value for the time object to receive time 
+ * @param time_offset  the offset value for the time object to receive time
  *    callback.
- * @return  The time object if successfully create a time object otherwise 
+ * @return  The time object if successfully create a time object otherwise
  *    NULL.
  */
-struct Time_object *Time_object_create_regular(double update_frequency, 
+struct Time_object *Time_object_create_regular(double update_frequency,
 	double time_offset);
 
 /***************************************************************************//**
@@ -119,7 +119,7 @@ DESCRIPTION :
 This routine allows the timekeeper to explicitly set the time.
 Separated Time_object_notify_clients_privileged so that all the clients
 can be updated with the new time before any of them call back to their clients.
-Users of a time object that is controlled by a timekeeper should set the time 
+Users of a time object that is controlled by a timekeeper should set the time
 through the timekeeper.
 ==============================================================================*/
 
@@ -131,7 +131,7 @@ DESCRIPTION :
 This routine allows the timekeeper to tell the time_object to notify its clients.
 Separated off from Time_object_set_current_time_privileged so that all the clients
 can be updated with the new time before any of them call back to their clients.
-Users of a time object that is controlled by a timekeeper should set the time 
+Users of a time object that is controlled by a timekeeper should set the time
 through the timekeeper.
 ==============================================================================*/
 
@@ -146,8 +146,8 @@ when in play mode.
 
 /***************************************************************************//**
  * This controls the exact time which the time object receive callbacks.
- * Time offset will set the time object to receive callback when 
- * time_offset + original callback time is reached. i.e 
+ * Time offset will set the time object to receive callback when
+ * time_offset + original callback time is reached. i.e
  *
  * @param time_object  The time object to be set.
  * @param offset  This set the time that notifier will receive callback.

@@ -36,7 +36,7 @@ SET( APIPP_HDRS
     source/api/zinc/spectrum.hpp
     source/api/zinc/stream.hpp
     source/api/zinc/tessellation.hpp
-    source/api/zinc/time.hpp
+    source/api/zinc/timenotifier.hpp
     source/api/zinc/timekeeper.hpp
     source/api/zinc/timesequence.hpp
     )
