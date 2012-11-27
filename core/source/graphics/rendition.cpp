@@ -348,7 +348,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->graphics_module =	graphics_module;
 				cmiss_rendition->time_object = NULL;
 				cmiss_rendition->list_of_scene = NULL;
-				cmiss_rendition->fast_changing = 0;
 				cmiss_rendition->cache = 0;
 				cmiss_rendition->changed = 0;
 				cmiss_rendition->position = 0;
@@ -1686,39 +1685,36 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 	if (rendition)
 	{
 		return_code = 1;
-		if (rendition->fast_changing == (renderer->fast_changing))
+		/* put out the name (position) of the scene_object: */
+		//
+		//printf("%i \n", rendition->position);
+		glLoadName((GLuint)rendition->position);
+		/* save a matrix multiply when identity transformation */
+		if(rendition->transformation)
 		{
-			/* put out the name (position) of the scene_object: */
-			//
-			//printf("%i \n", rendition->position);
-			glLoadName((GLuint)rendition->position);
-			/* save a matrix multiply when identity transformation */
-			if(rendition->transformation)
-			{
-				/* Save starting modelview matrix */
-				glMatrixMode(GL_MODELVIEW);
-				glPushMatrix();
-				glPushAttrib(GL_TRANSFORM_BIT);
-				glEnable(GL_NORMALIZE);
-				/* perform individual object transformation */
-				wrapperMultiplyCurrentMatrix(rendition->transformation);
-			}
-			if (rendition->time_object)
-			{
-				renderer->time = Time_object_get_current_time(rendition->time_object);
-			}
-			else
-			{
-				renderer->time = 0;
-			}
-			return_code = renderer->Cmiss_rendition_execute_members(rendition);
-			return_code = renderer->Cmiss_rendition_execute_child_rendition(rendition);
-			if (rendition->transformation)
-			{
-				/* Restore starting modelview matrix */
-				glPopAttrib();
-				glPopMatrix();
-			}
+			/* Save starting modelview matrix */
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glPushAttrib(GL_TRANSFORM_BIT);
+			glEnable(GL_NORMALIZE);
+			/* perform individual object transformation */
+			wrapperMultiplyCurrentMatrix(rendition->transformation);
+		}
+		if (rendition->time_object)
+		{
+			renderer->time = Time_object_get_current_time(rendition->time_object);
+		}
+		else
+		{
+			renderer->time = 0;
+		}
+		return_code = renderer->Cmiss_rendition_execute_members(rendition);
+		return_code = renderer->Cmiss_rendition_execute_child_rendition(rendition);
+		if (rendition->transformation)
+		{
+			/* Restore starting modelview matrix */
+			glPopAttrib();
+			glPopMatrix();
 		}
 	}
 	else

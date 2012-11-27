@@ -83,7 +83,6 @@ Structure for maintaining a graphical rendition of region.
 	/* level of cache in effect */
 	int cache;
 	int changed; /**< true if rendition has changed and haven't updated clients */
-	int fast_changing;
 	/* for accessing objects */
 	int access_count;
 	gtMatrix *transformation;

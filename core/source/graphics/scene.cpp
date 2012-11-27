@@ -217,63 +217,7 @@ MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
 	return (return_code);
 } /* Scene_refresh */
 
-static int Scene_notify_object_changed(struct Scene *scene,int fast_changing)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2002
-
-DESCRIPTION :
-Scene functions such as add/remove graphics_object and set_visibility change
-the scene->compile_status to GRAPHICS_NOT_COMPILED. Changes to objects in the
-scene only require a rebuild of those objects themselves, not the scene. This
-latter case a compile_status of CHILD_GRAPHICS_NOT_COMPILED. This function sets
-the compile status to CHILD_GRAPHICS_NOT_COMPILED if it is not already
-GRAPHICS_NOT_COMPILED, then calls Scene_refresh to inform clients of the change.
-They must call compile_Scene to make sure its display list is made up to date.
-If the <fast_changing> flag is set, and the scene is not already set for general
-change, set it to SCENE_FAST_CHANGE, otherwise SCENE_CHANGE.
-Private to the Scene and Scene_objects
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_notify_object_changed);
-	if (scene)
-	{
-		/* mark scene as needing a build */
-		scene->build = 1;
-		if (fast_changing && (SCENE_CHANGE != scene->change_status))
-		{
-			scene->change_status = SCENE_FAST_CHANGE;
-		}
-		else
-		{
-			scene->change_status = SCENE_CHANGE;
-		}
-#if defined (DEBUG_CODE)
-		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->change_status);
-#endif /* defined (DEBUG_CODE) */
-		if (scene->manager)
-		{
-			return_code = Scene_refresh( scene );
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_notify_object_changed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_notify_object_changed */
-
-static int Scene_changed_private(struct Scene *scene,int fast_changing)
+static int Scene_changed_private(struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
 
@@ -281,11 +225,7 @@ DESCRIPTION :
 Tells the scene it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.  Recompiles the scene display list as well
 as the objects in the scene unlike the public Scene_changed which only compiles
-the component objects. If the <fast_changing> flag is set, and the scene is not
-already set for general change, set it to SCENE_FAST_CHANGE, otherwise
-SCENE_CHANGE. If the <fast_changing> flag is set, and the
-scene is not already set for general change, set it to SCENE_FAST_CHANGE,
-otherwise SCENE_CHANGE.
+the component objects.
 Private to the Scene and Scene_objects.
 ==============================================================================*/
 {
@@ -296,18 +236,7 @@ Private to the Scene and Scene_objects.
 	{
 		/* mark scene as needing a build */
 		scene->build = 1;
-		if (fast_changing && (SCENE_CHANGE != scene->change_status))
-		{
-			scene->change_status = SCENE_FAST_CHANGE;
-		}
-		else
-		{
-			scene->change_status = SCENE_CHANGE;
-		}
-#if defined (DEBUG_CODE)
-		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->change_status);
-#endif /* defined (DEBUG_CODE) */
+		scene->change_status = SCENE_CHANGE;
 		if (scene->manager)
 		{
 			return_code = Scene_refresh( scene );
@@ -1206,7 +1135,7 @@ static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
 	ENTER(Scene_rendition_update_callback);
 	if (rendition &&(scene = (struct Scene *)scene_void))
 	{
-		Scene_notify_object_changed(scene,0);
+		Scene_changed_private(scene);
 		return_code = 1;
 	}
 	else
@@ -3631,7 +3560,7 @@ Adds a light to the Scene list_of_lights.
 		if (!IS_OBJECT_IN_LIST(Light)(light,scene->list_of_lights))
 		{
 			return_code=ADD_OBJECT_TO_LIST(Light)(light,scene->list_of_lights);
-			Scene_changed_private(scene,/*fast_changing*/0);
+			Scene_changed_private(scene);
 		}
 		else
 		{
@@ -3703,7 +3632,7 @@ Removes a light from the Scene list_of_lights.
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(Light)(light,
 				scene->list_of_lights);
-			Scene_changed_private(scene,/*fast_changing*/0);
+			Scene_changed_private(scene);
 		}
 		else
 		{
@@ -3751,36 +3680,6 @@ most common task will be to call execute_Light.
 
 	return (return_code);
 } /* for_each_Light_in_Scene */
-
-int Scene_has_fast_changing_objects(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Returns true if the scene may require special rendering because it has
-fast_changing objects in it, involving separately calling
-execute_Scene_non_fast_changing and execute_Scene_fast_changing, instead of
-execute_Scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_has_fast_changing_objects);
-	if (scene)
-	{
-		// no longer supported
-		return_code=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_has_fast_changing_objects.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_has_fast_changing_objects */
 
 enum Scene_change_status Scene_get_change_status(struct Scene *scene)
 /*******************************************************************************
@@ -3846,7 +3745,6 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)
 	{
-		renderer->fast_changing = 0;
 		glPushName(0);
 		if (scene->region)
 		{
@@ -4315,7 +4213,7 @@ int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
 				REACCESS(Cmiss_region)(&(scene->region), region);
 				DEACCESS(Cmiss_rendition)(&rendition);
 				Cmiss_scene_attach_to_renditions(scene);
-				Scene_changed_private(scene, 0);
+				Scene_changed_private(scene);
 				return_code = 1;
 			}
 			else
@@ -4400,7 +4298,7 @@ int Cmiss_scene_add_rendition(Scene *scene, struct Cmiss_rendition *rendition)
 			scene->list_of_rendition = new Rendition_set;
 		}
 		scene->list_of_rendition->insert(rendition);
-		Scene_changed_private(scene, /*fast_changing*/ 0);
+		Scene_changed_private(scene);
 		return_code = 1;
 	}
 	else

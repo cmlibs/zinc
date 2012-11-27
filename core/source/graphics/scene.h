@@ -744,17 +744,6 @@ Allows clients of the <scene> to perform functions with the lights in it. The
 most common task will be to call execute_Light.
 ==============================================================================*/
 
-int Scene_has_fast_changing_objects(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Returns true if the scene may require special rendering because it has
-fast_changing objects in it, involving separately calling
-execute_Scene_non_fast_changing and execute_Scene_fast_changing, instead of
-execute_Scene.
-==============================================================================*/
-
 enum Scene_change_status Scene_get_change_status(struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -794,25 +783,9 @@ LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Calls the display list for <scene>. If the display list is not current, an
-an error is reported. Version calls both the normal and fast_changing lists.
+an error is reported.
 Note that lights are not included in the scene and must be handled separately!
 Initialises the name stack then calls execute_child_Scene.
-==============================================================================*/
-
-int execute_Scene_non_fast_changing(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Calls just the normal non-fast_changing display list for <scene>, if any.
-==============================================================================*/
-
-int execute_Scene_fast_changing(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Calls the just fast_changing display list for <scene>, if any.
 ==============================================================================*/
 
 int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);
@@ -944,7 +917,6 @@ A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
 The optional <scene_object_name> allows the scene_object to be given a different
 name from that of the <graphics_object>, and must be unique for the scene.
-Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 
 int Scene_picked_object_get_number_of_renditions(

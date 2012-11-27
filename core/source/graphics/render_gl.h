@@ -49,10 +49,6 @@ class Render_graphics_opengl : public Render_graphics_compile_members
 public:
 	Graphics_buffer *graphics_buffer;
 
-	/** Specifies that we should be rendering only objects marked as fast
-	 * changing.
-	 */
-	int fast_changing;
 	/** Indicates that we are rendering specifically to pick objects.
 	 * Requires the ndc transformation to be different as the viewport is the picking window.
 	 */
@@ -75,7 +71,6 @@ public:
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
 		graphics_buffer(graphics_buffer),
-		fast_changing(0),
 		picking(0),
 		allow_texture_tiling(0),
 		texture_tiling(0),

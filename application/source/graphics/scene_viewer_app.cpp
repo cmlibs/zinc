@@ -379,7 +379,6 @@ about which the scene is turning relative to its lookat point and the
 		scene_viewer->core_scene_viewer->tumble_axis[1] = tumble_axis[1];
 		scene_viewer->core_scene_viewer->tumble_axis[2] = tumble_axis[2];
 		scene_viewer->core_scene_viewer->tumble_angle = tumble_angle;
-		scene_viewer->core_scene_viewer->fast_changing = 0;
 		/* Repost the idle callback */
 		if(!scene_viewer->idle_update_callback_id)
 		{
@@ -860,7 +859,6 @@ Requests a full redraw in idle time.
 	ENTER(Scene_viewer_redraw);
 	if (scene_viewer)
 	{
-		scene_viewer->core_scene_viewer->fast_changing=0;
 		Scene_viewer_app_redraw_in_idle_time(scene_viewer);
 		return_code=1;
 	}
@@ -909,8 +907,6 @@ Requests a full redraw immediately.
 			}
 		}
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
-		/* always do a full redraw */
-		scene_viewer->core_scene_viewer->fast_changing=0;
 		return_code = Cmiss_scene_viewer_render_scene(scene_viewer->core_scene_viewer);
 		if (scene_viewer->core_scene_viewer->swap_buffers)
 		{
@@ -965,8 +961,6 @@ and <transparency_layers> are used for just this render.
 			}
 		}
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
-		/* always do a full redraw */
-		scene_viewer->core_scene_viewer->fast_changing=0;
 		return_code = Scene_viewer_render_scene_in_viewport_with_overrides(
 			scene_viewer->core_scene_viewer, /*left*/0, /*bottom*/0, /*right*/0, /*top*/0,
 			antialias, transparency_layers, /*drawing_offscreen*/0);
@@ -1003,7 +997,6 @@ extensions can get the updated frame from the backbuffer.
 	{
 		Graphics_buffer_app_make_current(scene_viewer->graphics_buffer);
 		/* always do a full redraw */
-		scene_viewer->core_scene_viewer->fast_changing=0;
 		return_code = Cmiss_scene_viewer_render_scene(scene_viewer->core_scene_viewer);
 	}
 	else
@@ -1036,7 +1029,6 @@ Updates the scene_viewer.
 				(!Interactive_tool_is_Transform_tool(scene_viewer->interactive_tool) ||
 				Interactive_tool_transform_get_free_spin(scene_viewer->interactive_tool)))
 		{
-			scene_viewer->core_scene_viewer->fast_changing = 0;
 			Scene_viewer_automatic_tumble(scene_viewer);
 			/* Repost the idle callback */
 			if(!scene_viewer->idle_update_callback_id)

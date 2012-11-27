@@ -444,11 +444,6 @@ release.
 											"element_tool_rubber_band",g_POLYLINE,
 											element_tool->rubber_band_material);
 										ACCESS(GT_object)(element_tool->rubber_band);
-#if defined (USE_SCENE_OBJECT)
-										Scene_add_graphics_object(scene,element_tool->rubber_band,
-											/*position*/0,"element_tool_rubber_band",
-											/*fast_changing*/1);
-#endif
 									}
 									Interaction_volume_make_polyline_extents(
 										temp_interaction_volume,element_tool->rubber_band);
