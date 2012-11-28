@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module sceneviewer
+%module(package="zinc") sceneviewer
 
 %import "scene.i"
 

@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module differentialoperator
+%module(package="zinc") differentialoperator
 
 %{
 #include "zinc/differentialoperator.hpp"

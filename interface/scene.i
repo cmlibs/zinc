@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module scene
+%module(package="zinc") scene
 
 %import "region.i"
 %import "graphicsfilter.i"

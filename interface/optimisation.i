@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module optimisation
+%module(package="zinc") optimisation
 
 %import "field.i"
 

@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module graphicsmaterial
+%module(package="zinc") graphicsmaterial
 
 %typemap(in) (const double *values)
 {

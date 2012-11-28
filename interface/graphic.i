@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module graphic
+%module(package="zinc") graphic
 
 %import "field.i"
 %import "tessellation.i"

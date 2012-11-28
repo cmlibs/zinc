@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module fieldcache
+%module(package="zinc") fieldcache
 %include "doublevaluesarraytypemap.i"
 
 %import "field.i"

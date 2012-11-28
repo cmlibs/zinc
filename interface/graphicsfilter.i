@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module graphicsfilter
+%module(package="zinc") graphicsfilter
 
 %import "graphic.i"
 

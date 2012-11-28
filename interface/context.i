@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module context
+%module(package="zinc") context
 
 %import "graphicsmodule.i"
 %import "rendition.i"

@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module element
+%module(package="zinc") element
 
 %include "integervaluesarraytypemap.i"
 

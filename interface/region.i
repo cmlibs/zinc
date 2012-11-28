@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module region
+%module(package="zinc") region
 
 %import "fieldmodule.i"
 

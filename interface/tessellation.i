@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module tessellation
+%module(package="zinc") tessellation
 
 %include "integervaluesarraytypemap.i"
 

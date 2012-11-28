@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module field
+%module(package="zinc") field
 
 %include "fieldarraytypemap.i"
 %include "doublevaluesarraytypemap.i"

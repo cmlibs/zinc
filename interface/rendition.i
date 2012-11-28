@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module rendition
+%module(package="zinc") rendition
 
 %import "graphic.i"
 %import "selection.i"

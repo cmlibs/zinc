@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module timenotifier
+%module(package="zinc") timenotifier
 
 %extend zinc::TimeNotifier {
 
