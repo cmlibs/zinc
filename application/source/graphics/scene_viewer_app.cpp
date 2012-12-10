@@ -1241,7 +1241,6 @@ Removes the callback calling <function> with <user_data> from
 {
 	int return_code;
 
-	ENTER(Scene_viewer_remove_sync_callback);
 	if (scene_viewer&&function)
 	{
 		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_app_callback)(
@@ -1252,20 +1251,24 @@ Removes the callback calling <function> with <user_data> from
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_sync_callback.  Could not remove callback");
+				"Scene_viewer_app_remove_sync_callback.  Could not remove callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_sync_callback.  Invalid argument(s)");
+			"Scene_viewer_app_remove_sync_callback.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_remove_sync_callback */
+} /* Scene_viewer_app_remove_sync_callback */
+
+struct Graphics_buffer_app *Scene_viewer_app_get_graphics_buffer(struct Scene_viewer_app *scene_viewer)
+{
+	return scene_viewer->graphics_buffer;
+}
 
 int Scene_viewer_app_add_transform_callback(struct Scene_viewer_app *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_app_callback) *function,void *user_data)

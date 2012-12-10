@@ -2412,7 +2412,7 @@ all the dimensions are zero).
 
 int Scene_viewer_render_scene_in_viewport_with_overrides(
 	struct Scene_viewer *scene_viewer, int left, int bottom, int right, int top,
-	int antialias, int transparency_layers, int drawing_offscreen)
+	int antialias, int transparency_layers, int /*drawing_offscreen*/)
 /*******************************************************************************
 LAST MODIFIED : 11 December 2002
 
