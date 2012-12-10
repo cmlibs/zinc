@@ -91,7 +91,7 @@ LAST MODIFIED : 5 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Scene_viewer_remove_sync_callback(struct Scene_viewer_app *scene_viewer,
+int Scene_viewer_app_remove_sync_callback(struct Scene_viewer_app *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_app_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
@@ -122,6 +122,7 @@ Removes the callback calling <function> with <user_data> from
 Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 	Scene_viewer_rendering_data *rendering_data);
 
+struct Graphics_buffer_app *Scene_viewer_app_get_graphics_buffer(struct Scene_viewer_app *scene_viewer);
 
 int Scene_viewer_get_opengl_information(struct Scene_viewer_app *scene_viewer,
 	char **opengl_version, char **opengl_vendor, char **opengl_extensions,

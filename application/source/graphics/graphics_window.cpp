@@ -5401,7 +5401,7 @@ graphics window on screen.
 		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
 		real_left, real_right, real_bottom, real_top,
 		scaled_NDC_width,scaled_NDC_height ;
-	int i, j, number_of_panes = 0, pane,
+	int i, j, number_of_panes = 0, pane = 0,
 		pane_i, pane_j, pane_width = 0, pane_height = 0, panes_across = 0, panes_down = 0,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
@@ -5538,8 +5538,8 @@ graphics window on screen.
 #endif /* (WX_USER_INTERFACE) */
 			/*offscreen_buffer currently does not work well with Windows */
 			if (!(offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
-				  tile_width, tile_height, /*buffer_to_match*//*Scene_viewer_get_graphics_buffer(
-				  Graphics_window_get_Scene_viewer(window,pane0))*/0)))
+				  tile_width, tile_height, /*buffer_to_match*/Scene_viewer_app_get_graphics_buffer(
+				  Graphics_window_get_Scene_viewer(window, pane)))))
 			{
 				force_onscreen = 1;
 			}

@@ -71,23 +71,23 @@ public:
 		struct Cmiss_field_module *field_module) :
 		field_module(field_module)
 	{
-	};
+	}
 
 	~Computed_field_modify_data()
 	{
-	};
+	}
 
 	Cmiss_field_module *get_field_module()
 	{
 		return field_module;
-	};
+	}
 
 	/**
 	 * Take ownership of field reference so caller does not need
 	 * to deaccess the supplied field.
 	 * Sets MANAGED attribute so it is not destroyed.
-	 * 
-	 * @param new_field  Field to take ownership of. 
+	 *
+	 * @param new_field  Field to take ownership of.
 	 * @return  1 if field supplied, 0 if not.
 	 */
 	int update_field_and_deaccess(Computed_field *new_field)
@@ -99,7 +99,7 @@ public:
 			return 1;
 		}
 		return 0;
-	};
+	}
 
 	/**
 	 * Get existing field to replace, if any.
@@ -217,7 +217,7 @@ public:
 	 * from source fields, etc.
 	 *
 	 * @param parent  Field to attach core to
-	 * @return  true on success, false if construction of field failed.  
+	 * @return  true on success, false if construction of field failed.
 	 */
 	virtual bool attach_to_field(Computed_field* parent)
 	{
@@ -242,7 +242,7 @@ public:
 	virtual void inherit_source_field_attributes()
 	{
 	};
-	
+
 	virtual Computed_field_core *copy() = 0;
 
 	virtual const char *get_type_string() = 0;
@@ -449,12 +449,12 @@ DESCRIPTION :
 	FE_value *source_values;
 
 	int access_count;
-	
+
 	/* after clearing in create, following to be modified only by manager */
 	/* Keep a reference to the objects manager */
 	struct MANAGER(Computed_field) *manager;
 	int manager_change_status;
-	
+
 	/** bit flag attributes. @see Computed_field_attribute_flags. */
 	int attribute_flags;
 
@@ -669,7 +669,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 /***************************************************************************//**
  * Creates a new computed field with the supplied content and for the region
  * specified by the field_module.
- * 
+ *
  * @param field_module  Specifies region to add field to default parameters.
  * @param check_source_field_regions  If set to true, require all source fields
  * to be from the same region as the field_module. If false skip this checks.
@@ -692,7 +692,7 @@ Computed_field *Computed_field_create_generic(
 /***************************************************************************//**
  * Sets the Cmiss_region object which will own this manager.
  * Private! Only to be called only from Cmiss_region.
- * 
+ *
  * @param manager  Computed field manager.
  * @return  The owning Cmiss_region object.
  */
@@ -701,7 +701,7 @@ int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
 
 /***************************************************************************//**
  * Gets the Cmiss_region owning this field manager.
- * 
+ *
  * @param manager  Computed field manager.
  * @return  The owning Cmiss_region object.
  */
@@ -721,7 +721,7 @@ const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
 /***************************************************************************//**
  * Record that field data has changed.
  * Notify clients if not caching changes.
- * 
+ *
  * @param field  The field that has changed.
  */
 int Computed_field_changed(struct Computed_field *field);
@@ -730,7 +730,7 @@ int Computed_field_changed(struct Computed_field *field);
  * Record that external global objects this field depends on have change such
  * that this field should evaluate to different values.
  * Notify clients if not caching changes.
- * 
+ *
  * @param field  The field whose dependencies have changed.
  */
 int Computed_field_dependency_changed(struct Computed_field *field);
@@ -860,7 +860,7 @@ struct Coordinate_system Cmiss_field_module_get_coordinate_system(
 	struct Cmiss_field_module *field_module);
 
 /***************************************************************************//**
- * Returns true if the default coordinate system has been explicitly set. 
+ * Returns true if the default coordinate system has been explicitly set.
  *
  * @param field_module  The field module to create fields in.
  * @return  1 if coordinate system set, 0 if never set.
