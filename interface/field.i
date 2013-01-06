@@ -49,6 +49,7 @@
 %import "element.i"
 %import "stream.i"
 %import "fieldmodule.i"
+%import "fieldcache.i"
 
 %{
 #include "zinc/fieldtypesarithmeticoperators.hpp"
