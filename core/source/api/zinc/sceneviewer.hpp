@@ -216,6 +216,11 @@ public:
 		return Cmiss_scene_viewer_input_viewport_transform(id, input.getId());
 	}
 
+	int viewAll()
+	{
+		return Cmiss_scene_viewer_view_all(id);
+	}
+
 };
 
 class SceneViewerPackage
