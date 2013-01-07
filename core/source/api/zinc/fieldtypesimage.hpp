@@ -56,7 +56,8 @@ private:
 	explicit FieldImage(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldImage FieldModule::createImage(Field& domain_field, Field& source_field);
+	friend FieldImage FieldModule::createImage();
+	friend FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field);
 
 public:
 
@@ -287,7 +288,13 @@ inline StreamInformationImage FieldImage::createStreamInformation()
 				reinterpret_cast<Cmiss_field_image_id>(id))));
 }
 
-inline FieldImage FieldModule::createImage(Field& domain_field, Field& source_field)
+inline FieldImage FieldModule::createImage()
+{
+	return FieldImage(Cmiss_field_module_create_image(id,
+		0, 0));
+}
+
+inline FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field)
 {
 	return FieldImage(Cmiss_field_module_create_image(id,
 		domain_field.getId(), source_field.getId()));

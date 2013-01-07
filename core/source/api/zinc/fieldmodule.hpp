@@ -276,7 +276,9 @@ public:
 
 	FieldGroup createGroup();
 
-	FieldImage createImage(Field& domain_field, Field& source_field);
+	FieldImage createImage();
+
+	FieldImage createImageFromSource(Field& domain_field, Field& source_field);
 
 	FieldAnd createAnd(Field& sourceField1, Field& sourceField2);
 
