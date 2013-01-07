@@ -1360,8 +1360,7 @@ Cmiss_element_template_id Cmiss_element_template_access(
 	Cmiss_element_template_id element_template)
 {
 	if (element_template)
-		element_template->access();
-
+		return element_template->access();
 	return 0;
 }
 
@@ -1487,40 +1486,40 @@ int Cmiss_element_merge(Cmiss_element_id element,
 class Cmiss_element_shape_type_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_element_shape_type type)
-    {
-        const char *enum_string = 0;
-        switch (type)
-        {
-        	case CMISS_ELEMENT_SHAPE_LINE:
-        		enum_string = "LINE";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_SQUARE:
-        		enum_string = "SQUARE";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_TRIANGLE:
-        		enum_string = "TRIANGLE";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_CUBE:
-        		enum_string = "CUBE";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
-        		enum_string = "TETRAHEDRON";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_WEDGE12:
-        		enum_string = "WEDGE12";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_WEDGE13:
-        		enum_string = "WEDGE13";
-        		break;
-        	case CMISS_ELEMENT_SHAPE_WEDGE23:
-        		enum_string = "_WEDGE23";
-        		break;
-        	default:
-        		break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_element_shape_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMISS_ELEMENT_SHAPE_LINE:
+				enum_string = "LINE";
+				break;
+			case CMISS_ELEMENT_SHAPE_SQUARE:
+				enum_string = "SQUARE";
+				break;
+			case CMISS_ELEMENT_SHAPE_TRIANGLE:
+				enum_string = "TRIANGLE";
+				break;
+			case CMISS_ELEMENT_SHAPE_CUBE:
+				enum_string = "CUBE";
+				break;
+			case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
+				enum_string = "TETRAHEDRON";
+				break;
+			case CMISS_ELEMENT_SHAPE_WEDGE12:
+				enum_string = "WEDGE12";
+				break;
+			case CMISS_ELEMENT_SHAPE_WEDGE13:
+				enum_string = "WEDGE13";
+				break;
+			case CMISS_ELEMENT_SHAPE_WEDGE23:
+				enum_string = "_WEDGE23";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
