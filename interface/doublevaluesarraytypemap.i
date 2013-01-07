@@ -51,7 +51,11 @@
 		{
 			PyObject *o = PyList_GetItem($input,i);
 			if (PyFloat_Check(o))
-				$2[i] = PyFloat_AsDouble(PyList_GetItem($input,i));
+				$2[i] = PyFloat_AsDouble(o);
+                        else if (PyLong_Check(o))
+                        {
+                                $2[i] = PyLong_AsDouble(o);
+                        }
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
@@ -96,7 +100,11 @@ $1 = PyList_Check($input) ? 1 : 0;
 		{
 			PyObject *o = PyList_GetItem($input,i);
 			if (PyFloat_Check(o))
-				$1[i] = PyFloat_AsDouble(PyList_GetItem($input,i));
+				$1[i] = PyFloat_AsDouble(o);
+                        else if (PyLong_Check(o))
+                        {
+                                $1[i] = PyLong_AsDouble(o);
+                        }
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
