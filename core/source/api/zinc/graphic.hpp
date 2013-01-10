@@ -142,6 +142,11 @@ public:
 		return Cmiss_graphic_set_coordinate_field(id, coordinateField.getId());
 	}
 
+	int setTextureCoordinateField(Field& textureCoordinateField)
+	{
+		return Cmiss_graphic_set_texture_coordinate_field(id, textureCoordinateField.getId());
+	}
+
 	int setMaterial(GraphicsMaterial& graphicsMaterial)
 	{
 		return Cmiss_graphic_set_material(id, graphicsMaterial.getId());

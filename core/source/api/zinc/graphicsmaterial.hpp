@@ -40,6 +40,8 @@
 #define __ZN_CMISS_GRAPHICS_MATERIAL_HPP__
 
 #include "zinc/graphicsmaterial.h"
+#include "zinc/fieldimage.h"
+#include "zinc/field.hpp"
 
 namespace zinc
 {
@@ -149,6 +151,15 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_graphics_material_set_name(id, name);
+	}
+
+	int setImageField(int imageNumber, Field &imageField)
+	{
+		Cmiss_field_image_id field_image = Cmiss_field_cast_image(imageField.getId());
+		int result = Cmiss_graphics_material_set_image_field(id, imageNumber, field_image);
+		Cmiss_field_image_destroy(&field_image);
+
+		return result;
 	}
 
 };

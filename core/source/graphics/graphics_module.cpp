@@ -784,28 +784,28 @@ int Cmiss_graphics_module_define_standard_materials(
 			}
 			else if (NULL != (material = CREATE(Graphical_material)(startup_materials[i].name)))
 			{
-					colour.red   = startup_materials[i].ambient[0];
-					colour.green = startup_materials[i].ambient[1];
-					colour.blue  = startup_materials[i].ambient[2];
-					Graphical_material_set_ambient(material, &colour);
-					colour.red   = startup_materials[i].diffuse[0];
-					colour.green = startup_materials[i].diffuse[1];
-					colour.blue  = startup_materials[i].diffuse[2];
-					Graphical_material_set_diffuse(material, &colour);
-					colour.red   = startup_materials[i].emission[0];
-					colour.green = startup_materials[i].emission[1];
-					colour.blue  = startup_materials[i].emission[2];
-					Graphical_material_set_emission(material, &colour);
-					colour.red   = startup_materials[i].specular[0];
-					colour.green = startup_materials[i].specular[1];
-					colour.blue  = startup_materials[i].specular[2];
-					Graphical_material_set_specular(material, &colour);
-					Graphical_material_set_alpha(material, startup_materials[i].alpha);
-					Graphical_material_set_shininess(material,
-						startup_materials[i].shininess);
-					if (!Material_package_manage_material(graphics_module->material_package,
-							material))
-					{
+				colour.red   = startup_materials[i].ambient[0];
+				colour.green = startup_materials[i].ambient[1];
+				colour.blue  = startup_materials[i].ambient[2];
+				Graphical_material_set_ambient(material, &colour);
+				colour.red   = startup_materials[i].diffuse[0];
+				colour.green = startup_materials[i].diffuse[1];
+				colour.blue  = startup_materials[i].diffuse[2];
+				Graphical_material_set_diffuse(material, &colour);
+				colour.red   = startup_materials[i].emission[0];
+				colour.green = startup_materials[i].emission[1];
+				colour.blue  = startup_materials[i].emission[2];
+				Graphical_material_set_emission(material, &colour);
+				colour.red   = startup_materials[i].specular[0];
+				colour.green = startup_materials[i].specular[1];
+				colour.blue  = startup_materials[i].specular[2];
+				Graphical_material_set_specular(material, &colour);
+				Graphical_material_set_alpha(material, startup_materials[i].alpha);
+				Graphical_material_set_shininess(material,
+					startup_materials[i].shininess);
+				if (!Material_package_manage_material(graphics_module->material_package,
+						material))
+				{
 					DESTROY(Graphical_material)(&material);
 				}
 			}
