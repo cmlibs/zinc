@@ -109,8 +109,11 @@
 	$1 = new double[3];
 }
 
+%import "field.i"
+
 %{
 #include "zinc/graphicsmaterial.hpp"
+#include "zinc/fieldtypesconditional.hpp"
 %}
 
 %include "zinc/graphicsmaterial.hpp"
