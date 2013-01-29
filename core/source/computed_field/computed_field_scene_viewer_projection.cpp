@@ -70,7 +70,7 @@ public:
 		scene_viewer_callback_flag = 0;
 		transformation_callback_flag = 0;
 		projection_matrix = (double*)NULL;
-	};
+	}
 
 	virtual bool attach_to_field(Computed_field *parent)
 	{
