@@ -1,23 +1,14 @@
-/*
- * UnitTestImageBrowser.cpp
- *
- *  Created on: Feb 26, 2011
- *      Author: jchu014
- */
 
 #include <gtest/gtest.h>
 
-extern "C"
-{
-#include <zn/cmgui_configure.h>
-#include <zn/cmiss_core.h>
-#include <zn/cmiss_context.h>
-#include <zn/cmiss_region.h>
-#include <zn/cmiss_field_module.h>
-#include <zn/cmiss_field.h>
-#include <zn/cmiss_field_conditional.h>
-#include <zn/cmiss_field_constant.h>
-}
+#include <zinc/zincconfigure.h>
+#include <zinc/core.h>
+#include <zinc/context.h>
+#include <zinc/region.h>
+#include <zinc/fieldmodule.h>
+#include <zinc/field.h>
+#include <zinc/fieldconditional.h>
+#include <zinc/fieldconstant.h>
 
 TEST(Cmiss_field_module_create_if, invalid_args)
 {
