@@ -47,6 +47,7 @@ The public interface to the Cmiss_rendition.
 
 #include "types/fieldid.h"
 #include "types/graphicid.h"
+#include "types/graphicisosurfaceid.h"
 #include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
@@ -252,6 +253,71 @@ ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
+
+/**
+ * If the graphic is of type iso surface graphic then this function returns
+ * the iso_surface specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new iso surface graphic reference.
+ *
+ * @param graphic  The graphic to be cast.
+ * @return  Iso surface graphic specific representation if the input is the correct
+ * graphic type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic);
+
+/**
+ * Cast iso surface graphic back to its base graphic and return the graphic.
+ * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the iso_surface_graphic argument.
+ *
+ * @param iso_surface_graphic  Handle to the iso surface graphic to cast.
+ * @return  Non-accessed handle to the base graphic or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_iso_surface_base_cast(Cmiss_graphic_iso_surface_id iso_surface_graphic)
+{
+	return (Cmiss_graphic_id)(iso_surface_graphic);
+}
+
+/**
+ * Destroys this reference to the iso surface graphic (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param iso_surface_address  Address of handle to the iso surface graphic.
+ * @return  Status CMISS_OK if successfully destroyed the iso surface graphic handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address);
+
+/**
+ * Set the iso scalar field for the iso surface graphic.
+ *
+ * @param iso_surface_graphic The iso surface graphic to set the field to.
+ * @param iso_scalar_field The iso scalar field to set, this field must have only one component.
+ * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ */
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id iso_surface_graphic, Cmiss_field_id iso_scalar_field);
+
+/**
+ * Set the iso values for the iso surface graphic.
+ *
+ * @param iso_surface_graphic The iso surface graphic to set the field to.
+ * @param number_of_values The number of values in the values array.
+ * @param values The array of double values with length number_of_values.
+ * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ */
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values);
+
+/**
+ * Set the iso range for the iso surface graphic.
+ *
+ * @param iso_surface_graphic The iso surface graphic to set the field to.
+ * @param number_of_values The number of values to have between the first and last values (inclusive).
+ * @param first_value The first iso value.
+ * @param last_value The last iso value.
+ * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ */
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value);
 
 #ifdef __cplusplus
 }

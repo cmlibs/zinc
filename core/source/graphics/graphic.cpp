@@ -7212,3 +7212,34 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 
 	return return_code;
 }
+
+Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic)
+{
+	if (graphic)
+	{
+		Cmiss_graphic_access(graphic);
+		return (reinterpret_cast<Cmiss_graphic_iso_surface_id>(graphic));
+	}
+
+	return 0;
+}
+
+int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(iso_surface_address));
+}
+
+int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id iso_surface_graphic, Cmiss_field_id iso_scalar_field)
+{
+	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), iso_scalar_field, 0, 0, 0.0, 0.0, 0.0);
+}
+
+int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values)
+{
+	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), 0, number_of_values, values, 0.0, 0.0, 0.0);
+}
+
+int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value)
+{
+	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), 0, number_of_values, 0, first_value, last_value, 0.0);
+}
