@@ -217,6 +217,41 @@ public:
 
 };
 
+class GraphicIsoSurface : public Graphic
+{
+private:
+	explicit GraphicIsoSurface(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+
+public:
+	GraphicIsoSurface() : Graphic(0) {}
+
+	explicit GraphicIsoSurface(Cmiss_graphic_iso_surface_id graphic_iso_surface_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_iso_surface_id))
+	{}
+
+	GraphicIsoSurface(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_iso_surface(graphic.getId())))
+	{}
+
+	int setScalarField(Field& field)
+	{
+		return Cmiss_graphic_iso_surface_set_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id), field.getId());
+	}
+
+	int setIsoValues(int number_of_values, double *values)
+	{
+		return Cmiss_graphic_iso_surface_set_iso_values(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
+			number_of_values, values);
+	}
+
+	int setIsoRange(int number_of_values, double first_value, double last_value)
+	{
+		return Cmiss_graphic_iso_surface_set_iso_range(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
+			number_of_values, first_value, last_value);
+	}
+
+};
+
 } // namespace Cmiss
 
 #endif /* __ZN_CMISS_GRAPHIC_HPP__ */

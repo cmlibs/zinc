@@ -111,6 +111,13 @@ public:
 			static_cast<Cmiss_graphic_type>(graphicType)));
 	}
 
+	GraphicIsoSurface createGraphicIsoSurface()
+	{
+		Cmiss_graphic_id graphic = Cmiss_rendition_create_graphic(id,
+			static_cast<Cmiss_graphic_type>(Graphic::GRAPHIC_ISO_SURFACES));
+		return GraphicIsoSurface(Cmiss_graphic_cast_iso_surface(graphic));
+	}
+
 	SelectionHandler createSelectionHandler()
 	{
 		return SelectionHandler(Cmiss_rendition_create_selection_handler(id));

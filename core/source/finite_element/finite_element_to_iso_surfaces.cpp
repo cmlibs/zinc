@@ -1990,7 +1990,7 @@ struct Iso_surface_specification *Iso_surface_specification_create(
 	struct Iso_surface_specification *specification = NULL;
 	if (Computed_field_has_3_components(coordinate_field, NULL) &&
 		(0 <= number_of_iso_values) &&
-		(1 == Computed_field_get_number_of_components(scalar_field)) &
+		(1 == Computed_field_get_number_of_components(scalar_field)) &&
 		((NULL == texture_coordinate_field) ||
 			(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
