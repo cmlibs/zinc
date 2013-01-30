@@ -56,6 +56,10 @@
                         {
                                 $2[i] = PyLong_AsDouble(o);
                         }
+                        else if (PyInt_Check(o))
+                        {
+                                $2[i] = static_cast<double>(PyInt_AsLong(o));
+                        }
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
@@ -104,6 +108,10 @@ $1 = PyList_Check($input) ? 1 : 0;
                         else if (PyLong_Check(o))
                         {
                                 $1[i] = PyLong_AsDouble(o);
+                        }
+                        else if (PyInt_Check(o))
+                        {
+                                $1[i] = static_cast<double>(PyInt_AsLong(o));
                         }
 			else 
 			{
