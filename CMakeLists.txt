@@ -17,12 +17,11 @@ INCLUDE_DIRECTORIES(
 
 SET(API_TESTS)
 
+# Any tests to include must append the test name
+# to the API_TESTS list.  Any source files for the
+# test must be set to <test name>_SRC.
 INCLUDE(fieldmodule/tests.cmake)
-SET(CURRENT_TEST Cmiss_field_module)
-LIST(APPEND API_TESTS ${CURRENT_TEST})
-SET(${CURRENT_TEST}_SRC
-        ${CURRENT_TEST}/create_if.cpp
-    )
+INCLUDE(graphic/tests.cmake)
 
 FOREACH(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
         ADD_DEFINITIONS(-D${DEF})
