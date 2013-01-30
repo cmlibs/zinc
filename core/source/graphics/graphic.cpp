@@ -4615,11 +4615,11 @@ int Cmiss_graphic_set_iso_surface_parameters(
 	double first_iso_value, double last_iso_value,
 	double decimation_threshold)
 {
-	int i, return_code;
+	int i, return_code = 0;
 
 	ENTER(Cmiss_graphic_set_iso_surface_parameters);
 	if (graphic&& (!iso_scalar_field || (iso_scalar_field &&
-		(1==Computed_field_get_number_of_components(iso_scalar_field))))&&
+		(1==Computed_field_get_number_of_components(iso_scalar_field)))) &&
 		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
 	{
 		return_code=1;
@@ -7236,10 +7236,22 @@ int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id 
 
 int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values)
 {
-	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), 0, number_of_values, values, 0.0, 0.0, 0.0);
+	if (iso_surface_graphic && (number_of_values <= 0 || (number_of_values > 0 && values)))
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		return Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, values, 0.0, 0.0, 0.0);
+	}
+
+	return 0;
 }
 
 int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value)
 {
-	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), 0, number_of_values, 0, first_value, last_value, 0.0);
+	if (iso_surface_graphic)
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		return Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, 0, first_value, last_value, 0.0);
+	}
+
+	return 0;
 }
