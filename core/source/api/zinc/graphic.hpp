@@ -238,16 +238,16 @@ public:
 		return Cmiss_graphic_iso_surface_set_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id), field.getId());
 	}
 
-	int setIsoValues(int number_of_values, double *values)
+	int setIsoValues(int numberOfValues, double *values)
 	{
 		return Cmiss_graphic_iso_surface_set_iso_values(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
-			number_of_values, values);
+			numberOfValues, values);
 	}
 
-	int setIsoRange(int number_of_values, double first_value, double last_value)
+	int setIsoRange(int numberOfValues, double firstValue, double lastValue)
 	{
 		return Cmiss_graphic_iso_surface_set_iso_range(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
-			number_of_values, first_value, last_value);
+			numberOfValues, firstValue, lastValue);
 	}
 
 };
