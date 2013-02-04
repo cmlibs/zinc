@@ -7231,27 +7231,40 @@ int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_
 
 int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id iso_surface_graphic, Cmiss_field_id iso_scalar_field)
 {
-	return Cmiss_graphic_set_iso_surface_parameters(reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic), iso_scalar_field, 0, 0, 0.0, 0.0, 0.0);
+	int return_code = 0;
+	if (iso_surface_graphic)
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, iso_scalar_field, 0, 0, 0.0, 0.0, 0.0);
+		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+	}
+	return return_code;
 }
 
 int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values)
 {
+	int return_code = 0;
 	if (iso_surface_graphic && (number_of_values <= 0 || (number_of_values > 0 && values)))
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		return Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, values, 0.0, 0.0, 0.0);
+		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, values, 0.0, 0.0, 0.0);
+		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		return return_code;
 	}
 
-	return 0;
+	return return_code;
 }
 
 int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value)
 {
+	int return_code = 0;
 	if (iso_surface_graphic)
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		return Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, 0, first_value, last_value, 0.0);
+		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, 0, first_value, last_value, 0.0);
+		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		return return_code;
 	}
 
-	return 0;
+	return return_code;
 }
