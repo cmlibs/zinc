@@ -2786,7 +2786,6 @@ DESCRIPTION :
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
-		printf("scene viewer destroying with the package.\n");
 		DESTROY(Scene_viewer)(&scene_viewer);
 	}
 	return_code = 1;
@@ -3281,6 +3280,14 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		Scene_viewer_sleep(scene_viewer);
 		Scene_viewer_image_texture_set_field(&(scene_viewer->image_texture),
 			NULL);
+		/* send the destroy callbacks */
+		if (scene_viewer->destroy_callback_list)
+		{
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				scene_viewer->destroy_callback_list,scene_viewer,NULL);
+			DESTROY( LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
+				&scene_viewer->destroy_callback_list);
+		}
 		/* dispose of our data structure */
 		DEACCESS(Scene)(&(scene_viewer->scene));
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
@@ -3343,7 +3350,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	//Do nothing as the scene viewer removes itself from the package list
-	printf("deaccessing scene viewer\n");
 	*scene_viewer_address = (struct Scene_viewer *)NULL;
 	return(1);
 }
@@ -7149,7 +7155,7 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Scene_viewer_remove_destroy_callback);
 	if (scene_viewer&&function)
@@ -7163,14 +7169,12 @@ Removes the callback calling <function> with <user_data> from
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_remove_destroy_callback.  Could not remove callback");
-			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_remove_destroy_callback.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -8028,8 +8032,6 @@ Closes the scene_viewer.
 	}
 
 	return (return_code);
-	//-- printf("scene viewer access count = %d\n", (*scene_viewer_id_address)->access_count);
-	//-- return (DESTROY(Scene_viewer)(scene_viewer_id_address));
 }
 
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
