@@ -127,13 +127,6 @@ enum Image_orientation
 }; /* enum Image_orientation */
 #endif /* ! defined (USE_IMAGEMAGICK) */
 
-struct Cmgui_image_information_memory_block
-{
-	void *buffer;
-	unsigned int length;
-	int memory_block_is_imagemagick_blob;
-};
-
 struct Cmgui_image_information_memory_block *
 	Cmgui_image_information_memory_block_create(void)
 {
@@ -146,62 +139,6 @@ struct Cmgui_image_information_memory_block *
 	}
 	return block;
 }
-
-struct Cmgui_image_information
-/*******************************************************************************
-LAST MODIFIED : 11 March 2002
-
-DESCRIPTION :
-Private structure for describing information needed to read or create a
-Cmgui_image. Note not all members are needed for each task; file names are
-needed for reading files, but only certain raw file types need width, height
-and other information to be specified before they can be read.
-If more than one file_name is included, they must have consistent width, height
-and other attributes.
-For creating a blank Cmgui_image, file names are ignored but most other
-parameters are used to set the image dimensions and colour depth.
-==============================================================================*/
-{
-	int valid; /* will be set to zero if not set up properly */
-	int number_of_file_names;
-	char **file_names;
-	/* following can be used to override format inferred from file extension */
-	enum Image_file_format image_file_format;
-	int height, number_of_bytes_per_component, number_of_components, width;
-	enum Raw_image_storage raw_image_storage;
-	int background_number_of_fill_bytes;
-	unsigned char *background_fill_bytes;
-	struct IO_stream_package *io_stream_package;
-	double quality;
-	/* A flag to indicate that a Cmgui_image_write will write to the memory_block. */
-	int write_to_memory_block;
-	/* Flag to indicate that the memory_block memory is from an Imagemagick Blob
-	 * to deallocate with structure */
-	int number_of_memory_blocks;
-	struct Cmgui_image_information_memory_block **memory_blocks;
-	enum Image_storage_compression compression;
-};
-
-struct Cmgui_image
-/*******************************************************************************
-LAST MODIFIED : 26 February 2002
-
-DESCRIPTION :
-Private structure for storing 2-D images.
-==============================================================================*/
-{
-#if defined (USE_IMAGEMAGICK)
-	/* Image magick images are stored in bottom-to-top format */
-	Image *magick_image;
-#else /* defined (USE_IMAGEMAGICK) */
-	/* simple image_array storage is from top-to-bottom */
-	unsigned char **image_arrays;
-#endif /* defined (USE_IMAGEMAGICK) */
-	int width, height;
-	int number_of_components;
-	int number_of_bytes_per_component;
-	int number_of_images;
-};
 
 #if ! defined (USE_IMAGEMAGICK)
 struct Colour_map_entry
@@ -908,6 +845,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		{
 			enumerator_string = "yuv";
 		} break;
+		case ANALYZE_FILE_FORMAT:
+		{
+			enumerator_string = "analyze";
+		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -975,6 +916,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		case YUV_FILE_FORMAT:
 		{
 			file_format_extension = "yuv";
+		} break;
+		case ANALYZE_FILE_FORMAT:
+		{
+			file_format_extension = "analyze";
 		} break;
 		default:
 		{
@@ -5795,6 +5740,23 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 	return (return_code);
 } /* Cmgui_image_information_set_height */
 
+enum Image_file_format Cmgui_image_information_get_image_file_format(
+	struct Cmgui_image_information *cmgui_image_information)
+{
+	enum Image_file_format file_format = UNKNOWN_IMAGE_FILE_FORMAT;
+	if (cmgui_image_information)
+	{
+		file_format = cmgui_image_information->image_file_format;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_get_image_file_format.  Invalid argument(s)");
+	}
+
+	return file_format;
+}
+
 int Cmgui_image_information_set_image_file_format(
 	struct Cmgui_image_information *cmgui_image_information,
 	enum Image_file_format image_file_format)
@@ -6185,7 +6147,7 @@ int Cmgui_image_information_set_write_to_memory_block(
 } /* Cmgui_image_information_set_write_to_memory_block */
 
 #if defined (USE_IMAGEMAGICK)
-static int get_magick_image_parameters(Image *magick_image, int *width,
+int get_magick_image_parameters(Image *magick_image, int *width,
 	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
@@ -6232,14 +6194,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 				*number_of_components = 3;
 			}
 		}
-		if (16 == magick_image->depth)
-		{
-			*number_of_bytes_per_component = 2;
-		}
-		else
-		{
-			*number_of_bytes_per_component = 1;
-		}
+		*number_of_bytes_per_component = magick_image->depth/8;
 		DestroyExceptionInfo(&magick_exception);
 		return_code = 1;
 	}
@@ -6256,7 +6211,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 #endif /* defined (USE_IMAGEMAGICK) */
 
 #if defined (USE_IMAGEMAGICK)
-static int get_magick_image_number_of_consistent_images(Image *magick_image)
+int get_magick_image_number_of_consistent_images(Image *magick_image)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -6304,7 +6259,7 @@ Only these parameters matter to Cmgui_image for consistency.
 } /* get_magick_image_number_of_consistent_images */
 #endif /* defined (USE_IMAGEMAGICK) */
 
-static struct Cmgui_image *CREATE(Cmgui_image)(void)
+struct Cmgui_image *CREATE(Cmgui_image)(void)
 /*******************************************************************************
 LAST MODIFIED : 11 March 2002
 
@@ -6968,6 +6923,10 @@ equal to the number_of_components.
 			case 2:
 			{
 				magick_storage_type = ShortPixel;
+			} break;
+			case 4:
+			{
+				magick_storage_type = FloatPixel;
 			} break;
 			default:
 			{

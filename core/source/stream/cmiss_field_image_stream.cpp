@@ -49,6 +49,7 @@
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include "stream/cmiss_field_image_stream.hpp"
+#include "image_io/analyze.h"
 
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information)
@@ -131,7 +132,15 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 			}
 			if (return_code)
 			{
-				struct Cmgui_image *cmgui_image = Cmgui_image_read(image_information);
+				struct Cmgui_image *cmgui_image = 0;
+				if (Cmgui_image_information_get_image_file_format(image_information) == ANALYZE_FILE_FORMAT)
+				{
+					cmgui_image = Cmgui_image_read_analyze(image_information);
+				}
+				else
+				{
+					cmgui_image = Cmgui_image_read(image_information);
+				}
 				if (cmgui_image != NULL)
 				{
 					char *property, *value;
@@ -212,8 +221,8 @@ int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *fi
 		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
 			stream_information, file_name);
 	  return_code = Cmiss_field_image_read(image_field, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+	Cmiss_stream_resource_destroy(&resource);
+	Cmiss_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
@@ -367,8 +376,8 @@ int Cmiss_field_image_write_file(Cmiss_field_image_id image_field, const char *f
 		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
 			stream_information, file_name);
 	  return_code = Cmiss_field_image_write(image_field, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+	Cmiss_stream_resource_destroy(&resource);
+	Cmiss_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
@@ -477,28 +486,28 @@ int Cmiss_stream_information_image_set_attribute_real(
 class Cmiss_stream_information_image_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_stream_information_image_attribute attribute)
-    {
-    	const char *enum_string = 0;
-    	switch (attribute)
-    	{
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
-    			enum_string = "RAW_WIDTH_PIXELS";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
-    			enum_string = "RAW_HEIGHT_PIXELS";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
-    			enum_string = "BITS_PER_COMPONENT";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
-    			enum_string = "COMPRESSION_QUALITY";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_stream_information_image_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+				enum_string = "RAW_WIDTH_PIXELS";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+				enum_string = "RAW_HEIGHT_PIXELS";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
+				enum_string = "BITS_PER_COMPONENT";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
+				enum_string = "COMPRESSION_QUALITY";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_stream_information_image_attribute
@@ -557,6 +566,10 @@ int Cmiss_stream_information_image_set_file_format(
 			{
 				cmgui_file_format = TIFF_FILE_FORMAT;
 			} break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_ANALYZE:
+			{
+				cmgui_file_format = ANALYZE_FILE_FORMAT;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -576,37 +589,40 @@ int Cmiss_stream_information_image_set_file_format(
 class Cmiss_stream_information_image_file_format_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_stream_information_image_file_format format)
-    {
-    	const char *enum_string = 0;
-    	switch (format)
-    	{
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
-    			enum_string = "BMP";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
-    			enum_string = "DICOM";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
-    			enum_string = "JPG";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
-    			enum_string = "GIF";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
-    			enum_string = "PNG";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
-    			enum_string = "SGI";
-    			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
-    			enum_string = "TIFF";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_stream_information_image_file_format format)
+	{
+		const char *enum_string = 0;
+		switch (format)
+		{
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
+				enum_string = "BMP";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
+				enum_string = "DICOM";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
+				enum_string = "JPG";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
+				enum_string = "GIF";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
+				enum_string = "PNG";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
+				enum_string = "SGI";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
+				enum_string = "TIFF";
+				break;
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_ANALYZE:
+				enum_string = "ANALYZE";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_stream_information_image_file_format
