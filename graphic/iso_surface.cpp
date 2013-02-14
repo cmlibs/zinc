@@ -210,6 +210,8 @@ TEST(Cmiss_graphic_iso_surface, set_iso_range)
 	int num = 6;
 	double first = 0.1, last = 0.55;
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_iso_surface_set_iso_range(is, num, first, last));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_iso_surface_set_iso_range(is, 1, 0.3, 0.3));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_iso_surface_set_iso_range(is, 1, 0.7, 0.7));
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_iso_surface_destroy(&is));
 	Cmiss_graphic_destroy(&gr);
