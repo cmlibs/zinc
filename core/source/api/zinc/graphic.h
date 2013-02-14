@@ -255,6 +255,16 @@ ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 ZINC_API int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
 
 /**
+ * Set the element type to use for the graphic.  Note that this may not be applicable
+ * to all graphic types.
+ *
+ * @param graphic Handle to a cmiss_graphic object.
+ * @param use_type enum value of the element type to use.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_use_element_type use_type);
+
+/**
  * If the graphic is of type iso surface graphic then this function returns
  * the iso_surface specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the new iso surface graphic reference.
