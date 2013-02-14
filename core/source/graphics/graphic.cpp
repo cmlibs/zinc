@@ -47,6 +47,8 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+
+#include "zinc/status.h"
 #include "zinc/element.h"
 #include "zinc/graphic.h"
 #include "zinc/graphicsfont.h"
@@ -7213,6 +7215,18 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 	return return_code;
 }
 
+int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_use_element_type use_type)
+{
+	int return_code = 0;
+	if (graphic)
+	{
+		graphic->use_element_type = static_cast<Use_element_type>(use_type);
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
 Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic)
 {
 	if (graphic)
@@ -7249,7 +7263,6 @@ int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_su
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
 		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, values, 0.0, 0.0, 0.0);
 		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-		return return_code;
 	}
 
 	return return_code;
@@ -7263,7 +7276,6 @@ int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_sur
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
 		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, 0, first_value, last_value, 0.0);
 		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-		return return_code;
 	}
 
 	return return_code;

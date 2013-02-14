@@ -80,5 +80,16 @@ enum Cmiss_graphic_glyph_type
 	CMISS_GRAPHIC_GLYPH_AXES
 };
 
+/**
+ * An enum defining the type of element dimension to use.
+ */
+enum Cmiss_graphic_use_element_type
+{
+	CMISS_GRAPHIC_USE_ELEMENT_TYPE_INVALID = 0,
+	CMISS_GRAPHIC_USE_ELEMENT_HIGHEST_DIMENSION,
+	CMISS_GRAPHIC_USE_ELEMENT_FACES,
+	CMISS_GRAPHIC_USE_ELEMENT_LINES
+};
+
 #define CMISS_GRAPHIC_ID_H
 #endif /* CMISS_GRAPHIC_ID_H */
