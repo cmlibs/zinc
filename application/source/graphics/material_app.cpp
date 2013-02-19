@@ -548,7 +548,7 @@ DESCRIPTION :
 						material_package->root_region,
 						set_Material_image_texture);
 					Option_table_add_entry(option_table, "shininess",
-						&(material_to_be_modified_copy->shininess), NULL,
+						&(material_shininess), NULL,
 						set_float_0_to_1_inclusive);
 					Option_table_add_entry(option_table, "specular",
 						&(material_to_be_modified_copy->specular), NULL,
