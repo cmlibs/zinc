@@ -135,7 +135,7 @@ int DESTROY(Cmiss_scene_viewer_app_package)(
 void My_Cmiss_scene_viewer_callback(Cmiss_scene_viewer_id /* scene_viewer */,
 		void * /*callback_data*/, void *user_data)
 {
-	Scene_viewer_app_redraw_now((struct Scene_viewer_app *)user_data);
+	Scene_viewer_app_redraw((struct Scene_viewer_app *)user_data);
 }
 
 struct Scene_viewer_app *CREATE(Scene_viewer_app)(struct Graphics_buffer_app *graphics_buffer,
