@@ -111,10 +111,6 @@ IF( NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
     MESSAGE( FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
 ENDIF()
 
-# Set user interface
-CACHE_VAR_WITH_DEFAULT( ZINC_USER_INTERFACE "wx" STRING "What type of user interface is required" )
-SET_USER_INTERFACE_DEFINES( )
-
 CACHE_VAR_WITH_DEFAULT( ZINC_ImageMagick_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake"
     PATH "Where is Image magick installed?" )
 CACHE_VAR_WITH_DEFAULT( ZINC_OCE_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake"
