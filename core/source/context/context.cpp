@@ -95,6 +95,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 			//-- }
 			if (context->graphics_module)
 				Cmiss_graphics_module_destroy(&context->graphics_module);
+
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;
@@ -103,10 +104,12 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
 			}
+
 			if (context->scene_viewer_package)
 			{
 				Cmiss_scene_viewer_package_destroy(&context->scene_viewer_package);
 			}
+
 			if (context->any_object_selection)
 			{
 				DESTROY(Any_object_selection)(&context->any_object_selection);

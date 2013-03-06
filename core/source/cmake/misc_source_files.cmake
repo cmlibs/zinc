@@ -40,6 +40,12 @@ SET( FIELD_IO_SRCS
 SET( FIELD_IO_HDRS
     source/field_io/read_fieldml.h )
 
+SET( IMAGE_IO_SRCS
+    source/image_io/analyze.cpp )
+SET( IMAGE_IO_HDRS
+    source/image_io/analyze.h
+    source/image_io/analyze_header.h )
+
 SET( MESH_SRCS
     source/mesh/cmiss_element_private.cpp
     source/mesh/cmiss_node_private.cpp )
