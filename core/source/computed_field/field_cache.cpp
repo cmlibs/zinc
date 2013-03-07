@@ -234,7 +234,7 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	Cmiss_element_id top_level_element)
 {
-	if (!(cache && element && (number_of_chart_coordinates == Cmiss_element_get_dimension(element))))
+	if (!(cache && element && (number_of_chart_coordinates >= Cmiss_element_get_dimension(element))))
 		return 0;
 	cache->setMeshLocation(element, chart_coordinates, top_level_element);
 	return 1;
