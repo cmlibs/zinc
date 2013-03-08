@@ -266,8 +266,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 					polyline->number_of_points*sizeof(Triple));
 				if (0<contour_lines->number_of_data_components)
 				{
-					memcpy(data,polyline->data,polyline->number_of_points*
-						sizeof(ZnReal)*contour_lines->number_of_data_components);
+					CAST_TO_OTHER(data, polyline->data, GLfloat, polyline->number_of_points*contour_lines->number_of_data_components);
 				}
 				if (NULL != (gt_polyline=CREATE(GT_polyline)(g_PLAIN,line_width,
 					polyline->number_of_points,point_list,(Triple *)NULL,

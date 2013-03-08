@@ -541,11 +541,12 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
 				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
+				ZnReal *node_data_ptr = data_ptr;
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
 					CAST_TO_FE_VALUE(position, point_list[i], 3);
 					if (!(Render_node_create(&nodes[i], data, position,
-						 number_of_data_components, data_ptr)))
+						 number_of_data_components, node_data_ptr)))
 					{
 						display_message(ERROR_MESSAGE,
 								"render_voltex_to_finite_elements.  "
@@ -554,7 +555,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 					}
 					if (number_of_data_components)
 					{
-						data_ptr += number_of_data_components;
+						node_data_ptr += number_of_data_components;
 					}
 				}
 				if (data_ptr)
@@ -690,11 +691,12 @@ DESCRIPTION :
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
 				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
+				ZnReal *node_data_ptr = data_ptr;
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
 					CAST_TO_FE_VALUE(position, surfpts[i], 3);
 					if (!(Render_node_create(&nodes[i], data, position,
-						 number_of_data_components, data_ptr)))
+						 number_of_data_components, node_data_ptr)))
 					{
 						display_message(ERROR_MESSAGE,
 								"render_voltex_to_finite_elements.  "
@@ -703,7 +705,7 @@ DESCRIPTION :
 					}
 					if (number_of_data_components)
 					{
-						data_ptr += number_of_data_components;
+						node_data_ptr += number_of_data_components;
 					}
 				}
 				if (data_ptr)
