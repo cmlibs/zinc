@@ -2293,9 +2293,9 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			for (i = 0 ; i < data_vertex_count ; i++)
 			{
 				CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
-				CAST_TO_OTHER(colData,colour_vertex, ZnReal, 4);
 				Spectrum_value_to_rgba(spectrum, data_values_per_vertex,
 					feData, colData);
+				CAST_TO_OTHER(colour_vertex, colData, GLfloat, 4);
 				colour_vertex += 4;
 				data_vertex += data_values_per_vertex;
 			}

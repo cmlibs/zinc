@@ -1677,15 +1677,15 @@ Uses the <spectrum> to calculate RGBA components to represent the
 	ENTER(spectrum_value_to_rgba);
 	if (spectrum)
 	{
+		GLfloat frgba[4];
 		if (spectrum->clear_colour_before_settings)
 		{
 			rgba[0] = 0.0;
 			rgba[1] = 0.0;
 			rgba[2] = 0.0;
 			rgba[3] = 1.0;
+			CAST_TO_OTHER(frgba, rgba, GLfloat, 4);
 		}
-		GLfloat *frgba = new GLfloat[number_of_data_components];
-		CAST_TO_OTHER(frgba,data,GLfloat,number_of_data_components);
 		render_data.rgba = frgba;
 		GLfloat *fData = new GLfloat[number_of_data_components];
 		CAST_TO_OTHER(fData,data,GLfloat,number_of_data_components);
@@ -1696,8 +1696,9 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
 
+		CAST_TO_OTHER(rgba, frgba, ZnReal, 4);
+
 		delete[] fData;
-		delete[] frgba;
 	}
 	else
 	{
