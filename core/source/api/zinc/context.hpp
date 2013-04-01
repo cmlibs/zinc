@@ -118,14 +118,14 @@ public:
 	}
 
 	SceneViewerPackage getDefaultSceneViewerPackage()
- 	{
+	{
 		return SceneViewerPackage(Cmiss_context_get_default_scene_viewer_package(id));
- 	}
+	}
 
-//	TimeKeeper getDefaultTimeKeeper()
-//	{
-//		return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
-//	}
+	TimeKeeper getDefaultTimeKeeper()
+	{
+		return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
+	}
 
 };
 

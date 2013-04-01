@@ -64,13 +64,12 @@ struct Context *Cmiss_context_create(const char *id)
 		context->graphics_module = NULL;
 		context->root_region = NULL;
 		context->id = duplicate_string(id);
-		//-- context->UI_module = NULL;
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
 		context->scene_viewer_package = NULL;
-		//-- context->event_dispatcher = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
+		context->time_keeper = 0;
 		context->access_count = 1;
 	}
 
@@ -89,10 +88,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 		{
 			if (context->id)
 				DEALLOCATE(context->id);
-			//-- if (context->UI_module)
-			//-- {
-			//-- 	User_interface_module_destroy(&context->UI_module);
-			//-- }
 			if (context->graphics_module)
 				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->root_region)
@@ -123,10 +118,10 @@ int Cmiss_context_destroy(struct Context **context_address)
 			{
 				DESTROY(IO_stream_package)(&context->io_stream_package);
 			}
-			//-- if (context->event_dispatcher)
-			//-- {
-			//-- 	DESTROY(Event_dispatcher)(&context->event_dispatcher);
-			//-- }
+			if (context->time_keeper)
+			{
+				Cmiss_time_keeper_destroy(&context->time_keeper);
+			}
 			DEALLOCATE(*context_address);
 		}
 		*context_address = NULL;
@@ -286,6 +281,26 @@ struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
 	return io_stream_package;
 }
 
+Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(Cmiss_context_id context)
+{
+	Cmiss_time_keeper_id time_keeper = 0;
+	if (context)
+	{
+		if (!context->time_keeper)
+		{
+			context->time_keeper = CREATE(Time_keeper)("default", 0);
+		}
+		time_keeper = context->time_keeper;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_context_get_default_time_keeper.  Missing context.");
+	}
+
+	return time_keeper;
+}
+
 Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context)
 {
@@ -349,31 +364,4 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
 	}
 	return curve_manager;
 }
-
-//#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-//int Cmiss_context_enable_user_interface(Cmiss_context_id context, void *user_interface_instance)
-//#else
-//int Cmiss_context_enable_user_interface(
-//	Cmiss_context_id context, HINSTANCE current_instance, HINSTANCE previous_instance,
-//	LPSTR command_line,int initial_main_window_state, void *user_interface_instance)
-//#endif
-//{
-//	int return_code = 0;
-//#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-//	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
-//		context, 0, 0, user_interface_instance);
-//#else
-//	struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
-//		context, 0, 0, current_instance, previous_instance,
-//		command_line, initial_main_window_state, user_interface_instance);
-//#endif
-//	if (UI_module)
-//	{
-//		UI_module->external = 1;
-//		return_code = 1;
-//		User_interface_module_destroy(&UI_module);
-//	}
-//
-//	return return_code;
-//}
 

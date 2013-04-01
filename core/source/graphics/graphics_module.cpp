@@ -278,7 +278,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->scene_manager = CREATE(MANAGER(Scene)());
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
-			module->default_time_keeper = NULL;
+			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
 			module->tessellation_manager = CREATE(MANAGER(Cmiss_tessellation))();
 			Cmiss_tessellation_manager_set_owner_private(module->tessellation_manager, module);
 			module->graphics_filter_manager = CREATE(MANAGER(Cmiss_graphics_filter))();
