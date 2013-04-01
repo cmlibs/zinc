@@ -306,7 +306,7 @@ DESCRIPTION :
 			time_keeper->playing = 0;
 			time_keeper->event_dispatcher = event_dispatcher;
 			time_keeper->callback_list = (struct Time_keeper_callback_data *)NULL;
-			time_keeper->access_count = 0;
+			time_keeper->access_count = 1;
 		}
 		else
 		{
