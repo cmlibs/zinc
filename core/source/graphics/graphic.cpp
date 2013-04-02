@@ -371,7 +371,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphic->exterior=0;
-			graphic->face=-1; /* any face */
+			graphic->face=CMISS_GRAPHIC_FACE_ALL; /* any face */
 			/* for cylinders only */
 			graphic->constant_radius=0.0;
 			graphic->radius_scale_factor=1.0;
@@ -1906,38 +1906,32 @@ int Cmiss_graphic_set_coordinate_field(
 	return (return_code);
 }
 
-int Cmiss_graphic_set_face(struct Cmiss_graphic *graphic, int face)
+int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face)
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_graphic_set_face);
 	if (graphic&&(
 		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
 		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
 	{
-		return_code=1;
-		/* want -1 to represent none/all faces */
-		if ((0>face)||(5<face))
-		{
-			face = -1;
-		}
+		return_code = 1;
 		graphic->face = face;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_set_face.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* Cmiss_graphic_set_face */
 
-int Cmiss_graphic_set_exterior(struct Cmiss_graphic *graphic,
+int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic,
 	int exterior)
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_graphic_set_exterior);
 	if (graphic&&(
@@ -1959,7 +1953,6 @@ int Cmiss_graphic_set_exterior(struct Cmiss_graphic *graphic,
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_set_exterior.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -2263,32 +2256,32 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			{
 				append_string(&graphic_string," exterior",&error);
 			}
-			if (-1 != graphic->face)
+			if (CMISS_GRAPHIC_FACE_ALL != graphic->face)
 			{
 				append_string(&graphic_string," face",&error);
 				switch (graphic->face)
 				{
-					case 0:
+					case CMISS_GRAPHIC_FACE_XI1_0:
 					{
 						append_string(&graphic_string," xi1_0",&error);
 					} break;
-					case 1:
+					case CMISS_GRAPHIC_FACE_XI1_1:
 					{
 						append_string(&graphic_string," xi1_1",&error);
 					} break;
-					case 2:
+					case CMISS_GRAPHIC_FACE_XI2_0:
 					{
 						append_string(&graphic_string," xi2_0",&error);
 					} break;
-					case 3:
+					case CMISS_GRAPHIC_FACE_XI2_1:
 					{
 						append_string(&graphic_string," xi2_1",&error);
 					} break;
-					case 4:
+					case CMISS_GRAPHIC_FACE_XI3_0:
 					{
 						append_string(&graphic_string," xi3_0",&error);
 					} break;
-					case 5:
+					case CMISS_GRAPHIC_FACE_XI3_1:
 					{
 						append_string(&graphic_string," xi3_1",&error);
 					} break;
@@ -6554,27 +6547,24 @@ int Cmiss_graphic_get_exterior(struct Cmiss_graphic *graphic)
 	return (return_code);
 } /* Cmiss_graphic_get_exterior */
 
-int Cmiss_graphic_get_face(struct Cmiss_graphic *graphic,int *face)
+Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
 {
-	int return_code;
-
+	Cmiss_graphic_face_type face = CMISS_GRAPHIC_FACE_INVALID;
 	ENTER(Cmiss_graphic_get_face);
-	if (graphic&&face&&(
+	if (graphic && (
 		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
 		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
 	{
-		return_code=(0 <= graphic->face);
-		*face=graphic->face;
+		face=graphic->face;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_face.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
-	return (return_code);
+	return face;
 } /* Cmiss_graphic_get_face */
 
 int Cmiss_graphic_time_change(

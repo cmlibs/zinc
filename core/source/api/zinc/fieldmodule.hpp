@@ -98,6 +98,10 @@ class FieldElementGroup;
 class FieldNodeGroup;
 class FieldTimeLookup;
 class FieldTimeValue;
+class FieldDerivative;
+class FieldCurl;
+class FieldDivergence;
+class FieldGradient;
 class FieldSin;
 class FieldCos;
 class FieldTan;
@@ -324,6 +328,14 @@ public:
 	FieldTimeLookup createTimeLookup(Field& sourceField, Field& timeField);
 
 	FieldTimeValue createTimeValue(TimeKeeper& timeKeeper);
+
+	FieldDerivative createDerivative(Field& sourceField, int xi_index);
+
+	FieldCurl createCurl(Field& vectorField, Field& coordinateField);
+
+	FieldDivergence createDivergence(Field& vectorField, Field& coordinateField);
+
+	FieldGradient createGradient(Field& sourceField, Field& coordinateField);
 
 	FieldSin createSin(Field& sourceField);
 

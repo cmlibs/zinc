@@ -12,6 +12,7 @@ SET( API_HDRS
     source/api/zinc/fieldconditional.h
     source/api/zinc/fieldconstant.h
     source/api/zinc/fieldcoordinatetransformation.h
+    source/api/zinc/fieldderivatives.h
     source/api/zinc/fieldfiniteelement.h
     source/api/zinc/fieldgroup.h
     source/api/zinc/fieldimage.h

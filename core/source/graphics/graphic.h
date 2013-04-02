@@ -101,7 +101,7 @@ finite element group rendition.
 	char exterior;
 	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
 		 2 is xi2=0 etc. */
-	int face;
+	Cmiss_graphic_face_type face;
 	/* For surfaces only at the moment */
 	struct Computed_field *texture_coordinate_field;
 	/* for cylinders only */
@@ -445,11 +445,6 @@ enum Cmiss_graphic_type Cmiss_graphic_get_graphic_type(
 int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_type graphic_type);
 
-int Cmiss_graphic_set_face(struct Cmiss_graphic *graphic, int face);
-
-int Cmiss_graphic_set_exterior(struct Cmiss_graphic *graphic,
-	int exterior);
-
 /***************************************************************************//**
  * Returns the type of elements used by the graphic.
  * For <graphic> type CMISS_GRAPHIC_ELEMENT_POINTS and
@@ -602,13 +597,6 @@ int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
  * For 1-D and 2-D graphic types only.
  */
 int Cmiss_graphic_get_exterior(struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Returns 1 if the graphic refers to a particular face, while the face number,
- * where 0 is xi1=0, 1 is xi1=1, 2 is xi2=0 etc. returned in <face>.
- * For 1-D and 2-D graphic types only.
- */
-int Cmiss_graphic_get_face(struct Cmiss_graphic *graphic,int *face);
 
 /***************************************************************************//**
  * Returns the texture coordinate field used by <graphic>.

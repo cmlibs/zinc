@@ -431,7 +431,7 @@ top_level. Assumes <identifier> has been validated.
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				/*face_number*/-1, element_to_top_level)) &&
+				CMISS_GRAPHIC_FACE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,
@@ -1393,7 +1393,7 @@ If field and element_point_ranges not identically grid-based, clear
 		(field=Field_value_index_ranges_get_field(field_value_index_ranges))&&
 		/*(components=Field_value_index_ranges_get_ranges(field_value_index_ranges))&&
 		 You used to be able to set just some components, but that requires evaluating
-		the old values so you can set the new ones and I (Shane) am not sure it is 
+		the old values so you can set the new ones and I (Shane) am not sure it is
 		useful.*/
 		(set_grid_values_data=(struct Element_point_ranges_set_grid_values_data *)
 			set_grid_values_data_void)&&
@@ -1420,7 +1420,7 @@ If field and element_point_ranges not identically grid-based, clear
 			start = 0;
 			stop = 0;
 			while (Multi_range_get_next_start_value(
-				set_grid_values_data->destination_element_point_numbers, start, &start) 
+				set_grid_values_data->destination_element_point_numbers, start, &start)
 				&& Multi_range_get_next_stop_value(
 				set_grid_values_data->destination_element_point_numbers, stop, &stop))
 			{

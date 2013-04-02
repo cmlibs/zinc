@@ -170,7 +170,7 @@ ZINC_API int Cmiss_graphic_set_render_type(
  */
 ZINC_API int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Sets status of graphic visibility flag attribute.
  *
  * @param graphic  The graphic to modify.
@@ -180,7 +180,40 @@ ZINC_API int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
 ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
 
+/**
+ * Sets the glyph type for the graphic.
+ *
+ * @param graphic  The graphic to modify.
+ * @param visibility_flag  1 to set, 0 to clear.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
 ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_glyph_type glyph_type);
+
+/**
+ * Sets the face for the graphic to display.
+ *
+ * @param graphic  The graphic to modify.
+ * @param visibility_flag  1 to set, 0 to clear.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face);
+
+/**
+ * Returns Cmiss_graphic_face_type for the graphic. For 1-D and 2-D graphic types only.
+ *
+ *@param graphic  The graphic to query
+ *@return The face type of the graphic, CMISS_GRAPHIC_FACE_INVALID if the graphic is invalid.
+ */
+ZINC_API Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
+
+/**
+ * Sets whether to use exterior faces or not.
+ *
+ * @param graphic  The graphic to modify.
+ * @param exterior  1 to set, 0 to clear.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
 
 /***************************************************************************//**
  * Specifying the coordinate system in which to render the coordinates of graphics.
