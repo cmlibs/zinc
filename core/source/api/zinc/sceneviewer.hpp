@@ -216,6 +216,22 @@ public:
 		return Cmiss_scene_viewer_input_viewport_transform(id, input.getId());
 	}
 
+	int getLookatParameters(double *eyex,double *eyey,double *eyez,
+		double *lookatx,double *lookaty,double *lookatz,
+		double *upx,double *upy,double *upz)
+	{
+		return Cmiss_scene_viewer_get_lookat_parameters(id, eyex, eyey, eyez,
+			lookatx, lookaty, lookatz,
+			upx, upy, upz);
+	}
+
+	int getViewingVolume(double *left,double *right,double *bottom,double *top,
+		double *near_plane, double *far_plane)
+	{
+		return Cmiss_scene_viewer_get_viewing_volume(id, left, right, bottom, top,
+			near_plane, far_plane);
+	}
+
 	int viewAll()
 	{
 		return Cmiss_scene_viewer_view_all(id);
