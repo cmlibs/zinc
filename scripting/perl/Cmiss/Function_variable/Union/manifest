@@ -1,8 +1,0 @@
-Makefile.PL
-manifest
-readme
-typemap
-typemap.h
-t/1.t
-Union.pm
-Union.xs

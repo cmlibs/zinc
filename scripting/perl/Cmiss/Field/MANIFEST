@@ -1,7 +1,0 @@
-Makefile.PL
-manifest
-readme
-typemap
-typemap.h
-Field.pm
-Field.xs
