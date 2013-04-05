@@ -1,8 +1,0 @@
-Makefile.PL
-manifest
-readme
-typemap
-typemap.h
-t/1.t
-Divide_by_scalar.pm
-Divide_by_scalar.xs
