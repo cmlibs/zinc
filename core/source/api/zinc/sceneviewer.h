@@ -790,18 +790,6 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-/***************************************************************************//**
- * Create a scene viewer input object for manually setting mouse or other input
- * event data, for passing to Cmiss_scene_viewer_process_input. Use with UIs
- * (e.g. carbon on Mac) which don't send events directly to sub windows.
- * @see Cmiss_scene_viewer_process_input
- *
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
- * @return  Handle to Cmiss_scene_viewer_input on success, or NULL on failure.
- */
-//-- ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
-//-- 	Cmiss_scene_viewer_id scene_viewer);
-
 /*******************************************************************************
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
  *
