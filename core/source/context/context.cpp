@@ -290,7 +290,7 @@ Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(Cmiss_context_id cont
 		{
 			context->time_keeper = CREATE(Time_keeper)("default", 0);
 		}
-		time_keeper = context->time_keeper;
+		time_keeper = Cmiss_time_keeper_access(context->time_keeper);
 	}
 	else
 	{
