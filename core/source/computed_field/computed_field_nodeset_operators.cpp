@@ -72,7 +72,7 @@ public:
 		Computed_field_core(),
 		nodeset(Cmiss_nodeset_access(nodeset_in))
 	{
-	};
+	}
 
 	virtual ~Computed_field_nodeset_operator()
 	{
@@ -176,7 +176,7 @@ public:
 	Computed_field_nodeset_sum(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_nodeset_operator(nodeset_in)
 	{
-	};
+	}
 
 	Computed_field_core *copy()
 	{
@@ -250,7 +250,7 @@ public:
 	Computed_field_nodeset_mean(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_nodeset_sum(nodeset_in)
 	{
-	};
+	}
 
 	Computed_field_core *copy()
 	{
@@ -299,7 +299,7 @@ public:
 	Computed_field_nodeset_sum_squares(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_nodeset_operator(nodeset_in)
 	{
-	};
+	}
 
 	Computed_field_core *copy()
 	{
@@ -443,7 +443,7 @@ public:
 	Computed_field_nodeset_mean_squares(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_nodeset_sum_squares(nodeset_in)
 	{
-	};
+	}
 
 	Computed_field_core *copy()
 	{
@@ -507,6 +507,162 @@ int Computed_field_nodeset_mean_squares::evaluate(Cmiss_field_cache& cache, Fiel
 		}
 		return 1;
 	}
+	return 0;
+}
+
+const char computed_field_nodeset_minimum_type_string[] = "nodeset_min";
+
+class Computed_field_nodeset_minimum : public Computed_field_nodeset_operator
+{
+public:
+	Computed_field_nodeset_minimum(Cmiss_nodeset_id nodeset_in) :
+		Computed_field_nodeset_operator(nodeset_in)
+	{
+	}
+
+	Computed_field_core *copy()
+	{
+		return new Computed_field_nodeset_minimum(nodeset);
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_nodeset_minimum_type_string);
+	}
+
+	int compare(Computed_field_core* other_core)
+	{
+		Computed_field_nodeset_minimum *other =
+			dynamic_cast<Computed_field_nodeset_minimum*>(other_core);
+		if (other)
+			return Cmiss_nodeset_match(nodeset, other->get_nodeset());
+		return 0;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+
+};
+
+int Computed_field_nodeset_minimum::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	Cmiss_field_id sourceField = getSourceField(0);
+
+	bool initialise = true;
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	int node_count = 0;
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	{
+		node_count++;
+		extraCache.setNode(node);
+		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		if (sourceValueCache)
+		{
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				if (initialise)
+				{
+					valueCache.values[i] = sourceValueCache->values[i];
+				}
+				else if (sourceValueCache->values[i] < valueCache.values[i])
+				{
+					valueCache.values[i] = sourceValueCache->values[i];
+				}
+			}
+			if (initialise)
+			{
+				initialise = false;
+			}
+		}
+	}
+	Cmiss_node_iterator_destroy(&iterator);
+
+	if (node_count > 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+const char computed_field_nodeset_maximum_type_string[] = "nodeset_max";
+
+class Computed_field_nodeset_maximum : public Computed_field_nodeset_operator
+{
+public:
+	Computed_field_nodeset_maximum(Cmiss_nodeset_id nodeset_in) :
+		Computed_field_nodeset_operator(nodeset_in)
+	{
+	}
+
+	Computed_field_core *copy()
+	{
+		return new Computed_field_nodeset_maximum(nodeset);
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_nodeset_maximum_type_string);
+	}
+
+	int compare(Computed_field_core* other_core)
+	{
+		Computed_field_nodeset_maximum *other =
+			dynamic_cast<Computed_field_nodeset_maximum*>(other_core);
+		if (other)
+			return Cmiss_nodeset_match(nodeset, other->get_nodeset());
+		return 0;
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+
+};
+
+int Computed_field_nodeset_maximum::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	Cmiss_field_id sourceField = getSourceField(0);
+
+	bool initialise = true;
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+	int node_count = 0;
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	{
+		node_count++;
+		extraCache.setNode(node);
+		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		if (sourceValueCache)
+		{
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+				if (initialise)
+				{
+					valueCache.values[i] = sourceValueCache->values[i];
+				}
+				else if (sourceValueCache->values[i] > valueCache.values[i])
+				{
+					valueCache.values[i] = sourceValueCache->values[i];
+				}
+			}
+			if (initialise)
+			{
+				initialise = false;
+			}
+		}
+	}
+	Cmiss_node_iterator_destroy(&iterator);
+
+	if (node_count > 0)
+	{
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -584,6 +740,44 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_nodeset_mean_squares(nodeset));
+	}
+	return field;
+}
+
+Cmiss_field_id Cmiss_field_module_create_nodeset_minimum(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset)
+{
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical() && nodeset &&
+		(Cmiss_field_module_get_master_region_internal(field_module) ==
+			Cmiss_nodeset_get_master_region_internal(nodeset)))
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_nodeset_minimum(nodeset));
+	}
+	return field;
+}
+
+Cmiss_field_id Cmiss_field_module_create_nodeset_maximum(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset)
+{
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical() && nodeset &&
+		(Cmiss_field_module_get_master_region_internal(field_module) ==
+			Cmiss_nodeset_get_master_region_internal(nodeset)))
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_nodeset_maximum(nodeset));
 	}
 	return field;
 }

@@ -51,7 +51,7 @@
 extern "C" {
 #endif
 
-/*******************************************************************************
+/**
  * Creates a field which computes the sum of each source field component over
  * all nodes in the nodeset for which it is defined. Returned field has same
  * number of components as the source field.
@@ -65,7 +65,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
-/*******************************************************************************
+/**
  * Creates a field which computes the mean of each source field component over
  * all nodes in the nodeset for which it is defined. Returned field has same
  * number of components as the source field.
@@ -79,7 +79,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
-/*******************************************************************************
+/**
  * Creates a field which computes the sum of the squares of each source field
  * component over all nodes in the nodeset for which it is defined. Returned
  * field has same number of components as the source field.
@@ -96,7 +96,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
-/*******************************************************************************
+/**
  * Creates a field which computes the mean of the squares of each source field
  * component over all nodes in the nodeset for which it is defined. Returned
  * field has same number of components as the source field.
@@ -111,6 +111,34 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
  * @return  Handle to newly created field.
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
+
+/**
+ * Creates a field which computes the minimum of each source field
+ * component over all nodes in the nodeset for which it is defined. Returned
+ * field has same number of components as the source field.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to obtain minimum values for.
+ * @param nodeset  The set of nodes to obtain minimum over.
+ * @return  Handle to newly created field.
+ */
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_minimum(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
+
+/**
+ * Creates a field which computes the maximum of each source field
+ * component over all nodes in the nodeset for which it is defined. Returned
+ * field has same number of components as the source field.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to obtain maximum values for.
+ * @param nodeset  The set of nodes to obtain maximum over.
+ * @return  Handle to newly created field.
+ */
+ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_maximum(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 
