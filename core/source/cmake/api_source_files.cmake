@@ -12,6 +12,7 @@ SET( API_HDRS
     source/api/zinc/fieldconditional.h
     source/api/zinc/fieldconstant.h
     source/api/zinc/fieldcoordinatetransformation.h
+#    source/api/zinc/fieldderivatives.h
     source/api/zinc/fieldfiniteelement.h
     source/api/zinc/fieldgroup.h
     source/api/zinc/fieldimage.h
@@ -85,11 +86,9 @@ ENDIF( USE_OPENCASCADE )
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
     SET( API_HDRS ${API_HDRS}
         source/api/zinc/sceneviewer.h
-        source/api/zinc/types/sceneviewerid.h )
-
-    SET( NEW_API_HDRS ${NEW_API_HDRS}
-      source/api/zinc/sceneviewerinput.h )
-
+        source/api/zinc/sceneviewerinput.h
+        source/api/zinc/types/sceneviewerid.h
+        source/api/zinc/types/sceneviewerinputid.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
-SET( API_HDRS ${API_HDRS} ${NEW_API_HDRS} )
+SET( API_HDRS ${API_HDRS} )
