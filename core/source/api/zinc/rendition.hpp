@@ -123,7 +123,7 @@ public:
 		return SelectionHandler(Cmiss_rendition_create_selection_handler(id));
 	}
 
-	/***************************************************************************//**
+	/**
 	 * Returns the graphic of the specified name from the rendition. Beware that
 	 * graphics in the same rendition may have the same name and this function will
 	 * only return the first graphic found with the specified name;
