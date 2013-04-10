@@ -140,7 +140,7 @@ struct Computed_field *Cmiss_field_module_create_component(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int component_number);
 
-/****************************************************************************//*
+/**
  * Creates a composite field which returns a combination of field components and
  * constants in a given order.
  * The <number_of_source_fields> <source_fields> may be zero if the field is
@@ -168,7 +168,7 @@ struct Computed_field *Computed_field_create_composite(
 	int number_of_source_values, const double *source_values,
 	const int *source_field_numbers, const int *source_value_numbers);
 
-/*****************************************************************************//**
+/**
  * Creates a field which concatenates the components of all source fields, in
  * order, into a single vector.
  *
