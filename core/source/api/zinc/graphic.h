@@ -59,7 +59,7 @@ The public interface to the Cmiss_rendition.
 extern "C" {
 #endif
 
-/*******************************************************************************
+/**
  * Returns a new reference to the graphic with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -68,7 +68,7 @@ extern "C" {
  */
 ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Destroys the graphic and sets the pointer to NULL.
  *
  * @param graphic  The pointer to the handle of the graphic
@@ -77,7 +77,7 @@ ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
  */
 ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 
-/***************************************************************************//**
+/**
  * Sets the field supplying coordinates for the graphic.
  *
  * @param graphic  The graphic to be edited.
@@ -87,7 +87,7 @@ ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
 
-/***************************************************************************//**
+/**
  * Set the material of the cmiss graphic
  *
  * @param graphic  The graphic to be edit
@@ -96,7 +96,7 @@ ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  */
 ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
-/***************************************************************************//**
+/**
  * Set the selected material of the cmiss graphic
  *
  * @param graphic  The graphic to be edit
@@ -106,7 +106,7 @@ ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics
 ZINC_API int Cmiss_graphic_set_selected_material(
 	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
-/***************************************************************************//**
+/**
  * Set the texture coordinate field of the cmiss graphic.
  *
  * Texture coordinate field is use to set up and describe how a texture should
@@ -120,7 +120,7 @@ ZINC_API int Cmiss_graphic_set_selected_material(
 ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
 
-/***************************************************************************//**
+/**
  * Returns the tessellation object of the graphics or NULL if none.
  * Caller must destroy reference.
  *
@@ -130,7 +130,7 @@ ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic
  */
 ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Sets the tessellation object of the graphics.
  *
  * @param graphic  The graphic to be edit
@@ -141,7 +141,7 @@ ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id g
 ZINC_API int Cmiss_graphic_set_tessellation(
 		Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
 
-/***************************************************************************//**
+/**
  * Get the render type of the graphic.
  *
  * @param graphic  The handle to the graphic to be edit
@@ -151,7 +151,7 @@ ZINC_API int Cmiss_graphic_set_tessellation(
 ZINC_API enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 	Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Set the type for how the graphics will be rendered in GL.
  *
  * @param graphic  The handle to the graphic to be edit
@@ -162,7 +162,7 @@ ZINC_API enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 ZINC_API int Cmiss_graphic_set_render_type(
 	Cmiss_graphic_id graphic, enum Cmiss_graphics_render_type render_type);
 
-/***************************************************************************//**
+/**
  * Return status of graphic visibility flag attribute.
  *
  * @param graphic  The graphic to query.
@@ -224,7 +224,7 @@ ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
  */
 ZINC_API int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Specifying the coordinate system in which to render the coordinates of graphics.
  *
  * @param graphic  The graphic to modify.
@@ -235,7 +235,7 @@ ZINC_API int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic);
 ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
 	enum Cmiss_graphics_coordinate_system coordinate_system);
 
-/***************************************************************************//**
+/**
  * Get the coordinate system in which to render the coordinates of graphics.
  *
  * @param graphic  The graphic to modify.
@@ -244,7 +244,7 @@ ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
 ZINC_API enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -253,7 +253,7 @@ ZINC_API enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_syst
  */
 ZINC_API enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
@@ -262,7 +262,7 @@ ZINC_API enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char 
  */
 ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
 
-/***************************************************************************//**
+/**
  * Return the name of the graphic. Graphic does not have a name until user has
  * set it.
  *
@@ -272,7 +272,7 @@ ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
  */
 ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
+/**
  * Set the name of the graphic. Unlike other containers, rendition can contains
  * multiple graphics with the same name.
  *
@@ -282,7 +282,7 @@ ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
  */
 ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 
-/***************************************************************************//**
+/**
  * It takes the same string of command as gfx modify g_element <region_name>
  * <graphic_type> does. User can use this to quickly modify graphics. Make sure
  * coordinates field is specified.
