@@ -246,6 +246,23 @@ int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input
 	return (return_code);
 }
 
+int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_button_type button)
+{
+	int return_code = 0;
+	if (input)
+	{
+		return_code = 1;
+		input->button_number = static_cast<int>(button);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_set_button.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
 int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type)
 {
 	int return_code = 0;
