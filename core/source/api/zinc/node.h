@@ -58,7 +58,7 @@ Global functions
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -68,7 +68,7 @@ extern "C" {
 ZINC_API enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
 	const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
@@ -77,7 +77,7 @@ ZINC_API enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
  */
 ZINC_API char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
 
-/***************************************************************************//**
+/**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
  * container of nodes - i.e. Cmiss_node objects. Valid names may be any
  * node_group field, or the following special names:
@@ -95,7 +95,7 @@ ZINC_API char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type
 ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name);
 
-/*******************************************************************************
+/**
  * Returns a new handle to the nodeset with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
@@ -104,7 +104,7 @@ ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
  */
 ZINC_API Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Destroys this handle to the nodeset and sets it to NULL.
  * Internally this just decrements the reference count.
  *
@@ -113,7 +113,7 @@ ZINC_API Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
  */
 ZINC_API int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
 
-/***************************************************************************//**
+/**
  * Returns whether the node is from the nodeset.
  *
  * @param nodeset  The nodeset to query.
@@ -122,7 +122,7 @@ ZINC_API int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
  */
 ZINC_API int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Create a blank template from which new nodes can be created in this nodeset.
  * Used to describe how finite element fields are defined.
  * Also used for defining new fields on existing nodes.
@@ -133,7 +133,7 @@ ZINC_API int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id
 ZINC_API Cmiss_node_template_id Cmiss_nodeset_create_node_template(
 	Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Create a new node in this nodeset with fields defined as in the
  * node_template. Returns handle to new element.
  *
@@ -147,7 +147,7 @@ ZINC_API Cmiss_node_template_id Cmiss_nodeset_create_node_template(
 ZINC_API Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 	int identifier, Cmiss_node_template_id node_template);
 
-/***************************************************************************//**
+/**
  * Create a node iterator object for iterating through the nodes in the nodeset
  * which are ordered from lowest to highest identifier. The iterator initially
  * points at the position before the first node, so the first call to
@@ -161,7 +161,7 @@ ZINC_API Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 ZINC_API Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
 	Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Destroy all nodes in nodeset, also removing them from any related groups.
  * All handles to the destroyed nodes become invalid.
  *
@@ -170,7 +170,7 @@ ZINC_API Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
  */
 ZINC_API int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Destroy the node if it is in the nodeset. Removes node from any related
  * groups it is in. All handles to the destroyed node become invalid.
  *
@@ -180,7 +180,7 @@ ZINC_API int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
  */
 ZINC_API int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Destroy all nodes in the nodeset for which the conditional field is true i.e.
  * non-zero valued. These nodes are removed from any related groups they are in.
  * All handles to removed nodes become invalid.
@@ -195,7 +195,7 @@ ZINC_API int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id 
 ZINC_API int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 	Cmiss_field_id conditional_field);
 
-/***************************************************************************//**
+/**
  * Return a handle to the node in the nodeset with this identifier.
  *
  * @param nodeset  Handle to the nodeset to find the node in.
@@ -205,7 +205,7 @@ ZINC_API int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 ZINC_API Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier);
 
-/***************************************************************************//**
+/**
  * Get the master nodeset which owns the nodes for this nodeset. Can be the
  * same as the supplied nodeset if it is a master.
  *
@@ -215,7 +215,7 @@ ZINC_API Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id no
  */
 ZINC_API Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Return the name of the nodeset.
  *
  * @see Cmiss_deallocate()
@@ -225,7 +225,7 @@ ZINC_API Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
  */
 ZINC_API char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Return the number of nodes in the nodeset.
  *
  * @param nodeset  Handle to the nodeset to query.
@@ -233,7 +233,7 @@ ZINC_API char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
  */
 ZINC_API int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Check if two nodeset handles refer to the same object.
  *
  * @param nodeset1  The first nodeset to match.
@@ -242,7 +242,7 @@ ZINC_API int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
  */
 ZINC_API int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
 
-/***************************************************************************//**
+/**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
  * get the nodeset group specific interface for add/remove functions.
  * Caller is responsible for destroying the returned reference.
@@ -253,7 +253,7 @@ ZINC_API int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nod
  */
 ZINC_API Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * Destroys this handle to the nodeset group and sets it to NULL.
  * Internally this just decrements the reference count.
  *
@@ -262,7 +262,7 @@ ZINC_API Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodese
  */
 ZINC_API int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address);
 
-/***************************************************************************//**
+/**
  * Cast nodeset group back to its base nodeset class.
  * IMPORTANT NOTE: Returned nodeset does not have incremented reference count
  * and must not be destroyed. Use Cmiss_nodeset_access() to add a reference if
@@ -279,7 +279,7 @@ ZINC_C_INLINE Cmiss_nodeset_id Cmiss_nodeset_group_base_cast(
 	return (Cmiss_nodeset_id)(nodeset_group);
 }
 
-/***************************************************************************//**
+/**
  * Add specified node to nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
@@ -289,7 +289,7 @@ ZINC_C_INLINE Cmiss_nodeset_id Cmiss_nodeset_group_base_cast(
 ZINC_API int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Remove all nodes from nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
@@ -297,7 +297,7 @@ ZINC_API int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
  */
 ZINC_API int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
 
-/***************************************************************************//**
+/**
  * Remove specified node from nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
@@ -307,7 +307,7 @@ ZINC_API int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset
 ZINC_API int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Remove all nodes from the nodeset group for which the conditional field is
  * true i.e. non-zero valued in the node.
  * Note that group and node_group fields are valid conditional fields.
@@ -320,7 +320,7 @@ ZINC_API int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_grou
 ZINC_API int Cmiss_nodeset_group_remove_nodes_conditional(
 	Cmiss_nodeset_group_id nodeset_group, Cmiss_field_id conditional_field);
 
-/*******************************************************************************
+/**
  * Returns a new handle to the node iterator with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
@@ -330,7 +330,7 @@ ZINC_API int Cmiss_nodeset_group_remove_nodes_conditional(
 ZINC_API Cmiss_node_iterator_id Cmiss_node_iterator_access(
 	Cmiss_node_iterator_id node_iterator);
 
-/***************************************************************************//**
+/**
  * Destroys this handle to the node_iterator and sets it to NULL.
  *
  * @param node_iterator_address  Address of handle to node_iterator to destroy.
@@ -338,7 +338,7 @@ ZINC_API Cmiss_node_iterator_id Cmiss_node_iterator_access(
  */
 ZINC_API int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
 
-/***************************************************************************//**
+/**
  * Returns a handle to the next node in the container being iterated over then
  * advances the iterator position. The caller is required to destroy the
  * returned node handle.
@@ -348,7 +348,7 @@ ZINC_API int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_a
  */
 ZINC_API Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
 
-/*******************************************************************************
+/**
  * Returns a new handle to the node template with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
@@ -358,7 +358,7 @@ ZINC_API Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iter
 ZINC_API Cmiss_node_template_id Cmiss_node_template_access(
 	Cmiss_node_template_id node_template);
 
-/***************************************************************************//**
+/**
  * Destroys this handle to the node_template and sets it to NULL.
  * Internally this just decrements the reference count.
  *
@@ -368,7 +368,7 @@ ZINC_API Cmiss_node_template_id Cmiss_node_template_access(
  */
 ZINC_API int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
 
-/***************************************************************************//**
+/**
  * Defines the field on the node_template with just a single node value per
  * field component with no time variation.
  * Per-component derivatives and multiple versions can be added subsequently.
@@ -381,7 +381,7 @@ ZINC_API int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_a
 ZINC_API int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 	Cmiss_field_id field);
 
-/***************************************************************************//**
+/**
  * Defines the field on the node_template based on its definition in the
  * supplied node.
  *
@@ -395,7 +395,7 @@ ZINC_API int Cmiss_node_template_define_field_from_node(
 	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Adds storage for the supplied derivative type for the component/s of the
  * field in the node template.
  * Must have first called Cmiss_node_template_define_field for field.
@@ -412,7 +412,7 @@ ZINC_API int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_t
 	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type);
 
-/***************************************************************************//**
+/**
  * Defines variation of all nodal values/derivatives * versions with the
  * supplied time sequence for all components of the field in the node template.
  * Hence there will be as many of each parameter as times in the time sequence.
@@ -431,7 +431,7 @@ ZINC_API int Cmiss_node_template_define_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	struct Cmiss_time_sequence *time_sequence);
 
-/***************************************************************************//**
+/**
  * Adds storage for multiple versions of nodal values and derivatives for the
  * component/s of the field in the node template.
  * Note: currently limited to having the same number of versions for all values
@@ -450,7 +450,7 @@ ZINC_API int Cmiss_node_template_define_time_sequence(
 ZINC_API int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number, int number_of_versions);
 
-/***************************************************************************//**
+/**
  * Returns the number of versions defined for a given component of the field in
  * the node template.
  *
@@ -466,7 +466,7 @@ ZINC_API int Cmiss_node_template_define_versions(Cmiss_node_template_id node_tem
 ZINC_API int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number);
 
-/***************************************************************************//**
+/**
  * Returns the time sequence defined for field in node_template, if any.
  *
  * @param node_template  Node template to query.
@@ -478,7 +478,7 @@ ZINC_API int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id n
 ZINC_API Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_id field);
 
-/***************************************************************************//**
+/**
  * Returns whether a nodal derivative is defined for a component of the field
  * in the node template.
  *
@@ -495,7 +495,7 @@ ZINC_API int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_temp
 	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type);
 
-/***************************************************************************//**
+/**
  * Sets field to be undefined when next merged into an existing node. Has no
  * effect on newly created nodes. It is illegal to define and undefine the same
  * field in a node template.
@@ -508,7 +508,7 @@ ZINC_API int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_temp
 ZINC_API int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
 	Cmiss_field_id field);
 
-/*******************************************************************************
+/**
  * Returns a new handle to the node with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
@@ -517,7 +517,7 @@ ZINC_API int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_temp
  */
 ZINC_API Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Destroys this handle to the node and sets it to NULL.
  * Internally this just decrements the reference count.
  *
@@ -526,7 +526,7 @@ ZINC_API Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
  */
 ZINC_API int Cmiss_node_destroy(Cmiss_node_id *node_address);
 
-/***************************************************************************//**
+/**
  * Returns the non-negative integer uniquely identifying the node in its
  * nodeset.
  *
@@ -536,7 +536,7 @@ ZINC_API int Cmiss_node_destroy(Cmiss_node_id *node_address);
  */
 ZINC_API int Cmiss_node_get_identifier(Cmiss_node_id node);
 
-/***************************************************************************//**
+/**
  * Modifies the node to define fields as described in the node_template.
  *
  * @param node  The node to modify.
