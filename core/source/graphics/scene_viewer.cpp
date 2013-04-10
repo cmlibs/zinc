@@ -252,7 +252,7 @@ int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss
 	if (input)
 	{
 		return_code = 1;
-		input->button_number = static_cast<int>(button);
+		input->button_number = static_cast<int>(button) + 1;
 	}
 	else
 	{
