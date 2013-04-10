@@ -140,6 +140,18 @@ public:
 		USE_ELEMENT_LINES = CMISS_GRAPHIC_USE_ELEMENT_LINES
 	};
 
+	enum FaceType
+	{
+		FACE_INVALID = CMISS_GRAPHIC_FACE_INVALID,
+		FACE_ALL = CMISS_GRAPHIC_FACE_ALL,
+		FACE_XI1_0 = CMISS_GRAPHIC_FACE_XI1_0,
+		FACE_XI1_1 = CMISS_GRAPHIC_FACE_XI1_1,
+		FACE_XI2_0 = CMISS_GRAPHIC_FACE_XI2_0,
+		FACE_XI2_1 = CMISS_GRAPHIC_FACE_XI2_1,
+		FACE_XI3_0 = CMISS_GRAPHIC_FACE_XI3_0,
+		FACE_XI3_1 = CMISS_GRAPHIC_FACE_XI3_1
+	};
+
 	Cmiss_graphic_id getId()
 	{
 		return id;
@@ -226,8 +238,27 @@ public:
 	{
 		return Cmiss_graphic_set_glyph_type(id,
 			static_cast<Cmiss_graphic_glyph_type>(type));
-	 }
+	}
 
+	int setFace(FaceType face)
+	{
+		return Cmiss_graphic_set_face(id, static_cast<Cmiss_graphic_face_type>(face));
+	}
+
+	FaceType getFace()
+	{
+		return static_cast<FaceType>(Cmiss_graphic_get_face(id));
+	}
+
+	int setExterior(int exterior)
+	{
+		return Cmiss_graphic_set_exterior(id, exterior);
+	}
+
+	int getExterior()
+	{
+		return Cmiss_graphic_get_exterior(id);
+	}
 };
 
 class GraphicIsoSurface : public Graphic

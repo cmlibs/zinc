@@ -47,6 +47,7 @@ interface to CMISS.
 
 #include "zinc/node.h"
 #include "zinc/element.h"
+#include "zinc/graphic.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"
@@ -2088,23 +2089,27 @@ face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
 correct size and should be DEALLOCATED when finished with.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Returns true if <element> meets all the supplied criteria:
  * - it has the given <dimension>;
  * - it is an exterior face or line of its contiguous mesh if <exterior> set;
- * - it is on the <face_number> of a parent element if <face_number>
+ * - it is on the <face> of a parent element if <face>
  *   non-negative
  * - parent satisfies conditional function, if supplied.
  * Note that <exterior> and <face_number> requirements are ignored if they
  * make no sense for the element, eg. for n-D elements in an n-D mesh.
  * Only complete up to 3-D.
  *
- * @conditional  Optional conditional function. If supplied, limits search to
+ * @param element  The element to test against.
+ * @param dimension  The dimension to test for.
+ * @param exterior  Is an exterior face or line.
+ * @param face  The face of the parent element.
+ * @param conditional  Optional conditional function. If supplied, limits search to
  * parent elements for which this function passes.
- * @conditional_data  User data to pass to optional conditional function.
+ * @param conditional_data  User data to pass to optional conditional function.
  */
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, int face_number,
+	int dimension, int exterior, Cmiss_graphic_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
 int equivalent_FE_field_in_elements(struct FE_field *field,
@@ -3342,32 +3347,32 @@ DESCRIPTION :
 Returns true if <top_level_element> is a top_level parent of <element>.
 ==============================================================================*/
 
+/**
+ * Returns the/a top level [ultimate parent] element for <element>. If supplied,
+ * the function attempts to verify that the <check_top_level_element> is in
+ * fact a valid top_level_element for <element>, otherwise it tries to find one
+ * passing the <condition> function with <conditional_data>, and with <element>
+ * on its <face_number> (if positive), if either are specified.
+ *
+ * If the returned element is different to <element> (ie. is of higher dimension),
+ * then this function also fills the matrix <element_to_top_level> with values for
+ * converting the xi coordinates in <element> to those in the returned element.
+ * <element_to_top_level> should be preallocated to store at least nine FE_values.
+ *
+ * The use of the <element_to_top_level> matrix is similar to <face_to_element> in
+ * FE_element_shape - in fact it is either a copy of it, or calculated from it.
+ * It gives the transformation xi(top_level) = b + A xi(element), where b is in the
+ * first column of the matrix, and the rest of the matrix is A. Its size depends
+ * on the dimension of element:top_level, ie.,
+ * 1:2 First 4 values, in form of 2 row X 2 column matrix, used only.
+ * 1:3 First 6 values, in form of 3 row X 2 column matrix, used only.
+ * 2:3 First 9 values, in form of 3 row X 3 column matrix, used only.
+ * NOTE: recursive to handle 1-D to 3-D case.
+ */
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	int face_number, FE_value *element_to_top_level);
-/*******************************************************************************
-Returns the/a top level [ultimate parent] element for <element>. If supplied,
-the function attempts to verify that the <check_top_level_element> is in
-fact a valid top_level_element for <element>, otherwise it tries to find one
-passing the <condition> function with <conditional_data>, and with <element>
-on its <face_number> (if positive), if either are specified.
-
-If the returned element is different to <element> (ie. is of higher dimension),
-then this function also fills the matrix <element_to_top_level> with values for
-converting the xi coordinates in <element> to those in the returned element.
-<element_to_top_level> should be preallocated to store at least nine FE_values.
-
-The use of the <element_to_top_level> matrix is similar to <face_to_element> in
-FE_element_shape - in fact it is either a copy of it, or calculated from it.
-It gives the transformation xi(top_level) = b + A xi(element), where b is in the
-first column of the matrix, and the rest of the matrix is A. Its size depends
-on the dimension of element:top_level, ie.,
-1:2 First 4 values, in form of 2 row X 2 column matrix, used only.
-1:3 First 6 values, in form of 3 row X 2 column matrix, used only.
-2:3 First 9 values, in form of 3 row X 3 column matrix, used only.
-NOTE: recursive to handle 1-D to 3-D case.
-==============================================================================*/
+	Cmiss_graphic_face_type specified_face, FE_value *element_to_top_level);
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
@@ -3397,7 +3402,7 @@ FE_element_get_top_level_element_conversion.
 as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Returns the discretization in <number_in_xi> for displaying graphics over
  * <element>, subject to its ancestors satisfying the <conditional> function
  * with <conditional_data>, and with the <face_number> and suggested
@@ -3411,11 +3416,11 @@ as remaining values up to this size are cleared to zero.
  */
 int get_FE_element_discretization(struct FE_element *element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	int face_number, struct FE_field *native_discretization_field,
+	Cmiss_graphic_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);
 
-/***************************************************************************//**
+/**
  * Checks if the element is 2-D and exterior i.e. a face of exactly one parent
  * element, and if so whether the standard element/face mapping gives it an
  * inward normal.

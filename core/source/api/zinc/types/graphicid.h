@@ -91,5 +91,20 @@ enum Cmiss_graphic_use_element_type
 	CMISS_GRAPHIC_USE_ELEMENT_LINES
 };
 
+/**
+ * An enum defining the faces a graphic may use.
+ */
+enum Cmiss_graphic_face_type
+{
+	CMISS_GRAPHIC_FACE_INVALID = -1,
+	CMISS_GRAPHIC_FACE_ALL,
+	CMISS_GRAPHIC_FACE_XI1_0,
+	CMISS_GRAPHIC_FACE_XI1_1,
+	CMISS_GRAPHIC_FACE_XI2_0,
+	CMISS_GRAPHIC_FACE_XI2_1,
+	CMISS_GRAPHIC_FACE_XI3_0,
+	CMISS_GRAPHIC_FACE_XI3_1
+};
+
 #define CMISS_GRAPHIC_ID_H
 #endif /* CMISS_GRAPHIC_ID_H */
