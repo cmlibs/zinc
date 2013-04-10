@@ -158,7 +158,7 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_TETRAHEDRON;
 				}
-				else if ((SIMPLEX_SHAPE == shape_type1) || 
+				else if ((SIMPLEX_SHAPE == shape_type1) ||
 					(SIMPLEX_SHAPE == shape_type2))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_TRIANGLE_LINE;
@@ -209,8 +209,8 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 						linked_xi_directions[1] = 2;
 						*line_direction_address = 0;
 					}
-					get_FE_element_shape_xi_linkage_number(element_shape, 
-						linked_xi_directions[0], linked_xi_directions[1], 
+					get_FE_element_shape_xi_linkage_number(element_shape,
+						linked_xi_directions[0], linked_xi_directions[1],
 						number_of_polygon_sides_address);
 				}
 				else
@@ -417,9 +417,9 @@ comments for simplex and polygons shapes for more details.
 						/* Trianglular elements are subdivided into equal-sized upright and
 							 reversed triangles as follows:
 
-						      /\
-						     /__\
-						    /\  /\
+							  /\
+							 /__\
+							/\  /\
 						   /__\/__\
 
 							 Note that xi0 ranges from 0 to 1 along the base of the triangle,
@@ -1435,7 +1435,7 @@ array is enlarged if necessary and the new points added at random locations.
 							}
 						} break;
 						case ELEMENT_CATEGORY_2D_TRIANGLE:
-						{							
+						{
 							xi = *xi_points + (*number_of_xi_points);
 							FE_value xi0, xi1;
 							for (j = 0; j < number_of_points_in_square; j++)
@@ -1456,7 +1456,7 @@ array is enlarged if necessary and the new points added at random locations.
 								"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
 #endif /* defined (DEBUG_CODE) */
-							}			
+							}
 						} break;
 						default:
 						{
@@ -1625,7 +1625,7 @@ array is enlarged if necessary and the new points added at random locations.
 								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[1]);
 								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[2]);
 #if defined (DEBUG_CODE)
- 								/*???debug*/
+								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
@@ -1782,7 +1782,7 @@ fields, required for DENSITY and POISSON modes.
 	ENTER(FE_element_get_xi_points_cell_random);
 	if (element && get_FE_element_shape(element, &element_shape) &&
 		get_FE_element_shape_dimension(element_shape,
-		&element_dimension) && (0 < element_dimension) && number_in_xi && 
+		&element_dimension) && (0 < element_dimension) && number_in_xi &&
 		((((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
 			(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode)) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
@@ -1854,7 +1854,7 @@ fields, required for DENSITY and POISSON modes.
 						{
 							centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
-								element, xi_discretization_mode, element_shape_category, 
+								element, xi_discretization_mode, element_shape_category,
 								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
 								&number_of_xi_points_allocated, xi_offset);
@@ -1884,7 +1884,7 @@ fields, required for DENSITY and POISSON modes.
 							centre_xi[0] = ((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 							centre_xi[2] = 0.0;
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
-								element, xi_discretization_mode, element_shape_category, 
+								element, xi_discretization_mode, element_shape_category,
 								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
 								&number_of_xi_points_allocated, xi_offset);
@@ -1916,7 +1916,7 @@ fields, required for DENSITY and POISSON modes.
 							{
 								centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, xi_discretization_mode, element_shape_category, 
+									element, xi_discretization_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -1954,7 +1954,7 @@ fields, required for DENSITY and POISSON modes.
 							{
 								centre_xi[0] = ((FE_value)i + 0.25)/(FE_value)number_in_xi_simplex;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, xi_discretization_mode, element_shape_category, 
+									element, xi_discretization_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -1993,7 +1993,7 @@ fields, required for DENSITY and POISSON modes.
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, xi_discretization_mode, element_shape_category, 
+									element, xi_discretization_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -2012,7 +2012,7 @@ fields, required for DENSITY and POISSON modes.
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, xi_discretization_mode, element_shape_category, 
+									element, xi_discretization_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -2208,7 +2208,7 @@ a return value here indicates that the xi_points have been converted.
 	{
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &identifier);	
+		get_FE_element_identifier(element, &identifier);
 		top_level_element_dimension = get_FE_element_dimension(top_level_element);
 		/* extract useful information about the element_shape */
 		if (!categorize_FE_element_shape(top_level_element_shape,
@@ -2229,7 +2229,7 @@ a return value here indicates that the xi_points have been converted.
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				/*face*/-1, element_to_top_level)) &&
+				CMISS_GRAPHIC_FACE_ALL, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,
 					top_level_element_dimension, top_level_number_in_xi,
