@@ -59,6 +59,16 @@ public:
 		INPUT_EVENT_TYPE_KEY_RELEASE = CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE
 	};
 
+	enum InputButtonType
+	{
+		INPUT_BUTTON_INVALID = CMISS_SCENE_VIEWER_INPUT_BUTTON_INVALID,
+		INPUT_BUTTON_LEFT = CMISS_SCENE_VIEWER_INPUT_BUTTON_LEFT,
+		INPUT_BUTTON_MIDDLE = CMISS_SCENE_VIEWER_INPUT_BUTTON_MIDDLE,
+		INPUT_BUTTON_RIGHT = CMISS_SCENE_VIEWER_INPUT_BUTTON_RIGHT,
+		INPUT_BUTTON_SCROLL_DOWN = CMISS_SCENE_VIEWER_INPUT_BUTTON_SCROLL_DOWN,
+		INPUT_BUTTON_SCROLL_UP = CMISS_SCENE_VIEWER_INPUT_BUTTON_SCROLL_UP
+	};
+
 	SceneViewerInput() : id(0)
 	{  }
 
@@ -108,6 +118,11 @@ public:
 	int setButtonNumber(int number)
 	{
 		return Cmiss_scene_viewer_input_set_button_number(id, number);
+	}
+
+	int setButton(InputButtonType button)
+	{
+		return Cmiss_scene_viewer_input_set_button(id, static_cast<Cmiss_scene_viewer_input_button_type>(button));
 	}
 
 	int setType(InputEventType type)

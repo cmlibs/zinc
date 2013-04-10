@@ -36,12 +36,8 @@
 #ifndef __CMISS_SCENE_VIEWER_INPUT_H__
 #define __CMISS_SCENE_VIEWER_INPUT_H__
 
-struct Cmiss_scene_viewer_input;
-typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
-
-typedef int Cmiss_scene_viewer_input_modifier;
-
 #include "sceneviewer.h"
+#include "types/sceneviewerinputid.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,11 +104,22 @@ ZINC_API Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier
  *   2 ==> middle mouse button.
  *   3 ==> right mouse button.
  *
+ * @deprecated see Cmiss_scene_viewer_input_set_button
+ *
  * @param input  Handle to Cmiss_scene_viewer_input object.
  * @param number  The numeric value of the button.
  * @return  CMISS_OK if successful, any other value on failure.
  */
 ZINC_API int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number);
+
+/**
+ * Set the button for the scene viewer input.
+ *
+ * @param input Cmiss scene viewer input.
+ * @param button Cmiss scene viewer input button enumeration value.
+ * @return CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_button_type button);
 
 /**
  * Create a scene viewer input object for manually setting mouse or other input
