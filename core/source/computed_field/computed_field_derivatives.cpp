@@ -255,11 +255,11 @@ public:
 	Computed_field_derivative_image_filter *derivative_image_filter;
 
 	Computed_field_derivative(int xi_index) :
-		Computed_field_core(), xi_index(xi_index)
+		Computed_field_core(), xi_index(xi_index - 1)
 	{
 		/* Only construct the image filter version if it is required */
 		derivative_image_filter = (Computed_field_derivative_image_filter *)NULL;
-	};
+	}
 
 	~Computed_field_derivative()
 	{
@@ -267,7 +267,7 @@ public:
 		{
 			delete derivative_image_filter;
 		}
-	};
+	}
 
 private:
 	Computed_field_core *copy();
@@ -441,7 +441,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    xi number : %d\n",xi_index+1);
+			"    xi number : %d\n",xi_index + 1);
 		return_code = 1;
 	}
 	else
@@ -501,7 +501,7 @@ struct Computed_field *Computed_field_create_derivative(
 	struct Computed_field *source_field, int xi_index)
 {
 	Computed_field *field = NULL;
-	if (source_field)
+	if (source_field && (0 < xi_index) && (xi_index <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -513,7 +513,7 @@ struct Computed_field *Computed_field_create_derivative(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_derivative.  Missing source field");
+			"Computed_field_create_derivative.  Invalid argument(s)");
 	}
 
 	return (field);

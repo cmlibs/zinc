@@ -12,6 +12,7 @@ SET( APIPP_HDRS
     source/api/zinc/fieldtypesconditional.hpp
     source/api/zinc/fieldtypesconstant.hpp
     source/api/zinc/fieldtypescoordinatetransformation.hpp
+    source/api/zinc/fieldtypesderivatives.hpp
     source/api/zinc/fieldtypesfiniteelement.hpp
     source/api/zinc/fieldtypesgroup.hpp
     source/api/zinc/fieldtypesimage.hpp
