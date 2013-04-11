@@ -554,6 +554,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldconditional.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldconstant.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldcoordinatetransformation.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldderivatives.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldfiniteelement.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldgroup.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldimage.h
