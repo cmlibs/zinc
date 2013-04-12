@@ -45,22 +45,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
- * Labels of spectrum attributes which may be set or obtained using generic
- * get/set_attribute functions.
- */
-enum Cmiss_spectrum_attribute
-{
-	CMISS_SPECTRUM_ATTRIBUTE_INVALID = 0,
-	CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED = 1,
-	/*!< Boolean as integer, when 0 (default) spectrum is destroyed when no
-	 * longer in use, i.e. when number of external references to it drops to
-	 * zero. Set to 1 to manage spectrum object indefinitely, or until this
-	 * attribute is reset to zero, effectively marking it as pending destruction.
-	 */
-};
-
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -70,7 +55,7 @@ enum Cmiss_spectrum_attribute
 ZINC_API enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
 	const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
@@ -80,7 +65,7 @@ ZINC_API enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string
 ZINC_API char *Cmiss_spectrum_attribute_enum_to_string(
 	enum Cmiss_spectrum_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Access the spectrum, increase the access count of the time keeper by one.
  *
  * @param spectrum  handle to the "to be access" cmiss spectrum.
@@ -88,7 +73,7 @@ ZINC_API char *Cmiss_spectrum_attribute_enum_to_string(
  */
 ZINC_API Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
 
-/***************************************************************************//**
+/**
  * Destroy the spectrum.
  *
  * @param spectrum  address to the handle to the "to be destroyed"
@@ -98,7 +83,7 @@ ZINC_API Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
  */
 ZINC_API int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
 
-/***************************************************************************//**
+/**
  * Get an integer or Boolean attribute of the graphics spectrum.
  *
  * @param spectrum  Handle to the cmiss spectrum.
@@ -108,7 +93,7 @@ ZINC_API int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
 ZINC_API int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
 	enum Cmiss_spectrum_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set an integer or Boolean attribute of the graphics spectrum.
  *
  * @param spectrum  Handle to the cmiss spectrum.
@@ -121,7 +106,7 @@ ZINC_API int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
 ZINC_API int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 	enum Cmiss_spectrum_attribute attribute, int value);
 
-/***************************************************************************//**
+/**
  * Return an allocated string containing spectrum name.
  *
  * @param spectrum  handle to the cmiss spectrum.
@@ -130,7 +115,7 @@ ZINC_API int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
  */
 ZINC_API char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 
-/***************************************************************************//**
+/**
  * Set/change name for <spectrum>.
  *
  * @param spectrum  The handle to cmiss grpahical spectrum.
@@ -140,7 +125,7 @@ ZINC_API char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
  */
 ZINC_API int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
 
-/***************************************************************************//**
+/**
  * Execute cmgui command as in standalone cmgui application however this execute
  * command function will apply to the spectrum being passed into this function
  * only. It takes a string of command as gfx modify spectrum <spectrum> does.

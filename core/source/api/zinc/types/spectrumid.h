@@ -39,9 +39,24 @@
  * ***** END LICENSE BLOCK ***** */
 
 #if !defined (CMISS_SPECTRUM_ID_H)
+#define CMISS_SPECTRUM_ID_H
 
-	struct Cmiss_spectrum;
-	typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
-	#define CMISS_SPECTRUM_ID_H
+/**
+ * Labels of spectrum attributes which may be set or obtained using generic
+ * get/set_attribute functions.
+ */
+enum Cmiss_spectrum_attribute
+{
+	CMISS_SPECTRUM_ATTRIBUTE_INVALID = 0,
+	CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED = 1
+	/*!< Boolean as integer, when 0 (default) spectrum is destroyed when no
+	 * longer in use, i.e. when number of external references to it drops to
+	 * zero. Set to 1 to manage spectrum object indefinitely, or until this
+	 * attribute is reset to zero, effectively marking it as pending destruction.
+	 */
+};
+
+struct Cmiss_spectrum;
+typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
 
 #endif /* CMISS_SPECTRUM_ID_H */
