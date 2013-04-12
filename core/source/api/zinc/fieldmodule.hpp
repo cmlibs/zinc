@@ -50,6 +50,7 @@
 namespace zinc
 {
 
+class FieldAlias;
 class FieldAdd;
 class FieldPower;
 class FieldMultiply;
@@ -226,6 +227,8 @@ public:
 	{
 		return Optimisation(Cmiss_field_module_create_optimisation(id));
 	}
+
+	FieldAlias createAlias(Field& sourceField);
 
 	FieldAdd createAdd(Field& sourceField1, Field& sourceField2);
 

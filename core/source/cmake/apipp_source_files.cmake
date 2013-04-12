@@ -7,6 +7,7 @@ SET( APIPP_HDRS
     source/api/zinc/fieldcache.hpp
     source/api/zinc/field.hpp
     source/api/zinc/fieldmodule.hpp
+    source/api/zinc/fieldtypesalias.hpp
     source/api/zinc/fieldtypesarithmeticoperators.hpp
     source/api/zinc/fieldtypescomposite.hpp
     source/api/zinc/fieldtypesconditional.hpp
