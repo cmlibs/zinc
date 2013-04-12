@@ -53,7 +53,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a cmiss field which is an alias for another field, possibly from
  * another region.
  * This is the main mechanism for reusing field definitions from other regions.
