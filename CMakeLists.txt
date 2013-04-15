@@ -23,7 +23,6 @@ SET(API_TESTS)
 # test must be set to <test name>_SRC.
 INCLUDE(fieldmodule/tests.cmake)
 INCLUDE(graphic/tests.cmake)
-INCLUDE(fieldimage/tests.cmake)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/test_resources.h)
