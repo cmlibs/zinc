@@ -51,6 +51,7 @@ The public interface to the Cmiss_rendition.
 #include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
+#include "types/spectrumid.h"
 #include "types/tessellationid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -90,31 +91,69 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_coordinate_field(
 /**
  * Sets the field supplying coordinates for the graphic.
  *
- * @param graphic  The graphic to be edited.
- * @param coordinate_field  The cmiss_field to be use as the coordinate field.
+ * @param graphic  The graphic to be modified.
+ * @param coordinate_field  The field to use as the coordinate field.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
 
 /**
- * Set the material of the cmiss graphic
+ * Gets the data field used with the spectrum to colour the graphic.
  *
- * @param graphic  The graphic to be edit
- * @param material  The material to be set to graphic as the default material
+ * @param graphic  The graphic to be queried.
+ * @return  Handle to data field, or 0 if none or error.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_get_data_field(Cmiss_graphic_id graphic);
+
+/**
+ * Sets the data field used with the spectrum to colour the graphic.
+ *
+ * @param graphic  The graphic to be modified.
+ * @param data_field  The field to use as the data field.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id data_field);
+
+/**
+ * Sets the material giving the colour/shading of the graphic.
+ *
+ * @param graphic  The graphic to be modified.
+ * @param material  The standard/unselected material colour.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
 /**
- * Set the selected material of the cmiss graphic
+ * Set the material giving the colour/shading of the graphic when selected.
  *
- * @param graphic  The graphic to be edit
- * @param material  The material to be set to graphic as the selected material
+ * @param graphic  The graphic to be modified.
+ * @param material  The selected/highlight material.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_set_selected_material(
 	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
+
+/**
+ * Gets the spectrum used with the data field to colour the graphic.
+ *
+ * @param graphic  The graphic to be queried.
+ * @return  Handle to spectrum, or 0 if none or error.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic);
+
+/**
+ * Sets the spectrum used with the data field to colour the graphic.
+ *
+ * @param graphic  The graphic to be modified.
+ * @param spectrum  The spectrum to use to map colours.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
+	Cmiss_spectrum_id spectrum);
 
 /**
  * Set the texture coordinate field of the cmiss graphic.
@@ -129,6 +168,8 @@ ZINC_API int Cmiss_graphic_set_selected_material(
  */
 ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
+
+
 
 /**
  * Returns the tessellation object of the graphics or NULL if none.

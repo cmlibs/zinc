@@ -42,6 +42,7 @@
 #include "zinc/graphic.h"
 #include "zinc/field.hpp"
 #include "zinc/graphicsmaterial.hpp"
+#include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
 namespace zinc
@@ -167,6 +168,16 @@ public:
 		return Cmiss_graphic_set_coordinate_field(id, coordinateField.getId());
 	}
 
+	Field getDataField()
+	{
+		return Field(Cmiss_graphic_get_data_field(id));
+	}
+
+	int setDataField(Field& dataField)
+	{
+		return Cmiss_graphic_set_data_field(id, dataField.getId());
+	}
+
 	int setTextureCoordinateField(Field& textureCoordinateField)
 	{
 		return Cmiss_graphic_set_texture_coordinate_field(id, textureCoordinateField.getId());
@@ -180,6 +191,16 @@ public:
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
 	{
 		return Cmiss_graphic_set_selected_material(id, graphicsMaterial.getId());
+	}
+
+	Spectrum getSpectrum()
+	{
+		return Spectrum(Cmiss_graphic_get_spectrum(id));
+	}
+
+	int setSpectrum(Field& spectrum)
+	{
+		return Cmiss_graphic_set_spectrum(id, spectrum.getId());
 	}
 
 	Tessellation getTessellation()
