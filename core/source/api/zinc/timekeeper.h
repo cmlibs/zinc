@@ -53,105 +53,6 @@ rewind and fast forward.
 extern "C" {
 #endif
 
-/***************************************************************************//**
- * An enum type to define which direction the time keeper should go.
- */
-enum Cmiss_time_keeper_play_direction
-{
-	CMISS_TIME_KEEPER_PLAY_INVALID = 0,
-	CMISS_TIME_KEEPER_PLAY_FORWARD = 1,
-	CMISS_TIME_KEEPER_PLAY_BACKWARD = 2
-};
-
-/***************************************************************************//**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum Cmiss_time_keeper_play_direction
-	Cmiss_time_keeper_play_direction_enum_from_string(const char *string);
-
-/***************************************************************************//**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param direction  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_time_keeper_play_direction_enum_to_string(
-	enum Cmiss_time_keeper_play_direction direction);
-
-/***************************************************************************//**
- * An enum type to define the play mode of the time keeper.
- */
-enum Cmiss_time_keeper_repeat_mode
-{
-	CMISS_TIME_KEEPER_REPEAT_MODE_INVALID = 0, /*!< Invalid play mode to handle special
-																							 circumstances. */
-	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_ONCE = 1, /*!< Only play once until it reaches either the
-																	minimum or maximum time set on the
-																		time keeper. */
-	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_LOOP = 2, /*!< Play repeatedly in the same direction.
-																	i.e The time keeper will start from the
-																		minimum time again after it reaches the
-																		maximum time during a forward playback
-																		time keeper. */
-	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_SWING = 3 /*!< Play repeatedly in both direction.
-																	 i.e The time keeper will play forward till
-																		 it reaches the maximum time and then play
-																		 backward to minimum time and the same cycle
-																		 will repeat until stopped by the user. */
-};
-
-/***************************************************************************//**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_string(
-	const char *string);
-
-/***************************************************************************//**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param mode  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_time_keeper_repeat_mode_enum_to_string(
-	enum Cmiss_time_keeper_repeat_mode mode);
-
-enum Cmiss_time_keeper_frame_mode
-{
-	CMISS_TIME_KEEPER_FRAME_MODE_INVALID = 0,
-	CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME = 1,
-	CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME = 2
-};
-
-/***************************************************************************//**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
-	const char *string);
-
-/***************************************************************************//**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param mode  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_time_keeper_frame_mode_enum_to_string(
-	enum Cmiss_time_keeper_frame_mode mode);
-
 enum Cmiss_time_keeper_attribute
 {
 	CMISS_TIME_KEEPER_ATTRIBUTE_INVALID = 0,
@@ -163,14 +64,9 @@ enum Cmiss_time_keeper_attribute
 	 * allow any time lower then the minimum time specified by this function.
 	 * This is a real number attribute.
 	 */
-	CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME = 3,
+	CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME = 3
 	/*!< Maximum allowed time of the time keeper. The time keeper will not allow
 	 * any time larger than the value set by this function.
-	 * This is a real number attribute.
-	 */
-	CMISS_TIME_KEEPER_ATTRIBUTE_SPEED = 4
-	/*!< Rate of increment/decrement on time during playback. This will affect
-	 * how often an event is generate by the time keeper.
 	 * This is a real number attribute.
 	 */
 };
@@ -250,95 +146,6 @@ ZINC_API int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keep
  */
 ZINC_API Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
 	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
-
-/***************************************************************************//**
- * Get the current frame mode of the time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  CMISS_TIME_KEEPER_REAL_TIME or
- *    CMISS_TIME_KEEPER_EVERY_FRAME if successfully called, otherwise
- *    CMISS_TIME_KEEPER_INVALID_FRAME_MODE is returned.
- */
-ZINC_API enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
-	Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the time keeper to either play real time or every frame. In real time
- * mode, the time keeper may skip frames to ensure animation matches real-time
- * as closely as possible, when the redraw time is greater than the requested
- * interval. Every frame mode will cause the time keeper to generate every
- * event it thinks is due and may affect the synchronisation both with the
- * system time and between time notifiers.
- *
- * @param time_keeper  Handle to time keeper.
- * @param frame_mode  Enumerator to set the frame mode of the time keeper.
- * @return  Status CMISS_OK if successfully set the time keeper to play every
- * frame, any other value on failure.
- */
-ZINC_API int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
-	enum Cmiss_time_keeper_frame_mode frame_mode);
-
-/***************************************************************************//**
- * Get the current playing direction of the time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  CMISS_TIME_KEEPER_PLAY_FORWARD or CMISS_TIME_KEEPER_PLAY_BACKWARD
- */
-ZINC_API enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
-	Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the time keeper to play forward or backward in time, synchronised by the
- * system clock. Generates time events during playback as requested by time
- * notifier.
- *
- * @param time_keeper  Handle to time keeper.
- * @param Cmiss_time_keeper_play_direction  Enumerator to tell time keeper which
- *    direction it should play.
- * @return  Status CMISS_OK if successfully set the frame mode of time keeper,
- * any other value on failure.
- */
-ZINC_API int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
-	enum Cmiss_time_keeper_play_direction play_direction);
-
-/***************************************************************************//**
- * Check whether the time keeper is playing.
- * @param time_keeper  Handle to time keeper.
- * @return  1 if time keeper is playing, 0 if not or invalid argument.
- */
-ZINC_API int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Stops the time keeper from playing.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  Status CMISS_OK if successfully to stop the time keeper,
- * any other value on failure.
- */
-ZINC_API int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Get the current repeat mode of the time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  CMISS_TIME_KEEPER_PLAY_ONCE, CMISS_TIME_KEEPER_PLAY_LOOP or
- *    CMISS_TIME_KEEPER_PLAY_SWING if successfully called, otherwise
- *    CMISS_TIME_KEEPER_INVALID_REPEAT_MODE is returned.
- */
-ZINC_API enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
-	Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the repeat mode of the time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @param Cmiss_time_keeper_repeat_mode  enumerator to tell time keeper which
- *    repeat mode it should be playing.
- * @return  Status CMISS_OK if successfully set the repeat mode of time keeper,
- * any other value on failure.
- */
-ZINC_API int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
-	enum Cmiss_time_keeper_repeat_mode repeat_mode);
 
 /***************************************************************************//**
  * Add a time notifier to the time keeper. The time keeper will keep track of the

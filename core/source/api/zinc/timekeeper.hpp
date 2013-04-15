@@ -93,28 +93,6 @@ public:
 		return id;
 	}
 
-	enum PlayDirection
-	{
-		PLAY_INVALID = CMISS_TIME_KEEPER_PLAY_INVALID,
-		PLAY_FORWARD = CMISS_TIME_KEEPER_PLAY_FORWARD,
-		PLAY_BACKWARD = CMISS_TIME_KEEPER_PLAY_BACKWARD
-	};
-
-	enum RepeatMode
-	{
-		REPEAT_MODE_INVALID = CMISS_TIME_KEEPER_REPEAT_MODE_INVALID,
-		REPEAT_MODE_PLAY_ONCE = CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_ONCE,
-		REPEAT_MODE_PLAY_LOOP = CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_LOOP,
-		REPEAT_MODE_PLAY_SWING = CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_SWING
-	};
-
-	enum FrameMode
-	{
-		FRAME_MODE_INVALID = CMISS_TIME_KEEPER_FRAME_MODE_INVALID,
-		FRAME_MODE_PLAY_REAL_TIME = CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME,
-		FRAME_MODE_PLAY_EVERY_FRAME = CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME
-	};
-
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_TIME_KEEPER_ATTRIBUTE_INVALID,
@@ -150,38 +128,6 @@ public:
 	int removeTimeNotifier(TimeNotifier timeNotifier)
 	{
 		return Cmiss_time_keeper_remove_time_notifier(id, timeNotifier.getId());
-	}
-
-	FrameMode getFrameMode()
-	{
-		return static_cast<FrameMode>(Cmiss_time_keeper_get_frame_mode(id));
-	}
-
-	int setFrameMode(FrameMode frameMode)
-	{
-		return Cmiss_time_keeper_set_frame_mode(id,
-		static_cast<Cmiss_time_keeper_frame_mode>(frameMode));
-	}
-
-	PlayDirection getPlayDirection()
-	{
-		return static_cast<PlayDirection>(Cmiss_time_keeper_get_play_direction(id));
-	}
-
-	int play(PlayDirection playDirection)
-	{
-		return Cmiss_time_keeper_play(id,
-			static_cast<Cmiss_time_keeper_play_direction>(playDirection));
-	}
-
-	int isPlaying()
-	{
-		return Cmiss_time_keeper_is_playing(id);
-	}
-
-	int stop()
-	{
-		return Cmiss_time_keeper_stop(id);
 	}
 
 };

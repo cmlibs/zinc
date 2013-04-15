@@ -46,7 +46,7 @@ This provides an object which supplies a concept of time to Cmgui
 
 #include "zinc/timenotifier.h"
 #include "general/object.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 
 #define Time_object Cmiss_time_notifier
 #define Time_object_add_callback Cmiss_time_notifier_add_callback
@@ -167,7 +167,7 @@ not used.  Instead the next_time_function is called to evaluate the next valid
 time.
 ==============================================================================*/
 
-struct Time_keeper *Time_object_get_time_keeper(struct Time_object *time);
+struct Cmiss_time_keeper *Time_object_get_time_keeper(struct Time_object *time);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 

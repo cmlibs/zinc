@@ -46,7 +46,7 @@ This provides an object which supplies a concept of time to Cmgui
 #define TIME_TIME_PRIVATE_H
 
 #include "time/time.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 
 /***************************************************************************//**
  * Private function to set and access a pointer to time keeper in time object.
@@ -56,6 +56,6 @@ This provides an object which supplies a concept of time to Cmgui
  * @return  1 if successfully set the time keeper, otherwise 0.
  */
 int Time_object_set_time_keeper(struct Time_object *time,
-	struct Time_keeper *time_keeper);
+	struct Cmiss_time_keeper *time_keeper);
 
 #endif  /* !defined (TIME_TIME_PRIVATE_H) */

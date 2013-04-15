@@ -69,7 +69,7 @@ FILE : rendition.cpp
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "time/time.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 #include "general/message.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
@@ -2909,12 +2909,12 @@ static int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *renditi
 				time = Time_object_create_regular(/*update_frequency*/10.0,
 					/*time_offset*/0.0);
 				Cmiss_rendition_set_time_object(rendition, time);
-				struct Time_keeper *time_keeper = Cmiss_graphics_module_get_time_keeper_internal(
+				struct Cmiss_time_keeper *time_keeper = Cmiss_graphics_module_get_time_keeper_internal(
 					rendition->graphics_module);
 				if(time_keeper)
 				{
-					Time_keeper_add_time_object(time_keeper, time);
-					DEACCESS(Time_keeper)(&time_keeper);
+					time_keeper->addTimeObject(time);
+					DEACCESS(Cmiss_time_keeper)(&time_keeper);
 				}
 				else
 				{

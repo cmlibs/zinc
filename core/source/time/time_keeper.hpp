@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : computed_field_time.h
-
-LAST MODIFIED : 19 September 2003
-
-DESCRIPTION :
-Implements computed fields that control the time behaviour.
-==============================================================================*/
+/***************************************************************************//**
+ * time_keeper.hpp
+ *
+ * Declaration of time keeper classes and functions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +20,7 @@ Implements computed fields that control the time behaviour.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,9 +38,85 @@ Implements computed fields that control the time behaviour.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_TIME_H)
-#define COMPUTED_FIELD_TIME_H
 
-#include "time/time_keeper.hpp"
+#ifndef TIME_KEEPER_HPP
+#define TIME_KEEPER_HPP
 
-#endif /* !defined (COMPUTED_FIELD_TIME_H) */
+#include "general/mystring.h"
+#include "general/object.h"
+#include "general/debug.h"
+
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_time_keeper);
+
+#define Time_object Cmiss_time_notifier
+
+struct Time_object;
+
+struct Time_object_info
+{
+	struct Time_object *time_object;
+	double next_callback_due;
+	struct Time_object_info *next;
+};
+
+struct Cmiss_time_keeper
+{
+private:
+	const char *name;
+	double time;
+	struct Time_object_info *time_object_info_list;
+	double minimum, maximum, speed;
+
+public:
+
+	int access_count;
+
+	Cmiss_time_keeper();
+
+	virtual ~Cmiss_time_keeper();
+
+	inline Cmiss_time_keeper *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(Cmiss_time_keeper **time_keeper_address)
+	{
+		return DEACCESS(Cmiss_time_keeper)(time_keeper_address);
+	}
+
+	bool setName(const char *name_in);
+
+	char *getName();
+
+	int addTimeObject(struct Time_object *time_object);
+
+	int removeTimeObject(struct Time_object *time_object);
+
+	double getTime();
+
+	double getMinimum();
+
+	int setMinimum(double minimum_in);
+
+	double getMaximum();
+
+	int setMaximum(double maximum_in);
+
+	int setTime(double new_time);
+
+	int hasTimeObject();
+
+	struct Time_object_info *getObjectInfo();
+
+	void setTimeQuiet(double new_time);
+};
+
+enum Time_keeper_play_direction
+{
+	TIME_KEEPER_PLAY_FORWARD,
+	TIME_KEEPER_PLAY_BACKWARD
+};
+
+#endif

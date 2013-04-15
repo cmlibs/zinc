@@ -175,7 +175,7 @@
 #include "region/cmiss_region.h"
 #include "selection/any_object_selection.h"
 #include "graphics/font.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 #include "curve/curve.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
