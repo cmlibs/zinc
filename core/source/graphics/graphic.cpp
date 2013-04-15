@@ -1859,21 +1859,24 @@ int Cmiss_graphic_get_glyph_parameters(
 	return (return_code);
 } /* Cmiss_graphic_get_glyph_parameters */
 
-Cmiss_field_id Cmiss_graphic_get_coordinate_field(Cmiss_graphic_id graphic)
+struct Computed_field *Cmiss_graphic_get_coordinate_field(
+	struct Cmiss_graphic *graphic)
 {
-	Cmiss_field_id coordinate_field = 0;
+	struct Computed_field *coordinate_field;
+
+	ENTER(Cmiss_grpahic_get_coordinate_field);
 	if (graphic)
 	{
-		if (graphic->coordinate_field)
-		{
-			coordinate_field = ACCESS(Computed_field)(graphic->coordinate_field);
-		}
+		coordinate_field=graphic->coordinate_field;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_coordinate_field.  Invalid argument(s)");
+		coordinate_field=(struct Computed_field *)NULL;
 	}
+	LEAVE;
+
 	return (coordinate_field);
 }
 
@@ -7227,41 +7230,14 @@ int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(iso_surface_address));
 }
 
-Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic)
+int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id iso_surface_graphic, Cmiss_field_id iso_scalar_field)
 {
-	Cmiss_field_id iso_scalar_field = 0;
+	int return_code = 0;
 	if (iso_surface_graphic)
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (graphic->iso_scalar_field)
-		{
-			iso_scalar_field = Cmiss_field_access(graphic->iso_scalar_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_iso_surface_get_iso_scalar_field.  Invalid argument(s)");
-	}
-	return (iso_scalar_field);
-}
-
-int Cmiss_graphic_iso_surface_set_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	Cmiss_field_id iso_scalar_field)
-{
-	int return_code = 0;
-	if (iso_surface_graphic && ((0 == iso_scalar_field) ||
-		(1 == Cmiss_field_get_number_of_components(iso_scalar_field))))
-	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (iso_scalar_field != graphic->iso_scalar_field)
-		{
-			REACCESS(Computed_field)(&(graphic->iso_scalar_field), iso_scalar_field);
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-		}
-		return_code = 1;
+		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, iso_scalar_field, 0, 0, 0.0, 0.0, 0.0);
+		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 	}
 	return return_code;
 }

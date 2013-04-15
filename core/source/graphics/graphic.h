@@ -532,6 +532,15 @@ int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
 	enum Graphics_select_mode select_mode);
 
 /***************************************************************************//**
+ * Returns the field supplying coordinates for the graphic.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The coordinate field pointer, or NULL if none or invalid graphic.
+ */
+struct Computed_field *Cmiss_graphic_get_coordinate_field(
+	struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
  * Returns the material used by <graphic>.
  */
 struct Graphical_material *Cmiss_graphic_get_material(

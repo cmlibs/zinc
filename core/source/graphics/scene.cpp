@@ -2589,8 +2589,7 @@ stored in the nearest_element_data.
 			{
 				cad.number = -1;
 				cad.type = Cad_primitive_INVALID;
-				Cmiss_field_id coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
-				if (Cmiss_field_is_cad_geometry(coordinate_field, NULL))
+				if (Cmiss_field_is_cad_geometry(Cmiss_graphic_get_coordinate_field(graphic), NULL))
 				{
 					cad.number = Scene_picked_object_get_subobject(scene_picked_object,1);
 					if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_SURFACES)
@@ -2604,6 +2603,7 @@ stored in the nearest_element_data.
 					}
 					if (cad.type != Cad_primitive_INVALID)
 					{
+						struct Computed_field *coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
 						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
 						return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
 						if ( return_code )
@@ -2638,7 +2638,6 @@ stored in the nearest_element_data.
 						"Invalid cad element %s %d",Cad_primitive_type_string(cad.type),cad.number);
 					return_code=0;
 				}
-				Cmiss_field_destroy(&coordinate_field);
 			}
 			if (graphic)
 				Cmiss_graphic_destroy(&graphic);
@@ -2739,8 +2738,7 @@ static int Scene_picked_object_get_picked_region_cad_primitives(
 		{
 			cad.number = -1;
 			cad.type = Cad_primitive_INVALID;
-			Cmiss_field_id coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
-			if (Cmiss_field_is_cad_geometry(coordinate_field, NULL))
+			if (Cmiss_field_is_cad_geometry(Cmiss_graphic_get_coordinate_field(graphic), NULL))
 			{
 				cad.number = Scene_picked_object_get_subobject(scene_picked_object,1);
 				if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_SURFACES)
@@ -2753,6 +2751,7 @@ static int Scene_picked_object_get_picked_region_cad_primitives(
 				}
 				if (cad.type != Cad_primitive_INVALID)
 				{
+					struct Computed_field *coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
 					struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
 					return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
 					if ( return_code )
@@ -2779,7 +2778,6 @@ static int Scene_picked_object_get_picked_region_cad_primitives(
 					"Invalid cad element %s %d",Cad_primitive_type_string(cad.type),cad.number);
 				return_code=0;
 			}
-			Cmiss_field_destroy(&coordinate_field);
 		}
 		if (graphic)
 			Cmiss_graphic_destroy(&graphic);
