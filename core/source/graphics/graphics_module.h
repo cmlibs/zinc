@@ -54,7 +54,7 @@ DESCRIPTION :
 #include "graphics/light.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 
 
 struct Cmiss_graphics_module;
@@ -214,10 +214,7 @@ struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manag
 struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
 	struct Cmiss_graphics_module *graphics_module);
 
-int Cmiss_graphics_module_set_time_keeper_internal(
-		struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper);
-
-struct Time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
+struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	struct Cmiss_graphics_module *module);
 
 struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(

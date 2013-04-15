@@ -79,7 +79,7 @@
 #include "graphics/light.h"
 #include "graphics/texture.h"
 #include "time/time.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 #include "general/message.h"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"

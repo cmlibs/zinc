@@ -68,7 +68,7 @@ SET( TIME_SRCS
     source/time/time_keeper.cpp )
 SET( TIME_HDRS
     source/time/time.h
-    source/time/time_keeper.h
+    source/time/time_keeper.hpp
     source/time/time_private.h )
 
 SET( THREE_D_DRAWING_SRCS

@@ -53,7 +53,7 @@ FILE : graphics_module.cpp
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 #include "general/message.h"
 #include <list>
 
@@ -88,7 +88,7 @@ struct Cmiss_graphics_module
 	struct Light_model *default_light_model;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct Time_keeper *default_time_keeper;
+	struct Cmiss_time_keeper *default_time_keeper;
 	struct MANAGER(Cmiss_tessellation) *tessellation_manager;
 	struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager;
 	void *graphics_filter_manager_callback_id;
@@ -421,7 +421,7 @@ int Cmiss_graphics_module_destroy(
 			if (graphics_module->default_font)
 				DEACCESS(Cmiss_graphics_font)(&graphics_module->default_font);
 			if (graphics_module->default_time_keeper)
-				DEACCESS(Time_keeper)(&graphics_module->default_time_keeper);
+				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
 			if (graphics_module->default_tessellation)
 				DEACCESS(Cmiss_tessellation)(&graphics_module->default_tessellation);
 			DESTROY(MANAGER(Cmiss_tessellation))(&graphics_module->tessellation_manager);
@@ -1229,31 +1229,14 @@ Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 	return tessellation;
 }
 
-int Cmiss_graphics_module_set_time_keeper_internal(struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper)
-{
-	int return_code = 1;
-
-	if (module && time_keeper && !(module->default_time_keeper))
-	{
-		module->default_time_keeper = ACCESS(Time_keeper)(time_keeper);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_set_time_keeper_internal.  Invalid argument(s)");
-	}
-
-	return return_code;
-}
-
-struct Time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
+struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	struct Cmiss_graphics_module *module)
 {
-	struct Time_keeper *time_keeper = NULL;
+	struct Cmiss_time_keeper *time_keeper = NULL;
 
 	if (module && module->default_time_keeper)
 	{
-		time_keeper = ACCESS(Time_keeper)(module->default_time_keeper);
+		time_keeper = Cmiss_time_keeper_access(module->default_time_keeper);
 	}
 	else
 	{

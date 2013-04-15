@@ -55,7 +55,7 @@ Implements a number of basic component wise operations on computed fields.
 class Computed_field_time_package : public Computed_field_type_package
 {
 public:
-	struct Time_keeper *time_keeper;
+	struct Cmiss_time_keeper *time_keeper;
 };
 
 namespace {
@@ -306,13 +306,13 @@ public:
 
 	Time_object *time_object;
 
-	Computed_field_time_value(Time_keeper* time_keeper) :
+	Computed_field_time_value(Cmiss_time_keeper* time_keeper) :
 		Computed_field_core(),
 		time_object(NULL)
 	{
 		time_object = Time_object_create_regular(
 			/*update_frequency*/10.0, /*time_offset*/0.0);
-		if (!Time_keeper_add_time_object(time_keeper, time_object))
+		if (!time_keeper->addTimeObject(time_object))
 		{
 			DEACCESS(Time_object)(&time_object);
 		}
@@ -482,7 +482,7 @@ Always has multiple times.
 } //namespace
 
 Cmiss_field_id Cmiss_field_module_create_time_value(
-	struct Cmiss_field_module *field_module, struct Time_keeper *time_keeper)
+	struct Cmiss_field_module *field_module, struct Cmiss_time_keeper *time_keeper)
 {
 	struct Computed_field *field = NULL;
 	if (field_module && time_keeper)

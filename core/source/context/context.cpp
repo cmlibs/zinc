@@ -51,7 +51,7 @@
 #include "graphics/rendition.h"
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 //-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for Cmiss_region  */
 #include "region/cmiss_region_private.h"
@@ -120,7 +120,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 			}
 			if (context->time_keeper)
 			{
-				Cmiss_time_keeper_destroy(&context->time_keeper);
+				Cmiss_time_keeper_destroy(&(context->time_keeper));
 			}
 			DEALLOCATE(*context_address);
 		}
@@ -281,23 +281,22 @@ struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
 	return io_stream_package;
 }
 
-Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(Cmiss_context_id context)
+struct Cmiss_time_keeper *Cmiss_context_get_default_time_keeper(struct Context *context)
 {
-	Cmiss_time_keeper_id time_keeper = 0;
+	Cmiss_time_keeper *time_keeper = 0;
 	if (context)
 	{
 		if (!context->time_keeper)
 		{
-			context->time_keeper = CREATE(Time_keeper)("default", 0);
+			context->time_keeper = new Cmiss_time_keeper();
 		}
 		time_keeper = Cmiss_time_keeper_access(context->time_keeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_time_keeper.  Missing context.");
+			"Cmiss_context_get_default_time_keeper.  Missing context");
 	}
-
 	return time_keeper;
 }
 

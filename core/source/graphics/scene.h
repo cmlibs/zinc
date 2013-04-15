@@ -65,7 +65,7 @@
 #include "interaction/interaction_volume.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
-#include "time/time_keeper.h"
+#include "time/time_keeper.hpp"
 /* Convert the type */
 #define Scene Cmiss_scene
 
@@ -798,7 +798,7 @@ corresponding Scene_objects in this scene have a Time_object.
 ==============================================================================*/
 
 int Scene_set_time_behaviour(struct Scene *scene, char *scene_object_name,
-	char *time_object_name, struct Time_keeper *time_keeper);
+	char *time_object_name, struct Cmiss_time_keeper *time_keeper);
 /*******************************************************************************
 LAST MODIFIED : 12 October 1998
 
