@@ -157,6 +157,11 @@ public:
 		return id;
 	}
 
+	Field getCoordinateField()
+	{
+		return Field(Cmiss_graphic_get_coordinate_field(id));
+	}
+
 	int setCoordinateField(Field& coordinateField)
 	{
 		return Cmiss_graphic_set_coordinate_field(id, coordinateField.getId());
@@ -277,7 +282,12 @@ public:
 		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_iso_surface(graphic.getId())))
 	{}
 
-	int setScalarField(Field& field)
+	Field getIsoScalarField()
+	{
+		return Field(Cmiss_graphic_iso_surface_get_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id)));
+	}
+
+	int setIsoScalarField(Field& field)
 	{
 		return Cmiss_graphic_iso_surface_set_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id), field.getId());
 	}
