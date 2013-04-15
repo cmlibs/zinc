@@ -78,16 +78,6 @@ ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
 ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 
 /**
- * Gets the field supplying coordinates for the graphic.
- *
- * @param graphic  The graphic to be queried.
- * @return  Handle to coordinate field, or 0 if none or error.
- * Up to caller to destroy returned handle.
- */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_coordinate_field(
-	Cmiss_graphic_id graphic);
-
-/**
  * Sets the field supplying coordinates for the graphic.
  *
  * @param graphic  The graphic to be edited.
@@ -352,25 +342,13 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_iso_surface_base_cast(Cmiss_graphic
 ZINC_API int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address);
 
 /**
- * Gets the iso_scalar field for the iso_surface graphic.
- *
- * @param graphic  The graphic to be queried.
- * @return  Handle to iso_scalar field, or 0 if none or error.
- * Up to caller to destroy returned handle.
- */
-ZINC_API Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic);
-
-/**
  * Set the iso scalar field for the iso surface graphic.
  *
  * @param iso_surface_graphic The iso surface graphic to set the field to.
  * @param iso_scalar_field The iso scalar field to set, this field must have only one component.
  * @return Status CMISS_OK if the field was successfully set, any other value on failure
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	Cmiss_field_id iso_scalar_field);
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_scalar_field(Cmiss_graphic_iso_surface_id iso_surface_graphic, Cmiss_field_id iso_scalar_field);
 
 /**
  * Set the iso values for the iso surface graphic.
