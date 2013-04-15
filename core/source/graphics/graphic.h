@@ -543,45 +543,20 @@ struct Graphical_material *Cmiss_graphic_get_material(
 struct Graphical_material *Cmiss_graphic_get_selected_material(
 	struct Cmiss_graphic *graphic);
 
-/***************************************************************************//**
- * Returns parameters used for colouring the graphics created from <graphic> with
- * the <data_field> by the <spectrum>.
- * For type CMISS_GRAPHIC_STREAMLINES use function
- * Cmiss_graphic_get_data_spectrum_parameters_streamlines instead.
+/**
+ * Gets the streamline data type which allows extended options for colouring
+ * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
  */
-int Cmiss_graphic_get_data_spectrum_parameters(
-	struct Cmiss_graphic *graphic,
-	struct Computed_field **data_field,struct Spectrum **spectrum);
+enum Streamline_data_type Cmiss_graphic_get_streamline_data_type(
+	Cmiss_graphic_id graphic);
 
-/***************************************************************************//**
- * Sets parameters used for colouring the graphics created from <graphic> with
- * the <data_field> (currently only a scalar) by the <spectrum>.
- * For type CMISS_GRAPHIC_STREAMLINES use function
- * Cmiss_graphic_set_data_spectrum_parameters_streamlines instead.
+/**
+ * Sets the streamline data type which allows extended options for colouring
+ * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_graphic_set_data_spectrum_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field *data_field,
-	struct Spectrum *spectrum);
-
-/***************************************************************************//**
- * Special version of Cmiss_graphic_get_data_spectrum_parameters for type
- * CMISS_GRAPHIC_STREAMLINES only - handles the extended range of scalar data
- * options for streamlines - eg. STREAM_TRAVEL_SCALAR.
- */
-int Cmiss_graphic_get_data_spectrum_parameters_streamlines(
-	struct Cmiss_graphic *graphic,
-	enum Streamline_data_type *streamline_data_type,
-	struct Computed_field **data_field,struct Spectrum **spectrum);
-
-/***************************************************************************//**
- * Special version of Cmiss_graphic_set_data_spectrum_parameters for type
- * CMISS_GRAPHIC_STREAMLINES only - handles the extended range of scalar data
- * options for streamlines - eg. STREAM_TRAVEL_SCALAR.
- */
-int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
-	struct Cmiss_graphic *graphic,
-	enum Streamline_data_type streamline_data_type,
-	struct Computed_field *data_field,struct Spectrum *spectrum);
+int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
+	enum Streamline_data_type streamline_data_type);
 
 /***************************************************************************//**
  * Returns the texture coordinate field used by <graphic>.

@@ -1869,37 +1869,52 @@ Cmiss_field_id Cmiss_graphic_get_coordinate_field(Cmiss_graphic_id graphic)
 			coordinate_field = ACCESS(Computed_field)(graphic->coordinate_field);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_coordinate_field.  Invalid argument(s)");
-	}
 	return (coordinate_field);
 }
 
-int Cmiss_graphic_set_coordinate_field(
-	struct Cmiss_graphic *graphic,struct Computed_field *coordinate_field)
+int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id coordinate_field)
 {
-	int return_code = 1;
-
-	ENTER(Cmiss_graphic_set_coordinate_field);
-	if (graphic&&((!coordinate_field)||
-		(3>=Computed_field_get_number_of_components(coordinate_field))))
+	int return_code = 0;
+	if (graphic && ((0 == coordinate_field) ||
+		(3 >= Computed_field_get_number_of_components(coordinate_field))))
 	{
 		if (coordinate_field != graphic->coordinate_field)
 		{
-			REACCESS(Computed_field)(&(graphic->coordinate_field),coordinate_field);
+			REACCESS(Computed_field)(&(graphic->coordinate_field), coordinate_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
+		return_code = 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_coordinate_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return (return_code);
+}
 
+Cmiss_field_id Cmiss_graphic_get_data_field(Cmiss_graphic_id graphic)
+{
+	Cmiss_field_id data_field = 0;
+	if (graphic)
+	{
+		if (graphic->data_field)
+		{
+			data_field = ACCESS(Computed_field)(graphic->data_field);
+		}
+	}
+	return (data_field);
+}
+
+int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id data_field)
+{
+	int return_code = 0;
+	if (graphic)
+	{
+		if (data_field != graphic->data_field)
+		{
+			REACCESS(Computed_field)(&(graphic->data_field), data_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return_code = 1;
+	}
 	return (return_code);
 }
 
@@ -4383,75 +4398,60 @@ struct Graphical_material *Cmiss_graphic_get_selected_material(
 	return (selected_material);
 } /* Cmiss_graphic_get_selected_material */
 
-
-int Cmiss_graphic_set_data_spectrum_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field *data_field,
-	struct Spectrum *spectrum)
+Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_data_spectrum_parameters);
-	if (graphic&&((!data_field)||spectrum)&&
-		(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
+	Cmiss_spectrum_id spectrum = 0;
+	if (graphic)
 	{
-		return_code=1;
-		REACCESS(Computed_field)(&(graphic->data_field),data_field);
-		if (!data_field)
+		if (graphic->spectrum)
 		{
-			/* don't want graphic accessing spectrum when not using it: */
-			spectrum=(struct Spectrum *)NULL;
+			spectrum = ACCESS(Spectrum)(graphic->spectrum);
 		}
-		REACCESS(Spectrum)(&(graphic->spectrum),spectrum);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_data_spectrum_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return spectrum;
+}
 
-	return (return_code);
-} /* Cmiss_graphic_set_data_spectrum_parameters */
-
-int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
-	struct Cmiss_graphic *graphic,
-	enum Streamline_data_type streamline_data_type,
-	struct Computed_field *data_field,struct Spectrum *spectrum)
+int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
+	Cmiss_spectrum_id spectrum)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_data_spectrum_parameters_streamlines);
-	if (graphic&&((STREAM_FIELD_SCALAR!=streamline_data_type)||data_field)&&
-		((STREAM_NO_DATA==streamline_data_type)||spectrum)&&
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
+	int return_code = 0;
+	if (graphic)
 	{
-		return_code=1;
-		graphic->streamline_data_type=streamline_data_type;
-		if (STREAM_FIELD_SCALAR!=streamline_data_type)
+		if (spectrum != graphic->spectrum)
 		{
-			/* don't want graphic accessing data_field when not using it: */
-			data_field=(struct Computed_field *)NULL;
+			REACCESS(Spectrum)(&(graphic->spectrum), spectrum);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		REACCESS(Computed_field)(&(graphic->data_field),data_field);
-		if (STREAM_NO_DATA==streamline_data_type)
-		{
-			/* don't want graphic accessing spectrum when not using it: */
-			spectrum=(struct Spectrum *)NULL;
-		}
-		REACCESS(Spectrum)(&(graphic->spectrum),spectrum);
+		return_code = 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_data_spectrum_parameters_streamlines.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
-} /* Cmiss_graphic_set_data_spectrum_parameters_streamlines */
+enum Streamline_data_type Cmiss_graphic_get_streamline_data_type(
+	Cmiss_graphic_id graphic)
+{
+	if (graphic && (CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))
+	{
+		return graphic->streamline_data_type;
+	}
+	return STREAM_DATA_INVALID;
+}
+
+int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
+	enum Streamline_data_type streamline_data_type)
+{
+	int return_code = 0;
+	if (graphic && (CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))
+	{
+		if (streamline_data_type != graphic->streamline_data_type)
+		{
+			graphic->streamline_data_type = streamline_data_type;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
 
 int Cmiss_graphic_set_render_type(
 	struct Cmiss_graphic *graphic, enum Cmiss_graphics_render_type render_type)
@@ -5043,16 +5043,9 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Graphical_material)(&(destination->secondary_material),
 			source->secondary_material);
 		Cmiss_graphic_set_render_type(destination,source->render_type);
-		if (CMISS_GRAPHIC_STREAMLINES==source->graphic_type)
-		{
-			Cmiss_graphic_set_data_spectrum_parameters_streamlines(destination,
-				source->streamline_data_type,source->data_field,source->spectrum);
-		}
-		else
-		{
-			Cmiss_graphic_set_data_spectrum_parameters(destination,
-				source->data_field,source->spectrum);
-		}
+		REACCESS(Computed_field)(&(destination->data_field), source->data_field);
+		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
+		destination->streamline_data_type = source->streamline_data_type;
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
@@ -5928,31 +5921,6 @@ int Cmiss_graphic_extract_graphics_object_from_list(
 	return (return_code);
 } /* Cmiss_graphic_extract_graphics_object_from_list */
 
-int Cmiss_graphic_get_data_spectrum_parameters(
-	struct Cmiss_graphic *graphic,
-	struct Computed_field **data_field,struct Spectrum **spectrum)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_data_spectrum_parameters);
-	if (graphic&&data_field&&spectrum&&
-		(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
-	{
-		*data_field=graphic->data_field;
-		*spectrum=graphic->spectrum;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_data_spectrum_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_data_spectrum_parameters */
-
 int Cmiss_graphic_get_radius_parameters(
 	struct Cmiss_graphic *graphic,GLfloat *constant_radius,
 	GLfloat *radius_scale_factor,struct Computed_field **radius_scalar_field)
@@ -6426,34 +6394,6 @@ int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width)
 
 	return (return_code);
 } /* Cmiss_graphic_set_line_width */
-
-int Cmiss_graphic_get_data_spectrum_parameters_streamlines(
-	struct Cmiss_graphic *graphic,
-	enum Streamline_data_type *streamline_data_type,
-	struct Computed_field **data_field,struct Spectrum **spectrum)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_data_spectrum_parameters_streamlines);
-	if (graphic&&streamline_data_type&&data_field&&spectrum&&
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
-	{
-		*streamline_data_type=graphic->streamline_data_type;
-		*data_field=graphic->data_field;
-		*spectrum=graphic->spectrum;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_data_spectrum_parameters_streamlines.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_data_spectrum_parameters_streamlines */
 
 struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
 	struct Cmiss_graphic *graphic)
