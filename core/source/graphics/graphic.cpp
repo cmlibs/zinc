@@ -2012,11 +2012,12 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 			graphic->secondary_material);
 		set_GT_object_selected_material(graphic->graphics_object,
 			graphic->selected_material);
-		if (graphic->data_field && graphic->spectrum)
+		Cmiss_spectrum *spectrum = 0;
+		if (graphic->data_field)
 		{
-			set_GT_object_Spectrum(graphic->graphics_object,
-				(void *)graphic->spectrum);
+			spectrum = graphic->spectrum;
 		}
+		set_GT_object_Spectrum(graphic->graphics_object, (void *)spectrum);
 		return_code = 1;
 	}
 	LEAVE;
@@ -4420,7 +4421,8 @@ int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
 		if (spectrum != graphic->spectrum)
 		{
 			REACCESS(Spectrum)(&(graphic->spectrum), spectrum);
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return_code = 1;
 	}

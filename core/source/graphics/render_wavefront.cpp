@@ -309,77 +309,72 @@ points  given by the positions in <point_list> and oriented and scaled by
 	struct GT_object *transformed_object;
 	Triple *point,*axis1,*axis2,*axis3;
 
-	ENTER(draw_glyph_set_vrml);
+	ENTER(draw_glyph_set_wavefront);
 	/* Keep a similar interface to all the other render implementations */
 	USE_PARAMETER(labels);
+	USE_PARAMETER(number_of_data_components);
+	USE_PARAMETER(data);
+	USE_PARAMETER(spectrum);
 	return_code=0;
 	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph&&((!number_of_data_components)||(data&&material&&spectrum)))
+		glyph)
 	{
-		if (!data||(data&&spectrum))
+		point=point_list;
+		axis1=axis1_list;
+		axis2=axis2_list;
+		axis3=axis3_list;
+		/* try to draw points and lines faster */
+		if (0==strcmp(glyph->name,"point"))
 		{
-			point=point_list;
-			axis1=axis1_list;
-			axis2=axis2_list;
-			axis3=axis3_list;
-			/* try to draw points and lines faster */
-			if (0==strcmp(glyph->name,"point"))
+			for (int i = 0; i < number_of_points; i++)
 			{
-				for (int i = 0; i < number_of_points; i++)
-				{
-					fprintf(wavefront_file, "v %.8f %.8f %.8f\n",
-						point_list[i][0],
-						point_list[i][1],
-						point_list[i][2]);
-				}
+				fprintf(wavefront_file, "v %.8f %.8f %.8f\n",
+					point_list[i][0],
+					point_list[i][1],
+					point_list[i][2]);
 			}
-			else if (0==strcmp(glyph->name,"line"))
-			{
-				display_message(WARNING_MESSAGE,"draw_glyph_set_wavefront.  "
-					"pointset glyphs not currently rendered in wavefront files (use a surface glyph).");
-			}
-			else
-			{
-				for (i=0;i<number_of_points;i++)
-				{
-					transformation[ 0] = (*axis1)[0];
-					transformation[ 1] = (*axis1)[1];
-					transformation[ 2] = (*axis1)[2];
-					axis1++;
-					transformation[ 4] = (*axis2)[0];
-					transformation[ 5] = (*axis2)[1];
-					transformation[ 6] = (*axis2)[2];
-					axis2++;
-					transformation[ 8] = (*axis3)[0];
-					transformation[ 9] = (*axis3)[1];
-					transformation[10] = (*axis3)[2];
-					axis3++;
-					transformation[12] = (*point)[0];
-					transformation[13] = (*point)[1];
-					transformation[14] = (*point)[2];
-					point++;
-					transformation[ 3] = 0.0;
-					transformation[ 7] = 0.0;
-					transformation[11] = 0.0;
-					transformation[15] = 1.0;
-					transformed_object = transform_GT_object(glyph,
-						transformation);
-					if(transformed_object != 0)
-					{
-						set_GT_object_default_material(transformed_object,
-							material);
-						makewavefront(wavefront_file, 1, transformed_object, time);
-						DESTROY(GT_object)(&transformed_object);
-					}
-				}
-			}
-			return_code=1;
+		}
+		else if (0==strcmp(glyph->name,"line"))
+		{
+			display_message(WARNING_MESSAGE,"draw_glyph_set_wavefront.  "
+				"pointset glyphs not currently rendered in wavefront files (use a surface glyph).");
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"drawglyphsetGL.  Missing spectrum");
-			return_code=0;
+			for (i=0;i<number_of_points;i++)
+			{
+				transformation[ 0] = (*axis1)[0];
+				transformation[ 1] = (*axis1)[1];
+				transformation[ 2] = (*axis1)[2];
+				axis1++;
+				transformation[ 4] = (*axis2)[0];
+				transformation[ 5] = (*axis2)[1];
+				transformation[ 6] = (*axis2)[2];
+				axis2++;
+				transformation[ 8] = (*axis3)[0];
+				transformation[ 9] = (*axis3)[1];
+				transformation[10] = (*axis3)[2];
+				axis3++;
+				transformation[12] = (*point)[0];
+				transformation[13] = (*point)[1];
+				transformation[14] = (*point)[2];
+				point++;
+				transformation[ 3] = 0.0;
+				transformation[ 7] = 0.0;
+				transformation[11] = 0.0;
+				transformation[15] = 1.0;
+				transformed_object = transform_GT_object(glyph,
+					transformation);
+				if(transformed_object != 0)
+				{
+					set_GT_object_default_material(transformed_object,
+						material);
+					makewavefront(wavefront_file, 1, transformed_object, time);
+					DESTROY(GT_object)(&transformed_object);
+				}
+			}
 		}
+		return_code=1;
 	}
 	else
 	{
@@ -389,14 +384,14 @@ points  given by the positions in <point_list> and oriented and scaled by
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"draw_glyph_set_vrml. Invalid argument(s)");
+			display_message(ERROR_MESSAGE,"draw_glyph_set_wavefront. Invalid argument(s)");
 			return_code=0;
 		}
 	}
 	LEAVE;
 
 	return (return_code);
-} /* draw_glyph_set_vrml */
+} /* draw_glyph_set_wavefront */
 
 static int draw_surface_wavefront(FILE *file, Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int npts1,int npts2, gtPolygonType polygon_type,
