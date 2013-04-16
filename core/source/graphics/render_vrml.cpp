@@ -635,11 +635,10 @@ points  given by the positions in <point_list> and oriented and scaled by
 	ENTER(draw_glyph_set_vrml);
 	/* default return code */
 	return_code=0;
-	/* checking arguments */
+	const bool data_spectrum = (0 < number_of_data_components) && (0 != data) &&
+		(0 != spectrum) && (0 != material);
 	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
-		axis3_list && scale_list && glyph &&
-		((g_NO_DATA == number_of_data_components) ||
-			(data && material && spectrum)))
+		axis3_list && scale_list && glyph)
 	{
 		mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
 		if (mirror_mode)
@@ -650,8 +649,10 @@ points  given by the positions in <point_list> and oriented and scaled by
 		{
 			f = 0.0;
 		}
-		if ((!data) || (data && spectrum))
+		if (data && (!spectrum))
 		{
+			display_message(WARNING_MESSAGE,"draw_glyph_set_vrml.  Missing spectrum");
+		}
 			point = point_list;
 			axis1 = axis1_list;
 			axis2 = axis2_list;
@@ -686,7 +687,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				}
 				fprintf(vrml_file,"      ]\n");
 				fprintf(vrml_file,"    }\n");
-				if (number_of_data_components && data && spectrum)
+				if (data_spectrum)
 				{
 					spectrum_start_render_vrml(vrml_file,spectrum,material);
 					for (i=0;i<number_of_points;i++)
@@ -746,7 +747,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				}
 				fprintf(vrml_file,"      ]\n");
 				fprintf(vrml_file,"    }\n");
-				if (data&&spectrum)
+				if (data_spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
 					spectrum_start_render_vrml(vrml_file,spectrum,material);
@@ -826,7 +827,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				}
 				fprintf(vrml_file,"      ]\n");
 				fprintf(vrml_file,"    }\n");
-				if (data&&spectrum)
+				if (data_spectrum)
 				{
 					fprintf(vrml_file,"    colorPerVertex FALSE\n");
 					spectrum_start_render_vrml(vrml_file,spectrum,material);
@@ -852,7 +853,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 			}
 			else
 			{
-				if (number_of_data_components && data && material && spectrum)
+				if (data_spectrum)
 				{
 					material_copy = CREATE(Graphical_material)("render_vrml_copy");
 				}
@@ -1182,7 +1183,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 			if (label)
 			{
 				point=point_list;
-				if (number_of_data_components && data && material && spectrum)
+				if (data_spectrum)
 				{
 					material_copy = CREATE(Graphical_material)("render_vrml_copy");
 				}
@@ -1262,12 +1263,6 @@ points  given by the positions in <point_list> and oriented and scaled by
 				}
 			}
 			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"drawglyphsetGL.  Missing spectrum");
-			return_code=0;
-		}
 	}
 	else
 	{
@@ -1596,8 +1591,9 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 	int i,number_of_points,return_code;
 
 	ENTER(draw_polyline_vrml);
-	if (vrml_file&&point_list&&(1<n_pts)&&
-		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
+	const bool data_spectrum = (0 < number_of_data_components) && (0 != data) &&
+		(0 != spectrum) && (0 != material);
+	if (vrml_file&&point_list&&(1<n_pts))
 	{
 		return_code=1;
 		switch (polyline_type)
@@ -1645,7 +1641,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (data&&spectrum)
+			if (data_spectrum)
 			{
 				fprintf(vrml_file,"    colorPerVertex TRUE\n");
 				spectrum_start_render_vrml(vrml_file,spectrum,material);
@@ -1725,8 +1721,9 @@ DESCRIPTION :
 
 	ENTER(draw_surface_vrml);
 	return_code=0;
-	if (surfpts&&(0<npts1)&&(1<npts2)&&
-		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
+	const bool data_spectrum = (0 < number_of_data_components) && (0 != data) &&
+		(0 != spectrum) && (0 != material);
+	if (surfpts&&(0<npts1)&&(1<npts2))
 	{
 		switch (surface_type)
 		{
@@ -1820,7 +1817,7 @@ DESCRIPTION :
 					fprintf(vrml_file,"    }\n");
 				}
 			}
-			if (g_NO_DATA!=number_of_data_components)
+			if (data_spectrum)
 			{
 				spectrum_start_render_vrml(vrml_file,spectrum,material);
 				for (i=0;i<number_of_points;i++)
@@ -2034,8 +2031,9 @@ DESCRIPTION :
 	int i, return_code;
 
 	ENTER(draw_voltex_vrml);
-	/* default return code */
 	return_code=0;
+	const bool data_spectrum = (0 < number_of_data_components) &&
+		(0 != spectrum) && (0 != default_material);
 	if (triangle_list && vertex_list && (0<number_of_triangles))
 	{
 		/* more efficient case: no separate materials per polygon */
@@ -2066,7 +2064,7 @@ DESCRIPTION :
 		}
 		fprintf(vrml_file,"      ]\n");
 		fprintf(vrml_file,"    }\n");
-		if (spectrum && number_of_data_components)
+		if (data_spectrum)
 		{
 			spectrum_start_render_vrml(vrml_file, spectrum, default_material);
 			GLfloat *data = new GLfloat[number_of_data_components];

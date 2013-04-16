@@ -589,6 +589,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 		temp_axis3, temp_point;
 
 	ENTER(draw_glyphsetGL);
+	const bool data_spectrum = (0 != data) && (0 != spectrum);
 	if ((0 == number_of_points) || ((0 < number_of_points) && ((glyph && point_list &&
 		axis1_list && axis2_list && axis3_list && scale_list) || (!glyph && labels))))
 	{
@@ -604,7 +605,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 		else
 		{
 #if defined (OPENGL_API)
-			if ((!data)||(render_data=spectrum_start_renderGL
+			if ((!data_spectrum)||(render_data=spectrum_start_renderGL
 				(spectrum,material,number_of_data_components)))
 			{
 				draw_all = (!names) ||
@@ -615,7 +616,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 				axis3 = axis3_list;
 				scale = scale_list;
 				/* if there is data to plot, start the spectrum rendering */
-				if (data)
+				if (data_spectrum)
 				{
 					datum=data;
 				}
@@ -661,7 +662,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 						{
 							/* set the spectrum for this datum, if any */
-							if (data)
+							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
@@ -678,7 +679,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							}
 						}
 						point++;
-						if (data)
+						if (data_spectrum)
 						{
 							datum += number_of_data_components;
 						}
@@ -716,7 +717,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
-								if (data)
+								if (data_spectrum)
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
@@ -737,7 +738,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							}
 							/* advance pointers */
 							point++;
-							if (data)
+							if (data_spectrum)
 							{
 								datum += number_of_data_components;
 							}
@@ -758,7 +759,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						for (i=0;i<number_of_points;i++)
 						{
 							/* set the spectrum for this datum, if any */
-							if (data)
+							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 								datum+=number_of_data_components;
@@ -799,7 +800,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
-								if (data)
+								if (data_spectrum)
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
@@ -834,7 +835,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							point++;
 							axis1++;
 							scale++;
-							if (data)
+							if (data_spectrum)
 							{
 								datum+=number_of_data_components;
 							}
@@ -855,7 +856,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						for (i=0;i<number_of_points;i++)
 						{
 							/* set the spectrum for this datum, if any */
-							if (data)
+							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 								datum+=number_of_data_components;
@@ -907,7 +908,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
-								if (data)
+								if (data_spectrum)
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
@@ -962,7 +963,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							axis2++;
 							axis3++;
 							scale++;
-							if (data)
+							if (data_spectrum)
 							{
 								datum += number_of_data_components;
 							}
@@ -983,7 +984,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						for (i=0;i<number_of_points;i++)
 						{
 							/* set the spectrum for this datum, if any */
-							if (data)
+							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 								datum += number_of_data_components;
@@ -1056,7 +1057,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								glLoadName((GLuint)(*name));
 							}
 							/* set the spectrum for this datum, if any */
-							if (data)
+							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
@@ -1113,7 +1114,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						axis2++;
 						axis3++;
 						scale++;
-						if (data)
+						if (data_spectrum)
 						{
 							datum += number_of_data_components;
 						}
@@ -1164,7 +1165,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								y=(*point)[1];
 								z=(*point)[2];
 								/* set the spectrum for this datum, if any */
-								if (data)
+								if (data_spectrum)
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
@@ -1172,7 +1173,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							}
 							/* advance pointers */
 							point++;
-							if (data)
+							if (data_spectrum)
 							{
 								datum += number_of_data_components;
 							}
@@ -1189,7 +1190,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 					/* free space for point number on picking name stack */
 					glPopName();
 				}
-				if (data)
+				if (data_spectrum)
 				{
 					spectrum_end_renderGL(spectrum,render_data);
 				}
@@ -1542,7 +1543,8 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 #endif /* defined (DEBUG_CODE) */
 
 	/* checking arguments */
-	if (point_list&&(0<n_pts)&&((!data)||(render_data=
+	const bool data_spectrum = (0 != data) && (0 != spectrum);
+	if (point_list&&(0<n_pts)&&((!data_spectrum)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
 	{
 #if defined (OPENGL_API)
@@ -1551,14 +1553,14 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 		{
 			normal = normal_list;
 		}
-		if (data)
+		if (data_spectrum)
 		{
 			datum=data;
 		}
 		glBegin(GL_LINE_STRIP);
 		for (i=n_pts;i>0;i--)
 		{
-			if (data)
+			if (data_spectrum)
 			{
 				spectrum_renderGL_value(spectrum,material,render_data,datum);
 				datum += number_of_data_components;
@@ -1572,7 +1574,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 			point++;
 		}
 		glEnd();
-		if (data)
+		if (data_spectrum)
 		{
 			spectrum_end_renderGL(spectrum,render_data);
 		}
@@ -1614,14 +1616,13 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 	struct Spectrum_render_data *render_data = NULL;
 
 	ENTER(draw_dc_polylineGL);
-
-	/* checking arguments */
-	if (point_list&&(0<n_pts)&&((!data)||(render_data=
+	const bool data_spectrum = (0 != data) && (0 != spectrum);
+	if (point_list&&(0<n_pts)&&((!data_spectrum)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
 	{
 #if defined (OPENGL_API)
 		point=point_list;
-		if (data)
+		if (data_spectrum)
 		{
 			datum=data;
 		}
@@ -1632,7 +1633,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 		glBegin(GL_LINES);
 		for (i=n_pts;i>0;i--)
 		{
-			if (data)
+			if (data_spectrum)
 			{
 				spectrum_renderGL_value(spectrum,material,render_data,datum);
 				datum += number_of_data_components;
@@ -1644,7 +1645,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 			}
 			glVertex3fv(*point);
 			point++;
-			if (data)
+			if (data_spectrum)
 			{
 				spectrum_renderGL_value(spectrum,material,render_data,datum);
 				datum += number_of_data_components;
@@ -1659,7 +1660,7 @@ struct Graphical_material *material,struct Spectrum *spectrum)
 		}
 		glEnd();
 #endif /* defined (OPENGL_API) */
-		if (data)
+		if (data_spectrum)
 		{
 			spectrum_end_renderGL(spectrum,render_data);
 		}
@@ -1698,9 +1699,8 @@ struct Spectrum_render_data *render_data)
 #if ! defined GL_VERSION_1_3
 	USE_PARAMETER(tangentpoints);
 #endif /* ! defined GL_VERSION_1_3 */
-	/* checking arguments */
-	if (surfpts && (1<npts1) &&(1<npts2) &&
-		((NULL == data) || (NULL != render_data)))
+	const bool data_spectrum = (0 != data) && (0 != render_data);
+	if (surfpts && (1 < npts1) && (1 < npts2))
 	{
 #if defined (OPENGL_API)
 #if defined GL_VERSION_1_3
@@ -1750,7 +1750,7 @@ struct Spectrum_render_data *render_data)
 						{
 							glTexCoord3fv(texturepoints[index]);
 						}
-						if (data)
+						if (data_spectrum)
 						{
 							spectrum_renderGL_value(spectrum, material, render_data,
 								data + index*number_of_data_components);
@@ -1803,7 +1803,7 @@ struct Spectrum_render_data *render_data)
 						{
 							glTexCoord3fv(texturepoints[index]);
 						}
-						if (data)
+						if (data_spectrum)
 						{
 							spectrum_renderGL_value(spectrum, material, render_data,
 								data + index*number_of_data_components);
@@ -1875,9 +1875,10 @@ struct Spectrum_render_data *render_data)
 
 	ENTER(draw_data_dc_surfaceGL);
 	USE_PARAMETER(tangent_points);
-	if (surfpts&&(0<npolys)&&(2<npp) && ((NULL == data) || (NULL != render_data)))
+	const bool data_spectrum = (0 != data) && (0 != render_data);
+	if (surfpts&&(0<npolys)&&(2<npp))
 	{
-		if (data)
+		if (data_spectrum)
 		{
 			data_item=data;
 		}
@@ -1933,7 +1934,7 @@ struct Spectrum_render_data *render_data)
 			}
 			for (j=0;j<npp;j++)
 			{
-				if (data)
+				if (data_spectrum)
 				{
 					spectrum_renderGL_value(spectrum,material,render_data,data_item);
 					data_item += number_of_data_components;
@@ -2178,13 +2179,12 @@ struct Graphical_material *default_material, struct Spectrum *spectrum)
 	struct VT_iso_vertex *vertex;
 
 	ENTER(draw_voltexGL);
-	/* default return code */
 	return_code = 0;
-	/* checking arguments */
+	const bool data_spectrum = (0 < number_of_data_components) && (0 != spectrum);
 	if (triangle_list && vertex_list && (0 < number_of_vertices) && (0 < number_of_triangles))
 	{
 #if defined (OPENGL_API)
-		if ((!number_of_data_components) ||
+		if ((!data_spectrum) ||
 			(render_data=spectrum_start_renderGL(spectrum,default_material,
 			number_of_data_components)))
 		{
@@ -2194,14 +2194,14 @@ struct Graphical_material *default_material, struct Spectrum *spectrum)
 				triangle = triangle_list[i];
 				GLfloat values[3];
 				GLfloat *data = 0;
-				if (number_of_data_components)
+				if (data_spectrum)
 				{
 					data = new GLfloat[number_of_data_components];
 				}
 				for (j = 0 ; j < 3 ; j++)
 				{
 					vertex = triangle->vertices[j];
-					if (number_of_data_components)
+					if (data_spectrum)
 					{
 						CAST_TO_OTHER(data, vertex->data, GLfloat, number_of_data_components);
 						spectrum_renderGL_value(spectrum,default_material,render_data,data);
@@ -2220,7 +2220,7 @@ struct Graphical_material *default_material, struct Spectrum *spectrum)
 					delete[] data;
 			}
 			glEnd();
-			if (number_of_data_components)
+			if (data_spectrum)
 			{
 				spectrum_end_renderGL(spectrum,render_data);
 			}
@@ -2253,12 +2253,13 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 	GLfloat *data_buffer = NULL;
 	int return_code;
 	unsigned int data_values_per_vertex, data_vertex_count;
+	Spectrum *spectrum = 0;
 
 	if (object->vertex_array->get_float_vertex_buffer(
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-		&data_buffer, &data_values_per_vertex, &data_vertex_count))
+		&data_buffer, &data_values_per_vertex, &data_vertex_count) &&
+		(0 != (spectrum = get_GT_object_spectrum(object))))
 	{
-		Spectrum *spectrum = get_GT_object_spectrum(object);
 		/* Ignoring selected state here so we don't need to refer to primitive */
 		Graphical_material *material = get_GT_object_default_material(object);
 
