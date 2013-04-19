@@ -119,7 +119,7 @@ public:
 			static_cast<Cmiss_graphics_material_attribute>(attribute), value);
 	}
 
-	int getAttributeReal(Attribute attribute)
+	double getAttributeReal(Attribute attribute)
 	{
 		return Cmiss_graphics_material_get_attribute_real(id,
 			static_cast<Cmiss_graphics_material_attribute>(attribute));

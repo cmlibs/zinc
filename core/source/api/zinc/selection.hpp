@@ -94,7 +94,7 @@ public:
 
 	bool getHierarchical()
 	{
-		return Cmiss_selection_handler_get_hierarchical(id);
+		return (0 != Cmiss_selection_handler_get_hierarchical(id));
 	}
 
 	int setHierarchical(bool hierarchicalFlag)

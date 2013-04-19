@@ -41,12 +41,15 @@
 
 #include "zinc/graphic.h"
 #include "zinc/field.hpp"
+#include "zinc/graphicsfont.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
 namespace zinc
 {
+
+class GraphicPointAttributes;
 
 class Graphic
 {
@@ -114,14 +117,17 @@ public:
 
 	enum GlyphType
 	{
-		GLYPH_TYPE_INVALID = CMISS_GRAPHIC_GLYPH_TYPE_INVALID,
-		GLYPH_TYPE_POINT = CMISS_GRAPHIC_GLYPH_POINT,
-		GLYPH_TYPE_AXES = CMISS_GRAPHIC_GLYPH_AXES
+		GLYPH_TYPE_INVALID = CMISS_GRAPHICS_GLYPH_TYPE_INVALID,
+		GLYPH_TYPE_NONE = CMISS_GRAPHICS_GLYPH_NONE,
+		GLYPH_TYPE_POINT = CMISS_GRAPHICS_GLYPH_POINT,
+		GLYPH_TYPE_LINE = CMISS_GRAPHICS_GLYPH_LINE,
+		GLYPH_TYPE_SPHERE = CMISS_GRAPHICS_GLYPH_SPHERE,
+		GLYPH_TYPE_AXES = CMISS_GRAPHICS_GLYPH_AXES_SOLID,
 	};
 
 	enum GraphicType
 	{
-		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID ,
+		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID,
 		GRAPHIC_NODE_POINTS = CMISS_GRAPHIC_NODE_POINTS,
 		GRAPHIC_DATA_POINTS = CMISS_GRAPHIC_DATA_POINTS,
 		GRAPHIC_LINES = CMISS_GRAPHIC_LINES,
@@ -130,7 +136,7 @@ public:
 		GRAPHIC_ISO_SURFACES = CMISS_GRAPHIC_ISO_SURFACES,
 		GRAPHIC_ELEMENT_POINTS = CMISS_GRAPHIC_ELEMENT_POINTS,
 		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES,
-		GRAPHIC_POINT = CMISS_GRAPHIC_POINT
+		GRAPHIC_POINT = CMISS_GRAPHIC_POINT,
 	};
 
 	enum UseElementType
@@ -188,6 +194,8 @@ public:
 		return Cmiss_graphic_set_material(id, graphicsMaterial.getId());
 	}
 
+	GraphicPointAttributes getPointAttributes();
+
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
 	{
 		return Cmiss_graphic_set_selected_material(id, graphicsMaterial.getId());
@@ -198,7 +206,7 @@ public:
 		return Spectrum(Cmiss_graphic_get_spectrum(id));
 	}
 
-	int setSpectrum(Field& spectrum)
+	int setSpectrum(Spectrum& spectrum)
 	{
 		return Cmiss_graphic_set_spectrum(id, spectrum.getId());
 	}
@@ -226,7 +234,7 @@ public:
 
 	bool getVisibilityFlag()
 	{
-		return Cmiss_graphic_get_visibility_flag(id);
+		return (0 != Cmiss_graphic_get_visibility_flag(id));
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)
@@ -258,12 +266,6 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_graphic_set_name(id, name);
-	}
-
-	int setGlyphType(GlyphType type)
-	{
-		return Cmiss_graphic_set_glyph_type(id,
-			static_cast<Cmiss_graphic_glyph_type>(type));
 	}
 
 	int setFace(FaceType face)
@@ -326,6 +328,65 @@ public:
 	}
 
 };
+
+class GraphicPointAttributes
+{
+protected:
+	Cmiss_graphic_point_attributes_id id;
+
+public:
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicPointAttributes(Cmiss_graphic_point_attributes_id point_attributes_id) :
+		id(point_attributes_id)
+	  {}
+
+	GraphicPointAttributes(const GraphicPointAttributes& pointAttributes) :
+		id(Cmiss_graphic_point_attributes_access(pointAttributes.id))
+		{}
+
+	~GraphicPointAttributes()
+	{
+		Cmiss_graphic_point_attributes_destroy(&id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	GraphicsFont getFont()
+	{
+		return GraphicsFont(Cmiss_graphic_point_attributes_get_font(id));
+	}
+
+	int setFont(GraphicsFont& font)
+	{
+		return Cmiss_graphic_point_attributes_set_font(id, font.getId());
+	}
+
+	int setGlyphType(Graphic::GlyphType type)
+	{
+		return Cmiss_graphic_point_attributes_set_glyph_type(id,
+			static_cast<Cmiss_graphics_glyph_type>(type));
+	}
+
+	Field getLabelField()
+	{
+		return Field(Cmiss_graphic_point_attributes_get_label_field(id));
+	}
+
+	int setLabelField(Field& labelField)
+	{
+		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
+	}
+
+};
+
+inline GraphicPointAttributes Graphic::getPointAttributes()
+{
+	return GraphicPointAttributes(Cmiss_graphic_get_point_attributes(id));
+}
 
 } // namespace Cmiss
 

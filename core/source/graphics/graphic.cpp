@@ -1686,38 +1686,6 @@ int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 
 	return (return_code);
 }
-int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, Cmiss_graphic_glyph_type glyph_type)
-{
-	int return_code = 0;
-
-	if (graphic && glyph_type != CMISS_GRAPHIC_GLYPH_TYPE_INVALID)
-	{
-		if ((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-			(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-			(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-			(graphic->graphic_type == CMISS_GRAPHIC_POINT))
-		{
-			GT_object *glyph;
-			Graphic_glyph_scaling_mode glyph_scaling_mode;
-			Triple glyph_centre,glyph_scale_factors,glyph_size;
-			Computed_field *orientation_scale_field, *variable_scale_field; ;
-			Cmiss_graphic_get_glyph_parameters(graphic,
-				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
-				&orientation_scale_field, glyph_scale_factors,
-				&variable_scale_field);
-			if (glyph_type == CMISS_GRAPHIC_GLYPH_AXES)
-			{
-				glyph = Cmiss_rendition_get_glyph_from_manager(graphic->rendition, "axes_solid");
-			}
-			return_code = Cmiss_graphic_set_glyph_parameters(graphic,glyph,
-				glyph_scaling_mode, glyph_centre, glyph_size,
-				orientation_scale_field, glyph_scale_factors,
-				variable_scale_field);
-		}
-	}
-
-	return return_code;
-}
 
 int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic)
 {
@@ -1946,9 +1914,7 @@ int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic,
 	int return_code = 0;
 
 	ENTER(Cmiss_graphic_set_exterior);
-	if (graphic&&(
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
+	if (graphic)
 	{
 		return_code=1;
 		/* ensure flags are 0 or 1 to simplify comparison with other graphic */
@@ -2018,6 +1984,14 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 			spectrum = graphic->spectrum;
 		}
 		set_GT_object_Spectrum(graphic->graphics_object, (void *)spectrum);
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
+		{
+			set_GT_object_glyph(graphic->graphics_object, graphic->glyph);
+		}
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
+		{
+			set_GT_object_font(graphic->graphics_object, graphic->font);
+		}
 		return_code = 1;
 	}
 	LEAVE;
@@ -2050,35 +2024,6 @@ int Cmiss_graphic_set_material(struct Cmiss_graphic *graphic,
 
 	return (return_code);
 } /* Cmiss_graphic_set_material */
-
-int Cmiss_graphic_set_label_field(
-	struct Cmiss_graphic *graphic,struct Computed_field *label_field,
-	struct Cmiss_graphics_font *font)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_label_field);
-	if (graphic&&((!label_field)||
-		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_POINT==graphic->graphic_type))) &&
-		(!label_field || font))
-	{
-		REACCESS(Computed_field)(&(graphic->label_field), label_field);
-		REACCESS(Cmiss_graphics_font)(&(graphic->font), font);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_label_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 
 int Cmiss_graphic_set_selected_material(
 	struct Cmiss_graphic *graphic,
@@ -5318,58 +5263,6 @@ int Cmiss_graphic_data_FE_region_change(
 	return (return_code);
 } /* Cmiss_graphic_data_FE_region_change */
 
-namespace {
-
-/***************************************************************************//**
- * Makes a new graphic of the supplied graphic_type, optionally a copy of an
- * existing_graphic.
- *
- * @param rendition  Source of graphics defaults if creating a new graphic.
- * @param graphic_type  The type of the new graphic.
- * @param existing_graphic  An existing graphic to copy settings from if of
- * same graphic_type.
- * @return  1 on success, 0 on failure.
- */
-Cmiss_graphic* get_graphic_for_gfx_modify(Cmiss_rendition *rendition,
-	Cmiss_graphic_type graphic_type, Cmiss_graphic *existing_graphic)
-{
-	Cmiss_graphic *graphic = CREATE(Cmiss_graphic)(graphic_type);
-	if (existing_graphic && (graphic_type == existing_graphic->graphic_type))
-	{
-		Cmiss_graphic_copy_without_graphics_object(graphic, existing_graphic);
-		// GRC not sure why this was done:
-		// Cmiss_graphic_set_rendition_private(graphic, existing_graphic->rendition);
-	}
-	else
-	{
-		Cmiss_rendition_set_graphic_defaults(rendition, graphic);
-		/* Set up the coordinate_field */
-		// GRC move following to Cmiss_rendition_set_graphic_defaults ?
-		// GRC can improve as logic is probably already in rendition
-		if (!graphic->coordinate_field)
-		{
-			struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-			struct FE_region *fe_region =	Cmiss_region_get_FE_region(region);
-			struct FE_region *data_region = FE_region_get_data_FE_region(fe_region);
-			struct FE_field *fe_field;
-			if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-				FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-			{
-				struct Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_wraps_fe_field,
-					(void *)fe_field, Cmiss_region_get_Computed_field_manager(region));
-				if (coordinate_field)
-				{
-					Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
-				}
-			}
-		}
-	}
-	return (graphic);
-}
-
-} // namespace anonymous
-
 int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 	void *second_graphic_void)
 {
@@ -5466,7 +5359,6 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(CMISS_GRAPHIC_POINT==graphic->graphic_type) ))
 		{
 			return_code=
-				(graphic->glyph==second_graphic->glyph)&&
 				(graphic->glyph_scaling_mode==second_graphic->glyph_scaling_mode)&&
 				(graphic->glyph_size[0]==second_graphic->glyph_size[0])&&
 				(graphic->glyph_size[1]==second_graphic->glyph_size[1])&&
@@ -5485,8 +5377,7 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(graphic->variable_scale_field==
 					second_graphic->variable_scale_field)&&
 				(graphic->label_field==second_graphic->label_field)&&
-				(graphic->label_density_field==second_graphic->label_density_field)&&
-				(graphic->font==second_graphic->font);
+				(graphic->label_density_field==second_graphic->label_density_field);
 		}
 		/* for element_points and iso_surfaces */
 		if (return_code&&
@@ -5820,8 +5711,6 @@ int Cmiss_graphic_same_non_trivial(struct Cmiss_graphic *graphic,
 		return_code=
 			Cmiss_graphic_same_geometry(graphic,second_graphic_void)&&
 			(graphic->data_field==second_graphic->data_field)&&
-			(graphic->render_type==second_graphic->render_type)&&
-			(graphic->line_width==second_graphic->line_width)&&
 			(graphic->texture_coordinate_field==second_graphic->texture_coordinate_field)&&
 			((CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type)||
 				(graphic->streamline_data_type==
@@ -5949,53 +5838,13 @@ int Cmiss_graphic_get_radius_parameters(
 	return (return_code);
 } /* Cmiss_graphic_get_radius_parameters */
 
-int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **label_field, struct Cmiss_graphics_font **font)
+Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_label_field);
-	if (graphic&&
-		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_POINT==graphic->graphic_type)))
+	if (graphic && graphic->subgroup_field)
 	{
-		*label_field = graphic->label_field;
-		*font = graphic->font;
-		return_code = 1;
+		return ACCESS(Computed_field)(graphic->subgroup_field);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_label_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_label_field */
-
-int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **subgroup_field)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_subgroup_field);
-	if (graphic)
-	{
-		*subgroup_field = graphic->subgroup_field;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_subgroup_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return 0;
 }
 
 int Cmiss_graphic_set_subgroup_field(
@@ -6066,8 +5915,7 @@ int Cmiss_graphic_set_tessellation(
 	Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation)
 {
 	int return_code = 1;
-	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
-		CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+	if (graphic)
 	{
 		if (tessellation != graphic->tessellation)
 		{
@@ -6468,9 +6316,7 @@ int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic)
 {
 	int return_code = 0;
 
-	if (graphic && (
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
+	if (graphic)
 	{
 		return_code = graphic->exterior;
 	}
@@ -7155,12 +7001,11 @@ int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_grap
 
 Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic)
 {
-	if (graphic)
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_ISO_SURFACES))
 	{
 		Cmiss_graphic_access(graphic);
 		return (reinterpret_cast<Cmiss_graphic_iso_surface_id>(graphic));
 	}
-
 	return 0;
 }
 
@@ -7232,4 +7077,154 @@ int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_sur
 	}
 
 	return return_code;
+}
+
+Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
+	Cmiss_graphic_id graphic)
+{
+	if (graphic && (
+		(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+		(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
+		(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+		(graphic->graphic_type == CMISS_GRAPHIC_POINT)))
+	{
+		Cmiss_graphic_access(graphic);
+		return reinterpret_cast<Cmiss_graphic_point_attributes_id>(graphic);
+	}
+	return 0;
+}
+
+Cmiss_graphic_point_attributes_id Cmiss_graphic_point_attributes_access(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic_access(reinterpret_cast<Cmiss_graphic_id>(point_attributes));
+	return point_attributes;
+}
+
+int Cmiss_graphic_point_attributes_destroy(
+	Cmiss_graphic_point_attributes_id *point_attributes_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(point_attributes_address));
+}
+
+Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (graphic->font))
+	{
+		return ACCESS(Cmiss_graphics_font)(graphic->font);
+	}
+	return 0;
+}
+
+int Cmiss_graphic_point_attributes_set_font(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_graphics_font_id font)
+{
+	int return_code = 0;
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		if (font != graphic->font)
+		{
+			REACCESS(Cmiss_graphics_font)(&(graphic->font), font);
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int Cmiss_graphic_point_attributes_set_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	GT_object *glyph)
+{
+	int return_code = 0;
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		if (glyph != graphic->glyph)
+		{
+			if (graphic->glyph)
+			{
+				GT_object_remove_callback(graphic->glyph,
+					Cmiss_graphic_glyph_change, (void *)graphic);
+			}
+			REACCESS(GT_object)(&(graphic->glyph), glyph);
+			if (glyph)
+			{
+				GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
+					(void *)graphic);
+			}
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
+
+int Cmiss_graphic_point_attributes_set_glyph_type(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	enum Cmiss_graphics_glyph_type glyph_type)
+{
+	int return_code = 0;
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && glyph_type != CMISS_GRAPHICS_GLYPH_TYPE_INVALID)
+	{
+		GT_object *glyph = 0;
+		const char *glyph_name = 0;
+		switch (glyph_type)
+		{
+		case CMISS_GRAPHICS_GLYPH_TYPE_INVALID:
+		case CMISS_GRAPHICS_GLYPH_NONE:
+			glyph_name = 0;
+			break;
+		case CMISS_GRAPHICS_GLYPH_POINT:
+			glyph_name = "point";
+			break;
+		case CMISS_GRAPHICS_GLYPH_LINE:
+			glyph_name = "line";
+			break;
+		case CMISS_GRAPHICS_GLYPH_SPHERE:
+			glyph_name = "sphere";
+			break;
+		case CMISS_GRAPHICS_GLYPH_AXES_SOLID:
+			glyph_name = "axes_solid";
+			break;
+		};
+		glyph = Cmiss_rendition_get_glyph_from_manager(graphic->rendition, glyph_name);
+		return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
+	}
+	return return_code;
+}
+
+Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (graphic->label_field))
+	{
+		return ACCESS(Computed_field)(graphic->label_field);
+	}
+	return 0;
+}
+
+int Cmiss_graphic_point_attributes_set_label_field(
+	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field)
+{
+	int return_code = 0;
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		if (label_field != graphic->label_field)
+		{
+			REACCESS(Computed_field)(&(graphic->label_field), label_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return_code = 1;
+	}
+	return (return_code);
 }

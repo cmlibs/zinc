@@ -60,6 +60,7 @@ SET( API_HDRS
     source/api/zinc/types/graphicisosurfaceid.h
     source/api/zinc/types/graphicscoordinatesystem.h
     source/api/zinc/types/graphicsfilterid.h
+    source/api/zinc/types/graphicsfontid.h
     source/api/zinc/types/graphicsmaterialid.h
     source/api/zinc/types/graphicsmoduleid.h
     source/api/zinc/types/graphicsrendertype.h

@@ -73,6 +73,8 @@ enum Graphic_glyph_scaling_mode
 	GRAPHIC_GLYPH_SCALING_GENERAL
 }; /* enum Glyph_scaling_mode */
 
+struct Cmiss_graphic_point_attributes;
+
 struct Cmiss_graphic
 /*******************************************************************************
 LAST MODIFIED : 14 March 2003
@@ -453,24 +455,27 @@ int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 enum Use_element_type Cmiss_graphic_get_use_element_type(
 	struct Cmiss_graphic *graphic);
 
-/***************************************************************************//**
- * Returns the label_field and font used by <graphic>. For graphic types
- * CMISS_GRAPHIC_NODE_POINTS, CMISS_GRAPHIC_DATA_POINTS and
- * CMISS_GRAPHIC_ELEMENT_POINTS only.
+/**
+ * Gets the field which returns true/non-zero for primitive to be created.
+ *
+ * @param graphic  The graphic to be queried.
+ * @return  Handle to subgroup field, or 0 if none or error.
+ * Up to caller to destroy returned handle.
  */
-int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **label_field, struct Cmiss_graphics_font **font);
+Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic);
 
-
-int Cmiss_graphic_set_label_field(
-	struct Cmiss_graphic *graphic,struct Computed_field *label_field,
-	struct Cmiss_graphics_font *font);
-
-int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **subgroup_field);
-
-int Cmiss_graphic_set_subgroup_field(
-	struct Cmiss_graphic *graphic,struct Computed_field *subgroup_field);
+/**
+ * Sets optional field which returns true/non-zero for primitive to be created.
+ * Commonly a group, node_group or element_group field which is efficiently
+ * iterated over. Note general fields are evaluated at an arbitrary location in
+ * elements.
+ *
+ * @param graphic  The graphic to be modified.
+ * @param subgroup_field  Scalar subgroup field.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_graphic_set_subgroup_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id subgroup_field);
 
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
