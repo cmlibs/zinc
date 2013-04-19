@@ -170,7 +170,7 @@ public:
 
 	bool getVisibilityFlag()
 	{
-		return Cmiss_rendition_get_visibility_flag(id);
+		return (0 != Cmiss_rendition_get_visibility_flag(id));
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)

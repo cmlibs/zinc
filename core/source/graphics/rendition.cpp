@@ -852,22 +852,16 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 		{
 			Cmiss_tessellation *tessellation = Cmiss_graphics_module_get_default_tessellation(rendition->graphics_module);
 			Cmiss_graphic_set_tessellation(graphic, tessellation);
-			DEACCESS(Cmiss_tessellation)(&tessellation);
+			Cmiss_tessellation_destroy(&tessellation);
 		}
 
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
+		Cmiss_graphic_point_attributes_id point_attributes = Cmiss_graphic_get_point_attributes(graphic);
+		if (point_attributes)
 		{
 			Cmiss_graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
-			Cmiss_graphic_set_label_field(graphic, (Cmiss_field *)NULL, font);
-			DEACCESS(Cmiss_graphics_font)(&font);
-		}
+			Cmiss_graphic_point_attributes_set_font(point_attributes, font);
+			Cmiss_graphics_font_destroy(&font);
 
-		// default to point glyph for fastest possible display
-		if ((graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_POINT))
-		{
 			GT_object *glyph;
 			Graphic_glyph_scaling_mode glyph_scaling_mode;
 			Triple glyph_centre,glyph_scale_factors,glyph_size;
@@ -885,6 +879,8 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 				glyph_scaling_mode, glyph_centre, glyph_size,
 				orientation_scale_field, glyph_scale_factors,
 				variable_scale_field);
+
+			Cmiss_graphic_point_attributes_destroy(&point_attributes);
 		}
 
 		struct Material_package *material_package = Cmiss_graphics_module_get_material_package(rendition->graphics_module);

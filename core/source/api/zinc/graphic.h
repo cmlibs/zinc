@@ -47,6 +47,7 @@ The public interface to the Cmiss_rendition.
 
 #include "types/fieldid.h"
 #include "types/graphicid.h"
+#include "types/graphicsfontid.h"
 #include "types/graphicisosurfaceid.h"
 #include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
@@ -232,15 +233,6 @@ ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
 
 /**
- * Sets the glyph type for the graphic.
- *
- * @param graphic  The graphic to modify.
- * @param visibility_flag  1 to set, 0 to clear.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphic_set_glyph_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_glyph_type glyph_type);
-
-/**
  * Sets the face for the graphic to display.
  *
  * @param graphic  The graphic to modify.
@@ -332,6 +324,18 @@ ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
+
+/**
+ * Get handle to point attributes object for specifying glyph, scaling fields
+ * and scale factors used in visualising points produced by the graphic.
+ * Only returned for graphic classes for viewing points.
+ *
+ * @param graphic  The graphic to request attributes for.
+ * @return  Handle to point attributes object (up to caller to destroy), or 0
+ * if none, not supported or error.
+ */
+ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
+	Cmiss_graphic_id graphic);
 
 /**
  * It takes the same string of command as gfx modify g_element <region_name>
@@ -433,6 +437,93 @@ ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_
  * @return Status CMISS_OK if the field was successfully set, any other value on failure
  */
 ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value);
+
+/**
+ * If the graphic produces points then returns a handle to point attribute
+ * object for specifying glyph, scaling fields, scale factors and labels.
+ *
+ * @param graphic  The graphic to request point attributes from.
+ * @return  Handle to point attributes object, or 0 if not supported for
+ * graphic type or error. Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Returns a new reference to the point attributes with reference count
+ * incremented. Caller is responsible for destroying the new reference.
+ *
+ * @param point_attributes  The point_attributes to obtain a new reference to.
+ * @return  New point attributes reference with incremented reference count.
+ */
+ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_point_attributes_access(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Destroys this reference to the point attributes, and sets it to 0.
+ * Internally this just decrements the reference count.
+ *
+ * @param point_attributes_address  Address of handle to the point attributes.
+ * @return  Status CMISS_OK if successfully destroyed the handle, any other
+ * value on failure.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_destroy(
+	Cmiss_graphic_point_attributes_id *point_attributes_address);
+
+/**
+ * Gets the font in the graphic point attributes used to draw the label field.
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return Handle to font, or 0 if none or error. Up to caller to destroy
+ * returned handle.
+ */
+ZINC_API Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the font in the graphic point attributes used to draw the label field.
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param font  The font to set.
+ * @return  Status CMISS_OK if successfully set, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_font(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_graphics_font_id font);
+
+/**
+ * Sets the glyph use for visualising a graphics point from a reduced set
+ * of enumerations.
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param glyph_type  The glyph type identifier.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	enum Cmiss_graphics_glyph_type glyph_type);
+
+/**
+ * Gets the label_field from the graphic point attributes.
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return Handle to label field, or 0 if none or error. Up to caller to destroy
+ * returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the label_field in the graphic point attributes. A string representation
+ * of this field's value (if defined) is drawn with the current font at the
+ * glyph offset.
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param label_field  The label field to set.
+ * @return  Status CMISS_OK if successfully set, any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
+	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field);
 
 #ifdef __cplusplus
 }

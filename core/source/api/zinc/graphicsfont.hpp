@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : timekeeper.hpp
+ * FILE : graphicsfont.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -18,7 +18,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -36,51 +36,42 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_TIME_KEEPER_HPP__
-#define __ZN_TIME_KEEPER_HPP__
+#ifndef __ZN_GRAPHICSFONT_HPP__
+#define __ZN_GRAPHICSFONT_HPP__
 
-#include "zinc/timekeeper.h"
-#include "zinc/timenotifier.hpp"
+#include "zinc/graphicsfont.h"
 
 namespace zinc
 {
 
-class TimeKeeper
+class GraphicsFont
 {
 protected:
-	Cmiss_time_keeper_id id;
+	Cmiss_graphics_font_id id;
 
 public:
 
-	TimeKeeper() : id(0)
-	{   }
+	GraphicsFont() : id(0)
+	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeKeeper(Cmiss_time_keeper_id in_time_keeper_id) :
-		id(in_time_keeper_id)
+	explicit GraphicsFont(Cmiss_graphics_font_id font_id) : id(font_id)
 	{  }
 
-	TimeKeeper(const TimeKeeper& timeKeeper) :
-		id(Cmiss_time_keeper_access(timeKeeper.id))
+	GraphicsFont(const GraphicsFont& font) : id(Cmiss_graphics_font_access(font.id))
 	{  }
 
-	TimeKeeper& operator=(const TimeKeeper& timeKeeper)
+	GraphicsFont& operator=(const GraphicsFont& font)
 	{
-		Cmiss_time_keeper_id temp_id = Cmiss_time_keeper_access(timeKeeper.id);
-		if (0 != id)
-		{
-			Cmiss_time_keeper_destroy(&id);
-		}
+		Cmiss_graphics_font_id temp_id = Cmiss_graphics_font_access(font.id);
+		Cmiss_graphics_font_destroy(&id);
 		id = temp_id;
 		return *this;
 	}
 
-	~TimeKeeper()
+	~GraphicsFont()
 	{
-		if (0 != id)
-		{
-			Cmiss_time_keeper_destroy(&id);
-		}
+		Cmiss_graphics_font_destroy(&id);
 	}
 
 	bool isValid()
@@ -88,49 +79,21 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_time_keeper_id getId()
+	Cmiss_graphics_font_id getId()
 	{
 		return id;
 	}
 
-	enum Attribute
+	char *getName()
 	{
-		ATTRIBUTE_INVALID = CMISS_TIME_KEEPER_ATTRIBUTE_INVALID,
-		ATTRIBUTE_TIME = CMISS_TIME_KEEPER_ATTRIBUTE_TIME,
-		ATTRIBUTE_MINIMUM_TIME = CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME,
-		ATTRIBUTE_MAXIMUM_TIME = CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME
-	};
-
-	double getAttributeReal(Attribute attribute)
-	{
-		return Cmiss_time_keeper_get_attribute_real(id,
-			static_cast<Cmiss_time_keeper_attribute>(attribute));
+		return Cmiss_graphics_font_get_name(id);
 	}
 
-	int setAttributeReal(Attribute attribute, double value)
+	int setName(const char *name)
 	{
-		return Cmiss_time_keeper_set_attribute_real(id,
-			static_cast<Cmiss_time_keeper_attribute>(attribute), value);
-	}
-
-	TimeNotifier createNotifierRegular(double updateFrequency, double timeOffset)
-	{
-		return TimeNotifier(Cmiss_time_keeper_create_notifier_regular(
-			id, updateFrequency, timeOffset));
-	}
-
-	int addTimeNotifier(TimeNotifier timeNotifier)
-	{
-		return Cmiss_time_keeper_add_time_notifier(id, timeNotifier.getId());
-	}
-
-	int removeTimeNotifier(TimeNotifier timeNotifier)
-	{
-		return Cmiss_time_keeper_remove_time_notifier(id, timeNotifier.getId());
-	}
+		return Cmiss_graphics_font_set_name(id, name);
+ 	}
 
 };
 
-}  // namespace zinc
-
-#endif /* __ZN_TIME_KEEPER_HPP__ */
+#endif /* __ZN_GRAPHICSFONT_HPP__ */

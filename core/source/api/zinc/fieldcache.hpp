@@ -170,7 +170,7 @@ inline int Field::evaluateDerivative(DifferentialOperator& differentialOperator,
 
 inline bool Field::isDefinedAtLocation(FieldCache& cache)
 {
-	return Cmiss_field_is_defined_at_location(id, cache.getId());
+	return (0 != Cmiss_field_is_defined_at_location(id, cache.getId()));
 }
 
 }  // namespace zinc

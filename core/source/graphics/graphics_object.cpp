@@ -7063,14 +7063,11 @@ Sets the selected_material of a GT_object.
 	return (return_code);
 } /* set_GT_object_selected_material */
 
+/**
+ * Sets the spectrum of a GT_object.
+ */
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
 	void *spectrum_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 1998
-
-DESCRIPTION :
-Sets the spectrum of a GT_object.
-==============================================================================*/
 {
 	int return_code;
 	struct Spectrum *spectrum;
@@ -7127,6 +7124,56 @@ Gets the spectrum of a GT_object.
 
 	return (spectrum);
 } /* get_GT_object_spectrum */
+
+int set_GT_object_font(struct GT_object *graphics_object,
+	struct Cmiss_graphics_font *font)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if (graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set->font != font)
+			{
+				while (glyph_set)
+				{
+					REACCESS(Cmiss_graphics_font)(&glyph_set->font, font);
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph(struct GT_object *graphics_object,
+	struct GT_object *glyph)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if (graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set->glyph != glyph)
+			{
+				while (glyph_set)
+				{
+					REACCESS(GT_object)(&glyph_set->glyph, glyph);
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void)
 /*******************************************************************************

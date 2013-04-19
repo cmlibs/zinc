@@ -57,7 +57,7 @@ extern "C" {
  * @param font  handle to the "to be access" cmiss font.
  * @return  handle to font if successfully access font.
  */
-ZINC_API Cmiss_graphics_font_id Cmiss_graphics_font_access(Cmiss_graphics_font font);
+ZINC_API Cmiss_graphics_font_id Cmiss_graphics_font_access(Cmiss_graphics_font_id font);
 
 /***************************************************************************//**
  * Destroy the graphics font.

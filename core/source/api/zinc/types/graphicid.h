@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : cmiss_graphic_id.h
  *
  */
@@ -38,17 +38,18 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHIC_ID_H)
+#if !defined (CMISS_GRAPHICID_H)
+#define CMISS_GRAPHICID_H
 
-/***************************************************************************//**
+/**
  * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
  * such as lines, surfaces, node points and etc of a rendition. These graphics
- * can be customised through a numebr of set functions.
+ * can be customised through a number of set functions.
  */
 struct Cmiss_graphic;
 typedef struct Cmiss_graphic * Cmiss_graphic_id;
 
-/***************************************************************************//**
+/**
  * An enum type to define the type of a cmiss_graphic.
  */
 enum Cmiss_graphic_type
@@ -73,11 +74,14 @@ enum Cmiss_graphic_type
 /**
  *	An enum defining the type of graphic glyph.
  */
-enum Cmiss_graphic_glyph_type
+enum Cmiss_graphics_glyph_type
 {
-	CMISS_GRAPHIC_GLYPH_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_GLYPH_POINT,
-	CMISS_GRAPHIC_GLYPH_AXES
+	CMISS_GRAPHICS_GLYPH_TYPE_INVALID = 0,
+	CMISS_GRAPHICS_GLYPH_NONE,
+	CMISS_GRAPHICS_GLYPH_POINT,
+	CMISS_GRAPHICS_GLYPH_LINE,
+	CMISS_GRAPHICS_GLYPH_SPHERE,
+	CMISS_GRAPHICS_GLYPH_AXES_SOLID,
 };
 
 /**
@@ -106,5 +110,11 @@ enum Cmiss_graphic_face_type
 	CMISS_GRAPHIC_FACE_XI3_1
 };
 
-#define CMISS_GRAPHIC_ID_H
-#endif /* CMISS_GRAPHIC_ID_H */
+/**
+ * A handle to attributes specifying glyph, scaling fields, scale factors
+ * and labels used in visualising points produced by a Cmiss_graphic.
+ */
+struct Cmiss_graphic_point_attributes;
+typedef struct Cmiss_graphic_point_attributes * Cmiss_graphic_point_attributes_id;
+
+#endif /* CMISS_GRAPHICID_H */

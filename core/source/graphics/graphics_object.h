@@ -1371,6 +1371,20 @@ DESCRIPTION :
 Gets the spectrum of a GT_object.
 ==============================================================================*/
 
+struct Cmiss_graphics_font;
+
+/**
+ * Sets the font of all GT_glyph_set primitives in a GT_object.
+ */
+int set_GT_object_font(struct GT_object *graphics_object,
+	struct Cmiss_graphics_font *font);
+
+/**
+ * Sets the glyph of all GT_glyph_set primitives in a GT_object.
+ */
+int set_GT_object_glyph(struct GT_object *graphics_object,
+	struct GT_object *glyph);
+
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 5 January 1998

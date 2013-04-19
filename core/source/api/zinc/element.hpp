@@ -403,7 +403,7 @@ public:
 
 	bool containsElement(Element& element)
 	{
-		return Cmiss_mesh_contains_element(id, element.getId());
+		return (0 != Cmiss_mesh_contains_element(id, element.getId()));
 	}
 
 	ElementTemplate createElementTemplate()
