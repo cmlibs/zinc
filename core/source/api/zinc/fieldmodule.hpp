@@ -95,6 +95,8 @@ class FieldNodesetSum;
 class FieldNodesetMean;
 class FieldNodesetSumSquares;
 class FieldNodesetMeanSquares;
+class FieldNodesetMinimum;
+class FieldNodesetMaximum;
 class FieldElementGroup;
 class FieldNodeGroup;
 class FieldTimeLookup;
@@ -323,6 +325,10 @@ public:
 	FieldNodesetSumSquares createNodesetSumSquares(Field& sourceField, Nodeset& nodeset);
 
 	FieldNodesetMeanSquares createNodesetMeanSquares(Field& sourceField, Nodeset& nodeset);
+
+	FieldNodesetMinimum createNodesetMinimum(Field& sourceField, Nodeset& nodeset);
+
+	FieldNodesetMaximum createNodesetMaximum(Field& sourceField, Nodeset& nodeset);
 
 	FieldNodeGroup createNodeGroup(Nodeset& nodeset);
 
