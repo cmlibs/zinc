@@ -2282,6 +2282,17 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 	return (return_code);
 } /* Spectrum_get_colour_lookup_sizes */
 
+int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum)
+{
+	int return_code = 0;
+	if (spectrum)
+	{
+		Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);
+	}
+
+	return return_code;
+}
+
 int Cmiss_spectrum_set_name(
 	Cmiss_spectrum_id spectrum, const char *name)
 {

@@ -126,19 +126,14 @@ ZINC_API char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 ZINC_API int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
 
 /**
- * Execute cmgui command as in standalone cmgui application however this execute
- * command function will apply to the spectrum being passed into this function
- * only. It takes a string of command as gfx modify spectrum <spectrum> does.
- *
- * NOTE: This function may be removed in the future once more API functions are
- * made available to the users.
+ * Set spectrum maximum and minimum.
  *
  * @param spectrum  Handle to a cmiss_spectrum object.
- * @param command  Command to be executed.
+ * @param minimum  Minimum value of the spectrum.
+ * @param maximum  Maximum value of the spectrum.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
-	const char *command_string);
+ZINC_API int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum);
 
 #ifdef __cplusplus
 }
