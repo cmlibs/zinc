@@ -43,6 +43,7 @@
 %import "field.i"
 %import "tessellation.i"
 %import "graphicsmaterial.i"
+%import "spectrum.i"
 
 %{
 #include "zinc/graphic.hpp"

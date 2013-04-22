@@ -52,11 +52,13 @@
 %import "fieldcache.i"
 
 %{
+#include "zinc/fieldtypesalias.hpp"
 #include "zinc/fieldtypesarithmeticoperators.hpp"
 #include "zinc/fieldtypescomposite.hpp"
 #include "zinc/fieldtypesconditional.hpp"
 #include "zinc/fieldtypesconstant.hpp"
 #include "zinc/fieldtypescoordinatetransformation.hpp"
+#include "zinc/fieldtypesderivatives.hpp"
 #include "zinc/fieldtypesfiniteelement.hpp"
 #include "zinc/fieldtypesgroup.hpp"
 #include "zinc/fieldtypesimage.hpp"
@@ -77,6 +79,7 @@ using namespace zinc;
 %include "zinc/fieldtypesconditional.hpp"
 %include "zinc/fieldtypesconstant.hpp"
 %include "zinc/fieldtypescoordinatetransformation.hpp"
+%include "zinc/fieldtypesderivatives.hpp"
 %include "zinc/fieldtypesfiniteelement.hpp"
 %include "zinc/fieldtypessubobjectgroup.hpp"
 %include "zinc/fieldtypesgroup.hpp"
@@ -88,4 +91,5 @@ using namespace zinc;
 %include "zinc/fieldtypestime.hpp"
 %include "zinc/fieldtypestrigonometry.hpp"
 %include "zinc/fieldtypesarithmeticoperators.hpp"
+%include "zinc/fieldtypesalias.hpp"
 

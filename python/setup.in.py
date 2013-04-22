@@ -21,7 +21,7 @@ doclines = __doc__.split("\n")
 
 setup(
     name='PyZinc',
-    version='@ZINC_VERSION@-Python-@PYTHONLIBS_MAJOR_MINOR_VERSION@',
+    version='@PYPI_SOURCE_TARGZ_VERSION@',
     author='H. Sorby',
     author_email='h.sorby@auckland.ac.nz',
     packages=['zinc'],
