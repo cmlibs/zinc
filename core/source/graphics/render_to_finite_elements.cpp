@@ -74,13 +74,6 @@ Module types
 ------------
 */
 
-struct Render_node
-{
-	struct FE_node *fe_node;
-	FE_value_triple coordinates;
-	double *data;
-};
-
 struct Render_to_finite_elements_data
 {
 	Cmiss_region_id region;
@@ -226,184 +219,13 @@ struct Render_to_finite_elements_data
 	/** Generates a finite_element representation of the specified line according
 	 * to the <render_mode>
 	 */
-	int addLine(int number_of_data_components, struct Render_node *node1, struct Render_node *node2)
-	{
-		int return_code = 0;
-		switch (render_mode)
-		{
-			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
-			{
-				double length, density, expected_number;
-				FE_value position[3], side[3], xi1;
-				int i, j, number_of_points;
-				return_code = 1;
-				for (i = 0 ; i < 3 ; i++)
-				{
-					side[i] = node2->coordinates[i] - node1->coordinates[i];
-				}
-				length = sqrt(side[0] * side[0]
-					+ side[1] * side[1]
-					+ side[2] * side[2]);
-				if (number_of_data_components)
-				{
-					density = (node1->data[0] + node2->data[0]) / 3.0;
-					if (density < 0.0)
-					{
-						density = 0.0;
-					}
-				}
-				else
-				{
-					density = 1.0;
-				}
-				expected_number = length * density;
-				/* get actual_number = sample from Poisson distribution with
-					mean given by expected_number */
-				number_of_points =
-					sample_Poisson_distribution(expected_number);
-				for (j = 0; (j < number_of_points) && return_code; j++)
-				{
-					xi1 = CMGUI_RANDOM(ZnReal);
-					for (i = 0 ; i < 3 ; i++)
-					{
-						position[i] = node1->coordinates[i]
-							+ xi1 * side[i];
-					}
-					Cmiss_node_id node = createNode(position);
-					if (node)
-					{
-						Cmiss_node_destroy(&node);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			} break;
-			case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
-			{
-				if (node1 && node1->fe_node && node2 && node2->fe_node)
-				{
-					Cmiss_element_template_set_node(line_element_template, 1, node1->fe_node);
-					Cmiss_element_template_set_node(line_element_template, 2, node2->fe_node);
-					return_code = Cmiss_mesh_define_element(mesh_1d, /*identifier*/-1, line_element_template);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Render_to_finite_elements_data::addLine.  "
-						"Linear product render should have already created the nodes.");
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addLine.  "
-					"Unknown render mode.");
-				return_code = 0;
-			} break;
-		}
-		return return_code;
-	}
+	int addLine(int number_of_data_components, struct Render_node *node1, struct Render_node *node2);
 
 	/** Generates a finite_element representation of the specified triangle according
 	 * to the <render_mode>
 	 */
 	int addTriangle(int number_of_data_components,
-		struct Render_node *node1, struct Render_node *node2, struct Render_node *node3)
-	{
-		int return_code = 0;
-		switch (render_mode)
-		{
-			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
-			{
-				double area, coordinate_1, coordinate_2, coordinate_3, density, expected_number;
-				FE_value side1[3], side2[3], side3[3], position[3], xi1, xi2;
-				int i, j, number_of_points;
-
-				return_code = 1;
-				for (i = 0 ; i < 3 ; i++)
-				{
-					side1[i] = node2->coordinates[i] - node1->coordinates[i];
-					side2[i] = node3->coordinates[i] - node1->coordinates[i];
-					side3[i] = node3->coordinates[i] - node2->coordinates[i];
-				}
-				coordinate_1 = sqrt(side1[0] * side1[0]
-					+ side1[1] * side1[1]
-					+ side1[2] * side1[2]);
-				coordinate_2 = sqrt(side2[0] * side2[0]
-					+ side2[1] * side2[1]
-					+ side2[2] * side2[2]);
-				coordinate_3 = sqrt(side3[0] * side3[0]
-					+ side3[1] * side3[1]
-					+ side3[2] * side3[2]);
-				area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
-				area = sqrt ( area * (area - coordinate_1) *
-					(area - coordinate_2) * (area - coordinate_3));
-				if (number_of_data_components)
-				{
-					density = (node1->data[0] + node2->data[0] + node3->data[0]) / 3.0;
-					if (density < 0.0)
-					{
-						density = 0.0;
-					}
-				}
-				else
-				{
-					density = 1.0;
-				}
-				expected_number = area * density;
-				/* get actual_number = sample from Poisson distribution with
-					mean given by expected_number */
-				number_of_points =
-					sample_Poisson_distribution(expected_number);
-				for (j = 0; (j < number_of_points) && return_code; j++)
-				{
-					xi1 = CMGUI_RANDOM(ZnReal);
-					xi2 = CMGUI_RANDOM(ZnReal);
-					if(xi1 + xi2 > 1.0)
-					{
-						xi1 = 1.0 - xi1;
-						xi2 = 1.0 - xi2;
-					}
-					for (i = 0 ; i < 3 ; i++)
-					{
-						position[i] = node1->coordinates[i]
-							+ xi1 * side1[i] + xi2 * side2[i];
-					}
-					Cmiss_node_id node = createNode(position);
-					if (node)
-					{
-						Cmiss_node_destroy(&node);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			} break;
-			case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
-			{
-				if (node1 && node1->fe_node && node2 && node2->fe_node && node3 && node3->fe_node)
-				{
-					Cmiss_element_template_set_node(triangle_element_template, 1, node1->fe_node);
-					Cmiss_element_template_set_node(triangle_element_template, 2, node2->fe_node);
-					Cmiss_element_template_set_node(triangle_element_template, 3, node3->fe_node);
-					return_code = Cmiss_mesh_define_element(mesh_2d, /*identifier*/-1, triangle_element_template);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addTriangle.  "
-						"Linear product render should have already created the nodes.");
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Render_to_finite_elements_data::addTriangle.  "
-					"Unknown render mode.");
-				return_code = 0;
-			} break;
-		}
-		return (return_code);
-	}
+		struct Render_node *node1, struct Render_node *node2, struct Render_node *node3);
 
 	/** Generates a finite_element representation of the specified square according
 	 * to the <render_mode>.  If the mode does not have a special representation then
@@ -412,83 +234,290 @@ struct Render_to_finite_elements_data
 	 * xi1=0,xi2=0 ; xi1=1,xi2=0 ; xi1=0,xi2=1 ; xi1=1,xi2=1
 	 */
 	int addSquare(int number_of_data_components,
-		struct Render_node *node1, struct Render_node *node2, struct Render_node *node3, struct Render_node *node4)
+		struct Render_node *node1, struct Render_node *node2, struct Render_node *node3, struct Render_node *node4);
+
+};
+
+struct Render_node
+{
+	struct FE_node *fe_node;
+	FE_value_triple coordinates;
+	FE_value *data;
+
+	Render_node() :
+		fe_node(0),
+		data(0)
 	{
-		int return_code = 0;
-		switch (render_mode)
+	}
+
+	~Render_node()
+	{
+		delete[] this->data;
+		Cmiss_node_destroy(&(this->fe_node));
+	}
+
+	/**
+	 * Depending on the render mode, either stores coordinates and data, or
+	 * Generates a finite_element node at the specified location
+	 */
+	void assign(Render_to_finite_elements_data &render_data,
+		FE_value *coordinates, int number_of_data_components, FE_value *data_values)
+	{
+		/* Keep the coordinates for later */
+		this->coordinates[0] = coordinates[0];
+		this->coordinates[1] = coordinates[1];
+		this->coordinates[2] = coordinates[2];
+		if (this->data)
 		{
-			case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+			delete[] this->data;
+			this->data = 0;
+		}
+		if (0 < number_of_data_components)
+		{
+			this->data = new FE_value[number_of_data_components];
+			for (int i = 0; i < number_of_data_components; ++i)
 			{
-				if (node1 && node1->fe_node && node2 && node2->fe_node &&
-					node3 && node3->fe_node && node4 && node4->fe_node)
-				{
-					Cmiss_element_template_set_node(square_element_template, 1, node1->fe_node);
-					Cmiss_element_template_set_node(square_element_template, 2, node2->fe_node);
-					Cmiss_element_template_set_node(square_element_template, 3, node3->fe_node);
-					Cmiss_element_template_set_node(square_element_template, 4, node4->fe_node);
-					return_code = Cmiss_mesh_define_element(mesh_2d, /*identifier*/-1, square_element_template);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addSquare.  "
-						"Linear product render should have already created the nodes.");
-				}
+				this->data[i] = data_values[i];
+			}
+		}
+		Cmiss_node_destroy(&(this->fe_node));
+		switch (render_data.render_mode)
+		{
+			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
+			{
+				// do nothing
 			} break;
 			default:
 			{
-				return_code = addTriangle(number_of_data_components, node1, node2, node3) &&
-					addTriangle(number_of_data_components, node2, node3, node4);
+				this->fe_node = render_data.createNode(coordinates);
 			} break;
 		}
-		return (return_code);
 	}
 
 };
+
+int Render_to_finite_elements_data::addLine(int number_of_data_components, struct Render_node *node1, struct Render_node *node2)
+{
+	int return_code = 0;
+	switch (render_mode)
+	{
+		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
+		{
+			FE_value length, density, expected_number;
+			FE_value position[3], side[3], xi1;
+			int i, j, number_of_points;
+			return_code = 1;
+			for (i = 0 ; i < 3 ; i++)
+			{
+				side[i] = node2->coordinates[i] - node1->coordinates[i];
+			}
+			length = sqrt(side[0] * side[0]
+				+ side[1] * side[1]
+				+ side[2] * side[2]);
+			if (number_of_data_components)
+			{
+				density = (node1->data[0] + node2->data[0]) / 3.0;
+				if (density < 0.0)
+				{
+					density = 0.0;
+				}
+			}
+			else
+			{
+				density = 1.0;
+			}
+			expected_number = length * density;
+			/* get actual_number = sample from Poisson distribution with
+				mean given by expected_number */
+			number_of_points =
+				sample_Poisson_distribution(expected_number);
+			for (j = 0; (j < number_of_points) && return_code; j++)
+			{
+				xi1 = CMGUI_RANDOM(ZnReal);
+				for (i = 0 ; i < 3 ; i++)
+				{
+					position[i] = node1->coordinates[i]
+						+ xi1 * side[i];
+				}
+				Cmiss_node_id node = createNode(position);
+				if (node)
+				{
+					Cmiss_node_destroy(&node);
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		} break;
+		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+		{
+			if (node1 && node1->fe_node && node2 && node2->fe_node)
+			{
+				Cmiss_element_template_set_node(line_element_template, 1, node1->fe_node);
+				Cmiss_element_template_set_node(line_element_template, 2, node2->fe_node);
+				return_code = Cmiss_mesh_define_element(mesh_1d, /*identifier*/-1, line_element_template);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Render_to_finite_elements_data::addLine.  "
+					"Linear product render should have already created the nodes.");
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addLine.  "
+				"Unknown render mode.");
+			return_code = 0;
+		} break;
+	}
+	return return_code;
+}
+
+/** Generates a finite_element representation of the specified triangle according
+	* to the <render_mode>
+	*/
+int Render_to_finite_elements_data::addTriangle(int number_of_data_components,
+	struct Render_node *node1, struct Render_node *node2, struct Render_node *node3)
+{
+	int return_code = 0;
+	switch (render_mode)
+	{
+		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
+		{
+			FE_value area, coordinate_1, coordinate_2, coordinate_3, density, expected_number;
+			FE_value side1[3], side2[3], side3[3], position[3], xi1, xi2;
+			int i, j, number_of_points;
+
+			return_code = 1;
+			for (i = 0 ; i < 3 ; i++)
+			{
+				side1[i] = node2->coordinates[i] - node1->coordinates[i];
+				side2[i] = node3->coordinates[i] - node1->coordinates[i];
+				side3[i] = node3->coordinates[i] - node2->coordinates[i];
+			}
+			coordinate_1 = sqrt(side1[0] * side1[0]
+				+ side1[1] * side1[1]
+				+ side1[2] * side1[2]);
+			coordinate_2 = sqrt(side2[0] * side2[0]
+				+ side2[1] * side2[1]
+				+ side2[2] * side2[2]);
+			coordinate_3 = sqrt(side3[0] * side3[0]
+				+ side3[1] * side3[1]
+				+ side3[2] * side3[2]);
+			area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
+			area = sqrt ( area * (area - coordinate_1) *
+				(area - coordinate_2) * (area - coordinate_3));
+			if (number_of_data_components)
+			{
+				density = (node1->data[0] + node2->data[0] + node3->data[0]) / 3.0;
+				if (density < 0.0)
+				{
+					density = 0.0;
+				}
+			}
+			else
+			{
+				density = 1.0;
+			}
+			expected_number = area * density;
+			/* get actual_number = sample from Poisson distribution with
+				mean given by expected_number */
+			number_of_points =
+				sample_Poisson_distribution(expected_number);
+			for (j = 0; (j < number_of_points) && return_code; j++)
+			{
+				xi1 = CMGUI_RANDOM(ZnReal);
+				xi2 = CMGUI_RANDOM(ZnReal);
+				if(xi1 + xi2 > 1.0)
+				{
+					xi1 = 1.0 - xi1;
+					xi2 = 1.0 - xi2;
+				}
+				for (i = 0 ; i < 3 ; i++)
+				{
+					position[i] = node1->coordinates[i]
+						+ xi1 * side1[i] + xi2 * side2[i];
+				}
+				Cmiss_node_id node = createNode(position);
+				if (node)
+				{
+					Cmiss_node_destroy(&node);
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		} break;
+		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+		{
+			if (node1 && node1->fe_node && node2 && node2->fe_node && node3 && node3->fe_node)
+			{
+				Cmiss_element_template_set_node(triangle_element_template, 1, node1->fe_node);
+				Cmiss_element_template_set_node(triangle_element_template, 2, node2->fe_node);
+				Cmiss_element_template_set_node(triangle_element_template, 3, node3->fe_node);
+				return_code = Cmiss_mesh_define_element(mesh_2d, /*identifier*/-1, triangle_element_template);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addTriangle.  "
+					"Linear product render should have already created the nodes.");
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,"Render_to_finite_elements_data::addTriangle.  "
+				"Unknown render mode.");
+			return_code = 0;
+		} break;
+	}
+	return (return_code);
+}
+
+/** Generates a finite_element representation of the specified square according
+	* to the <render_mode>.  If the mode does not have a special representation then
+	* it will default to creating to triangles.
+	* The vertex ordering is the usual order in cmgui.
+	* xi1=0,xi2=0 ; xi1=1,xi2=0 ; xi1=0,xi2=1 ; xi1=1,xi2=1
+	*/
+int Render_to_finite_elements_data::addSquare(int number_of_data_components,
+	struct Render_node *node1, struct Render_node *node2, struct Render_node *node3, struct Render_node *node4)
+{
+	int return_code = 0;
+	switch (render_mode)
+	{
+		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+		{
+			if (node1 && node1->fe_node && node2 && node2->fe_node &&
+				node3 && node3->fe_node && node4 && node4->fe_node)
+			{
+				Cmiss_element_template_set_node(square_element_template, 1, node1->fe_node);
+				Cmiss_element_template_set_node(square_element_template, 2, node2->fe_node);
+				Cmiss_element_template_set_node(square_element_template, 3, node3->fe_node);
+				Cmiss_element_template_set_node(square_element_template, 4, node4->fe_node);
+				return_code = Cmiss_mesh_define_element(mesh_2d, /*identifier*/-1, square_element_template);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Render_to_finite_elements_data::addSquare.  "
+					"Linear product render should have already created the nodes.");
+			}
+		} break;
+		default:
+		{
+			return_code = addTriangle(number_of_data_components, node1, node2, node3) &&
+				addTriangle(number_of_data_components, node2, node3, node4);
+		} break;
+	}
+	return (return_code);
+}
+
 
 /*
 Module functions
 ----------------
 */
-
-static int Render_node_create(struct Render_node *render_node,
-	struct Render_to_finite_elements_data *data,
-	FE_value *coordinates, int number_of_data_components, double *data_values)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2005
-
-DESCRIPTION :
-Generates a finite_element node at the specified location
-==============================================================================*/
-{
-	int return_code;
-	render_node->fe_node = (struct FE_node *)NULL;
-	render_node->data = (double *)NULL;
-	return_code = 1;
-	if (data)
-	{
-		switch (data->render_mode)
-		{
-			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
-			{
-				/* Keep the coordinates for later */
-				render_node->coordinates[0] = coordinates[0];
-				render_node->coordinates[1] = coordinates[1];
-				render_node->coordinates[2] = coordinates[2];
-				if (number_of_data_components)
-				{
-					render_node->data = data_values;
-				}
-			} break;
-			default:
-			{
-				Cmiss_node_id node = data->createNode(coordinates);
-				render_node->fe_node = node;
-				Cmiss_node_destroy(&node); // existing code did not access
-			} break;
-		}
-	}
-	return (return_code);
-}
 
 static int render_polyline_to_finite_elements(
 	struct Render_to_finite_elements_data *data, Triple *point_list,
@@ -503,9 +532,7 @@ Writes VRML code to the file handle which represents the given
 continuous polyline. If data or spectrum are NULL they are ignored.
 ==============================================================================*/
 {
-	ZnReal *data_ptr = 0;
 	int i,number_of_points,return_code;
-	struct Render_node *nodes;
 	FE_value_triple position;
 
 	ENTER(render_polyline_to_finite_elements);
@@ -513,7 +540,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
 	{
 		return_code=1;
-		nodes = (struct Render_node *)NULL;
+		Render_node *nodes = 0;
 		switch (polyline_type)
 		{
 			case g_PLAIN:
@@ -534,32 +561,28 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 		}
 		if (return_code)
 		{
+			GLfloat *data_values_ptr = data_values;
+			FE_value *data_ptr = 0;
 			if (number_of_data_components)
 			{
-				data_ptr = new ZnReal[number_of_data_components*number_of_points];
+				data_ptr = new FE_value[number_of_data_components];
 			}
-			if (ALLOCATE(nodes, struct Render_node, number_of_points))
+			nodes = new Render_node[number_of_points];
+			if (0 != nodes)
 			{
-				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
-				ZnReal *node_data_ptr = data_ptr;
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
-					CAST_TO_FE_VALUE(position, point_list[i], 3);
-					if (!(Render_node_create(&nodes[i], data, position,
-						 number_of_data_components, node_data_ptr)))
-					{
-						display_message(ERROR_MESSAGE,
-								"render_voltex_to_finite_elements.  "
-								"Could not set fields at node");
-						return_code = 0;
-					}
 					if (number_of_data_components)
 					{
-						node_data_ptr += number_of_data_components;
+						CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
+					}
+					CAST_TO_FE_VALUE(position, point_list[i], 3);
+					nodes[i].assign(*data, position, number_of_data_components, data_ptr);
+					if (number_of_data_components)
+					{
+						data_values_ptr += number_of_data_components;
 					}
 				}
-				if (data_ptr)
-					delete[] data_ptr;
 			}
 			else
 			{
@@ -568,6 +591,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 					"Unable to allocate node array");
 				return_code = 0;
 			}
+			delete[] data_ptr;
 		}
 		if (return_code)
 		{
@@ -597,10 +621,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 				} break;
 			}
 		}
-		if (nodes)
-		{
-			DEALLOCATE(nodes);
-		}
+		delete[] nodes;
 	}
 	else
 	{
@@ -631,10 +652,8 @@ LAST MODIFIED : 8 December 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	ZnReal *data_ptr = 0;
 	int i,j,return_code;
 	int index,index_1,index_2,number_of_points;
-	struct Render_node *nodes;
 	FE_value_triple position;
 
 	ENTER(render_surface_to_finite_elements);
@@ -683,33 +702,28 @@ DESCRIPTION :
 		}
 		if (return_code)
 		{
-			nodes = (struct Render_node *)NULL;
+			GLfloat *data_values_ptr = data_values;
+			FE_value *data_ptr = 0;
 			if (number_of_data_components)
 			{
-				data_ptr = new ZnReal[number_of_data_components*number_of_points];
+				data_ptr = new FE_value[number_of_data_components];
 			}
-			if (ALLOCATE(nodes, struct Render_node, number_of_points))
+			Render_node *nodes = new Render_node[number_of_points];
+			if (0 != nodes)
 			{
-				CAST_TO_OTHER(data_ptr, data_values, ZnReal, number_of_data_components*number_of_points);
-				ZnReal *node_data_ptr = data_ptr;
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
-					CAST_TO_FE_VALUE(position, surfpts[i], 3);
-					if (!(Render_node_create(&nodes[i], data, position,
-						 number_of_data_components, node_data_ptr)))
-					{
-						display_message(ERROR_MESSAGE,
-								"render_voltex_to_finite_elements.  "
-								"Could not set fields at node");
-						return_code = 0;
-					}
 					if (number_of_data_components)
 					{
-						node_data_ptr += number_of_data_components;
+						CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
+					}
+					CAST_TO_FE_VALUE(position, surfpts[i], 3);
+					nodes[i].assign(*data, position, number_of_data_components, data_ptr);
+					if (number_of_data_components)
+					{
+						data_values_ptr += number_of_data_components;
 					}
 				}
-				if (data_ptr)
-					delete[] data_ptr;
 			}
 			else
 			{
@@ -812,10 +826,8 @@ DESCRIPTION :
 					} break;
 				}
 			}
-			if (nodes)
-			{
-				DEALLOCATE(nodes);
-			}
+			delete[] nodes;
+			delete[] data_ptr;
 		}
 		else
 		{
@@ -854,7 +866,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int i, return_code;
-	struct Render_node *nodes;
 	FE_value_triple position;
 
 	ENTER(render_voltex_to_finite_elements);
@@ -862,19 +873,22 @@ DESCRIPTION :
 	return_code = 1;
 	if (triangle_list && vertex_list && (0<number_of_triangles))
 	{
-		if (ALLOCATE(nodes, struct Render_node, number_of_vertices))
+		FE_value *data_ptr = 0;
+		if (number_of_data_components)
+		{
+			data_ptr = new FE_value[number_of_data_components];
+		}
+		Render_node *nodes = new Render_node[number_of_vertices];
+		if (0 != nodes)
 		{
 			for (i = 0 ; return_code && (i < number_of_vertices) ; i++)
 			{
-				CAST_TO_FE_VALUE(position, vertex_list[i]->coordinates, 3);
-				if (!(Render_node_create(&nodes[i], data, position,
-					number_of_data_components, vertex_list[i]->data)))
+				if (number_of_data_components)
 				{
-					display_message(ERROR_MESSAGE,
-						"render_voltex_to_finite_elements.  "
-						"Could not set fields at node");
-					return_code = 0;
+					CAST_TO_OTHER(data_ptr, vertex_list[i]->data, FE_value, number_of_data_components);
 				}
+				CAST_TO_FE_VALUE(position, vertex_list[i]->coordinates, 3);
+				nodes[i].assign(*data, position, number_of_data_components, data_ptr);
 			}
 			if (return_code)
 			{
@@ -886,7 +900,6 @@ DESCRIPTION :
 						&nodes[triangle_list[i]->vertices[2]->index]);
 				}
 			}
-			DEALLOCATE(nodes);
 		}
 		else
 		{
@@ -895,7 +908,8 @@ DESCRIPTION :
 				"Unable to allocate node array");
 			return_code = 0;
 		}
-
+		delete[] nodes;
+		delete[] data_ptr;
 	}
 	LEAVE;
 
