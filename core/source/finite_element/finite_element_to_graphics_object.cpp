@@ -1160,8 +1160,8 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 struct GT_surface *create_cylinder_from_FE_element(
 	struct FE_element *element, Cmiss_field_cache_id field_cache,
 	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,
-	ZnReal constant_radius,ZnReal scale_factor,struct Computed_field *radius_field,
+	struct Computed_field *data_field, const FE_value *base_size,
+	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
@@ -1169,7 +1169,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
-		normal_3, *radius_array, radius_derivative, radius_value, sin_theta,
+		normal_3, *radius_array, diameter_derivative, diameter_value, sin_theta,
 		tex_coordinates[3], theta, theta_change, xi, x, y;
 	ZnReal texture_coordinate1;
 	GLfloat *data, *datum;
@@ -1186,8 +1186,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 	if (element && field_cache && line_mesh && (1 == get_FE_element_dimension(element)) &&
 		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
 		coordinate_field && (3 >= coordinate_dimension) &&
-		((!radius_field) ||
-			(1 == Computed_field_get_number_of_components(radius_field))) &&
+		(0 != base_size) && (0 != scale_factors) &&
+		((!orientation_scale_field) ||
+			(1 == Computed_field_get_number_of_components(orientation_scale_field))) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
 		Cmiss_differential_operator_id d_dxi = Cmiss_mesh_get_chart_differential_operator(line_mesh, /*order*/1, 1);
@@ -1222,6 +1223,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 				number_of_segments_around+1,number_of_segments_along+1,
 				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
 		{
+			// convert diameter to radius
+			FE_value constant_radius = 0.5*base_size[0];
+			FE_value scale_factor = 0.5*scale_factors[0];
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
 			GT_surface_set_integer_identifier(surface, cm.number);
@@ -1243,9 +1247,9 @@ struct GT_surface *create_cylinder_from_FE_element(
 						coordinate_dimension, coordinates) &&
 					((!data_field) || Cmiss_field_evaluate_real(data_field,
 						field_cache, n_data_components, feData)) &&
-					((!radius_field) || (
-						Cmiss_field_evaluate_derivative(radius_field, d_dxi, field_cache, 1, &radius_derivative) &&
-						Cmiss_field_evaluate_real(radius_field, field_cache, 1, &radius_value))) &&
+					((!orientation_scale_field) || (
+						Cmiss_field_evaluate_derivative(orientation_scale_field, d_dxi, field_cache, 1, &diameter_derivative) &&
+						Cmiss_field_evaluate_real(orientation_scale_field, field_cache, 1, &diameter_value))) &&
 					((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
 						texture_coordinate_dimension, tex_coordinates)))
 				{
@@ -1270,10 +1274,10 @@ struct GT_surface *create_cylinder_from_FE_element(
 					(*derivative)[1]=(ZnReal)derivative_xi[1];
 					(*derivative)[2]=(ZnReal)derivative_xi[2];
 					/* store the radius and derivative in the radius array */
-					if (radius_field)
+					if (orientation_scale_field)
 					{
-						radius_array[3*i] = constant_radius+scale_factor*radius_value;
-						radius_array[3*i+1] = radius_derivative * scale_factor;
+						radius_array[3*i] = constant_radius + scale_factor*diameter_value;
+						radius_array[3*i+1] = diameter_derivative*scale_factor;
 					}
 					else
 					{
@@ -1534,8 +1538,8 @@ struct GT_surface *create_cylinder_from_FE_element(
 					jacobian[5]=derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
 
 					/* Get the other stored values */
-					radius_value = radius_array[3*i];
-					radius_derivative = radius_array[3*i+1];
+					FE_value radius_value = radius_array[3*i];
+					FE_value radius_derivative = radius_array[3*i+1];
 					dS_dxi = radius_array[3*i+2];
 
 					/* Write the true normals and positions */
@@ -1560,7 +1564,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 						(point[j])[0]=(point[0])[0]+ZnReal(radius_value*(normal[j])[0]);
 						(point[j])[1]=(point[0])[1]+ZnReal(radius_value*(normal[j])[1]);
 						(point[j])[2]=(point[0])[2]+ZnReal(radius_value*(normal[j])[2]);
-						if (radius_field && (0.0 != radius_derivative))
+						if (orientation_scale_field && (0.0 != radius_derivative))
 						{
 							if (0.0 < dS_dxi)
 							{

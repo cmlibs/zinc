@@ -51,7 +51,7 @@ extern "C" {
 /*****************************************************************************//**
  * Generic status codes returned by API functions to indicate success or error.
  *
- * WARNING: Planned future binary compatiblity break.
+ * WARNING: Planned future binary compatibility break.
  * At a future date we will change value of CMISS_OK to 0, and
  * introduce negative-valued error codes e.g. 'CMISS_ERROR_ARGUMENT',
  * to bring the CMGUI Zinc API in to line with common C API conventions.
@@ -62,7 +62,9 @@ extern "C" {
  */
 enum Cmiss_status
 {
-	CMISS_OK = 1 /*!< value to be returned on success */
+	CMISS_ERROR_ARGUMENT = -1, /*!< invalid argument(s) passed to API function. Only reported for new APIs. */
+	CMISS_ERROR_GENERAL = 0, /*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
+	CMISS_OK = 1, /*!< value to be returned on success */
 };
 
 #ifdef __cplusplus

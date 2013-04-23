@@ -1483,7 +1483,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length,ZnReal width,enum Streamline_type type,
+	ZnReal length, FE_value width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
 	struct FE_region *fe_region)
 {
@@ -1521,7 +1521,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 			}
 			else
 			{
-				thickness = 0.2f * width;
+				thickness = 0.2 * width;
 			}
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,

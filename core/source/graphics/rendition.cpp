@@ -865,7 +865,7 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 			GT_object *glyph;
 			Graphic_glyph_scaling_mode glyph_scaling_mode;
 			Triple glyph_centre,glyph_scale_factors,glyph_size;
-			Computed_field *orientation_scale_field, *variable_scale_field; ;
+			Computed_field *orientation_scale_field, *variable_scale_field;
 			Cmiss_graphic_get_glyph_parameters(graphic,
 				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
 				&orientation_scale_field, glyph_scale_factors,
