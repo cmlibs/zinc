@@ -195,6 +195,6 @@ public:
 
 };
 
-} // namespace Cmiss
+} // namespace zinc
 
 #endif /* __ZN_CMISS_RENDITION_HPP__ */

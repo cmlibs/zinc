@@ -1,4 +1,4 @@
-	
+
 # Defines GENERAL_SRCS
 
 SET( GENERAL_SRCS
@@ -9,7 +9,6 @@ SET( GENERAL_SRCS
 	source/general/debug.cpp
 	source/general/error_handler.cpp
 	source/general/geometry.cpp
-	source/general/heapsort.cpp
 	source/general/image_utilities.cpp
 	source/general/indexed_multi_range.cpp
 	source/general/integration.cpp
@@ -46,7 +45,6 @@ SET( GENERAL_HDRS
 	source/general/enumerator_private.hpp
 	source/general/error_handler.h
 	source/general/geometry.h
-	source/general/heapsort.h
 	source/general/image_utilities.h
 	source/general/indexed_list_private.h
 	source/general/indexed_list_stl_private.hpp
@@ -79,8 +77,14 @@ IF( NOT HAVE_VFSCANF )
 	SET( GENERAL_HDRS ${GENERAL_HDRS}
 		source/general/alt_vfscanf.h )
 ENDIF( NOT HAVE_VFSCANF )
+IF( NOT HAVE_HEAPSORT )
+	SET( GENERAL_SRCS ${GENERAL_SRCS}
+		source/general/heapsort.cpp )
+	SET( GENERAL_HDRS ${GENERAL_HDRS}
+		source/general/heapsort.h )
+ENDIF( NOT HAVE_HEAPSORT )
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GENERAL_SRCS ${GENERAL_SRCS} source/general/photogrammetry.cpp )
 	SET( GENERAL_HDRS ${GENERAL_HDRS} source/general/photogrammetry.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	
+
