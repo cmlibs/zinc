@@ -24,7 +24,7 @@ public:
 		context("test"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldModule()),
-		gm(context.getDefaultGraphicsModule(context)),
+		gm(context.getDefaultGraphicsModule()),
 		ren(0)
 	{
 		EXPECT_EQ(CMISS_OK, gm.enableRenditions(root_region));

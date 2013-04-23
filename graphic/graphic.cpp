@@ -14,6 +14,10 @@
 #include <zinc/spectrum.h>
 
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
+#include "zinc/graphic.hpp"
+#include "zinc/fieldtypesconstant.hpp"
+#include "zinc/graphicsfont.hpp"
 
 TEST(Cmiss_graphic_api, set_use_element_type)
 {
@@ -205,15 +209,6 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 	Cmiss_graphic_destroy(&gr);
 }
 
-#ifdef FUTURE
-
-#include "zinctestsetupcpp.hpp"
-#include "zinc/graphic.hpp"
-#include "zinc/fieldtypesconstant.hpp"
-#include "zinc/graphicsfont.hpp"
-
-using namespace zinc;
-
 TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 {
 	ZincTestSetupCpp zinc;
@@ -234,19 +229,17 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(Field())); // clear label field
-	EXPECT_EQ(static_cast<Cmiss_field_id>(0), pointattr.getLabelField().getId());
+	EXPECT_EQ(false, pointattr.getLabelField().isValid());
 
 	// should start with a default font
 	GraphicsFont font = pointattr.getFont();
 	EXPECT_EQ(true, font.isValid());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(GraphicsFont())); // clear font
-	EXPECT_EQ(static_cast<Cmiss_graphics_font_id>(0), pointattr.getFont().getId());
+	EXPECT_EQ(false, pointattr.getFont().isValid());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(font));
 }
-
-#endif // FUTURE
 
 TEST(Cmiss_graphic_api, line_attributes)
 {
@@ -298,4 +291,51 @@ TEST(Cmiss_graphic_api, line_attributes)
 
 	Cmiss_graphic_line_attributes_destroy(&lineattr);
 	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, line_attributes_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_CYLINDERS);
+	EXPECT_EQ(true, gr.isValid());
+
+	GraphicLineAttributes lineattr = gr.getLineAttributes();
+	EXPECT_EQ(true, lineattr.isValid());
+
+	double value = 1.0;
+	Field orientationScaleField = zinc.fm.createConstant(1, &value);
+	EXPECT_EQ(true, orientationScaleField.isValid());
+
+	EXPECT_EQ(false, lineattr.getOrientationScaleField().isValid());
+	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(orientationScaleField));
+
+	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
+	EXPECT_EQ(tempOrientationScaleField.getId(), orientationScaleField.getId());
+
+	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(Field())); // clear field
+	EXPECT_EQ(false, lineattr.getOrientationScaleField().isValid());
+
+	const double values[] = { 0.5, 1.2 };
+	double outputValues[3];
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(2, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.setBaseSize(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(3, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.getBaseSize(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(2, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.setScaleFactors(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(3, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.getScaleFactors(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
 }
