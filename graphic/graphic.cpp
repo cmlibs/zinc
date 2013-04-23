@@ -247,3 +247,55 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 }
 
 #endif // FUTURE
+
+TEST(Cmiss_graphic_api, line_attributes)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_CYLINDERS);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphic_line_attributes_id lineattr = Cmiss_graphic_get_line_attributes(gr);
+	EXPECT_NE(static_cast<Cmiss_graphic_line_attributes *>(0), lineattr);
+
+	double value = 1.0;
+	Cmiss_field_id orientation_scale_field = Cmiss_field_module_create_constant(zinc.fm, 1, &value);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), orientation_scale_field);
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_line_attributes_get_orientation_scale_field(lineattr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_orientation_scale_field(lineattr, orientation_scale_field));
+
+	Cmiss_field_id temp_orientation_scale_field = Cmiss_graphic_line_attributes_get_orientation_scale_field(lineattr);
+	EXPECT_EQ(temp_orientation_scale_field, orientation_scale_field);
+	Cmiss_field_destroy(&temp_orientation_scale_field);
+	Cmiss_field_destroy(&orientation_scale_field);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_orientation_scale_field(lineattr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_line_attributes_get_orientation_scale_field(lineattr));
+
+	const double values[] = { 0.5, 1.2 };
+	double outputValues[3];
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
+
+	Cmiss_graphic_line_attributes_destroy(&lineattr);
+	Cmiss_graphic_destroy(&gr);
+}
