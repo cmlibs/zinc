@@ -77,8 +77,12 @@ Functions and structures for interfacing with the graphics library.
 #	endif /* defined (UNIX) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (UNIX) && defined (DARWIN)
-#	include <OpenGL/gl.h>
-#	include <OpenGL/glu.h>
+#	if defined (USE_GLEW)
+#		include <GL/glew.h>
+#	else
+#		include <OpenGL/gl.h>
+#		include <OpenGL/glu.h>
+#	endif
 #endif /* defined UNIX && defined (DARWIN) */
 
 /*
