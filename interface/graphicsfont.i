@@ -1,10 +1,9 @@
 /*******************************************************************************
- * Material.i
- * 
- * Swig interface file for cmiss material.
+ * GraphicsFont.i
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1mesh_name
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -39,82 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") graphicsmaterial
+%module(package="zinc") graphicsfilter
 
-%typemap(in) (const double *values)
-{
-	/* Check if is a list */
-	if (PyList_Check($input)) 
-	{
-		int i;
-		$1 = (double *) malloc(3*sizeof(double));
-		for (i = 0; i < 3; i++) 
-		{
-			PyObject *o = PyList_GetItem($input,i);
-			if (PyFloat_Check(o))
-				$1[i] = PyFloat_AsDouble(PyList_GetItem($input,i));
-			else 
-			{
-				PyErr_SetString(PyExc_TypeError,"list must contain float");
-				free($1);
-				return NULL;
-			}
-		}
-	}
-	else
-	{
-		PyErr_SetString(PyExc_TypeError,"not a list");
-		return NULL;
-	}
-}
-
-%typemap(freearg) (const double *values)
-{
-	free((double*) $1);
-}
-
-%typemap(argout)(double *outValues)
-{
-	PyObject *o, *o2, *o3, *o4;
-	o = PyList_New(3);
-	for (int i = 0 ; i < 3; i++)
-	{
-		o4 = PyFloat_FromDouble($1[i]);
-		PyList_SetItem(o, i, o4);
-	}
-	if ((!$result) || ($result == Py_None))
-	{
-		$result = o;
-	}
-	else 
-	{
-		if (!PyTuple_Check($result))
-		{
-			PyObject *o2 = $result;
-			$result = PyTuple_New(1);
-			PyTuple_SetItem($result,0,o2);
-		}
-		o3 = PyTuple_New(1);
-		PyTuple_SetItem(o3,0,o);
-		o2 = $result;
-		$result = PySequence_Concat(o2,o3);
-		Py_DECREF(o2);
-		Py_DECREF(o3);
-	}
-	delete $1;
-}
-
-%typemap(in,numinputs=0) (double *outValues)
-{
-	$1 = new double[3];
-}
-
-%import "field.i"
-%import "graphicsfont.i"
+%import "graphic.i"
 
 %{
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/graphicsfont.hpp"
 #include "zinc/fieldtypesconditional.hpp"
 %}
 
-%include "zinc/graphicsmaterial.hpp"
+%include "zinc/graphicsfont.hpp"
+
