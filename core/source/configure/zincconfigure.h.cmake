@@ -36,6 +36,7 @@
 #cmakedefine OPTIMISED
 #cmakedefine MEMORY_CHECKING
 #cmakedefine ZINC_NO_STDOUT
+#cmakedefine HAVE_HEAPSORT
 
 typedef @FE_value@ FE_value;
 #cmakedefine FE_VALUE_INPUT_STRING @FE_VALUE_INPUT_STRING@

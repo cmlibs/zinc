@@ -44,9 +44,12 @@
 
 #include <cstdio>
 #include <cmath>
+#include "zinc/zincconfigure.h"
 #include "finite_element/finite_element_basis.h"
 #include "general/debug.h"
-#include "general/heapsort.h"
+#ifndef HAVE_HEAPSORT
+#	include "general/heapsort.h"
+#endif
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -207,8 +210,8 @@ static FE_value quadratic_simplex_3d_blending_matrix[]=
 	   Intend to use simplex basis functions directly once testing examples running.
 	   coefficients of monomial set, with x=xi1 y=xi2 z=xi3
 		 1  x   xx   y   xy   xxy   yy   xyy   xxyy
-	 	 z  xz  xxz  yz  xyz  xxyz  yyz  xyyz  xxyyz
-	 	 zz xzz xxzz yzz xyzz xxyzz yyzz xyyzz xxyyzz */
+		 z  xz  xxz  yz  xyz  xxyz  yyz  xyyz  xxyyz
+		 zz xzz xxzz yzz xyzz xxyzz yyzz xyyzz xxyyzz */
 	1,-3, 2,-3, 4,  0,  2,  0,0, -3, 4,  0,  4,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0,
 	0, 4,-4, 0,-4,  0,  0,  0,0,  0,-4,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
 	0,-1, 2, 0, 0,  0,  0,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
@@ -2768,7 +2771,7 @@ returned.
 							basis_function_number += 2*(number_of_xi_coordinates+1);
 						}
 						/* calculate the size of column containing non-zero entries, to reduce
-						 	dot product calculation in global_to_element_map_values() */
+							dot product calculation in global_to_element_map_values() */
 						for (j=0;j<number_of_standard_basis_functions;j++)
 						{
 							reorder_1 = basis->blending_matrix + number_of_basis_functions*number_of_standard_basis_functions + j;

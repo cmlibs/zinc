@@ -454,6 +454,6 @@ inline GraphicPointAttributes Graphic::getPointAttributes()
 	return GraphicPointAttributes(Cmiss_graphic_get_point_attributes(id));
 }
 
-} // namespace Cmiss
+} // namespace zinc
 
 #endif /* __ZN_CMISS_GRAPHIC_HPP__ */
