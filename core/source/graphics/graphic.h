@@ -74,6 +74,7 @@ enum Graphic_glyph_scaling_mode
 }; /* enum Glyph_scaling_mode */
 
 struct Cmiss_graphic_point_attributes;
+struct Cmiss_graphic_line_attributes;
 
 struct Cmiss_graphic
 /*******************************************************************************
@@ -96,6 +97,7 @@ finite element group rendition.
 // 	/* geometry settings */
 // 	/* for all graphic types */
 	enum Cmiss_graphic_type graphic_type;
+	struct Computed_field *subgroup_field;
 	struct Computed_field *coordinate_field;
 	enum Graphics_select_mode select_mode;
 
@@ -106,10 +108,12 @@ finite element group rendition.
 	Cmiss_graphic_face_type face;
 	/* For surfaces only at the moment */
 	struct Computed_field *texture_coordinate_field;
-	/* for cylinders only */
-	/* use radius = constant_radius + scale_factor*radius_scalar_field */
-	GLfloat constant_radius,radius_scale_factor;
-	struct Computed_field *radius_scalar_field;
+
+	/* line attributes */
+	FE_value line_base_size[3];
+	FE_value line_scale_factors[3];
+	Cmiss_field_id line_orientation_scale_field;
+
 	/* for iso_surfaces only */
 	struct Computed_field *iso_scalar_field;
 	int number_of_iso_values;
@@ -118,7 +122,8 @@ finite element group rendition.
 		first_iso_value to last_iso_value including these values for n>1 */
 	double *iso_values, first_iso_value, last_iso_value,
 		decimation_threshold;
-	/* for node_points, data_points and element_points only */
+
+	/* point attributes */
 	struct GT_object *glyph;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	Triple glyph_offset, glyph_scale_factors, glyph_size;
@@ -126,7 +131,7 @@ finite element group rendition.
 	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
 	struct Computed_field *label_density_field;
-	struct Computed_field *subgroup_field;
+
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
 	/* for element_points only */
@@ -150,7 +155,7 @@ finite element group rendition.
 	enum Streamline_type streamline_type;
 	struct Computed_field *stream_vector_field;
 	int reverse_track;
-	GLfloat streamline_length, streamline_width;
+	GLfloat streamline_length;
 	enum Streamline_data_type streamline_data_type;
 	/* streamline seed nodeset and field giving mesh location */
 	Cmiss_nodeset_id seed_nodeset;
@@ -653,29 +658,6 @@ int Cmiss_graphic_set_iso_surface_parameters(
 	double decimation_threshold);
 
 /***************************************************************************//**
- * Returns the current radius parameters which are used in the expression:
- * radius = constant_radius + radius_scale_factor*radius_scalar_field.
- *For graphic_type CMISS_GRAPHIC_CYLINDERS only.
- */
-int Cmiss_graphic_get_radius_parameters(
-	struct Cmiss_graphic *graphic,GLfloat *constant_radius,
-	GLfloat *radius_scale_factor,struct Computed_field **radius_scalar_field);
-
-/***************************************************************************//**
- * Sets the current radius parameters which are used in the expression:
- * radius = constant_radius + radius_scale_factor*radius_scalar_field.
- * For settings_type CMISS_GRAPHIC_CYLINDERS only.
- * @param graphic cmiss graphic to be modified
- * @param constant_radius constant radius of the cylinder
- * @param radius_scale_factor scale factor of radius
- * @param radius_scalar_field computed field used to scale the radius
- * @return If succesfully set the radius parameters returns 1, else 0
- */
-int Cmiss_graphic_set_radius_parameters(
-	struct Cmiss_graphic *graphic,GLfloat constant_radius,
-	GLfloat radius_scale_factor,struct Computed_field *radius_scalar_field);
-
-/***************************************************************************//**
  * For graphic starting in a particular element.
  */
 struct FE_element *Cmiss_graphic_get_seed_element(
@@ -707,7 +689,7 @@ int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width);
 int Cmiss_graphic_get_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
 	struct Computed_field **stream_vector_field,int *reverse_track,
-	GLfloat *streamline_length,GLfloat *streamline_width);
+	GLfloat *streamline_length);
 
 /***************************************************************************//**
  * For graphic_type CMISS_RENDITION_STREAMLINES only.
@@ -715,7 +697,7 @@ int Cmiss_graphic_get_streamline_parameters(
 int Cmiss_graphic_set_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	GLfloat streamline_length,GLfloat streamline_width);
+	GLfloat streamline_length);
 
 /***************************************************************************//**
  * Sets the type of elements used by the graphic.

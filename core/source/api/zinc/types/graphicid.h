@@ -111,10 +111,17 @@ enum Cmiss_graphic_face_type
 };
 
 /**
- * A handle to attributes specifying glyph, scaling fields, scale factors
- * and labels used in visualising points produced by a Cmiss_graphic.
+ * A handle to attributes specifying how points are visualised in a
+ * Cmiss_graphic including glyph, scaling, labels and font.
  */
 struct Cmiss_graphic_point_attributes;
 typedef struct Cmiss_graphic_point_attributes * Cmiss_graphic_point_attributes_id;
+
+/**
+ * A handle to attributes specifying how lines are visualised in a
+ * Cmiss_graphic including section profile and scaling.
+ */
+struct Cmiss_graphic_line_attributes;
+typedef struct Cmiss_graphic_line_attributes * Cmiss_graphic_line_attributes_id;
 
 #endif /* CMISS_GRAPHICID_H */

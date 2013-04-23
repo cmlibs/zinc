@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_graphic.h
-
-LAST MODIFIED : 04 Nov 2009
-
-DESCRIPTION :
-The public interface to the Cmiss_rendition.
-==============================================================================*/
+/**
+ * FILE : cmiss_graphic.h
+ *
+ * The public interface to a zinc graphic which produces a 3-D graphics
+ * object from an algorithm using fields in a region.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +21,7 @@ The public interface to the Cmiss_rendition.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2005-2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -169,8 +167,6 @@ ZINC_API int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
  */
 ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
-
-
 
 /**
  * Returns the tessellation object of the graphics or NULL if none.
@@ -439,6 +435,144 @@ ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_
 ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value);
 
 /**
+ * If the graphic produces lines or extrusions then returns a handle to the
+ * line attribute object for specifying section profile and scaling.
+ *
+ * @param graphic  The graphic to request line attributes from.
+ * @return  Handle to line attributes object, or 0 if not supported for
+ * graphic type or error. Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Returns a new reference to the line attributes with reference count
+ * incremented. Caller is responsible for destroying the new reference.
+ *
+ * @param line_attributes  The line_attributes to obtain a new reference to.
+ * @return  New line attributes reference with incremented reference count.
+ */
+ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_line_attributes_access(
+	Cmiss_graphic_line_attributes_id line_attributes);
+
+/**
+ * Destroys this reference to the line attributes, and sets it to 0.
+ * Internally this just decrements the reference count.
+ *
+ * @param line_attributes_address  Address of handle to the line attributes.
+ * @return  Status CMISS_OK if successfully destroyed the handle, any other
+ * value on failure.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_destroy(
+	Cmiss_graphic_line_attributes_id *line_attributes_address);
+
+/**
+ * Gets the base size of the extrusion section, one value for each lateral axis.
+ * @see Cmiss_graphic_line_attributes_set_base_size.
+ *
+ * @param line_attributes  The line_attributes to query.
+ * @param number  The number of base size values to request, starting with the
+ * first lateral axis. If fewer values have been set it is padded with the last
+ * base size value. 1 to 3 values can be obtained.
+ * @param base_size  Array to receive base sizes. Must be big enough to contain
+ * the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_get_base_size(
+	Cmiss_graphic_line_attributes_id line_attributes, int number,
+	double *base_size);
+
+/**
+ * Sets the base size of the extrusion section, one value for each lateral axis.
+ * 1 to 3 values can be set.
+ * For a unit section profile, the final size in each lateral direction is:
+ * base_size + scale_factor * field_scalar
+ * where field_scalar is determined from the orientation_scale_field.
+ * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
+ * The default base size is zero.
+ * Note: only a single base size is used at present. It gives the base diameter
+ * of cylinders and the width of streamlines.
+ *
+ * @param line_attributes  The line_attributes to modify.
+ * @param number  The number of base size values to set, starting with the
+ * first lateral axis. If fewer values are set than the number of axes,
+ * the last value is assumed for subsequent axes. Hence a single value can
+ * be used to set a diameter for a unit circle profile.
+ * @param base_size  Array of base sizes with the number of values specified.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_set_base_size(
+	Cmiss_graphic_line_attributes_id line_attributes, int number,
+	const double *base_size);
+
+/**
+ * Gets the orientation scale field from the graphic line attributes. This
+ * controls lateral scaling and orientation of line extrusions.
+ * @see Cmiss_graphic_line_attributes_set_orientation_scale_field
+ *
+ * @param line_attributes  The line attributes to query.
+ * @return Handle to orientation scale field, or 0 if none or error. Up to
+ * caller to destroy the returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_line_attributes_get_orientation_scale_field(
+	Cmiss_graphic_line_attributes_id line_attributes);
+
+/**
+ * Sets the orientation scale field in the graphic line attributes. This
+ * controls lateral scaling and orientation of line extrusions.
+ * Note: Currently it is only used to supply a scalar field for scaling
+ * cylinders and with default scale factor of 1 it gives its diameter. Soon
+ * we will offer more options for controlling extrusions.
+ *
+ * @param line_attributes  The line attributes to modify.
+ * @param orientation_scale_field  The orientation scale field to set.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_set_orientation_scale_field(
+	Cmiss_graphic_line_attributes_id line_attributes,
+	Cmiss_field_id orientation_scale_field);
+
+/**
+ * Gets the scale factors used in sizing the extrusion section, one value for
+ * each lateral axis.
+ * @see Cmiss_graphic_line_attributes_set_scale_factors.
+ *
+ * @param line_attributes  The line_attributes to query.
+ * @param number  The number of scale_factors to request, starting with the
+ * first lateral axis. If fewer values have been set it is padded with the last
+ * scale factor value. 1 to 3 values can be obtained.
+ * @param scale_factors  Array to receive scale factors. Must be big enough to
+ * contain the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
+	Cmiss_graphic_line_attributes_id line_attributes, int number,
+	double *scale_factors);
+
+/**
+ * Sets the scale factors used in sizing the extrusion section, one value for
+ * each lateral axis. 1 to 3 values can be set.
+ * For a unit section profile, the final size in each lateral direction is:
+ * base_size + scale_factor * field_scalar
+ * where field_scalar is determined from the orientation_scale_field.
+ * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
+ * Scale factor values default to 1.
+ * Note: only a single scale factor is used at present.
+ *
+ * @param line_attributes  The line_attributes to modify.
+ * @param number  The number of scale factor values to set, starting with the
+ * first lateral axis. If fewer values are set than the number of axes,
+ * the last value is assumed for subsequent axes. Hence a single value applies
+ * to all axes.
+ * @param scale_factors  Array of scale factors with the number of values
+ * specified.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_set_scale_factors(
+	Cmiss_graphic_line_attributes_id line_attributes, int number,
+	const double *scale_factors);
+
+/**
  * If the graphic produces points then returns a handle to point attribute
  * object for specifying glyph, scaling fields, scale factors and labels.
  *
@@ -504,7 +638,7 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
 	enum Cmiss_graphics_glyph_type glyph_type);
 
 /**
- * Gets the label_field from the graphic point attributes.
+ * Gets the label field from the graphic point attributes.
  *
  * @param point_attributes  The point attributes to query.
  * @return Handle to label field, or 0 if none or error. Up to caller to destroy
@@ -514,7 +648,7 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
 	Cmiss_graphic_point_attributes_id point_attributes);
 
 /**
- * Sets the label_field in the graphic point attributes. A string representation
+ * Sets the label field in the graphic point attributes. A string representation
  * of this field's value (if defined) is drawn with the current font at the
  * glyph offset.
  *

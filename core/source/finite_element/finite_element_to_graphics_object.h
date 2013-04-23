@@ -270,10 +270,10 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
  * Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
  * finite <element> using a grid of points.  The cylinder is built out of an
  * array of rectangles <number_of_segments_along> by <number_of_segments_around>
- * the cylinder.The actual radius is calculated as:
- * radius = constant_radius + scale_factor*radius_field(a scalar field)
- * The optional <data_field> (currently only a scalar) is calculated as data over
- * the length of the cylinder, for later colouration by a spectrum.
+ * the cylinder.The diameter is calculated as:
+ * diameter = base_size[0] + scale_factor[0]*orientation_scale_field[0]
+ * The optional <data_field> is calculated over the length of the cylinder, for
+ * later colouration by a spectrum.
  * The optional <top_level_element> may be provided as a clue to Computed_fields
  * to say which parent element they should be evaluated on as necessary.
  * The first component of <texture_coordinate_field> is used to control the
@@ -285,8 +285,8 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 struct GT_surface *create_cylinder_from_FE_element(
 	struct FE_element *element, Cmiss_field_cache_id field_cache,
 	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,
-	FE_value constant_radius,FE_value scale_factor,struct Computed_field *radius_field,
+	struct Computed_field *data_field, const FE_value *base_size,
+	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,

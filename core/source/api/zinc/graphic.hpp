@@ -49,6 +49,7 @@
 namespace zinc
 {
 
+class GraphicLineAttributes;
 class GraphicPointAttributes;
 
 class Graphic
@@ -194,6 +195,8 @@ public:
 		return Cmiss_graphic_set_material(id, graphicsMaterial.getId());
 	}
 
+	GraphicLineAttributes getLineAttributes();
+
 	GraphicPointAttributes getPointAttributes();
 
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
@@ -328,6 +331,69 @@ public:
 	}
 
 };
+
+class GraphicLineAttributes
+{
+protected:
+	Cmiss_graphic_line_attributes_id id;
+
+public:
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicLineAttributes(Cmiss_graphic_line_attributes_id line_attributes_id) :
+		id(line_attributes_id)
+	{}
+
+	GraphicLineAttributes(const GraphicLineAttributes& lineAttributes) :
+		id(Cmiss_graphic_line_attributes_access(lineAttributes.id))
+	{}
+
+	~GraphicLineAttributes()
+	{
+		Cmiss_graphic_line_attributes_destroy(&id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	int getBaseSize(int number, double *baseSize)
+	{
+		return Cmiss_graphic_line_attributes_get_base_size(id, number, baseSize);
+	}
+
+	int setBaseSize(int number, const double *baseSize)
+	{
+		return Cmiss_graphic_line_attributes_set_base_size(id, number, baseSize);
+	}
+
+	Field getOrientationScaleField()
+	{
+		return Field(Cmiss_graphic_line_attributes_get_orientation_scale_field(id));
+	}
+
+	int setOrientationScaleField(Field& orientationScaleField)
+	{
+		return Cmiss_graphic_line_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
+	}
+
+	int getScaleFactors(int number, double *scaleFactors)
+	{
+		return Cmiss_graphic_line_attributes_get_scale_factors(id, number, scaleFactors);
+	}
+
+	int setScaleFactors(int number, const double *scaleFactors)
+	{
+		return Cmiss_graphic_line_attributes_set_scale_factors(id, number, scaleFactors);
+	}
+
+};
+
+inline GraphicLineAttributes Graphic::getLineAttributes()
+{
+	return GraphicLineAttributes(Cmiss_graphic_get_line_attributes(id));
+}
 
 class GraphicPointAttributes
 {
