@@ -96,4 +96,6 @@ public:
 
 };
 
+} // namespace zinc
+
 #endif /* __ZN_GRAPHICSFONT_HPP__ */
