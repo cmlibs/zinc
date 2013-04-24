@@ -861,25 +861,13 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 			Cmiss_graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 			Cmiss_graphic_point_attributes_set_font(point_attributes, font);
 			Cmiss_graphics_font_destroy(&font);
-
-			GT_object *glyph;
-			Graphic_glyph_scaling_mode glyph_scaling_mode;
-			Triple glyph_centre,glyph_scale_factors,glyph_size;
-			Computed_field *orientation_scale_field, *variable_scale_field;
-			Cmiss_graphic_get_glyph_parameters(graphic,
-				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
-				&orientation_scale_field, glyph_scale_factors,
-				&variable_scale_field);
+			GT_object *glyph = Cmiss_graphic_point_attributes_get_glyph(point_attributes);
 			if (!glyph)
 			{
 				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
 					Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
+				Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
 			}
-			Cmiss_graphic_set_glyph_parameters(graphic,glyph,
-				glyph_scaling_mode, glyph_centre, glyph_size,
-				orientation_scale_field, glyph_scale_factors,
-				variable_scale_field);
-
 			Cmiss_graphic_point_attributes_destroy(&point_attributes);
 		}
 
@@ -3186,65 +3174,6 @@ int DESTROY(Cmiss_rendition)(
 	LEAVE;
 
 	return (return_code);
-}
-
-int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
-	struct GT_object *glyph, const char *cmiss_graphic_name)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_rendition_add_glyph);
-	if (rendition && glyph)
-	{
-		if (!FIRST_OBJECT_IN_LIST_THAT(Cmiss_graphic)(Cmiss_graphic_has_name,
-				(void *)cmiss_graphic_name, rendition->list_of_graphics))
-		{
-			Cmiss_rendition_begin_change(rendition);
-			Cmiss_graphic *graphic = Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_POINT);
-			struct Graphical_material *material = get_GT_object_default_material(glyph);
-			if (!material)
-			{
-				struct Material_package *material_package =
-					Cmiss_graphics_module_get_material_package(rendition->graphics_module);
-				if (material_package)
-				{
-					material = Material_package_get_default_material(material_package);
-					DEACCESS(Material_package)(&material_package);
-				}
-			}
-			//set_GT_object_default_material(glyph, NULL);
-			if (graphic && Cmiss_graphic_set_name(graphic, cmiss_graphic_name))
-			{
-				struct Computed_field *orientation_scale_field, *variable_scale_field;
-				struct GT_object *old_glyph;
-				Triple glyph_centre,glyph_scale_factors,glyph_size;
-				enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-				if (Cmiss_graphic_set_material(graphic, material) &&
-					Cmiss_graphic_set_selected_material(graphic, material) &&
-					Cmiss_graphic_get_glyph_parameters(
-						graphic, &old_glyph, &glyph_scaling_mode,
-						glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
-						&variable_scale_field)&&
-					Cmiss_graphic_set_glyph_parameters(
-						graphic, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field, glyph_scale_factors,
-						variable_scale_field))
-				{
-					return_code = 1;
-				}
-				Cmiss_graphic_destroy(&graphic);
-			}
-			Cmiss_rendition_end_change(rendition);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_rendition_add_glyph.  Graphic with the same name alreadu exists");
-		}
-	}
-	LEAVE;
-
-	return return_code;
 }
 
 int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,

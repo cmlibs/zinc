@@ -53,25 +53,6 @@
 #include "general/list.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
-#include "graphics/volume_texture.h"
-
-/***************************************************************************//**
- * Enumerator controlling how glyph orientation and scaling parameters are set.
- * Modes other than GENERAL restrict the options available and their
- * interpretation. For example, in GENERAL mode the base size can be a*b*c, but in
- * VECTOR mode it is restricted to be 0*a*a.
- * Note: the first value will be 0 by the ANSI standard, with each subsequent entry
- * incremented by 1. This pattern is expected by the ENUMERATOR macros.
- * Must ensure the ENUMERATOR_STRING function returns a string for each value here.
- */
-enum Graphic_glyph_scaling_mode
-{
-	GRAPHIC_GLYPH_SCALING_CONSTANT,
-	GRAPHIC_GLYPH_SCALING_SCALAR,
-	GRAPHIC_GLYPH_SCALING_VECTOR,
-	GRAPHIC_GLYPH_SCALING_AXES,
-	GRAPHIC_GLYPH_SCALING_GENERAL
-}; /* enum Glyph_scaling_mode */
 
 struct Cmiss_graphic_point_attributes;
 struct Cmiss_graphic_line_attributes;
@@ -125,10 +106,11 @@ finite element group rendition.
 
 	/* point attributes */
 	struct GT_object *glyph;
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-	Triple glyph_offset, glyph_scale_factors, glyph_size;
-	struct Computed_field *orientation_scale_field;
-	struct Computed_field *variable_scale_field;
+	FE_value point_offset[3];
+	FE_value point_base_size[3];
+	FE_value point_scale_factors[3];
+	struct Computed_field *point_orientation_scale_field;
+	struct Computed_field *signed_scale_field;
 	struct Computed_field *label_field;
 	struct Computed_field *label_density_field;
 
@@ -141,11 +123,6 @@ finite element group rendition.
 	struct Cmiss_tessellation *tessellation;
 	struct Element_discretization discretization;
 	int circle_discretization;
-	/* for volumes only */
-	struct VT_volume_texture *volume_texture;
-	/* SAB Added for text access only */
-	struct Computed_field *displacement_map_field;
-	int displacement_map_xi_direction;
 	int overlay_flag;
 	int overlay_order;
 	/* for settings starting in a particular element */
@@ -248,8 +225,6 @@ struct Cmiss_graphic_range
 	struct Graphics_object_range_struct *graphics_object_range;
 	enum Cmiss_graphics_coordinate_system coordinate_system;
 };
-
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode);
 
 struct Cmiss_graphic_to_graphics_object_data
 {
@@ -609,28 +584,12 @@ int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic);
 int Cmiss_graphic_set_circle_discretization(
 	struct Cmiss_graphic *graphic, int circle_discretization);
 
-/***************************************************************************//**
- * Returns the current glyph and parameters for orienting and scaling it.
- */
-int Cmiss_graphic_get_glyph_parameters(
-	struct Cmiss_graphic *graphic,
-	struct GT_object **glyph, enum Graphic_glyph_scaling_mode *glyph_scaling_mode,
-	Triple glyph_centre, Triple glyph_size,
-	struct Computed_field **orientation_scale_field, Triple glyph_scale_factors,
-	struct Computed_field **variable_scale_field);
+GT_object *Cmiss_graphic_point_attributes_get_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes);
 
-/***************************************************************************//**
- * Sets the glyph and parameters for orienting and scaling it.
- * See function make_glyph_orientation_scale_axes in
- * finite_element/finite_element_to_graphics object for explanation of how the
- * <orientation_scale_field> is used.
- */
-int Cmiss_graphic_set_glyph_parameters(
-	struct Cmiss_graphic *graphic,
-	struct GT_object *glyph, enum Graphic_glyph_scaling_mode glyph_scaling_mode,
-	Triple glyph_centre, Triple glyph_size,
-	struct Computed_field *orientation_scale_field, Triple glyph_scale_factors,
-	struct Computed_field *variable_scale_field);
+int Cmiss_graphic_point_attributes_set_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	GT_object *glyph);
 
 /***************************************************************************//**
  * Returns parameters for the iso_surface: iso_scalar_field = iso_value.
@@ -827,12 +786,6 @@ int Cmiss_graphic_extract_graphics_object_from_list(
  */
 int Cmiss_graphic_same_non_trivial_with_graphics_object(
 	struct Cmiss_graphic *graphic,void *second_graphic_void);
-
-/***************************************************************************//**
- * For graphic_type CMISS_GRAPHIC_VOLUMES only.
- */
-int Cmiss_graphic_set_volume_texture(struct Cmiss_graphic *graphic,
-	struct VT_volume_texture *volume_texture);
 
 /***************************************************************************//**
  * Gets the graphic's stored name, or generates one based on its position.

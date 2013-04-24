@@ -605,6 +605,45 @@ ZINC_API int Cmiss_graphic_point_attributes_destroy(
 	Cmiss_graphic_point_attributes_id *point_attributes_address);
 
 /**
+ * Gets the base size of the point glyph, up to 3 values, one for each axis.
+ * @see Cmiss_graphic_point_attributes_set_base_size.
+ *
+ * @param point_attributes  The point_attributes to query.
+ * @param number  The number of base size values to request, starting with the
+ * first axis. If fewer values have been set it is padded with the last
+ * base size value. 1 to 3 values can be obtained.
+ * @param base_size  Array to receive base sizes. Must be big enough to contain
+ * the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_get_base_size(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *base_size);
+
+/**
+ * Sets the base size of the point glyph, up to 3 values, one for each axis.
+ * For a unit sized glyph, the final size in each direction is:
+ * base_size + scale_factor * field_scalar
+ * where field_scalar is determined from the orientation_scale_field.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * The default base size is zero.
+ * Tip: to visualise a 2- or 3-component vector orientation_scale_field, use a
+ * base size of 0,D,D with scale factors 1,0,0. This ensures the length equals
+ * the magnitude and the glyph is fixed to size D on the orthogonal axes.
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param number  The number of base size values to set, starting with the
+ * first axis. If fewer values are set than the number of axes, the last value
+ * is assumed for subsequent axes. Hence a single value can be used to set the
+ * diameter for a unit sphere glyph.
+ * @param base_size  Array of base sizes with the number of values specified.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_base_size(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *base_size);
+
+/**
  * Gets the font in the graphic point attributes used to draw the label field.
  *
  * @param point_attributes  The point attributes to query.
@@ -619,7 +658,7 @@ ZINC_API Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
  *
  * @param point_attributes  The point attributes to modify.
  * @param font  The font to set.
- * @return  Status CMISS_OK if successfully set, any other value on failure.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_point_attributes_set_font(
 	Cmiss_graphic_point_attributes_id point_attributes,
@@ -631,7 +670,7 @@ ZINC_API int Cmiss_graphic_point_attributes_set_font(
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_type  The glyph type identifier.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
 	Cmiss_graphic_point_attributes_id point_attributes,
@@ -654,10 +693,154 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
  *
  * @param point_attributes  The point attributes to modify.
  * @param label_field  The label field to set.
- * @return  Status CMISS_OK if successfully set, any other value on failure.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
 	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field);
+
+/**
+ * Gets the offset from the point coordinates to where the glyph origin is
+ * drawn, in glyph units along the axes, i.e. values are subsequently scaled.
+ * @see Cmiss_graphic_point_attributes_set_offset.
+ *
+ * @param point_attributes  The point_attributes to query.
+ * @param number  The number of offset values to request, up to 3.
+ * @param offset  Array to receive offset values, starting with the first axis.
+ * Must be big enough to contain the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_get_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *offset);
+
+/**
+ * Sets the offset from the point coordinates to where the glyph origin is
+ * drawn, in glyph units along the axes, i.e. values are subsequently scaled.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * Tip: offset values can give the effect of moving the centre point / origin
+ * of the glyph: just pass in negative coordinates for the new origin.
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param number  The number of offset values to set, up to 3.
+ * @param offset  Array of offset values, starting with the first axis. If
+ * fewer than 3 then zero is assumed for all other offset values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *offset);
+
+/**
+ * Gets the orientation scale field from the graphic point attributes. This
+ * controls scaling and orientation of point glyphs.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return Handle to orientation scale field, or 0 if none or error. Up to
+ * caller to destroy the returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_orientation_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the orientation scale field in the graphic point attributes. This
+ * controls scaling and orientation of point glyphs.
+ * Only fields with the following numbers of components are allowed, with the
+ * prescribed behaviour:
+ * 1 : default orientation in line with local x, y and z axes, with scalar value
+ *     equally applied in all 3 axes.
+ * 2 : 2-D vector giving orientation of 1st axis. 2nd vector is 90 degrees
+ *     anticlockwise in 2-D plane, and 3rd vector is v1 (x) v2. Scale in all
+ *     directions is magnitude of vector; use a zero scale factor to not scale
+ *     in any axis.
+ * 3 : 3-D vector giving orientation of first axis. 2nd vector is arbitrary
+ *     normal to this, and 3rd vector is v1 (x) v2. Scale in all directions is
+ *     magnitude of vector; use a zero scale factor to not scale in any axis.
+ * 4 : 2 2-D vectors each giving orientation and scale (from magnitude) of 1st
+ *     and 2nd axes. 3rd axis is v1 (x) v2 including scale from its magnitude.
+ * 6 : 2 3-D vectors each giving orientation and scale (from magnitude) of 1st
+ *     and 2nd axes. 3rd axis is v1 (x) v2 including scale from its magnitude.
+ * 9 : 3 3-D vectors giving orientation and scale (from magnitude) of all 3
+ *     axes, in a right-handed sense.
+ * Note the signed scale field provides additional scaling and orientation
+ * reversal for negative values.
+ * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param orientation_scale_field  The orientation scale field to set.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_orientation_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_field_id orientation_scale_field);
+
+/**
+ * Sets the scale factors used in sizing the point glyph, up to 3 values,
+ * one for each axis.
+ * @see Cmiss_graphic_point_attributes_set_scale_factors.
+ *
+ * @param point_attributes  The point_attributes to query.
+ * @param number  The number of scale_factors to request, starting with the
+ * first axis. If fewer values have been set it is padded with the last
+ * scale factor value. 1 to 3 values can be obtained.
+ * @param scale_factors  Array to receive scale factors. Must be big enough to
+ * contain the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_get_scale_factors(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *scale_factors);
+
+/**
+ * Sets the scale factors used in sizing the point glyph, up to 3 values,
+ * one for each axis.
+ * For a unit sized glyph, the final size in each direction is:
+ * base_size + scale_factor * field_scalar
+ * where field_scalar is determined from the orientation_scale_field.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * Scale factor values default to 1.
+ * Tip: to visualise a 2- or 3-component vector orientation_scale_field, use a
+ * base size of 0,D,D with scale factors 1,0,0. This ensures the length equals
+ * the magnitude and the glyph is fixed to size D on the orthogonal axes.
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param number  The number of scale factor values to set, starting with the
+ * first axis. If fewer values are set than the number of axes, the last value
+ * is assumed for subsequent axes. Hence a single value applies to all axes.
+ * @param scale_factors  Array of scale factors with the number of values
+ * specified.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_scale_factors(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *scale_factors);
+
+/**
+ * Gets the signed scale field from the graphic point attributes.
+ * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return Handle to signed scale field, or 0 if none or error. Up to
+ * caller to destroy the returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the signed scale field in the graphic point attributes. Can have from 1
+ * to 3 components. Its absolute value in any axis multiplies the scaling from
+ * the orientation scale field, and if negative adds a further offset to the end
+ * of the scale axis and reverses the orientation. It is commonly used to draw
+ * stress and strain with mirrored arrow glyphs to show them pointing inward for
+ * compression, outward for tension.
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param signed_scale_field  The signed scale field to set.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_signed_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_field_id signed_scale_field);
 
 #ifdef __cplusplus
 }
