@@ -164,11 +164,133 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(gr);
 	EXPECT_NE(static_cast<Cmiss_graphic_point_attributes *>(0), pointattr);
 
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_TYPE_INVALID));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_SPHERE));
-	EXPECT_NE(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_TYPE_INVALID));
+
+	double fieldValues[] = { 0.3, 0.4, 0.5 };
+	Cmiss_field_id field = Cmiss_field_module_create_constant(zinc.fm, 3, fieldValues);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), field);
+	Cmiss_field_id temp_field = 0;
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_orientation_scale_field(pointattr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_orientation_scale_field(pointattr, field));
+	temp_field = Cmiss_graphic_point_attributes_get_orientation_scale_field(pointattr);
+	EXPECT_EQ(temp_field, field);
+	Cmiss_field_destroy(&temp_field);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_orientation_scale_field(pointattr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_orientation_scale_field(pointattr));
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_signed_scale_field(pointattr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_signed_scale_field(pointattr, field));
+	temp_field = Cmiss_graphic_point_attributes_get_signed_scale_field(pointattr);
+	EXPECT_EQ(temp_field, field);
+	Cmiss_field_destroy(&temp_field);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_signed_scale_field(pointattr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_signed_scale_field(pointattr));
+
+	Cmiss_field_destroy(&field);
+
+	const double values[] = { 0.5, 1.2 };
+	double outputValues[3];
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_base_size(pointattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_base_size(pointattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_base_size(pointattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_base_size(pointattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_base_size(pointattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_base_size(pointattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_offset(pointattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_scale_factors(pointattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_scale_factors(pointattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_scale_factors(pointattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
 
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
 	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_POINT);
+	EXPECT_EQ(true, gr.isValid());
+
+	GraphicPointAttributes pointattr = gr.getPointAttributes();
+	EXPECT_EQ(true, pointattr.isValid());
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphType(Graphic::GLYPH_TYPE_INVALID));
+	EXPECT_EQ(CMISS_OK, pointattr.setGlyphType(Graphic::GLYPH_TYPE_SPHERE));
+
+	double fieldValues[] = { 0.3, 0.4, 0.5 };
+	Field field = zinc.fm.createConstant(sizeof(fieldValues)/sizeof(double), fieldValues);
+	EXPECT_EQ(true, field.isValid());
+	Field tempField;
+
+	EXPECT_EQ(false, pointattr.getOrientationScaleField().isValid());
+	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(field));
+	tempField = pointattr.getOrientationScaleField();
+	EXPECT_EQ(tempField.getId(), field.getId());
+	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(Field())); // clear field
+	EXPECT_EQ(false, pointattr.getOrientationScaleField().isValid());
+
+	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
+	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(field));
+	tempField = pointattr.getSignedScaleField();
+	EXPECT_EQ(tempField.getId(), field.getId());
+	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(Field())); // clear field
+	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
+
+	const double values[] = { 0.5, 1.2 };
+	double outputValues[3];
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setBaseSize(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setBaseSize(2, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.setBaseSize(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getBaseSize(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getBaseSize(3, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.getBaseSize(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setOffset(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setOffset(2, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.setOffset(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getOffset(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getOffset(3, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.getOffset(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setScaleFactors(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setScaleFactors(2, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.setScaleFactors(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getScaleFactors(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getScaleFactors(3, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.getScaleFactors(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[1], outputValues[2]);
 }
 
 TEST(Cmiss_graphic_api, point_attributes_label)
