@@ -4389,44 +4389,6 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 	return (return_code);
 }
 
-int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object, const char *cmiss_graphic_name)
-{
-	char *graphics_object_name = NULL;
-	int return_code = 0;
-	struct Cmiss_rendition *rendition = NULL;
-
-	ENTER(Scene_add_graphics_object);
-	if (scene && graphics_object)
-	{
-		if (scene->region &&
-			(NULL != (rendition = Cmiss_region_get_rendition_internal(scene->region))))
-		{
-			if (!cmiss_graphic_name)
-			{
-				GET_NAME(GT_object)(graphics_object, &graphics_object_name);
-				cmiss_graphic_name = graphics_object_name;
-			}
-			return_code = Cmiss_rendition_add_glyph(rendition, graphics_object,
-				cmiss_graphic_name);
-			DEACCESS(Cmiss_rendition)(&rendition);
-			if (graphics_object_name)
-			{
-					DEALLOCATE(graphics_object_name);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_add_graphics_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_add_graphics_object */
-
 Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene)
 {
 	Cmiss_graphics_filter_id filter = NULL;

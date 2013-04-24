@@ -389,9 +389,6 @@ PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_rendition);
 
 PROTOTYPE_ANY_OBJECT(Cmiss_rendition);
 
-int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
-	struct GT_object *glyph, const char *cmiss_graphic_name);
-
 Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**

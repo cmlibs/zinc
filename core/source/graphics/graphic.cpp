@@ -219,45 +219,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphic_glyph_scaling_mode)
-{
-	const char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(Graphic_glyph_scaling_mode));
-	switch (enumerator_value)
-	{
-		case GRAPHIC_GLYPH_SCALING_CONSTANT:
-		{
-			enumerator_string = "constant";
-		} break;
-		case GRAPHIC_GLYPH_SCALING_SCALAR:
-		{
-			enumerator_string = "scalar";
-		} break;
-		case GRAPHIC_GLYPH_SCALING_VECTOR:
-		{
-			enumerator_string = "vector";
-		} break;
-		case GRAPHIC_GLYPH_SCALING_AXES:
-		{
-			enumerator_string = "axes";
-		} break;
-		case GRAPHIC_GLYPH_SCALING_GENERAL:
-		{
-			enumerator_string = "general";
-		} break;
-		default:
-		{
-			enumerator_string = (const char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(Glyph_scaling_mode) */
-
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode)
-
 int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 	enum Cmiss_graphic_attribute attribute)
 {
@@ -390,21 +351,17 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->decimation_threshold = 0.0;
 
 			/* point attributes */
-			graphic->glyph=(struct GT_object *)NULL;
-			graphic->glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
-			graphic->glyph_offset[0]=0.0;
-			graphic->glyph_offset[1]=0.0;
-			graphic->glyph_offset[2]=0.0;
-			graphic->glyph_scale_factors[0]=1.0;
-			graphic->glyph_scale_factors[1]=1.0;
-			graphic->glyph_scale_factors[2]=1.0;
-			graphic->glyph_size[0]=1.0;
-			graphic->glyph_size[1]=1.0;
-			graphic->glyph_size[2]=1.0;
-			graphic->orientation_scale_field=(struct Computed_field *)NULL;
-			graphic->variable_scale_field=(struct Computed_field *)NULL;
-			graphic->label_field=(struct Computed_field *)NULL;
-			graphic->label_density_field=(struct Computed_field *)NULL;
+			graphic->glyph = 0;
+			for (int i = 0; i < 3; i++)
+			{
+				graphic->point_offset[i] = 0.0;
+				graphic->point_base_size[0] = 0.0;
+				graphic->point_scale_factors[i] = 1.0;
+			}
+			graphic->point_orientation_scale_field = 0;
+			graphic->signed_scale_field = 0;
+			graphic->label_field = 0;
+			graphic->label_density_field = 0;
 
 			graphic->subgroup_field=(struct Computed_field *)NULL;
 			graphic->select_mode=GRAPHICS_SELECT_ON;
@@ -421,10 +378,6 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->discretization.number_in_xi2=1;
 			graphic->discretization.number_in_xi3=1;
 			graphic->circle_discretization=6;
-			/* for volumes only */
-			graphic->volume_texture=(struct VT_volume_texture *)NULL;
-			graphic->displacement_map_field=(struct Computed_field *)NULL;
-			graphic->displacement_map_xi_direction = 12;
 			/* for settings starting in a particular element */
 			graphic->seed_element=(struct FE_element *)NULL;
 			/* for settings requiring an exact xi location */
@@ -453,7 +406,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->autorange_spectrum_flag = 0;
 			/* for glyphsets */
 			graphic->font = NULL;
-			/* for cylinders, surfaces and volumes */
+			/* for surface rendering */
 			graphic->render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
 			/* for streamlines only */
 			graphic->streamline_data_type=STREAM_NO_DATA;
@@ -529,14 +482,8 @@ int DESTROY(Cmiss_graphic)(
 					(void *)graphic);
 				DEACCESS(GT_object)(&(graphic->glyph));
 		}
-		if (graphic->orientation_scale_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->orientation_scale_field));
-		}
-		if (graphic->variable_scale_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->variable_scale_field));
-		}
+		Cmiss_field_destroy(&(graphic->point_orientation_scale_field));
+		Cmiss_field_destroy(&(graphic->signed_scale_field));
 		if (graphic->label_field)
 		{
 			DEACCESS(Computed_field)(&(graphic->label_field));
@@ -548,14 +495,6 @@ int DESTROY(Cmiss_graphic)(
 		if (graphic->subgroup_field)
 		{
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
-		}
-		if (graphic->volume_texture)
-		{
-			DEACCESS(VT_volume_texture)(&(graphic->volume_texture));
-		}
-		if (graphic->displacement_map_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->displacement_map_field));
 		}
 		if (graphic->xi_point_density_field)
 		{
@@ -715,7 +654,7 @@ int Cmiss_element_conditional_field_is_true(Cmiss_element_id element,
 static int FE_element_to_graphics_object(struct FE_element *element,
 	Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
 {
-	FE_value base_size[3], offset[3], initial_xi[3], scale_factors[3];
+	FE_value initial_xi[3];
 	GLfloat time;
 	int element_dimension = 1, element_graphics_name,
 		element_selected, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -1120,15 +1059,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									{
 										element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->selection_group_field, graphic_to_object_data->field_cache);
 									}
-									base_size[0] = (FE_value)(graphic->glyph_size[0]);
-									base_size[1] = (FE_value)(graphic->glyph_size[1]);
-									base_size[2] = (FE_value)(graphic->glyph_size[2]);
-									offset[0] = (FE_value)(graphic->glyph_offset[0]);
-									offset[1] = (FE_value)(graphic->glyph_offset[1]);
-									offset[2] = (FE_value)(graphic->glyph_offset[2]);
-									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
-									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
-									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
 									/* NOT an error if no glyph_set produced == empty selection */
 									if ((0 < number_of_xi_points) &&
 										NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
@@ -1136,9 +1066,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											use_element, top_level_element,
 											graphic_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
-											graphic->glyph, base_size, offset, scale_factors,
+											graphic->glyph, graphic->point_base_size, graphic->point_offset,
+											graphic->point_scale_factors,
 											graphic_to_object_data->wrapper_orientation_scale_field,
-											graphic->variable_scale_field, graphic->data_field,
+											graphic->signed_scale_field, graphic->data_field,
 											graphic->font, graphic->label_field, graphic->select_mode,
 											element_selected, ranges, top_level_xi_point_numbers)))
 									{
@@ -1787,49 +1718,6 @@ int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, str
 	return (return_code);
 }
 
-int Cmiss_graphic_get_glyph_parameters(
-	struct Cmiss_graphic *graphic,
-	struct GT_object **glyph, enum Graphic_glyph_scaling_mode *glyph_scaling_mode,
-	Triple glyph_offset, Triple glyph_size,
-	struct Computed_field **orientation_scale_field, Triple glyph_scale_factors,
-	struct Computed_field **variable_scale_field)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_glyph_parameters);
-	if (graphic && glyph && glyph_scaling_mode && glyph_offset && glyph_size &&
-		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_POINT==graphic->graphic_type)) &&
-		orientation_scale_field && glyph_scale_factors && variable_scale_field)
-	{
-		*glyph = graphic->glyph;
-		*glyph_scaling_mode = graphic->glyph_scaling_mode;
-		glyph_offset[0] = graphic->glyph_offset[0];
-		glyph_offset[1] = graphic->glyph_offset[1];
-		glyph_offset[2] = graphic->glyph_offset[2];
-		glyph_size[0] = graphic->glyph_size[0];
-		glyph_size[1] = graphic->glyph_size[1];
-		glyph_size[2] = graphic->glyph_size[2];
-		*orientation_scale_field = graphic->orientation_scale_field;
-		glyph_scale_factors[0] = graphic->glyph_scale_factors[0];
-		glyph_scale_factors[1] = graphic->glyph_scale_factors[1];
-		glyph_scale_factors[2] = graphic->glyph_scale_factors[2];
-		*variable_scale_field = graphic->variable_scale_field;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_glyph_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_glyph_parameters */
-
 Cmiss_field_id Cmiss_graphic_get_coordinate_field(Cmiss_graphic_id graphic)
 {
 	Cmiss_field_id coordinate_field = 0;
@@ -2097,10 +1985,7 @@ int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 		{
 			DEALLOCATE(graphic->name);
 		}
-		if (ALLOCATE(graphic->name, char, strlen(name) + 1))
-		{
-			strcpy((char *)graphic->name, name);
-		}
+		graphic->name = duplicate_string(name);
 		return_code=1;
 	}
 	else
@@ -2409,18 +2294,14 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					append_string(&graphic_string,name,&error);
 					DEALLOCATE(name);
 				}
-				append_string(&graphic_string," ",&error);
-				append_string(&graphic_string,
-					ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(graphic->glyph_scaling_mode),
-					&error);
-				sprintf(temp_string," size \"%g*%g*%g\"",graphic->glyph_size[0],
-					graphic->glyph_size[1],graphic->glyph_size[2]);
+				sprintf(temp_string," size \"%g*%g*%g\"",graphic->point_base_size[0],
+					graphic->point_base_size[1],graphic->point_base_size[2]);
 				append_string(&graphic_string,temp_string,&error);
 				// legacy command uses negative offset as glyph centre
 				Triple glyph_centre;
 				for (int comp_no=0;(comp_no<3);comp_no++)
 				{
-					glyph_centre[comp_no] = graphic->glyph_offset[comp_no];
+					glyph_centre[comp_no] = graphic->point_offset[comp_no];
 					// want to avoid values of -0.0
 					if (glyph_centre[comp_no] != 0.0f)
 					{
@@ -2462,9 +2343,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 						DEALLOCATE(name);
 					}
 				}
-				if (graphic->orientation_scale_field)
+				if (graphic->point_orientation_scale_field)
 				{
-					if (GET_NAME(Computed_field)(graphic->orientation_scale_field,&name))
+					if (GET_NAME(Computed_field)(graphic->point_orientation_scale_field,&name))
 					{
 						/* put quotes around name if it contains special characters */
 						make_valid_token(&name);
@@ -2478,9 +2359,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 						error=1;
 					}
 				}
-				if (graphic->variable_scale_field)
+				if (graphic->signed_scale_field)
 				{
-					if (GET_NAME(Computed_field)(graphic->variable_scale_field,&name))
+					if (GET_NAME(Computed_field)(graphic->signed_scale_field,&name))
 					{
 						/* put quotes around name if it contains special characters */
 						make_valid_token(&name);
@@ -2494,12 +2375,12 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 						error=1;
 					}
 				}
-				if (graphic->orientation_scale_field || graphic->variable_scale_field)
+				if (graphic->point_orientation_scale_field || graphic->signed_scale_field)
 				{
 					sprintf(temp_string," scale_factors \"%g*%g*%g\"",
-						graphic->glyph_scale_factors[0],
-						graphic->glyph_scale_factors[1],
-						graphic->glyph_scale_factors[2]);
+						graphic->point_scale_factors[0],
+						graphic->point_scale_factors[1],
+						graphic->point_scale_factors[2]);
 					append_string(&graphic_string,temp_string,&error);
 				}
 			}
@@ -2732,7 +2613,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				append_string(&graphic_string,name,&error);
 				DEALLOCATE(name);
 			}
-			/* for surfaces and volumes */
+			/* for surfaces rendering */
 			if ((CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
 				|| (CMISS_GRAPHIC_SURFACES==graphic->graphic_type)
 				|| (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
@@ -2762,7 +2643,6 @@ int Cmiss_graphic_to_point_object_at_time(
 	struct Cmiss_graphic *graphic, Cmiss_field_cache_id field_cache, FE_value time,
 	GLfloat graphics_object_primitive_time)
 {
-	FE_value base_size[3], offset[3], scale_factors[3];
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
 	char **labels = NULL;
@@ -2781,16 +2661,6 @@ int Cmiss_graphic_to_point_object_at_time(
 				graphic->graphics_object, graphics_object_primitive_time,
 				(GT_object_primitive_object_name_conditional_function *)NULL,
 				(void *)NULL);
-			base_size[0] = (FE_value)(graphic->glyph_size[0]);
-			base_size[1] = (FE_value)(graphic->glyph_size[1]);
-			base_size[2] = (FE_value)(graphic->glyph_size[2]);
-			offset[0] = (FE_value)(graphic->glyph_offset[0]);
-			offset[1] = (FE_value)(graphic->glyph_offset[1]);
-			offset[2] = (FE_value)(graphic->glyph_offset[2]);
-			scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
-			scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
-			scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-
 			Triple *point_list, *axis1_list, *axis2_list, *axis3_list,
 				*scale_list;
 			ALLOCATE(point_list, Triple, 1);
@@ -2804,21 +2674,21 @@ int Cmiss_graphic_to_point_object_at_time(
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
 			/* NOT an error if no glyph_set produced == empty group */
-			(*point_list)[0] = (GLfloat)offset[0];
-			(*point_list)[1] = (GLfloat)offset[1];
-			(*point_list)[2] = (GLfloat)offset[2];
-			(*axis1_list)[0] = (GLfloat)base_size[0];
+			(*point_list)[0] = (GLfloat)graphic->point_offset[0];
+			(*point_list)[1] = (GLfloat)graphic->point_offset[1];
+			(*point_list)[2] = (GLfloat)graphic->point_offset[2];
+			(*axis1_list)[0] = (GLfloat)graphic->point_base_size[0];
 			(*axis1_list)[1] = 0.0;
 			(*axis1_list)[2] = 0.0;
 			(*axis2_list)[0] = 0.0;
-			(*axis2_list)[1] = (GLfloat)base_size[1];
+			(*axis2_list)[1] = (GLfloat)graphic->point_base_size[1];
 			(*axis2_list)[2] = 0.0;
 			(*axis3_list)[0] = 0.0;
 			(*axis3_list)[1] = 0.0;
-			(*axis3_list)[2] = (GLfloat)base_size[2];
-			(*scale_list)[0] = (GLfloat)scale_factors[0];
-			(*scale_list)[1] = (GLfloat)scale_factors[1];
-			(*scale_list)[2] = (GLfloat)scale_factors[2];
+			(*axis3_list)[2] = (GLfloat)graphic->point_base_size[2];
+			(*scale_list)[0] = (GLfloat)graphic->point_scale_factors[0];
+			(*scale_list)[1] = (GLfloat)graphic->point_scale_factors[1];
+			(*scale_list)[2] = (GLfloat)graphic->point_scale_factors[2];
 			if (glyph_set)
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
@@ -3288,7 +3158,6 @@ int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
 {
 	char *existing_name, *graphic_string;
-	FE_value base_size[3], offset[3], scale_factors[3];
 	GLfloat time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
@@ -3335,11 +3204,11 @@ int Cmiss_graphic_to_graphics_object(
 								return_code = 0;
 							}
 						}
-						if (return_code && graphic->orientation_scale_field)
+						if (return_code && graphic->point_orientation_scale_field)
 						{
 							graphic_to_object_data->wrapper_orientation_scale_field =
 								Computed_field_begin_wrap_orientation_scale_field(
-									graphic->orientation_scale_field, graphic_to_object_data->rc_coordinate_field);
+									graphic->point_orientation_scale_field, graphic_to_object_data->rc_coordinate_field);
 							if (!graphic_to_object_data->wrapper_orientation_scale_field)
 							{
 								display_message(ERROR_MESSAGE,
@@ -3521,15 +3390,6 @@ int Cmiss_graphic_to_graphics_object(
 											graphic->graphics_object, time,
 											(GT_object_primitive_object_name_conditional_function *)NULL,
 											(void *)NULL);
-										base_size[0] = (FE_value)(graphic->glyph_size[0]);
-										base_size[1] = (FE_value)(graphic->glyph_size[1]);
-										base_size[2] = (FE_value)(graphic->glyph_size[2]);
-										offset[0] = (FE_value)(graphic->glyph_offset[0]);
-										offset[1] = (FE_value)(graphic->glyph_offset[1]);
-										offset[2] = (FE_value)(graphic->glyph_offset[2]);
-										scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
-										scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
-										scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
 										Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
 											(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
 										Cmiss_nodeset_id iteration_nodeset = 0;
@@ -3577,10 +3437,10 @@ int Cmiss_graphic_to_graphics_object(
 											GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
 												iteration_nodeset, graphic_to_object_data->field_cache,
 												graphic_to_object_data->rc_coordinate_field,
-												graphic->glyph, base_size, offset, scale_factors,
+												graphic->glyph, graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
 												graphic_to_object_data->time,
 												graphic_to_object_data->wrapper_orientation_scale_field,
-												graphic->variable_scale_field, graphic->data_field,
+												graphic->signed_scale_field, graphic->data_field,
 												graphic->font, graphic->label_field,
 												graphic->label_density_field,
 												(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
@@ -3829,7 +3689,7 @@ int Cmiss_graphic_to_graphics_object(
 						{
 							Computed_field_end_wrap(&(graphic_to_object_data->wrapper_stream_vector_field));
 						}
-						if (graphic->orientation_scale_field)
+						if (graphic->point_orientation_scale_field)
 						{
 							Computed_field_end_wrap(&(graphic_to_object_data->wrapper_orientation_scale_field));
 						}
@@ -4021,12 +3881,12 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 			(CMISS_GRAPHIC_NODE_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_DATA_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type)) &&
-			((graphic->orientation_scale_field &&
+			((graphic->point_orientation_scale_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
-					graphic->orientation_scale_field, conditional_function, user_data)))||
-			(graphic->variable_scale_field &&
+					graphic->point_orientation_scale_field, conditional_function, user_data)))||
+			(graphic->signed_scale_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
-					graphic->variable_scale_field, conditional_function, user_data))) ||
+					graphic->signed_scale_field, conditional_function, user_data))) ||
 			(graphic->label_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
 					graphic->label_field, conditional_function, user_data))) ||
@@ -4434,65 +4294,6 @@ int Cmiss_graphic_set_render_type(
 
 } /* Cmiss_graphic_set_render_type */
 
-int Cmiss_graphic_set_glyph_parameters(
-	struct Cmiss_graphic *graphic,
-	struct GT_object *glyph, enum Graphic_glyph_scaling_mode glyph_scaling_mode,
-	Triple glyph_offset, Triple glyph_size,
-	struct Computed_field *orientation_scale_field, Triple glyph_scale_factors,
-	struct Computed_field *variable_scale_field)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && ((glyph_offset && glyph_size &&
-		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_POINT==graphic->graphic_type))&&
-		((!orientation_scale_field) || Computed_field_is_orientation_scale_capable(
-			orientation_scale_field,(void *)NULL)) && glyph_scale_factors &&
-		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
-			variable_scale_field,(void *)NULL))) || !glyph))
-	{
-		if (graphic->glyph)
-		{
-			GT_object_remove_callback(graphic->glyph,
-				Cmiss_graphic_glyph_change, (void *)graphic);
-		}
-		REACCESS(GT_object)(&(graphic->glyph),glyph);
-		if (glyph)
-		{
-			GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
-					(void *)graphic);
-		}
-		graphic->glyph_scaling_mode = glyph_scaling_mode;
-		graphic->glyph_offset[0] = glyph_offset[0];
-		graphic->glyph_offset[1] = glyph_offset[1];
-		graphic->glyph_offset[2] = glyph_offset[2];
-		graphic->glyph_size[0] = glyph_size[0];
-		graphic->glyph_size[1] = glyph_size[1];
-		graphic->glyph_size[2] = glyph_size[2];
-		REACCESS(Computed_field)(&(graphic->orientation_scale_field),
-			orientation_scale_field);
-		graphic->glyph_scale_factors[0]=glyph_scale_factors[0];
-		graphic->glyph_scale_factors[1]=glyph_scale_factors[1];
-		graphic->glyph_scale_factors[2]=glyph_scale_factors[2];
-		REACCESS(Computed_field)(&(graphic->variable_scale_field),
-			variable_scale_field);
-
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_glyph_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_glyph_parameters */
-
 int Cmiss_graphic_get_iso_surface_parameters(
 	struct Cmiss_graphic *graphic,struct Computed_field **iso_scalar_field,
 	int *number_of_iso_values, double **iso_values,
@@ -4820,11 +4621,11 @@ int Cmiss_graphic_copy_without_graphics_object(
 		if (destination->name)
 		{
 			DEALLOCATE(destination->name);
+			destination->name = 0;
 		}
-		if (source->name && ALLOCATE(destination->name, char,
-			strlen(source->name) + 1))
+		if (source->name)
 		{
-			strcpy((char *)destination->name, source->name);
+			destination->name = duplicate_string(source->name);
 		}
 
 		/* copy geometry graphic */
@@ -4878,17 +4679,18 @@ int Cmiss_graphic_copy_without_graphics_object(
 				DEACCESS(Computed_field)(&destination->iso_scalar_field);
 			}
 		}
-		/* for node_points, data_points and element_points only */
-		if ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_DATA_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_POINT==source->graphic_type))
+
+		Cmiss_graphic_point_attributes_id point_attributes =
+			Cmiss_graphic_get_point_attributes(destination);
+		if (point_attributes)
 		{
-			Cmiss_graphic_set_glyph_parameters(destination,
-				source->glyph, source->glyph_scaling_mode,
-				source->glyph_offset, source->glyph_size,
-				source->orientation_scale_field, source->glyph_scale_factors,
-				source->variable_scale_field);
+			Cmiss_graphic_point_attributes_set_glyph(point_attributes, source->glyph);
+			for (int i = 0; i < 3; i++)
+			{
+				destination->point_base_size[i] = source->point_base_size[i];
+				destination->point_offset[i] = source->point_offset[i];
+				destination->point_scale_factors[i] = source->point_scale_factors[i];
+			}
 		}
 		else
 		{
@@ -4898,15 +4700,13 @@ int Cmiss_graphic_copy_without_graphics_object(
 					Cmiss_graphic_glyph_change, (void *)destination);
 				DEACCESS(GT_object)(&(destination->glyph));
 			}
-			if (destination->orientation_scale_field)
-			{
-				DEACCESS(Computed_field)(&destination->orientation_scale_field);
-			}
-			if (destination->variable_scale_field)
-			{
-				DEACCESS(Computed_field)(&destination->variable_scale_field);
-			}
 		}
+		REACCESS(Computed_field)(&(destination->point_orientation_scale_field),
+			source->point_orientation_scale_field);
+		REACCESS(Computed_field)(&(destination->signed_scale_field), source->signed_scale_field);
+		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
+		REACCESS(Computed_field)(&(destination->subgroup_field),source->subgroup_field);
+		Cmiss_graphic_point_attributes_destroy(&point_attributes);
 
 		if (CMISS_GRAPHIC_POINT==source->graphic_type)
 		{
@@ -4914,8 +4714,6 @@ int Cmiss_graphic_copy_without_graphics_object(
 			destination->overlay_order = source->overlay_order;
 		}
 
-		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
-		REACCESS(Computed_field)(&(destination->subgroup_field),source->subgroup_field);
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
@@ -4934,11 +4732,6 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Cmiss_tessellation)(&(destination->tessellation),
 			source->tessellation);
 		REACCESS(Computed_field)(&(destination->label_density_field),source->label_density_field);
-		/* for volumes only */
-		REACCESS(VT_volume_texture)(&(destination->volume_texture),
-			source->volume_texture);
-		REACCESS(Computed_field)(&(destination->displacement_map_field),
-			source->displacement_map_field);
 		/* for graphic starting in a particular element */
 		REACCESS(FE_element)(&(destination->seed_element),
 			source->seed_element);
@@ -5358,23 +5151,22 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(CMISS_GRAPHIC_POINT==graphic->graphic_type) ))
 		{
 			return_code=
-				(graphic->glyph_scaling_mode==second_graphic->glyph_scaling_mode)&&
-				(graphic->glyph_size[0]==second_graphic->glyph_size[0])&&
-				(graphic->glyph_size[1]==second_graphic->glyph_size[1])&&
-				(graphic->glyph_size[2]==second_graphic->glyph_size[2])&&
-				(graphic->glyph_scale_factors[0]==
-					second_graphic->glyph_scale_factors[0])&&
-				(graphic->glyph_scale_factors[1]==
-					second_graphic->glyph_scale_factors[1])&&
-				(graphic->glyph_scale_factors[2]==
-					second_graphic->glyph_scale_factors[2])&&
-				(graphic->glyph_offset[0]==second_graphic->glyph_offset[0])&&
-				(graphic->glyph_offset[1]==second_graphic->glyph_offset[1])&&
-				(graphic->glyph_offset[2]==second_graphic->glyph_offset[2])&&
-				(graphic->orientation_scale_field==
-					second_graphic->orientation_scale_field)&&
-				(graphic->variable_scale_field==
-					second_graphic->variable_scale_field)&&
+				(graphic->point_base_size[0]==second_graphic->point_base_size[0])&&
+				(graphic->point_base_size[1]==second_graphic->point_base_size[1])&&
+				(graphic->point_base_size[2]==second_graphic->point_base_size[2])&&
+				(graphic->point_scale_factors[0]==
+					second_graphic->point_scale_factors[0])&&
+				(graphic->point_scale_factors[1]==
+					second_graphic->point_scale_factors[1])&&
+				(graphic->point_scale_factors[2]==
+					second_graphic->point_scale_factors[2])&&
+				(graphic->point_offset[0]==second_graphic->point_offset[0])&&
+				(graphic->point_offset[1]==second_graphic->point_offset[1])&&
+				(graphic->point_offset[2]==second_graphic->point_offset[2])&&
+				(graphic->point_orientation_scale_field==
+					second_graphic->point_orientation_scale_field)&&
+				(graphic->signed_scale_field==
+					second_graphic->signed_scale_field)&&
 				(graphic->label_field==second_graphic->label_field)&&
 				(graphic->label_density_field==second_graphic->label_density_field);
 		}
@@ -6397,13 +6189,13 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->orientation_scale_field &&
-			Computed_field_has_multiple_times(graphic->orientation_scale_field))
+		if (graphic->point_orientation_scale_field &&
+			Computed_field_has_multiple_times(graphic->point_orientation_scale_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphic->variable_scale_field &&
-			Computed_field_has_multiple_times(graphic->variable_scale_field))
+		if (graphic->signed_scale_field &&
+			Computed_field_has_multiple_times(graphic->signed_scale_field))
 		{
 			time_dependent = 1;
 		}
@@ -6422,13 +6214,8 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->variable_scale_field &&
-			Computed_field_has_multiple_times(graphic->variable_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphic->displacement_map_field &&
-			Computed_field_has_multiple_times(graphic->displacement_map_field))
+		if (graphic->signed_scale_field &&
+			Computed_field_has_multiple_times(graphic->signed_scale_field))
 		{
 			time_dependent = 1;
 		}
@@ -6685,13 +6472,13 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->iso_scalar_field));
 		}
-		if (graphic->orientation_scale_field)
+		if (graphic->point_orientation_scale_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->orientation_scale_field));
+			DEACCESS(Computed_field)(&(graphic->point_orientation_scale_field));
 		}
-		if (graphic->variable_scale_field)
+		if (graphic->signed_scale_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->variable_scale_field));
+			DEACCESS(Computed_field)(&(graphic->signed_scale_field));
 		}
 		if (graphic->label_field)
 		{
@@ -6704,10 +6491,6 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		if (graphic->subgroup_field)
 		{
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
-		}
-		if (graphic->displacement_map_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->displacement_map_field));
 		}
 		if (graphic->xi_point_density_field)
 		{
@@ -7228,6 +7011,53 @@ int Cmiss_graphic_point_attributes_destroy(
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(point_attributes_address));
 }
 
+int Cmiss_graphic_point_attributes_get_base_size(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *base_size)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && base_size)
+	{
+		const int count = (number > 3) ? 3 : number;
+		for (int i = 0; i < count; ++i)
+		{
+			base_size[i] = static_cast<double>(graphic->point_base_size[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_set_base_size(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *base_size)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && base_size)
+	{
+		bool changed = false;
+		FE_value value;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(base_size[i]);
+			}
+			if (graphic->point_base_size[i] != value)
+			{
+				graphic->point_base_size[i] = value;
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
 	Cmiss_graphic_point_attributes_id point_attributes)
 {
@@ -7243,7 +7073,6 @@ int Cmiss_graphic_point_attributes_set_font(
 	Cmiss_graphic_point_attributes_id point_attributes,
 	Cmiss_graphics_font_id font)
 {
-	int return_code = 0;
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
@@ -7253,16 +7082,26 @@ int Cmiss_graphic_point_attributes_set_font(
 			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
-		return_code = 1;
+		return CMISS_OK;
 	}
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+GT_object *Cmiss_graphic_point_attributes_get_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (graphic->glyph))
+	{
+		return ACCESS(GT_object)(graphic->glyph);
+	}
+	return 0;
 }
 
 int Cmiss_graphic_point_attributes_set_glyph(
 	Cmiss_graphic_point_attributes_id point_attributes,
 	GT_object *glyph)
 {
-	int return_code = 0;
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
@@ -7282,16 +7121,16 @@ int Cmiss_graphic_point_attributes_set_glyph(
 			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
-		return_code = 1;
+		return CMISS_OK;
 	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_graphic_point_attributes_set_glyph_type(
 	Cmiss_graphic_point_attributes_id point_attributes,
 	enum Cmiss_graphics_glyph_type glyph_type)
 {
-	int return_code = 0;
+	int return_code = CMISS_ERROR_ARGUMENT;
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic && glyph_type != CMISS_GRAPHICS_GLYPH_TYPE_INVALID)
 	{
@@ -7336,7 +7175,6 @@ Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
 int Cmiss_graphic_point_attributes_set_label_field(
 	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field)
 {
-	int return_code = 0;
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
@@ -7345,7 +7183,159 @@ int Cmiss_graphic_point_attributes_set_label_field(
 			REACCESS(Computed_field)(&(graphic->label_field), label_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		return_code = 1;
+		return CMISS_OK;
 	}
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_get_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *offset)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && offset)
+	{
+		const int count = (number > 3) ? 3 : number;
+		for (int i = 0; i < count; ++i)
+		{
+			offset[i] = static_cast<double>(graphic->point_offset[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_set_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *offset)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && offset)
+	{
+		bool changed = false;
+		FE_value value = 0.0;
+		for (int i = 2; 0 <= i; --i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(offset[i]);
+			}
+			if (graphic->point_offset[i] != value)
+			{
+				graphic->point_offset[i] = value;
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_field_id Cmiss_graphic_point_attributes_get_orientation_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (graphic->point_orientation_scale_field))
+	{
+		return ACCESS(Computed_field)(graphic->point_orientation_scale_field);
+	}
+	return 0;
+}
+
+int Cmiss_graphic_point_attributes_set_orientation_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_field_id orientation_scale_field)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && ((0 == orientation_scale_field) ||
+		Computed_field_is_orientation_scale_capable(orientation_scale_field, (void *)0)))
+	{
+		if (orientation_scale_field != graphic->point_orientation_scale_field)
+		{
+			REACCESS(Computed_field)(&(graphic->point_orientation_scale_field), orientation_scale_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_get_scale_factors(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *scale_factors)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && scale_factors)
+	{
+		const int count = (number > 3) ? 3 : number;
+		for (int i = 0; i < count; ++i)
+		{
+			scale_factors[i] = static_cast<double>(graphic->point_scale_factors[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_set_scale_factors(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *scale_factors)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && scale_factors)
+	{
+		bool changed = false;
+		FE_value value;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(scale_factors[i]);
+			}
+			if (graphic->point_scale_factors[i] != value)
+			{
+				graphic->point_scale_factors[i] = value;
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (graphic->signed_scale_field))
+	{
+		return ACCESS(Computed_field)(graphic->signed_scale_field);
+	}
+	return 0;
+}
+
+int Cmiss_graphic_point_attributes_set_signed_scale_field(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	Cmiss_field_id signed_scale_field)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && ((!signed_scale_field) ||
+		Computed_field_has_up_to_3_numerical_components(signed_scale_field,(void *)NULL)))
+	{
+		if (signed_scale_field != graphic->signed_scale_field)
+		{
+			REACCESS(Computed_field)(&(graphic->signed_scale_field), signed_scale_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }

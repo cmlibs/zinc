@@ -421,6 +421,16 @@ public:
 		return (0 != id);
 	}
 
+	int getBaseSize(int number, double *baseSize)
+	{
+		return Cmiss_graphic_point_attributes_get_base_size(id, number, baseSize);
+	}
+
+	int setBaseSize(int number, const double *baseSize)
+	{
+		return Cmiss_graphic_point_attributes_set_base_size(id, number, baseSize);
+	}
+
 	GraphicsFont getFont()
 	{
 		return GraphicsFont(Cmiss_graphic_point_attributes_get_font(id));
@@ -445,6 +455,46 @@ public:
 	int setLabelField(Field& labelField)
 	{
 		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
+	}
+
+	int getOffset(int number, double *offset)
+	{
+		return Cmiss_graphic_point_attributes_get_offset(id, number, offset);
+	}
+
+	int setOffset(int number, const double *offset)
+	{
+		return Cmiss_graphic_point_attributes_set_offset(id, number, offset);
+	}
+
+	Field getOrientationScaleField()
+	{
+		return Field(Cmiss_graphic_point_attributes_get_orientation_scale_field(id));
+	}
+
+	int setOrientationScaleField(Field& orientationScaleField)
+	{
+		return Cmiss_graphic_point_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
+	}
+
+	int getScaleFactors(int number, double *scaleFactors)
+	{
+		return Cmiss_graphic_point_attributes_get_scale_factors(id, number, scaleFactors);
+	}
+
+	int setScaleFactors(int number, const double *scaleFactors)
+	{
+		return Cmiss_graphic_point_attributes_set_scale_factors(id, number, scaleFactors);
+	}
+
+	Field getSignedScaleField()
+	{
+		return Field(Cmiss_graphic_point_attributes_get_signed_scale_field(id));
+	}
+
+	int setSignedScaleField(Field& signedScaleField)
+	{
+		return Cmiss_graphic_point_attributes_set_signed_scale_field(id, signedScaleField.getId());
 	}
 
 };

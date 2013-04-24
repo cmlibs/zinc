@@ -909,16 +909,6 @@ int Scene_export_region_graphics_object(struct Scene *scene,
 	graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
 
-int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object, const char *cmiss_graphic_name);
-/*******************************************************************************
-Adds <graphics_object> to the list of objects on <scene> at <position>.
-A position of 1 indicates the top of the list, while less than 1 or greater
-than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> allows the scene_object to be given a different
-name from that of the <graphics_object>, and must be unique for the scene.
-==============================================================================*/
-
 int Scene_picked_object_get_number_of_renditions(
 	struct Scene_picked_object *scene_picked_object);
 /*******************************************************************************
