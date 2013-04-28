@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") graphicsfilter
+%module(package="zinc") graphicsfont
 
 %import "graphic.i"
 

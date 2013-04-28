@@ -39,6 +39,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 %module(package="zinc") graphic
+%include "doublevaluesarraytypemap.i"
+%include "integervaluesarraytypemap.i"
 
 %import "field.i"
 %import "tessellation.i"

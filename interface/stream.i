@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Stream.i
- * 
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,6 +39,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 %module(package="zinc") stream
+%typemap(in) (const void *buffer, unsigned int buffer_length)
+{
+	$1 = PyString_AsString($input);   /* char *str */
+	$2 = PyString_Size($input);       /* int len   */
+}
 
 %{
 #include "zinc/stream.hpp"

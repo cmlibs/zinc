@@ -48,6 +48,10 @@ $1 = PyList_Check($input) ? 1 : 0;
 %typemap(freearg) (int basisNumberOfNodes, int *localNodeIndexes) = (int numberOfValues, int *values);
 %typemap(typecheck) (int basisNumberOfNodes, int *localNodeIndexes) = (int numberOfValues, int *values);
 
+%typemap(in) (int number, int *discretization) = (int numberOfValues, int *values);
+%typemap(freearg) (int number, int *discretization) = (int numberOfValues, int *values);
+%typemap(typecheck) (int number, int *discretization) = (int numberOfValues, int *values);
+
 %typemap(argout)(int numberOfValues, int *outValues)
 {
 	PyObject *o, *o2, *o3, *o4;

@@ -92,6 +92,18 @@ $1 = PyList_Check($input) ? 1 : 0;
 %typemap(freearg) (int numberOfTimes, double *times) = (int numberOfValues, double *values);
 %typemap(typecheck) (int numberOfTimes, double *times) = (int numberOfValues, double *values);
 
+%typemap(in) (int number, double *baseSize) = (int numberOfValues, double *values);
+%typemap(freearg) (int number, double *baseSize) = (int numberOfValues, double *values);
+%typemap(typecheck) (int number, double *baseSize) = (int numberOfValues, double *values);
+
+%typemap(in) (int number, double *scaleFactors) = (int numberOfValues, double *values);
+%typemap(freearg) (int number, double *scaleFactors) = (int numberOfValues, double *values);
+%typemap(typecheck) (int number, double *scaleFactors) = (int numberOfValues, double *values);
+
+%typemap(in) (int number, double *offset) = (int numberOfValues, double *values);
+%typemap(freearg) (int number, double *offset) = (int numberOfValues, double *values);
+%typemap(typecheck) (int number, double *offset) = (int numberOfValues, double *values);
+
 %typemap(in) (double *weights)
 {
 	/* Check if is a list */
