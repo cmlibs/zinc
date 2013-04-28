@@ -435,6 +435,7 @@ DESCRIPTION :
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
 	/* list of callbacks requested by other objects when scene viewer destroyed */
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
 }; /* struct Scene_viewer */
 
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
@@ -1660,6 +1661,9 @@ Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 
 int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input);
+
+int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
 
 #endif /* !defined (SCENE_VIEWER_H) */
