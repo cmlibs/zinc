@@ -149,10 +149,9 @@ DESCRIPTION :
 				 projection matrix exists */
 			if (!scene_viewer_callback_flag)
 			{
-				scene_viewer_callback_flag = 0;
-				//-- 	Scene_viewer_add_transform_callback(scene_viewer,
-				//-- 		Computed_field_scene_viewer_projection_scene_viewer_callback,
-				//-- 		(void *)field);
+				Scene_viewer_add_transform_callback(scene_viewer,
+					Computed_field_scene_viewer_projection_scene_viewer_callback,
+				 		(void *)field);
 			}
 			if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
 				(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
@@ -431,9 +430,9 @@ Clear the type specific data used by this type.
 		}
 		if (scene_viewer_callback_flag)
 		{
-		//-- 	Scene_viewer_remove_transform_callback(scene_viewer,
-		//-- 	  Computed_field_scene_viewer_projection_scene_viewer_callback,
-		//-- 	  (void *)field);
+		 	Scene_viewer_remove_transform_callback(scene_viewer,
+		 	  Computed_field_scene_viewer_projection_scene_viewer_callback,
+		 	  (void *)field);
 			scene_viewer_callback_flag = 0;
 		}
 		remove_transformation_callback();
@@ -805,9 +804,9 @@ Clear the scene viewer reference when it is no longer valid.
 	{
 		if (core->scene_viewer_callback_flag)
 		{
-			//-- Scene_viewer_remove_transform_callback(scene_viewer,
-			//--   Computed_field_scene_viewer_projection_scene_viewer_callback,
-			//--   (void *)field);
+			Scene_viewer_remove_transform_callback(scene_viewer,
+			  Computed_field_scene_viewer_projection_scene_viewer_callback,
+			  (void *)field);
 			core->scene_viewer_callback_flag = 0;
 		}
 		if (core->graphics_window_name)

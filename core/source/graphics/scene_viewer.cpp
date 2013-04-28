@@ -478,6 +478,15 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_callback, \
 //-- DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_input_callback,
 //-- 	struct Scene_viewer *,struct Graphics_buffer_input *)
 
+void Scene_viewer_trigger_transform_callback(struct Scene_viewer *scene_viewer)
+{
+	if (scene_viewer)
+	{
+		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(scene_viewer->transform_callback_list,
+			scene_viewer, NULL);
+	}
+}
+
 static void Scene_viewer_scene_change(
 	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void);
 
@@ -3244,6 +3253,9 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->destroy_callback_list =
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 
+				scene_viewer->transform_callback_list=
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
+
 				/* add callbacks to the graphics buffer */
 				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
 				//-- 	Scene_viewer_initialise_callback, scene_viewer);
@@ -3319,6 +3331,11 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
 				&scene_viewer->repaint_required_callback_list);
+		}
+		if (scene_viewer->transform_callback_list)
+		{
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
+				&scene_viewer->transform_callback_list);
 		}
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);
@@ -3722,6 +3739,7 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->lookatx -= dx;
 							scene_viewer->lookaty -= dy;
 							scene_viewer->lookatz -= dz;
+							Scene_viewer_trigger_transform_callback(scene_viewer);
 							view_changed=1;
 						} break;
 						case SV_DRAG_ZOOM:
@@ -3754,7 +3772,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					}
 					if (view_changed)
 					{
-						//-- Scene_viewer_set_transform_flag(scene_viewer);
+						Scene_viewer_trigger_transform_callback(scene_viewer);
 						CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 							scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 						/* send the callbacks */
@@ -4807,7 +4825,7 @@ Sets the view direction and orientation of the Scene_viewer.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 			return_code=1;
@@ -4872,7 +4890,7 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 			return_code=1;
@@ -5018,7 +5036,7 @@ consecutive across rows, eg:
 						modelview_matrix[i*4+j];
 				}
 			}
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -5097,7 +5115,7 @@ are used to position the intended viewing volume in user coordinates.
 			scene_viewer->NDC_top=NDC_top;
 			scene_viewer->NDC_width=NDC_width;
 			scene_viewer->NDC_height=NDC_height;
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -5163,7 +5181,7 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		(SCENE_VIEWER_CUSTOM==projection_mode)))
 	{
 		scene_viewer->projection_mode=projection_mode;
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		return_code=1;
@@ -5246,7 +5264,7 @@ consecutive across rows, eg:
 					scene_viewer->projection_matrix[i*4+j] = projection_matrix[j*4+i];
 				}
 			}
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -5311,7 +5329,7 @@ Sets the Scene_viewer scene.
 		{
 			DEACCESS(Scene)(&(scene_viewer->scene));
 			scene_viewer->scene=ACCESS(Scene)(scene);
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		}
@@ -5855,7 +5873,7 @@ For PARALLEL and PERSPECTIVE projection modes only.
 		scene_viewer->right  = centre_x + width *size_ratio;
 		scene_viewer->bottom = centre_y - height*size_ratio;
 		scene_viewer->top    = centre_y + height*size_ratio;
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		return_code=1;
@@ -5921,7 +5939,7 @@ eye_distance*0.99 in front of it.
 		{
 			scene_viewer->near_plane=eye_distance-clip_distance;
 		}
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		return_code=1;
@@ -6110,7 +6128,7 @@ rendering a higher resolution image in parts.
 			scene_viewer->top=top;
 			scene_viewer->near_plane=near_plane;
 			scene_viewer->far_plane=far_plane;
-			//-- Scene_viewer_set_transform_flag(scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 			return_code=1;
@@ -6200,7 +6218,7 @@ pixels per unit enables zooming to be achieved.
 		scene_viewer->user_viewport_top=viewport_top;
 		scene_viewer->user_viewport_pixels_per_unit_x=viewport_pixels_per_unit_x;
 		scene_viewer->user_viewport_pixels_per_unit_y=viewport_pixels_per_unit_y;
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -6546,7 +6564,7 @@ viewport coordinates, which are specified relative to the window.
 		(SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT==viewport_mode)))
 	{
 		scene_viewer->viewport_mode=viewport_mode;
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -6604,7 +6622,7 @@ Sets the width and height of the Scene_viewers drawing area.
 	{
 		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
 		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		return_code = 1;
 	}
 	else
@@ -6720,7 +6738,7 @@ not already a unit vector, it will be made one by this function.
 		scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
 		scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
 		scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -7111,7 +7129,7 @@ Scales of the absolute image while keeping the same centre point.
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->user_viewport_pixels_per_unit_y);
-		//-- Scene_viewer_set_transform_flag(scene_viewer);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -8659,6 +8677,76 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 
 	return return_code;
 }
+
+int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	if (scene_viewer&&function)
+	{
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
+			scene_viewer->transform_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_add_transform_callback.  Could not add callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_add_transform_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Scene_viewer_add_transform_callback */
+
+int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+{
+	int return_code;
+
+	if (scene_viewer&&function)
+	{
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_callback)(
+			scene_viewer->transform_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_remove_transform_callback.  Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_remove_transform_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Scene_viewer_remove_transform_callback */
 
 //-- Cmiss_scene_viewer_input_id Cmiss_scene_viewer_create_input(
 //-- 	Cmiss_scene_viewer_id scene_viewer)
