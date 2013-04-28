@@ -95,7 +95,7 @@ public:
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_SPECTRUM_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED,
+		ATTRIBUTE_IS_MANAGED = CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED
 	};
 
 	int getAttributeInteger(Attribute attribute)
@@ -118,6 +118,26 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_spectrum_set_name(id, name);
+	}
+
+	int setMinimumAndMaximum(double minimum, double maximum)
+	{
+		return Cmiss_spectrum_set_minimum_and_maximum(id, minimum, maximum);
+	}
+
+	int setRainbow()
+	{
+		return Cmiss_spectrum_set_rainbow(id);
+	}
+
+	double getMaximum()
+	{
+		return Cmiss_spectrum_get_maximum(id);
+	}
+
+	double getMinimum()
+	{
+		return Cmiss_spectrum_get_minimum(id);
 	}
 
 };

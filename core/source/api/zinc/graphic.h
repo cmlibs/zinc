@@ -842,6 +842,49 @@ ZINC_API int Cmiss_graphic_point_attributes_set_signed_scale_field(
 	Cmiss_graphic_point_attributes_id point_attributes,
 	Cmiss_field_id signed_scale_field);
 
+/**
+ * If the graphic produces points then returns a handle to point attribute
+ * object for specifying glyph, scaling fields, scale factors and labels.
+ *
+ * @param graphic  The graphic to request point attributes from.
+ * @return  Handle to point attributes object, or 0 if not supported for
+ * graphic type or error. Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_graphic_element_attributes_id Cmiss_graphic_get_element_attributes(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Returns a new reference to the point attributes with reference count
+ * incremented. Caller is responsible for destroying the new reference.
+ *
+ * @param point_attributes  The point_attributes to obtain a new reference to.
+ * @return  New point attributes reference with incremented reference count.
+ */
+ZINC_API Cmiss_graphic_element_attributes_id Cmiss_graphic_element_attributes_access(
+	Cmiss_graphic_element_attributes_id element_attributes);
+
+/**
+ * Destroys this reference to the point attributes, and sets it to 0.
+ * Internally this just decrements the reference count.
+ *
+ * @param point_attributes_address  Address of handle to the point attributes.
+ * @return  Status CMISS_OK if successfully destroyed the handle, any other
+ * value on failure.
+ */
+ZINC_API int Cmiss_graphic_element_attributes_destroy(
+	Cmiss_graphic_element_attributes_id *element_attributes_address);
+
+/**
+ */
+ZINC_API int Cmiss_graphic_element_attributes_set_discretization(
+	Cmiss_graphic_element_attributes_id element_attributes, int number,
+	const int *discretization);
+
+/**
+ */
+ZINC_API int Cmiss_graphic_element_attributes_set_discretization_mode(
+	Cmiss_graphic_element_attributes_id element_attributes, Cmiss_graphics_xi_discretization_mode mode);
+
 #ifdef __cplusplus
 }
 #endif

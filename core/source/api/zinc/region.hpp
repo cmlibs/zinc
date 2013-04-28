@@ -63,7 +63,7 @@ public:
 	{  }
 
 	Region(const Region& region) : id(Cmiss_region_access(region.id))
-	{  }
+	{ }
 
 	Region& operator=(const Region& region)
 	{
@@ -147,7 +147,7 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_region_set_name(id, name);
- 	}
+	}
 
 	Region getParent()
 	{

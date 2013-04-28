@@ -51,6 +51,7 @@ namespace zinc
 
 class GraphicLineAttributes;
 class GraphicPointAttributes;
+class GraphicElementAttributes;
 
 class Graphic
 {
@@ -198,6 +199,8 @@ public:
 	GraphicLineAttributes getLineAttributes();
 
 	GraphicPointAttributes getPointAttributes();
+
+	GraphicElementAttributes getElementAttributes();
 
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
 	{
@@ -502,6 +505,60 @@ public:
 inline GraphicPointAttributes Graphic::getPointAttributes()
 {
 	return GraphicPointAttributes(Cmiss_graphic_get_point_attributes(id));
+}
+
+class GraphicElementAttributes
+{
+protected:
+	Cmiss_graphic_element_attributes_id id;
+
+public:
+
+	enum DiscretizationMode
+	{
+		DISCRETIZATION_MODE_INVALID = CMISS_GRAPHICS_XI_DISCRETIZATION_INVALID_MODE,
+		DISCRETIZATION_CELL_CENTRES = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CENTRES,
+		DISCRETIZATION_CELL_CORNERS = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CORNERS,
+		DISCRETIZATION_CELL_DENSITY = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_DENSITY,
+		DISCRETIZATION_CELL_POISSON = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_POISSON,
+		DISCRETIZATION_CELL_RANDOM = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_RANDOM,
+		DISCRETIZATION_EXACT_XI = CMISS_GRAPHICS_XI_DISCRETIZATION_EXACT_XI
+	};
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicElementAttributes(Cmiss_graphic_element_attributes_id element_attributes_id) :
+		id(element_attributes_id)
+	  {}
+
+	GraphicElementAttributes(const GraphicElementAttributes& elementAttributes) :
+		id(Cmiss_graphic_element_attributes_access(elementAttributes.id))
+		{}
+
+	~GraphicElementAttributes()
+	{
+		Cmiss_graphic_element_attributes_destroy(&id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	int setDiscretizationMode(DiscretizationMode mode)
+	{
+		return Cmiss_graphic_element_attributes_set_discretization_mode(id, static_cast<Cmiss_graphics_xi_discretization_mode>(mode));
+	}
+
+	int setDiscretization(int number, int *discretization)
+	{
+		return Cmiss_graphic_element_attributes_set_discretization(id, number, discretization);
+	}
+
+};
+
+inline GraphicElementAttributes Graphic::getElementAttributes()
+{
+	return GraphicElementAttributes(Cmiss_graphic_get_element_attributes(id));
 }
 
 } // namespace zinc

@@ -580,7 +580,13 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
 
 Cmiss_field_id Cmiss_field_access(Cmiss_field_id field)
 {
-	return (ACCESS(Computed_field)(field));
+	Cmiss_field_id accessed_field = 0;
+	if (field)
+	{
+		accessed_field = (ACCESS(Computed_field)(field));
+	}
+
+	return accessed_field;
 }
 
 int Cmiss_field_destroy(Cmiss_field_id *field_address)
