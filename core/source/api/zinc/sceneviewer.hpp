@@ -247,6 +247,11 @@ public:
 			near_plane, far_plane);
 	}
 
+	int setBackgroundColourRGB(double red, double green, double blue)
+	{
+		return Cmiss_scene_viewer_set_background_colour_r_g_b(id, red, green, blue);
+	}
+
 	int viewAll()
 	{
 		return Cmiss_scene_viewer_view_all(id);

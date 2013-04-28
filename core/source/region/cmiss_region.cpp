@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * FILE : cmiss_region.cpp
- * 
+ *
  * Definition of Cmiss_region, container of fields for representing model data,
  * and child regions for building hierarchical models.
  */
@@ -79,7 +79,7 @@ struct Cmiss_region
 	Cmiss_region *first_child, *next_sibling;
 	/* non-access pointer to previous sibling, if any */
 	Cmiss_region *previous_sibling;
-	
+
 	/* fields owned by this region (or master) */
 	struct MANAGER(Computed_field) *field_manager;
 	void *field_manager_callback_id;
@@ -500,7 +500,7 @@ void Cmiss_region_clear_field_value_caches(Cmiss_region_id region, Cmiss_field_i
 
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region)
 {
-	if (region) 
+	if (region)
 	{
 		Cmiss_region *child = region->first_child;
 		while (child)
@@ -524,7 +524,7 @@ struct Cmiss_region *Cmiss_region_create_region(struct Cmiss_region *base_region
 	return CREATE(Cmiss_region)(base_region);
 }
 
-struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_region, 
+struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_region,
 	const char *name)
 {
 	struct Cmiss_region *region = NULL;
@@ -846,7 +846,7 @@ char *Cmiss_region_get_name(struct Cmiss_region *region)
 	char *name = NULL;
 	if (region && region->name)
 	{
-		name = duplicate_string(region->name); 
+		name = duplicate_string(region->name);
 	}
 	return (name);
 }
@@ -917,7 +917,7 @@ char *Cmiss_region_get_path(struct Cmiss_region *region)
 		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
 	}
 	LEAVE;
-	
+
 	return (path);
 }
 
@@ -930,7 +930,7 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
 	if (region && other_region)
 	{
 		int error = 0;
-		if (region != other_region) 
+		if (region != other_region)
 		{
 			Cmiss_region* parent = region->parent;
 			if (parent)
@@ -952,7 +952,7 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
 		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
 	}
 	LEAVE;
-	
+
 	return (path);
 }
 
@@ -1463,7 +1463,13 @@ struct Cmiss_field_module *Cmiss_region_get_field_module(struct Cmiss_region *re
 
 Cmiss_region_id Cmiss_region_access(Cmiss_region_id region)
 {
-	return (ACCESS(Cmiss_region)(region));
+	Cmiss_region_id accessed_region = 0;
+	if (region)
+	{
+		accessed_region = (ACCESS(Cmiss_region)(region));
+	}
+
+	return accessed_region;
 }
 
 int Cmiss_region_destroy(Cmiss_region_id *region)

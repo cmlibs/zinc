@@ -3742,6 +3742,8 @@ int build_Scene(struct Scene *scene)
 int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
 	int return_code = 1;
+	static int count = 0;
+	count += 1;
 	Rendition_set::iterator pos;
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)

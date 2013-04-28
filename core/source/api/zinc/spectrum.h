@@ -128,12 +128,38 @@ ZINC_API int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *nam
 /**
  * Set spectrum maximum and minimum.
  *
+ * @deprecated
  * @param spectrum  Handle to a cmiss_spectrum object.
  * @param minimum  Minimum value of the spectrum.
  * @param maximum  Maximum value of the spectrum.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum);
+
+/**
+ * Set the spectrum to use the rainbow.
+ *
+ * @deprecated
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_spectrum_set_rainbow(Cmiss_spectrum_id spectrum);
+
+/**
+ * Get the minimum value from the given spectrum.
+ *
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @return  the minimum value, 0.0 on failure.
+ */
+ZINC_API double Cmiss_spectrum_get_minimum(Cmiss_spectrum_id spectrum);
+
+/**
+ * Get the maximum value from the given spectrum.
+ *
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @return  the maximum value, 0.0 on failure.
+ */
+ZINC_API double Cmiss_spectrum_get_maximum(Cmiss_spectrum_id spectrum);
 
 #ifdef __cplusplus
 }

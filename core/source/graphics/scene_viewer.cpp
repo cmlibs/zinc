@@ -900,6 +900,7 @@ handles the flags that mark render_objects as processed.
 	int return_code;
 	struct Scene_viewer_render_object *render_object;
 	render_object= NULL;
+
 	ENTER(Scene_viewer_call_next_renderer);
 	if (rendering_data)
 	{

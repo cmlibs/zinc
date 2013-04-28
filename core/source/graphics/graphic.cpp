@@ -7140,7 +7140,7 @@ int Cmiss_graphic_point_attributes_set_glyph_type(
 		{
 		case CMISS_GRAPHICS_GLYPH_TYPE_INVALID:
 		case CMISS_GRAPHICS_GLYPH_NONE:
-			glyph_name = 0;
+			glyph_name = "";
 			break;
 		case CMISS_GRAPHICS_GLYPH_POINT:
 			glyph_name = "point";
@@ -7338,4 +7338,104 @@ int Cmiss_graphic_point_attributes_set_signed_scale_field(
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_graphic_element_attributes_id Cmiss_graphic_get_element_attributes(
+	Cmiss_graphic_id graphic)
+{
+	if (graphic &&
+		(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS))
+	{
+		Cmiss_graphic_access(graphic);
+		return reinterpret_cast<Cmiss_graphic_element_attributes_id>(graphic);
+	}
+
+	return 0;
+}
+
+Cmiss_graphic_element_attributes_id Cmiss_graphic_element_attributes_access(
+	Cmiss_graphic_element_attributes_id element_attributes)
+{
+	Cmiss_graphic_access(reinterpret_cast<Cmiss_graphic_id>(element_attributes));
+	return element_attributes;
+}
+
+int Cmiss_graphic_element_attributes_destroy(
+	Cmiss_graphic_element_attributes_id *element_attributes_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(element_attributes_address));
+}
+
+int Cmiss_graphic_element_attributes_set_discretization(
+	Cmiss_graphic_element_attributes_id element_attributes, int number,
+	const int *discretization)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(element_attributes);
+	if (graphic && (0 < number) && discretization)
+	{
+		bool changed = false;
+		FE_value value = 0.0;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(discretization[i]);
+			}
+			switch (i)
+			{
+			case 0:
+				if (graphic->discretization.number_in_xi1 != value)
+				{
+					graphic->discretization.number_in_xi1 = value;
+					changed = true;
+				}
+				break;
+			case 1:
+				if (graphic->discretization.number_in_xi2 != value)
+				{
+					graphic->discretization.number_in_xi2 = value;
+					changed = true;
+				}
+				break;
+			case 2:
+				if (graphic->discretization.number_in_xi3 != value)
+				{
+					graphic->discretization.number_in_xi3 = value;
+					changed = true;
+				}
+				break;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+
+int Cmiss_graphic_element_attributes_set_discretization_mode(
+	Cmiss_graphic_element_attributes_id element_attributes, Cmiss_graphics_xi_discretization_mode mode)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(element_attributes);
+	if (graphic)
+	{
+		return_code = CMISS_OK;
+		bool changed = false;
+		if (graphic->xi_discretization_mode != static_cast<Xi_discretization_mode>(mode))
+		{
+			changed = true;
+			graphic->xi_discretization_mode = static_cast<Xi_discretization_mode>(mode);
+		}
+		if (changed)
+		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+	}
+
+	return return_code;
 }

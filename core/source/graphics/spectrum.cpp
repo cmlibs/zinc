@@ -2282,12 +2282,46 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 	return (return_code);
 } /* Spectrum_get_colour_lookup_sizes */
 
+double Cmiss_spectrum_get_minimum(Cmiss_spectrum_id spectrum)
+{
+	double value = 0.0;
+	if (spectrum)
+	{
+		value = spectrum->minimum;
+	}
+
+	return value;
+}
+
+double Cmiss_spectrum_get_maximum(Cmiss_spectrum_id spectrum)
+{
+	double value = 0.0;
+	if (spectrum)
+	{
+		value = spectrum->maximum;
+	}
+
+	return value;
+}
+
 int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum)
 {
 	int return_code = 0;
 	if (spectrum)
 	{
 		Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);
+	}
+
+	return return_code;
+}
+
+int Cmiss_spectrum_set_rainbow(Cmiss_spectrum_id spectrum)
+{
+	int return_code = 0;
+
+	if (spectrum)
+	{
+		Spectrum_set_simple_type(spectrum, BLUE_TO_RED_SPECTRUM);
 	}
 
 	return return_code;

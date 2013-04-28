@@ -124,4 +124,22 @@ typedef struct Cmiss_graphic_point_attributes * Cmiss_graphic_point_attributes_i
 struct Cmiss_graphic_line_attributes;
 typedef struct Cmiss_graphic_line_attributes * Cmiss_graphic_line_attributes_id;
 
+enum Cmiss_graphics_xi_discretization_mode
+{
+	CMISS_GRAPHICS_XI_DISCRETIZATION_INVALID_MODE = 0,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CENTRES = 1,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CORNERS = 2,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_DENSITY = 3,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_POISSON = 4,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_RANDOM = 5,
+	CMISS_GRAPHICS_XI_DISCRETIZATION_EXACT_XI = 6
+};
+
+/**
+ * A handle to attributes specifying how lines are visualised in a
+ * Cmiss_graphic including section profile and scaling.
+ */
+struct Cmiss_graphic_element_attributes;
+typedef struct Cmiss_graphic_element_attributes * Cmiss_graphic_element_attributes_id;
+
 #endif /* CMISS_GRAPHICID_H */
