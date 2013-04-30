@@ -355,7 +355,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			for (int i = 0; i < 3; i++)
 			{
 				graphic->point_offset[i] = 0.0;
-				graphic->point_base_size[0] = 0.0;
+				graphic->point_base_size[i] = 0.0;
 				graphic->point_scale_factors[i] = 1.0;
 			}
 			graphic->point_orientation_scale_field = 0;
