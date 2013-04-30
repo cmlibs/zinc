@@ -396,9 +396,9 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_iso_surface_base_cast(Cmiss_graphic
 ZINC_API int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address);
 
 /**
- * Gets the iso_scalar field for the iso_surface graphic.
+ * Gets the iso scalar field for the iso surface graphic.
  *
- * @param graphic  The graphic to be queried.
+ * @param iso_surface_graphic  The iso surface graphic to query.
  * @return  Handle to iso_scalar field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
@@ -408,34 +408,73 @@ ZINC_API Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
 /**
  * Set the iso scalar field for the iso surface graphic.
  *
- * @param iso_surface_graphic The iso surface graphic to set the field to.
- * @param iso_scalar_field The iso scalar field to set, this field must have only one component.
- * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ * @param iso_surface_graphic  The iso surface graphic to modify.
+ * @param iso_scalar_field  The iso scalar field to set, this field must have
+ * only one component.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_iso_surface_set_iso_scalar_field(
 	Cmiss_graphic_iso_surface_id iso_surface_graphic,
 	Cmiss_field_id iso_scalar_field);
 
 /**
- * Set the iso values for the iso surface graphic.
+ * Get the iso values for the iso surface graphic when it has been set as an
+ * explicit list.
+ * @see Cmiss_graphic_iso_surface_set_iso_values.
  *
- * @param iso_surface_graphic The iso surface graphic to set the field to.
- * @param number_of_values The number of values in the values array.
- * @param values The array of double values with length number_of_values.
- * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ * @param iso_surface_graphic  The iso surface graphic to query.
+ * @param number_of_iso_values  The size of the iso_values array.
+ * @param iso_values  Array to receive number_of_values iso values.
+ * @return  The actual number of iso values that have been explicitly set using
+ * Cmiss_graphic_iso_surface_set_iso_values. This can be more than the number
+ * requested, so a second call may be needed with a larger array. A zero return
+ * value can indicate iso_values were set as a range, not as an explicit list.
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values);
+ZINC_API int Cmiss_graphic_iso_surface_get_iso_values(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	double *iso_values);
 
 /**
- * Set the iso range for the iso surface graphic.
+ * Set the iso values for the iso surface graphic as an explicit list.
  *
- * @param iso_surface_graphic The iso surface graphic to set the field to.
- * @param number_of_values The number of values to have between the first and last values (inclusive).
- * @param first_value The first iso value.
- * @param last_value The last iso value.
- * @return Status CMISS_OK if the field was successfully set, any other value on failure
+ * @param iso_surface_graphic  The iso surface graphic to modify.
+ * @param number_of_iso_values  The number of values in the iso_values array.
+ * @param iso_values  The array of number_of_iso_values double values.
+ * @return  Status CMISS_OK on success, otherwise any error code.
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value);
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	const double *iso_values);
+
+/**
+ * Get the iso values for the iso surface graphic as a number in a range from
+ * first value to last value, in uniform increments.
+ *
+ * @param iso_surface_graphic  The iso surface graphic to query.
+ * @param first_iso_value_address  The address to put the first iso value.
+ * @param last_iso_value_address  The address to put the last iso value.
+ * @return  Number of iso values in the range, or 0 if not set as a range or
+ * other error.
+ */
+ZINC_API int Cmiss_graphic_iso_surface_get_iso_range(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic,
+	double *first_iso_value_address, double *last_iso_value_address);
+
+/**
+ * Set the iso values for the iso surface graphic as a number in a range from
+ * first value to last value, in uniform increments.
+ * For example, 5 values from 0.0 to 1.0 gives: 0.0, 0.25, 0.5, 0.75 and 1.0.
+ *
+ * @param iso_surface_graphic  The iso surface graphic to modify.
+ * @param number_of_iso_values  The number of values to have between the first
+ * and last iso last values.
+ * @param first_iso_value  The first iso value.
+ * @param last_iso_value  The last iso value.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	double first_iso_value, double last_iso_value);
 
 /**
  * If the graphic produces lines or extrusions then returns a handle to the

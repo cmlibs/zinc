@@ -591,30 +591,19 @@ int Cmiss_graphic_point_attributes_set_glyph(
 	Cmiss_graphic_point_attributes_id point_attributes,
 	GT_object *glyph);
 
-/***************************************************************************//**
- * Returns parameters for the iso_surface: iso_scalar_field = iso_value.
- * Either the iso_values are stored in the array <iso_values> or they are
- * distributed from <first_iso_value> to <last_iso_value>.
- * For graphic_type GT_ELEMENT_GRAPHIC_ISO_SURFACES only.
+/**
+ * Get iso surface decimation threshold.
  */
-int Cmiss_graphic_get_iso_surface_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values,
-	double *first_iso_value, double *last_iso_value,
-	double *decimation_threshold);
+double Cmiss_graphic_iso_surface_get_decimation_threshold(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic);
 
-/***************************************************************************//**
- * Sets parameters for the iso_surface: iso_scalar_field = iso_value.
- * Either the iso_values are stored in the array <iso_values> or they are
- * distributed from <first_iso_value> to <last_iso_value>.
- * For settings_type CMISS_GRAPHIC_ISO_SURFACES only - must call this after
- * CREATE to define a valid iso_surface.
+/**
+ * Set iso surface decimation threshold, controlling polygon reduction.
+ * Converts iso surface into a voltex first.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-int Cmiss_graphic_set_iso_surface_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values,
-	double first_iso_value, double last_iso_value,
-	double decimation_threshold);
+int Cmiss_graphic_iso_surface_set_decimation_threshold(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, double decimation_threshold);
 
 /***************************************************************************//**
  * For graphic starting in a particular element.

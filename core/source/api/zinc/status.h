@@ -62,6 +62,7 @@ extern "C" {
  */
 enum Cmiss_status
 {
+	CMISS_ERROR_MEMORY = -2, /*!< failed to allocate memory. */
 	CMISS_ERROR_ARGUMENT = -1, /*!< invalid argument(s) passed to API function. Only reported for new APIs. */
 	CMISS_ERROR_GENERAL = 0, /*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
 	CMISS_OK = 1, /*!< value to be returned on success */

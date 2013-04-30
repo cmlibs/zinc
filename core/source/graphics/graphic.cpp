@@ -4292,141 +4292,6 @@ int Cmiss_graphic_set_render_type(
 
 } /* Cmiss_graphic_set_render_type */
 
-int Cmiss_graphic_get_iso_surface_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values,
-	double *first_iso_value, double *last_iso_value,
-	double *decimation_threshold)
-{
-	int i, return_code;
-
-	ENTER(Cmiss_graphic_get_iso_surface_parameters);
-	if (graphic&&iso_scalar_field&&number_of_iso_values&&iso_values&&
-		decimation_threshold&&
-		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
-	{
-		*iso_scalar_field=graphic->iso_scalar_field;
-		*decimation_threshold=graphic->decimation_threshold;
-		*number_of_iso_values = graphic->number_of_iso_values;
-		*first_iso_value = graphic->first_iso_value;
-		*last_iso_value = graphic->last_iso_value;
-		if (0 < graphic->number_of_iso_values)
-		{
-			if (graphic->iso_values)
-			{
-				if (ALLOCATE(*iso_values, double, graphic->number_of_iso_values))
-				{
-					for (i = 0 ; i < graphic->number_of_iso_values ; i++)
-					{
-						(*iso_values)[i] = graphic->iso_values[i];
-					}
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_graphic_get_iso_surface_parameters.  "
-						"Could not allocate memory.");
-					return_code=0;
-				}
-			}
-			else
-			{
-				*iso_values = (double *)NULL;
-				return_code = 1;
-			}
-		}
-		else
-		{
-			*number_of_iso_values=graphic->number_of_iso_values;
-			*iso_values=(double *)NULL;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_iso_surface_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_iso_surface_parameters */
-
-int Cmiss_graphic_set_iso_surface_parameters(
-	struct Cmiss_graphic *graphic,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values,
-	double first_iso_value, double last_iso_value,
-	double decimation_threshold)
-{
-	int i, return_code = 0;
-
-	ENTER(Cmiss_graphic_set_iso_surface_parameters);
-	if (graphic&& (!iso_scalar_field || (iso_scalar_field &&
-		(1==Computed_field_get_number_of_components(iso_scalar_field)))) &&
-		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
-	{
-		return_code=1;
-		REACCESS(Computed_field)(&(graphic->iso_scalar_field),iso_scalar_field);
-		graphic->decimation_threshold = decimation_threshold;
-		if (0 < number_of_iso_values)
-		{
-			if (iso_values)
-			{
-				double *temp_values;
-				if (REALLOCATE(temp_values, graphic->iso_values, double,
-						number_of_iso_values))
-				{
-					graphic->iso_values = temp_values;
-					graphic->number_of_iso_values = number_of_iso_values;
-					for (i = 0 ; i < number_of_iso_values ; i++)
-					{
-						graphic->iso_values[i] = iso_values[i];
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"cmiss_graphic_set_iso_surface_parameters.  "
-						"Could not allocate memory.");
-					return_code=0;
-				}
-			}
-			else
-			{
-				if (graphic->iso_values)
-				{
-					DEALLOCATE(graphic->iso_values);
-				}
-				graphic->number_of_iso_values = number_of_iso_values;
-				graphic->first_iso_value = first_iso_value;
-				graphic->last_iso_value = last_iso_value;
-			}
-		}
-		else
-		{
-			if (graphic->iso_values)
-			{
-				DEALLOCATE(graphic->iso_values);
-				graphic->iso_values = (double *)NULL;
-			}
-			graphic->number_of_iso_values = 0;
-			graphic->first_iso_value = 0;
-			graphic->last_iso_value = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_iso_surface_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_iso_surface_parameters */
-
 int Cmiss_graphic_get_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
 	struct Computed_field **stream_vector_field,int *reverse_track,
@@ -4661,14 +4526,22 @@ int Cmiss_graphic_copy_without_graphics_object(
 			DEACCESS(Computed_field)(&destination->line_orientation_scale_field);
 		}
 
-		/* for iso_surfaces only */
-		if (CMISS_GRAPHIC_ISO_SURFACES==source->graphic_type)
+		Cmiss_graphic_iso_surface_id iso_surface_graphic = Cmiss_graphic_cast_iso_surface(destination);
+		if (iso_surface_graphic)
 		{
-			Cmiss_graphic_set_iso_surface_parameters(destination,
-				source->iso_scalar_field,source->number_of_iso_values,
-				source->iso_values,
-				source->first_iso_value, source->last_iso_value,
-				source->decimation_threshold);
+			Cmiss_graphic_iso_surface_set_iso_scalar_field(iso_surface_graphic, source->iso_scalar_field);
+			if (source->iso_values)
+			{
+				Cmiss_graphic_iso_surface_set_iso_values(iso_surface_graphic, source->number_of_iso_values,
+					source->iso_values);
+			}
+			else
+			{
+				Cmiss_graphic_iso_surface_set_iso_range(iso_surface_graphic, source->number_of_iso_values,
+					source->first_iso_value, source->last_iso_value);
+			}
+			Cmiss_graphic_iso_surface_set_decimation_threshold(iso_surface_graphic, source->decimation_threshold);
+			Cmiss_graphic_iso_surface_destroy(&iso_surface_graphic);
 		}
 		else
 		{
@@ -4676,6 +4549,12 @@ int Cmiss_graphic_copy_without_graphics_object(
 			{
 				DEACCESS(Computed_field)(&destination->iso_scalar_field);
 			}
+			if (destination->iso_values)
+			{
+				DEALLOCATE(destination->iso_values);
+				destination->iso_values = 0;
+			}
+			destination->number_of_iso_values = 0;
 		}
 
 		Cmiss_graphic_point_attributes_id point_attributes =
@@ -6730,31 +6609,48 @@ int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(iso_surface_address));
 }
 
-Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
+double Cmiss_graphic_iso_surface_get_decimation_threshold(
 	Cmiss_graphic_iso_surface_id iso_surface_graphic)
 {
-	Cmiss_field_id iso_scalar_field = 0;
 	if (iso_surface_graphic)
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (graphic->iso_scalar_field)
-		{
-			iso_scalar_field = Cmiss_field_access(graphic->iso_scalar_field);
-		}
+		return graphic->decimation_threshold;
 	}
-	else
+	return 0;
+}
+
+int Cmiss_graphic_iso_surface_set_decimation_threshold(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, double decimation_threshold)
+{
+	if (iso_surface_graphic)
 	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_iso_surface_get_iso_scalar_field.  Invalid argument(s)");
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		if (decimation_threshold != graphic->decimation_threshold)
+		{
+			graphic->decimation_threshold = decimation_threshold;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
 	}
-	return (iso_scalar_field);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+	if (graphic && graphic->iso_scalar_field)
+	{
+		return Cmiss_field_access(graphic->iso_scalar_field);
+	}
+	return 0;
 }
 
 int Cmiss_graphic_iso_surface_set_iso_scalar_field(
 	Cmiss_graphic_iso_surface_id iso_surface_graphic,
 	Cmiss_field_id iso_scalar_field)
 {
-	int return_code = 0;
 	if (iso_surface_graphic && ((0 == iso_scalar_field) ||
 		(1 == Cmiss_field_get_number_of_components(iso_scalar_field))))
 	{
@@ -6764,35 +6660,141 @@ int Cmiss_graphic_iso_surface_set_iso_scalar_field(
 			REACCESS(Computed_field)(&(graphic->iso_scalar_field), iso_scalar_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		return_code = 1;
+		return CMISS_OK;
 	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphic_iso_surface_set_iso_values(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double *values)
+int Cmiss_graphic_iso_surface_get_iso_values(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	double *iso_values)
 {
-	int return_code = 0;
-	if (iso_surface_graphic && (number_of_values <= 0 || (number_of_values > 0 && values)))
+	if (iso_surface_graphic && ((number_of_iso_values == 0) ||
+		((number_of_iso_values > 0) && iso_values)))
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, values, 0.0, 0.0, 0.0);
-		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		if (graphic->iso_values)
+		{
+			const int number_to_copy = (number_of_iso_values < graphic->number_of_iso_values) ?
+				number_of_iso_values : graphic->number_of_iso_values;
+			for (int i = 0 ; i < number_to_copy ; i++)
+			{
+				iso_values[i] = graphic->iso_values[i];
+			}
+			return graphic->number_of_iso_values;
+		}
 	}
-
-	return return_code;
+	return 0;
 }
 
-int Cmiss_graphic_iso_surface_set_iso_range(Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_values, double first_value, double last_value)
+int Cmiss_graphic_iso_surface_set_iso_values(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	const double *iso_values)
 {
-	int return_code = 0;
-	if (iso_surface_graphic)
+	if (iso_surface_graphic && ((number_of_iso_values == 0) ||
+		((number_of_iso_values > 0) && iso_values)))
 	{
 		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		return_code = Cmiss_graphic_set_iso_surface_parameters(graphic, graphic->iso_scalar_field, number_of_values, 0, first_value, last_value, 0.0);
-		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		bool changed = false;
+		if (number_of_iso_values == graphic->number_of_iso_values)
+		{
+			if (graphic->iso_values)
+			{
+				for (int i = 0; i < number_of_iso_values; i++)
+				{
+					if (iso_values[i] != graphic->iso_values[i])
+					{
+						changed = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				changed = true;
+			}
+		}
+		else
+		{
+			changed = true;
+		}
+		if (changed)
+		{
+			if (0 < number_of_iso_values)
+			{
+				double *temp_values;
+				REALLOCATE(temp_values, graphic->iso_values, double, number_of_iso_values);
+				if (!temp_values)
+				{
+					return CMISS_ERROR_MEMORY;
+				}
+				graphic->iso_values = temp_values;
+				graphic->number_of_iso_values = number_of_iso_values;
+				for (int i = 0 ; i < number_of_iso_values ; i++)
+				{
+					graphic->iso_values[i] = iso_values[i];
+				}
+			}
+			else
+			{
+				if (graphic->iso_values)
+				{
+					DEALLOCATE(graphic->iso_values);
+					graphic->iso_values = 0;
+				}
+				graphic->number_of_iso_values = 0;
+			}
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
 	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
-	return return_code;
+int Cmiss_graphic_iso_surface_get_iso_range(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic,
+	double *first_iso_value_address, double *last_iso_value_address)
+{
+	if (iso_surface_graphic && first_iso_value_address && last_iso_value_address)
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		if (0 == graphic->iso_values)
+		{
+			if (0 < graphic->number_of_iso_values)
+			{
+				*first_iso_value_address = graphic->first_iso_value;
+				*last_iso_value_address = graphic->last_iso_value;
+			}
+			return graphic->number_of_iso_values;
+		}
+	}
+	return 0;	
+}
+
+int Cmiss_graphic_iso_surface_set_iso_range(
+	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
+	double first_iso_value, double last_iso_value)
+{
+	if (iso_surface_graphic && (0 <= number_of_iso_values))
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		if ((number_of_iso_values != graphic->number_of_iso_values) ||
+			(0 != graphic->iso_values) || (first_iso_value != graphic->first_iso_value) ||
+			(last_iso_value != graphic->last_iso_value))
+		{
+			if (graphic->iso_values)
+			{
+				DEALLOCATE(graphic->iso_values);
+				graphic->iso_values = 0;
+			}
+			graphic->number_of_iso_values = number_of_iso_values;
+			graphic->first_iso_value = first_iso_value;
+			graphic->last_iso_value = last_iso_value;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
