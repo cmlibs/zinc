@@ -193,6 +193,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[3];
 
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_base_size(pointattr, 3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_base_size(pointattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_base_size(pointattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_base_size(pointattr, 2, values));
@@ -203,6 +208,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, values));
@@ -213,6 +223,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
 
+	// check default values = 1.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_scale_factors(pointattr, 3, outputValues));
+	EXPECT_EQ(1.0, outputValues[0]);
+	EXPECT_EQ(1.0, outputValues[1]);
+	EXPECT_EQ(1.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_scale_factors(pointattr, 2, values));
@@ -391,6 +406,11 @@ TEST(Cmiss_graphic_api, line_attributes)
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[3];
 
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, values));
@@ -401,6 +421,11 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
+	// check default values = 1.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, outputValues));
+	EXPECT_EQ(1.0, outputValues[0]);
+	EXPECT_EQ(1.0, outputValues[1]);
+	EXPECT_EQ(1.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, values));
