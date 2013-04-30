@@ -4572,7 +4572,7 @@ will produce the range of all the graphics objects.
 	ZnReal temp;
 	GLfloat *maximum,*minimum;
 	int *first, i, j, number_of_positions = 0, number_of_times = 0, position_offset = 0,
-		return_code;
+		return_code = 0;
 	struct Graphics_object_range_struct *graphics_object_range;
 	struct GT_glyph_set *glyph_set;
 	struct GT_point *point;

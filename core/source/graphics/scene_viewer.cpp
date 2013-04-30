@@ -1970,7 +1970,7 @@ Scene_viewer_render_scene_with_picking, Scene_viewer_render_scene_in_viewport to
 access this function.
 ==============================================================================*/
 {
-	GLboolean double_buffer;
+	GLboolean double_buffer = 0;
 	int do_render,return_code;
 	struct Scene_viewer_rendering_data rendering_data;
 	struct Scene_viewer_render_object *render_object;

@@ -497,7 +497,9 @@ DESCRIPTION :
 				case CMISS_GRAPHICS_FONT_TYPE_PIXMAP:
 				{
 					glRasterPos3f(x, y, z);
+					glDepthMask(GL_FALSE);
 					font->ftFont->Render(text);
+					glDepthMask(GL_TRUE);
 				} break;
 				case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
 				case CMISS_GRAPHICS_FONT_TYPE_OUTLINE:
