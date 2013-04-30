@@ -101,13 +101,13 @@ enum Cmiss_graphic_use_element_type
 enum Cmiss_graphic_face_type
 {
 	CMISS_GRAPHIC_FACE_INVALID = -1,
-	CMISS_GRAPHIC_FACE_ALL,
-	CMISS_GRAPHIC_FACE_XI1_0,
-	CMISS_GRAPHIC_FACE_XI1_1,
-	CMISS_GRAPHIC_FACE_XI2_0,
-	CMISS_GRAPHIC_FACE_XI2_1,
-	CMISS_GRAPHIC_FACE_XI3_0,
-	CMISS_GRAPHIC_FACE_XI3_1
+	CMISS_GRAPHIC_FACE_ALL,   /*!< include all faces */
+	CMISS_GRAPHIC_FACE_XI1_0, /*!< only faces where top-level xi1 == 0 */
+	CMISS_GRAPHIC_FACE_XI1_1, /*!< only faces where top-level xi1 == 1 */
+	CMISS_GRAPHIC_FACE_XI2_0, /*!< only faces where top-level xi2 == 0 */
+	CMISS_GRAPHIC_FACE_XI2_1, /*!< only faces where top-level xi2 == 1 */
+	CMISS_GRAPHIC_FACE_XI3_0, /*!< only faces where top-level xi3 == 0 */
+	CMISS_GRAPHIC_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
 };
 
 /**

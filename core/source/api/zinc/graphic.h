@@ -229,44 +229,47 @@ ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
 
 /**
- * Sets the face for the graphic to display.
- *
- * @param graphic  The graphic to modify.
- * @param visibility_flag  1 to set, 0 to clear.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face);
-
-/**
- * Returns Cmiss_graphic_face_type for the graphic. For 1-D and 2-D graphic types only.
- *
- *@param graphic  The graphic to query
- *@return The face type of the graphic, CMISS_GRAPHIC_FACE_INVALID if the graphic is invalid.
- */
-ZINC_API Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
-
-/**
- * Sets whether to use exterior faces or not.
- *
- * @param graphic  The graphic to modify.
- * @param exterior  1 to set, 0 to clear.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
-
-/**
- * Returns wether the exterior face flag is set for the given graphic.
- * For 1-D and 2-D graphic types only.
+ * Gets flag to generate graphics for exterior faces or lines only.
  *
  * @param graphic  The graphic to query.
- * @return  1 if <graphic> is only using exterior elements, otherwise 0.
+ * @return  1 if exterior flag is set, otherwise 0.
  */
 ZINC_API int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic);
 
 /**
- * Specifying the coordinate system in which to render the coordinates of graphics.
+ * Sets flag to generate graphics for exterior faces or lines only.
  *
  * @param graphic  The graphic to modify.
+ * @param exterior  1 to set, 0 to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
+
+/**
+ * Gets the face the graphic is limited to generate graphics for.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The face type of the graphic, or CMISS_GRAPHIC_FACE_INVALID if the
+ * graphic is invalid.
+ */
+ZINC_API Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
+
+/**
+ * Sets the face the graphic is limited to generate graphics for.
+ * e.g. CMISS_GRAPHIC_FACE_XI1_0 generates graphics only on faces and lines
+ * where the top-level element 'xi' coordinate equals 0.
+ *
+ * @param graphic  The graphic to modify.
+ * @param face  A valid face type.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic,
+	Cmiss_graphic_face_type face);
+
+/**
+ * Specifying the coordinate system in which to render the coordinates of graphics.
+ *
+ *  @param graphic  The graphic to modify.
  * @param coordinate_system  enumerator describing coordinate system to be set
  * 		for graphic.
  * @return  Status CMISS_OK on success, any other value on failure.

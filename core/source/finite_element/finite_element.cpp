@@ -57,7 +57,7 @@ Functions for manipulating finite element structures.
 #include <cstdlib>
 #include <cstdio>
 
-#include "zinc/graphic.h"
+#include "zinc/types/graphicid.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"
