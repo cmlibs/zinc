@@ -83,7 +83,7 @@ finite element group rendition.
 	enum Graphics_select_mode select_mode;
 
 	/* for 1-D and 2-D elements only */
-	char exterior;
+	bool exterior;
 	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
 		 2 is xi2=0 etc. */
 	Cmiss_graphic_face_type face;

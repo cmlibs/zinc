@@ -331,7 +331,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			/* For surfaces only at the moment */
 			graphic->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
-			graphic->exterior=0;
+			graphic->exterior = false;
 			graphic->face=CMISS_GRAPHIC_FACE_ALL; /* any face */
 
 			/* line attributes */
@@ -1777,55 +1777,53 @@ int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
 	return (return_code);
 }
 
-int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face)
+int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic)
 {
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_set_face);
-	if (graphic&&(
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
+	if (graphic && graphic->exterior)
 	{
-		return_code = 1;
-		graphic->face = face;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_face.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_face */
+	return 0;
+}
 
 int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic,
 	int exterior)
 {
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_set_exterior);
 	if (graphic)
 	{
-		return_code=1;
-		/* ensure flags are 0 or 1 to simplify comparison with other graphic */
-		if (exterior)
+		bool use_exterior = (0 != exterior);
+		if (use_exterior != graphic->exterior)
 		{
-			graphic->exterior = 1;
+			graphic->exterior = use_exterior;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		else
-		{
-			graphic->exterior = 0;
-		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_exterior.  Invalid argument(s)");
-	}
-	LEAVE;
+	return CMISS_ERROR_ARGUMENT;
+}
 
-	return (return_code);
+Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
+{
+	if (graphic)
+	{
+		return graphic->face;
+	}
+	return CMISS_GRAPHIC_FACE_INVALID;
+}
+
+int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face)
+{
+	int return_code = 0;
+	if (graphic && (face != CMISS_GRAPHIC_FACE_INVALID))
+	{
+		if (face != graphic->face)
+		{
+			graphic->face = face;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_void)
@@ -6075,43 +6073,6 @@ enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 
 	return (render_type);
 } /* Cmiss_graphic_get_render_type */
-
-int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic)
-{
-	int return_code = 0;
-
-	if (graphic)
-	{
-		return_code = graphic->exterior;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_exterior.  Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Cmiss_graphic_get_exterior */
-
-Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
-{
-	Cmiss_graphic_face_type face = CMISS_GRAPHIC_FACE_INVALID;
-	ENTER(Cmiss_graphic_get_face);
-	if (graphic && (
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,1)||
-		Cmiss_graphic_type_uses_dimension(graphic->graphic_type,2)))
-	{
-		face=graphic->face;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_face.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return face;
-} /* Cmiss_graphic_get_face */
 
 int Cmiss_graphic_time_change(
 	struct Cmiss_graphic *graphic,void *dummy_void)
