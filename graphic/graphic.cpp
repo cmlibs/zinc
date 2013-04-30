@@ -36,28 +36,30 @@ TEST(Cmiss_graphic_api, exterior)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id is = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_ISO_SURFACES);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), is);
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
-	int result = Cmiss_graphic_set_exterior(is, 1);
+	EXPECT_EQ(0, Cmiss_graphic_get_exterior(gr));
+	int result = Cmiss_graphic_set_exterior(gr, 1);
 	EXPECT_EQ(CMISS_OK, result);
-	EXPECT_EQ(1, Cmiss_graphic_get_exterior(is));
+	EXPECT_EQ(1, Cmiss_graphic_get_exterior(gr));
 
-	Cmiss_graphic_destroy(&is);
+	Cmiss_graphic_destroy(&gr);
 }
 
 TEST(Cmiss_graphic_api, face)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id is = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_ISO_SURFACES);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), is);
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
-	int result = Cmiss_graphic_set_face(is, CMISS_GRAPHIC_FACE_XI2_0);
+	EXPECT_EQ(CMISS_GRAPHIC_FACE_ALL, Cmiss_graphic_get_face(gr));
+	int result = Cmiss_graphic_set_face(gr, CMISS_GRAPHIC_FACE_XI2_0);
 	EXPECT_EQ(CMISS_OK, result);
-	EXPECT_EQ(CMISS_GRAPHIC_FACE_XI2_0, Cmiss_graphic_get_face(is));
+	EXPECT_EQ(CMISS_GRAPHIC_FACE_XI2_0, Cmiss_graphic_get_face(gr));
 
-	Cmiss_graphic_destroy(&is);
+	Cmiss_graphic_destroy(&gr);
 }
 
 TEST(Cmiss_graphic_api, coordinate_field)
