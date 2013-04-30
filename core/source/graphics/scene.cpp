@@ -3793,6 +3793,12 @@ Returns 0 without error if scene is empty.
 		build_Scene(scene);
 		/* get range of visible graphics_objects in scene */
 		graphics_object_range.first = 1;
+		graphics_object_range.minimum[0] = 0.0;
+		graphics_object_range.minimum[1] = 0.0;
+		graphics_object_range.minimum[2] = 0.0;
+		graphics_object_range.maximum[0] = 0.0;
+		graphics_object_range.maximum[1] = 0.0;
+		graphics_object_range.maximum[2] = 0.0;
 		if (scene->list_of_rendition &&
 			!scene->list_of_rendition->empty())
 		{
