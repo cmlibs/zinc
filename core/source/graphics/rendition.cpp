@@ -885,13 +885,12 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 	return return_code;
 }
 
-int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
+int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic)
 {
 	int return_code = 1;
 	if (rendition && graphic)
 	{
-		Cmiss_rendition_set_minimum_graphic_defaults(rendition, graphic);
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
 		if (graphic_type != CMISS_GRAPHIC_POINT)
@@ -951,7 +950,7 @@ int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_set_graphic_defaults.  Invalid argument(s)");
+			"Cmiss_rendition_set_graphics_defaults_gfx_modify.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;

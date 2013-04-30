@@ -403,7 +403,14 @@ int Cmiss_rendition_create_node_list_selection(Cmiss_rendition_id rendition,
  * Set default graphic attributes depending on type, e.g. tessellation,
  * materials, etc.
  */
-int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
+int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *rendition,
+	struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
+ * Set additional default attributes for backward compatibility with gfx modify
+ * g_element commands: default coordinate, discretization etc.
+ */
+int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
