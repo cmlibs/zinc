@@ -166,7 +166,7 @@ TEST(Cmiss_graphic_iso_surface, iso_range_null)
 	EXPECT_NE(static_cast<Cmiss_graphic_iso_surface *>(0), is);
 
 	const int num = 6;
-	double first = 0.1, last = 0.55;
+	double first = 0.1, last = 0.55;//
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_iso_surface_set_iso_range(0, num, first, last));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_iso_surface_set_iso_range(is, -1, first, last));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_iso_surface_set_iso_range(is, 0, first, last));
