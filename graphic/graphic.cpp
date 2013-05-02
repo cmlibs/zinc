@@ -266,14 +266,15 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(field));
 	tempField = pointattr.getOrientationScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
-	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(Field())); // clear field
+	Field noField;
+	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(noField)); // clear field
 	EXPECT_EQ(false, pointattr.getOrientationScaleField().isValid());
 
 	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
 	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(field));
 	tempField = pointattr.getSignedScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
-	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(Field())); // clear field
+	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(noField)); // clear field
 	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
@@ -367,14 +368,16 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	Field tempLabelField = pointattr.getLabelField();
 	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
 
-	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(Field())); // clear label field
+	Field noField;
+	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(noField)); // clear label field
 	EXPECT_EQ(false, pointattr.getLabelField().isValid());
 
 	// should start with a default font
 	GraphicsFont font = pointattr.getFont();
 	EXPECT_EQ(true, font.isValid());
 
-	EXPECT_EQ(CMISS_OK, pointattr.setFont(GraphicsFont())); // clear font
+	GraphicsFont noFont;
+	EXPECT_EQ(CMISS_OK, pointattr.setFont(noFont)); // clear font
 	EXPECT_EQ(false, pointattr.getFont().isValid());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(font));
@@ -462,7 +465,8 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
 	EXPECT_EQ(tempOrientationScaleField.getId(), orientationScaleField.getId());
 
-	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(Field())); // clear field
+	Field noField;
+	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(noField)); // clear field
 	EXPECT_EQ(false, lineattr.getOrientationScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
