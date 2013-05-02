@@ -543,8 +543,6 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_displ
 		<Render_graphics_opengl_vertex_buffer_object>(graphics_buffer);
 }
 
-/******************  **********************/
-
 static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
 struct GT_object *glyph, char **labels,
@@ -4427,9 +4425,9 @@ static int Graphics_object_compile_opengl_display_list(GT_object *graphics_objec
 	return (return_code);
 } /* Graphics_object_compile_opengl_display_list */
 
-/***************************************************************************//**
-																			 * Compile the display list for this object.
-																			 */
+/**
+ * Compile the display list for this object.
+ */
 static int Graphics_object_execute_opengl_display_list(GT_object *graphics_object_list,
 	Render_graphics_opengl *renderer)
 {
