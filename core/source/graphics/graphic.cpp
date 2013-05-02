@@ -1813,7 +1813,6 @@ Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
 
 int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face)
 {
-	int return_code = 0;
 	if (graphic && (face != CMISS_GRAPHIC_FACE_INVALID))
 	{
 		if (face != graphic->face)
