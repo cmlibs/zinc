@@ -492,3 +492,4 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 }
+
