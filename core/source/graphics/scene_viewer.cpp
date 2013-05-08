@@ -2066,14 +2066,12 @@ access this function.
 					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())))
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
-						scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer();
 				}
 				else
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_vertex_buffer_object_renderer(
-						scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_vertex_buffer_object_renderer();
 				}
 			}
 			else
@@ -2088,14 +2086,12 @@ access this function.
 				if (Graphics_library_check_extension(GL_display_lists))
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer(
-						scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer();
 				}
 				else
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_client_vertex_arrays_renderer(
-						scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_client_vertex_arrays_renderer();
 				}
 			}
 			else
@@ -2104,14 +2100,12 @@ access this function.
 				if (Graphics_library_check_extension(GL_display_lists))
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_glbeginend_display_list_renderer(
-						scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_glbeginend_display_list_renderer();
 				}
 				else
 				{
 					rendering_data.renderer =
-						Render_graphics_opengl_create_glbeginend_renderer(
-					 scene_viewer->graphics_buffer);
+						Render_graphics_opengl_create_glbeginend_renderer();
 				}
 			}
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);

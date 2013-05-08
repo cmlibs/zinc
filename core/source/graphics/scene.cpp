@@ -3374,8 +3374,7 @@ Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int positi
 }
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
-	struct Interaction_volume *interaction_volume,
-	struct Graphics_buffer *graphics_buffer)
+	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -3400,7 +3399,7 @@ understood for the type of <interaction_volume> passed.
 		if (scene_picked_object_list != 0)
 		{
 			Render_graphics_opengl *renderer =
-				Render_graphics_opengl_create_glbeginend_renderer(graphics_buffer);
+				Render_graphics_opengl_create_glbeginend_renderer();
 			renderer->picking = 1;
 			if (renderer->Scene_compile(scene))
 			{

@@ -130,8 +130,7 @@ int Render_graphics_opengl::Material_compile(Graphical_material *material)
 class Render_graphics_opengl_glbeginend : public Render_graphics_opengl
 {
 public:
-	Render_graphics_opengl_glbeginend(Graphics_buffer *graphics_buffer) :
-	  Render_graphics_opengl(graphics_buffer)
+	Render_graphics_opengl_glbeginend() : Render_graphics_opengl()
 	  {
 	  }
 
@@ -296,10 +295,9 @@ public:
 
 }; /* class Render_graphics_opengl_glbeginend */
 
-Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer()
 {
-	return new Render_graphics_opengl_glbeginend(graphics_buffer);
+	return new Render_graphics_opengl_glbeginend();
 }
 
 /***************************************************************************//**
@@ -308,8 +306,8 @@ Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer(
 class Render_graphics_opengl_client_vertex_arrays : public Render_graphics_opengl_glbeginend
 {
 public:
-	Render_graphics_opengl_client_vertex_arrays(Graphics_buffer *graphics_buffer) :
-	  Render_graphics_opengl_glbeginend(graphics_buffer)
+	Render_graphics_opengl_client_vertex_arrays() :
+	  Render_graphics_opengl_glbeginend()
 	  {
 	  }
 
@@ -340,8 +338,8 @@ public:
 class Render_graphics_opengl_vertex_buffer_object : public Render_graphics_opengl_glbeginend
 {
 public:
-	Render_graphics_opengl_vertex_buffer_object(Graphics_buffer *graphics_buffer) :
-	  Render_graphics_opengl_glbeginend(graphics_buffer)
+	Render_graphics_opengl_vertex_buffer_object() :
+	  Render_graphics_opengl_glbeginend()
 	  {
 	  }
 
@@ -378,17 +376,16 @@ public:
 
 }; /* class Render_graphics_opengl_vertex_buffer_object */
 
-Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer()
 {
-	return new Render_graphics_opengl_client_vertex_arrays(graphics_buffer);
+	return new Render_graphics_opengl_client_vertex_arrays();
 }
 
 class Render_graphics_opengl_vertex_buffer_objects : public Render_graphics_opengl_glbeginend
 {
 public:
-	Render_graphics_opengl_vertex_buffer_objects(Graphics_buffer *graphics_buffer) :
-	  Render_graphics_opengl_glbeginend(graphics_buffer)
+	Render_graphics_opengl_vertex_buffer_objects() :
+	  Render_graphics_opengl_glbeginend()
 	  {
 	  }
 
@@ -400,10 +397,9 @@ public:
 
 }; /* class Render_graphics_opengl_glbeginend */
 
-Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer()
 {
-	return new Render_graphics_opengl_vertex_buffer_object(graphics_buffer);
+	return new Render_graphics_opengl_vertex_buffer_object();
 }
 
 /***************************************************************************//**
@@ -415,8 +411,7 @@ template <class Render_immediate> class Render_graphics_opengl_display_list
 {
 
 public:
-	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
-	  Render_immediate(graphics_buffer)
+	Render_graphics_opengl_display_list() : Render_immediate()
 	  {
 	  }
 
@@ -522,25 +517,19 @@ public:
 
 }; /* class Render_graphics_opengl_display_list */
 
-Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_renderer()
 {
-	return new Render_graphics_opengl_display_list
-		<Render_graphics_opengl_glbeginend>(graphics_buffer);
+	return new Render_graphics_opengl_display_list<Render_graphics_opengl_glbeginend>();
 }
 
-Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer()
 {
-	return new Render_graphics_opengl_display_list
-		<Render_graphics_opengl_client_vertex_arrays>(graphics_buffer);
+	return new Render_graphics_opengl_display_list<Render_graphics_opengl_client_vertex_arrays>();
 }
 
-Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
-	Graphics_buffer *graphics_buffer)
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer()
 {
-	return new Render_graphics_opengl_display_list
-		<Render_graphics_opengl_vertex_buffer_object>(graphics_buffer);
+	return new Render_graphics_opengl_display_list<Render_graphics_opengl_vertex_buffer_object>();
 }
 
 static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
@@ -4311,7 +4300,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 									if (glyph_set->glyph)
 										renderer->Graphics_object_compile(glyph_set->glyph);
 									if (glyph_set->font)
-										Cmiss_graphics_font_compile(glyph_set->font, renderer->graphics_buffer);
+										Cmiss_graphics_font_compile(glyph_set->font);
 								}
 							}
 						}
@@ -4329,7 +4318,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point->font)
 									{
-										Cmiss_graphics_font_compile(point->font, renderer->graphics_buffer);
+										Cmiss_graphics_font_compile(point->font);
 									}
 								}
 							}
@@ -4348,7 +4337,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point_set->font)
 									{
-										Cmiss_graphics_font_compile(point_set->font, renderer->graphics_buffer);
+										Cmiss_graphics_font_compile(point_set->font);
 									}
 								}
 							}

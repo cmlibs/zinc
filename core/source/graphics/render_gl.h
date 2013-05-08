@@ -47,7 +47,6 @@
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
 public:
-	Graphics_buffer *graphics_buffer;
 
 	/** Indicates that we are rendering specifically to pick objects.
 	 * Requires the ndc transformation to be different as the viewport is the picking window.
@@ -69,8 +68,7 @@ public:
 	SubObjectGroupHighlightFunctor *highlight_functor;
 
 public:
-	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
-		graphics_buffer(graphics_buffer),
+	Render_graphics_opengl() :
 		picking(0),
 		allow_texture_tiling(0),
 		texture_tiling(0),
@@ -139,42 +137,36 @@ public:
  * Factory function to create a renderer that uses immediate mode
  * glBegin/glEnd calls to render primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer();
 
 /***************************************************************************//**
  * Factory function to create a renderer that compiles objects into display lists
  * for rendering and uses glBegin/glEnd calls when compiling primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_renderer();
 
 /***************************************************************************//**
  * Factory function to create a renderer that uses immediate mode
  * client vertex arrays to render primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer();
 
 /***************************************************************************//**
  * Factory function to create a renderer that compiles objects into display lists
  * for rendering and uses client vertex arrays when compiling primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer();
 
 /***************************************************************************//**
  * Factory function to create a renderer that uses immediate mode
  * vertex buffer objects to render primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer();
 
 /***************************************************************************//**
  * Factory function to create a renderer that compiles objects into display lists
  * for rendering and uses vertex buffer objects when compiling primitives.
  */
-Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
-	Graphics_buffer *graphics_buffer);
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer();
 
 #endif /* !defined (RENDERGL_HPP) */
