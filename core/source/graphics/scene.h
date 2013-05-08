@@ -698,8 +698,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 ==============================================================================*/
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
-	struct Interaction_volume *interaction_volume,
-	struct Graphics_buffer *graphics_buffer);
+	struct Interaction_volume *interaction_volume);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 

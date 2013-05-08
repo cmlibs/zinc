@@ -93,8 +93,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 
-int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font,
-	struct Graphics_buffer *buffer);
+int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 

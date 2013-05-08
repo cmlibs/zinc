@@ -369,8 +369,7 @@ unsigned int Cmiss_graphics_font_get_font_buffer(struct Cmiss_graphics_font *fon
 	return true_type_length;
 }
 
-int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font,
-	struct Graphics_buffer *buffer)
+int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 12 March 2008
 
@@ -381,86 +380,73 @@ Compiles the specified <font> so it can be used by the graphics.  The
 {
 	int return_code;
 
-	ENTER(Cmiss_graphics_font_compile);
-	if (font && buffer)
+	if (font)
 	{
 		return_code = 1;
 
 		/* Can have multiple types compiled in at the same time (X and gtk) */
-		switch (Graphics_buffer_get_type(buffer))
+		if (font->ftFont && font->changed == 1)
 		{
-			case GRAPHICS_BUFFER_ONSCREEN_TYPE:
+			delete font->ftFont;
+			font->ftFont = 0;
+		}
+		if (font->ftFont == 0)
+		{
+			unsigned char *true_type_buffer = 0;
+			unsigned int true_type_length = 0;
+			true_type_length = Cmiss_graphics_font_get_font_buffer(font,
+				&true_type_buffer);
+			if ((true_type_buffer != 0) && (true_type_length > 0))
 			{
-				if (font->ftFont && font->changed == 1)
+				switch (font->font_type)
 				{
-					delete font->ftFont;
-					font->ftFont = 0;
-				}
-				if (font->ftFont == 0)
+				case CMISS_GRAPHICS_FONT_TYPE_BITMAP:
+				case CMISS_GRAPHICS_FONT_TYPE_PIXMAP:
 				{
-					unsigned char *true_type_buffer = 0;
-					unsigned int true_type_length = 0;
-					true_type_length = Cmiss_graphics_font_get_font_buffer(font,
-						&true_type_buffer);
-					if ((true_type_buffer != 0) && (true_type_length > 0))
-					{
-						switch (font->font_type)
-						{
-							case CMISS_GRAPHICS_FONT_TYPE_BITMAP:
-							case CMISS_GRAPHICS_FONT_TYPE_PIXMAP:
-							{
-								if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_BITMAP)
-									font->ftFont = new FTBitmapFont(true_type_buffer, true_type_length);
-								else
-									font->ftFont = new FTPixmapFont(true_type_buffer, true_type_length);
-								if(font->ftFont->Error())
-								{
-									return_code = 0;
-								}
-								else
-								{
-									font->ftFont->FaceSize(font->size);
-									font->ftFont->UseDisplayList(false);
-								}
-							} break;
-							case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
-							case CMISS_GRAPHICS_FONT_TYPE_OUTLINE:
-							case CMISS_GRAPHICS_FONT_TYPE_EXTRUDE:
-							{
-								if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_POLYGON)
-									font->ftFont = new FTPolygonFont(true_type_buffer, true_type_length);
-								else if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_OUTLINE)
-									font->ftFont = new FTOutlineFont(true_type_buffer, true_type_length);
-								else
-									font->ftFont = new FTExtrudeFont(true_type_buffer, true_type_length);
-								if(font->ftFont->Error())
-								{
-									return_code = 0;
-								}
-								else
-								{
-									font->ftFont->FaceSize(font->size,144);
-									font->ftFont->Depth((float)font->depth);
-									font->ftFont->UseDisplayList(false);
-								}
-							} break;
-							default :
-							{
-								return_code = 0;
-							}break;
-						}
-					}
+					if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_BITMAP)
+						font->ftFont = new FTBitmapFont(true_type_buffer, true_type_length);
+					else
+						font->ftFont = new FTPixmapFont(true_type_buffer, true_type_length);
+					if(font->ftFont->Error())
 					{
 						return_code = 0;
 					}
+					else
+					{
+						font->ftFont->FaceSize(font->size);
+						font->ftFont->UseDisplayList(false);
+					}
+				} break;
+				case CMISS_GRAPHICS_FONT_TYPE_POLYGON:
+				case CMISS_GRAPHICS_FONT_TYPE_OUTLINE:
+				case CMISS_GRAPHICS_FONT_TYPE_EXTRUDE:
+				{
+					if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_POLYGON)
+						font->ftFont = new FTPolygonFont(true_type_buffer, true_type_length);
+					else if (font->font_type == CMISS_GRAPHICS_FONT_TYPE_OUTLINE)
+						font->ftFont = new FTOutlineFont(true_type_buffer, true_type_length);
+					else
+						font->ftFont = new FTExtrudeFont(true_type_buffer, true_type_length);
+					if(font->ftFont->Error())
+					{
+						return_code = 0;
+					}
+					else
+					{
+						font->ftFont->FaceSize(font->size,144);
+						font->ftFont->Depth((float)font->depth);
+						font->ftFont->UseDisplayList(false);
+					}
+				} break;
+				default :
+				{
+					return_code = 0;
+				}break;
 				}
-			}break;
-			default:
+			}
 			{
-				display_message(ERROR_MESSAGE,"Cmiss_graphics_font.  "
-					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
-			} break;
+			}
 		}
 		font->changed = 0;
 	}
@@ -470,7 +456,6 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			"Invalid argument");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Cmiss_graphics_font_compile */
