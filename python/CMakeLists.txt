@@ -4,6 +4,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(PyZinc)
 
+INCLUDE( Functions.cmake )
+
 SET(PYTHON_VERSIONS "2.6;2.7;3.3" CACHE STRING "Identify your preferred version or versions of Python to locate. [2.6, 2.7, 3.0, 3.3]")
 
 IF( PYZINC_MODULE_PATH AND NOT IS_ABSOLUTE ${PYZINC_MODULE_PATH} )
@@ -29,18 +31,18 @@ FIND_PACKAGE(PythonLibs REQUIRED)
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 
 IF(${CMAKE_VERSION} VERSION_LESS "2.8.8")
-    IF(PYTHON_INCLUDE_DIRS AND EXISTS "${PYTHON_INCLUDE_DIR}/patchlevel.h")
-        FILE(STRINGS "${PYTHON_INCLUDE_DIR}/patchlevel.h" python_version_str
-            REGEX "^#define[ \t]+PY_VERSION[ \t]+\"[^\"]+\"")
-        STRING(REGEX REPLACE "^#define[ \t]+PY_VERSION[ \t]+\"([^\"]+)\".*" "\\1"
-            PYTHONLIBS_VERSION_STRING "${python_version_str}")
-        UNSET(python_version_str)
-    ENDIF()
+	IF(PYTHON_INCLUDE_DIRS AND EXISTS "${PYTHON_INCLUDE_DIR}/patchlevel.h")
+		FILE(STRINGS "${PYTHON_INCLUDE_DIR}/patchlevel.h" python_version_str
+			REGEX "^#define[ \t]+PY_VERSION[ \t]+\"[^\"]+\"")
+		STRING(REGEX REPLACE "^#define[ \t]+PY_VERSION[ \t]+\"([^\"]+)\".*" "\\1"
+			PYTHONLIBS_VERSION_STRING "${python_version_str}")
+		UNSET(python_version_str)
+	ENDIF()
 ENDIF()
 
 STRING(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 1 PYTHONLIBS_MAJOR_VERSION)
 IF(${PYTHONLIBS_MAJOR_VERSION} STREQUAL "3")
-    SET(PYTHONLIBS_SWIG_FLAGS -py3)
+	SET(PYTHONLIBS_SWIG_FLAGS -py3)
 ENDIF()
 
 SET(PythonInterp_FIND_VERSION ${PYTHONLIBS_VERSION_STRING})
@@ -54,30 +56,30 @@ INCLUDE_DIRECTORIES(${ZINC_INCLUDE_DIRS})
 SET(CMAKE_SWIG_FLAGS -w362 ${PYTHONLIBS_SWIG_FLAGS})
 
 SET(INTERFACE_SRCS
-    ../interface/context.i
-    ../interface/region.i
-    ../interface/fieldmodule.i
-    ../interface/graphicsmodule.i
-    ../interface/graphicsmaterial.i
-    ../interface/rendition.i
-    ../interface/field.i
-    ../interface/stream.i
-    ../interface/element.i
-    ../interface/node.i
-    ../interface/differentialoperator.i
-    ../interface/fieldcache.i
-    ../interface/tessellation.i
-    ../interface/graphic.i
-    ../interface/selection.i
-    ../interface/graphicsfont.i
-    ../interface/graphicsfilter.i
-    ../interface/scene.i
-    ../interface/sceneviewer.i
-    ../interface/spectrum.i
-    ../interface/optimisation.i
-    ../interface/timenotifier.i
-    ../interface/timekeeper.i
-    ../interface/timesequence.i)
+	../interface/context.i
+	../interface/region.i
+	../interface/fieldmodule.i
+	../interface/graphicsmodule.i
+	../interface/graphicsmaterial.i
+	../interface/rendition.i
+	../interface/field.i
+	../interface/stream.i
+	../interface/element.i
+	../interface/node.i
+	../interface/differentialoperator.i
+	../interface/fieldcache.i
+	../interface/tessellation.i
+	../interface/graphic.i
+	../interface/selection.i
+	../interface/graphicsfont.i
+	../interface/graphicsfilter.i
+	../interface/scene.i
+	../interface/sceneviewer.i
+	../interface/spectrum.i
+	../interface/optimisation.i
+	../interface/timenotifier.i
+	../interface/timekeeper.i
+	../interface/timesequence.i)
 
 SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)
 
@@ -86,52 +88,55 @@ SET(CMAKE_SWIG_OUTDIR ${ZINC_PYTHON_MODULE})
 
 SET(SWIG_MODULE_TARGETS)
 FOREACH(SWIG_INTERFACE ${INTERFACE_SRCS})
-    GET_FILENAME_COMPONENT(MODULE ${SWIG_INTERFACE} NAME_WE)
-    SWIG_ADD_MODULE(${MODULE} python ${SWIG_INTERFACE})
-    SWIG_LINK_LIBRARIES(${MODULE} ${PYTHON_LIBRARIES} ${ZINC_LIBRARIES})
-    SET_TARGET_PROPERTIES(${SWIG_MODULE_${MODULE}_REAL_NAME} PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE}
-        RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE})
-    LIST(APPEND SWIG_MODULE_TARGETS ${SWIG_MODULE_${MODULE}_REAL_NAME})
+	GET_FILENAME_COMPONENT(MODULE ${SWIG_INTERFACE} NAME_WE)
+	SWIG_ADD_MODULE(${MODULE} python ${SWIG_INTERFACE})
+	SWIG_LINK_LIBRARIES(${MODULE} ${PYTHON_LIBRARIES} ${ZINC_LIBRARIES})
+	SET_TARGET_PROPERTIES(${SWIG_MODULE_${MODULE}_REAL_NAME} PROPERTIES
+		LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE}
+		RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_MODULE})
+	LIST(APPEND SWIG_MODULE_TARGETS ${SWIG_MODULE_${MODULE}_REAL_NAME})
 ENDFOREACH()
 
 FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "# Zinc Python package initialisation file.\n")
 
-set(PYPI_SRCS 
-    MANIFEST.in
-    CHANGES.txt
-    LICENSE.txt
-    README.txt
-    docs/main.rst)
+set(PYPI_SRCS
+	MANIFEST.in
+	CHANGES.txt
+	LICENSE.txt
+	README.txt
+	docs/main.rst)
 
 SET(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 IF(CMAKE_CL_64)
-    SET(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR}_64)
+	SET(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR}_64)
 ENDIF()
 
 STRING(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION)
 GET_TARGET_PROPERTY(ZINC_LOCATION ${ZINC_LIBRARIES} LOCATION)
-STRING(REGEX MATCH "([0-9].[0-9].[0-9])$" ZINC_VERSION "${ZINC_LOCATION}")
+STRING(REGEX MATCH "([0-9].[0-9].[0-9])|(dev-r[0-9]+[M]?)$" ZINC_VERSION "${ZINC_LOCATION}")
 
-SET(PYPI_SOURCE_TARGZ_VERSION "${ZINC_VERSION}-${PYZINC_ARCHITECTURE}-${CMAKE_SYSTEM}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
+# Get a pretty system name.
+GET_SYSTEM_NAME(SYSTEM_NAME)
+
+SET(PYPI_SOURCE_TARGZ_VERSION "${ZINC_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
 
 SET(CONFIGURED_SETUP_FILE "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 CONFIGURE_FILE(setup.in.py ${CONFIGURED_SETUP_FILE} @ONLY)
 
 SET(PYPI_GENERATED_SRCS ${CONFIGURED_SETUP_FILE})
 FOREACH(_file ${PYPI_SRCS})
-    ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
+	ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
 	DEPENDS ${SWIG_MODULE_TARGETS})
-    LIST(APPEND PYPI_GENERATED_SRCS "${CMAKE_CURRENT_BINARY_DIR}/${_file}")
+	LIST(APPEND PYPI_GENERATED_SRCS "${CMAKE_CURRENT_BINARY_DIR}/${_file}")
 ENDFOREACH()
 
 SET(PYPI_SOURCE_TARGZ "${CMAKE_CURRENT_BINARY_DIR}/dist/PyZinc-${PYPI_SOURCE_TARGZ_VERSION}.tar.gz")
 ADD_CUSTOM_COMMAND(OUTPUT "${PYPI_SOURCE_TARGZ}"
-    COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py clean
-    COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py sdist
-    COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py bdist_egg
-    DEPENDS ${PYPI_GENERATED_SRCS})
+	COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py clean
+	COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py sdist
+	#COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py bdist_egg
+	DEPENDS ${PYPI_GENERATED_SRCS})
 ADD_CUSTOM_TARGET(pypi-package DEPENDS "${PYPI_SOURCE_TARGZ}")
 
 
