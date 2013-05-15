@@ -20,7 +20,7 @@ from distutils.core import setup
 doclines = __doc__.split("\n")
 
 setup(
-    name='PyZinc',
+    name='@PYPI_PACKAGE_NAME@',
     version='@PYPI_SOURCE_TARGZ_VERSION@',
     author='H. Sorby',
     author_email='h.sorby@auckland.ac.nz',
