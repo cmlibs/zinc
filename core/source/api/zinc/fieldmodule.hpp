@@ -219,10 +219,10 @@ public:
 		return Mesh(Cmiss_field_module_find_mesh_by_name(id, meshName));
 	}
 
-	TimeSequence getMatchingTimeSequence(int numberOfTimes, double *times)
+	TimeSequence getMatchingTimeSequence(int timesCount, const double *times)
 	{
 		return TimeSequence(Cmiss_field_module_get_matching_time_sequence(
-			id, numberOfTimes, times));
+			id, timesCount, times));
 	}
 
 	Optimisation createOptimisation()
@@ -242,7 +242,7 @@ public:
 
 	FieldSubtract createSubtract(Field& sourceField1, Field& sourceField2);
 
-	FieldSumComponents createSumComponents(Field& sourceField, double *weights);
+	FieldSumComponents createSumComponents(Field& sourceField, const double *weights);
 
 	FieldLog createLog(Field& sourceField);
 
@@ -260,7 +260,7 @@ public:
 
 	FieldIf createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 
-	FieldConstant createConstant(int numberOfValues, double *values);
+	FieldConstant createConstant(int valuesCount, const double *values);
 
 	FieldStringConstant createStringConstant(const char *stringConstant);
 

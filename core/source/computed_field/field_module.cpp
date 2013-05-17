@@ -374,7 +374,7 @@ Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
 }
 
 Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
-	Cmiss_field_module_id field_module, int number_of_times, double *times)
+	Cmiss_field_module_id field_module, int number_of_times, const double *times)
 {
 	if (!field_module)
 		return NULL;

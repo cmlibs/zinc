@@ -60,7 +60,7 @@ extern "C" {
  * @return  The time sequence matching the times array, or NULL if failed.
  */
 ZINC_API Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
-	Cmiss_field_module_id field_module, int number_of_times, double *times);
+	Cmiss_field_module_id field_module, int number_of_times, const double *times);
 
 /***************************************************************************//**
  * Returns a new reference to the time sequence with reference count

@@ -139,7 +139,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id
  * @return Newly created field
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, double *weights);
+	Cmiss_field_id source_field, const double *weights);
 
 /*****************************************************************************//**
  * Creates a field where the field components are the natural logarithm

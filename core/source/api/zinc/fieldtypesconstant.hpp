@@ -53,7 +53,7 @@ private:
 	explicit FieldConstant(Cmiss_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldConstant FieldModule::createConstant(int numberOfValues, double *values);
+	friend FieldConstant FieldModule::createConstant(int valuesCount, const double *values);
 
 public:
 
@@ -78,10 +78,10 @@ public:
 
 };
 
-inline FieldConstant FieldModule::createConstant(int numberOfValues, double *values)
+inline FieldConstant FieldModule::createConstant(int valuesCount, const double *values)
 {
 	return FieldConstant(Cmiss_field_module_create_constant(id,
-		numberOfValues, values));
+		valuesCount, values));
 }
 
 inline FieldStringConstant FieldModule::createStringConstant(const char *stringConstant)
