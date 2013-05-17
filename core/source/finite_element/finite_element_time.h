@@ -168,7 +168,7 @@ returned.
 ==============================================================================*/
 
 struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
-	struct FE_time_sequence_package *fe_time, int number_of_times, FE_value *times);
+	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times);
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 

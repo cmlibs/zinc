@@ -2296,7 +2296,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_sum_components(Cmiss_field_module *field_module,
-	struct Computed_field *source_field, double *weights)
+	struct Computed_field *source_field, const double *weights)
 {
 	Cmiss_field_id field = 0;
 	if (source_field && source_field->isNumerical())

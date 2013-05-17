@@ -5802,7 +5802,7 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 } /* FE_region_smooth_FE_field */
 
 struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
-	struct FE_region *fe_region, int number_of_times, FE_value *times)
+	struct FE_region *fe_region, int number_of_times, const FE_value *times)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 

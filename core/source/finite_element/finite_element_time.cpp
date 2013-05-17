@@ -889,7 +889,7 @@ returned.
 } /* get_FE_time_sequence_matching_FE_time_sequence */
 
 struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
-	struct FE_time_sequence_package *fe_time, int number_of_times, FE_value *times)
+	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
@@ -912,7 +912,7 @@ If no equivalent fe_time_sequence is found one is created and returned.
 		local_fe_time_sequence = CREATE(FE_time_sequence)();
 		local_fe_time_sequence->type = FE_TIME_SEQUENCE;
 		local_fe_time_sequence->number_of_times = number_of_times;
-		local_fe_time_sequence->times = times;
+		local_fe_time_sequence->times = const_cast<FE_value*>(times);
 		/* search the manager for a fe_time_sequence of that name */
 		if (NULL != (fe_time_sequence=
 			FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(local_fe_time_sequence,
@@ -980,7 +980,7 @@ by merging the two time_sequences supplied.
 	struct FE_time_sequence *fe_time_sequence;
 #define TIME_SEQUENCE_MERGING_SMALL_COUNT (10)
 
-	ENTER(get_FE_time_sequence_matching_time_series);
+	ENTER(get_FE_time_sequence_merging_two_time_series);
 	fe_time_sequence=(struct FE_time_sequence *)NULL;
 	if (fe_time&&fe_time->fe_time_sequence_manager&&time_sequence_one&&
 		time_sequence_two)
@@ -1098,7 +1098,7 @@ by merging the two time_sequences supplied.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"get_FE_time_sequence_matching_time_series.  "
+						"get_FE_time_sequence_merging_two_time_series.  "
 						"Could not ALLOCATE temporary time array.");
 					fe_time_sequence=(struct FE_time_sequence *)NULL;
 				}
@@ -1108,13 +1108,13 @@ by merging the two time_sequences supplied.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_time_sequence_matching_time_series.  Invalid argument(s)");
+			"get_FE_time_sequence_merging_two_time_series.  Invalid argument(s)");
 		fe_time_sequence=(struct FE_time_sequence *)NULL;
 	}
 	LEAVE;
 
 	return (fe_time_sequence);
-} /* get_FE_time_sequence_matching_time_series */
+} /* get_FE_time_sequence_merging_two_time_series */
 
 enum FE_time_sequence_mapping FE_time_sequences_mapping(
 	struct FE_time_sequence *source_sequence,

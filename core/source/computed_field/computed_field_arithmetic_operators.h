@@ -146,7 +146,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 
 struct Computed_field *Computed_field_create_sum_components(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, double *weights);
+	struct Computed_field *source_field, const double *weights);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 

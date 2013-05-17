@@ -101,18 +101,18 @@ public:
 		return Cmiss_field_cache_set_element(id, element.getId());
 	}
 
-	int setMeshLocation(Element& element, int numberOfChartCoordinates,
-		double *chartCoordinates)
+	int setMeshLocation(Element& element, int coordinatesCount,
+		const double *coordinates)
 	{
 		return Cmiss_field_cache_set_mesh_location(id, element.getId(),
-			numberOfChartCoordinates, chartCoordinates);
+			coordinatesCount, coordinates);
 	}
 
-	int setFieldReal(Field& referenceField, int numberOfValues,
+	int setFieldReal(Field& referenceField, int valuesCount,
 		const double *values)
 	{
 		return Cmiss_field_cache_set_field_real(id,
-			referenceField.getId(), numberOfValues, values);
+			referenceField.getId(), valuesCount, values);
 	}
 
 	int setNode(Node& node)
@@ -127,16 +127,15 @@ public:
 };
 
 inline int Field::assignMeshLocation(FieldCache& cache, Element element,
-	int numberOfChartCoordinates, const double *chartCoordinates)
+	int coordinatesCount, const double *coordinates)
 {
 	return Cmiss_field_assign_mesh_location(id, cache.getId(), element.getId(),
-		numberOfChartCoordinates, chartCoordinates);
+		coordinatesCount, coordinates);
 }
 
-inline int Field::assignReal(FieldCache& cache,	int numberOfValues, const double *values)
+inline int Field::assignReal(FieldCache& cache,	int valuesCount, const double *values)
 {
-	return Cmiss_field_assign_real(id, cache.getId(), numberOfValues,
-		values);
+	return Cmiss_field_assign_real(id, cache.getId(), valuesCount, values);
 }
 
 inline int Field::assignString(FieldCache& cache, const char *stringValue)
@@ -144,16 +143,16 @@ inline int Field::assignString(FieldCache& cache, const char *stringValue)
 	return Cmiss_field_assign_string(id, cache.getId(), stringValue);
 }
 
-inline Element Field::evaluateMeshLocation(FieldCache& cache, int numberOfChartCoordinates,
-	double *outChartCoordinates)
+inline Element Field::evaluateMeshLocation(FieldCache& cache, int coordinatesCount,
+	double *coordinates)
 {
 	return Element(Cmiss_field_evaluate_mesh_location(id,
-		cache.getId(), numberOfChartCoordinates, outChartCoordinates));
+		cache.getId(), coordinatesCount, coordinates));
 }
 
-inline int Field::evaluateReal(FieldCache& cache, int numberOfValues, double *outValues)
+inline int Field::evaluateReal(FieldCache& cache, int valuesCount, double *values)
 {
-	return Cmiss_field_evaluate_real(id, cache.getId(), numberOfValues, outValues);
+	return Cmiss_field_evaluate_real(id, cache.getId(), valuesCount, values);
 }
 
 inline char *Field::evaluateString(FieldCache& cache)
@@ -162,10 +161,10 @@ inline char *Field::evaluateString(FieldCache& cache)
 }
 
 inline int Field::evaluateDerivative(DifferentialOperator& differentialOperator,
-	FieldCache& cache, int numberOfValues, double *outValues)
+	FieldCache& cache, int valuesCount, double *values)
 {
 	return Cmiss_field_evaluate_derivative(id, differentialOperator.getId(),
-		cache.getId(), numberOfValues, outValues);
+		cache.getId(), valuesCount, values);
 }
 
 inline bool Field::isDefinedAtLocation(FieldCache& cache)

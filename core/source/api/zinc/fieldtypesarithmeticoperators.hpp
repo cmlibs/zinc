@@ -157,7 +157,7 @@ private:
 	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSumComponents FieldModule::FieldModule::createSumComponents(Field& sourceField, double *weights);
+	friend FieldSumComponents FieldModule::FieldModule::createSumComponents(Field& sourceField, const double *weights);
 
 public:
 
@@ -286,7 +286,7 @@ inline FieldSubtract FieldModule::createSubtract(Field& sourceField1, Field& sou
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField, double *weights)
+inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField, const double *weights)
 {
 	return FieldSumComponents(Cmiss_field_module_create_sum_components(id,
 		sourceField.getId(), weights));
