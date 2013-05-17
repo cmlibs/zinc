@@ -39,31 +39,32 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
-%typemap(in) (int numberOfValues, double *values)
+%typemap(in) (int valuesCount, const double *values)
 {
 	/* Check if is a list */
 	if (PyList_Check($input)) 
 	{
-		int i;
 		$1 = PyList_Size($input);
-		$2 = (double *) malloc(($1)*sizeof(double));
-		for (i = 0; i < $1; i++) 
+		$2 = new double[$1];
+		for (int i = 0; i < $1; i++) 
 		{
 			PyObject *o = PyList_GetItem($input,i);
 			if (PyFloat_Check(o))
+			{
 				$2[i] = PyFloat_AsDouble(o);
-                        else if (PyLong_Check(o))
-                        {
-                                $2[i] = PyLong_AsDouble(o);
-                        }
-                        else if (PyInt_Check(o))
-                        {
-                                $2[i] = static_cast<double>(PyInt_AsLong(o));
-                        }
+			}
+			else if (PyLong_Check(o))
+			{
+				$2[i] = PyLong_AsDouble(o);
+			}
+			else if (PyInt_Check(o))
+			{
+				$2[i] = static_cast<double>(PyInt_AsLong(o));
+			}
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
-				free($2);
+				delete[] $2;
 				return NULL;
 			}
 		}
@@ -75,34 +76,79 @@
 	}
 }
 
-%typemap(freearg) (int numberOfValues, double *values)
+%typemap(freearg) (int valuesCount, const double *values)
 {
-	free((double*) $2);
+	delete[] $2;
 }
 
-%typemap(typecheck) (int numberOfValues, double *values) {
-$1 = PyList_Check($input) ? 1 : 0;
+// array getter in-handler expects an integer array size only
+// and allocates array to accept output; see argout-handler
+%typemap(in) (int valuesCount, double *values)
+{
+	if (!PyInt_Check($input))
+	{
+		PyErr_SetString(PyExc_ValueError, "Expecting an integer");
+		return NULL;
+	}
+	$1 = PyInt_AsLong($input);
+	if ($1 < 0)
+	{
+		PyErr_SetString(PyExc_ValueError, "Positive integer expected");
+		return NULL;
+	}
+	$2 = new double[$1];
 }
 
-%typemap(in) (int numberOfChartCoordinates, double *chartCoordinates) = (int numberOfValues, double *values);
-%typemap(freearg) (int numberOfChartCoordinates, double *chartCoordinates) = (int numberOfValues, double *values);
-%typemap(typecheck) (int numberOfChartCoordinates, double *chartCoordinates) = (int numberOfValues, double *values);
+%typemap(argout)(int valuesCount, double *values)
+{
+	PyObject *o;
+	if ($1 == 1)
+	{
+		o = PyFloat_FromDouble(*$2);
+	}
+	else
+	{
+		o = PyList_New($1);
+		for (int i = 0 ; i < $1; i++)
+		{
+			PyList_SET_ITEM(o, i, PyFloat_FromDouble($2[i])); // steals reference
+		}
+	}
+	if ((!$result) || ($result == Py_None))
+	{
+		$result = o;
+	}
+	else 
+	{
+		// note: code considers that tuples are supposed to be immutable
+		// should only modify if you have only reference to them!
+		if (!PyTuple_Check($result))
+		{
+			PyObject *previousResult = $result;
+			$result = PyTuple_New(2);
+			PyTuple_SET_ITEM($result, 0, previousResult); // steals reference
+			PyTuple_SET_ITEM($result, 1, o); // steals reference
+		}
+		else
+		{
+			PyObject *previousResult = $result;
+			PyObject *addResult = PyTuple_New(1);
+			PyTuple_SET_ITEM(tmp, 0, o); // steals reference
+			$result = PySequence_Concat(previousResult, addResult);
+			Py_DECREF(previousResult);
+			Py_DECREF(addResult);
+		}
+	}
+	delete[] $2;
+}
 
-%typemap(in) (int numberOfTimes, double *times) = (int numberOfValues, double *values);
-%typemap(freearg) (int numberOfTimes, double *times) = (int numberOfValues, double *values);
-%typemap(typecheck) (int numberOfTimes, double *times) = (int numberOfValues, double *values);
+%typemap(in) (int coordinatesCount, const double *coordinates) = (int valuesCount, const double *values);
+%typemap(freearg) (int coordinatesCount, const double *coordinates) = (int valuesCount, const double *values);
+%typemap(in) (int coordinatesCount, double *coordinates) = (int valuesCount, double *values);
+%typemap(argout) (int coordinatesCount, double *coordinates) = (int valuesCount, double *values);
 
-%typemap(in) (int number, double *baseSize) = (int numberOfValues, double *values);
-%typemap(freearg) (int number, double *baseSize) = (int numberOfValues, double *values);
-%typemap(typecheck) (int number, double *baseSize) = (int numberOfValues, double *values);
-
-%typemap(in) (int number, double *scaleFactors) = (int numberOfValues, double *values);
-%typemap(freearg) (int number, double *scaleFactors) = (int numberOfValues, double *values);
-%typemap(typecheck) (int number, double *scaleFactors) = (int numberOfValues, double *values);
-
-%typemap(in) (int number, double *offset) = (int numberOfValues, double *values);
-%typemap(freearg) (int number, double *offset) = (int numberOfValues, double *values);
-%typemap(typecheck) (int number, double *offset) = (int numberOfValues, double *values);
+%typemap(in) (int timesCount, const double *times) = (int valuesCount, const double *values);
+%typemap(freearg) (int timesCount, const double *times) = (int valuesCount, const double *values);
 
 %typemap(in) (double *weights)
 {
@@ -117,14 +163,14 @@ $1 = PyList_Check($input) ? 1 : 0;
 			PyObject *o = PyList_GetItem($input,i);
 			if (PyFloat_Check(o))
 				$1[i] = PyFloat_AsDouble(o);
-                        else if (PyLong_Check(o))
-                        {
-                                $1[i] = PyLong_AsDouble(o);
-                        }
-                        else if (PyInt_Check(o))
-                        {
-                                $1[i] = static_cast<double>(PyInt_AsLong(o));
-                        }
+			else if (PyLong_Check(o))
+			{
+				$1[i] = PyLong_AsDouble(o);
+			}
+			else if (PyInt_Check(o))
+			{
+				$1[i] = static_cast<double>(PyInt_AsLong(o));
+			}
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
@@ -146,50 +192,5 @@ $1 = PyList_Check($input) ? 1 : 0;
 }
 
 %typemap(typecheck) (double *weights) {
-$1 = PyList_Check($input) ? 1 : 0;
+	$1 = PyList_Check($input) ? 1 : 0;
 }
-
-
-%typemap(argout)(int numberOfValues, double *outValues)
-{
-	PyObject *o, *o2, *o3, *o4;
-	if($1 == 1)
-		o = PyFloat_FromDouble(*$2);
-	else
-	{
-		o = PyList_New($1);
-		for (int i = 0 ; i < $1; i++)
-		{
-			o4 = PyFloat_FromDouble($2[i]);
-			PyList_SetItem(o, i, o4);
-		}
-	}
-	if ((!$result) || ($result == Py_None))
-	{
-		$result = o;
-	}
-	else 
-	{
-		if (!PyTuple_Check($result))
-		{
-			PyObject *o2 = $result;
-			$result = PyTuple_New(1);
-			PyTuple_SetItem($result,0,o2);
-		}
-		o3 = PyTuple_New(1);
-		PyTuple_SetItem(o3,0,o);
-		o2 = $result;
-		$result = PySequence_Concat(o2,o3);
-		Py_DECREF(o2);
-		Py_DECREF(o3);
-	}
-	delete $2;
-}
-
-%typemap(in,numinputs=0) (double *outValues)
-{
-	$1 = new double[100];
-}
-
-%typemap(argout) (int numberOfChartCoordinates, double *outChartCoordinates) = (int numberOfValues, double *outValues);
-%typemap(in,numinputs=0) (double *outChartCoordinates) = (double *outValues);
