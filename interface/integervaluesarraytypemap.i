@@ -125,7 +125,7 @@
 		{
 			PyObject *previousResult = $result;
 			PyObject *addResult = PyTuple_New(1);
-			PyTuple_SET_ITEM(tmp, 0, o); // steals reference
+			PyTuple_SET_ITEM(addResult, 0, o); // steals reference
 			$result = PySequence_Concat(previousResult, addResult);
 			Py_DECREF(previousResult);
 			Py_DECREF(addResult);
