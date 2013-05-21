@@ -1,7 +1,7 @@
 /*******************************************************************************
- * FieldArrayTypemap.i
+ * fieldarraytypemap.i
  * 
- * Swig interface file for void to field array.
+ * Swig interface file for field array.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,19 +39,21 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%typemap(in) (int numberOfSourceFields, void **sourceFieldsVoid)
+%typemap(in) (int fieldsCount, Field *fields)
 {
 	/* Check if is a list */
 	if (PyList_Check($input)) 
 	{
 		$1 = PyList_Size($input);
-		$2 = (void **) malloc(($1)*sizeof(void *));
+		$2 = new Field[$i];
 		for (int i = 0; i < $1; i++) 
 		{
-			void *temp_pointer;
+			zinc::Field *field_ptr;
 			PyObject *o = PyList_GetItem($input,i);
-			if (SWIG_ConvertPtr(o, (void **) &temp_pointer, $descriptor(zinc::Field *), SWIG_POINTER_EXCEPTION) == 0)
-				$2[i] = temp_pointer;
+			if (SWIG_ConvertPtr(o, static_cast<void **>(&field_ptr), $descriptor(zinc::Field *), SWIG_POINTER_EXCEPTION) == 0)
+			{
+				$2[i] = *field_ptr;
+			}
 			else
 			{
 				PyErr_SetString(PyExc_TypeError,"Failed to convert type");
@@ -66,12 +68,7 @@
 	}
 }
 
-%typemap(freearg) (int numberOfSourceFields, void **sourceFieldsVoid)
+%typemap(freearg) (int fieldsCount, Field *fields)
 {
-	free($2);
-}
-
-%typemap(typecheck) (int numberOfSourceFields, void **sourceFieldsVoid)
-{
-	$1 = PyList_Check($input) ? 1 : 0;
+	delete[] $2;
 }
