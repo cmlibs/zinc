@@ -561,9 +561,9 @@ public:
 		return Cmiss_graphic_element_attributes_set_discretization_mode(id, static_cast<Cmiss_graphics_xi_discretization_mode>(mode));
 	}
 
-	int setDiscretization(int number, int *discretization)
+	int setDiscretization(int valuesCount, const int *values)
 	{
-		return Cmiss_graphic_element_attributes_set_discretization(id, number, discretization);
+		return Cmiss_graphic_element_attributes_set_discretization(id, valuesCount, values);
 	}
 
 };

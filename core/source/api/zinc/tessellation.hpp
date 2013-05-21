@@ -122,24 +122,24 @@ public:
 		return Cmiss_tessellation_set_name(id, name);
 	}
 
-	int getMinimumDivisions(int size, int *outMinimumDivisions)
+	int getMinimumDivisions(int valuesSize, int *values)
 	{
-		return Cmiss_tessellation_get_minimum_divisions(id, size, outMinimumDivisions);
+		return Cmiss_tessellation_get_minimum_divisions(id, valuesSize, values);
 	}
 
-	int setMinimumDivisions(int size, int *minimumDivisions)
+	int setMinimumDivisions(int valuesSize, const int *values)
 	{
-		return Cmiss_tessellation_set_minimum_divisions(id, size, minimumDivisions);
+		return Cmiss_tessellation_set_minimum_divisions(id, valuesSize, values);
 	}
 
-	int getRefinementFactors(int size, int *outRefinementFactors)
+	int getRefinementFactors(int valuesSize, int *values)
 	{
-		return Cmiss_tessellation_get_refinement_factors(id, size, outRefinementFactors);
+		return Cmiss_tessellation_get_refinement_factors(id, valuesSize, values);
 	}
 
-	int setRefinementFactors(int size, int *refinementFactors)
+	int setRefinementFactors(int valuesSize, const int *values)
 	{
-		return Cmiss_tessellation_set_refinement_factors(id, size, refinementFactors);
+		return Cmiss_tessellation_set_refinement_factors(id, valuesSize, values);
 	}
 
 };
