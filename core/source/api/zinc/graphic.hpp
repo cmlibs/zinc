@@ -321,16 +321,16 @@ public:
 		return Cmiss_graphic_contours_set_isoscalar_field(reinterpret_cast<Cmiss_graphic_contours_id>(id), field.getId());
 	}
 
-	int getListIsovalues(int valuesCount, double *values)
+	int getListIsovalues(int valuesCount, double *valuesOut)
 	{
 		return Cmiss_graphic_contours_get_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
-			valuesCount, values);
+			valuesCount, valuesOut);
 	}
 
-	int setListIsovalues(int valuesCount, const double *values)
+	int setListIsovalues(int valuesCount, const double *valuesIn)
 	{
 		return Cmiss_graphic_contours_set_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
-			valuesCount, values);
+			valuesCount, valuesIn);
 	}
 
 	double getRangeFirstIsovalue()
@@ -385,14 +385,14 @@ public:
 		return (0 != id);
 	}
 
-	int getBaseSize(int valuesCount, double *values)
+	int getBaseSize(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_line_attributes_get_base_size(id, valuesCount, values);
+		return Cmiss_graphic_line_attributes_get_base_size(id, valuesCount, valuesOut);
 	}
 
-	int setBaseSize(int valuesCount, const double *values)
+	int setBaseSize(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_line_attributes_set_base_size(id, valuesCount, values);
+		return Cmiss_graphic_line_attributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
 	Field getOrientationScaleField()
@@ -405,14 +405,14 @@ public:
 		return Cmiss_graphic_line_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
-	int getScaleFactors(int valuesCount, double *values)
+	int getScaleFactors(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_line_attributes_get_scale_factors(id, valuesCount, values);
+		return Cmiss_graphic_line_attributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
 
-	int setScaleFactors(int valuesCount, const double *values)
+	int setScaleFactors(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_line_attributes_set_scale_factors(id, valuesCount, values);
+		return Cmiss_graphic_line_attributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
 };
@@ -448,14 +448,14 @@ public:
 		return (0 != id);
 	}
 
-	int getBaseSize(int valuesCount, double *values)
+	int getBaseSize(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_base_size(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_get_base_size(id, valuesCount, valuesOut);
 	}
 
-	int setBaseSize(int valuesCount, const double *values)
+	int setBaseSize(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_base_size(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
 	GraphicsFont getFont()
@@ -484,14 +484,14 @@ public:
 		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
 	}
 
-	int getOffset(int valuesCount, double *values)
+	int getOffset(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_offset(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_get_offset(id, valuesCount, valuesOut);
 	}
 
-	int setOffset(int valuesCount, const double *values)
+	int setOffset(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_offset(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_set_offset(id, valuesCount, valuesIn);
 	}
 
 	Field getOrientationScaleField()
@@ -504,14 +504,14 @@ public:
 		return Cmiss_graphic_point_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
-	int getScaleFactors(int valuesCount, double *values)
+	int getScaleFactors(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_scale_factors(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
 
-	int setScaleFactors(int valuesCount, const double *values)
+	int setScaleFactors(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_scale_factors(id, valuesCount, values);
+		return Cmiss_graphic_point_attributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
 	Field getSignedScaleField()
@@ -573,9 +573,9 @@ public:
 		return Cmiss_graphic_element_attributes_set_discretization_mode(id, static_cast<Cmiss_graphics_xi_discretization_mode>(mode));
 	}
 
-	int setDiscretization(int valuesCount, const int *values)
+	int setDiscretization(int valuesCount, const int *valuesIn)
 	{
-		return Cmiss_graphic_element_attributes_set_discretization(id, valuesCount, values);
+		return Cmiss_graphic_element_attributes_set_discretization(id, valuesCount, valuesIn);
 	}
 
 };

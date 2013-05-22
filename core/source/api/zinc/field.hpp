@@ -194,21 +194,21 @@ public:
 	FieldModule getFieldModule();
 
 	int assignMeshLocation(FieldCache& cache, Element element,
-		int coordinatesCount, const double *coordinates);
+		int coordinatesCount, const double *coordinatesIn);
 
-	int assignReal(FieldCache& cache, int valuesCount, const double *values);
+	int assignReal(FieldCache& cache, int valuesCount, const double *valuesIn);
 
 	int assignString(FieldCache& cache, const char *stringValue);
 
 	Element evaluateMeshLocation(FieldCache& cache, int coordinatesCount,
-		double *coordinates);
+		double *coordinatesOut);
 
-	int evaluateReal(FieldCache& cache, int valuesCount, double *values);
+	int evaluateReal(FieldCache& cache, int valuesCount, double *valuesOut);
 
 	char *evaluateString(FieldCache& cache);
 
 	int evaluateDerivative(DifferentialOperator& differentialOperator,
-		FieldCache& cache, int valuesCount, double *values);
+		FieldCache& cache, int valuesCount, double *valuesOut);
 
 	bool isDefinedAtLocation(FieldCache& cache);
 
