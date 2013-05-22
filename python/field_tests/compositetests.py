@@ -1,0 +1,38 @@
+'''
+Created on May 23, 2013
+
+@author: hsorby
+'''
+import unittest
+
+from zinc.context import Context
+
+class CompositeTestCase(unittest.TestCase):
+
+
+    def setUp(self):
+        self.context = Context("compositetest")
+        root_region = self.context.getDefaultRegion()
+        self.field_module = root_region.getFieldModule()
+
+
+    def tearDown(self):
+        del self.field_module
+        del self.context
+
+
+    def testCompositeFieldCreate(self):
+        self.assertRaises(TypeError, self.field_module.createConcatenate, [1])
+        f1 = self.field_module.createConstant([2])
+        f2 = self.field_module.createConstant([5])
+        f = self.field_module.createConcatenate([f1, f2])
+        self.assertTrue(f.isValid())
+
+def suite():
+    #import ImportTestCase
+    tests = unittest.TestSuite()
+    tests.addTests(unittest.TestLoader().loadTestsFromTestCase(CompositeTestCase))
+    return tests
+
+if __name__ == '__main__':
+    unittest.TextTestRunner().run(suite())

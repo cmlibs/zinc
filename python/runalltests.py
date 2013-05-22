@@ -12,6 +12,9 @@ def suite():
 
     from graphic_tests import graphictests
     tests.addTests(graphictests.suite())
+    
+    from field_tests import fieldtests
+    tests.addTests(fieldtests.suite())
 
     return tests
 
