@@ -16,6 +16,10 @@ class RegionTestCase(unittest.TestCase):
     def tearDown(self):
         del self.c
         
+    def findRegion(self, r, path):
+        r.findSubregionAtPath(path)
+        self.assertTrue(r.isValid())
+        
     def testRegion(self):
         rr = self.c.getDefaultRegion()
         self.assertTrue(rr.isValid())
@@ -23,6 +27,7 @@ class RegionTestCase(unittest.TestCase):
         self.assertTrue(sr.isValid())
         tr = rr.findSubregionAtPath("/bob/rick/mark")
         self.assertTrue(tr.isValid())
+        self.findRegion(rr, '/bob/rick/mark')
 
 
 def suite():

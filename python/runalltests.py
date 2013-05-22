@@ -10,6 +10,9 @@ def suite():
     from region_tests import regiontests
     tests.addTests(regiontests.suite())
 
+    from graphic_tests import graphictests
+    tests.addTests(graphictests.suite())
+
     return tests
 
 if __name__ == '__main__':
