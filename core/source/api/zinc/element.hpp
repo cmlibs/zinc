@@ -285,11 +285,11 @@ public:
 	}
 
 	int defineFieldSimpleNodal(Field& field, int componentNumber,
-		ElementBasis& basis, int nodeIndexesCount, const int *nodeIndexes)
+		ElementBasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
 	{
 		return Cmiss_element_template_define_field_simple_nodal(
 			id, field.getId(),  componentNumber, basis.getId(),
-			nodeIndexesCount, nodeIndexes);
+			nodeIndexesCount, nodeIndexesIn);
 	}
 
 	Node getNode(int localNodeIndex)
