@@ -76,7 +76,7 @@
 			else 
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain long");
-				free($2);
+				delete[] $2;
 				return NULL;
 			}
 		}

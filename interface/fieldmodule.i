@@ -1,6 +1,6 @@
 /*******************************************************************************
  * FieldModule.i
- * 
+ *
  * Swig interface file for wrapping api functions in api/fieldmodule.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -44,36 +44,75 @@
 %include "doublevaluesarraytypemap.i"
 %include "fieldarraytypemap.i"
 
-/* Interestingly, swig does not recognise the typemap to Field **, 
-	therefore using the following to wrap it around*/
-%extend zinc::FieldModule
+%typemap(in) (int fieldsCount, zinc::Field *sourceFields)
 {
-	zinc::FieldConcatenate createConcatenate(int numberOfSourceFields, void **sourceFieldsVoid)
+	if (PyList_Check($input))
 	{
-		zinc::Field **temp = (zinc::Field **)sourceFieldsVoid;
-		zinc::Field *fieldsArray = new zinc::Field[numberOfSourceFields];
-		for (int i = 0; i < numberOfSourceFields; i++)
+		$1 = PyList_Size($input);
+		$2 = new zinc::Field[$1];
+		$2_ltype field = 0;
+		for (int i = 0; i < $1; i++)
 		{
-			fieldsArray[i] = *temp[i];
+			PyObject *o = PyList_GetItem($input,i);
+			if ((SWIG_ConvertPtr(o,(void **) &field, $2_descriptor,SWIG_POINTER_EXCEPTION)) != -1)
+			{
+					$2[i] = *field;
+			}
+			else
+			{
+				PyErr_SetString(PyExc_TypeError,"list must contain zinc::Field");
+				delete[] $2;
+				return NULL;
+			}
 		}
-    	zinc::FieldConcatenate return_field = ($self)->createConcatenate(numberOfSourceFields, fieldsArray);
-    	delete[] fieldsArray;
-    	return return_field;
 	}
-	
-	zinc::FieldCrossProduct createCrossProduct(int numberOfSourceFields, void **sourceFieldsVoid)
+	else
 	{
-		zinc::Field **temp = (zinc::Field **)sourceFieldsVoid;
-		zinc::Field *fieldsArray = new zinc::Field[numberOfSourceFields];
-		for (int i = 0; i < numberOfSourceFields; i++)
-		{
-			fieldsArray[i] = *temp[i];
-		}
-    	zinc::FieldCrossProduct return_field = ($self)->createCrossProduct(numberOfSourceFields + 1, fieldsArray);
-    	delete[] fieldsArray;
-    	return return_field;
+			PyErr_SetString(PyExc_TypeError,"not a list");
+			return NULL;
 	}
-};
+}
+
+%typemap(freearg) (int fieldsCount, zinc::Field *sourceFields)
+{
+	delete[] $2;
+}
+
+
+%typemap(in) (int dimension, zinc::Field *sourceFields)
+{
+	if (PyList_Check($input))
+	{
+		$1 = PyList_Size($input);
+		$2 = new zinc::Field[$1];
+		$2_ltype field = 0;
+		for (int i = 0; i < $1; i++)
+		{
+			PyObject *o = PyList_GetItem($input,i);
+			if ((SWIG_ConvertPtr(o,(void **) &field, $2_descriptor,SWIG_POINTER_EXCEPTION)) != -1)
+			{
+					$2[i] = *field;
+			}
+			else
+			{
+				PyErr_SetString(PyExc_TypeError,"list must contain zinc::Field");
+				delete[] $2;
+				return NULL;
+			}
+		}
+		$1 += 1;
+	}
+	else
+	{
+		PyErr_SetString(PyExc_TypeError,"not a list");
+		return NULL;
+	}
+}
+
+%typemap(freearg) (int dimension, zinc::Field *sourceFields)
+{
+	delete[] $2;
+}
 
 %import "timesequence.i"
 %import "optimisation.i"
