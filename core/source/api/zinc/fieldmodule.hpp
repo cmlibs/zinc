@@ -219,10 +219,10 @@ public:
 		return Mesh(Cmiss_field_module_find_mesh_by_name(id, meshName));
 	}
 
-	TimeSequence getMatchingTimeSequence(int timesCount, const double *times)
+	TimeSequence getMatchingTimeSequence(int timesCount, const double *timesIn)
 	{
 		return TimeSequence(Cmiss_field_module_get_matching_time_sequence(
-			id, timesCount, times));
+			id, timesCount, timesIn));
 	}
 
 	Optimisation createOptimisation()
@@ -260,7 +260,7 @@ public:
 
 	FieldIf createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 
-	FieldConstant createConstant(int valuesCount, const double *values);
+	FieldConstant createConstant(int valuesCount, const double *valuesIn);
 
 	FieldStringConstant createStringConstant(const char *stringConstant);
 
