@@ -1,11 +1,17 @@
 #!/usr/bin/python
 import unittest
 
-if __name__ == '__main__':
+def suite():
     tests = unittest.TestSuite()
 
     from import_tests import importtests
     tests.addTests(importtests.suite())
+    
+    from region_tests import regiontests
+    tests.addTests(regiontests.suite())
 
-    unittest.TextTestRunner().run(tests)
+    return tests
+
+if __name__ == '__main__':
+    unittest.TextTestRunner().run(suite())
 
