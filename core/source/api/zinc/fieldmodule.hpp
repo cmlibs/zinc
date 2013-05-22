@@ -256,7 +256,7 @@ public:
 
 	FieldComponent createComponent(Field& sourceField, int componentIndex);
 
-	FieldConcatenate createConcatenate(int fieldsCount, Field *fields);
+	FieldConcatenate createConcatenate(int fieldsCount, Field *sourceFields);
 
 	FieldIf createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 

@@ -91,7 +91,7 @@ private:
 	explicit FieldConcatenate(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *fields);
+	friend FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields);
 
 public:
 
@@ -111,7 +111,7 @@ inline FieldComponent FieldModule::createComponent(Field& sourceField, int compo
 		sourceField.getId(), componentIndex));
 }
 
-inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *fields)
+inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields)
 {
 	Cmiss_field_id concatenateField = 0;
 	if (fieldsCount > 0)
@@ -119,7 +119,7 @@ inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *f
 		Cmiss_field_id *source_fields = new Cmiss_field_id[fieldsCount];
 		for (int i = 0; i < fieldsCount; i++)
 		{
-			source_fields[i] = fields[i].getId();
+			source_fields[i] = sourceFields[i].getId();
 		}
 		concatenateField = Cmiss_field_module_create_concatenate(id, fieldsCount, source_fields);
 		delete[] source_fields;
