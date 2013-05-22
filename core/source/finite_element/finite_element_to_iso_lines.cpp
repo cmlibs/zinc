@@ -898,7 +898,7 @@ data values for more efficient storage and smoother rendering.
 
 int create_iso_lines_from_FE_element(struct FE_element *element,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *scalar_field,FE_value iso_value,
+	struct Computed_field *isoscalar_field,FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
 	struct GT_object *graphics_object, int line_width)
@@ -920,7 +920,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		scalar_field&&(1==Computed_field_get_number_of_components(scalar_field))&&
+		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
 		graphics_object&&(g_POLYLINE==GT_object_get_type(graphics_object)))
 	{
 		return_code=1;
@@ -972,7 +972,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 					xi[1]=(FE_value)j / distance2;
 					if (Cmiss_field_cache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element) &&
 						Cmiss_field_evaluate_real(coordinate_field, field_cache, 3, coordinates) &&
-						Cmiss_field_evaluate_real(scalar_field, field_cache, 1, scalar) &&
+						Cmiss_field_evaluate_real(isoscalar_field, field_cache, 1, scalar) &&
 						((!data_field) || Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, datum)))
 					{
 						(*point)[0]=GLfloat(coordinates[0]);

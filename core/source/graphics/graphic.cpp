@@ -343,11 +343,11 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->line_orientation_scale_field = 0;
 
 			/* for iso_surfaces only */
-			graphic->iso_scalar_field=(struct Computed_field *)NULL;
-			graphic->number_of_iso_values=0;
-			graphic->iso_values=(double *)NULL;
-			graphic->first_iso_value=0.0;
-			graphic->last_iso_value=0.0;
+			graphic->isoscalar_field=(struct Computed_field *)NULL;
+			graphic->number_of_isovalues=0;
+			graphic->isovalues=(double *)NULL;
+			graphic->first_isovalue=0.0;
+			graphic->last_isovalue=0.0;
 			graphic->decimation_threshold = 0.0;
 
 			/* point attributes */
@@ -468,13 +468,13 @@ int DESTROY(Cmiss_graphic)(
 			DEACCESS(Computed_field)(&(graphic->texture_coordinate_field));
 		}
 		Cmiss_field_destroy(&(graphic->line_orientation_scale_field));
-		if (graphic->iso_scalar_field)
+		if (graphic->isoscalar_field)
 		{
-				DEACCESS(Computed_field)(&(graphic->iso_scalar_field));
+				DEACCESS(Computed_field)(&(graphic->isoscalar_field));
 		}
-		if (graphic->iso_values)
+		if (graphic->isovalues)
 		{
-			DEALLOCATE(graphic->iso_values);
+			DEALLOCATE(graphic->isovalues);
 		}
 		if (graphic->glyph)
 		{
@@ -927,14 +927,14 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										}
 										else
 										{
-											if (graphic->iso_values)
+											if (graphic->isovalues)
 											{
-												for (i = 0 ; i < graphic->number_of_iso_values ; i++)
+												for (i = 0 ; i < graphic->number_of_isovalues ; i++)
 												{
 													return_code = create_iso_lines_from_FE_element(element,
 														graphic_to_object_data->field_cache,
 														graphic_to_object_data->rc_coordinate_field,
-														graphic->iso_scalar_field, graphic->iso_values[i],
+														graphic->isoscalar_field, graphic->isovalues[i],
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
 														top_level_element, graphic->graphics_object,
 														graphic->line_width);
@@ -942,26 +942,26 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											}
 											else
 											{
-												double iso_value_range;
-												if (graphic->number_of_iso_values > 1)
+												double isovalue_range;
+												if (graphic->number_of_isovalues > 1)
 												{
-													iso_value_range =
-														(graphic->last_iso_value - graphic->first_iso_value)
-														/ (double)(graphic->number_of_iso_values - 1);
+													isovalue_range =
+														(graphic->last_isovalue - graphic->first_isovalue)
+														/ (double)(graphic->number_of_isovalues - 1);
 												}
 												else
 												{
-													iso_value_range = 0;
+													isovalue_range = 0;
 												}
-												for (i = 0 ; i < graphic->number_of_iso_values ; i++)
+												for (i = 0 ; i < graphic->number_of_isovalues ; i++)
 												{
-													double iso_value =
-														graphic->first_iso_value +
-														(double)i * iso_value_range;
+													double isovalue =
+														graphic->first_isovalue +
+														(double)i * isovalue_range;
 													return_code = create_iso_lines_from_FE_element(element,
 														graphic_to_object_data->field_cache,
 														graphic_to_object_data->rc_coordinate_field,
-														graphic->iso_scalar_field, iso_value,
+														graphic->isoscalar_field, isovalue,
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
 														top_level_element, graphic->graphics_object,
 														graphic->line_width);
@@ -981,7 +981,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							default:
 							{
 								display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
-									"Invalid graphic type for iso_scalar");
+									"Invalid graphic type for contours");
 								return_code = 0;
 							} break;
 						}
@@ -2232,9 +2232,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		/* for iso_surfaces only */
 		if (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)
 		{
-			if (graphic->iso_scalar_field)
+			if (graphic->isoscalar_field)
 			{
-				if (GET_NAME(Computed_field)(graphic->iso_scalar_field,&name))
+				if (GET_NAME(Computed_field)(graphic->isoscalar_field,&name))
 				{
 					/* put quotes around name if it contains special characters */
 					make_valid_token(&name);
@@ -2248,26 +2248,26 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					error=1;
 				}
 			}
-			if (graphic->iso_values)
+			if (graphic->isovalues)
 			{
 				sprintf(temp_string," iso_values");
 				append_string(&graphic_string,temp_string,&error);
-				for (i = 0 ; i < graphic->number_of_iso_values ; i++)
+				for (i = 0 ; i < graphic->number_of_isovalues ; i++)
 				{
-					sprintf(temp_string, " %g", graphic->iso_values[i]);
+					sprintf(temp_string, " %g", graphic->isovalues[i]);
 					append_string(&graphic_string,temp_string,&error);
 				}
 			}
 			else
 			{
 				sprintf(temp_string," range_number_of_iso_values %d",
-					graphic->number_of_iso_values);
+					graphic->number_of_isovalues);
 				append_string(&graphic_string,temp_string,&error);
 				sprintf(temp_string," first_iso_value %g",
-					graphic->first_iso_value);
+					graphic->first_isovalue);
 				append_string(&graphic_string,temp_string,&error);
 				sprintf(temp_string," last_iso_value %g",
-					graphic->last_iso_value);
+					graphic->last_isovalue);
 				append_string(&graphic_string,temp_string,&error);
 			}
 			if (graphic->decimation_threshold > 0.0)
@@ -3296,14 +3296,14 @@ int Cmiss_graphic_to_graphics_object(
 												{
 													display_message(ERROR_MESSAGE,
 														"Cmiss_graphic_to_graphics_object.  "
-														"iso_scalars of 1-D elements is not supported");
+														"Contours of 1-D elements is not supported");
 													return_code = 0;
 												} break;
 												default:
 												{
 													display_message(ERROR_MESSAGE,
 														"Cmiss_graphic_to_graphics_object.  "
-														"Invalid dimension for iso_scalars");
+														"Invalid dimension for contours");
 													return_code = 0;
 												} break;
 											}
@@ -3551,17 +3551,17 @@ int Cmiss_graphic_to_graphics_object(
 									case CMISS_GRAPHIC_ISO_SURFACES:
 									{
 										Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
-										if (0 < graphic->number_of_iso_values)
+										if (0 < graphic->number_of_isovalues)
 										{
 											if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
 											{
 												graphic_to_object_data->iso_surface_specification =
 													Iso_surface_specification_create(
-														graphic->number_of_iso_values, graphic->iso_values,
-														graphic->first_iso_value, graphic->last_iso_value,
+														graphic->number_of_isovalues, graphic->isovalues,
+														graphic->first_isovalue, graphic->last_isovalue,
 														graphic_to_object_data->rc_coordinate_field,
 														graphic->data_field,
-														graphic->iso_scalar_field,
+														graphic->isoscalar_field,
 														graphic->texture_coordinate_field);
 											}
 											if (graphic_to_object_data->iteration_mesh)
@@ -3867,9 +3867,9 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		}
 		/* for iso_surfaces only */
 		else if ((CMISS_GRAPHIC_ISO_SURFACES == graphic->graphic_type) &&
-			(graphic->iso_scalar_field &&
+			(graphic->isoscalar_field &&
 			Computed_field_or_ancestor_satisfies_condition(
-				graphic->iso_scalar_field, conditional_function, user_data)))
+				graphic->isoscalar_field, conditional_function, user_data)))
 		{
 			return_code = 1;
 		}
@@ -4525,35 +4525,35 @@ int Cmiss_graphic_copy_without_graphics_object(
 			DEACCESS(Computed_field)(&destination->line_orientation_scale_field);
 		}
 
-		Cmiss_graphic_iso_surface_id iso_surface_graphic = Cmiss_graphic_cast_iso_surface(destination);
-		if (iso_surface_graphic)
+		Cmiss_graphic_contours_id contours_graphic = Cmiss_graphic_cast_contours(destination);
+		if (contours_graphic)
 		{
-			Cmiss_graphic_iso_surface_set_iso_scalar_field(iso_surface_graphic, source->iso_scalar_field);
-			if (source->iso_values)
+			Cmiss_graphic_contours_set_isoscalar_field(contours_graphic, source->isoscalar_field);
+			if (source->isovalues)
 			{
-				Cmiss_graphic_iso_surface_set_iso_values(iso_surface_graphic, source->number_of_iso_values,
-					source->iso_values);
+				Cmiss_graphic_contours_set_list_isovalues(contours_graphic, source->number_of_isovalues,
+					source->isovalues);
 			}
 			else
 			{
-				Cmiss_graphic_iso_surface_set_iso_range(iso_surface_graphic, source->number_of_iso_values,
-					source->first_iso_value, source->last_iso_value);
+				Cmiss_graphic_contours_set_range_isovalues(contours_graphic, source->number_of_isovalues,
+					source->first_isovalue, source->last_isovalue);
 			}
-			Cmiss_graphic_iso_surface_set_decimation_threshold(iso_surface_graphic, source->decimation_threshold);
-			Cmiss_graphic_iso_surface_destroy(&iso_surface_graphic);
+			Cmiss_graphic_contours_set_decimation_threshold(contours_graphic, source->decimation_threshold);
+			Cmiss_graphic_contours_destroy(&contours_graphic);
 		}
 		else
 		{
-			if (destination->iso_scalar_field)
+			if (destination->isoscalar_field)
 			{
-				DEACCESS(Computed_field)(&destination->iso_scalar_field);
+				DEACCESS(Computed_field)(&destination->isoscalar_field);
 			}
-			if (destination->iso_values)
+			if (destination->isovalues)
 			{
-				DEALLOCATE(destination->iso_values);
-				destination->iso_values = 0;
+				DEALLOCATE(destination->isovalues);
+				destination->isovalues = 0;
 			}
-			destination->number_of_iso_values = 0;
+			destination->number_of_isovalues = 0;
 		}
 
 		Cmiss_graphic_point_attributes_id point_attributes =
@@ -4979,20 +4979,20 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 		if (return_code&&
 			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
 		{
-			return_code=(graphic->number_of_iso_values==
-				second_graphic->number_of_iso_values)&&
+			return_code=(graphic->number_of_isovalues==
+				second_graphic->number_of_isovalues)&&
 				(graphic->decimation_threshold==second_graphic->decimation_threshold)&&
-				(graphic->iso_scalar_field==second_graphic->iso_scalar_field);
+				(graphic->isoscalar_field==second_graphic->isoscalar_field);
 			if (return_code)
 			{
-				if (graphic->iso_values)
+				if (graphic->isovalues)
 				{
-					if (second_graphic->iso_values)
+					if (second_graphic->isovalues)
 					{
 						i = 0;
-						while (return_code && (i < graphic->number_of_iso_values))
+						while (return_code && (i < graphic->number_of_isovalues))
 						{
-							if (graphic->iso_values[i] != second_graphic->iso_values[i])
+							if (graphic->isovalues[i] != second_graphic->isovalues[i])
 							{
 								return_code = 0;
 							}
@@ -5006,15 +5006,15 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				}
 				else
 				{
-					if (second_graphic->iso_values)
+					if (second_graphic->isovalues)
 					{
 						return_code = 0;
 					}
 					else
 					{
 						return_code =
-							(graphic->first_iso_value == second_graphic->first_iso_value)
-							&& (graphic->last_iso_value == second_graphic->last_iso_value);
+							(graphic->first_isovalue == second_graphic->first_isovalue)
+							&& (graphic->last_isovalue == second_graphic->last_isovalue);
 					}
 				}
 			}
@@ -6023,8 +6023,8 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->iso_scalar_field && Computed_field_has_multiple_times(
-			graphic->iso_scalar_field))
+		if (graphic->isoscalar_field && Computed_field_has_multiple_times(
+			graphic->isoscalar_field))
 		{
 			time_dependent = 1;
 		}
@@ -6307,9 +6307,9 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->line_orientation_scale_field));
 		}
-		if (graphic->iso_scalar_field)
+		if (graphic->isoscalar_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->iso_scalar_field));
+			DEACCESS(Computed_field)(&(graphic->isoscalar_field));
 		}
 		if (graphic->point_orientation_scale_field)
 		{
@@ -6593,38 +6593,38 @@ int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_grap
 	return return_code;
 }
 
-Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic)
+Cmiss_graphic_contours_id Cmiss_graphic_cast_contours(Cmiss_graphic_id graphic)
 {
 	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_ISO_SURFACES))
 	{
 		Cmiss_graphic_access(graphic);
-		return (reinterpret_cast<Cmiss_graphic_iso_surface_id>(graphic));
+		return (reinterpret_cast<Cmiss_graphic_contours_id>(graphic));
 	}
 	return 0;
 }
 
-int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address)
+int Cmiss_graphic_contours_destroy(Cmiss_graphic_contours_id *contours_address)
 {
-	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(iso_surface_address));
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(contours_address));
 }
 
-double Cmiss_graphic_iso_surface_get_decimation_threshold(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic)
+double Cmiss_graphic_contours_get_decimation_threshold(
+	Cmiss_graphic_contours_id contours_graphic)
 {
-	if (iso_surface_graphic)
+	if (contours_graphic)
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
 		return graphic->decimation_threshold;
 	}
 	return 0;
 }
 
-int Cmiss_graphic_iso_surface_set_decimation_threshold(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, double decimation_threshold)
+int Cmiss_graphic_contours_set_decimation_threshold(
+	Cmiss_graphic_contours_id contours_graphic, double decimation_threshold)
 {
-	if (iso_surface_graphic)
+	if (contours_graphic)
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
 		if (decimation_threshold != graphic->decimation_threshold)
 		{
 			graphic->decimation_threshold = decimation_threshold;
@@ -6635,28 +6635,28 @@ int Cmiss_graphic_iso_surface_set_decimation_threshold(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic)
+Cmiss_field_id Cmiss_graphic_contours_get_isoscalar_field(
+	Cmiss_graphic_contours_id contours_graphic)
 {
-	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-	if (graphic && graphic->iso_scalar_field)
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+	if (graphic && graphic->isoscalar_field)
 	{
-		return Cmiss_field_access(graphic->iso_scalar_field);
+		return Cmiss_field_access(graphic->isoscalar_field);
 	}
 	return 0;
 }
 
-int Cmiss_graphic_iso_surface_set_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	Cmiss_field_id iso_scalar_field)
+int Cmiss_graphic_contours_set_isoscalar_field(
+	Cmiss_graphic_contours_id contours_graphic,
+	Cmiss_field_id isoscalar_field)
 {
-	if (iso_surface_graphic && ((0 == iso_scalar_field) ||
-		(1 == Cmiss_field_get_number_of_components(iso_scalar_field))))
+	if (contours_graphic && ((0 == isoscalar_field) ||
+		(1 == Cmiss_field_get_number_of_components(isoscalar_field))))
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (iso_scalar_field != graphic->iso_scalar_field)
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if (isoscalar_field != graphic->isoscalar_field)
 		{
-			REACCESS(Computed_field)(&(graphic->iso_scalar_field), iso_scalar_field);
+			REACCESS(Computed_field)(&(graphic->isoscalar_field), isoscalar_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		return CMISS_OK;
@@ -6664,44 +6664,44 @@ int Cmiss_graphic_iso_surface_set_iso_scalar_field(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphic_iso_surface_get_iso_values(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	double *iso_values)
+int Cmiss_graphic_contours_get_list_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	double *isovalues)
 {
-	if (iso_surface_graphic && ((number_of_iso_values == 0) ||
-		((number_of_iso_values > 0) && iso_values)))
+	if (contours_graphic && ((number_of_isovalues == 0) ||
+		((number_of_isovalues > 0) && isovalues)))
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (graphic->iso_values)
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if (graphic->isovalues)
 		{
-			const int number_to_copy = (number_of_iso_values < graphic->number_of_iso_values) ?
-				number_of_iso_values : graphic->number_of_iso_values;
+			const int number_to_copy = (number_of_isovalues < graphic->number_of_isovalues) ?
+				number_of_isovalues : graphic->number_of_isovalues;
 			for (int i = 0 ; i < number_to_copy ; i++)
 			{
-				iso_values[i] = graphic->iso_values[i];
+				isovalues[i] = graphic->isovalues[i];
 			}
-			return graphic->number_of_iso_values;
+			return graphic->number_of_isovalues;
 		}
 	}
 	return 0;
 }
 
-int Cmiss_graphic_iso_surface_set_iso_values(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	const double *iso_values)
+int Cmiss_graphic_contours_set_list_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	const double *isovalues)
 {
-	if (iso_surface_graphic && ((number_of_iso_values == 0) ||
-		((number_of_iso_values > 0) && iso_values)))
+	if (contours_graphic && ((number_of_isovalues == 0) ||
+		((number_of_isovalues > 0) && isovalues)))
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
 		bool changed = false;
-		if (number_of_iso_values == graphic->number_of_iso_values)
+		if (number_of_isovalues == graphic->number_of_isovalues)
 		{
-			if (graphic->iso_values)
+			if (graphic->isovalues)
 			{
-				for (int i = 0; i < number_of_iso_values; i++)
+				for (int i = 0; i < number_of_isovalues; i++)
 				{
-					if (iso_values[i] != graphic->iso_values[i])
+					if (isovalues[i] != graphic->isovalues[i])
 					{
 						changed = true;
 						break;
@@ -6719,29 +6719,29 @@ int Cmiss_graphic_iso_surface_set_iso_values(
 		}
 		if (changed)
 		{
-			if (0 < number_of_iso_values)
+			if (0 < number_of_isovalues)
 			{
 				double *temp_values;
-				REALLOCATE(temp_values, graphic->iso_values, double, number_of_iso_values);
+				REALLOCATE(temp_values, graphic->isovalues, double, number_of_isovalues);
 				if (!temp_values)
 				{
 					return CMISS_ERROR_MEMORY;
 				}
-				graphic->iso_values = temp_values;
-				graphic->number_of_iso_values = number_of_iso_values;
-				for (int i = 0 ; i < number_of_iso_values ; i++)
+				graphic->isovalues = temp_values;
+				graphic->number_of_isovalues = number_of_isovalues;
+				for (int i = 0 ; i < number_of_isovalues ; i++)
 				{
-					graphic->iso_values[i] = iso_values[i];
+					graphic->isovalues[i] = isovalues[i];
 				}
 			}
 			else
 			{
-				if (graphic->iso_values)
+				if (graphic->isovalues)
 				{
-					DEALLOCATE(graphic->iso_values);
-					graphic->iso_values = 0;
+					DEALLOCATE(graphic->isovalues);
+					graphic->isovalues = 0;
 				}
-				graphic->number_of_iso_values = 0;
+				graphic->number_of_isovalues = 0;
 			}
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
@@ -6750,45 +6750,67 @@ int Cmiss_graphic_iso_surface_set_iso_values(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphic_iso_surface_get_iso_range(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	double *first_iso_value_address, double *last_iso_value_address)
+double Cmiss_graphic_contours_get_range_first_isovalue(
+	Cmiss_graphic_contours_id contours_graphic)
 {
-	if (iso_surface_graphic && first_iso_value_address && last_iso_value_address)
+	if (contours_graphic)
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if (0 == graphic->iso_values)
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if (0 == graphic->isovalues)
 		{
-			if (0 < graphic->number_of_iso_values)
-			{
-				*first_iso_value_address = graphic->first_iso_value;
-				*last_iso_value_address = graphic->last_iso_value;
-			}
-			return graphic->number_of_iso_values;
+			return graphic->first_isovalue;
+		}
+	}
+	return 0.0;	
+}
+
+double Cmiss_graphic_contours_get_range_last_isovalue(
+	Cmiss_graphic_contours_id contours_graphic)
+{
+	if (contours_graphic)
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if (0 == graphic->isovalues)
+		{
+			return graphic->last_isovalue;
+		}
+	}
+	return 0.0;	
+}
+
+int Cmiss_graphic_contours_get_range_number_of_isovalues(
+	Cmiss_graphic_contours_id contours_graphic)
+{
+	if (contours_graphic)
+	{
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if (0 == graphic->isovalues)
+		{
+			return graphic->number_of_isovalues;
 		}
 	}
 	return 0;	
 }
 
-int Cmiss_graphic_iso_surface_set_iso_range(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	double first_iso_value, double last_iso_value)
+int Cmiss_graphic_contours_set_range_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	double first_isovalue, double last_isovalue)
 {
-	if (iso_surface_graphic && (0 <= number_of_iso_values))
+	if (contours_graphic && (0 <= number_of_isovalues))
 	{
-		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(iso_surface_graphic);
-		if ((number_of_iso_values != graphic->number_of_iso_values) ||
-			(0 != graphic->iso_values) || (first_iso_value != graphic->first_iso_value) ||
-			(last_iso_value != graphic->last_iso_value))
+		Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic_id>(contours_graphic);
+		if ((number_of_isovalues != graphic->number_of_isovalues) ||
+			(0 != graphic->isovalues) || (first_isovalue != graphic->first_isovalue) ||
+			(last_isovalue != graphic->last_isovalue))
 		{
-			if (graphic->iso_values)
+			if (graphic->isovalues)
 			{
-				DEALLOCATE(graphic->iso_values);
-				graphic->iso_values = 0;
+				DEALLOCATE(graphic->isovalues);
+				graphic->isovalues = 0;
 			}
-			graphic->number_of_iso_values = number_of_iso_values;
-			graphic->first_iso_value = first_iso_value;
-			graphic->last_iso_value = last_iso_value;
+			graphic->number_of_isovalues = number_of_isovalues;
+			graphic->first_isovalue = first_isovalue;
+			graphic->last_isovalue = last_isovalue;
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		return CMISS_OK;

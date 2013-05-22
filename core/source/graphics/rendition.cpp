@@ -3644,6 +3644,13 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 	return graphic;
 }
 
+Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
+	Cmiss_rendition_id rendition)
+{
+	return (reinterpret_cast<Cmiss_graphic_contours_id>(
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_ISO_SURFACES)));
+}
+
 Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition)
 {
 	Cmiss_selection_handler_id selection_handler = NULL;
