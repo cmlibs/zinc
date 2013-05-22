@@ -50,6 +50,12 @@ struct Cmiss_graphic;
 typedef struct Cmiss_graphic * Cmiss_graphic_id;
 
 /**
+ * The contours derived type specific handle to a Cmiss_graphic.
+ */
+struct Cmiss_graphic_contours;
+typedef struct Cmiss_graphic_contours *Cmiss_graphic_contours_id;
+
+/**
  * An enum type to define the type of a cmiss_graphic.
  */
 enum Cmiss_graphic_type

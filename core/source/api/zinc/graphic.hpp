@@ -295,54 +295,66 @@ public:
 	}
 };
 
-class GraphicIsoSurface : public Graphic
+class GraphicContours : public Graphic
 {
 private:
-	explicit GraphicIsoSurface(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicContours(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
-	GraphicIsoSurface() : Graphic(0) {}
+	GraphicContours() : Graphic(0) {}
 
-	explicit GraphicIsoSurface(Cmiss_graphic_iso_surface_id graphic_iso_surface_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_iso_surface_id))
+	explicit GraphicContours(Cmiss_graphic_contours_id graphic_contours_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_contours_id))
 	{}
 
-	GraphicIsoSurface(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_iso_surface(graphic.getId())))
+	GraphicContours(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_contours(graphic.getId())))
 	{}
 
-	Field getIsoScalarField()
+	Field getIsoscalarField()
 	{
-		return Field(Cmiss_graphic_iso_surface_get_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id)));
+		return Field(Cmiss_graphic_contours_get_isoscalar_field(reinterpret_cast<Cmiss_graphic_contours_id>(id)));
 	}
 
-	int setIsoScalarField(Field& field)
+	int setIsoscalarField(Field& field)
 	{
-		return Cmiss_graphic_iso_surface_set_iso_scalar_field(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id), field.getId());
+		return Cmiss_graphic_contours_set_isoscalar_field(reinterpret_cast<Cmiss_graphic_contours_id>(id), field.getId());
 	}
 
-	int getIsoValues(int valuesCount, double *values)
+	int getListIsovalues(int valuesCount, double *values)
 	{
-		return Cmiss_graphic_iso_surface_get_iso_values(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
+		return Cmiss_graphic_contours_get_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
 			valuesCount, values);
 	}
 
-	int setIsoValues(int valuesCount, const double *values)
+	int setListIsovalues(int valuesCount, const double *values)
 	{
-		return Cmiss_graphic_iso_surface_set_iso_values(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
+		return Cmiss_graphic_contours_set_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
 			valuesCount, values);
 	}
 
-	int getIsoRange(double *firstValueAddress, double *lastValueAddress)
+	double getRangeFirstIsovalue()
 	{
-		return Cmiss_graphic_iso_surface_get_iso_range(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
-			firstValueAddress, lastValueAddress);
+		return Cmiss_graphic_contours_get_range_first_isovalue(
+			reinterpret_cast<Cmiss_graphic_contours_id>(id));
 	}
 
-	int setIsoRange(int numberOfValues, double firstValue, double lastValue)
+	double getRangeLastIsovalue()
 	{
-		return Cmiss_graphic_iso_surface_set_iso_range(reinterpret_cast<Cmiss_graphic_iso_surface_id>(id),
-			numberOfValues, firstValue, lastValue);
+		return Cmiss_graphic_contours_get_range_last_isovalue(
+			reinterpret_cast<Cmiss_graphic_contours_id>(id));
+	}
+
+	int getRangeNumberOfIsovalues()
+	{
+		return Cmiss_graphic_contours_get_range_number_of_isovalues(
+			reinterpret_cast<Cmiss_graphic_contours_id>(id));
+	}
+
+	int setRangeIsovalues(int numberOfValues, double firstIsovalue, double lastIsovalue)
+	{
+		return Cmiss_graphic_contours_set_range_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
+			numberOfValues, firstIsovalue, lastIsovalue);
 	}
 
 };

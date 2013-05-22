@@ -90,21 +90,26 @@ ZINC_API int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
  */
 ZINC_API int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
 
-/***************************************************************************//**
- * Create graphic representation for rendition. This graphical
- * representation can be modified through Cmiss_graphic_set functions.
- * Type of graphic to be created is specified by graphic_type.
+/**
+ * Create a graphic of the given type in the rendition.
  *
- * @param rendition  The handle to the rendition which the static graphics are
- *   object created for.
- *
- * @param graphic_type  enumerator for a specific graphic type. Please
- * 		take a look at cmiss_graphic.h for available graphic types.
- * @return  the handle to the created graphic if successfully create graphic of
- * the specified type for rendition, otherwise NULL.
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @param graphic_type  Enumerator for a specific graphic type.
+ * @return  Handle to the new graphic on success, otherwise 0.
  */
 ZINC_API Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 	enum Cmiss_graphic_type graphic_type);
+
+/**
+ * Create a contours graphic in the rendition. Contours create graphics showing
+ * where the isoscalar field has fixed value(s): iso-surfaces for 3-D domains,
+ * iso-lines for 2-D domains.
+ *
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @return  Handle to the new contours graphic on success, otherwise 0.
+ */
+ZINC_API Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
+	Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Return a handle to selection handler for this rendition. User can add and

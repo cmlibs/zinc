@@ -46,7 +46,6 @@
 #include "types/fieldid.h"
 #include "types/graphicid.h"
 #include "types/graphicsfontid.h"
-#include "types/graphicisosurfaceid.h"
 #include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
@@ -325,18 +324,6 @@ ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
 ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 
 /**
- * Get handle to point attributes object for specifying glyph, scaling fields
- * and scale factors used in visualising points produced by the graphic.
- * Only returned for graphic classes for viewing points.
- *
- * @param graphic  The graphic to request attributes for.
- * @return  Handle to point attributes object (up to caller to destroy), or 0
- * if none, not supported or error.
- */
-ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
-	Cmiss_graphic_id graphic);
-
-/**
  * It takes the same string of command as gfx modify g_element <region_name>
  * <graphic_type> does. User can use this to quickly modify graphics. Make sure
  * coordinates field is specified.
@@ -361,120 +348,139 @@ ZINC_API int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_
 ZINC_API int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_use_element_type use_type);
 
 /**
- * If the graphic is of type iso surface graphic then this function returns
- * the iso_surface specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new iso surface graphic reference.
+ * If the graphic is of type contours graphic then this function returns
+ * the contours specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new contours graphic reference.
  *
  * @param graphic  The graphic to be cast.
- * @return  Iso surface graphic specific representation if the input is the correct
+ * @return  Contours graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_iso_surface_id Cmiss_graphic_cast_iso_surface(Cmiss_graphic_id graphic);
+ZINC_API Cmiss_graphic_contours_id Cmiss_graphic_cast_contours(Cmiss_graphic_id graphic);
 
 /**
- * Cast iso surface graphic back to its base graphic and return the graphic.
+ * Cast contours graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
  * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
- * maintaining returned handle beyond the lifetime of the iso_surface_graphic argument.
+ * maintaining returned handle beyond the lifetime of the contours_graphic argument.
  *
- * @param iso_surface_graphic  Handle to the iso surface graphic to cast.
+ * @param contours_graphic  Handle to the contours graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_iso_surface_base_cast(Cmiss_graphic_iso_surface_id iso_surface_graphic)
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_contours_base_cast(Cmiss_graphic_contours_id contours_graphic)
 {
-	return (Cmiss_graphic_id)(iso_surface_graphic);
+	return (Cmiss_graphic_id)(contours_graphic);
 }
 
 /**
- * Destroys this reference to the iso surface graphic (and sets it to NULL).
+ * Destroys this reference to the contours graphic (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
- * @param iso_surface_address  Address of handle to the iso surface graphic.
- * @return  Status CMISS_OK if successfully destroyed the iso surface graphic handle,
+ * @param contours_address  Address of handle to the contours graphic.
+ * @return  Status CMISS_OK if successfully destroyed the contours graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_iso_surface_destroy(Cmiss_graphic_iso_surface_id *iso_surface_address);
+ZINC_API int Cmiss_graphic_contours_destroy(Cmiss_graphic_contours_id *contours_address);
 
 /**
- * Gets the iso scalar field for the iso surface graphic.
+ * Gets the isoscalar field for the contours graphic.
  *
- * @param iso_surface_graphic  The iso surface graphic to query.
- * @return  Handle to iso_scalar field, or 0 if none or error.
+ * @param contours_graphic  The contours graphic to query.
+ * @return  Handle to isoscalar field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_iso_surface_get_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic);
+ZINC_API Cmiss_field_id Cmiss_graphic_contours_get_isoscalar_field(
+	Cmiss_graphic_contours_id contours_graphic);
 
 /**
- * Set the iso scalar field for the iso surface graphic.
+ * Set the isoscalar field for the contours graphic.
  *
- * @param iso_surface_graphic  The iso surface graphic to modify.
- * @param iso_scalar_field  The iso scalar field to set, this field must have
+ * @param contours_graphic  The Contours graphic to modify.
+ * @param isoscalar_field  The isoscalar field to set, this field must have
  * only one component.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_scalar_field(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	Cmiss_field_id iso_scalar_field);
+ZINC_API int Cmiss_graphic_contours_set_isoscalar_field(
+	Cmiss_graphic_contours_id contours_graphic,
+	Cmiss_field_id isoscalar_field);
 
 /**
- * Get the iso values for the iso surface graphic when it has been set as an
+ * Get the iso values for the contours graphic when it has been set as an
  * explicit list.
- * @see Cmiss_graphic_iso_surface_set_iso_values.
+ * @see Cmiss_graphic_contours_set_list_isovalues.
  *
- * @param iso_surface_graphic  The iso surface graphic to query.
- * @param number_of_iso_values  The size of the iso_values array.
- * @param iso_values  Array to receive number_of_values iso values.
+ * @param contours_graphic  The contours graphic to query.
+ * @param number_of_isovalues  The size of the isovalues array.
+ * @param isovalues  Array to receive number_of_isovalues iso values.
  * @return  The actual number of iso values that have been explicitly set using
- * Cmiss_graphic_iso_surface_set_iso_values. This can be more than the number
+ * Cmiss_graphic_contours_set_list_isovalues. This can be more than the number
  * requested, so a second call may be needed with a larger array. A zero return
- * value can indicate iso_values were set as a range, not as an explicit list.
+ * value can indicate isovalues were set as a range, not as an explicit list.
  */
-ZINC_API int Cmiss_graphic_iso_surface_get_iso_values(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	double *iso_values);
+ZINC_API int Cmiss_graphic_contours_get_list_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	double *isovalues);
 
 /**
- * Set the iso values for the iso surface graphic as an explicit list.
+ * Set the iso values for the contours graphic as an explicit list.
  *
- * @param iso_surface_graphic  The iso surface graphic to modify.
- * @param number_of_iso_values  The number of values in the iso_values array.
- * @param iso_values  The array of number_of_iso_values double values.
+ * @param contours_graphic  The contours graphic to modify.
+ * @param number_of_isovalues  The number of values in the isovalues array.
+ * @param isovalues  The array of number_of_isovalues double values.
  * @return  Status CMISS_OK on success, otherwise any error code.
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_values(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	const double *iso_values);
+ZINC_API int Cmiss_graphic_contours_set_list_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	const double *isovalues);
 
 /**
- * Get the iso values for the iso surface graphic as a number in a range from
- * first value to last value, in uniform increments.
+ * Get the first isovalue for the contours graphic when set as a range.
+ * @see Cmiss_graphic_contours_set_range_isovalues
  *
- * @param iso_surface_graphic  The iso surface graphic to query.
- * @param first_iso_value_address  The address to put the first iso value.
- * @param last_iso_value_address  The address to put the last iso value.
+ * @param contours_graphic  The contours graphic to query.
+ * @return  First iso values in the range, or 0.0 if not set as a range or
+ * other error.
+ */
+ZINC_API double Cmiss_graphic_contours_get_range_first_isovalue(
+	Cmiss_graphic_contours_id contours_graphic);
+
+/**
+ * Get the last isovalue for the contours graphic when set as a range.
+ * @see Cmiss_graphic_contours_set_range_isovalues
+ *
+ * @param contours_graphic  The contours graphic to query.
+ * @return  Last iso values in the range, or 0.0 if not set as a range or
+ * other error.
+ */
+ZINC_API double Cmiss_graphic_contours_get_range_last_isovalue(
+	Cmiss_graphic_contours_id contours_graphic);
+
+/**
+ * Get the number of isovalues for the contours graphic when set as a range.
+ * @see Cmiss_graphic_contours_set_range_isovalues
+ *
+ * @param contours_graphic  The contours graphic to query.
  * @return  Number of iso values in the range, or 0 if not set as a range or
  * other error.
  */
-ZINC_API int Cmiss_graphic_iso_surface_get_iso_range(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic,
-	double *first_iso_value_address, double *last_iso_value_address);
+ZINC_API int Cmiss_graphic_contours_get_range_number_of_isovalues(
+	Cmiss_graphic_contours_id contours_graphic);
 
 /**
- * Set the iso values for the iso surface graphic as a number in a range from
- * first value to last value, in uniform increments.
+ * Set the isovalues for the contours graphic as a number in a range from
+ * first isovalue to last isovalue, in uniform increments.
  * For example, 5 values from 0.0 to 1.0 gives: 0.0, 0.25, 0.5, 0.75 and 1.0.
  *
- * @param iso_surface_graphic  The iso surface graphic to modify.
- * @param number_of_iso_values  The number of values to have between the first
- * and last iso last values.
- * @param first_iso_value  The first iso value.
- * @param last_iso_value  The last iso value.
+ * @param contours_graphic  The contours graphic to modify.
+ * @param number_of_isovalues  The number of contours from the first to the
+ * last isovalue.
+ * @param first_isovalue  The first iso value.
+ * @param last_isovalue  The last iso value.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_iso_surface_set_iso_range(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, int number_of_iso_values,
-	double first_iso_value, double last_iso_value);
+ZINC_API int Cmiss_graphic_contours_set_range_isovalues(
+	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+	double first_isovalue, double last_isovalue);
 
 /**
  * If the graphic produces lines or extrusions then returns a handle to the

@@ -96,12 +96,12 @@ finite element group rendition.
 	Cmiss_field_id line_orientation_scale_field;
 
 	/* for iso_surfaces only */
-	struct Computed_field *iso_scalar_field;
-	int number_of_iso_values;
-	/* If the iso_values array is set then these values are used,
-		otherwise number_of_iso_values values are distributed from
-		first_iso_value to last_iso_value including these values for n>1 */
-	double *iso_values, first_iso_value, last_iso_value,
+	struct Computed_field *isoscalar_field;
+	int number_of_isovalues;
+	/* If the isovalues array is set then these values are used,
+		otherwise number_of_isovalues values are distributed from
+		first_isovalue to last_isovalue including these values for n>1 */
+	double *isovalues, first_isovalue, last_isovalue,
 		decimation_threshold;
 
 	/* point attributes */
@@ -594,16 +594,16 @@ int Cmiss_graphic_point_attributes_set_glyph(
 /**
  * Get iso surface decimation threshold.
  */
-double Cmiss_graphic_iso_surface_get_decimation_threshold(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic);
+double Cmiss_graphic_contours_get_decimation_threshold(
+	Cmiss_graphic_contours_id contours_graphic);
 
 /**
  * Set iso surface decimation threshold, controlling polygon reduction.
  * Converts iso surface into a voltex first.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-int Cmiss_graphic_iso_surface_set_decimation_threshold(
-	Cmiss_graphic_iso_surface_id iso_surface_graphic, double decimation_threshold);
+int Cmiss_graphic_contours_set_decimation_threshold(
+	Cmiss_graphic_contours_id contours_graphic, double decimation_threshold);
 
 /***************************************************************************//**
  * For graphic starting in a particular element.
