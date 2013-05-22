@@ -39,10 +39,30 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%typemap(in) (int valuesCount, const int *values)
+%typemap(in) (int valuesCount, const int *valuesIn)
 {
 	/* Check if is a list */
-	if (PyList_Check($input)) 
+	if (PyInt_Check($input) || PyLong_Check($input))
+	{
+		$1 = 1;
+		$2 = new int[$1];
+		PyObject *o = $input;
+		if (PyLong_Check(o))
+		{
+			$2[0] = PyLong_AsLong(o);
+		}
+		else if (PyInt_Check(o))
+		{
+			$2[0] = PyInt_AsLong(o);
+		}
+		else 
+		{
+			PyErr_SetString(PyExc_TypeError,"value must be a long");
+			delete[] $2;
+			return NULL;
+		}
+	}
+	else if (PyList_Check($input)) 
 	{
 		$1 = PyList_Size($input);
 		$2 = new int[$1];
@@ -68,14 +88,14 @@
 	}
 }
 
-%typemap(freearg) (int valuesCount, const int *values)
+%typemap(freearg) (int valuesCount, const int *valuesIn)
 {
 	delete[] $2;
 }
 
 // array getter in-handler expects an integer array size only
 // and allocates array to accept output; see argout-handler
-%typemap(in) (int valuesCount, int *values)
+%typemap(in, numinputs=1) (int valuesCount, int *valuesOut)
 {
 	if (!PyInt_Check($input))
 	{
@@ -91,7 +111,7 @@
 	$2 = new int[$1];
 }
 
-%typemap(argout)(int valuesCount, int *values)
+%typemap(argout)(int valuesCount, int *valuesOut)
 {
 	PyObject *o;
 	if ($1 == 1)
@@ -134,5 +154,5 @@
 	delete[] $2;
 }
 
-%typemap(in) (int nodeIndexesCount, const int *nodeIndexes) = (int valuesCount, const int *values);
-%typemap(freearg) (int nodeIndexesCount, const int *nodeIndexes) = (int valuesCount, const int *values);
+%typemap(in) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
+%typemap(freearg) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);

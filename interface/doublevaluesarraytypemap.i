@@ -39,10 +39,34 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
-%typemap(in) (int valuesCount, const double *values)
+%typemap(in) (int valuesCount, const double *valuesIn)
 {
 	/* Check if is a list */
-	if (PyList_Check($input)) 
+        if (PyInt_Check($input) || PyFloat_Check($input) || PyLong_Check($input))
+        {
+                $1 = 1;
+                $2 = new double[$1];
+                PyObject *o = $input;
+		if (PyFloat_Check(o))
+		{
+			$2[0] = PyFloat_AsDouble(o);
+		}
+		else if (PyLong_Check(o))
+		{
+			$2[0] = PyLong_AsDouble(o);
+		}
+		else if (PyInt_Check(o))
+		{
+			$2[0] = static_cast<double>(PyInt_AsLong(o));
+		}
+		else 
+		{
+			PyErr_SetString(PyExc_TypeError,"value must be a float");
+			delete[] $2;
+			return NULL;
+		}
+        }
+	else if (PyList_Check($input)) 
 	{
 		$1 = PyList_Size($input);
 		$2 = new double[$1];
@@ -71,19 +95,19 @@
 	}
 	else
 	{
-		PyErr_SetString(PyExc_TypeError,"not a list");
+		PyErr_SetString(PyExc_TypeError,"not a list, or single value");
 		return NULL;
 	}
-}
+};
 
-%typemap(freearg) (int valuesCount, const double *values)
+%typemap(freearg) (int valuesCount, double const *valuesIn)
 {
 	delete[] $2;
-}
+};
 
 // array getter in-handler expects an integer array size only
 // and allocates array to accept output; see argout-handler
-%typemap(in) (int valuesCount, double *values)
+%typemap(in, numinputs=1) (int valuesCount, double *valuesOut)
 {
 	if (!PyInt_Check($input))
 	{
@@ -97,9 +121,9 @@
 		return NULL;
 	}
 	$2 = new double[$1];
-}
+};
 
-%typemap(argout)(int valuesCount, double *values)
+%typemap(argout)(int valuesCount, double *valuesOut)
 {
 	PyObject *o;
 	if ($1 == 1)
@@ -140,15 +164,12 @@
 		}
 	}
 	delete[] $2;
-}
+};
 
-%typemap(in) (int coordinatesCount, const double *coordinates) = (int valuesCount, const double *values);
-%typemap(freearg) (int coordinatesCount, const double *coordinates) = (int valuesCount, const double *values);
-%typemap(in) (int coordinatesCount, double *coordinates) = (int valuesCount, double *values);
-%typemap(argout) (int coordinatesCount, double *coordinates) = (int valuesCount, double *values);
+%apply (int valuesCount, const double *valuesIn) { (int coordinatesCount, const double *coordinatesIn)};
+%apply (int valuesCount, double *valuesOut) { (int coordinatesCount, double *coordinatesOut)};
 
-%typemap(in) (int timesCount, const double *times) = (int valuesCount, const double *values);
-%typemap(freearg) (int timesCount, const double *times) = (int valuesCount, const double *values);
+%apply (int valuesCount, const double *valuesIn) { (int timesCount, const double *timesIn) };
 
 %typemap(in) (double *weights)
 {
