@@ -128,7 +128,6 @@ TEST(Cmiss_graphic_contours, range_isovalues)
 	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
-	double outputFirst, outputLast;
 	EXPECT_EQ(0, Cmiss_graphic_contours_get_range_number_of_isovalues(is));
 	EXPECT_EQ(0.0, Cmiss_graphic_contours_get_range_first_isovalue(is));
 	EXPECT_EQ(0.0, Cmiss_graphic_contours_get_range_last_isovalue(is));
@@ -160,7 +159,6 @@ TEST(Cmiss_graphic_contours, range_isovalues_null)
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_contours_set_range_isovalues(is, 0, first, last));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_contours_set_range_isovalues(is, num, first, last));
 
-	double outputFirst, outputLast;
 	EXPECT_EQ(0, Cmiss_graphic_contours_get_range_number_of_isovalues(0));
 	EXPECT_EQ(0.0, Cmiss_graphic_contours_get_range_first_isovalue(0));
 	EXPECT_EQ(0.0, Cmiss_graphic_contours_get_range_last_isovalue(0));
