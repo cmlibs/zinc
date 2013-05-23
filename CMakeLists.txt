@@ -654,7 +654,6 @@ SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicisosurfaceid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicscoordinatesystem.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfilterid.h
