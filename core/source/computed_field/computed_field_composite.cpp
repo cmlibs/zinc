@@ -1042,54 +1042,25 @@ Changes <field> into type composite with one input field, the <source_field>.
 	return (field);
 } /* Computed_field_create_identity */
 
-Computed_field *Cmiss_field_module_create_component(
-	struct Cmiss_field_module *field_module,
-	Computed_field *source_field, int component_number)
-/*******************************************************************************
-
-DESCRIPTION :
-Changes <field> into type composite with one input field, the <source_field>
-and the component index <component_number>.
-==============================================================================*/
+Cmiss_field_id Cmiss_field_module_create_component(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	int component_number)
 {
-	int number_of_components, *source_field_numbers,
-		*source_value_numbers;
-	Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_component);
-	if (source_field && source_field->isNumerical())
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical() && (0 < component_number) &&
+		(component_number <= Computed_field_get_number_of_components(source_field)))
 	{
-		number_of_components = 1;
-		ALLOCATE(source_field_numbers, int, number_of_components);
-		ALLOCATE(source_value_numbers, int, number_of_components);
-		if (source_field_numbers && source_value_numbers)
-		{
-			source_field_numbers[0] = 0;
-			source_value_numbers[0] = component_number;
-			field =
-				Computed_field_create_composite(field_module,
-				number_of_components,
-				/*number_of_source_fields*/1, /*source_fields*/&source_field,
-				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
-				source_field_numbers, source_value_numbers);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_create_component.  Not enough memory");
-		}
-		DEALLOCATE(source_field_numbers);
-		DEALLOCATE(source_value_numbers);
+		const int source_field_number = 0;
+		const int source_value_number = component_number - 1; // external numbering starts at 1
+		field =
+			Computed_field_create_composite(field_module,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, /*source_fields*/&source_field,
+			/*number_of_source_values*/0, /*source_values*/(double *)0,
+			&source_field_number, &source_value_number);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_component.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (field);
-} /* Computed_field_create_component */
+	return field;
+}
 
 struct Computed_field *Computed_field_create_concatenate(
 	struct Cmiss_field_module *field_module,
