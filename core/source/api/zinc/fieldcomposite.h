@@ -68,15 +68,13 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
- * Creates a field with the single source field and extracts a single component
- * specified by the component_number.
- * Internally this a composite field.
+ * Creates a field returning the component of the source field with the given
+ * component_index, starting at 1.
  *
  * @param field_module  Region field module which will own new field.
- * @param source_field The field the component value is copied from.
- * @param component_index  The index for the component.  The first values index
- * is 0 and the last is (number_of_field_components - 1).
- * @return Newly created field
+ * @param source_field  The field the component value is copied from.
+ * @param component_index  The component index from 1 to number of components.
+ * @return  Newly created field.
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, int component_index);
