@@ -309,7 +309,7 @@ public:
 
 	SceneViewer createSceneViewer(SceneViewer::BufferingMode buffering_mode, SceneViewer::StereoMode stereo_mode)
 	{
-		return SceneViewer(Cmiss_scene_viewer_create(id,
+		return SceneViewer(Cmiss_scene_viewer_package_create_scene_viewer(id,
 			static_cast<Cmiss_scene_viewer_buffering_mode>(buffering_mode),
 			static_cast<Cmiss_scene_viewer_stereo_mode>(stereo_mode)));
 	}

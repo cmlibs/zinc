@@ -134,8 +134,6 @@ and the functions given their public names.
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
 #define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
-#define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
-#define Scene_viewer_win32_set_window_size Cmiss_scene_viewer_win32_set_window_size
 #define Scene_viewer_add_transform_callback Cmiss_scene_viewer_add_transform_callback
 #define Scene_viewer_remove_transform_callback Cmiss_scene_viewer_remove_transform_callback
 #define Scene_viewer_add_input_callback Cmiss_scene_viewer_add_input_callback
@@ -1617,30 +1615,6 @@ attempt to override the default values for just this call.
 If <force_onscreen> is non zero then the pixels will always be grabbed from the
 scene viewer on screen.
 ==============================================================================*/
-
-#if defined (CARBON_USER_INTERFACE)
-int Scene_viewer_carbon_set_window_size(struct Scene_viewer *scene_viewer,
-	int width, int height, int clip_width, int clip_height);
-/*******************************************************************************
-LAST MODIFIED : 16 February 2007
-
-DESCRIPTION :
-Sets the coordinates within the graphics port which the scene_viewer should
-respect.
-==============================================================================*/
-#endif /* defined (CARBON_USER_INTERFACE) */
-
-#if defined (WIN32_USER_INTERFACE)
-int Scene_viewer_win32_set_window_size(struct Scene_viewer *scene_viewer,
-	int width, int height, int x, int y);
-/*******************************************************************************
-LAST MODIFIED : 14 September 2007
-
-DESCRIPTION :
-Sets the maximum extent of the graphics window within which individual paints
-will be requested with handle_windows_event.
-==============================================================================*/
-#endif /* defined (WIN32_USER_INTERFACE) */
 
 unsigned int Scene_viewer_get_frame_count(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
