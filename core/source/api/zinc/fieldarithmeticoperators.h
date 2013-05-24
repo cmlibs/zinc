@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : cmiss_field_arithmetic_operators.h
-
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-The public interface to the Cmiss_fields that perform arithmetic operators.
-==============================================================================*/
+/**
+ * FILE : cmiss_field_arithmetic_operators.h
+ *
+ * The public interface to the Cmiss_fields that perform arithmetic operators.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -54,7 +51,7 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 extern "C" {
 #endif
 
-/*****************************************************************************//**
+/**
  * Creates a field where the which calculates the components of source_field_one
  * raised to the power of the components in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
@@ -68,7 +65,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id fi
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the which multiplies the components of source_field_one and
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
@@ -82,7 +79,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the which divides the components of source_field_one
  * by source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
@@ -96,7 +93,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id f
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the which adds the components of source_field_one and
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
@@ -110,7 +107,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id fiel
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the which subtracts the components of source_field_two
  * from source_field_one.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
@@ -124,24 +121,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/*****************************************************************************//**
- * Creates a field which has one component which is calculated as
- * the dot product of the source_field components and the vector of
- * values, weights.
- * WARNING: to be deprecated
- * I think this should be deprecated and either only the dot product kept
- * or the dot product and a field with sums the components without weights.
- *
- * @param field_module  Region field module which will own new field.
- * @param source_field The input field
- * @param weights A vector of values equal in length to the number of components
- * in the source field which is dot producted with the source field components.
- * @return Newly created field
- */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, const double *weights);
-
-/*****************************************************************************//**
+/**
  * Creates a field where the field components are the natural logarithm
  * of each component in the source field.
  *
@@ -152,7 +132,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_mod
 ZINC_API Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the field components are the square root
  * of each component in the source field.
  *
@@ -163,7 +143,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id fiel
 ZINC_API Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the field components are the natural exponent
  * of each component in the source field.
  *
@@ -174,7 +154,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id fie
 ZINC_API Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
-/*****************************************************************************//**
+/**
  * Creates a field where the field components are the absolute value of each
  * component in the source field.
  *

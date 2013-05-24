@@ -242,7 +242,7 @@ public:
 
 	FieldSubtract createSubtract(Field& sourceField1, Field& sourceField2);
 
-	FieldSumComponents createSumComponents(Field& sourceField, const double *weights);
+	FieldSumComponents createSumComponents(Field& sourceField);
 
 	FieldLog createLog(Field& sourceField);
 

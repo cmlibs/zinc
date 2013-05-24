@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : cmiss_field_vector_operators.h
  *
  * The public interface to the Cmiss_fields that perform vector operations.
@@ -50,7 +50,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a vector field with (dimension) components whose values are given by
  * the cross product of the (dimension-1) source fields.
  *
@@ -65,7 +65,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product(
 	Cmiss_field_module_id field_module, int dimension,
 	Cmiss_field_id *source_fields);
 
-/***************************************************************************//**
+/**
  * Convenience function creating a field giving the 3-D cross product of two
  * 3-component vector source fields. Resulting field has 3 components.
  *
@@ -78,7 +78,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/***************************************************************************//**
+/**
  * Creates a scalar field whose value is the dot product of the two supplied
  * source fields, which must have equal numbers of components.
  *
@@ -91,7 +91,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_dot_product(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
-/***************************************************************************//**
+/**
  * Creates a scalar field returning the magnitude of the vector source field.
  *
  * @param field_module  Region field module which will own new field.
@@ -101,7 +101,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_dot_product(
 ZINC_API Cmiss_field_id Cmiss_field_module_create_magnitude(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the values of source vector field normalised to
  * unit length.
  *
@@ -110,6 +110,19 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_magnitude(
  * @return  Newly created field
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_normalise(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+
+/**
+ * Creates a field which has one component equal to the sum of all components of
+ * the source field. Also called the L1, taxicab or manhattan norm.
+ * For weighted sum of components use a dot_product with a constant weights field.
+ * @see Cmiss_field_module_create_dot_product
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  The field whose components are to be summed.
+ * @return  Newly created field
+ */
+ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
 
 #ifdef __cplusplus

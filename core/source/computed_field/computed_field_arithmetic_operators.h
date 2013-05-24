@@ -49,7 +49,6 @@ Implements a number of basic component wise operators on computed fields.
 #include "zinc/fieldarithmeticoperators.h"
 
 /* API functions are prefixed with Cmiss */
-#define Computed_field_create_sum_components Cmiss_field_module_create_sum_components
 #define Computed_field_create_add Cmiss_field_module_create_add
 #define Computed_field_create_subtract Cmiss_field_module_create_subtract
 #define Computed_field_create_multiply Cmiss_field_module_create_multiply
@@ -142,19 +141,6 @@ Converts <field> to type COMPUTED_FIELD_ADD with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
-==============================================================================*/
-
-struct Computed_field *Computed_field_create_sum_components(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, const double *weights);
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
-returns a scalar weighted sum of the components of <source_field>.
-The <weights> array must therefore contain as many FE_values as there are
-components in <source_field>.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_log(

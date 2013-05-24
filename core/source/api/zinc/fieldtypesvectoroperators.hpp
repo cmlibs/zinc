@@ -115,6 +115,22 @@ public:
 
 };
 
+class FieldSumComponents : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldSumComponents FieldModule::createSumComponents(Field& sourceField);
+
+public:
+
+	FieldSumComponents() : Field(0)
+	{	}
+
+};
+
 inline FieldCrossProduct FieldModule::createCrossProduct(int dimension, Field* sourceFields)
 {
 	Cmiss_field_id field = 0;
@@ -152,6 +168,12 @@ inline FieldMagnitude FieldModule::createMagnitude(Field& sourceField)
 inline FieldNormalise FieldModule::createNormalise(Field& sourceField)
 {
 	return FieldNormalise(Cmiss_field_module_create_normalise(id, sourceField.getId()));
+}
+
+inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField)
+{
+	return FieldSumComponents(Cmiss_field_module_create_sum_components(id,
+		sourceField.getId()));
 }
 
 }  // namespace zinc
