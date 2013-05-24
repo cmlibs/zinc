@@ -72,3 +72,8 @@
 {
 	delete[] $2;
 }
+
+%typemap(typecheck) (int fieldsCount, zinc::Field *sourceFields)
+{
+	$1 = PyList_Check($input) ? 1 : 0;
+}
