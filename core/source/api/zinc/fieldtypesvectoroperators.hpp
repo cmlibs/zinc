@@ -53,10 +53,10 @@ private:
 	explicit FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCrossProduct FieldModule::createCrossProduct(int dimension,
+	friend FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount,
 		Field* sourceFields);
 
-	friend FieldCrossProduct FieldModule::createCrossProduct3D(
+	friend FieldCrossProduct FieldModule::createCrossProduct(
 		Field& sourceField1, Field& sourceField2);
 
 public:
@@ -131,24 +131,23 @@ public:
 
 };
 
-inline FieldCrossProduct FieldModule::createCrossProduct(int dimension, Field* sourceFields)
+inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field* sourceFields)
 {
 	Cmiss_field_id field = 0;
-	if (dimension - 1 > 0)
+	if (fieldsCount > 0)
 	{
-		Cmiss_field_id *source_fields = new Cmiss_field_id[dimension - 1];
-		for (int i = 0; i < (dimension - 1); i++)
+		Cmiss_field_id *source_fields = new Cmiss_field_id[fieldsCount];
+		for (int i = 0; i < fieldsCount; i++)
 		{
 			source_fields[i] = sourceFields[i].getId();
 		}
-		field = Cmiss_field_module_create_cross_product(id,
-			dimension, source_fields);
+		field = Cmiss_field_module_create_cross_product(id, fieldsCount, source_fields);
 		delete[] source_fields;
 	}
 	return FieldCrossProduct(field);
 }
 
-inline FieldCrossProduct FieldModule::createCrossProduct3D(Field& sourceField1, Field& sourceField2)
+inline FieldCrossProduct FieldModule::createCrossProduct(Field& sourceField1, Field& sourceField2)
 {
 	return FieldCrossProduct(Cmiss_field_module_create_cross_product_3d(id, sourceField1.getId(),
 		sourceField2.getId()));

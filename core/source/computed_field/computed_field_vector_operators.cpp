@@ -525,21 +525,21 @@ Returns allocated command string for reproducing field. Includes type.
 
 struct Computed_field *Cmiss_field_module_create_cross_product(
 	struct Cmiss_field_module *field_module,
-	int dimension, struct Computed_field **source_fields)
+	int number_of_source_fields, struct Computed_field **source_fields)
 {
 	Computed_field *field = NULL;
-	if ((2 <= dimension) && (4 >= dimension) && source_fields)
+	if ((0 < number_of_source_fields) && (number_of_source_fields <= 3) && source_fields)
 	{
+		const int dimension = number_of_source_fields + 1;
 		int return_code = 1;
-		for (int i = 0 ; return_code && (i < dimension - 1) ; i++)
+		for (int i = 0 ; i < number_of_source_fields; i++)
 		{
 			if (!source_fields[i] ||
 				(source_fields[i]->number_of_components != dimension))
 			{
 				display_message(ERROR_MESSAGE,
 					"Cmiss_field_module_create_cross_product.  "
-					"The number of components of the %s field does not match the dimension",
-					source_fields[i]->name);
+					"Source field %d missing or has wrong number of components", i + 1);
 				return_code = 0;
 			}
 		}
@@ -548,7 +548,7 @@ struct Computed_field *Cmiss_field_module_create_cross_product(
 			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				/*number_of_components*/dimension,
-				/*number_of_source_fields*/(dimension - 1), source_fields,
+				/*number_of_source_fields*/number_of_source_fields, source_fields,
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_cross_product());
 		}
@@ -563,7 +563,7 @@ Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
 	Cmiss_field_id source_fields[2];
 	source_fields[0] = source_field_one;
 	source_fields[1] = source_field_two;
-	return Cmiss_field_module_create_cross_product(field_module, /*dimension*/3, source_fields);
+	return Cmiss_field_module_create_cross_product(field_module, 2, source_fields);
 }
 
 int Computed_field_get_type_cross_product(struct Computed_field *field,
