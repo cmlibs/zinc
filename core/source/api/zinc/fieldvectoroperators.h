@@ -51,18 +51,26 @@ extern "C" {
 #endif
 
 /**
- * Creates a vector field with (dimension) components whose values are given by
- * the cross product of the (dimension-1) source fields.
+ * Creates a vector field which is the cross product of the source_fields.
+ * The number of source fields determines the number of components i.e.
+ * dimension of the source_fields and the result. Allowable numbers:
+ * 1 : single 2-D vector source field. Returns orthogonal vector in 2-D plane
+ *     given by 90 degree rotation anticlockwise.
+ * 2 : two 3-D vector source fields. Returns familiar 3-D cross product vector
+ *     orthogonal to both source vectors in a right hand sense, whose magnitude
+ *     is the area of the parallelogram formed by the source vectors on 2 sides.
+ * 3 : cross product of three 4-D vector source fields.
  *
- * @param field_module  Region field module which will own new field.
- * @param dimension  Dimension of the cross product = number of components of
- * resulting field. Only 2, 3 and 4 dimensions supported.
- * @param source_fields  Array of (dimension-1) fields with number of components
- * equal to (dimension).
- * @return  Newly created field
+ * @param field_module  Region field module which will own the new field.
+ * @param number_of_source_fields  The size of the source_fields array, one less
+ * than the dimension i.e. number of components of each source_field and the
+ * result. Only 1, 2 and 3 fields i.e. 2-D, 3-D and 4-D are supported.
+ * @param source_fields  Array of fields with number of components equal to the
+ * dimension i.e. one more than the number_of_source_fields.
+ * @return  Newly created field.
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product(
-	Cmiss_field_module_id field_module, int dimension,
+	Cmiss_field_module_id field_module, int number_of_source_fields,
 	Cmiss_field_id *source_fields);
 
 /**

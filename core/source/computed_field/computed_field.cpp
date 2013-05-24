@@ -1233,8 +1233,11 @@ Computed_field *Computed_field_create_generic(
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_generic.  Invalid argument(s)");
 	}
-	// replace_field must not be used for further field creates, so clear
-	Cmiss_field_module_set_replace_field(field_module, NULL);
+	if (field_module)
+	{
+		// replace_field must not be used for further field creates, so clear
+		Cmiss_field_module_set_replace_field(field_module, NULL);
+	}
 	LEAVE;
 
 	return (field);
