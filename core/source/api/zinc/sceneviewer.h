@@ -985,23 +985,35 @@ DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
 
-//ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
-//	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
-//	void *parent_void,
-//	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-//	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-//	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-//	int minimum_accumulation_buffer_depth);
-//ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
-//		Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
-//		void *canvas);
-
-ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_create(
+/**
+ * Returns a handle to a scene viewer object.  The scene viewer attributes for
+ * buffering mode and stereo mode are also set.
+ *
+ * @param cmiss_scene_viewer_package  Handle to a cmiss_scene_viewer_package object.
+ * @param buffer_mode  The buffering mode in use for the OpenGL context.
+ * @param stereo_mode  The stereo mode in use for the OpenGL context.
+ * @return  A handle to a scene viewer if successfully created otherwise 0.
+ */
+ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_package_create_scene_viewer(
 	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode);
 
+/**
+ * Returns a new reference to the scene viewer package with the reference counter
+ * incremented.  The caller is responsible for destroying the new reference.
+ *
+ * @param scene_viewer_package  The scene viewer package to obtain a reference to.
+ * @return New scene viewer package reference with incremented reference count.
+ */
 ZINC_API Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package);
+
+/**
+ * Destroys the scene viewer package and sets the pointer to 0.
+ *
+ * @param scene_viewer_package_address  The pointer to the handle of the scene viewer package.
+ * @return  Status CMISS_OK if handle successfully destroyed, otherwise any other value.
+ */
 ZINC_API int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address);
 
 #ifdef __cplusplus
