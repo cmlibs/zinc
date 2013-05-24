@@ -72,38 +72,3 @@
 {
 	delete[] $2;
 }
-
-%typemap(in) (int dimension, zinc::Field *sourceFields)
-{
-	if (PyList_Check($input))
-	{
-		$1 = PyList_Size($input);
-		$2 = new zinc::Field[$1];
-		$2_ltype field = 0;
-		for (int i = 0; i < $1; i++)
-		{
-			PyObject *o = PyList_GetItem($input,i);
-			if ((SWIG_ConvertPtr(o,(void **) &field, $2_descriptor,SWIG_POINTER_EXCEPTION)) != -1)
-			{
-					$2[i] = *field;
-			}
-			else
-			{
-				PyErr_SetString(PyExc_TypeError,"list must contain zinc::Field");
-				delete[] $2;
-				return NULL;
-			}
-		}
-		$1 += 1;
-	}
-	else
-	{
-		PyErr_SetString(PyExc_TypeError,"not a list");
-		return NULL;
-	}
-}
-
-%typemap(freearg) (int dimension, zinc::Field *sourceFields)
-{
-	delete[] $2;
-}
