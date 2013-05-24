@@ -150,22 +150,6 @@ inline FieldSubtract operator-(Field& operand1, Field& operand2)
 	return fieldModule.createSubtract(operand1, operand2);
 }
 
-class FieldSumComponents : public Field
-{
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldSumComponents FieldModule::FieldModule::createSumComponents(Field& sourceField, const double *weights);
-
-public:
-
-	FieldSumComponents() : Field(0)
-	{	}
-
-};
-
 class FieldLog : public Field
 {
 private:
@@ -284,12 +268,6 @@ inline FieldSubtract FieldModule::createSubtract(Field& sourceField1, Field& sou
 {
 	return FieldSubtract(Cmiss_field_module_create_subtract(id,
 		sourceField1.getId(), sourceField2.getId()));
-}
-
-inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField, const double *weights)
-{
-	return FieldSumComponents(Cmiss_field_module_create_sum_components(id,
-		sourceField.getId(), weights));
 }
 
 inline FieldLog FieldModule::createLog(Field& sourceField)

@@ -1051,6 +1051,169 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 
 namespace {
 
+const char computed_field_sum_components_type_string[] = "sum_components";
+
+class Computed_field_sum_components : public Computed_field_core
+{
+public:
+	Computed_field_sum_components() : Computed_field_core()
+	{
+	};
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_sum_components();
+	}
+
+	const char *get_type_string()
+	{
+		return(computed_field_sum_components_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_sum_components*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_sum_components::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+{
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	if (sourceCache)
+	{
+		int i, j;
+		/* sum of components of source field */
+		FE_value sum = 0.0;
+		const int source_number_of_components = field->source_fields[0]->number_of_components;
+		for (i = 0; i < source_number_of_components; i++)
+		{
+			sum += sourceCache->values[i];
+		}
+		valueCache.values[0] = sum;
+		int number_of_xi = cache.getRequestedDerivatives();
+		if (number_of_xi && sourceCache->derivatives_valid)
+		{
+			for (j = 0; j < number_of_xi; j++)
+			{
+				FE_value *temp = sourceCache->derivatives + j;
+				sum = 0.0;
+				for (i = 0; i < source_number_of_components; i++)
+				{
+					sum += (*temp);
+					temp += number_of_xi;
+				}
+				valueCache.derivatives[j] = sum;
+			}
+			valueCache.derivatives_valid = 1;
+		}
+		else
+		{
+			valueCache.derivatives_valid = 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_sum_components::list()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_sum_components);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    field : %s\n",
+			field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_sum_components.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_sum_components */
+
+char *Computed_field_sum_components::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_sum_components::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_sum_components_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sum_components::get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_sum_components::get_command_string */
+
+} //namespace
+
+Cmiss_field_id Cmiss_field_module_create_sum_components(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field)
+{
+	Cmiss_field_id field = 0;
+	if (source_field && source_field->isNumerical())
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_sum_components());
+	}
+	return (field);
+}
+
+namespace {
+
 char computed_field_cubic_texture_coordinates_type_string[] = "cubic_texture_coordinates";
 
 class Computed_field_cubic_texture_coordinates : public Computed_field_core
