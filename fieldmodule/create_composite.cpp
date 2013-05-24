@@ -32,6 +32,7 @@ TEST(Cmiss_field_module_create_component, valid_args)
 	double value = 0.0;
 	EXPECT_EQ(CMISS_OK, Cmiss_field_evaluate_real(f2, cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
+	Cmiss_field_cache_destroy(&cache);
 
 	Cmiss_field_destroy(&f1);
 	Cmiss_field_destroy(&f2);
