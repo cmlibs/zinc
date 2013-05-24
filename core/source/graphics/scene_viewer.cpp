@@ -2788,6 +2788,7 @@ DESCRIPTION :
 	{
 		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
 			package->scene_viewer_list);
+		Cmiss_scene_viewer_destroy(&scene_viewer);
 	}
 }
 
@@ -2807,7 +2808,7 @@ DESCRIPTION :
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
-		DESTROY(Scene_viewer)(&scene_viewer);
+		Cmiss_scene_viewer_destroy(&scene_viewer);
 	}
 	return_code = 1;
 
@@ -3412,7 +3413,7 @@ DESCRIPTION :
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the package list */
-			ADD_OBJECT_TO_LIST(Scene_viewer)(scene_viewer,
+			ADD_OBJECT_TO_LIST(Scene_viewer)(Cmiss_scene_viewer_access(scene_viewer),
 				cmiss_scene_viewer_package->scene_viewer_list);
 
 			/* Register a callback so that if the scene_viewer is destroyed
@@ -7622,7 +7623,6 @@ Closes the scene_viewer.
 		(*scene_viewer_id_address)->access_count--;
 		if ((*scene_viewer_id_address)->access_count == 0)
 		{
-			printf("going to destroy this scene viewer\n");
 			return_code = DESTROY(Scene_viewer)(scene_viewer_id_address);
 		}
 		else
