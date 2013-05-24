@@ -57,13 +57,13 @@ protected:
 	FE_value time;
 	int number_of_derivatives;
 
-   Field_location(FE_value time = 0.0, int number_of_derivatives = 0) : 
+	Field_location(FE_value time = 0.0, int number_of_derivatives = 0) :
 		time(time), number_of_derivatives(number_of_derivatives)
-	{};
+	{}
 
 public:
 
-   /* Abstract virtual destructor declaration as we will not make objects of this
+	/* Abstract virtual destructor declaration as we will not make objects of this
 		parent class */
 	virtual ~Field_location() = 0;
 
@@ -139,18 +139,18 @@ public:
 		top_level_element(0)
 	{
 	}
-	
-   ~Field_element_xi_location()
+
+	~Field_element_xi_location()
 	{
 		DEACCESS(FE_element)(&element);
 		if (top_level_element)
 			DEACCESS(FE_element)(&top_level_element);
 	}
 
-   virtual Field_location *clone()
-   {
-   	return new Field_element_xi_location(element, xi, time, top_level_element);
-   }
+	virtual Field_location *clone()
+	{
+		return new Field_element_xi_location(element, xi, time, top_level_element);
+	}
 
 	int get_dimension() const
 	{
@@ -189,16 +189,16 @@ public:
 		node(ACCESS(FE_node)(node))
 	{
 	}
-	
-   ~Field_node_location()
+
+	~Field_node_location()
 	{
-   	DEACCESS(FE_node)(&node);
+		DEACCESS(FE_node)(&node);
 	}
 
-   virtual Field_location *clone()
-   {
-   	return new Field_node_location(node, time);
-   }
+	virtual Field_location *clone()
+	{
+		return new Field_node_location(node, time);
+	}
 
 	FE_node *get_node()
 	{
@@ -219,14 +219,14 @@ public:
 	{
 	}
 
-   ~Field_time_location()
+	~Field_time_location()
 	{
 	}
 
-   virtual Field_location *clone()
-   {
-   	return new Field_time_location(time);
-   }
+	virtual Field_location *clone()
+	{
+		return new Field_time_location(time);
+	}
 };
 
 class Field_coordinate_location : public Field_location
@@ -241,7 +241,7 @@ public:
 	Field_coordinate_location(Cmiss_field *reference_field_in,
 		int number_of_values_in, const FE_value* values_in, FE_value time = 0,
 		int number_of_derivatives_in = 0, const FE_value* derivatives_in = NULL);
-	
+
 	// blank constructor - caller should call set_field_values & check valid return
 	Field_coordinate_location(FE_value time = 0) :
 		Field_location(time),
@@ -254,10 +254,10 @@ public:
 
 	~Field_coordinate_location();
 
-   virtual Field_location *clone()
-   {
-   	return new Field_coordinate_location(reference_field, number_of_values, values, time, number_of_derivatives, derivatives);
-   }
+	virtual Field_location *clone()
+	{
+		return new Field_coordinate_location(reference_field, number_of_values, values, time, number_of_derivatives, derivatives);
+	}
 
 	Cmiss_field *get_reference_field()
 	{
