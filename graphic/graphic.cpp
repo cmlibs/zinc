@@ -240,6 +240,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
+	EXPECT_EQ(0, Cmiss_graphic_point_attributes_get_mirror_glyph_flag(pointattr));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_mirror_glyph_flag(0, 1));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_mirror_glyph_flag(pointattr, 1));
+	EXPECT_EQ(1, Cmiss_graphic_point_attributes_get_mirror_glyph_flag(pointattr));
+
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
 	Cmiss_graphic_destroy(&gr);
 }
@@ -309,6 +314,10 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
+
+	EXPECT_EQ(false, pointattr.getMirrorGlyphFlag());
+	EXPECT_EQ(CMISS_OK, pointattr.setMirrorGlyphFlag(true));
+	EXPECT_EQ(true, pointattr.getMirrorGlyphFlag());
 }
 
 TEST(Cmiss_graphic_api, point_attributes_label)
