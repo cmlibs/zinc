@@ -118,6 +118,7 @@ the glyph_set to be identified in picking for node position/vector editing.
 	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
 	char **labels;
 	struct GT_object *glyph;
+	int mirror_glyph_flag; // if set, draws a second glyph mirrored on axis1
 	int n_data_components;
 	GLfloat *data;
 	int label_bounds_dimension, label_bounds_components;
@@ -443,8 +444,6 @@ Graphical object data structure.
 	/* Custom per compile code for graphics_objects used as glyphs. */
 	Graphics_object_glyph_labels_function glyph_labels_function;
 
-	/*???temporary*/
-	int glyph_mirror_mode;
 	int access_count;
 };
 

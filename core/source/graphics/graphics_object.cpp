@@ -1251,7 +1251,7 @@ this gets tricky when done on all axes consistently.
 			if (return_code)
 			{
 				glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
+					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph, initial->mirror_glyph_flag,
 					initial->font, labels, initial->n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,
@@ -2342,7 +2342,7 @@ DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph, int mirror_glyph_flag,
 	struct Cmiss_graphics_font *font, char **labels, int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names)
@@ -2365,6 +2365,7 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 				glyph_set->glyph = ACCESS(GT_object)(glyph);
 			else
 				glyph_set->glyph = (GT_object *)NULL;
+			glyph_set->mirror_glyph_flag = mirror_glyph_flag;
 			if (font)
 				glyph_set->font = ACCESS(Cmiss_graphics_font)(font);
 			else
@@ -3810,8 +3811,6 @@ Allocates memory and assigns fields for a graphics object.
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct Spectrum *)NULL;
 				object->number_of_times=0;
-				/*???temporary*/
-				object->glyph_mirror_mode=0;
 			}
 			else
 			{
@@ -6720,62 +6719,6 @@ Sets the select_mode of the <graphics_object>.
 	return (return_code);
 } /* GT_object_set_select_mode */
 
-int GT_object_get_glyph_mirror_mode(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Gets the glyph_mirror_mode of a GT_object -- true or false.
-???RC temporary until we have a separate struct Glyph.
-==============================================================================*/
-{
-	int glyph_mirror_mode;
-
-	ENTER(GT_object_get_glyph_mirror_mode);
-	if (graphics_object)
-	{
-		glyph_mirror_mode = graphics_object->glyph_mirror_mode;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_set_glyph_mirror_mode.  Invalid argument(s)");
-		glyph_mirror_mode = 0;
-	}
-	LEAVE;
-
-	return (glyph_mirror_mode);
-} /* GT_object_get_glyph_mirror_mode */
-
-int GT_object_set_glyph_mirror_mode(struct GT_object *graphics_object,
-	int glyph_mirror_mode)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Sets the glyph_mirror_mode of the <graphics_object> to true or false.
-???RC temporary until we have a separate struct Glyph.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_object_set_glyph_mirror_mode);
-	if (graphics_object)
-	{
-		graphics_object->glyph_mirror_mode = glyph_mirror_mode;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_set_glyph_mirror_mode.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_set_glyph_mirror_mode */
-
 Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
 	struct GT_object *graphics_object)
 /*******************************************************************************
@@ -7175,6 +7118,31 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
 	return (return_code);
 }
 
+int set_GT_object_mirror_glyph_flag(struct GT_object *graphics_object,
+	int mirror_glyph_flag)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if (graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set->mirror_glyph_flag != mirror_glyph_flag)
+			{
+				while (glyph_set)
+				{
+					glyph_set->mirror_glyph_flag = mirror_glyph_flag;
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 1998
@@ -7225,18 +7193,8 @@ type.
 } /* GT_object_list_contents */
 
 int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
-	Triple axis3, Triple scale, int mirror, int reverse, Triple final_point,
+	Triple axis3, Triple scale, int mirror, int rebase, Triple final_point,
 	Triple final_axis1, Triple final_axis2, Triple final_axis3)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Multiplies the three axes by their <scale> to give the final axes, reversing
-<final_axis3> if necessary to produce a right handed coordinate system.
-If <mirror> is true, then the axes are pointed in the opposite direction.
-If <reverse> is true, then the point is shifted to the end of each axis if the
-scale is negative for that axis.
-==============================================================================*/
 {
 	int j, return_code;
 
@@ -7250,27 +7208,19 @@ scale is negative for that axis.
 			final_axis1[j] = axis1[j] * scale[0];
 			final_axis2[j] = axis2[j] * scale[1];
 			final_axis3[j] = axis3[j] * scale[2];
+			final_point[j] = point[j];
 			if (mirror)
 			{
 				final_axis1[j] = -final_axis1[j];
 				final_axis2[j] = -final_axis2[j];
 				final_axis3[j] = -final_axis3[j];
 			}
-			final_point[j] = point[j];
-			if (reverse)
+			if (rebase)
 			{
-				/* shift glyph centre to end of axes if scale negative */
-				if (0.0 > scale[0])
+				// if first scale is negative, shift glyph origin to end of axis1 
+				if (scale[0] < 0.0)
 				{
 					final_point[j] -= final_axis1[j];
-				}
-				if (0.0 > scale[1])
-				{
-					final_point[j] -= final_axis2[j];
-				}
-				if (0.0 > scale[2])
-				{
-					final_point[j] -= final_axis3[j];
 				}
 			}
 		}

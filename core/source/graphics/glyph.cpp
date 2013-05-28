@@ -1,24 +1,20 @@
-/*******************************************************************************
-FILE : glyph.c
-
-LAST MODIFIED : 19 September 2005
-
-DESCRIPTION :
-Glyphs are GT_objects which contain simple geometric shapes such as
-cylinders, arrows and axes which are (or should) fit into a unit (1x1x1) cube,
-with the major axes of the glyph aligned with the x, y and z axes. 
-The logical centre of each glyph should be at (0,0,0). This should be
-interpreted as follows:
-- if the glyph is symmetrical along any axis, its coordinates in that
-direction should vary from -0.5 to +0.5;
-- if the glyph involves any sort of arrow that is unsymmetric in its direction
-(ie. is single-headed), (0,0,0) should be at the base of the arrow.
-- axes should therefore be centred at (0,0,0) and extend to 1 in each axis
-direction. Axis titles "x", "y" and "z" may be outside the unit cube.
-
-Glyphs are referenced by GT_glyph_set objects. Glyphs themselves should not
-reference graphical materials or spectrums.
-==============================================================================*/
+/**
+ * FILE : glyph.cpp
+ *
+ * Glyphs are GT_objects which contain simple geometric shapes such as
+ * cylinders, arrows and axes which are (or should) fit into a unit (1x1x1) cube,
+ * with the major axes of the glyph aligned with the x, y and z axes. 
+ * The logical centre of each glyph should be at (0,0,0). This should be
+ * interpreted as follows:
+ * - if the glyph is symmetrical along any axis, its coordinates in that
+ * direction should vary from -0.5 to +0.5;
+ * - if the glyph involves any sort of arrow that is unsymmetric in its direction
+ * (ie. is single-headed), (0,0,0) should be at the base of the arrow.
+ * - axes should therefore be centred at (0,0,0) and extend to 1 in each axis
+ * direction. Axis titles "x", "y" and "z" may be outside the unit cube.
+ * Glyphs are referenced by GT_glyph_set objects. Glyphs themselves should not
+ * reference graphical materials or spectrums.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -1746,38 +1742,6 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 	return (glyph);
 } /* make_glyph_line */
 
-struct GT_object *make_glyph_mirror(const char *name, struct GT_object *mirror_glyph)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Makes a glyph with the given <name> that automatically mirrors the given
-<mirror_glyph>.
-==============================================================================*/
-{
-	struct GT_object *glyph;
-
-	ENTER(make_glyph_mirror);
-	if (name && mirror_glyph)
-	{
-		/*???temporary. Use dummy GT_object until we have struct Glyph */
-		glyph = CREATE(GT_object)(name, g_SURFACE, (struct Graphical_material *)NULL);
-		if (glyph)
-		{
-			GT_object_set_glyph_mirror_mode(glyph, 1);
-			GT_object_set_next_object(glyph, mirror_glyph);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "make_glyph_mirror.  Invalid argument(s)");
-		glyph = (struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_mirror */
-
 struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
 	ZnReal marker_size)
 /*******************************************************************************
@@ -2093,7 +2057,7 @@ Creates a list of standard glyphs for the cmgui applications.
 {
 	const char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
 		 *labels_123[] = {"1","2","3"};
-	struct GT_object *glyph, *mirror_glyph;
+	struct GT_object *glyph;
 	struct MANAGER(GT_object) *glyph_manager;
 
 	ENTER(make_glyph_sphere);
@@ -2106,20 +2070,8 @@ Creates a list of standard glyphs for the cmgui applications.
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		mirror_glyph = glyph;
-		glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
 		glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
 			12,2.f/3.f,1.f/6.f,/*cone_radius*/0.5f);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		mirror_glyph = glyph;
-		glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
@@ -2155,12 +2107,6 @@ Creates a list of standard glyphs for the cmgui applications.
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		glyph=make_glyph_cone("cone",12);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		mirror_glyph = glyph;
-		glyph=make_glyph_mirror("mirror_cone",mirror_glyph);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
@@ -2224,12 +2170,6 @@ Creates a list of standard glyphs for the cmgui applications.
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		glyph=make_glyph_line("line");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		mirror_glyph = glyph;
-		glyph=make_glyph_mirror("mirror_line",mirror_glyph);
 		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);

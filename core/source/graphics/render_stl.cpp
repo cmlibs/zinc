@@ -273,15 +273,14 @@ int makestl(Stl_context& stl_context, gtObject *graphics_object, ZnReal time);
  * @param spectrum ignored
  * @return 1 on success, 0 on failure
  */
-int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
+static int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list,
-	struct GT_object *glyph,char **labels,
+	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
 	int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time)
 {
 	int return_code;
-	struct GT_object *temp_glyph;
 	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
 		temp_axis3, temp_point;
 
@@ -303,12 +302,11 @@ int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 		scale = scale_list;
 		for (int i=0; i<number_of_points; i++)
 		{
-			int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-			int number_of_glyphs = mirror_mode ? 2 : 1;
+			int number_of_glyphs = mirror_glyph_flag ? 2 : 1;
 			for (int j=0; j<number_of_glyphs; j++)
 			{
 				resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-					/*mirror*/j, /*reverse*/mirror_mode,
+					/*mirror*/j, /*reverse*/mirror_glyph_flag,
 					temp_point, temp_axis1, temp_axis2, temp_axis3);
 				Transformation_matrix matrix(
 					(double)temp_axis1[0], (double)temp_axis2[0], (double)temp_axis3[0], (double)temp_point[0],
@@ -316,15 +314,7 @@ int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 					(double)temp_axis1[2], (double)temp_axis2[2], (double)temp_axis3[2], (double)temp_point[2],
 					0.0, 0.0, 0.0, 1.0);
 				stl_context.push_multiply_transformation(matrix);
-				if (mirror_mode)
-				{
-					/* ignore first glyph since just a wrapper for the second */
-					temp_glyph = GT_object_get_next_object(glyph);
-				}
-				else
-				{
-					temp_glyph = glyph;
-				}
+				struct GT_object *temp_glyph = glyph;
 				/* call the glyph display lists of the linked-list of glyphs */
 				while (temp_glyph)
 				{
@@ -713,6 +703,7 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 										interpolate_glyph_set->axis3_list,
 										interpolate_glyph_set->scale_list,
 										interpolate_glyph_set->glyph,
+										interpolate_glyph_set->mirror_glyph_flag,
 										interpolate_glyph_set->labels,
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
@@ -733,6 +724,7 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 									glyph_set->point_list,glyph_set->axis1_list,
 									glyph_set->axis2_list,glyph_set->axis3_list,
 									glyph_set->scale_list,glyph_set->glyph,
+									glyph_set->mirror_glyph_flag,
 									glyph_set->labels,glyph_set->n_data_components,
 									glyph_set->data,object->default_material,object->spectrum,
 									time);

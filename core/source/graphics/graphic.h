@@ -106,6 +106,7 @@ finite element group rendition.
 
 	/* point attributes */
 	struct GT_object *glyph;
+	bool mirror_glyph_flag;
 	FE_value point_offset[3];
 	FE_value point_base_size[3];
 	FE_value point_scale_factors[3];

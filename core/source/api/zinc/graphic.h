@@ -747,6 +747,33 @@ ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
 	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field);
 
 /**
+ * Return whether mirror glyph flag is set.
+ * @see Cmiss_graphic_point_attributes_set_mirror
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return  1 if mirror glyph flag is set, 0 if not.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_get_mirror_glyph_flag(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets whether the glyph is mirrored i.e. drawn twice, the second mirrored
+ * about the origin along the first axis. Commonly used with a
+ * signed_scale_field to visualise stress and strains using pairs of arrow
+ * glyphs pointing inward for compression, outward for tension.
+ * Suitable glyphs (line, arrow, cone) span from 0 to 1 along their first axis.
+ * Not suitable for sphere, cube etc. which are symmetric about 0 on axis 1.
+ * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+ * @see Cmiss_graphic_point_attributes_set_offset
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param mirror_glyph_flag  1 to set, 0 to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_mirror_glyph_flag(
+	Cmiss_graphic_point_attributes_id point_attributes, int mirror_glyph_flag);
+
+/**
  * Gets the offset from the point coordinates to where the glyph origin is
  * drawn, in glyph units along the axes, i.e. values are subsequently scaled.
  * @see Cmiss_graphic_point_attributes_set_offset.
@@ -876,11 +903,17 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
 
 /**
  * Sets the signed scale field in the graphic point attributes. Can have from 1
- * to 3 components. Its absolute value in any axis multiplies the scaling from
- * the orientation scale field, and if negative adds a further offset to the end
- * of the scale axis and reverses the orientation. It is commonly used to draw
- * stress and strain with mirrored arrow glyphs to show them pointing inward for
- * compression, outward for tension.
+ * to 3 components which multiply the scaling from the orientation scale field
+ * on the corresponding axis.
+ * Note special behaviour applies when the mirror_glyph_flag is set:
+ * If value is negative on the first axis, the origin of the glyph is moved to
+ * the end of the first axis and its direction is reversed. This is commonly
+ * used to draw stress and strain with mirrored arrow-like glyphs pointing
+ * inward for compression, and outward for tension. Do this by passing a single
+ * eigenvalue (of stress or strain tensor) as the signed_scale and the
+ * corresponding eigenvector as the orientation_scale field, and set the
+ * mirror_glyph_flag. Use a separate points graphic for each eigenvalue.
+ * @see Cmiss_graphic_point_attributes_set_mirror
  *
  * @param point_attributes  The point attributes to modify.
  * @param signed_scale_field  The signed scale field to set.
