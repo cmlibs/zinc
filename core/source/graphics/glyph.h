@@ -160,15 +160,6 @@ Creates a graphics object named <name> consisting of a line from <-0.5,0,0> to
 <0.5,0,0>.
 ==============================================================================*/
 
-struct GT_object *make_glyph_mirror(const char *name, struct GT_object *mirror_glyph);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Makes a glyph with the given <name> that automatically mirrors the given
-<mirror_glyph>.
-==============================================================================*/
-
 struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
 	ZnReal marker_size);
 /*******************************************************************************

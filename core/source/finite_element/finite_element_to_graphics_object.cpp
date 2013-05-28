@@ -793,7 +793,7 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
-	struct Computed_field *coordinate_field, struct GT_object *glyph,
+	struct Computed_field *coordinate_field, struct GT_object *glyph, int mirror_glyph_flag,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
@@ -1004,7 +1004,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						}
 					}
 					glyph_set = CREATE(GT_glyph_set)(final_number_of_points,point_list,
-						axis1_list,axis2_list,axis3_list,scale_list,glyph,font,labels,
+						axis1_list,axis2_list,axis3_list,scale_list,glyph,mirror_glyph_flag,font,labels,
 						n_data_components,data,
 						label_bounds_dimension,label_bounds_components,label_bounds,
 						label_density_list,
@@ -2450,7 +2450,8 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	Cmiss_field_cache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
+	int number_of_xi_points, FE_value_triple *xi_points,
+	struct GT_object *glyph, int mirror_glyph_flag,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
@@ -2603,7 +2604,7 @@ Note:
 				ALLOCATE(axis3_list, Triple, points_to_draw) &&
 				ALLOCATE(scale_list, Triple, points_to_draw) &&
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list, glyph, font,
+					axis1_list, axis2_list, axis3_list, scale_list, glyph, mirror_glyph_flag, font,
 					labels, n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,

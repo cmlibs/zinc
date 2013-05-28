@@ -556,7 +556,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph, int mirror_glyph_flag,
 	struct Cmiss_graphics_font *font, char **labels, int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names);
@@ -1273,25 +1273,6 @@ DESCRIPTION :
 Sets the select_mode of the <graphics_object>.
 ==============================================================================*/
 
-int GT_object_get_glyph_mirror_mode(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Gets the glyph_mirror_mode of a GT_object -- true or false.
-???RC temporary until we have a separate struct Glyph.
-==============================================================================*/
-
-int GT_object_set_glyph_mirror_mode(struct GT_object *graphics_object,
-	int glyph_mirror_mode);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Sets the glyph_mirror_mode of the <graphics_object> to true or false.
-???RC temporary until we have a separate struct Glyph.
-==============================================================================*/
-
 struct Graphical_material *get_GT_object_default_material(
 	struct GT_object *graphics_object);
 /*******************************************************************************
@@ -1385,6 +1366,12 @@ int set_GT_object_font(struct GT_object *graphics_object,
 int set_GT_object_glyph(struct GT_object *graphics_object,
 	struct GT_object *glyph);
 
+/**
+ * Sets the mirror flag for rendering glyphs in a GT_object.
+ */
+int set_GT_object_mirror_glyph_flag(struct GT_object *graphics_object,
+	int mirror_glyph_flag);
+
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 5 January 1998
@@ -1404,19 +1391,16 @@ Ensures the <spectrum> maximum and minimum is at least large enough to include
 the range of data values in <graphics_object>.
 ==============================================================================*/
 
+/**
+ * Multiplies the three axes by their <scale> to give the final axes, reversing
+ * <final_axis3> if necessary to produce a right handed coordinate system.
+ * If <mirror> is true, then the axes are pointed in the opposite direction.
+ * If <rebase> is true and the first scale is negative then shift the
+ * final_point to the other end of final_axis1.
+ */
 int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
-	Triple axis3, Triple scale, int mirror, int reverse, Triple final_point,
+	Triple axis3, Triple scale, int mirror, int rebase, Triple final_point,
 	Triple final_axis1, Triple final_axis2, Triple final_axis3);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Multiplies the three axes by their <scale> to give the final axes, reversing
-<final_axis3> if necessary to produce a right handed coordinate system.
-If <mirror> is true, then the axes are pointed in the opposite direction.
-If <reverse> is true, then the point is shifted to the end of each axis if the
-scale is negative for that axis.
-==============================================================================*/
 
 struct GT_object_compile_context *CREATE(GT_object_compile_context)(
 	ZnReal time, struct Graphics_buffer *graphics_buffer

@@ -484,6 +484,16 @@ public:
 		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
 	}
 
+	bool getMirrorGlyphFlag()
+	{
+		return (0 != Cmiss_graphic_point_attributes_get_mirror_glyph_flag(id));
+	}
+
+	int setMirrorGlyphFlag(bool mirrorFlag)
+	{
+		return Cmiss_graphic_point_attributes_set_mirror_glyph_flag(id, (int)mirrorFlag);
+	}
+
 	int getOffset(int valuesCount, double *valuesOut)
 	{
 		return Cmiss_graphic_point_attributes_get_offset(id, valuesCount, valuesOut);

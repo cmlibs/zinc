@@ -1,10 +1,8 @@
-/*******************************************************************************
-FILE : cmiss_graphic.cpp
-
-LAST MODIFIED : 22 October 2008
-
-DESCRIPTION :
-==============================================================================*/
+/**
+ * FILE : cmiss_graphic.cpp
+ *
+ * Implementation of graphic conversion object.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -352,6 +350,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 
 			/* point attributes */
 			graphic->glyph = 0;
+			graphic->mirror_glyph_flag = false;
 			for (int i = 0; i < 3; i++)
 			{
 				graphic->point_offset[i] = 0.0;
@@ -1066,7 +1065,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											use_element, top_level_element,
 											graphic_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
-											graphic->glyph, graphic->point_base_size, graphic->point_offset,
+											graphic->glyph, (int)graphic->mirror_glyph_flag,
+											graphic->point_base_size, graphic->point_offset,
 											graphic->point_scale_factors,
 											graphic_to_object_data->wrapper_orientation_scale_field,
 											graphic->signed_scale_field, graphic->data_field,
@@ -1875,6 +1875,7 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
 			set_GT_object_glyph(graphic->graphics_object, graphic->glyph);
+			set_GT_object_mirror_glyph_flag(graphic->graphics_object, (int)graphic->mirror_glyph_flag);
 		}
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
 		{
@@ -2291,6 +2292,10 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					append_string(&graphic_string,name,&error);
 					DEALLOCATE(name);
 				}
+				if (graphic->mirror_glyph_flag)
+				{
+					append_string(&graphic_string, " mirror_glyph", &error);
+				}
 				sprintf(temp_string," size \"%g*%g*%g\"",graphic->point_base_size[0],
 					graphic->point_base_size[1],graphic->point_base_size[2]);
 				append_string(&graphic_string,temp_string,&error);
@@ -2666,7 +2671,8 @@ int Cmiss_graphic_to_point_object_at_time(
 			ALLOCATE(axis3_list, Triple, 1);
 			ALLOCATE(scale_list, Triple, 1);
 			glyph_set = CREATE(GT_glyph_set)(1,
-				point_list, axis1_list, axis2_list, axis3_list, scale_list, graphic->glyph, graphic->font,
+				point_list, axis1_list, axis2_list, axis3_list, scale_list,
+				graphic->glyph, graphic->mirror_glyph_flag, graphic->font,
 				labels, /*n_data_components*/0, /*data*/(GLfloat *)NULL,
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
@@ -3434,7 +3440,8 @@ int Cmiss_graphic_to_graphics_object(
 											GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
 												iteration_nodeset, graphic_to_object_data->field_cache,
 												graphic_to_object_data->rc_coordinate_field,
-												graphic->glyph, graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
+												graphic->glyph, (int)graphic->mirror_glyph_flag,
+												graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
 												graphic_to_object_data->time,
 												graphic_to_object_data->wrapper_orientation_scale_field,
 												graphic->signed_scale_field, graphic->data_field,
@@ -4558,6 +4565,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		if (point_attributes)
 		{
 			Cmiss_graphic_point_attributes_set_glyph(point_attributes, source->glyph);
+			destination->mirror_glyph_flag = source->mirror_glyph_flag;
 			for (int i = 0; i < 3; i++)
 			{
 				destination->point_base_size[i] = source->point_base_size[i];
@@ -7163,6 +7171,35 @@ int Cmiss_graphic_point_attributes_set_label_field(
 		{
 			REACCESS(Computed_field)(&(graphic->label_field), label_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_get_mirror_glyph_flag(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		return graphic->mirror_glyph_flag;
+	}
+	return 0;
+}
+
+int Cmiss_graphic_point_attributes_set_mirror_glyph_flag(
+	Cmiss_graphic_point_attributes_id point_attributes, int mirror_glyph_flag)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		bool use_mirror_glyph_flag = (0 != mirror_glyph_flag);
+		if (use_mirror_glyph_flag != graphic->mirror_glyph_flag)
+		{
+			graphic->mirror_glyph_flag = use_mirror_glyph_flag;
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
 	}

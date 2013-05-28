@@ -532,36 +532,32 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_displ
 	return new Render_graphics_opengl_display_list<Render_graphics_opengl_vertex_buffer_object>();
 }
 
+/**
+ * Draws graphics object <glyph> at <number_of_points> points given by the
+ * positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
+ * and <axis3_list>, each axis additionally scaled by its value in <scale_list>.
+ * If the glyph is part of a linked list through its nextobject
+ * member, these attached glyphs are also executed.
+ * Writes the <labels> array strings, if supplied, beside each glyph point.
+ * If <names> are supplied these identify each point/glyph for OpenGL picking.
+ * If <draw_selected> is set, then only those <names> in <selected_name_ranges>
+ * are drawn, otherwise only those names not there are drawn.
+ * If <some_selected> is true, <selected_name_ranges> indicates the points that
+ * are selected, or all points if <selected_name_ranges> is NULL.
+ * @param no_lighting  Flag giving current state of whether lighting is off.
+ * Enable or disable lighting and update as appropriate for point/line or surface
+ * glyphs to minimise state changes.
+ */
 static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
-struct GT_object *glyph, char **labels,
+	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
 	int number_of_data_components, GLfloat *data, int *names,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,
-struct Graphical_material *material, struct Graphical_material *secondary_material,
-struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
-	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
 	Render_graphics_opengl *renderer, int object_name, int *lighting_off)
-	/*******************************************************************************
-	LAST MODIFIED : 22 November 2005
-
-	DESCRIPTION :
-	Draws graphics object <glyph> at <number_of_points> points given by the
-	positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
-	and <axis3_list>, each axis additionally scaled by its value in <scale_list>.
-	If the glyph is part of a linked list through its nextobject
-	member, these attached glyphs are also executed.
-	Writes the <labels> array strings, if supplied, beside each glyph point.
-	If <names> are supplied these identify each point/glyph for OpenGL picking.
-	If <draw_selected> is set, then only those <names> in <selected_name_ranges>
-	are drawn, otherwise only those names not there are drawn.
-	If <some_selected> is true, <selected_name_ranges> indicates the points that
-	are selected, or all points if <selected_name_ranges> is NULL.
-	@param no_lighting  Flag giving current state of whether lighting is off.
-	Enable or disable lighting and update as appropriate for point/line or surface
-	glyphs to minimise state changes.
-	==============================================================================*/
 {
 	char **label;
 	ZnReal *label_bound;
@@ -570,7 +566,6 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 	GLfloat *datum = 0;
 	int draw_all, i, j, *name = NULL, name_selected = 0, label_bounds_per_glyph = 0,
 		return_code;
-	struct GT_object *temp_glyph = NULL;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
 		temp_axis3, temp_point;
@@ -627,8 +622,8 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 				{
 					label_bounds_per_glyph = 1 << label_bounds_dimension;
 				}
-				/* try to draw points and lines faster */
-				if (!glyph)
+				// try to draw points and lines faster
+				if (!glyph) // labels only
 				{
 					if (!*lighting_off)
 					{
@@ -760,11 +755,9 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						glEnd();
 					}
 				}
-				else if ((0 == strcmp(glyph->name, "line")) ||
-					(0 == strcmp(glyph->name, "mirror_line")))
+				else if (0 == strcmp(glyph->name, "line"))
 				{
 					GLfloat f0, f1;
-					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
 					if (!*lighting_off)
 					{
 						/* disable lighting so rendered in flat diffuse colour */
@@ -798,7 +791,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								x = (*point)[0];
 								y = (*point)[1];
 								z = (*point)[2];
-								if (mirror_mode)
+								if (mirror_glyph_flag)
 								{
 									f0 = (*scale)[0];
 									x -= f0*(*axis1)[0];
@@ -851,7 +844,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 							x = (*point)[0];
 							y = (*point)[1];
 							z = (*point)[2];
-							if (mirror_mode)
+							if (mirror_glyph_flag)
 							{
 								f0 = (*scale)[0];
 								x -= f0*(*axis1)[0];
@@ -904,7 +897,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 									glLoadName((GLuint)(*name));
 								}
 								resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-									/*mirror*/0, /*reverse*/0,
+									/*mirror*/0, /*rebase*/0,
 									temp_point, temp_axis1, temp_axis2, temp_axis3);
 
 								x = temp_point[0];
@@ -977,7 +970,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								datum += number_of_data_components;
 							}
 							resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-								/*mirror*/0, /*reverse*/0,
+								/*mirror*/0, /*rebase*/0,
 								temp_point, temp_axis1, temp_axis2, temp_axis3);
 							/* x-line */
 							x = temp_point[0] - 0.5*temp_axis1[0];
@@ -1015,7 +1008,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						glEnd();
 					}
 				}
-				else
+				else // general case
 				{
 					if (*lighting_off)
 					{
@@ -1023,8 +1016,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 						glEnable(GL_LIGHTING);
 						*lighting_off = 0;
 					}
-					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-					const int number_of_glyphs = (mirror_mode) ? 2 : 1;
+					const int number_of_glyphs = (mirror_glyph_flag) ? 2 : 1;
 					/* must push and pop the modelview matrix */
 					glMatrixMode(GL_MODELVIEW);
 					if ((object_name > 0) && highlight_functor)
@@ -1053,7 +1045,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								/* store the current modelview matrix */
 								glPushMatrix();
 								resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-									/*mirror*/j, /*reverse*/mirror_mode,
+									/*mirror*/j, /*rebase*/mirror_glyph_flag,
 									temp_point, temp_axis1, temp_axis2, temp_axis3);
 
 								/* make transformation matrix for manipulating glyph */
@@ -1074,16 +1066,7 @@ struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
 								transformation[14] = temp_point[2];
 								transformation[15] = 1.0;
 								glMultMatrixf(transformation);
-								if (mirror_mode)
-								{
-									/* ignore first glyph since just a wrapper for the second */
-									temp_glyph = GT_object_get_next_object(glyph);
-								}
-								else
-								{
-									temp_glyph = glyph;
-								}
-								renderer->Graphics_object_execute(temp_glyph);
+								renderer->Graphics_object_execute(glyph);
 								glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph);
 								if (glyph_labels_function)
 								{
@@ -3181,6 +3164,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 											interpolate_glyph_set->axis3_list,
 											interpolate_glyph_set->scale_list,
 											interpolate_glyph_set->glyph,
+											interpolate_glyph_set->mirror_glyph_flag,
 											interpolate_glyph_set->labels,
 											interpolate_glyph_set->n_data_components,
 											interpolate_glyph_set->data,
@@ -3211,7 +3195,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									draw_glyphsetGL(glyph_set->number_of_points,
 										glyph_set->point_list, glyph_set->axis1_list,
 										glyph_set->axis2_list, glyph_set->axis3_list,
-										glyph_set->scale_list, glyph_set->glyph,
+										glyph_set->scale_list, glyph_set->glyph, glyph_set->mirror_glyph_flag,
 										glyph_set->labels, glyph_set->n_data_components,
 										glyph_set->data, glyph_set->names,
 										glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,

@@ -606,10 +606,10 @@ b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
 	return (return_code);
 } /* get_orthogonal_axes */
 
-int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
+static int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	Triple *point_list,Triple *axis1_list,
 	Triple *axis2_list,Triple *axis3_list,Triple *scale_list,
-	struct GT_object *glyph,char **labels,
+	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
 	int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
@@ -624,9 +624,9 @@ points  given by the positions in <point_list> and oriented and scaled by
 {
 	char **label, *label_token;
 	ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
-		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f, f0, f1, j1, j2, j3,
+		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f0, f1, j1, j2, j3,
 		c_magnitude, s1, s2, s3, x, y, z;
-	int i, j, mirror_mode, number_of_glyphs, number_of_skew_glyph_axes,
+	int i, j, number_of_glyphs, number_of_skew_glyph_axes,
 		return_code, skewed_axes;
 	struct Graphical_material *material_copy;
 	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
@@ -640,15 +640,6 @@ points  given by the positions in <point_list> and oriented and scaled by
 	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
 		axis3_list && scale_list && glyph)
 	{
-		mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-		if (mirror_mode)
-		{
-			f = -1.0;
-		}
-		else
-		{
-			f = 0.0;
-		}
 		if (data && (!spectrum))
 		{
 			display_message(WARNING_MESSAGE,"draw_glyph_set_vrml.  Missing spectrum");
@@ -700,17 +691,9 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"  } #Pointset\n");
 				fprintf(vrml_file,"} #Shape\n");
 			}
-			else if ((0 == strcmp(glyph->name, "line")) ||
-				(0 == strcmp(glyph->name, "mirror_line")))
+			else if (0 == strcmp(glyph->name, "line"))
 			{
-				if (mirror_mode)
-				{
-					f = -1.0;
-				}
-				else
-				{
-					f = 0.0;
-				}
+				const ZnReal f = mirror_glyph_flag ? -1.0 : 0.0;
 				fprintf(vrml_file,"Shape {\n");
 				fprintf(vrml_file,"  appearance\n");
 				if (material)
@@ -790,7 +773,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				for (i=0;i<number_of_points;i++)
 				{
 					resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-						/*mirror*/0, /*reverse*/0,
+						/*mirror*/0, /*rebase*/0,
 						temp_point, temp_axis1, temp_axis2, temp_axis3);
 					/* x-line */
 					x = temp_point[0] - 0.5*temp_axis1[0];
@@ -864,7 +847,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				number_of_skew_glyph_axes=0;
 				for (i = 0; i < number_of_points; i++)
 				{
-					if (mirror_mode)
+					if (mirror_glyph_flag)
 					{
 						number_of_glyphs = 2;
 					}
@@ -875,7 +858,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 					for (j = 0; j < number_of_glyphs; j++)
 					{
 						resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-							/*mirror*/j, /*reverse*/mirror_mode,
+							/*mirror*/j, /*rebase*/mirror_glyph_flag,
 							temp_point, temp_axis1, temp_axis2, temp_axis3);
 						/* get the glyph centre as x, y and z */
 						x = temp_point[0];
@@ -1120,35 +1103,15 @@ points  given by the positions in <point_list> and oriented and scaled by
 									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
 								/* note no DEF/USE when coloured by a spectrum as will always be
 									 different every time it is rendered */
-								if (mirror_mode)
-								{
-									write_graphics_object_vrml(vrml_file, GT_object_get_next_object(glyph), time,
-										(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
-										material_copy, /*gt_object_already_defined*/0);
-								}
-								else
-								{
-									write_graphics_object_vrml(vrml_file, glyph, time,
-										(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
-										material_copy, /*gt_object_already_defined*/0);
-								}
+								write_graphics_object_vrml(vrml_file, glyph, time,
+									(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
+									material_copy, /*gt_object_already_defined*/0);
 							}
 							else
 							{
-								/*???RC temporary until we have a struct Glyph - actual glyph to use
-									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
-								if (mirror_mode)
-								{
-									write_graphics_object_vrml(vrml_file, GT_object_get_next_object(glyph), time,
-										vrml_prototype_list, /*object_is_glyph*/1,
-										material, /*gt_object_already_defined*/0<i);
-								}
-								else
-								{
-									write_graphics_object_vrml(vrml_file, glyph, time,
-										vrml_prototype_list, /*object_is_glyph*/1,
-										material, /*gt_object_already_defined*/0<i);
-								}
+								write_graphics_object_vrml(vrml_file, glyph, time,
+									vrml_prototype_list, /*object_is_glyph*/1,
+									material, /*gt_object_already_defined*/0<i);
 							}
 							fprintf(vrml_file,"    ]\n");
 /*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
@@ -2220,6 +2183,7 @@ Only writes the geometry field.
 										interpolate_glyph_set->axis3_list,
 										interpolate_glyph_set->scale_list,
 										interpolate_glyph_set->glyph,
+										interpolate_glyph_set->mirror_glyph_flag,
 										interpolate_glyph_set->labels,
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
@@ -2240,7 +2204,7 @@ Only writes the geometry field.
 									glyph_set->point_list, glyph_set->axis1_list,
 									glyph_set->axis2_list, glyph_set->axis3_list,
 									glyph_set->scale_list, glyph_set->glyph,
-									glyph_set->labels,
+									glyph_set->mirror_glyph_flag, glyph_set->labels,
 									glyph_set->n_data_components, glyph_set->data,
 									object->default_material, object->spectrum,
 									time, vrml_prototype_list);
