@@ -54,7 +54,7 @@ private:
 	{	}
 
 	friend FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount,
-		Field* sourceFields);
+		Field *sourceFields);
 
 	friend FieldCrossProduct FieldModule::createCrossProduct(
 		Field& sourceField1, Field& sourceField2);
@@ -131,7 +131,7 @@ public:
 
 };
 
-inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field* sourceFields)
+inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field *sourceFields)
 {
 	Cmiss_field_id field = 0;
 	if (fieldsCount > 0)

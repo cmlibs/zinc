@@ -360,7 +360,7 @@ public:
 
 	FieldAtan2 createAtan2(Field& sourceField1, Field& sourceField2);
 
-	FieldCrossProduct createCrossProduct(int fieldsCount, Field* sourceFields);
+	FieldCrossProduct createCrossProduct(int fieldsCount, Field *sourceFields);
 
 	FieldCrossProduct createCrossProduct(Field& sourceField1, Field& sourceField2);
 
