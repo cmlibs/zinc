@@ -46,6 +46,8 @@
 namespace zinc
 {
 
+class ScenePicker;
+
 class Scene
 {
 protected:
@@ -136,6 +138,8 @@ public:
 	{
 		return Cmiss_scene_set_filter(id, filter.getId());
 	}
+
+	ScenePicker createPicker();
 
 };
 
