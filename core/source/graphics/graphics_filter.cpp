@@ -377,6 +377,29 @@ public:
 	}
 };
 
+class Cmiss_graphics_filter_graphic_type : public Cmiss_graphics_filter
+{
+	enum Cmiss_graphic_type graphic_type;
+
+public:
+	Cmiss_graphics_filter_graphic_type(enum Cmiss_graphic_type inGraphicType) :
+		graphic_type(inGraphicType)
+	{
+		filter_type = CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_TYPE;
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic)
+	{
+		return (!isInverse() == (graphic_type == Cmiss_graphic_get_graphic_type(graphic)));
+	}
+
+	virtual void list_type_specific() const
+	{
+		char *filter_type_name = Cmiss_graphic_type_enum_to_string(graphic_type);
+		display_message(INFORMATION_MESSAGE, "%s", filter_type_name);
+		DEALLOCATE(filter_type_name);
+	}
+};
 }
 
 Cmiss_graphics_filter *Cmiss_graphics_filter_access(Cmiss_graphics_filter *filter)
@@ -656,6 +679,26 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
 		struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager =
 			Cmiss_graphics_module_get_filter_manager(graphics_module);
 		graphics_filter = new Cmiss_graphics_filter_graphic_name(match_name);
+		Cmiss_graphics_filter_set_name(graphics_filter, name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphics_filter_manager))
+		{
+			DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+		}
+		DEALLOCATE(name);
+	}
+	return graphics_filter;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_type(
+	Cmiss_graphics_module_id graphics_module, enum Cmiss_graphic_type graphic_type)
+{
+	Cmiss_graphics_filter_id graphics_filter = NULL;
+	if (graphics_module)
+	{
+		char *name = get_valid_temporary_name_for_graphics_filter(graphics_module);
+		struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager =
+			Cmiss_graphics_module_get_filter_manager(graphics_module);
+		graphics_filter = new Cmiss_graphics_filter_graphic_type(graphic_type);
 		Cmiss_graphics_filter_set_name(graphics_filter, name);
 		if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphics_filter_manager))
 		{

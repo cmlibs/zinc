@@ -941,4 +941,11 @@ int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void);
 int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
 	struct Scene *scene, void *dummy_void);
 
+Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int position);
+
+struct Cmiss_graphics_module *Cmiss_scene_get_graphics_module(Cmiss_scene_id scene);
+
+int Scene_manager_set_owner(struct MANAGER(Scene) *manager,
+	struct Cmiss_graphics_module *graphics_module);
+
 #endif /* !defined (SCENE_H) */

@@ -42,6 +42,7 @@
 #define RENDER_HPP
 
 struct Cmiss_scene;
+struct Cmiss_graphics_filter;
 #define Scene Cmiss_scene // GRC temp
 struct Cmiss_graphic;
 struct Cmiss_rendition;
@@ -64,10 +65,12 @@ class Render_graphics
 {
 private:
 	Cmiss_scene *current_scene;
+	Cmiss_graphics_filter *graphics_filter;
 
 public:
 	Render_graphics() :
-		current_scene(NULL)
+		current_scene(NULL),
+		graphics_filter(NULL)
 	{
 	}
 
@@ -78,7 +81,7 @@ public:
 	/***************************************************************************//**
 	 * Compile the Scene.
 	 */
-	virtual int Scene_compile(Scene *scene) = 0;
+	virtual int Scene_compile(Scene *scene, Cmiss_graphics_filter *graphics_filter) = 0;
 	
 	/***************************************************************************//**
 	 * Execute the Scene.
@@ -168,9 +171,19 @@ public:
 		return current_scene;
 	}
 
+	Cmiss_graphics_filter *getGraphicsFilter()
+	{
+		return graphics_filter;
+	}
+
 	void set_Scene(Cmiss_scene *new_scene)
 	{
 		current_scene = new_scene;
+	}
+
+	void setGraphicsFilter(Cmiss_graphics_filter *new_graphics_filter)
+	{
+		graphics_filter = new_graphics_filter;
 	}
 
 	/** Prepare coordinate system for executing graphics object.
@@ -232,7 +245,7 @@ public:
 	/***************************************************************************//**
 	 * Compile the Scene.
 	 */
-	virtual int Scene_compile(Scene *scene);
+	virtual int Scene_compile(Scene *scene, Cmiss_graphics_filter *graphics_filter);
 
 	/***************************************************************************//**
 	 * Compile the Cmiss rendition.

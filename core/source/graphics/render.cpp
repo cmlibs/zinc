@@ -39,6 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+#include "zinc/graphicsfilter.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -57,9 +58,10 @@
 
 /****************** Render_graphics_compile_members **********************/
 
-int Render_graphics_compile_members::Scene_compile(Scene *scene)
+int Render_graphics_compile_members::Scene_compile(Scene *scene, Cmiss_graphics_filter_id graphics_filter)
 {
 	set_Scene(scene);
+	setGraphicsFilter(graphics_filter);
 	return Scene_compile_members(scene, this);
 }
 

@@ -1032,7 +1032,7 @@ int Cmiss_rendition_modify_graphic(struct Cmiss_rendition *rendition,
 } /* Cmiss_rendition_modify_graphic */
 
 static int Cmiss_rendition_build_graphics_objects(
-	struct Cmiss_rendition *rendition, struct Cmiss_scene *scene,
+	struct Cmiss_rendition *rendition, Cmiss_graphics_filter *graphics_filter,
 	FE_value time, const char *name_prefix)
 {
 	int return_code = 1;
@@ -1058,7 +1058,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
 			graphic_to_object_data.master_mesh = 0;
 			graphic_to_object_data.iteration_mesh = 0;
-			graphic_to_object_data.scene = scene;
+			graphic_to_object_data.graphics_filter = graphics_filter;
 			graphic_to_object_data.time = time;
 			graphic_to_object_data.selected_element_point_ranges_list
 				= Element_point_ranges_selection_get_element_point_ranges_list(
@@ -1210,6 +1210,12 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 		/* must first build graphics objects */
 		Render_graphics_build_objects renderer;
 		renderer.set_Scene(scene);
+ 		Cmiss_graphics_filter *filter = Cmiss_scene_get_filter(scene);
+ 		if (filter)
+ 		{
+ 			renderer.setGraphicsFilter(filter);
+ 			Cmiss_graphics_filter_destroy(&filter);
+ 		}
 		renderer.Cmiss_rendition_compile(rendition);
 		if (NULL != (transformation = Cmiss_rendition_get_total_transformation_on_scene(
 			rendition, scene)))
@@ -1543,7 +1549,7 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	{
 		/* check whether rendition contents need building */
 		return_code = Cmiss_rendition_build_graphics_objects(rendition,
-			renderer->get_Scene(), renderer->time, renderer->name_prefix);
+			renderer->getGraphicsFilter(), renderer->time, renderer->name_prefix);
 	/* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,

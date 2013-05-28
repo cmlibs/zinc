@@ -3173,7 +3173,7 @@ int Cmiss_graphic_to_graphics_object(
 		time = 0.0;
 		return_code = 1;
 		/* build only if visible... */
-		Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(graphic_to_object_data->scene);
+		Cmiss_graphics_filter_id filter = graphic_to_object_data->graphics_filter;
 		if (filter)
 		{
 			/* build only if changed... and complete */
@@ -3703,7 +3703,6 @@ int Cmiss_graphic_to_graphics_object(
 					graphic->selected_graphics_changed = 0;
 				}
 			}
-			Cmiss_graphics_filter_destroy(&filter);
 		}
 	}
 	else
@@ -3730,7 +3729,7 @@ int Cmiss_graphic_compile_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_Scene());
+			Cmiss_graphics_filter_id filter = renderer->getGraphicsFilter();
 			if (filter)
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
@@ -3739,7 +3738,6 @@ int Cmiss_graphic_compile_visible_graphic(
 					return_code = renderer->Graphics_object_compile(graphic->graphics_object);
 					Cmiss_graphic_remove_renderer_highlight_functor(graphic, renderer);
 				}
-				Cmiss_graphics_filter_destroy(&filter);
 			}
 		}
 	}
@@ -3792,7 +3790,7 @@ int Cmiss_graphic_execute_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_Scene());
+			Cmiss_graphics_filter_id filter = renderer->getGraphicsFilter();
 			if (filter)
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
@@ -3810,7 +3808,6 @@ int Cmiss_graphic_execute_visible_graphic(
 						}
 					}
 				}
-				Cmiss_graphics_filter_destroy(&filter);
 			}
 		}
 	}
