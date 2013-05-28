@@ -70,9 +70,13 @@ TEST(zincFieldCrossProduct, create_evaluate_2d)
 	FieldConstant f4 = zinc.fm.createConstant(1, &one);
 	EXPECT_EQ(true, f4.isValid());
 	Field noField;
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(0, &f1).isValid());
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(1, &noField).isValid());
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(1, &f4).isValid());
+	Field f;
+	f = zinc.fm.createCrossProduct(0, &f1);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createCrossProduct(1, &noField);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createCrossProduct(1, &f4);
+	EXPECT_EQ(false, f.isValid());
 }
 
 TEST(Cmiss_field_cross_product, create_evaluate_3d)
@@ -138,9 +142,13 @@ TEST(zincFieldCrossProduct, create_evaluate_3d)
 	FieldConstant f4 = zinc.fm.createConstant(1, &one);
 	EXPECT_EQ(true, f4.isValid());
 	Field noField;
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(noField, f2).isValid());
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(f1, noField).isValid());
-	EXPECT_EQ(false, zinc.fm.createCrossProduct(f1, f4).isValid());
+	Field f;
+	f = zinc.fm.createCrossProduct(noField, f2);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createCrossProduct(f1, noField);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createCrossProduct(f1, f4);
+	EXPECT_EQ(false, f.isValid());
 }
 
 TEST(Cmiss_field_sum_components, create_evaluate)

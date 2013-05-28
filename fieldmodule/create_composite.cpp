@@ -82,7 +82,11 @@ TEST(zincFieldModule_createComponent, invalid_args)
 	EXPECT_EQ(true, f1.isValid());
 
 	Field noField;
-	EXPECT_EQ(false, zinc.fm.createComponent(noField, component_index).isValid());
-	EXPECT_EQ(false, zinc.fm.createComponent(f1, 0).isValid());
-	EXPECT_EQ(false, zinc.fm.createComponent(f1, 4).isValid());
+	Field f;
+	f = zinc.fm.createComponent(noField, component_index);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createComponent(f1, 0);
+	EXPECT_EQ(false, f.isValid());
+	f = zinc.fm.createComponent(f1, 4);
+	EXPECT_EQ(false, f.isValid());
 }
