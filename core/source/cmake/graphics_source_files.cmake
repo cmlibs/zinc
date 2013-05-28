@@ -97,6 +97,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
 		source/graphics/scene.cpp
+		source/graphics/scene_picker.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
 		source/graphics/font.h
@@ -107,5 +108,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render_gl.h
 		source/graphics/scene.h
 		source/graphics/scene.hpp
+		source/graphics/scene_picker.hpp
 		source/graphics/tile_graphics_objects.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )

@@ -48,6 +48,7 @@
 #include "types/graphicsfilterid.h"
 #include "types/regionid.h"
 #include "types/sceneid.h"
+#include "types/scenepickerid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -177,6 +178,14 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
+/***************************************************************************//**
+ * Create a scene picker which user can use to define a picking volume and
+ * find the onjects included in this volume.
+ *
+ * @param scene  Scene to create the scene picker for.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene);
 
 #ifdef __cplusplus
 }

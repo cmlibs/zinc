@@ -57,6 +57,7 @@ November 97 Created from rendering part of Drawing.
 #include <map>
 #include "zinc/field.h"
 #include "zinc/fieldmodule.h"
+#include "zinc/graphicsfilter.h"
 #include "zinc/sceneviewerinput.h"
 //#include "zinc/graphic.h"
 //#include "computed_field/computed_field.h"
@@ -2111,7 +2112,10 @@ access this function.
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
-			rendering_data.renderer->Scene_compile(scene_viewer->scene);
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(scene_viewer->scene);
+			rendering_data.renderer->Scene_compile(scene_viewer->scene, filter);
+			if (filter)
+				Cmiss_graphics_filter_destroy(&filter);
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
 			/* Add functionality to the render callstack */

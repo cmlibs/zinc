@@ -276,6 +276,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
 					(void *)module, module->spectrum_manager);
 			module->scene_manager = CREATE(MANAGER(Scene)());
+			Scene_manager_set_owner(module->scene_manager, module);
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);

@@ -160,11 +160,22 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility
  * name.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
- * @param match_name  The name a graphic must have to be matched by this filter.
+ * @param match_name  The name of a graphic must be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
 ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
 	Cmiss_graphics_module_id graphics_module, const char *match_name);
+
+/***************************************************************************//**
+ * Creates a Cmiss_graphics_filter which matches any graphic with matching
+ * type.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @param graphic_type  The type of a graphic must be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_type(
+	Cmiss_graphics_module_id graphics_module, enum Cmiss_graphic_type graphic_type);
 
 /***************************************************************************//**
  * Creates a Cmiss_graphics_filter which matches any graphic in region or any

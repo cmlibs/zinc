@@ -121,7 +121,7 @@ completed by type-specific create function.
 		interaction_volume->modelview_matrix_calculated=0;
 		interaction_volume->projection_matrix_calculated=0;
 		interaction_volume->transformation_matrix_calculated=0;
-		interaction_volume->access_count=0;
+		interaction_volume->access_count=1;
 	}
 	else
 	{
@@ -647,7 +647,7 @@ Destroys the Interaction_volume.
 	if (interaction_volume_address&&
 		(interaction_volume= *interaction_volume_address))
 	{
-		if (0==interaction_volume->access_count)
+		if (0 >= interaction_volume->access_count)
 		{
 			DEALLOCATE(*interaction_volume_address);
 			return_code=1;

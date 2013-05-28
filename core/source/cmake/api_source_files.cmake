@@ -37,6 +37,7 @@ SET( API_HDRS
     source/api/zinc/region.h
     source/api/zinc/rendition.h
     source/api/zinc/scene.h
+    source/api/zinc/scenepicker.h
     source/api/zinc/selection.h
     source/api/zinc/spectrum.h
     source/api/zinc/status.h
@@ -69,6 +70,7 @@ SET( API_HDRS
     source/api/zinc/types/regionid.h
     source/api/zinc/types/renditionid.h
     source/api/zinc/types/sceneid.h
+    source/api/zinc/types/scenepickerid.h
     source/api/zinc/types/selectionid.h
     source/api/zinc/types/spectrumid.h
     source/api/zinc/types/streamid.h

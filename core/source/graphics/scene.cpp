@@ -51,6 +51,7 @@
 
 
 #include "zinc/scene.h"
+#include "zinc/scenepicker.h"
 #include "zinc/graphicsfilter.h"
 #include "zinc/rendition.h"
 #include "computed_field/computed_field.h"
@@ -78,6 +79,7 @@
 #include "graphics/graphics_object.h"
 #include "graphics/light.h"
 #include "graphics/texture.h"
+#include "graphics/scene_picker.hpp"
 #include "time/time.h"
 #include "time/time_keeper.hpp"
 #include "general/message.h"
@@ -149,6 +151,13 @@ Module functions
 */
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Scene, struct Cmiss_graphics_module)
+
+int Scene_manager_set_owner(struct MANAGER(Scene) *manager,
+	struct Cmiss_graphics_module *graphics_module)
+{
+	return MANAGER_SET_OWNER(Scene)(manager, graphics_module);
+}
 
 int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 {
@@ -3401,7 +3410,8 @@ understood for the type of <interaction_volume> passed.
 			Render_graphics_opengl *renderer =
 				Render_graphics_opengl_create_glbeginend_renderer();
 			renderer->picking = 1;
-			if (renderer->Scene_compile(scene))
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(scene);
+			if (renderer->Scene_compile(scene, filter))
 			{
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;
@@ -3527,6 +3537,8 @@ understood for the type of <interaction_volume> passed.
 				display_message(ERROR_MESSAGE,
 					"Scene_pick_objects.  Unable to compile scene.");
 			}
+			if (filter)
+				Cmiss_graphics_filter_destroy(&filter);
 			delete renderer;
 		}
 		else
@@ -3721,7 +3733,10 @@ int build_Scene(struct Scene *scene)
 			Render_graphics_build_objects renderer;
 
 			scene->build = 0;
-			return_code = renderer.Scene_compile(scene);
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(scene);
+			return_code = renderer.Scene_compile(scene, filter);
+			if (filter)
+				Cmiss_graphics_filter_destroy(&filter);
 		}
 		else
 		{
@@ -4558,4 +4573,30 @@ char *Cmiss_scene_attribute_enum_to_string(
 {
 	const char *attribute_string = Cmiss_scene_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
+}
+
+struct Cmiss_graphics_module *Cmiss_scene_get_graphics_module(Cmiss_scene_id scene)
+{
+	Cmiss_graphics_module_id graphics_module = 0;
+	if (scene && scene->manager)
+	{
+		graphics_module = MANAGER_GET_OWNER(Scene)(scene->manager);
+		if (graphics_module)
+			Cmiss_graphics_module_access(graphics_module);
+	}
+	return graphics_module;
+}
+
+Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene)
+{
+	if (scene)
+	{
+		Cmiss_graphics_module_id graphics_module = Cmiss_scene_get_graphics_module(scene);
+		Cmiss_scene_picker_id scene_picker = Cmiss_scene_picker_create(graphics_module);
+		if (graphics_module)
+			Cmiss_graphics_module_destroy(&graphics_module);
+		Cmiss_scene_picker_set_scene(scene_picker, scene);
+		return scene_picker;
+	}
+	return 0;
 }
