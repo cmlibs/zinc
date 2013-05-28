@@ -586,6 +586,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/region.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/rendition.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scene.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scenepicker.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewer.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewerinput.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/selection.h
@@ -632,6 +633,7 @@ SET( ZINC_LIB_APIPP_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/region.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/rendition.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scene.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/scenepicker.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/sceneviewer.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/selection.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/spectrum.hpp
@@ -666,6 +668,7 @@ SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/regionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/renditionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/sceneid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/scenepickerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/sceneviewerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/selectionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/spectrumid.h

@@ -34,6 +34,7 @@ SET( APIPP_HDRS
     source/api/zinc/region.hpp
     source/api/zinc/rendition.hpp
     source/api/zinc/scene.hpp
+    source/api/zinc/scenepicker.hpp
     source/api/zinc/sceneviewer.hpp
     source/api/zinc/selection.hpp
     source/api/zinc/spectrum.hpp
