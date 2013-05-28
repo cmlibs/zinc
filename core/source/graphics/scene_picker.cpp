@@ -34,6 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <list>
 #include <map>
 
 #include "zinc/status.h"
@@ -485,7 +486,7 @@ public:
 		Cmiss_element_id nearest_element = 0;
 		if (pickObjects() && select_buffer)
 		{
-			int hit_no, number_of_names, current_element_type;
+			int hit_no, number_of_names, current_element_type = 0;
 			GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 			double current_nearest = 0, nearest = 0;
 			Cmiss_rendition_id rendition = 0, existing_rendition = 0;
