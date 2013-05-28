@@ -34,7 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <list>
+#include <algorithm>
 #include <map>
 
 #include "zinc/status.h"
