@@ -54,10 +54,10 @@ TEST(zincFieldCrossProduct, create_evaluate_2d)
 
 	const double values1[] = { 1.0, 1.0 };
 	FieldConstant f1 = zinc.fm.createConstant(2, values1);
-	EXPECT_EQ(true, f1.isValid());
+	EXPECT_TRUE(f1.isValid());
 
 	FieldCrossProduct f2 = zinc.fm.createCrossProduct(1, &f1);
-	EXPECT_EQ(true, f2.isValid());
+	EXPECT_TRUE(f2.isValid());
 
 	FieldCache cache = zinc.fm.createCache();
 	double values[2];
@@ -68,15 +68,11 @@ TEST(zincFieldCrossProduct, create_evaluate_2d)
 	// test invalid arguments
 	const double one = 1.0;
 	FieldConstant f4 = zinc.fm.createConstant(1, &one);
-	EXPECT_EQ(true, f4.isValid());
+	EXPECT_TRUE(f4.isValid());
 	Field noField;
-	Field f;
-	f = zinc.fm.createCrossProduct(0, &f1);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createCrossProduct(1, &noField);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createCrossProduct(1, &f4);
-	EXPECT_EQ(false, f.isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(0, &f1).isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(1, &noField).isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(1, &f4).isValid());
 }
 
 TEST(Cmiss_field_cross_product, create_evaluate_3d)
@@ -122,13 +118,13 @@ TEST(zincFieldCrossProduct, create_evaluate_3d)
 
 	const double values1[] = { 2.0, 0.0, 0.0 };
 	FieldConstant f1 = zinc.fm.createConstant(3, values1);
-	EXPECT_EQ(true, f1.isValid());
+	EXPECT_TRUE(f1.isValid());
 	const double values2[] = { 0.0, 1.5, 0.0 };
 	FieldConstant f2 = zinc.fm.createConstant(3, values2);
-	EXPECT_EQ(true, f2.isValid());
+	EXPECT_TRUE(f2.isValid());
 
 	FieldCrossProduct f3 = zinc.fm.createCrossProduct(f1, f2);
-	EXPECT_EQ(true, f3.isValid());
+	EXPECT_TRUE(f3.isValid());
 
 	FieldCache cache = zinc.fm.createCache();
 	double values[3];
@@ -140,15 +136,11 @@ TEST(zincFieldCrossProduct, create_evaluate_3d)
 	// test invalid arguments
 	const double one = 1.0;
 	FieldConstant f4 = zinc.fm.createConstant(1, &one);
-	EXPECT_EQ(true, f4.isValid());
+	EXPECT_TRUE(f4.isValid());
 	Field noField;
-	Field f;
-	f = zinc.fm.createCrossProduct(noField, f2);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createCrossProduct(f1, noField);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createCrossProduct(f1, f4);
-	EXPECT_EQ(false, f.isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(noField, f2).isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(f1, noField).isValid());
+	EXPECT_FALSE(zinc.fm.createCrossProduct(f1, noField).isValid());
 }
 
 TEST(Cmiss_field_sum_components, create_evaluate)
@@ -182,10 +174,10 @@ TEST(zincFieldSumComponents, create_evaluate)
 
 	const double values[] = { 2.0, 4.0, 6.0 };
 	FieldConstant f1 = zinc.fm.createConstant(3, values);
-	EXPECT_EQ(true, f1.isValid());
+	EXPECT_TRUE(f1.isValid());
 
 	FieldSumComponents f2 = zinc.fm.createSumComponents(f1);
-	EXPECT_EQ(true, f2.isValid());
+	EXPECT_TRUE(f2.isValid());
 
 	FieldCache cache = zinc.fm.createCache();
 	double value = 0.0;
@@ -195,5 +187,5 @@ TEST(zincFieldSumComponents, create_evaluate)
 	// test invalid arguments
 	Field noField;
 	FieldSumComponents f3 = zinc.fm.createSumComponents(noField);
-	EXPECT_EQ(false, f3.isValid());
+	EXPECT_FALSE(f3.isValid());
 }

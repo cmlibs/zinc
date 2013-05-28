@@ -61,10 +61,10 @@ TEST(zincFieldModule_createComponent, valid_args)
 	const double values[] = { 2.0, 4.0, 6.0 };
 	const int component_index = 2;
 	FieldConstant f1 = zinc.fm.createConstant(3, values);
-	EXPECT_EQ(true, f1.isValid());
+	EXPECT_TRUE(f1.isValid());
 
 	FieldComponent f2 = zinc.fm.createComponent(f1, component_index);
-	EXPECT_EQ(true, f2.isValid());
+	EXPECT_TRUE(f2.isValid());
 
 	FieldCache cache = zinc.fm.createCache();
 	double value = 0.0;
@@ -79,14 +79,10 @@ TEST(zincFieldModule_createComponent, invalid_args)
 	const double values[] = { 2.0, 4.0, 6.0 };
 	const int component_index = 2;
 	FieldConstant f1 = zinc.fm.createConstant(3, values);
-	EXPECT_EQ(true, f1.isValid());
+	EXPECT_TRUE(f1.isValid());
 
 	Field noField;
-	Field f;
-	f = zinc.fm.createComponent(noField, component_index);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createComponent(f1, 0);
-	EXPECT_EQ(false, f.isValid());
-	f = zinc.fm.createComponent(f1, 4);
-	EXPECT_EQ(false, f.isValid());
+	EXPECT_FALSE(zinc.fm.createComponent(noField, component_index).isValid());
+	EXPECT_FALSE(zinc.fm.createComponent(f1, 0).isValid());
+	EXPECT_FALSE(zinc.fm.createComponent(f1, 4).isValid());
 }
