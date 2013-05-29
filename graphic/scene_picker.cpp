@@ -15,6 +15,13 @@
 #include <zinc/scenepicker.h>
 
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
+#include "zinc/element.hpp"
+#include "zinc/graphic.hpp"
+#include "zinc/node.hpp"
+#include "zinc/scenepicker.hpp"
+#include "zinc/scene.hpp"
+#include "zinc/sceneviewer.hpp"
 
 TEST(Cmiss_scene_picker_api, valid_args)
 {
@@ -94,4 +101,66 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	Cmiss_scene_picker_destroy(&scene_picker);
 
 	Cmiss_scene_destroy(&scene);
+}
+
+TEST(Cmiss_scene_picker_api, valid_args_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldGroup fieldGroup = zinc.fm.createGroup();
+
+	Scene scene = zinc.gm.createScene();
+
+	ScenePicker scenePicker = scene.createPicker();
+	EXPECT_EQ(true, scenePicker.isValid());
+
+	SceneViewerPackage sv_package = zinc.context.getDefaultSceneViewerPackage();
+	EXPECT_EQ(true, sv_package.isValid());
+
+	SceneViewer sv = sv_package.createSceneViewer(
+		SceneViewer::BUFFERING_MODE_DOUBLE, SceneViewer::STEREO_MODE_ANY);
+	EXPECT_EQ(true, sv.isValid());
+
+	int result = sv.setScene(scene);
+	EXPECT_EQ(CMISS_OK, result);
+
+	result = sv.setViewportSize(512, 512);
+	EXPECT_EQ(CMISS_OK, result);
+
+	result = sv.viewAll();
+	EXPECT_EQ(CMISS_OK, result);
+
+	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_NODE_POINTS);
+	EXPECT_EQ(true, gf.isValid());
+
+	result = scenePicker.setScene(scene);
+	EXPECT_EQ(CMISS_OK, result);
+
+	result = scenePicker.setGraphicsFilter(gf);
+	EXPECT_EQ(CMISS_OK, result);
+
+	result = scenePicker.setSceneViewerRectangle(sv,
+		Graphic::COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Element element = scenePicker.getNearestElement();
+	EXPECT_EQ(false, element.isValid());
+
+	Node node = scenePicker.getNearestNode();
+	EXPECT_EQ(false, node.isValid());
+
+	Graphic graphic = scenePicker.getNearestElementGraphic();
+	EXPECT_EQ(false, graphic.isValid());
+
+	graphic = scenePicker.getNearestNodeGraphic();
+	EXPECT_EQ(false, graphic.isValid());
+
+	graphic = scenePicker.getNearestGraphic();
+	EXPECT_EQ(false, graphic.isValid());
+
+	result = scenePicker.addPickedElementsToGroup(fieldGroup);
+	EXPECT_EQ(CMISS_OK, result);
+
+	result = scenePicker.addPickedNodesToGroup(fieldGroup);
+	EXPECT_EQ(CMISS_OK, result);
 }
