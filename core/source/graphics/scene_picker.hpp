@@ -37,10 +37,95 @@
 #if !defined (SCENE_PICKER_HPP)
 #define SCENE_PICKER_HPP
 
+#include <map>
 #include "zinc/scenepicker.h"
+#include "zinc/types/graphicid.h"
+#include "zinc/types/graphicscoordinatesystem.h"
+#include "zinc/types/graphicsfilterid.h"
+#include "zinc/types/fieldgroupid.h"
+#include "zinc/types/elementid.h"
+#include "zinc/types/nodeid.h"
+#include "zinc/types/sceneid.h"
+#include "zinc/types/scenepickerid.h"
+#include "zinc/types/sceneviewerid.h"
 
-struct Cmiss_scene_picker;
 struct Cmiss_graphics_module;
+
+typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
+typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
+
+enum Cmiss_scene_picker_object_type
+{
+	CMISS_SCENE_PICKER_OBJECT_ANY = 0,
+	CMISS_SCENE_PICKER_OBJECT_NODE = 1,
+	CMISS_SCENE_PICKER_OBJECT_ELEMENT = 2,
+	CMISS_SCENE_PICKER_OBJECT_DATA = 3
+};
+
+struct Cmiss_scene_picker
+{
+private:
+	struct Interaction_volume *interaction_volume;
+	Cmiss_scene_id scene;
+	Cmiss_scene_viewer_id scene_viewer;
+	int centre_x, centre_y, size_x, size_y;
+	Cmiss_graphics_coordinate_system coordinate_system;
+	Cmiss_graphics_filter_id filter;
+	GLuint *select_buffer;
+	int select_buffer_size;
+	int number_of_hits;
+	Cmiss_graphics_module_id graphics_module;
+
+	void updateViewerRectangle();
+
+	int pickObjects();
+
+	Region_node_map getPickedRegionSortedNodes(enum Cmiss_scene_picker_object_type type);
+
+	Region_element_map getPickedRegionSortedElements();
+
+	void reset();
+
+	/*provide a select buffer pointer and return the rendition and graphic */
+	int getRenditionAndGraphic(GLuint *select_buffer_ptr,
+		Cmiss_rendition_id *rendition, Cmiss_graphic_id *graphic);
+
+public:
+
+	int access_count;
+
+	Cmiss_scene_picker(Cmiss_graphics_module_id graphics_module_in);
+
+	~Cmiss_scene_picker();
+
+	int setGraphicsFilter(Cmiss_graphics_filter_id filter_in);
+
+	int setScene(Cmiss_scene_id scene_in);
+
+	int setSceneViewerRectangle(Cmiss_scene_viewer_id scene_viewer_in,
+		enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
+		double y1, double x2, double y2);
+
+	int setInteractionVolume(struct Interaction_volume *interaction_volume_in);
+
+	Cmiss_element_id getNearestElement();
+
+	Cmiss_node_id getNearestNode(enum Cmiss_scene_picker_object_type type);
+
+	Cmiss_graphic_id getNearestGraphic(enum Cmiss_scene_picker_object_type type);
+
+	inline Cmiss_scene_picker *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	int addPickedElementsToGroup(Cmiss_field_group_id group);
+
+	int addPickedNodesToGroup(Cmiss_field_group_id group,
+		enum Cmiss_scene_picker_object_type type);
+
+};
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_scene_picker);
 

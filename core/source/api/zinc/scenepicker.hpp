@@ -99,7 +99,7 @@ public:
 		return id;
 	}
 
-	int setSceneViewerRectangle(SceneViewer sceneViewer, Graphic::CoordinateSystem coordinateSystem, double x1,
+	int setSceneViewerRectangle(SceneViewer& sceneViewer, Graphic::CoordinateSystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
 		return Cmiss_scene_picker_set_scene_viewer_rectangle(
@@ -118,12 +118,12 @@ public:
 		return Node(Cmiss_scene_picker_get_nearest_node(id));
 	}
 
-	Graphic nearestElementGraphic()
+	Graphic getNearestElementGraphic()
 	{
 		return Graphic(Cmiss_scene_picker_get_nearest_element_graphic(id));
 	}
 
-	Graphic nearestNodeGraphic()
+	Graphic getNearestNodeGraphic()
 	{
 		return Graphic(Cmiss_scene_picker_get_nearest_node_graphic(id));
 	}
@@ -133,13 +133,13 @@ public:
 		return Graphic(Cmiss_scene_picker_get_nearest_graphic(id));
 	}
 
-	int addPickedElementsToGroup(FieldGroup fieldGroup)
+	int addPickedElementsToGroup(FieldGroup& fieldGroup)
 	{
 		return Cmiss_scene_picker_add_picked_elements_to_group(id,
 			(reinterpret_cast<Cmiss_field_group_id>(fieldGroup.getId())));
 	}
 
-	int addPickedNodesToGroup(FieldGroup fieldGroup)
+	int addPickedNodesToGroup(FieldGroup& fieldGroup)
 	{
 		return Cmiss_scene_picker_add_picked_nodes_to_group(id,
 			(reinterpret_cast<Cmiss_field_group_id>(fieldGroup.getId())));
@@ -150,7 +150,7 @@ public:
 		return Cmiss_scene_picker_set_scene(id, scene.getId());
 	}
 
-	int setFilter(GraphicsFilter& filter)
+	int setGraphicsFilter(GraphicsFilter& filter)
 	{
 		return Cmiss_scene_picker_set_graphics_filter(id, filter.getId());
 	}
