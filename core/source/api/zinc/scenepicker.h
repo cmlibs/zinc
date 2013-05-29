@@ -59,7 +59,7 @@
 extern "C" {
 #endif
 
-/*******************************************************************************
+/**
  * Returns a new reference to the scene picker with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -69,7 +69,7 @@ extern "C" {
 ZINC_API Cmiss_scene_picker_id Cmiss_scene_picker_access(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
+/**
  * Destroys this reference to the scene_picker (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -79,7 +79,7 @@ ZINC_API Cmiss_scene_picker_id Cmiss_scene_picker_access(
  */
 ZINC_API int Cmiss_scene_picker_destroy(Cmiss_scene_picker_id *scene_picker_address);
 
-/*******************************************************************************
+/**
  * Set the scene for the scene picker to pick from.
  *
  * @param scene_picker  The scene picker to be modified.
@@ -89,9 +89,9 @@ ZINC_API int Cmiss_scene_picker_destroy(Cmiss_scene_picker_id *scene_picker_addr
 ZINC_API int Cmiss_scene_picker_set_scene(Cmiss_scene_picker_id scene_picker,
 	Cmiss_scene_id scene);
 
-/*******************************************************************************
- * Set the scene for the scene picker to pick from. This graphics picker will
- * work in additional to the one in scene.
+/**
+ * Set the graphics filter for the scene picker. This filter will work in
+ * additional to the one in scene.
  *
  * @param scene_picker  The scene picker to be modified.
  * @param scene  The scene to pick from.
@@ -100,18 +100,18 @@ ZINC_API int Cmiss_scene_picker_set_scene(Cmiss_scene_picker_id scene_picker,
 ZINC_API int Cmiss_scene_picker_set_graphics_filter(Cmiss_scene_picker_id scene_picker,
 	Cmiss_graphics_filter_id filter_in);
 
-/*******************************************************************************
+/**
  * Set the bounding box of scene picker. Scene viewer will provide the preset
  * modelview and projection matrix from itself.
+ * (x1,y1) and (x2,y2) are diagonally opposite corners of the rectangle.
  *
  * @param scene_picker  The scene picker to be modified.
  * @param scene_viewer_in  Scene viewer to get the modelview and projection
  * matrix from.
  * @param coordinate_system_in
- * @param x1 left of the bounding box
- * @param y1 top of the bounding box
- * @param x2 right of the bounding box
- * @param y2 bottom of the bounding box
+ * @param x1 and y1 specify the location of a corner of the rectangle
+ * @param x1 and y2 specify tthe location of he diagonally opposite corners
+ * to (x1, y1) of the rectangle.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int  Cmiss_scene_picker_set_scene_viewer_rectangle(
@@ -119,7 +119,7 @@ ZINC_API int  Cmiss_scene_picker_set_scene_viewer_rectangle(
 	enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 
-/*******************************************************************************
+/**
  * Get the nearest element in the defined bounding box on scene.
  *
  * @param scene_picker  The scene picker to pick the nearest element.
@@ -128,7 +128,7 @@ ZINC_API int  Cmiss_scene_picker_set_scene_viewer_rectangle(
 ZINC_API Cmiss_element_id Cmiss_scene_picker_get_nearest_element(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
+/**
  * Get the nearest node in the defined bounding box on scene.
  *
  * @param scene_picker  The scene picker to pick the nearest node.
@@ -137,7 +137,7 @@ ZINC_API Cmiss_element_id Cmiss_scene_picker_get_nearest_element(
 ZINC_API Cmiss_node_id Cmiss_scene_picker_get_nearest_node(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
+/**
  * Get the nearest element graphic in the defined bounding box on scene.
  *
  * @param scene_picker  The scene picker to pick the nearest element graphic.
@@ -146,7 +146,7 @@ ZINC_API Cmiss_node_id Cmiss_scene_picker_get_nearest_node(
 ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_element_graphic(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
+/**
  * Get the nearest node graphic in the defined bounding box on scene.
  *
  * @param scene_picker  The scene picker to pick the nearest node graphic.
@@ -155,7 +155,7 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_element_graphic(
 ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_node_graphic(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
+/**
  * Get the nearest graphic in the defined bounding box on scene.
  *
  * @param scene_picker  The scene picker to pick the nearest graphic.
@@ -164,8 +164,9 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_node_graphic(
 ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_graphic(
 	Cmiss_scene_picker_id scene_picker);
 
-/*******************************************************************************
- * Add all selected nodes to a group field. Invalid node will be skipped.
+/**
+ * Picked nodes belong to group field's owning region tree will
+ * be addeed to group.
  * Additional subregion fields will be created when required.
  *
  * @param scene_picker  The scene picker to pick the nearest node.
@@ -175,8 +176,9 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_picker_get_nearest_graphic(
 ZINC_API int Cmiss_scene_picker_add_picked_nodes_to_group(
 	Cmiss_scene_picker_id scene_picker, Cmiss_field_group_id group);
 
-/*******************************************************************************
- * Add all selected elements to a group field. Invalid node will be skipped.
+/**
+ * Picked elements belong to group field's owning region tree will
+ * be addeed to group.
  * Additional subregion fields will be created when required.
  *
  * @param scene_picker  The scene picker to pick the nearest element.

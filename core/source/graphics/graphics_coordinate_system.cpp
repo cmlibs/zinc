@@ -130,14 +130,14 @@ int Cmiss_graphics_coordinate_system_get_viewport(
 		break;
 	case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
 		*left = 0.0;
-		*right = viewport_width;
+		*right = (double)(int)(viewport_width + 0.5);
 		*bottom = 0.0;
-		*top = viewport_height;
+		*top = (double)(int)(viewport_height + 0.5);
 		break;
 	case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 		*left = 0.0;
-		*right = viewport_width;
-		*bottom = -viewport_height;
+		*right = (double)(int)(viewport_width + 0.5);
+		*bottom = (double)(int)(-viewport_height - 0.5);
 		*top = 0.0;
 		break;
 	default:

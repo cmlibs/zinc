@@ -42,6 +42,7 @@
 #include "zinc/graphicsmodule.h"
 #include "zinc/region.hpp"
 #include "zinc/rendition.hpp"
+#include "zinc/graphic.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/graphicsfilter.hpp"
 #include "zinc/graphicsfont.hpp"
@@ -144,6 +145,12 @@ public:
 	GraphicsFilter createFilterGraphicName(const char *matchName)
 	{
 		return GraphicsFilter(Cmiss_graphics_module_create_filter_graphic_name(id, matchName));
+	}
+
+	GraphicsFilter createFilterGraphicType(Graphic::GraphicType graphicType)
+	{
+		return GraphicsFilter(Cmiss_graphics_module_create_filter_graphic_type(id,
+			static_cast<Cmiss_graphic_type>(graphicType)));
 	}
 
 	GraphicsFilter createFilterRegion(Region& matchRegion)
