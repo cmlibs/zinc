@@ -105,11 +105,13 @@ private:
 			Scene_viewer_get_viewport_size(scene_viewer,	&width, &height);
 			viewport_width  = ((double)width)/viewport_pixels_per_unit_x;
 			viewport_height = ((double)height)/viewport_pixels_per_unit_y;
-
+			/* recalculate the centre of y as windows coordinate is different from the
+			 * GL coordinate */
+			double new_centre_y = viewport_height - (double)(centre_y) - 1.0;
 			interaction_volume = create_Interaction_volume_ray_frustum(
 				temp_modelview_matrix, temp_projection_matrix,
 				viewport_left, viewport_bottom, viewport_width, viewport_height,
-				centre_x, centre_y, size_x, size_y);
+				centre_x, new_centre_y, size_x, size_y);
 		}
 	}
 
