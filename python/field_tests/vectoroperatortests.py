@@ -20,7 +20,7 @@ class VectorOperatorTestCase(unittest.TestCase):
         del self.context
 
     def testCrossProductCreate(self):
-        self.assertRaises(TypeError, self.field_module.createCrossProduct)
+        self.assertRaises(NotImplementedError, self.field_module.createCrossProduct)
         self.assertRaises(TypeError, self.field_module.createCrossProduct, [0])
         f = self.field_module.createConstant([1, 2])
         cp = self.field_module.createCrossProduct([f])
