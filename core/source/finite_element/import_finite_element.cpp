@@ -3308,10 +3308,10 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
-	struct FE_element *element, *template_element;
+	struct FE_element *template_element;
 	struct FE_element_shape *element_shape;
 	struct FE_field_order_info *field_order_info;
-	struct FE_node *node, *template_node;
+	struct FE_node *template_node;
 
 	ENTER(read_exregion_file);
 	return_code = 0;
@@ -3644,12 +3644,13 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							/* ensure we have node field information */
 							if (template_node)
 							{
-								/* read node */
-								if (NULL != (node = read_FE_node(input_file, template_node, fe_region,
-									root_region, region, field_order_info, time_index)))
+								FE_node *tmp_node = read_FE_node(input_file, template_node, fe_region,
+									root_region, region, field_order_info, time_index);
+								if (tmp_node)
 								{
-									ACCESS(FE_node)(node);
-									if (FE_region_merge_FE_node(fe_region, node))
+									ACCESS(FE_node)(tmp_node);
+									FE_node *node = FE_region_merge_FE_node(fe_region, tmp_node);
+									if (node)
 									{
 										if (group && (!nodeset_group))
 										{
@@ -3677,7 +3678,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 											"read_exregion_file.  Could not merge node into region");
 										return_code = 0;
 									}
-									DEACCESS(FE_node)(&node);
+									DEACCESS(FE_node)(&tmp_node);
 								}
 								else
 								{
@@ -3710,12 +3711,13 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							/* ensure we have element field information */
 							if (template_element)
 							{
-								/* read element */
-								if (NULL != (element = read_FE_element(input_file, template_element,
-									fe_region, field_order_info)))
+								FE_element *tmp_element = read_FE_element(input_file, template_element,
+									fe_region, field_order_info);
+								if (tmp_element)
 								{
-									ACCESS(FE_element)(element);
-									if (FE_region_merge_FE_element(fe_region, element))
+									ACCESS(FE_element)(tmp_element);
+									FE_element *element = FE_region_merge_FE_element(fe_region, tmp_element);
+									if (element)
 									{
 										if (group && (!mesh_group))
 										{
@@ -3743,7 +3745,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 											"Could not merge element into region");
 										return_code = 0;
 									}
-									DEACCESS(FE_element)(&element);
+									DEACCESS(FE_element)(&tmp_element);
 								}
 								else
 								{
