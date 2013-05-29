@@ -26,7 +26,18 @@ class VectorOperatorTestCase(unittest.TestCase):
         cp = self.field_module.createCrossProduct([f])
         self.assertTrue(cp.isValid())
 
-
+    def testCrossProductOverload1(self):
+        f1 = self.field_module.createConstant([1, 2, 3])
+        f2 = self.field_module.createConstant([4, 5, 6])
+        cp = self.field_module.createCrossProduct(f1, f2)
+        self.assertTrue(cp.isValid())
+        
+    def testCrossProductOverload2(self):
+        f1 = self.field_module.createConstant([1, 2])
+        f2 = self.field_module.createConstant([4, 5])
+        cp = self.field_module.createCrossProduct(f1, f2)
+        self.assertFalse(cp.isValid())
+        
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
