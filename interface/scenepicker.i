@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Scene.i
+ * ScenePicker.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,15 +38,18 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") scene
+%module(package="zinc") scenepicker
 
-%import "region.i"
-%import "graphicsfilter.i"
+%import "element.i"
+%import "graphic.i"
+%import "node.i"
+%import "sceneviewer.i"
 
 %{
-#include "zinc/scenepicker.hpp"
+#include "zinc/fieldtypesgroup.hpp"
+#include "zinc/graphicsfilter.hpp"
 #include "zinc/scene.hpp"
+#include "zinc/scenepicker.hpp"
 %}
 
-%include "zinc/scene.hpp"
-
+%include "zinc/scenepicker.hpp"
