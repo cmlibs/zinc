@@ -962,12 +962,11 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					Cmiss_field_cache_set_time(field_cache, time);
 					Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
 					Cmiss_node_id node = 0;
-					while (return_code && (0 != (node = Cmiss_node_iterator_next(iterator))))
+					while (return_code && (0 != (node = Cmiss_node_iterator_next_non_access(iterator))))
 					{
 						Cmiss_field_cache_set_node(field_cache, node);
 						glyph_set_data.graphics_name = get_FE_node_identifier(node);
 						return_code = field_cache_location_to_glyph_point(field_cache, &glyph_set_data);
-						Cmiss_node_destroy(&node);
 					}
 					Cmiss_node_iterator_destroy(&iterator);
 					final_number_of_points = glyph_set_data.number_of_points;
