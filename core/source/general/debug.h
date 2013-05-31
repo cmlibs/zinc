@@ -223,4 +223,10 @@ change information for ALLOCATE, DEALLOCATE and REALLOCATE.  display_message
 is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion
 prevented).
 ==============================================================================*/
+
+/**
+ * Print a stack trace from the current location.
+ */
+void stack_trace(void);
+
 #endif /* !defined (DEBUG_H) */

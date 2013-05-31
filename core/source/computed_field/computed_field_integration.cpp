@@ -416,10 +416,10 @@ time is supplied in the workingCache
 			have the positions and weights of a gauss point scheme for integrating
 			with the number of points corresponding to the row. */
 		gauss_positions[MAXIMUM_GAUSS_POINTS_DEFINED][MAXIMUM_GAUSS_POINTS_DEFINED]
-		   = {{0.5, 0},
+			= {{0.5, 0},
 			  {0.25, 0.75}},
 		gauss_weights[MAXIMUM_GAUSS_POINTS_DEFINED][MAXIMUM_GAUSS_POINTS_DEFINED]
-		   = {{1, 0},
+			= {{1, 0},
 			  {0.5, 0.5}},
 		xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		xi_vector[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -432,6 +432,10 @@ time is supplied in the workingCache
 		(number_of_gauss_points <= MAXIMUM_GAUSS_POINTS_DEFINED))
 	{
 		return_code = 1;
+		for (k = 0; k < MAXIMUM_ELEMENT_XI_DIMENSIONS; k++)
+		{
+			xi[k] = 0.0;
+		}
 		element_dimension = get_FE_element_dimension(element);
 		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
