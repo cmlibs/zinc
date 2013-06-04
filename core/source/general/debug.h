@@ -62,7 +62,7 @@ Macros
 /* Following are the only question mark operators allowed in CMGUI, needed
 	because it is machine dependent whether a pointer or NULL is returned for an
 	allocation of zero size. Inlined for optimisation */
-#if defined (OPTIMISED)
+#if (defined (OPTIMISED)) || (defined (NDEBUG))
 
 #include <stdlib.h>
 
@@ -76,7 +76,7 @@ Macros
 
 #define ASSERT_IF( expression , return_code , error_value )
 
-#else /* defined (OPTIMISED) */
+#else /* (defined (OPTIMISED)) || (defined (NDEBUG)) */
 
 #define ALLOCATE( result , type , number ) \
 ( result = ( type *) allocate( ( number ) * sizeof( type ) , __FILE__ , \
@@ -89,7 +89,7 @@ Macros
 ( final = ( type *) reallocate( (char *)( initial ) , \
 	( number ) * sizeof( type ) , __FILE__ , __LINE__, #type ))
 
-#endif /* defined (OPTIMISED) */
+#endif /* (defined (OPTIMISED)) || (defined (NDEBUG)) */
 
 /* Treatment of an int to store the value in a void* and to extract it later.
    The pointer to/from integer conversions are not necessary portable so a
@@ -160,7 +160,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #define USE_PARAMETER(dummy)
 #endif /* defined (USE_PARAMETER_ON) */
 
-#if !defined (OPTIMISED)
+#if !(defined (OPTIMISED)) || (defined (NDEBUG))
 char *allocate(unsigned long int size, const char *file_name,int line_number,const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
@@ -185,7 +185,7 @@ LAST MODIFIED : 7 January 1998
 DESCRIPTION :
 Wrapper for realloc.
 ==============================================================================*/
-#endif /* !defined (OPTIMISED) */
+#endif /* !(defined (OPTIMISED)) || (defined (NDEBUG)) */
 
 int list_memory(int count, int show_pointers, int increment_counter,
 	int show_structures);

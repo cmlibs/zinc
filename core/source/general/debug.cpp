@@ -368,7 +368,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 } /* use_parameter */
 #endif /* defined (USE_PARAMETER_ON) */
 
-#if !defined (OPTIMISED)
+#if !(defined (OPTIMISED)) || (defined (NDEBUG))
 char *allocate(unsigned long int size,const char *filename,int line, const char *type)
 /*******************************************************************************
 LAST MODIFIED : 26 November 2001
@@ -650,7 +650,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 
 	return (result);
 } /* reallocate */
-#endif /* !defined (OPTIMISED) */
+#endif /* !(defined (OPTIMISED)) || (defined (NDEBUG)) */
 
 int list_memory(int count,int show_pointers,int increment_counter,
 	int show_structures)
