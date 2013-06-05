@@ -224,9 +224,11 @@ is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion
 prevented).
 ==============================================================================*/
 
+#  if defined (UNIX)
 /**
  * Print a stack trace from the current location.
  */
 void stack_trace(void);
+#endif /*  defined (UNIX) */
 
 #endif /* !defined (DEBUG_H) */

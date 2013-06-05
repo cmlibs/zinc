@@ -821,6 +821,7 @@ return buffers allocated internally to cmiss.
 	return (return_code);
 } /* Cmiss_deallocate */
 
+#  if defined (UNIX)
 #include <execinfo.h>
 
 void stack_trace(void)
@@ -848,4 +849,6 @@ void stack_trace(void)
 
 	free(strings);
 }
+
+#endif /* defined (UNIX) */
 
