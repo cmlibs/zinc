@@ -555,7 +555,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Spectrum *spectrum, struct Cmiss_graphics_font *font,
+	struct Spectrum *spectrum, struct Cmiss_font *font,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
 	Render_graphics_opengl *renderer, int object_name, int *lighting_off)
 {
@@ -657,7 +657,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							}
 							if (labels && *label)
 							{
-								Cmiss_graphics_font_rendergl_text(font, *label, x, y, z);
+								Cmiss_font_rendergl_text(font, *label, x, y, z);
 							}
 						}
 						point++;
@@ -715,7 +715,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 								glEnd();
 								if (labels && *label)
 								{
-									Cmiss_graphics_font_rendergl_text(font, *label, x, y, z);
+									Cmiss_font_rendergl_text(font, *label, x, y, z);
 								}
 							}
 							/* advance pointers */
@@ -800,7 +800,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 								}
 								if (labels && *label)
 								{
-									Cmiss_graphics_font_rendergl_text(font, *label, x, y, z);
+									Cmiss_font_rendergl_text(font, *label, x, y, z);
 								}
 								glBegin(GL_LINES);
 								glVertex3f(x,y,z);
@@ -905,7 +905,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 								z = temp_point[2];
 								if (labels && *label)
 								{
-									Cmiss_graphics_font_rendergl_text(font, *label, x, y, z);
+									Cmiss_font_rendergl_text(font, *label, x, y, z);
 								}
 								glBegin(GL_LINES);
 								/* x-line */
@@ -1139,7 +1139,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-								Cmiss_graphics_font_rendergl_text(font, *label, x, y, z);
+								Cmiss_font_rendergl_text(font, *label, x, y, z);
 							}
 							/* advance pointers */
 							point++;
@@ -1189,7 +1189,7 @@ static int draw_pointsetGL(int n_pts,Triple *point_list,char **text,
 	gtMarkerType marker_type,GLfloat marker_size,int *names,
 	int number_of_data_components, GLfloat *data,
 struct Graphical_material *material, struct Spectrum *spectrum,
-struct Cmiss_graphics_font *font)
+struct Cmiss_font *font)
 	/*******************************************************************************
 	LAST MODIFIED : 18 November 2005
 
@@ -1358,7 +1358,7 @@ struct Cmiss_graphics_font *font)
 					}
 					if (*text_string)
 					{
-						Cmiss_graphics_font_rendergl_text(font, *text_string, x, y, z);
+						Cmiss_font_rendergl_text(font, *text_string, x, y, z);
 					}
 					text_string++;
 				}
@@ -4284,7 +4284,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 									if (glyph_set->glyph)
 										renderer->Graphics_object_compile(glyph_set->glyph);
 									if (glyph_set->font)
-										Cmiss_graphics_font_compile(glyph_set->font);
+										Cmiss_font_compile(glyph_set->font);
 								}
 							}
 						}
@@ -4302,7 +4302,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point->font)
 									{
-										Cmiss_graphics_font_compile(point->font);
+										Cmiss_font_compile(point->font);
 									}
 								}
 							}
@@ -4321,7 +4321,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point_set->font)
 									{
-										Cmiss_graphics_font_compile(point_set->font);
+										Cmiss_font_compile(point_set->font);
 									}
 								}
 							}

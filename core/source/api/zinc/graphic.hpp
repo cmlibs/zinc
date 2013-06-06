@@ -41,7 +41,7 @@
 
 #include "zinc/graphic.h"
 #include "zinc/field.hpp"
-#include "zinc/graphicsfont.hpp"
+#include "zinc/font.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
@@ -458,12 +458,12 @@ public:
 		return Cmiss_graphic_point_attributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
-	GraphicsFont getFont()
+	Font getFont()
 	{
-		return GraphicsFont(Cmiss_graphic_point_attributes_get_font(id));
+		return Font(Cmiss_graphic_point_attributes_get_font(id));
 	}
 
-	int setFont(GraphicsFont& font)
+	int setFont(Font& font)
 	{
 		return Cmiss_graphic_point_attributes_set_font(id, font.getId());
 	}

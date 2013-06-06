@@ -250,7 +250,7 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
  * Should only be called by Cmiss_graphics_module.
  */
 int Cmiss_rendition_font_change(struct Cmiss_rendition *rendition,
-	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message);
+	struct MANAGER_MESSAGE(Cmiss_font) *manager_message);
 
 int for_each_rendition_in_Cmiss_rendition(
 	struct Cmiss_rendition *rendition,

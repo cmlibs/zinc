@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : graphics_font.h
+FILE : font.h
 
 LAST MODIFIED : 17 November 2005
 
@@ -44,48 +44,48 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_FONT_H)
 #define GRAPHICS_FONT_H
 
-#include "zinc/types/graphicsfontid.h"
+#include "zinc/types/fontid.h"
 #include "general/callback.h"
 #include "general/manager.h"
 #include "general/enumerator.h"
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_font_type);
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_font_true_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_font_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_font_true_type);
 
 /*
 Global types
 ------------
 */
 
-struct Cmiss_graphics_font;
+struct Cmiss_font;
 
-DECLARE_LIST_TYPES(Cmiss_graphics_font);
+DECLARE_LIST_TYPES(Cmiss_font);
 
-DECLARE_MANAGER_TYPES(Cmiss_graphics_font);
+DECLARE_MANAGER_TYPES(Cmiss_font);
 
 struct Cmiss_graphics_module;
 #include "general/manager_private.h"
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Cmiss_graphics_font, struct Cmiss_graphics_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Cmiss_font, struct Cmiss_graphics_module);
 
 /*
 Global functions
 ----------------
 */
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphics_font);
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_font);
 
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_graphics_font);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_font);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphics_font);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphics_font,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(Cmiss_font);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_font,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Cmiss_graphics_font,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_font);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_font,name,const char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Cmiss_font,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_font);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_font,name,const char *);
 
-struct Cmiss_graphics_font *CREATE(Cmiss_graphics_font)(const char *name);
+struct Cmiss_font *CREATE(Cmiss_font)(const char *name);
 
-int DESTROY(Cmiss_graphics_font)(struct Cmiss_graphics_font **font_address);
+int DESTROY(Cmiss_font)(struct Cmiss_font **font_address);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -93,7 +93,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 
-int Cmiss_graphics_font_compile(struct Cmiss_graphics_font *font);
+int Cmiss_font_compile(struct Cmiss_font *font);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -102,7 +102,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required as the Win32 API requires a window context.
 ==============================================================================*/
 
-int Cmiss_graphics_font_rendergl_text(struct Cmiss_graphics_font *font, char *text,
+int Cmiss_font_rendergl_text(struct Cmiss_font *font, char *text,
 	float x, float y, float z);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -110,7 +110,7 @@ LAST MODIFIED : 17 November 2005
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_graphics_font_manager_set_owner(struct MANAGER(Cmiss_graphics_font) *manager,
+int Cmiss_font_manager_set_owner(struct MANAGER(Cmiss_font) *manager,
 	struct Cmiss_graphics_module *graphics_module);
 #endif /* !defined (GRAPHICS_FONT_H) */
 

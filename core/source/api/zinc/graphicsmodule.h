@@ -37,7 +37,7 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
-#include "types/graphicsfontid.h"
+#include "types/fontid.h"
 #include "types/graphicsfilterid.h"
 #include "types/graphicsmaterialid.h"
 #include "types/graphicsmoduleid.h"
@@ -226,7 +226,7 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
  * belong to.
  * @return  Handle to the newly created font if successful, otherwise NULL.
  */
-ZINC_API Cmiss_graphics_font_id Cmiss_graphics_module_create_font(
+ZINC_API Cmiss_font_id Cmiss_graphics_module_create_font(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -237,7 +237,7 @@ ZINC_API Cmiss_graphics_font_id Cmiss_graphics_module_create_font(
  * @param name  The name of the font.
  * @return  Handle to the font with that name, or NULL if not found.
  */
-ZINC_API Cmiss_graphics_font_id Cmiss_graphics_module_find_font_by_name(
+ZINC_API Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 

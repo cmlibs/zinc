@@ -577,7 +577,7 @@ SET( ZINC_LIB_API_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldtrigonometry.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/fieldvectoroperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphic.h
-	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsfont.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/font.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsfilter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmaterial.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/graphicsmodule.h
@@ -657,7 +657,7 @@ SET( ZINC_LIB_API_TYPES_INSTALL_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicscoordinatesystem.h
-	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfontid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsfilterid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsmaterialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/core/source/api/zinc/types/graphicsmoduleid.h
