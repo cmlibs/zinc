@@ -162,8 +162,10 @@ ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
 ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 	Cmiss_graphics_module_id graphics_module);
 
-/***************************************************************************//**
+/**
  * Find the tessellation with the supplied name in graphics module, if any.
+ *
+ * @deprecated see Cmiss_tessellation_module_find_tessellation_by_name
  *
  * @param graphics_module  The handle to the graphics module to find the
  * tessellation in.
@@ -173,14 +175,25 @@ ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
-/***************************************************************************//**
+/**
  * Create and return a handle to a new tessellation.
+ *
+ * @deprecated see Cmiss_tessellation_module_create_tessellation
  *
  * @param graphics_module  The handle to the graphics module the tessellation will
  * belong to.
  * @return  Handle to the newly created tessellation if successful, otherwise NULL.
  */
 ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
+	Cmiss_graphics_module_id graphics_module);
+
+/**
+* Get the tessellation module which stores tessellation object.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**

@@ -144,6 +144,86 @@ public:
 
 };
 
+class TessellationModule
+{
+protected:
+	Cmiss_tessellation_module_id id;
+
+public:
+
+	TessellationModule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit TessellationModule(Cmiss_tessellation_module_id in_tessellation_module_id) :
+		id(in_tessellation_module_id)
+	{  }
+
+	TessellationModule(const TessellationModule& tessellationModule) :
+		id(Cmiss_tessellation_module_access(tessellationModule.id))
+	{  }
+
+	TessellationModule& operator=(const TessellationModule& tessellationModule)
+	{
+		Cmiss_tessellation_module_id temp_id = Cmiss_tessellation_module_access(
+			tessellationModule.id);
+		if (0 != id)
+		{
+			Cmiss_tessellation_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~TessellationModule()
+	{
+		if (0 != id)
+		{
+			Cmiss_tessellation_module_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Cmiss_tessellation_module_id getId()
+	{
+		return id;
+	}
+
+	Tessellation createTessellation()
+	{
+		return Tessellation(Cmiss_tessellation_module_create_tessellation(id));
+	}
+
+	Tessellation findTessellationByName(const char *name)
+	{
+		return Tessellation(Cmiss_tessellation_module_find_tessellation_by_name(id, name));
+	}
+
+	int beginChange()
+	{
+		return Cmiss_tessellation_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_tessellation_module_end_change(id);
+	}
+
+	Tessellation getDefaultTessellation()
+	{
+		return Tessellation(Cmiss_tessellation_module_get_default_tessellation(id));
+	}
+
+	int setDefaultTessellation(Tessellation &tessellation)
+	{
+		return Cmiss_tessellation_module_set_default_tessellation(id, tessellation.getId());
+	}
+};
+
 }  // namespace zinc
 
 #endif /* __ZN_TESSELLATION_HPP__ */

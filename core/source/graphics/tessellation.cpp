@@ -40,10 +40,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 #include <cstdlib>
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
-#include "graphics/graphics_module.h"
 #include "general/cmiss_set.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
@@ -54,6 +54,126 @@
 Module types
 ------------
 */
+
+struct Cmiss_tessellation_module
+{
+
+private:
+
+	struct MANAGER(Cmiss_tessellation) *tessellationManager;
+	Cmiss_tessellation *defaultTessellation;
+	int access_count;
+
+	Cmiss_tessellation_module() :
+		tessellationManager(CREATE(MANAGER(Cmiss_tessellation))()),
+		defaultTessellation(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_tessellation_module()
+	{
+		if (defaultTessellation)
+		{
+			DEACCESS(Cmiss_tessellation)(&(this->defaultTessellation));
+		}
+		DESTROY(MANAGER(Cmiss_tessellation))(&(this->tessellationManager));
+	}
+
+public:
+
+	static Cmiss_tessellation_module *create()
+	{
+		return new Cmiss_tessellation_module();
+	}
+
+	Cmiss_tessellation_module *access()
+
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_tessellation_module* &tessellation_module)
+	{
+		if (tessellation_module)
+		{
+			--(tessellation_module->access_count);
+			if (tessellation_module->access_count <= 0)
+			{
+				delete tessellation_module;
+			}
+			tessellation_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(Cmiss_tessellation) *getManager()
+	{
+		return this->tessellationManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Cmiss_tessellation)(this->tessellationManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Cmiss_tessellation)(this->tessellationManager);
+	}
+
+	Cmiss_tessellation_id createTessellation()
+	{
+		Cmiss_tessellation_id tessellation = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_tessellation)(this->tessellationManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(temp_name,
+			this->tessellationManager));
+		tessellation = Cmiss_tessellation_create_private();
+		Cmiss_tessellation_set_name(tessellation, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_tessellation)(tessellation, this->tessellationManager))
+		{
+			DEACCESS(Cmiss_tessellation)(&tessellation);
+		}
+		return tessellation;
+	}
+
+	Cmiss_tessellation *findTessellationByName(const char *name)
+	{
+		Cmiss_tessellation *tessellation = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(name,
+			this->tessellationManager);
+		if (tessellation)
+		{
+			return ACCESS(Cmiss_tessellation)(tessellation);
+		}
+		return 0;
+	}
+
+	Cmiss_tessellation *getDefaultTessellation()
+	{
+		if (this->defaultTessellation)
+		{
+			ACCESS(Cmiss_tessellation)(this->defaultTessellation);
+			return this->defaultTessellation;
+		}
+		return 0;
+	}
+
+	int setDefaultTessellation(Cmiss_tessellation *tessellation)
+	{
+		REACCESS(Cmiss_tessellation)(&this->defaultTessellation, tessellation);
+		return CMISS_OK;
+	}
+
+};
+
 
 void list_divisions(int size, int *divisions)
 {
@@ -277,7 +397,7 @@ struct Cmiss_tessellation_compare_name
 
 typedef Cmiss_set<Cmiss_tessellation *,Cmiss_tessellation_compare_name> Cmiss_set_Cmiss_tessellation;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_graphics_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_tessellation_module, void *);
 
 /*
 Module functions
@@ -400,12 +520,87 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Cmiss_tessellation,name,
 DECLARE_MANAGER_FUNCTIONS(Cmiss_tessellation,manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_tessellation,manager)
 DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_tessellation,name,const char *,manager)
-DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_tessellation, struct Cmiss_graphics_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_tessellation, struct Cmiss_tessellation_module)
 
 int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellation) *manager,
-	struct Cmiss_graphics_module *graphics_module)
+	struct Cmiss_tessellation_module *tessellation_module)
 {
-	return MANAGER_SET_OWNER(Cmiss_tessellation)(manager, graphics_module);
+	return MANAGER_SET_OWNER(Cmiss_tessellation)(manager, tessellation_module);
+}
+
+Cmiss_tessellation_module_id Cmiss_tessellation_module_create()
+{
+	return Cmiss_tessellation_module::create();
+}
+
+Cmiss_tessellation_module_id Cmiss_tessellation_module_access(
+	Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->access();
+	return 0;
+}
+
+int Cmiss_tessellation_module_destroy(Cmiss_tessellation_module_id *tessellation_module_address)
+{
+	if (tessellation_module_address)
+		return Cmiss_tessellation_module::deaccess(*tessellation_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_tessellation_id Cmiss_tessellation_module_create_tessellation(
+	Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->createTessellation();
+	return 0;
+}
+
+struct MANAGER(Cmiss_tessellation) *Cmiss_tessellation_module_get_manager(
+	Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->getManager();
+	return 0;
+}
+
+int Cmiss_tessellation_module_begin_change(Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_tessellation_module_end_change(Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_tessellation_id Cmiss_tessellation_module_find_tessellation_by_name(
+	Cmiss_tessellation_module_id tessellation_module, const char *name)
+{
+	if (tessellation_module)
+		return tessellation_module->findTessellationByName(name);
+   return 0;
+}
+
+Cmiss_tessellation_id Cmiss_tessellation_module_get_default_tessellation(
+	Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->getDefaultTessellation();
+	return 0;
+}
+
+int Cmiss_tessellation_module_set_default_tessellation(
+	Cmiss_tessellation_module_id tessellation_module,
+	Cmiss_tessellation_id tessellation)
+{
+	if (tessellation_module)
+		return tessellation_module->setDefaultTessellation(tessellation);
+	return 0;
 }
 
 struct Cmiss_tessellation *Cmiss_tessellation_create_private()
@@ -758,7 +953,6 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 
 	return return_code;
 }
-
 
 int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, void *dummy_void)
 {
