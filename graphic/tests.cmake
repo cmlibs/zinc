@@ -5,5 +5,6 @@ SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/contours.cpp
     ${CURRENT_TEST}/graphic.cpp
     ${CURRENT_TEST}/scene_picker.cpp
+    ${CURRENT_TEST}/tessellation.cpp
     )
 
