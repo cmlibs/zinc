@@ -71,7 +71,7 @@ SET(INTERFACE_SRCS
 	../interface/tessellation.i
 	../interface/graphic.i
 	../interface/selection.i
-	../interface/graphicsfont.i
+	../interface/font.i
 	../interface/graphicsfilter.i
 	../interface/scene.i
 	../interface/scenepicker.i

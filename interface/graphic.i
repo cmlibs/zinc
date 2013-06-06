@@ -46,7 +46,7 @@
 %import "tessellation.i"
 %import "graphicsmaterial.i"
 %import "spectrum.i"
-%import "graphicsfont.i"
+%import "font.i"
 
 %{
 #include "zinc/graphic.hpp"

@@ -38,14 +38,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") graphicsfont
+%module(package="zinc") font
 
 %import "graphic.i"
 
 %{
-#include "zinc/graphicsfont.hpp"
+#include "zinc/font.hpp"
 #include "zinc/fieldtypesconditional.hpp"
 %}
 
-%include "zinc/graphicsfont.hpp"
+%include "zinc/font.hpp"
 

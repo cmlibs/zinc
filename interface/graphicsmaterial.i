@@ -110,7 +110,7 @@
 }
 
 %import "field.i"
-%import "graphicsfont.i"
+%import "font.i"
 
 %{
 #include "zinc/graphicsmaterial.hpp"
