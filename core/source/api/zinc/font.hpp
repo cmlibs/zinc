@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : graphicsfont.hpp
+ * FILE : font.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,39 +39,39 @@
 #ifndef __ZN_GRAPHICSFONT_HPP__
 #define __ZN_GRAPHICSFONT_HPP__
 
-#include "zinc/graphicsfont.h"
+#include "zinc/font.h"
 
 namespace zinc
 {
 
-class GraphicsFont
+class Font
 {
 protected:
-	Cmiss_graphics_font_id id;
+	Cmiss_font_id id;
 
 public:
 
-	GraphicsFont() : id(0)
+	Font() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsFont(Cmiss_graphics_font_id font_id) : id(font_id)
+	explicit Font(Cmiss_font_id font_id) : id(font_id)
 	{  }
 
-	GraphicsFont(const GraphicsFont& font) : id(Cmiss_graphics_font_access(font.id))
+	Font(const Font& font) : id(Cmiss_font_access(font.id))
 	{  }
 
-	GraphicsFont& operator=(const GraphicsFont& font)
+	Font& operator=(const Font& font)
 	{
-		Cmiss_graphics_font_id temp_id = Cmiss_graphics_font_access(font.id);
-		Cmiss_graphics_font_destroy(&id);
+		Cmiss_font_id temp_id = Cmiss_font_access(font.id);
+		Cmiss_font_destroy(&id);
 		id = temp_id;
 		return *this;
 	}
 
-	~GraphicsFont()
+	~Font()
 	{
-		Cmiss_graphics_font_destroy(&id);
+		Cmiss_font_destroy(&id);
 	}
 
 	bool isValid()
@@ -79,19 +79,19 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_font_id getId()
+	Cmiss_font_id getId()
 	{
 		return id;
 	}
 
 	char *getName()
 	{
-		return Cmiss_graphics_font_get_name(id);
+		return Cmiss_font_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_graphics_font_set_name(id, name);
+		return Cmiss_font_set_name(id, name);
  	}
 
 };

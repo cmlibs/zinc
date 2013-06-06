@@ -49,7 +49,7 @@
 #include "zinc/status.h"
 #include "zinc/element.h"
 #include "zinc/graphic.h"
-#include "zinc/graphicsfont.h"
+#include "zinc/font.h"
 #include "zinc/graphicsfilter.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
@@ -534,7 +534,7 @@ int DESTROY(Cmiss_graphic)(
 		}
 		if (graphic->font)
 		{
-			DEACCESS(Cmiss_graphics_font)(&(graphic->font));
+			DEACCESS(Cmiss_font)(&(graphic->font));
 		}
 		if (graphic->seed_element)
 		{
@@ -2317,7 +2317,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				if (graphic->font)
 				{
 					append_string(&graphic_string," font ",&error);
-					if (GET_NAME(Cmiss_graphics_font)(graphic->font, &name))
+					if (GET_NAME(Cmiss_font)(graphic->font, &name))
 					{
 						append_string(&graphic_string,name,&error);
 						DEALLOCATE(name);
@@ -4651,7 +4651,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
-		REACCESS(Cmiss_graphics_font)(&(destination->font), source->font);
+		REACCESS(Cmiss_font)(&(destination->font), source->font);
 
 		/* ensure destination graphics object is cleared */
 		REACCESS(GT_object)(&(destination->graphics_object),
@@ -6226,8 +6226,8 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 	void *font_manager_message_void)
 {
 	int return_code;
-	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message =
-		(struct MANAGER_MESSAGE(Cmiss_graphics_font) *)font_manager_message_void;
+	struct MANAGER_MESSAGE(Cmiss_font) *manager_message =
+		(struct MANAGER_MESSAGE(Cmiss_font) *)font_manager_message_void;
 	if (graphic && manager_message)
 	{
 		return_code = 1;
@@ -6238,10 +6238,10 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 				(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
 				(graphic->graphic_type == CMISS_GRAPHIC_POINT)) && graphic->label_field)
 			{
-				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_font)(
+				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_font)(
 					manager_message, graphic->font);
 				// GRC: following could be smarter, e.g. by checking if actual discretization is changing
-				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_font))
+				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_font))
 				{
 					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 				}
@@ -6571,7 +6571,7 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		}
 		if (rendition_command_data.default_font)
 		{
-			DEACCESS(Cmiss_graphics_font)(&rendition_command_data.default_font);
+			DEACCESS(Cmiss_font)(&rendition_command_data.default_font);
 		}
 		if (rendition_command_data.default_spectrum)
 		{
@@ -7047,27 +7047,27 @@ int Cmiss_graphic_point_attributes_set_base_size(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
+Cmiss_font_id Cmiss_graphic_point_attributes_get_font(
 	Cmiss_graphic_point_attributes_id point_attributes)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic && (graphic->font))
 	{
-		return ACCESS(Cmiss_graphics_font)(graphic->font);
+		return ACCESS(Cmiss_font)(graphic->font);
 	}
 	return 0;
 }
 
 int Cmiss_graphic_point_attributes_set_font(
 	Cmiss_graphic_point_attributes_id point_attributes,
-	Cmiss_graphics_font_id font)
+	Cmiss_font_id font)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
 		if (font != graphic->font)
 		{
-			REACCESS(Cmiss_graphics_font)(&(graphic->font), font);
+			REACCESS(Cmiss_font)(&(graphic->font), font);
 			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}

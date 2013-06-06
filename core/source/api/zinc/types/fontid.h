@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_graphics_font_id.h
+ * FILE : cmiss_font_id.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,29 +38,29 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHICS_FONT_ID_H)
-#define CMISS_GRAPHICS_FONT_ID_H
+#if !defined (CMISS_FONT_ID_H)
+#define CMISS_FONT_ID_H
 
 #include "zinc/zincsharedobject.h"
 
-enum Cmiss_graphics_font_true_type
+enum Cmiss_font_true_type
 {
-	CMISS_GRAPHICS_FONT_TRUE_TYPE_INVALID = 0,
-	CMISS_GRAPHICS_FONT_TRUE_TYPE_OpenSans = 1,
+	CMISS_FONT_TRUE_TYPE_INVALID = 0,
+	CMISS_FONT_TRUE_TYPE_OpenSans = 1,
 };
 
-enum Cmiss_graphics_font_type
+enum Cmiss_font_type
 {
-	CMISS_GRAPHICS_FONT_TYPE_INVALID = 0,
-	CMISS_GRAPHICS_FONT_TYPE_BITMAP = 1,
-	CMISS_GRAPHICS_FONT_TYPE_PIXMAP = 2,
-	CMISS_GRAPHICS_FONT_TYPE_POLYGON = 3,
-	CMISS_GRAPHICS_FONT_TYPE_OUTLINE = 4,
-	CMISS_GRAPHICS_FONT_TYPE_EXTRUDE = 5,
+	CMISS_FONT_TYPE_INVALID = 0,
+	CMISS_FONT_TYPE_BITMAP = 1,
+	CMISS_FONT_TYPE_PIXMAP = 2,
+	CMISS_FONT_TYPE_POLYGON = 3,
+	CMISS_FONT_TYPE_OUTLINE = 4,
+	CMISS_FONT_TYPE_EXTRUDE = 5,
 };
 
-struct Cmiss_graphics_font;
-typedef struct Cmiss_graphics_font *Cmiss_graphics_font_id;
+struct Cmiss_font;
+typedef struct Cmiss_font *Cmiss_font_id;
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,8 +72,8 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_graphics_font_true_type
-	Cmiss_graphics_font_true_type_enum_from_string(const char *string);
+ZINC_API enum Cmiss_font_true_type
+	Cmiss_font_true_type_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
@@ -82,8 +82,8 @@ ZINC_API enum Cmiss_graphics_font_true_type
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphics_font_true_type_enum_to_string(
-	enum Cmiss_graphics_font_true_type true_type);
+ZINC_API char *Cmiss_font_true_type_enum_to_string(
+	enum Cmiss_font_true_type true_type);
 
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
@@ -92,8 +92,8 @@ ZINC_API char *Cmiss_graphics_font_true_type_enum_to_string(
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_graphics_font_type
-	Cmiss_graphics_font_type_enum_from_string(const char *string);
+ZINC_API enum Cmiss_font_type
+	Cmiss_font_type_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
@@ -102,11 +102,11 @@ ZINC_API enum Cmiss_graphics_font_type
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphics_font_type_enum_to_string(
-	enum Cmiss_graphics_font_type font_type);
+ZINC_API char *Cmiss_font_type_enum_to_string(
+	enum Cmiss_font_type font_type);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CMISS_GRAPHICS_FONT_ID_H */
+#endif /* CMISS_FONT_ID_H */

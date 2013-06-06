@@ -93,7 +93,7 @@ Global types
 */
 
 struct Graphical_material;
-struct Cmiss_graphics_font;
+struct Cmiss_font;
 struct Cmiss_scene;
 
 typedef enum
@@ -557,7 +557,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph, int mirror_glyph_flag,
-	struct Cmiss_graphics_font *font, char **labels, int n_data_components, GLfloat *data,
+	struct Cmiss_font *font, char **labels, int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names);
 /*******************************************************************************
@@ -692,7 +692,7 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
-	int object_name, GLfloat *data, struct Cmiss_graphics_font *font);
+	int object_name, GLfloat *data, struct Cmiss_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -723,7 +723,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
-	int *names, struct Cmiss_graphics_font *font);
+	int *names, struct Cmiss_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -1352,13 +1352,13 @@ DESCRIPTION :
 Gets the spectrum of a GT_object.
 ==============================================================================*/
 
-struct Cmiss_graphics_font;
+struct Cmiss_font;
 
 /**
  * Sets the font of all GT_glyph_set primitives in a GT_object.
  */
 int set_GT_object_font(struct GT_object *graphics_object,
-	struct Cmiss_graphics_font *font);
+	struct Cmiss_font *font);
 
 /**
  * Sets the glyph of all GT_glyph_set primitives in a GT_object.

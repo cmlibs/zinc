@@ -169,7 +169,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, 
-	struct Cmiss_graphics_font *font, struct Computed_field *label_field,
+	struct Cmiss_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
@@ -214,7 +214,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
-	struct Cmiss_graphics_font *font, struct Computed_field *label_field,
+	struct Cmiss_font *font, struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
 	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
 	struct Computed_field *group_field);

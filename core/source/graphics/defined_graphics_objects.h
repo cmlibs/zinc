@@ -56,7 +56,7 @@ int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	int tick_divisions,GLfloat tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
-	struct Cmiss_graphics_font *font);
+	struct Cmiss_font *font);
 /*******************************************************************************
 LAST MODIFIED : 27 September 2006
 

@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (GRAPHICS_MODULE_H)
 #define GRAPHICS_MODULE_H
 
-#include "zinc/graphicsfont.h"
+#include "zinc/font.h"
 #include "zinc/graphicsfilter.h"
 #include "general/object.h"
 #include "context/context.h"
@@ -132,7 +132,7 @@ struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
 struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
 	struct Cmiss_graphics_module *graphics_module);
 
-struct MANAGER(Cmiss_graphics_font) *Cmiss_graphics_module_get_font_manager(
+struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -141,7 +141,7 @@ struct MANAGER(Cmiss_graphics_font) *Cmiss_graphics_module_get_font_manager(
  * @param graphics_module  Pointer to a Graphics_module object.
  * @return  the default font if successfully called, otherwise NULL.
  */
-struct Cmiss_graphics_font *Cmiss_graphics_module_get_default_font(
+struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**

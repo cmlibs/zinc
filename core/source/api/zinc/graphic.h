@@ -45,7 +45,7 @@
 
 #include "types/fieldid.h"
 #include "types/graphicid.h"
-#include "types/graphicsfontid.h"
+#include "types/fontid.h"
 #include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
@@ -698,7 +698,7 @@ ZINC_API int Cmiss_graphic_point_attributes_set_base_size(
  * @return Handle to font, or 0 if none or error. Up to caller to destroy
  * returned handle.
  */
-ZINC_API Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
+ZINC_API Cmiss_font_id Cmiss_graphic_point_attributes_get_font(
 	Cmiss_graphic_point_attributes_id point_attributes);
 
 /**
@@ -710,7 +710,7 @@ ZINC_API Cmiss_graphics_font_id Cmiss_graphic_point_attributes_get_font(
  */
 ZINC_API int Cmiss_graphic_point_attributes_set_font(
 	Cmiss_graphic_point_attributes_id point_attributes,
-	Cmiss_graphics_font_id font);
+	Cmiss_font_id font);
 
 /**
  * Sets the glyph use for visualising a graphics point from a reduced set

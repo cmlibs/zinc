@@ -365,7 +365,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
 									g_PLUS_MARKER,global_point_size,g_NO_DATA,
-									/*object_name*/0,(GLfloat *)NULL, (struct Cmiss_graphics_font *)NULL);
+									/*object_name*/0,(GLfloat *)NULL, (struct Cmiss_font *)NULL);
 								GT_OBJECT_ADD(GT_point)(obj,time,point);
 							} break;
 							case g_POINTSET:
@@ -387,7 +387,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								pointset = CREATE(GT_pointset)(npts1,pointlist,
 									(char **)NULL,g_PLUS_MARKER,global_point_size,g_NO_DATA,
-									(GLfloat *)NULL,(int *)NULL, (struct Cmiss_graphics_font *)NULL);
+									(GLfloat *)NULL,(int *)NULL, (struct Cmiss_font *)NULL);
 								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
 #if defined (DEBUG_CODE)
 								/*???debug */

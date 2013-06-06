@@ -45,7 +45,7 @@
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/graphicsfilter.hpp"
-#include "zinc/graphicsfont.hpp"
+#include "zinc/font.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
@@ -112,9 +112,9 @@ public:
 		return Rendition(Cmiss_graphics_module_get_rendition(id, region.getId()));
 	}
 
-	GraphicsFont createFont()
+	Font createFont()
 	{
-		return GraphicsFont(Cmiss_graphics_module_create_font(id));
+		return Font(Cmiss_graphics_module_create_font(id));
 	}
 
 	GraphicsMaterial createMaterial()
@@ -127,9 +127,9 @@ public:
 		return Cmiss_graphics_module_define_standard_materials(id);
 	}
 
-	GraphicsFont findFontByName(const char *font_name)
+	Font findFontByName(const char *font_name)
 	{
-		return GraphicsFont(Cmiss_graphics_module_find_font_by_name(id, font_name));
+		return Font(Cmiss_graphics_module_find_font_by_name(id, font_name));
 	}
 
 	GraphicsMaterial findMaterialByName(const char *material_name)

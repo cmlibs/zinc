@@ -858,9 +858,9 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 		Cmiss_graphic_point_attributes_id point_attributes = Cmiss_graphic_get_point_attributes(graphic);
 		if (point_attributes)
 		{
-			Cmiss_graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
+			Cmiss_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 			Cmiss_graphic_point_attributes_set_font(point_attributes, font);
-			Cmiss_graphics_font_destroy(&font);
+			Cmiss_font_destroy(&font);
 			GT_object *glyph = Cmiss_graphic_point_attributes_get_glyph(point_attributes);
 			if (!glyph)
 			{
@@ -1519,7 +1519,7 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 }
 
 int Cmiss_rendition_font_change(struct Cmiss_rendition *rendition,
-	struct MANAGER_MESSAGE(Cmiss_graphics_font) *manager_message)
+	struct MANAGER_MESSAGE(Cmiss_font) *manager_message)
 {
 	int return_code = 1;
 	if (rendition && manager_message)

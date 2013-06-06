@@ -28,7 +28,7 @@ SET( API_HDRS
     source/api/zinc/fieldvectoroperators.h
     source/api/zinc/graphic.h
     source/api/zinc/graphicsfilter.h
-    source/api/zinc/graphicsfont.h
+    source/api/zinc/font.h
     source/api/zinc/graphicsmaterial.h
     source/api/zinc/graphicsmodule.h
     source/api/zinc/interactivetool.h
@@ -60,7 +60,7 @@ SET( API_HDRS
     source/api/zinc/types/graphicid.h
     source/api/zinc/types/graphicscoordinatesystem.h
     source/api/zinc/types/graphicsfilterid.h
-    source/api/zinc/types/graphicsfontid.h
+    source/api/zinc/types/fontid.h
     source/api/zinc/types/graphicsmaterialid.h
     source/api/zinc/types/graphicsmoduleid.h
     source/api/zinc/types/graphicsrendertype.h

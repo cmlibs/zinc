@@ -123,7 +123,7 @@ the glyph_set to be identified in picking for node position/vector editing.
 	GLfloat *data;
 	int label_bounds_dimension, label_bounds_components;
 	ZnReal *label_bounds;
-	struct Cmiss_graphics_font *font;
+	struct Cmiss_font *font;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
@@ -190,7 +190,7 @@ DESCRIPTION :
 	ZnReal marker_size;
 	int n_data_components;
 	GLfloat *data;
-	struct Cmiss_graphics_font *font;
+	struct Cmiss_font *font;
 
 	/* store integer object_name eg. node number from which this object came */
 	int object_name;
@@ -213,7 +213,7 @@ DESCRIPTION :
 	ZnReal marker_size;
 	int n_data_components;
 	GLfloat *data;
-	struct Cmiss_graphics_font *font;
+	struct Cmiss_font *font;
 
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
