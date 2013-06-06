@@ -68,15 +68,28 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_tessellation,name,const char
 PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_tessellation);
 PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_tessellation,name,const char *);
 
+
+/**
+ * Create and return a handle to a new tessellation module.
+ * Private; only to be called from graphics_module.
+ *
+ * @return  Handle to the newly created tessellation module if successful,
+ * otherwise NULL.
+ */
+Cmiss_tessellation_module_id Cmiss_tessellation_module_create();
+
+struct MANAGER(Cmiss_tessellation) *Cmiss_tessellation_module_get_manager(
+	Cmiss_tessellation_module_id tessellation_module);
+
 /***************************************************************************//**
  * Private; only to be called from graphics_module.
  */
 int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellation) *manager,
-	struct Cmiss_graphics_module *graphics_module);
+	struct Cmiss_tessellation_module *tessellation_module);
 
 /***************************************************************************//**
  * Create and return a handle to a new tessellation.
- * Private; only to be called from graphics_module.
+ * Private; only to be called from tessellation_module.
  *
  * @return  Handle to the newly created tessellation if successful, otherwise NULL.
  */

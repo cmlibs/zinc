@@ -196,6 +196,11 @@ public:
 		return Spectrum(Cmiss_graphics_module_find_spectrum_by_name(id, name));
 	}
 
+	TessellationModule getTessellationModule()
+	{
+		return TessellationModule(Cmiss_graphics_module_get_tessellation_module(id));
+	}
+
 	Tessellation createTessellation()
 	{
 		return Tessellation(Cmiss_graphics_module_create_tessellation(id));

@@ -40,6 +40,9 @@
 
 #if !defined (CMISS_TESSELLATION_ID_H)
 
+	struct Cmiss_tessellation_module;
+	typedef struct Cmiss_tessellation_module * Cmiss_tessellation_module_id;
+
 	struct Cmiss_tessellation;
 	typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
 	#define CMISS_TESSELLATION_ID_H
