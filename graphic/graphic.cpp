@@ -17,7 +17,7 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/graphic.hpp"
 #include "zinc/fieldtypesconstant.hpp"
-#include "zinc/graphicsfont.hpp"
+#include "zinc/font.hpp"
 
 TEST(Cmiss_graphic_api, set_use_element_type)
 {
@@ -346,11 +346,11 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_label_field(pointattr));
 
 	// should start with a default font
-	Cmiss_graphics_font_id font = Cmiss_graphic_point_attributes_get_font(pointattr);
-	EXPECT_NE(static_cast<Cmiss_graphics_font *>(0), font);
+	Cmiss_font_id font = Cmiss_graphic_point_attributes_get_font(pointattr);
+	EXPECT_NE(static_cast<Cmiss_font *>(0), font);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_font(pointattr, 0));
-	EXPECT_EQ(static_cast<Cmiss_graphics_font *>(0), Cmiss_graphic_point_attributes_get_font(pointattr));
+	EXPECT_EQ(static_cast<Cmiss_font *>(0), Cmiss_graphic_point_attributes_get_font(pointattr));
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_font(pointattr, font));
 
@@ -382,10 +382,10 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	EXPECT_EQ(false, pointattr.getLabelField().isValid());
 
 	// should start with a default font
-	GraphicsFont font = pointattr.getFont();
+	Font font = pointattr.getFont();
 	EXPECT_EQ(true, font.isValid());
 
-	GraphicsFont noFont;
+	Font noFont;
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(noFont)); // clear font
 	EXPECT_EQ(false, pointattr.getFont().isValid());
 
