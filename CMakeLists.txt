@@ -90,21 +90,21 @@ CACHE_VAR_WITH_DEFAULT( ZINC_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}"
 SET( CMAKE_INSTALL_PREFIX ${ZINC_INSTALL_PREFIX} CACHE INTERNAL "Internalise CMAKE_INSTALL_PREFIX, manipulate via ZINC_INSTALL_PREFIX" FORCE )
 
 # Offer the user the choice of overriding the installation directories
-CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_LIB_DIR "lib" PATH "Installation directory for libraries")
-CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_BIN_DIR "bin" PATH "Installation directory for executables")
-CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_INC_DIR "include" PATH "Installation directory for header files")
+SET( ZINC_INSTALL_LIB_DIR "lib" )# "Installation directory for libraries"
+SET( ZINC_INSTALL_BIN_DIR "bin" )# "Installation directory for executables"
+SET( ZINC_INSTALL_INC_DIR "include" )# "Installation directory for header files"
 IF(WIN32 AND NOT CYGWIN)
 	SET(DEFAULT_INSTALL_CMAKE_DIR cmake)
 ELSE()
 	SET(DEFAULT_INSTALL_CMAKE_DIR lib/cmake/${ZINC_BASE_NAME})
 ENDIF()
-CACHE_VAR_WITH_DEFAULT(ZINC_INSTALL_CMAKE_DIR ${DEFAULT_INSTALL_CMAKE_DIR} PATH "Installation directory for CMake files")
+SET( ZINC_INSTALL_CMAKE_DIR ${DEFAULT_INSTALL_CMAKE_DIR} )# "Installation directory for CMake files"
 
 # Make relative paths absolute (needed later on)
 FOREACH( p LIB BIN INC CMAKE )
 	SET( var ZINC_INSTALL_${p}_DIR )
 	IF( NOT IS_ABSOLUTE "${${var}}" )
-		SET( ${var} "${CMAKE_INSTALL_PREFIX}/${${var}}" )
+		SET( ${var}_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${${var}}" )
 	ENDIF()
 ENDFOREACH()
 
@@ -508,8 +508,8 @@ STRING( REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 STRING( REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}" )
 
 # Create the ZincConfig.cmake and ZincConfigVersion.cmake files
-FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR}"
-	"${ZINC_INSTALL_INC_DIR}" )
+FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR_ABSOLUTE}"
+	"${ZINC_INSTALL_INC_DIR_ABSOLUTE}" )
 SET( ZINC_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake" )
 CONFIGURE_FILE( cmake/ZincConfig.in.cmake
 	"${ZINC_CONFIG_FILE_NAME}" @ONLY )
