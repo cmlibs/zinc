@@ -52,14 +52,13 @@ Functions for interfacing with the graphics library.
 #    include <dlfcn.h>
 #if defined (DARWIN)
 #		include <OpenGL/OpenGL.h>
+#else
+#      include <GL/glx.h>
 #endif
 #  endif /* defined (UNIX) */
 #  include <math.h>
 #  include <string.h>
 #  include <stdio.h>
-#    if defined (UNIX)
-#      include <GL/glx.h>
-#endif
 #  if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #    include <gtk/gtk.h>
 #    if defined (UNIX)
