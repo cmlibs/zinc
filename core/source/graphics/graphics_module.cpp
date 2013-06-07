@@ -74,13 +74,12 @@ struct Cmiss_graphics_module
 	struct MANAGER(GT_object) *glyph_manager;
 	struct Material_package *material_package;
 	void *material_manager_callback_id;
-	struct Cmiss_font *default_font;
 	struct Light *default_light;
 	struct MANAGER(Light) *light_manager;
 	struct LIST(Light) *list_of_lights;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	void *spectrum_manager_callback_id;
-	struct MANAGER(Cmiss_font) *font_manager;
+	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Scene) *scene_manager;
@@ -250,7 +249,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->material_package = NULL;
 			module->list_of_lights = NULL;
 			module->glyph_manager = NULL;
-			module->default_font = NULL;
 			module->default_light = NULL;
 			module->default_spectrum = NULL;
 			module->default_scene = NULL;
@@ -258,11 +256,10 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_graphics_filter = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
-			module->font_manager = CREATE(MANAGER(Cmiss_font))();
-			Cmiss_font_manager_set_owner(module->font_manager, module);
+			module->font_module = Cmiss_font_module_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
-					(void *)module, module->font_manager);
+					(void *)module, Cmiss_font_module_get_manager(module->font_module));
 			Spectrum_manager_set_owner(module->spectrum_manager, module);
 			module->material_package = ACCESS(Material_package)(CREATE(Material_package)
 				(Cmiss_context_get_default_region(context), module->spectrum_manager));
@@ -386,7 +383,8 @@ int Cmiss_graphics_module_destroy(
 				graphics_module->tessellation_manager_callback_id,
 				Cmiss_tessellation_module_get_manager(graphics_module->tessellation_module));
 			MANAGER_DEREGISTER(Cmiss_font)(
-				graphics_module->font_manager_callback_id, graphics_module->font_manager);
+				graphics_module->font_manager_callback_id,
+				Cmiss_font_module_get_manager(graphics_module->font_module));
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
 			FOR_EACH_OBJECT_IN_MANAGER(Scene)(
 				Cmiss_scene_cleanup_top_rendition_scene_projection_callback, (void *)NULL, graphics_module->scene_manager);
@@ -413,15 +411,14 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Spectrum)(&graphics_module->default_spectrum);
 			if (graphics_module->spectrum_manager)
 				DESTROY(MANAGER(Spectrum))(&graphics_module->spectrum_manager);
-			if (graphics_module->font_manager)
-				DESTROY(MANAGER(Cmiss_font))(&graphics_module->font_manager);
+			if (graphics_module->font_module)
+				Cmiss_font_module_destroy(&graphics_module->font_module);
 			if (graphics_module->material_package)
 				DEACCESS(Material_package)(&graphics_module->material_package);
-			if (graphics_module->default_font)
-				DEACCESS(Cmiss_font)(&graphics_module->default_font);
 			if (graphics_module->default_time_keeper)
 				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
-			Cmiss_tessellation_module_destroy(&graphics_module->tessellation_module);
+			if (graphics_module->tessellation_module)
+				Cmiss_tessellation_module_destroy(&graphics_module->tessellation_module);
 			if (graphics_module->default_graphics_filter)
 				DEACCESS(Cmiss_graphics_filter)(&graphics_module->default_graphics_filter);
 			DESTROY(MANAGER(Cmiss_graphics_filter))(&graphics_module->graphics_filter_manager);
@@ -820,38 +817,23 @@ int Cmiss_graphics_module_define_standard_materials(
 	return return_code;
 }
 
-struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module)
-	{
-		return graphics_module->font_manager;
-	}
-	return 0;
-}
-
 struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module)
 {
 	struct Cmiss_font *font = NULL;
 
-	if (graphics_module && graphics_module->font_manager)
+	if (graphics_module && graphics_module->font_module)
 	{
-		if (!graphics_module->default_font)
+		font = Cmiss_font_module_get_default_font(
+			graphics_module->font_module);
+		if (!font)
 		{
-			graphics_module->default_font=CREATE(Cmiss_font)("default");
-			if (graphics_module->default_font)
+			font = Cmiss_font_module_create_font(graphics_module->font_module);
+			if (font)
 			{
-				if (!ADD_OBJECT_TO_MANAGER(Cmiss_font)(graphics_module->default_font,
-						graphics_module->font_manager))
-				{
-					DEACCESS(Cmiss_font)(&(graphics_module->default_font));
-				}
+				Cmiss_font_set_name(font, "default");
+				Cmiss_font_module_set_default_font(graphics_module->font_module, font);
 			}
-		}
-		if (graphics_module->default_font)
-		{
-			font = ACCESS(Cmiss_font)(graphics_module->default_font);
 		}
 	}
 
@@ -863,17 +845,11 @@ Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
 {
 	Cmiss_font_id font = NULL;
 
-	if (graphics_module && name)
+	if (graphics_module && graphics_module->font_module && name)
 	{
-		if (graphics_module->font_manager)
-		{
-			if (NULL != (font=FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font, name)(
-										 name, graphics_module->font_manager)))
-			{
-				ACCESS(Cmiss_font)(font);
-			}
-		}
+		return Cmiss_font_module_find_font_by_name(graphics_module->font_module, name);
 	}
+	return 0;
 
 	return font;
 }
@@ -881,45 +857,22 @@ Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
 Cmiss_font_id Cmiss_graphics_module_create_font(
 	Cmiss_graphics_module_id graphics_module)
 {
-	Cmiss_font_id font = NULL;
-	int i = 0;
-	char *temp_string = NULL;
-	char *num = NULL;
-
-	do
+	if (graphics_module && graphics_module->font_module)
 	{
-		if (temp_string)
-		{
-			DEALLOCATE(temp_string);
-		}
-		ALLOCATE(temp_string, char, 18);
-		strcpy(temp_string, "temp_font");
-		num = strrchr(temp_string, 'm') + 1;
-		sprintf(num, "%i", i);
-		strcat(temp_string, "\0");
-		i++;
+		return Cmiss_font_module_create_font(
+			graphics_module->font_module);
 	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font, name)(temp_string,
-		graphics_module->font_manager));
+	return 0;
+}
 
-	if (temp_string)
+struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->font_module)
 	{
-		if (NULL != (font = CREATE(Cmiss_font)(temp_string)))
-		{
-			if (ADD_OBJECT_TO_MANAGER(Cmiss_font)(
-						font, graphics_module->font_manager))
-			{
-				ACCESS(Cmiss_font)(font);
-			}
-			else
-			{
-				DESTROY(Cmiss_font)(&font);
-			}
-		}
-		DEALLOCATE(temp_string);
+		return Cmiss_font_module_get_manager(graphics_module->font_module);
 	}
-
-	return font;
+	return 0;
 }
 
 struct MANAGER(GT_object) * Cmiss_graphics_module_get_default_glyph_manager(
@@ -1124,6 +1077,16 @@ struct Light_model *Cmiss_graphics_module_get_default_light_model(
 			"Cmiss_graphics_module_get_default_light_model.  Invalid argument(s)");
 	}
 	return light_model;
+}
+
+Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->font_module)
+	{
+		return Cmiss_font_module_access(graphics_module->font_module);
+	}
+	return 0;
 }
 
 Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(

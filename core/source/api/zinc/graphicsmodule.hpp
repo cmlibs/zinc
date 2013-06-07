@@ -112,11 +112,6 @@ public:
 		return Rendition(Cmiss_graphics_module_get_rendition(id, region.getId()));
 	}
 
-	Font createFont()
-	{
-		return Font(Cmiss_graphics_module_create_font(id));
-	}
-
 	GraphicsMaterial createMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphics_module_create_material(id));
@@ -125,11 +120,6 @@ public:
 	int defineStandardMaterials()
 	{
 		return Cmiss_graphics_module_define_standard_materials(id);
-	}
-
-	Font findFontByName(const char *font_name)
-	{
-		return Font(Cmiss_graphics_module_find_font_by_name(id, font_name));
 	}
 
 	GraphicsMaterial findMaterialByName(const char *material_name)
@@ -194,6 +184,21 @@ public:
 	Spectrum findSpectrumByName(const char *name)
 	{
 		return Spectrum(Cmiss_graphics_module_find_spectrum_by_name(id, name));
+	}
+
+	FontModule getFontModule()
+	{
+		return FontModule(Cmiss_graphics_module_get_font_module(id));
+	}
+
+	Font createFont()
+	{
+		return Font(Cmiss_graphics_module_create_font(id));
+	}
+
+	Font findFontByName(const char *font_name)
+	{
+		return Font(Cmiss_graphics_module_find_font_by_name(id, font_name));
 	}
 
 	TessellationModule getTessellationModule()

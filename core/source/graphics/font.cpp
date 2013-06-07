@@ -45,6 +45,7 @@ This provides a Cmgui interface to the font contexts of many types.
 #include <string.h>
 #include "zinc/zincconfigure.h"
 #include "zinc/font.h"
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
@@ -63,6 +64,201 @@ This provides a Cmgui interface to the font contexts of many types.
 Module types
 ------------
 */
+struct Cmiss_font *Cmiss_font_create_private();
+
+struct Cmiss_font_module
+{
+
+private:
+
+	struct MANAGER(Cmiss_font) *fontManager;
+	Cmiss_font *defaultFont;
+	int access_count;
+
+	Cmiss_font_module() :
+		fontManager(CREATE(MANAGER(Cmiss_font))()),
+		defaultFont(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_font_module()
+	{
+		if (defaultFont)
+		{
+			DEACCESS(Cmiss_font)(&(this->defaultFont));
+		}
+		DESTROY(MANAGER(Cmiss_font))(&(this->fontManager));
+	}
+
+public:
+
+	static Cmiss_font_module *create()
+	{
+		return new Cmiss_font_module();
+	}
+
+	Cmiss_font_module *access()
+
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_font_module* &font_module)
+	{
+		if (font_module)
+		{
+			--(font_module->access_count);
+			if (font_module->access_count <= 0)
+			{
+				delete font_module;
+			}
+			font_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(Cmiss_font) *getManager()
+	{
+		return this->fontManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Cmiss_font)(this->fontManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Cmiss_font)(this->fontManager);
+	}
+
+	Cmiss_font_id createFont()
+	{
+		Cmiss_font_id font = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_font)(this->fontManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font,name)(temp_name,
+			this->fontManager));
+		font = Cmiss_font_create_private();
+		Cmiss_font_set_name(font, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_font)(font, this->fontManager))
+		{
+			DEACCESS(Cmiss_font)(&font);
+		}
+		return font;
+	}
+
+	Cmiss_font *findFontByName(const char *name)
+	{
+		Cmiss_font *font = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font,name)(name,
+			this->fontManager);
+		if (font)
+		{
+			return ACCESS(Cmiss_font)(font);
+		}
+		return 0;
+	}
+
+	Cmiss_font *getDefaultFont()
+	{
+		if (this->defaultFont)
+		{
+			ACCESS(Cmiss_font)(this->defaultFont);
+			return this->defaultFont;
+		}
+		return 0;
+	}
+
+	int setDefaultFont(Cmiss_font *font)
+	{
+		REACCESS(Cmiss_font)(&this->defaultFont, font);
+		return CMISS_OK;
+	}
+
+};
+
+Cmiss_font_module_id Cmiss_font_module_create()
+{
+	return Cmiss_font_module::create();
+}
+
+Cmiss_font_module_id Cmiss_font_module_access(
+	Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->access();
+	return 0;
+}
+
+int Cmiss_font_module_destroy(Cmiss_font_module_id *font_module_address)
+{
+	if (font_module_address)
+		return Cmiss_font_module::deaccess(*font_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_font_id Cmiss_font_module_create_font(
+	Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->createFont();
+	return 0;
+}
+
+struct MANAGER(Cmiss_font) *Cmiss_font_module_get_manager(
+	Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->getManager();
+	return 0;
+}
+
+int Cmiss_font_module_begin_change(Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_font_module_end_change(Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_font_id Cmiss_font_module_find_font_by_name(
+	Cmiss_font_module_id font_module, const char *name)
+{
+	if (font_module)
+		return font_module->findFontByName(name);
+   return 0;
+}
+
+Cmiss_font_id Cmiss_font_module_get_default_font(
+	Cmiss_font_module_id font_module)
+{
+	if (font_module)
+		return font_module->getDefaultFont();
+	return 0;
+}
+
+int Cmiss_font_module_set_default_font(
+	Cmiss_font_module_id font_module,
+	Cmiss_font_id font)
+{
+	if (font_module)
+		return font_module->setDefaultFont(font);
+	return 0;
+}
 
 struct Cmiss_font
 /*******************************************************************************
@@ -76,8 +272,8 @@ DESCRIPTION :
 	int offset_x, offset_y;
 	int size, italic, bold, changed;
 	double depth;
-	Cmiss_font_true_type true_type;
 	Cmiss_font_type font_type;
+	Cmiss_font_render_type render_type;
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Cmiss_font) *manager;
 	int manager_change_status;
@@ -88,7 +284,7 @@ DESCRIPTION :
 
 FULL_DECLARE_LIST_TYPE(Cmiss_font);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_font, Cmiss_graphics_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_font, Cmiss_font_module, void *);
 
 /*
 Module functions
@@ -171,8 +367,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Cmiss_font,name)
 		destination->depth = source->depth;
 		destination->italic = source->italic;
 		destination->bold = source->bold;
-		destination->true_type = source->true_type;
 		destination->font_type = source->font_type;
+		destination->render_type = source->render_type;
 		return_code = 1;
 	}
 	else
@@ -228,26 +424,18 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_font,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_font,name,const char *,manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_font, struct Cmiss_graphics_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_font, struct Cmiss_font_module)
 
 int Cmiss_font_manager_set_owner(struct MANAGER(Cmiss_font) *manager,
-	struct Cmiss_graphics_module *graphics_module)
+	struct Cmiss_font_module *font_module)
 {
-	return MANAGER_SET_OWNER(Cmiss_font)(manager, graphics_module);
+	return MANAGER_SET_OWNER(Cmiss_font)(manager, font_module);
 }
-
-struct Cmiss_font *CREATE(Cmiss_font)(const char *name);
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Creates a font called <name> with the user interface dependent <font_string>.
-==============================================================================*/
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_font)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_font)
 
-struct Cmiss_font *CREATE(Cmiss_font)(const char *name)
+struct Cmiss_font *Cmiss_font_create_private()
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -256,29 +444,22 @@ DESCRIPTION :
 {
 	Cmiss_font *font;
 
-	ENTER(CREATE(Cmiss_font));
-
 	if (ALLOCATE(font, struct Cmiss_font, 1))
 	{
-		font->name = duplicate_string(name);
-
+		font->name = 0;
 		font->offset_x = 0;
 		font->offset_y = 0;
-
 		font->size = 15;
 		font->italic = 0;
 		font->bold = 0;
 		font->depth = 0.1;
-		font->true_type = CMISS_FONT_TRUE_TYPE_OpenSans;
-		font->font_type = CMISS_FONT_TYPE_PIXMAP;
-
+		font->font_type = CMISS_FONT_TYPE_OpenSans;
+		font->render_type = CMISS_FONT_RENDER_TYPE_PIXMAP;
 		font->manager = (struct MANAGER(Cmiss_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(Cmiss_font);
-
 		font->ftFont = 0;
 		font->changed = 1;
 		font->access_count = 1;
-
 	}
 	else
 	{
@@ -286,7 +467,6 @@ DESCRIPTION :
 		font = (struct Cmiss_font *)NULL;
 	}
 
-	LEAVE;
 	return (font);
 } /* CREATE(Cmiss_font) */
 
@@ -329,44 +509,44 @@ DESCRIPTION :
 } /* DESTROY(Cmiss_font) */
 
 unsigned int Cmiss_font_get_font_buffer(struct Cmiss_font *font,
-	unsigned char **true_type_buffer_out)
+	unsigned char **font_type_buffer_out)
 {
-	unsigned char *true_type_buffer = 0;
-	unsigned int true_type_length = 0;
-	switch (font->true_type)
+	unsigned char *font_type_buffer = 0;
+	unsigned int font_type_length = 0;
+	switch (font->font_type)
 	{
-		case CMISS_FONT_TRUE_TYPE_OpenSans:
+		case CMISS_FONT_TYPE_OpenSans:
 		{
 			if (font->bold)
 			{
 				if (font->italic)
 				{
-					true_type_buffer = OpenSans_BoldItalic_ttf;
-					true_type_length = OpenSans_BoldItalic_ttf_len;
+					font_type_buffer = OpenSans_BoldItalic_ttf;
+					font_type_length = OpenSans_BoldItalic_ttf_len;
 				}
 				else
 				{
-					true_type_buffer = OpenSans_Bold_ttf;
-					true_type_length = OpenSans_Bold_ttf_len;
+					font_type_buffer = OpenSans_Bold_ttf;
+					font_type_length = OpenSans_Bold_ttf_len;
 				}
 			}
 			else if (font->italic)
 			{
-				true_type_buffer = OpenSans_Italic_ttf;
-				true_type_length = OpenSans_Italic_ttf_len;
+				font_type_buffer = OpenSans_Italic_ttf;
+				font_type_length = OpenSans_Italic_ttf_len;
 			}
 			else
 			{
-				true_type_buffer = OpenSans_Regular_ttf;
-				true_type_length = OpenSans_Regular_ttf_len;
+				font_type_buffer = OpenSans_Regular_ttf;
+				font_type_length = OpenSans_Regular_ttf_len;
 			}
 		} break;
 		default :
 		{
 		}break;
 	}
-	*true_type_buffer_out = true_type_buffer;
-	return true_type_length;
+	*font_type_buffer_out = font_type_buffer;
+	return font_type_length;
 }
 
 int Cmiss_font_compile(struct Cmiss_font *font)
@@ -392,21 +572,21 @@ Compiles the specified <font> so it can be used by the graphics.  The
 		}
 		if (font->ftFont == 0)
 		{
-			unsigned char *true_type_buffer = 0;
-			unsigned int true_type_length = 0;
-			true_type_length = Cmiss_font_get_font_buffer(font,
-				&true_type_buffer);
-			if ((true_type_buffer != 0) && (true_type_length > 0))
+			unsigned char *font_type_buffer = 0;
+			unsigned int font_type_length = 0;
+			font_type_length = Cmiss_font_get_font_buffer(font,
+				&font_type_buffer);
+			if ((font_type_buffer != 0) && (font_type_length > 0))
 			{
-				switch (font->font_type)
+				switch (font->render_type)
 				{
-				case CMISS_FONT_TYPE_BITMAP:
-				case CMISS_FONT_TYPE_PIXMAP:
+				case CMISS_FONT_RENDER_TYPE_BITMAP:
+				case CMISS_FONT_RENDER_TYPE_PIXMAP:
 				{
-					if (font->font_type == CMISS_FONT_TYPE_BITMAP)
-						font->ftFont = new FTBitmapFont(true_type_buffer, true_type_length);
+					if (font->render_type == CMISS_FONT_RENDER_TYPE_BITMAP)
+						font->ftFont = new FTBitmapFont(font_type_buffer, font_type_length);
 					else
-						font->ftFont = new FTPixmapFont(true_type_buffer, true_type_length);
+						font->ftFont = new FTPixmapFont(font_type_buffer, font_type_length);
 					if(font->ftFont->Error())
 					{
 						return_code = 0;
@@ -417,16 +597,16 @@ Compiles the specified <font> so it can be used by the graphics.  The
 						font->ftFont->UseDisplayList(false);
 					}
 				} break;
-				case CMISS_FONT_TYPE_POLYGON:
-				case CMISS_FONT_TYPE_OUTLINE:
-				case CMISS_FONT_TYPE_EXTRUDE:
+				case CMISS_FONT_RENDER_TYPE_POLYGON:
+				case CMISS_FONT_RENDER_TYPE_OUTLINE:
+				case CMISS_FONT_RENDER_TYPE_EXTRUDE:
 				{
-					if (font->font_type == CMISS_FONT_TYPE_POLYGON)
-						font->ftFont = new FTPolygonFont(true_type_buffer, true_type_length);
-					else if (font->font_type == CMISS_FONT_TYPE_OUTLINE)
-						font->ftFont = new FTOutlineFont(true_type_buffer, true_type_length);
+					if (font->render_type == CMISS_FONT_RENDER_TYPE_POLYGON)
+						font->ftFont = new FTPolygonFont(font_type_buffer, font_type_length);
+					else if (font->render_type == CMISS_FONT_RENDER_TYPE_OUTLINE)
+						font->ftFont = new FTOutlineFont(font_type_buffer, font_type_length);
 					else
-						font->ftFont = new FTExtrudeFont(true_type_buffer, true_type_length);
+						font->ftFont = new FTExtrudeFont(font_type_buffer, font_type_length);
 					if(font->ftFont->Error())
 					{
 						return_code = 0;
@@ -476,19 +656,19 @@ DESCRIPTION :
 	{
 		if (font->ftFont)
 		{
-			switch (font->font_type)
+			switch (font->render_type)
 			{
-				case CMISS_FONT_TYPE_BITMAP:
-				case CMISS_FONT_TYPE_PIXMAP:
+				case CMISS_FONT_RENDER_TYPE_BITMAP:
+				case CMISS_FONT_RENDER_TYPE_PIXMAP:
 				{
 					glRasterPos3f(x, y, z);
 					glDepthMask(GL_FALSE);
 					font->ftFont->Render(text);
 					glDepthMask(GL_TRUE);
 				} break;
-				case CMISS_FONT_TYPE_POLYGON:
-				case CMISS_FONT_TYPE_OUTLINE:
-				case CMISS_FONT_TYPE_EXTRUDE:
+				case CMISS_FONT_RENDER_TYPE_POLYGON:
+				case CMISS_FONT_RENDER_TYPE_OUTLINE:
+				case CMISS_FONT_RENDER_TYPE_EXTRUDE:
 				{
 					glMatrixMode(GL_MODELVIEW);
 					glPushMatrix();
@@ -524,10 +704,27 @@ int Cmiss_font_set_name(
 {
 	int return_code = 0;
 
-	if (font && font->manager && name)
+	if (font && name)
 	{
-		return_code = MANAGER_MODIFY_IDENTIFIER(Cmiss_font, name)(
-			font, name, font->manager);
+		return_code = 1;
+		if (font->manager)
+		{
+			return_code = MANAGER_MODIFY_IDENTIFIER(Cmiss_font, name)(
+				font, name, font->manager);
+		}
+		else
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				DEALLOCATE(font->name);
+				font->name = new_name;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
 	}
 
 	return return_code;
@@ -566,38 +763,7 @@ int Cmiss_font_changed(Cmiss_font_id font)
 }
 
 
-Cmiss_font_true_type Cmiss_font_get_true_type(
-	Cmiss_font_id font)
-{
-	if (font)
-	{
-		return font->true_type;
-	}
-	else
-	{
-		return CMISS_FONT_TRUE_TYPE_INVALID;
-	}
-}
-
-int Cmiss_font_set_true_type(Cmiss_font_id font,
-	Cmiss_font_true_type true_type)
-{
-	if (font)
-	{
-		if (font->true_type != true_type)
-		{
-			font->true_type = true_type;
-			Cmiss_font_changed(font);
-		}
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-Cmiss_font_type Cmiss_font_get_type(
+Cmiss_font_type Cmiss_font_get_font_type(
 	Cmiss_font_id font)
 {
 	if (font)
@@ -610,7 +776,7 @@ Cmiss_font_type Cmiss_font_get_type(
 	}
 }
 
-int Cmiss_font_set_type(Cmiss_font_id font,
+int Cmiss_font_set_font_type(Cmiss_font_id font,
 	Cmiss_font_type font_type)
 {
 	if (font)
@@ -618,6 +784,37 @@ int Cmiss_font_set_type(Cmiss_font_id font,
 		if (font->font_type != font_type)
 		{
 			font->font_type = font_type;
+			Cmiss_font_changed(font);
+		}
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+Cmiss_font_render_type Cmiss_font_get_render_type(
+	Cmiss_font_id font)
+{
+	if (font)
+	{
+		return font->render_type;
+	}
+	else
+	{
+		return CMISS_FONT_RENDER_TYPE_INVALID;
+	}
+}
+
+int Cmiss_font_set_render_type(Cmiss_font_id font,
+	Cmiss_font_render_type render_type)
+{
+	if (font)
+	{
+		if (font->render_type != render_type)
+		{
+			font->render_type = render_type;
 			Cmiss_font_changed(font);
 		}
 		return 1;
@@ -676,7 +873,7 @@ int Cmiss_font_set_depth(Cmiss_font_id font, double depth)
 		if (font->depth != depth)
 		{
 			font->depth = depth;
-			if (font->font_type == CMISS_FONT_TYPE_EXTRUDE)
+			if (font->render_type == CMISS_FONT_RENDER_TYPE_EXTRUDE)
 				Cmiss_font_changed(font);
 		}
 		return 1;
@@ -777,6 +974,57 @@ int Cmiss_font_destroy(Cmiss_font_id *font_address)
 	return return_code;
 }
 
+class Cmiss_font_render_type_conversion
+{
+public:
+	static const char *to_string(enum Cmiss_font_render_type render_type)
+	{
+		const char *enum_string = 0;
+		switch (render_type)
+		{
+		case CMISS_FONT_RENDER_TYPE_BITMAP:
+			enum_string = "BITMAP";
+			break;
+		case CMISS_FONT_RENDER_TYPE_PIXMAP:
+			enum_string = "PIXMAP";
+			break;
+		case CMISS_FONT_RENDER_TYPE_POLYGON:
+			enum_string = "POLYGON";
+			break;
+		case CMISS_FONT_RENDER_TYPE_OUTLINE:
+			enum_string = "OUTLINE";
+			break;
+		case CMISS_FONT_RENDER_TYPE_EXTRUDE:
+			enum_string = "EXTRUDE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum Cmiss_font_render_type Cmiss_font_render_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum Cmiss_font_render_type,
+		Cmiss_font_render_type_conversion>(string);
+}
+
+char *Cmiss_font_render_type_enum_to_string(
+	enum Cmiss_font_render_type render_type)
+{
+	const char *render_type_string =Cmiss_font_render_type_conversion::to_string(render_type);
+	return (render_type_string ? duplicate_string(render_type_string) : 0);
+}
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_font_render_type)
+{
+	return Cmiss_font_render_type_conversion::to_string(enumerator_value);
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_font_render_type)
+
 class Cmiss_font_type_conversion
 {
 public:
@@ -785,20 +1033,8 @@ public:
 		const char *enum_string = 0;
 		switch (font_type)
 		{
-		case CMISS_FONT_TYPE_BITMAP:
-			enum_string = "BITMAP";
-			break;
-		case CMISS_FONT_TYPE_PIXMAP:
-			enum_string = "PIXMAP";
-			break;
-		case CMISS_FONT_TYPE_POLYGON:
-			enum_string = "POLYGON";
-			break;
-		case CMISS_FONT_TYPE_OUTLINE:
-			enum_string = "OUTLINE";
-			break;
-		case CMISS_FONT_TYPE_EXTRUDE:
-			enum_string = "EXTRUDE";
+		case CMISS_FONT_TYPE_OpenSans:
+			enum_string = "OpenSans";
 			break;
 		default:
 			break;
@@ -827,42 +1063,3 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_font_type)
 }
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_font_type)
-
-class Cmiss_font_true_type_conversion
-{
-public:
-	static const char *to_string(enum Cmiss_font_true_type true_type)
-	{
-		const char *enum_string = 0;
-		switch (true_type)
-		{
-		case CMISS_FONT_TRUE_TYPE_OpenSans:
-			enum_string = "OpenSans";
-			break;
-		default:
-			break;
-		}
-		return enum_string;
-	}
-};
-
-enum Cmiss_font_true_type Cmiss_font_true_type_enum_from_string(
-	const char *string)
-{
-	return string_to_enum<enum Cmiss_font_true_type,
-		Cmiss_font_true_type_conversion>(string);
-}
-
-char *Cmiss_font_true_type_enum_to_string(
-	enum Cmiss_font_true_type true_type)
-{
-	const char *true_type_string =Cmiss_font_true_type_conversion::to_string(true_type);
-	return (true_type_string ? duplicate_string(true_type_string) : 0);
-}
-
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_font_true_type)
-{
-	return Cmiss_font_true_type_conversion::to_string(enumerator_value);
-}
-
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_font_true_type)

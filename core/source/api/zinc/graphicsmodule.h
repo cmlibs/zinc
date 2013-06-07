@@ -219,8 +219,10 @@ ZINC_API int Cmiss_graphics_module_define_standard_materials(
 ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
-/***************************************************************************//**
+/**
  * Create and return a handle to a new font.
+ *
+ * @deprecated see Cmiss_font_module_create_font
  *
  * @param graphics_module  The handle to the graphics module the font will
  * belong to.
@@ -229,8 +231,10 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 ZINC_API Cmiss_font_id Cmiss_graphics_module_create_font(
 	Cmiss_graphics_module_id graphics_module);
 
-/***************************************************************************//**
+/**
  * Find the font with the supplied name in graphics module, if any.
+ *
+ * @deprecated see Cmiss_font_module_find_font_by_name
  *
  * @param graphics_module  The handle to the graphics module to find the
  * spectrum in.
@@ -240,6 +244,14 @@ ZINC_API Cmiss_font_id Cmiss_graphics_module_create_font(
 ZINC_API Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
+/**
+* Get the font module which stores font object.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
+	Cmiss_graphics_module_id graphics_module);
 
 #ifdef __cplusplus
 }

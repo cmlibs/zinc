@@ -74,6 +74,22 @@ public:
 		Cmiss_font_destroy(&id);
 	}
 
+	enum RenderType
+	{
+		RENDER_TYPE_INVALID = CMISS_FONT_RENDER_TYPE_INVALID,
+		RENDER_TYPE_BITMAP = CMISS_FONT_RENDER_TYPE_BITMAP,
+		RENDER_TYPE_PIXMAP = CMISS_FONT_RENDER_TYPE_PIXMAP,
+		RENDER_TYPE_POLYGON = CMISS_FONT_RENDER_TYPE_POLYGON,
+		RENDER_TYPE_OUTLINE = CMISS_FONT_RENDER_TYPE_OUTLINE,
+		RENDER_TYPE_EXTRUDE = CMISS_FONT_RENDER_TYPE_EXTRUDE
+	};
+
+	enum FontType
+	{
+		FONT_TYPE_INVALID = CMISS_FONT_TYPE_INVALID,
+		FONT_TYPE_OpenSans = CMISS_FONT_TYPE_OpenSans
+	};
+
 	bool isValid()
 	{
 		return (0 != id);
@@ -94,6 +110,146 @@ public:
 		return Cmiss_font_set_name(id, name);
  	}
 
+	int getBold()
+	{
+		return Cmiss_font_get_bold(id);
+	}
+
+	int setBold(int bold)
+	{
+		return Cmiss_font_set_bold(id, bold);
+	}
+
+	double getDepth()
+	{
+		return Cmiss_font_get_depth(id);
+	}
+
+	int setDepth(double depth)
+	{
+		return Cmiss_font_set_depth(id, depth);
+	}
+
+	int getItalic()
+	{
+		return Cmiss_font_get_italic(id);
+	}
+
+	int setItalic(int italic)
+	{
+		return Cmiss_font_set_italic(id, italic);
+	}
+
+	int getSize()
+	{
+		return Cmiss_font_get_size(id);
+	}
+
+	int setSize(int size)
+	{
+		return Cmiss_font_set_size(id, size);
+	}
+
+	enum RenderType getRenderType()
+	{
+		return static_cast<RenderType>(Cmiss_font_get_render_type(id));
+	}
+
+	int setRenderType(RenderType renderType)
+	{
+		return Cmiss_font_set_render_type(id,
+			static_cast<Cmiss_font_render_type>(renderType));
+	}
+
+	enum FontType getFontType()
+	{
+		return static_cast<FontType>(Cmiss_font_get_font_type(id));
+	}
+
+	int setFontType(FontType fontType)
+	{
+		return Cmiss_font_set_font_type(id, static_cast<Cmiss_font_type>(fontType));
+	}
+};
+
+class FontModule
+{
+protected:
+	Cmiss_font_module_id id;
+
+public:
+
+	FontModule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FontModule(Cmiss_font_module_id in_font_module_id) :
+		id(in_font_module_id)
+	{  }
+
+	FontModule(const FontModule& fontModule) :
+		id(Cmiss_font_module_access(fontModule.id))
+	{  }
+
+	FontModule& operator=(const FontModule& fontModule)
+	{
+		Cmiss_font_module_id temp_id = Cmiss_font_module_access(
+			fontModule.id);
+		if (0 != id)
+		{
+			Cmiss_font_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~FontModule()
+	{
+		if (0 != id)
+		{
+			Cmiss_font_module_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Cmiss_font_module_id getId()
+	{
+		return id;
+	}
+
+	Font createFont()
+	{
+		return Font(Cmiss_font_module_create_font(id));
+	}
+
+	Font findFontByName(const char *name)
+	{
+		return Font(Cmiss_font_module_find_font_by_name(id, name));
+	}
+
+	int beginChange()
+	{
+		return Cmiss_font_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_font_module_end_change(id);
+	}
+
+	Font getDefaultFont()
+	{
+		return Font(Cmiss_font_module_get_default_font(id));
+	}
+
+	int setDefaultFont(Font &font)
+	{
+		return Cmiss_font_module_set_default_font(id, font.getId());
+	}
 };
 
 } // namespace zinc
