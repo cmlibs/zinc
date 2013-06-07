@@ -49,8 +49,8 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "general/manager.h"
 #include "general/enumerator.h"
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_font_render_type);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_font_type);
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_font_true_type);
 
 /*
 Global types
@@ -63,9 +63,9 @@ DECLARE_LIST_TYPES(Cmiss_font);
 
 DECLARE_MANAGER_TYPES(Cmiss_font);
 
-struct Cmiss_graphics_module;
+struct Cmiss_font_module;
 #include "general/manager_private.h"
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Cmiss_font, struct Cmiss_graphics_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Cmiss_font, struct Cmiss_font_module);
 
 /*
 Global functions
@@ -83,7 +83,17 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Cmiss_font,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_font);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_font,name,const char *);
 
-struct Cmiss_font *CREATE(Cmiss_font)(const char *name);
+/**
+ * Create and return a handle to a new font module.
+ * Private; only to be called from graphics_module.
+ *
+ * @return  Handle to the newly created font module if successful,
+ * otherwise NULL.
+ */
+Cmiss_font_module_id Cmiss_font_module_create();
+
+struct MANAGER(Cmiss_font) *Cmiss_font_module_get_manager(
+	Cmiss_font_module_id font_module);
 
 int DESTROY(Cmiss_font)(struct Cmiss_font **font_address);
 /*******************************************************************************

@@ -43,48 +43,31 @@
 
 #include "zinc/zincsharedobject.h"
 
-enum Cmiss_font_true_type
-{
-	CMISS_FONT_TRUE_TYPE_INVALID = 0,
-	CMISS_FONT_TRUE_TYPE_OpenSans = 1,
-};
-
 enum Cmiss_font_type
 {
 	CMISS_FONT_TYPE_INVALID = 0,
-	CMISS_FONT_TYPE_BITMAP = 1,
-	CMISS_FONT_TYPE_PIXMAP = 2,
-	CMISS_FONT_TYPE_POLYGON = 3,
-	CMISS_FONT_TYPE_OUTLINE = 4,
-	CMISS_FONT_TYPE_EXTRUDE = 5,
+	CMISS_FONT_TYPE_OpenSans = 1,
+};
+
+enum Cmiss_font_render_type
+{
+	CMISS_FONT_RENDER_TYPE_INVALID = 0,
+	CMISS_FONT_RENDER_TYPE_BITMAP = 1,
+	CMISS_FONT_RENDER_TYPE_PIXMAP = 2,
+	CMISS_FONT_RENDER_TYPE_POLYGON = 3,
+	CMISS_FONT_RENDER_TYPE_OUTLINE = 4,
+	CMISS_FONT_RENDER_TYPE_EXTRUDE = 5,
 };
 
 struct Cmiss_font;
 typedef struct Cmiss_font *Cmiss_font_id;
 
+struct Cmiss_font_module;
+typedef struct Cmiss_font_module *Cmiss_font_module_id;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-/***************************************************************************//**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum Cmiss_font_true_type
-	Cmiss_font_true_type_enum_from_string(const char *string);
-
-/***************************************************************************//**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param system  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_font_true_type_enum_to_string(
-	enum Cmiss_font_true_type true_type);
-
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
@@ -104,6 +87,26 @@ ZINC_API enum Cmiss_font_type
  */
 ZINC_API char *Cmiss_font_type_enum_to_string(
 	enum Cmiss_font_type font_type);
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+ZINC_API enum Cmiss_font_render_type
+	Cmiss_font_render_type_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param system  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *Cmiss_font_render_type_enum_to_string(
+	enum Cmiss_font_render_type render_type);
 
 #ifdef __cplusplus
 }
