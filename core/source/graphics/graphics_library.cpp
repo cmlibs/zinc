@@ -57,11 +57,13 @@ Functions for interfacing with the graphics library.
 #  include <math.h>
 #  include <string.h>
 #  include <stdio.h>
+#    if defined (UNIX)
+#      include <GL/glx.h>
+#endif
 #  if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #    include <gtk/gtk.h>
 #    if defined (UNIX)
 #      define GLX_GLXEXT_PROTOTYPES
-#      include <GL/glx.h>
 #      include <GL/glxext.h>
 #    endif
 #    if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
