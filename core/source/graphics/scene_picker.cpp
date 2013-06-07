@@ -43,6 +43,7 @@
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"
+#include "graphics/graphics_library.h"
 #include "graphics/render_gl.h"
 #include "graphics/scene.h"
 #include "graphics/scene_picker.hpp"
@@ -125,10 +126,12 @@ int Cmiss_scene_picker::pickObjects()
 {
 	double modelview_matrix[16],projection_matrix[16];
 	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
-	int i, j, return_code = 0;
+	int i, j, return_code = CMISS_ERROR_GENERAL;
 	updateViewerRectangle();
 	if (select_buffer != NULL)
-		return 1;
+		return CMISS_OK;
+	if (!has_current_context())
+		return CMISS_ERROR_GENERAL;
 	if (scene&&interaction_volume)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_glbeginend_renderer();
@@ -195,7 +198,7 @@ int Cmiss_scene_picker::pickObjects()
 					number_of_hits=glRenderMode(GL_RENDER);
 					if (0<=number_of_hits)
 					{
-						return_code=1;
+						return_code=CMISS_OK;
 					}
 					else
 					{
@@ -225,7 +228,7 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 {
 	Region_node_map node_map;
 
-	if (pickObjects() && select_buffer)
+	if ((CMISS_OK == pickObjects()) && select_buffer)
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
@@ -299,7 +302,7 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 {
 	Region_element_map element_map;
 
-	if (pickObjects() && select_buffer)
+	if ((CMISS_OK == pickObjects()) && select_buffer)
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
@@ -457,7 +460,7 @@ int Cmiss_scene_picker::setInteractionVolume(struct Interaction_volume *interact
 Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 {
 	Cmiss_element_id nearest_element = 0;
-	if (pickObjects() && select_buffer)
+	if ((CMISS_OK == pickObjects()) && select_buffer)
 	{
 		int hit_no, number_of_names, current_element_type = 0;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
@@ -534,7 +537,7 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_type type)
 {
 	Cmiss_node_id nearest_node = 0;
-	if (pickObjects() && select_buffer)
+	if ((CMISS_OK == pickObjects()) && select_buffer)
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
@@ -617,7 +620,7 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 
 Cmiss_graphic_id Cmiss_scene_picker::getNearestGraphic(enum Cmiss_scene_picker_object_type type)
 {
-	if (pickObjects() && select_buffer)
+	if ((CMISS_OK == pickObjects()) && select_buffer)
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;

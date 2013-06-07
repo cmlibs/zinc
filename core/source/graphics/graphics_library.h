@@ -113,6 +113,8 @@ Global functions
 ----------------
 */
 
+int has_current_context();
+
 int open_graphics_library(void);
 /*******************************************************************************
 LAST MODIFIED : 23 March 1993

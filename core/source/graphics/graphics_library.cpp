@@ -50,6 +50,9 @@ Functions for interfacing with the graphics library.
 #endif
 #  if defined (UNIX)
 #    include <dlfcn.h>
+#if defined (DARWIN)
+#		include <OpenGL/OpenGL.h>
+#endif
 #  endif /* defined (UNIX) */
 #  include <math.h>
 #  include <string.h>
@@ -87,6 +90,24 @@ Functions for interfacing with the graphics library.
 Global functions
 ----------------
 */
+
+int has_current_context()
+{
+#if defined (WIN32)
+	if (NULL!=wglGetCurrentContext())
+		return 1;
+#endif
+#if defined (UNIX)
+#if defined (DARWIN)
+	if (NULL != CGLGetCurrentContext())
+		return 1;
+#else
+	if (NULL!= glXGetCurrentContext())
+		return 1;
+#endif
+#endif
+	return 0;
+}
 
 int initialize_graphics_library()
 /*******************************************************************************
