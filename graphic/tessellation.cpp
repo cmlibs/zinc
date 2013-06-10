@@ -10,7 +10,7 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/tessellation.hpp"
 
-TEST(Cmiss_tesselation_module_api, valid_args)
+TEST(Cmiss_tessellation_module_api, valid_args)
 {
 	ZincTestSetup zinc;
 
@@ -51,7 +51,7 @@ TEST(Cmiss_tesselation_module_api, valid_args)
 	Cmiss_tessellation_module_destroy(&tm);
 }
 
-TEST(Cmiss_tesselation_module_api, valid_args_cpp)
+TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -84,7 +84,7 @@ TEST(Cmiss_tesselation_module_api, valid_args_cpp)
 	EXPECT_EQ(true, tessellation.isValid());
 }
 
-TEST(Cmiss_tesselation_api, valid_args)
+TEST(Cmiss_tessellation_api, valid_args)
 {
 	ZincTestSetup zinc;
 
@@ -133,7 +133,7 @@ TEST(Cmiss_tesselation_api, valid_args)
 	Cmiss_tessellation_module_destroy(&tm);
 }
 
-TEST(Cmiss_tesselation_api, valid_args_cpp)
+TEST(Cmiss_tessellation_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
