@@ -142,6 +142,87 @@ public:
 
 };
 
+
+class SpectrumModule
+{
+protected:
+	Cmiss_spectrum_module_id id;
+
+public:
+
+	SpectrumModule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit SpectrumModule(Cmiss_spectrum_module_id in_spectrum_module_id) :
+		id(in_spectrum_module_id)
+	{  }
+
+	SpectrumModule(const SpectrumModule& spectrumModule) :
+		id(Cmiss_spectrum_module_access(spectrumModule.id))
+	{  }
+
+	SpectrumModule& operator=(const SpectrumModule& spectrumModule)
+	{
+		Cmiss_spectrum_module_id temp_id = Cmiss_spectrum_module_access(
+			spectrumModule.id);
+		if (0 != id)
+		{
+			Cmiss_spectrum_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~SpectrumModule()
+	{
+		if (0 != id)
+		{
+			Cmiss_spectrum_module_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Cmiss_spectrum_module_id getId()
+	{
+		return id;
+	}
+
+	Spectrum createSpectrum()
+	{
+		return Spectrum(Cmiss_spectrum_module_create_spectrum(id));
+	}
+
+	Spectrum findSpectrumByName(const char *name)
+	{
+		return Spectrum(Cmiss_spectrum_module_find_spectrum_by_name(id, name));
+	}
+
+	int beginChange()
+	{
+		return Cmiss_spectrum_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_spectrum_module_end_change(id);
+	}
+
+	Spectrum getDefaultSpectrum()
+	{
+		return Spectrum(Cmiss_spectrum_module_get_default_spectrum(id));
+	}
+
+	int setDefaultSpectrum(Spectrum &spectrum)
+	{
+		return Cmiss_spectrum_module_set_default_spectrum(id, spectrum.getId());
+	}
+};
+
 }  // namespace zinc
 
 #endif /* __ZN_SPECTRUM_HPP__ */

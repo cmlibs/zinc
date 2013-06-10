@@ -77,7 +77,7 @@ struct Cmiss_graphics_module
 	struct Light *default_light;
 	struct MANAGER(Light) *light_manager;
 	struct LIST(Light) *list_of_lights;
-	struct MANAGER(Spectrum) *spectrum_manager;
+	Cmiss_spectrum_module_id spectrum_module;
 	void *spectrum_manager_callback_id;
 	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
@@ -255,14 +255,14 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_light_model = NULL;
 			module->default_graphics_filter = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
-			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
+			module->spectrum_module=Cmiss_spectrum_module_create();
 			module->font_module = Cmiss_font_module_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
 					(void *)module, Cmiss_font_module_get_manager(module->font_module));
-			Spectrum_manager_set_owner(module->spectrum_manager, module);
 			module->material_package = ACCESS(Material_package)(CREATE(Material_package)
-				(Cmiss_context_get_default_region(context), module->spectrum_manager));
+				(Cmiss_context_get_default_region(context),
+					Cmiss_spectrum_module_get_manager(module->spectrum_module)));
 			Material_manager_set_owner(
 				Material_package_get_material_manager(module->material_package), module);
 			module->material_manager_callback_id =
@@ -270,7 +270,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 					(void *)module, Material_package_get_material_manager(module->material_package));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
-					(void *)module, module->spectrum_manager);
+					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
 			module->scene_manager = CREATE(MANAGER(Scene)());
 			Scene_manager_set_owner(module->scene_manager, module);
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
@@ -376,7 +376,7 @@ int Cmiss_graphics_module_destroy(
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id, Material_package_get_material_manager(graphics_module->material_package));
 			MANAGER_DEREGISTER(Spectrum)(
-				graphics_module->spectrum_manager_callback_id, graphics_module->spectrum_manager);
+				graphics_module->spectrum_manager_callback_id, Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module));
 			MANAGER_DEREGISTER(Cmiss_graphics_filter)(
 				graphics_module->graphics_filter_manager_callback_id,	graphics_module->graphics_filter_manager);
 			MANAGER_DEREGISTER(Cmiss_tessellation)(
@@ -409,8 +409,8 @@ int Cmiss_graphics_module_destroy(
 				DESTROY(MANAGER(Light_model))(&graphics_module->light_model_manager);
 			if (graphics_module->default_spectrum)
 				DEACCESS(Spectrum)(&graphics_module->default_spectrum);
-			if (graphics_module->spectrum_manager)
-				DESTROY(MANAGER(Spectrum))(&graphics_module->spectrum_manager);
+			if (graphics_module->spectrum_module)
+				Cmiss_spectrum_module_destroy(&graphics_module->spectrum_module);
 			if (graphics_module->font_module)
 				Cmiss_font_module_destroy(&graphics_module->font_module);
 			if (graphics_module->material_package)
@@ -544,54 +544,22 @@ struct Light *Cmiss_graphics_module_get_default_light(
 struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	struct MANAGER(Spectrum) *spectrum_manager = NULL;
-	if (graphics_module)
+	if (graphics_module && graphics_module->spectrum_module)
 	{
-		spectrum_manager = graphics_module->spectrum_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_spectrum_manager.  Invalid argument(s)");
+		return Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module);
 	}
 
-	return spectrum_manager;
+	return NULL;
 }
 
-struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
+Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	struct Spectrum *spectrum = NULL;
-
-	if (graphics_module && graphics_module->spectrum_manager)
+	if (graphics_module && graphics_module->spectrum_module)
 	{
-		if (!graphics_module->default_spectrum)
-		{
-			graphics_module->default_spectrum=CREATE(Spectrum)("default");
-			if (graphics_module->default_spectrum)
-			{
-				Spectrum_set_simple_type(graphics_module->default_spectrum,
-					BLUE_TO_RED_SPECTRUM);
-				Spectrum_set_minimum_and_maximum(graphics_module->default_spectrum,0,1);
-				if (!ADD_OBJECT_TO_MANAGER(Spectrum)(graphics_module->default_spectrum,
-						graphics_module->spectrum_manager))
-				{
-					DEACCESS(Spectrum)(&(graphics_module->default_spectrum));
-				}
-			}
-		}
-		if (graphics_module->default_spectrum)
-		{
-			spectrum = ACCESS(Spectrum)(graphics_module->default_spectrum);
-		}
+		return Cmiss_spectrum_module_access(graphics_module->spectrum_module);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_spectrum.  Invalid argument(s)");
-	}
-
-	return spectrum;
+	return 0;
 }
 
 Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
@@ -599,21 +567,12 @@ Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
 {
 	Cmiss_spectrum_id spectrum = NULL;
 
-	ENTER(Cmiss_graphics_module_find_spectrum_by_name);
-	if (graphics_module && name)
+	if (graphics_module && graphics_module->spectrum_module && name)
 	{
-		struct MANAGER(Spectrum) *spectrum_manager =
-			Cmiss_graphics_module_get_spectrum_manager(graphics_module);
-		if (spectrum_manager)
-		{
-			if (NULL != (spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum, name)(
-										 name, spectrum_manager)))
-			{
-				ACCESS(Spectrum)(spectrum);
-			}
-		}
+		return Cmiss_spectrum_module_find_spectrum_by_name(
+			graphics_module->spectrum_module, name);
 	}
-	LEAVE;
+	return 0;
 
 	return spectrum;
 }
@@ -621,47 +580,39 @@ Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
 Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 	Cmiss_graphics_module_id graphics_module)
 {
-	Cmiss_spectrum_id spectrum = NULL;
-	struct MANAGER(Spectrum) *spectrum_manager =
-		Cmiss_graphics_module_get_spectrum_manager(graphics_module);
-	int i = 0;
-	char *temp_string = NULL;
-	char *num = NULL;
-
-	ENTER(Cmiss_graphics_module_create_spectrum);
-	do
+	if (graphics_module && graphics_module->spectrum_module)
 	{
-		if (temp_string)
-		{
-			DEALLOCATE(temp_string);
-		}
-		ALLOCATE(temp_string, char, 18);
-		strcpy(temp_string, "temp_spectrum");
-		num = strrchr(temp_string, 'm') + 1;
-		sprintf(num, "%i", i);
-		strcat(temp_string, "\0");
-		i++;
+		return Cmiss_spectrum_module_create_spectrum(
+			graphics_module->spectrum_module);
 	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum, name)(temp_string,
-			spectrum_manager));
+	return 0;
+}
 
-	if (temp_string)
+struct Cmiss_spectrum *Cmiss_graphics_module_get_default_spectrum(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	struct Cmiss_spectrum *spectrum = NULL;
+
+	if (graphics_module && graphics_module->spectrum_module)
 	{
-		if (NULL != (spectrum = CREATE(Spectrum)(temp_string)))
+		spectrum = Cmiss_spectrum_module_get_default_spectrum(
+			graphics_module->spectrum_module);
+		if (!spectrum)
 		{
-			if (ADD_OBJECT_TO_MANAGER(Spectrum)(
-						spectrum, spectrum_manager))
+			spectrum = Cmiss_spectrum_module_create_spectrum(graphics_module->spectrum_module);
+			if (spectrum)
 			{
-				ACCESS(Spectrum)(spectrum);
-			}
-			else
-			{
-				DESTROY(Spectrum)(&spectrum);
+				Cmiss_spectrum_set_name(spectrum, "default");
+				Cmiss_spectrum_module_set_default_spectrum(graphics_module->spectrum_module, spectrum);
+				if (spectrum)
+				{
+					Spectrum_set_simple_type(spectrum,
+						BLUE_TO_RED_SPECTRUM);
+					Spectrum_set_minimum_and_maximum(spectrum,0,1);
+				}
 			}
 		}
-		DEALLOCATE(temp_string);
 	}
-	LEAVE;
 
 	return spectrum;
 }
@@ -838,6 +789,16 @@ struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	}
 
 	return font;
+}
+
+Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->font_module)
+	{
+		return Cmiss_font_module_access(graphics_module->font_module);
+	}
+	return 0;
 }
 
 Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
@@ -1077,16 +1038,6 @@ struct Light_model *Cmiss_graphics_module_get_default_light_model(
 			"Cmiss_graphics_module_get_default_light_model.  Invalid argument(s)");
 	}
 	return light_model;
-}
-
-Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->font_module)
-	{
-		return Cmiss_font_module_access(graphics_module->font_module);
-	}
-	return 0;
 }
 
 Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(

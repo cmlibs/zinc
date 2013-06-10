@@ -45,6 +45,92 @@
 extern "C" {
 #endif
 
+
+/**
+* Returns a new reference to the spectrum module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param spectrum_module  The spectrum module to obtain a new reference to.
+* @return  spectrum module with incremented reference count.
+*/
+ZINC_API Cmiss_spectrum_module_id Cmiss_spectrum_module_access(
+	Cmiss_spectrum_module_id spectrum_module);
+
+/**
+* Destroys this reference to the spectrum module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param spectrum_module_address  Address of handle to spectrum module
+*   to destroy.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_spectrum_module_destroy(
+	Cmiss_spectrum_module_id *spectrum_module_address);
+
+/**
+ * Create and return a handle to a new spectrum.
+ *
+ * @param spectrum_module  The handle to the spectrum module the
+ * spectrum will belong to.
+ * @return  Handle to the newly created spectrum if successful, otherwise NULL.
+ */
+ZINC_API Cmiss_spectrum_id Cmiss_spectrum_module_create_spectrum(
+	Cmiss_spectrum_module_id spectrum_module);
+
+/**
+* Begin caching or increment cache level for this spectrum module. Call this
+* function before making multiple changes to minimise number of change messages
+* sent to clients. Must remember to end_change after completing changes.
+* @see Cmiss_spectrum_module_end_change
+*
+* @param spectrum_module  The spectrum_module to begin change cache on.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_spectrum_module_begin_change(Cmiss_spectrum_module_id spectrum_module);
+
+/***************************************************************************//**
+* Decrement cache level or end caching of changes for the spectrum module.
+* Call Cmiss_spectrum_module_begin_change before making multiple changes
+* and call this afterwards. When change level is restored to zero,
+* cached change messages are sent out to clients.
+*
+* @param spectrum_module  The glyph_module to end change cache on.
+* @return  Status CMISS_OK on success, any other value on failure.
+*/
+ZINC_API int Cmiss_spectrum_module_end_change(Cmiss_spectrum_module_id spectrum_module);
+
+/**
+* Find the spectrum with the specified name, if any.
+*
+* @param spectrum_module  spectrum module to search.
+* @param name  The name of the spectrum.
+* @return  Handle to the spectrum of that name, or 0 if not found.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_spectrum_id Cmiss_spectrum_module_find_spectrum_by_name(
+	Cmiss_spectrum_module_id spectrum_module, const char *name);
+
+/**
+* Get the default spectrum, if any.
+*
+* @param spectrum_module  spectrum module to query.
+* @return  Handle to the default spectrum, or 0 if none.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_spectrum_id Cmiss_spectrum_module_get_default_spectrum(
+	Cmiss_spectrum_module_id spectrum_module);
+
+/**
+* Set the default spectrum.
+*
+* @param spectrum_module  spectrum module to modify
+* @param spectrum  The spectrum to set as default.
+* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_spectrum_module_set_default_spectrum(
+	Cmiss_spectrum_module_id spectrum_module,
+	Cmiss_spectrum_id spectrum);
+
 /**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.

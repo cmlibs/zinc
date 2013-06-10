@@ -47,6 +47,7 @@ Spectrum functions and support code.
 #include <string.h>
 #include <math.h>
 #include "zinc/spectrum.h"
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
@@ -66,6 +67,202 @@ Spectrum functions and support code.
 Module types
 ------------
 */
+
+struct Cmiss_spectrum *Cmiss_spectrum_create_private();
+
+struct Cmiss_spectrum_module
+{
+
+private:
+
+	struct MANAGER(Cmiss_spectrum) *spectrumManager;
+	Cmiss_spectrum *defaultSpectrum;
+	int access_count;
+
+	Cmiss_spectrum_module() :
+		spectrumManager(CREATE(MANAGER(Cmiss_spectrum))()),
+		defaultSpectrum(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_spectrum_module()
+	{
+		if (defaultSpectrum)
+		{
+			DEACCESS(Cmiss_spectrum)(&(this->defaultSpectrum));
+		}
+		DESTROY(MANAGER(Cmiss_spectrum))(&(this->spectrumManager));
+	}
+
+public:
+
+	static Cmiss_spectrum_module *create()
+	{
+		return new Cmiss_spectrum_module();
+	}
+
+	Cmiss_spectrum_module *access()
+
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_spectrum_module* &spectrum_module)
+	{
+		if (spectrum_module)
+		{
+			--(spectrum_module->access_count);
+			if (spectrum_module->access_count <= 0)
+			{
+				delete spectrum_module;
+			}
+			spectrum_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(Cmiss_spectrum) *getManager()
+	{
+		return this->spectrumManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Cmiss_spectrum)(this->spectrumManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Cmiss_spectrum)(this->spectrumManager);
+	}
+
+	Cmiss_spectrum_id createSpectrum()
+	{
+		Cmiss_spectrum_id spectrum = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_spectrum)(this->spectrumManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_spectrum,name)(temp_name,
+			this->spectrumManager));
+		spectrum = Cmiss_spectrum_create_private();
+		Cmiss_spectrum_set_name(spectrum, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_spectrum)(spectrum, this->spectrumManager))
+		{
+			DEACCESS(Cmiss_spectrum)(&spectrum);
+		}
+		return spectrum;
+	}
+
+	Cmiss_spectrum *findSpectrumByName(const char *name)
+	{
+		Cmiss_spectrum *spectrum = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_spectrum,name)(name,
+			this->spectrumManager);
+		if (spectrum)
+		{
+			return ACCESS(Cmiss_spectrum)(spectrum);
+		}
+		return 0;
+	}
+
+	Cmiss_spectrum *getDefaultSpectrum()
+	{
+		if (this->defaultSpectrum)
+		{
+			ACCESS(Cmiss_spectrum)(this->defaultSpectrum);
+			return this->defaultSpectrum;
+		}
+		return 0;
+	}
+
+	int setDefaultSpectrum(Cmiss_spectrum *spectrum)
+	{
+		REACCESS(Cmiss_spectrum)(&this->defaultSpectrum, spectrum);
+		return CMISS_OK;
+	}
+
+};
+
+Cmiss_spectrum_module_id Cmiss_spectrum_module_create()
+{
+	return Cmiss_spectrum_module::create();
+}
+
+Cmiss_spectrum_module_id Cmiss_spectrum_module_access(
+	Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->access();
+	return 0;
+}
+
+int Cmiss_spectrum_module_destroy(Cmiss_spectrum_module_id *spectrum_module_address)
+{
+	if (spectrum_module_address)
+		return Cmiss_spectrum_module::deaccess(*spectrum_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_spectrum_id Cmiss_spectrum_module_create_spectrum(
+	Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->createSpectrum();
+	return 0;
+}
+
+struct MANAGER(Cmiss_spectrum) *Cmiss_spectrum_module_get_manager(
+	Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->getManager();
+	return 0;
+}
+
+int Cmiss_spectrum_module_begin_change(Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_spectrum_module_end_change(Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_spectrum_id Cmiss_spectrum_module_find_spectrum_by_name(
+	Cmiss_spectrum_module_id spectrum_module, const char *name)
+{
+	if (spectrum_module)
+		return spectrum_module->findSpectrumByName(name);
+   return 0;
+}
+
+Cmiss_spectrum_id Cmiss_spectrum_module_get_default_spectrum(
+	Cmiss_spectrum_module_id spectrum_module)
+{
+	if (spectrum_module)
+		return spectrum_module->getDefaultSpectrum();
+	return 0;
+}
+
+int Cmiss_spectrum_module_set_default_spectrum(
+	Cmiss_spectrum_module_id spectrum_module,
+	Cmiss_spectrum_id spectrum)
+{
+	if (spectrum_module)
+		return spectrum_module->setDefaultSpectrum(spectrum);
+	return 0;
+}
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
@@ -730,7 +927,8 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 				Spectrum_settings_remove(spectrum_settings,spectrum_settings_list);
 				spectrum_settings=(struct Spectrum_settings *)NULL;
 			}
-			spectrum_to_be_modified_copy=CREATE(Spectrum)("spectrum_modify_temp");
+			spectrum_to_be_modified_copy = Cmiss_spectrum_create_private();
+			Cmiss_spectrum_set_name(spectrum_to_be_modified_copy, "spectrum_modify_temp");
 			if (spectrum_to_be_modified_copy)
 			{
 				/* if required,generate and set the contours setting */
@@ -1844,7 +2042,7 @@ Writes the properties of the <spectrum> to the command window.
 	return (return_code);
 } /* Spectrum_list_contents */
 
-struct Spectrum *CREATE(Spectrum)(const char *name)
+struct Cmiss_spectrum *Cmiss_spectrum_create_private()
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
 
@@ -1852,66 +2050,30 @@ DESCRIPTION :
 Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
 {
-	struct Spectrum *spectrum;
-
-	ENTER(CREATE(Spectrum));
-	if (name)
+	struct Spectrum *spectrum = 0;
+	if (ALLOCATE(spectrum,struct Spectrum,1))
 	{
-		if (ALLOCATE(spectrum,struct Spectrum,1))
+		spectrum->maximum=0;
+		spectrum->minimum=0;
+		spectrum->clear_colour_before_settings = 1;
+		spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
+		spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
+		spectrum->access_count=1;
+		spectrum->colour_lookup_texture = (struct Texture *)NULL;
+		spectrum->is_managed_flag = false;
+		spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))();
+		spectrum->name=NULL;
+		if (!spectrum->list_of_settings)
 		{
-			spectrum->maximum=0;
-			spectrum->minimum=0;
-			spectrum->clear_colour_before_settings = 1;
-			spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
-			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
-			spectrum->access_count=1;
-			spectrum->colour_lookup_texture = (struct Texture *)NULL;
-			spectrum->is_managed_flag = false;
-			spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))();
-			if (spectrum->list_of_settings)
-			{
-				if (name)
-				{
-					if (ALLOCATE(spectrum->name,char,strlen(name)+1))
-					{
-						strcpy(spectrum->name,name);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(Spectrum).  Cannot allocate spectrum name");
-						DEALLOCATE(spectrum);
-						spectrum=(struct Spectrum *)NULL;
-					}
-				}
-				else
-				{
-					spectrum->name=NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Spectrum).  Cannot create settings list");
-				DEALLOCATE(spectrum);
-				spectrum=(struct Spectrum *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Spectrum).  Cannot allocate spectrum");
+			DEALLOCATE(spectrum);
 			spectrum=(struct Spectrum *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Spectrum).  Missing name");
 		spectrum=(struct Spectrum *)NULL;
 	}
-	LEAVE;
-
-	return (spectrum);
+	return spectrum;
 } /* CREATE(Spectrum) */
 
 int DESTROY(Spectrum)(struct Spectrum **spectrum_ptr)
@@ -2309,7 +2471,7 @@ int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double mi
 	int return_code = 0;
 	if (spectrum)
 	{
-		Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);
+		return_code = Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);
 	}
 
 	return return_code;
@@ -2321,7 +2483,7 @@ int Cmiss_spectrum_set_rainbow(Cmiss_spectrum_id spectrum)
 
 	if (spectrum)
 	{
-		Spectrum_set_simple_type(spectrum, BLUE_TO_RED_SPECTRUM);
+		return_code = Spectrum_set_simple_type(spectrum, BLUE_TO_RED_SPECTRUM);
 	}
 
 	return return_code;
@@ -2332,13 +2494,28 @@ int Cmiss_spectrum_set_name(
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_spectrum_set_name);
-	if (spectrum && spectrum->manager && name)
+	if (spectrum && name)
 	{
-		return_code = MANAGER_MODIFY_IDENTIFIER(Spectrum, name)(
-			spectrum, name, spectrum->manager);
+		return_code = 1;
+		if (spectrum->manager)
+		{
+			return_code = MANAGER_MODIFY_IDENTIFIER(Cmiss_spectrum, name)(
+				spectrum, name, spectrum->manager);
+		}
+		else
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				DEALLOCATE(spectrum->name);
+				spectrum->name = new_name;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
 	}
-	LEAVE;
 
 	return return_code;
 }
