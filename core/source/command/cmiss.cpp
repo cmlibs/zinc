@@ -795,8 +795,8 @@ static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_v
 	struct Spectrum_settings *blue_settings;
 	struct Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
 
-	if ( command_data && ( (*spectrum) = CREATE(Spectrum)("RGB") ) )
-	{
+	if ( command_data && (NULL != ((*spectrum) = Cmiss_spectrum_create_private())) &&
+		Cmiss_spectrum_set_name(spectrum, "RGB"))
 		spectrum_settings_list = get_Spectrum_settings_list( (*spectrum) );
 		number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
 		if ( number_in_list > 0 )

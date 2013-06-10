@@ -176,6 +176,11 @@ public:
 		return Scene(Cmiss_graphics_module_find_scene_by_name(id, name));
 	}
 
+	SpectrumModule getSpectrumModule()
+	{
+		return SpectrumModule(Cmiss_graphics_module_get_spectrum_module(id));
+	}
+
 	Spectrum createSpectrum()
 	{
 		return Spectrum(Cmiss_graphics_module_create_spectrum(id));

@@ -59,4 +59,7 @@ enum Cmiss_spectrum_attribute
 struct Cmiss_spectrum;
 typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
 
+struct Cmiss_spectrum_module;
+typedef struct Cmiss_spectrum_module *Cmiss_spectrum_module_id;
+
 #endif /* CMISS_SPECTRUM_ID_H */

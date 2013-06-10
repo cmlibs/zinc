@@ -46,6 +46,7 @@ Spectrum structures and support code.
 
 #include "zinc/zincconfigure.h"
 #include "zinc/graphicsmodule.h"
+#include "zinc/spectrum.h"
 
 #if defined (USE_GLEW)
 #include <GL/glew.h>
@@ -433,13 +434,18 @@ DESCRIPTION :
 Writes the properties of the <spectrum> to the command window.
 ==============================================================================*/
 
-struct Spectrum *CREATE(Spectrum)(const char *name);
+Cmiss_spectrum *Cmiss_spectrum_create_private();
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
 DESCRIPTION :
 Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
+
+struct MANAGER(Cmiss_spectrum) *Cmiss_spectrum_module_get_manager(
+	Cmiss_spectrum_module_id spectrum_module);
+
+struct Cmiss_spectrum_module *Cmiss_spectrum_module_create();
 
 int DESTROY(Spectrum)(struct Spectrum **spectrum_ptr);
 /*******************************************************************************

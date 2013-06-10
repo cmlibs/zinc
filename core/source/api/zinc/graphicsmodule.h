@@ -144,6 +144,8 @@ ZINC_API int Cmiss_graphics_module_enable_renditions(
 /***************************************************************************//**
  * Find the spectrum with the supplied name in graphics module, if any.
  *
+ * @deprecated see Cmiss_spectrum_module_find_spectrum_by_name
+ *
  * @param graphics_module  The handle to the graphics module to find the
  * spectrum in.
  * @param name  The name of the spectrum.
@@ -155,11 +157,22 @@ ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
 /***************************************************************************//**
  * Create and return a handle to a new spectrum.
  *
+ * @deprecated see Cmiss_spectrum_module_create_spectrum
+ *
  * @param graphics_module  The handle to the graphics module the spectrum will
  * belong to.
  * @return  Handle to the newly created spectrum if successful, otherwise NULL.
  */
 ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
+	Cmiss_graphics_module_id graphics_module);
+
+/**
+* Get the spectrum module which stores spectrum object.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
 	Cmiss_graphics_module_id graphics_module);
 
 /**
