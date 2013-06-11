@@ -163,8 +163,8 @@ public:
 		id(in_scene_viewer_id)
 	{  }
 
-	SceneViewer(const SceneViewer& scene_viewer_package) :
-		id(Cmiss_scene_viewer_access(scene_viewer_package.id))
+	SceneViewer(const SceneViewer& scene_viewer_module) :
+		id(Cmiss_scene_viewer_access(scene_viewer_module.id))
 	{  }
 
 	SceneViewer& operator=(const SceneViewer& scene_viewer)
@@ -259,41 +259,41 @@ public:
 
 };
 
-class SceneViewerPackage
+class SceneViewerModule
 {
 protected:
-	Cmiss_scene_viewer_package_id id;
+	Cmiss_scene_viewer_module_id id;
 
 public:
 
-	SceneViewerPackage() : id(0)
+	SceneViewerModule() : id(0)
 	{  }
 
 	// takes ownership of C-style region reference
-	SceneViewerPackage(Cmiss_scene_viewer_package_id in_scene_viewer_package_id) :
-		id(in_scene_viewer_package_id)
+	SceneViewerModule(Cmiss_scene_viewer_module_id in_scene_viewer_module_id) :
+		id(in_scene_viewer_module_id)
 	{  }
 
-	SceneViewerPackage(const SceneViewerPackage& scene_viewer_package) :
-		id(Cmiss_scene_viewer_package_access(scene_viewer_package.id))
+	SceneViewerModule(const SceneViewerModule& scene_viewer_module) :
+		id(Cmiss_scene_viewer_module_access(scene_viewer_module.id))
 	{  }
 
-	SceneViewerPackage& operator=(const SceneViewerPackage& scene_viewer_package)
+	SceneViewerModule& operator=(const SceneViewerModule& scene_viewer_module)
 	{
-		Cmiss_scene_viewer_package_id temp_id = Cmiss_scene_viewer_package_access(scene_viewer_package.id);
+		Cmiss_scene_viewer_module_id temp_id = Cmiss_scene_viewer_module_access(scene_viewer_module.id);
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_package_destroy(&id);
+			Cmiss_scene_viewer_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~SceneViewerPackage()
+	~SceneViewerModule()
 	{
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_package_destroy(&id);
+			Cmiss_scene_viewer_module_destroy(&id);
 		}
 	}
 
@@ -302,14 +302,14 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_scene_viewer_package_id getId()
+	Cmiss_scene_viewer_module_id getId()
 	{
 		return id;
 	}
 
 	SceneViewer createSceneViewer(SceneViewer::BufferingMode buffering_mode, SceneViewer::StereoMode stereo_mode)
 	{
-		return SceneViewer(Cmiss_scene_viewer_package_create_scene_viewer(id,
+		return SceneViewer(Cmiss_scene_viewer_module_create_scene_viewer(id,
 			static_cast<Cmiss_scene_viewer_buffering_mode>(buffering_mode),
 			static_cast<Cmiss_scene_viewer_stereo_mode>(stereo_mode)));
 	}

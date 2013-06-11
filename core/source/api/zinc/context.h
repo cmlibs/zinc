@@ -128,13 +128,13 @@ ZINC_API Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_context_id context);
 
 /***************************************************************************//**
- * Returns a handle to a scene viewer package
+ * Returns a handle to a scene viewer module
  * User interface must be enabled before this function can be called successfully.
  *
  * @param context  Handle to a cmiss_context object.
- * @return The scene viewer package if successfully called otherwise NULL.
+ * @return The scene viewer module if successfully called otherwise NULL.
  */
-ZINC_API Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
+ZINC_API Cmiss_scene_viewer_module_id Cmiss_context_get_default_scene_viewer_module(
 	Cmiss_context_id context);
 
 /***************************************************************************//**

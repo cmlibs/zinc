@@ -41,8 +41,8 @@
 #if !defined (CMISS_SCENE_VIEWER_ID_H)
 #define CMISS_SCENE_VIEWER_ID_H
 
-	struct Cmiss_scene_viewer_package;
-	typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
+	struct Cmiss_scene_viewer_module;
+	typedef struct Cmiss_scene_viewer_module * Cmiss_scene_viewer_module_id;
 
 	//-- struct Cmiss_scene_viewer_input;
 	//-- typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;

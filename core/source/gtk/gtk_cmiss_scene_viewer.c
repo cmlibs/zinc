@@ -207,7 +207,7 @@ Global functions
 */
 
 GtkWidget *gtk_cmiss_scene_viewer_new(
-	struct Cmiss_scene_viewer_package *scene_viewer_package)
+	struct Cmiss_scene_viewer_module *scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
 
@@ -225,12 +225,12 @@ DESCRIPTION:
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
 	gtk_cmiss_scene_viewer->cmiss_scene_viewer = Cmiss_scene_viewer_create_gtk(
-		scene_viewer_package,
+		scene_viewer_module,
 		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
 		CMISS_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 
 		/*minimum_depth_buffer_depth*/8, /*minimum_accumulation_buffer_depth*/8);
 
-	gtk_cmiss_scene_viewer->cmiss_scene_viewer_package = scene_viewer_package;
+	gtk_cmiss_scene_viewer->cmiss_scene_viewer_module = scene_viewer_module;
 
 	Scene_viewer_add_destroy_callback(
 		gtk_cmiss_scene_viewer->cmiss_scene_viewer,

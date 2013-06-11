@@ -56,7 +56,7 @@ struct Context
 		not be available on this implementation */
 	struct Cmiss_graphics_module *graphics_module;
 	//-- struct User_interface_module *UI_module;
-	struct Cmiss_scene_viewer_package *scene_viewer_package;
+	struct Cmiss_scene_viewer_module *scene_viewer_module;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
