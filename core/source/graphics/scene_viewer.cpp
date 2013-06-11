@@ -105,8 +105,8 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
-	struct Cmiss_scene_viewer_package *, void *);
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_module_callback, \
+	struct Cmiss_scene_viewer_module *, void *);
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
@@ -464,10 +464,10 @@ Frees the memory for the render_object and sets <*render_object_address> to NULL
 DECLARE_OBJECT_FUNCTIONS(Scene_viewer_render_object)
 DECLARE_LIST_FUNCTIONS(Scene_viewer_render_object)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_package_callback, void)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_module_callback, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_package_callback, \
-	struct Cmiss_scene_viewer_package *,void *)
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_module_callback, \
+	struct Cmiss_scene_viewer_module *,void *)
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
 
@@ -2723,7 +2723,7 @@ Global functions
 ----------------
 */
 
-struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -2734,47 +2734,47 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer_package.
+Creates a Cmiss_scene_viewer_module.
 ==============================================================================*/
 {
-	struct Cmiss_scene_viewer_package *scene_viewer_package;
+	struct Cmiss_scene_viewer_module *scene_viewer_module;
 
-	ENTER(CREATE(Scene_viewer_package));
+	ENTER(CREATE(Scene_viewer_module));
 	if (background_colour && default_light_model && scene)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
-		if (ALLOCATE(scene_viewer_package,struct Cmiss_scene_viewer_package,1))
+		if (ALLOCATE(scene_viewer_module,struct Cmiss_scene_viewer_module,1))
 		{
-			scene_viewer_package->access_count = 1;
-			scene_viewer_package->graphics_buffer_package = CREATE(Graphics_buffer_package)();
-			scene_viewer_package->background_colour = background_colour;
-			scene_viewer_package->interactive_tool_manager = interactive_tool_manager;
-			scene_viewer_package->light_manager = light_manager;
-			scene_viewer_package->default_light = ACCESS(Light)(default_light);
-			scene_viewer_package->light_model_manager = light_model_manager;
-			scene_viewer_package->default_light_model = ACCESS(Light_model)(default_light_model);
-			scene_viewer_package->scene_manager = scene_manager;
-			scene_viewer_package->scene = ACCESS(Scene)(scene);
-			//-- scene_viewer_package->user_interface = user_interface;
-			scene_viewer_package->scene_viewer_list = CREATE(LIST(Scene_viewer))();
-			scene_viewer_package->destroy_callback_list=
-					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))();
+			scene_viewer_module->access_count = 1;
+			scene_viewer_module->graphics_buffer_package = CREATE(Graphics_buffer_package)();
+			scene_viewer_module->background_colour = background_colour;
+			scene_viewer_module->interactive_tool_manager = interactive_tool_manager;
+			scene_viewer_module->light_manager = light_manager;
+			scene_viewer_module->default_light = ACCESS(Light)(default_light);
+			scene_viewer_module->light_model_manager = light_model_manager;
+			scene_viewer_module->default_light_model = ACCESS(Light_model)(default_light_model);
+			scene_viewer_module->scene_manager = scene_manager;
+			scene_viewer_module->scene = ACCESS(Scene)(scene);
+			//-- scene_viewer_module->user_interface = user_interface;
+			scene_viewer_module->scene_viewer_list = CREATE(LIST(Scene_viewer))();
+			scene_viewer_module->destroy_callback_list=
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))();
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Scene_viewer_package).  Not enough memory for scene_viewer");
+				"CREATE(Scene_viewer_module).  Not enough memory for scene_viewer");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_package).  Invalid argument(s)");
-		scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_module).  Invalid argument(s)");
+		scene_viewer_module=(struct Cmiss_scene_viewer_module *)NULL;
 	}
 	LEAVE;
 
-	return (scene_viewer_package);
-} /* CREATE(Cmiss_scene_viewer_package) */
+	return (scene_viewer_module);
+} /* CREATE(Cmiss_scene_viewer_module) */
 
 static void Scene_viewer_destroy_remove_from_package(
 	struct Scene_viewer *scene_viewer,
@@ -2785,10 +2785,10 @@ LAST MODIFIED : 19 April 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Cmiss_scene_viewer_package *package;
+	struct Cmiss_scene_viewer_module *package;
 
 	USE_PARAMETER(dummy_void);
-	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
+	if (scene_viewer && (package = (struct Cmiss_scene_viewer_module *)package_void))
 	{
 		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
 			package->scene_viewer_list);
@@ -2805,10 +2805,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_scene_viewer_package *package;
+	struct Cmiss_scene_viewer_module *package;
 
 	ENTER(Scene_viewer_destroy_from_package);
-	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
+	if (scene_viewer && (package = (struct Cmiss_scene_viewer_module *)package_void))
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
@@ -2819,41 +2819,41 @@ DESCRIPTION :
 	return (return_code);
 }
 
-struct Cmiss_scene_viewer_package *ACCESS(Cmiss_scene_viewer_package)(struct Cmiss_scene_viewer_package *scene_viewer_package)
+struct Cmiss_scene_viewer_module *ACCESS(Cmiss_scene_viewer_module)(struct Cmiss_scene_viewer_module *scene_viewer_module)
 {
-	if (scene_viewer_package)
+	if (scene_viewer_module)
 	{
-		(scene_viewer_package->access_count)++;
+		(scene_viewer_module->access_count)++;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"ACCESS(scene_viewer_package).  Invalid argument");
+			"ACCESS(scene_viewer_module).  Invalid argument");
 	}
 
-	return scene_viewer_package;
+	return scene_viewer_module;
 }
 
-int DESTROY(Cmiss_scene_viewer_package)(
-	struct Cmiss_scene_viewer_package **scene_viewer_package_address)
+int DESTROY(Cmiss_scene_viewer_module)(
+	struct Cmiss_scene_viewer_module **scene_viewer_module_address)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Destroys the scene_viewer_package.
+Destroys the scene_viewer_module.
 ==============================================================================*/
 {
 	int return_code = 0;
-	struct Cmiss_scene_viewer_package *scene_viewer_package = *scene_viewer_package_address;
+	struct Cmiss_scene_viewer_module *scene_viewer_module = *scene_viewer_module_address;
 
-	ENTER(DESTROY(Cmiss_scene_viewer_package));
-	if (scene_viewer_package != 0)
+	ENTER(DESTROY(Cmiss_scene_viewer_module));
+	if (scene_viewer_module != 0)
 	{
 		/* Call the destroy callbacks */
-		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_package_callback)(
-			scene_viewer_package->destroy_callback_list,scene_viewer_package,NULL);
-		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))
-			(&scene_viewer_package->destroy_callback_list);
+		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_module_callback)(
+			scene_viewer_module->destroy_callback_list,scene_viewer_module,NULL);
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))
+			(&scene_viewer_module->destroy_callback_list);
 
 		/* Destroy the scene viewers in the list as they are not accessed
 			or deaccessed by the list (so not destroyed when delisted).
@@ -2862,139 +2862,139 @@ Destroys the scene_viewer_package.
 			therefore this package no longer reference these scene viewers or
 			they should register for destroy callbacks. */
 		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_package,
-			scene_viewer_package, scene_viewer_package->scene_viewer_list);
-		DESTROY(LIST(Scene_viewer))(&scene_viewer_package->scene_viewer_list);
-		DESTROY(Graphics_buffer_package)(&scene_viewer_package->graphics_buffer_package);
-		DEACCESS(Light)(&scene_viewer_package->default_light);
-		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
-		DEACCESS(Scene)(&scene_viewer_package->scene);
-		DEALLOCATE(*scene_viewer_package_address);
+			scene_viewer_module, scene_viewer_module->scene_viewer_list);
+		DESTROY(LIST(Scene_viewer))(&scene_viewer_module->scene_viewer_list);
+		DESTROY(Graphics_buffer_package)(&scene_viewer_module->graphics_buffer_package);
+		DEACCESS(Light)(&scene_viewer_module->default_light);
+		DEACCESS(Light_model)(&scene_viewer_module->default_light_model);
+		DEACCESS(Scene)(&scene_viewer_module->scene);
+		DEALLOCATE(*scene_viewer_module_address);
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_scene_viewer_package).  "
+		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_scene_viewer_module).  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Cmiss_scene_viewer_package) */
+} /* DESTROY(Cmiss_scene_viewer_module) */
 
-Cmiss_scene_viewer_package_id Cmiss_scene_viewer_package_access(Cmiss_scene_viewer_package_id scene_viewer_package)
+Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_scene_viewer_module_id scene_viewer_module)
 {
-	if (scene_viewer_package)
+	if (scene_viewer_module)
 	{
-		scene_viewer_package->access_count++;
+		scene_viewer_module->access_count++;
 	}
 
-	return scene_viewer_package;
+	return scene_viewer_module;
 }
 
-int Cmiss_scene_viewer_package_destroy(Cmiss_scene_viewer_package_id *scene_viewer_package_address)
+int Cmiss_scene_viewer_module_destroy(Cmiss_scene_viewer_module_id *scene_viewer_module_address)
 {
 	int return_code = 0;
-	Cmiss_scene_viewer_package_id object = 0;
+	Cmiss_scene_viewer_module_id object = 0;
 
-	if (scene_viewer_package_address && (object = *scene_viewer_package_address))
+	if (scene_viewer_module_address && (object = *scene_viewer_module_address))
 	{
 		(object->access_count)--;
 		if (object->access_count <= 0)
 		{
-			return_code = DESTROY(Cmiss_scene_viewer_package)(scene_viewer_package_address);
+			return_code = DESTROY(Cmiss_scene_viewer_module)(scene_viewer_module_address);
 		}
 		else
 		{
 			return_code = 1;
 		}
-		*scene_viewer_package_address = 0;
+		*scene_viewer_module_address = 0;
 	}
 
 	return (return_code);
 } /* DEACCESS(object_type) */
 
-int Cmiss_scene_viewer_package_add_destroy_callback(
-	struct Cmiss_scene_viewer_package *scene_viewer_package,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,
+int Cmiss_scene_viewer_module_add_destroy_callback(
+	struct Cmiss_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
-Adds a callback to the <scene_viewer_package> that is called back before the scene
+Adds a callback to the <scene_viewer_module> that is called back before the scene
 viewer is destroyed.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_package_add_destroy_callback);
-	if (scene_viewer_package&&function)
+	ENTER(Cmiss_scene_viewer_module_add_destroy_callback);
+	if (scene_viewer_module&&function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_scene_viewer_package_callback)(
-			scene_viewer_package->destroy_callback_list,function,user_data))
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_scene_viewer_module_callback)(
+			scene_viewer_module->destroy_callback_list,function,user_data))
 		{
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_package_add_destroy_callback.  Could not add callback");
+				"Cmiss_scene_viewer_module_add_destroy_callback.  Could not add callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_package_add_destroy_callback.  Invalid argument(s)");
+			"Cmiss_scene_viewer_module_add_destroy_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_package_add_destroy_callback */
+} /* Cmiss_scene_viewer_module_add_destroy_callback */
 
-int Cmiss_scene_viewer_package_remove_destroy_callback(
-	struct Cmiss_scene_viewer_package *scene_viewer_package,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,
+int Cmiss_scene_viewer_module_remove_destroy_callback(
+	struct Cmiss_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Removes the callback calling <function> with <user_data> from
-<scene_viewer_package>.
+<scene_viewer_module>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_package_remove_destroy_callback);
-	if (scene_viewer_package&&function)
+	ENTER(Cmiss_scene_viewer_module_remove_destroy_callback);
+	if (scene_viewer_module&&function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_scene_viewer_package_callback)(
-			scene_viewer_package->destroy_callback_list,function,user_data))
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_scene_viewer_module_callback)(
+			scene_viewer_module->destroy_callback_list,function,user_data))
 		{
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_package_remove_destroy_callback.  Could not remove callback");
+				"Cmiss_scene_viewer_module_remove_destroy_callback.  Could not remove callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_package_remove_destroy_callback.  Invalid argument(s)");
+			"Cmiss_scene_viewer_module_remove_destroy_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_package_remove_destroy_callback */
+} /* Cmiss_scene_viewer_module_remove_destroy_callback */
 
-struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
+struct Graphics_buffer_package *Cmiss_scene_viewer_module_get_graphics_buffer_package(
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -3004,10 +3004,10 @@ DESCRIPTION :
 	struct Graphics_buffer_package *graphics_buffer_package;
 
 	ENTER(Scene_viewer_get_graphics_buffer_package);
-	if (cmiss_scene_viewer_package)
+	if (cmiss_scene_viewer_module)
 	{
 		graphics_buffer_package =
-			cmiss_scene_viewer_package->graphics_buffer_package;
+			cmiss_scene_viewer_module->graphics_buffer_package;
 	}
 	else
 	{
@@ -3020,8 +3020,8 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
-struct Scene *Cmiss_scene_viewer_package_get_default_scene(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
+struct Scene *Cmiss_scene_viewer_module_get_default_scene(
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -3031,9 +3031,9 @@ DESCRIPTION :
 	struct Scene *default_scene;
 
 	ENTER(Scene_viewer_get_default_scene);
-	if (cmiss_scene_viewer_package)
+	if (cmiss_scene_viewer_module)
 	{
-		default_scene = cmiss_scene_viewer_package->scene;
+		default_scene = cmiss_scene_viewer_module->scene;
 	}
 	else
 	{
@@ -3392,7 +3392,7 @@ DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module,
 	struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -3403,28 +3403,28 @@ DESCRIPTION :
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(create_Scene_viewer_from_package);
-	if (graphics_buffer && cmiss_scene_viewer_package && scene)
+	if (graphics_buffer && cmiss_scene_viewer_module && scene)
 	{
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
-			cmiss_scene_viewer_package->background_colour,
-			cmiss_scene_viewer_package->light_manager,
-			cmiss_scene_viewer_package->default_light,
-			cmiss_scene_viewer_package->light_model_manager,
-			cmiss_scene_viewer_package->default_light_model,
-			cmiss_scene_viewer_package->scene_manager,
+			cmiss_scene_viewer_module->background_colour,
+			cmiss_scene_viewer_module->light_manager,
+			cmiss_scene_viewer_module->default_light,
+			cmiss_scene_viewer_module->light_model_manager,
+			cmiss_scene_viewer_module->default_light_model,
+			cmiss_scene_viewer_module->scene_manager,
 			scene);
 
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the package list */
 			ADD_OBJECT_TO_LIST(Scene_viewer)(Cmiss_scene_viewer_access(scene_viewer),
-				cmiss_scene_viewer_package->scene_viewer_list);
+				cmiss_scene_viewer_module->scene_viewer_list);
 
 			/* Register a callback so that if the scene_viewer is destroyed
 				then it is removed from the list */
 			Scene_viewer_add_destroy_callback(scene_viewer,
 				Scene_viewer_destroy_remove_from_package,
-				cmiss_scene_viewer_package);
+				cmiss_scene_viewer_module);
 		}
 	}
 	else
@@ -3437,8 +3437,8 @@ DESCRIPTION :
 	return (scene_viewer);
 } /* create_Scene_viewer_from_package */
 
-Cmiss_scene_viewer_id Cmiss_scene_viewer_package_create_scene_viewer(
-	Cmiss_scene_viewer_package_id cmiss_scene_viewer_package,
+Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
+	Cmiss_scene_viewer_module_id cmiss_scene_viewer_module,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode)
 {
@@ -3447,7 +3447,7 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_package_create_scene_viewer(
 	struct Graphics_buffer *graphics_buffer;
 	struct Cmiss_scene_viewer *scene_viewer;
 
-	if (cmiss_scene_viewer_package)
+	if (cmiss_scene_viewer_module)
 	{
 		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
 		{
@@ -3482,16 +3482,16 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_package_create_scene_viewer(
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
 		graphics_buffer = CREATE(Graphics_buffer)(
-			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			Cmiss_scene_viewer_module_get_graphics_buffer_package(cmiss_scene_viewer_module),
 			GRAPHICS_BUFFER_ONSCREEN_TYPE,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode);
 		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
-			cmiss_scene_viewer_package,
-			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
+			cmiss_scene_viewer_module,
+			Cmiss_scene_viewer_module_get_default_scene(cmiss_scene_viewer_module));
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_package_create_scene_viewer.  "
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_module_create_scene_viewer.  "
 			"The Cmiss_scene_viewer data must be initialised before any scene "
 			"viewers can be created.");
 		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
@@ -7619,7 +7619,7 @@ DESCRIPTION :
 Closes the scene_viewer.
 ==============================================================================*/
 {
-	/* The normal destroy will call the Scene_viewer_package callback
+	/* The normal destroy will call the Scene_viewer_module callback
 		to remove it from the package */
 	int return_code = 0;
 	if (scene_viewer_id_address)

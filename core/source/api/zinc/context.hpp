@@ -117,9 +117,9 @@ public:
 		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));
 	}
 
-	SceneViewerPackage getDefaultSceneViewerPackage()
+	SceneViewerModule getDefaultSceneViewerModule()
 	{
-		return SceneViewerPackage(Cmiss_context_get_default_scene_viewer_package(id));
+		return SceneViewerModule(Cmiss_context_get_default_scene_viewer_module(id));
 	}
 
 	TimeKeeper getDefaultTimeKeeper()

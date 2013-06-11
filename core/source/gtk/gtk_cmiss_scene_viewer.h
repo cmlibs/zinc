@@ -112,7 +112,7 @@ DESCRIPTION :
 	GtkBin bin;
 
 	Cmiss_scene_viewer_id cmiss_scene_viewer;
-	struct Cmiss_scene_viewer_package* cmiss_scene_viewer_package;
+	struct Cmiss_scene_viewer_module* cmiss_scene_viewer_module;
 };
 
 struct _GtkCmissSceneViewerClass
@@ -142,7 +142,7 @@ DESCRIPTION :
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
 GtkWidget* gtk_cmiss_scene_viewer_new(
-	struct Cmiss_scene_viewer_package *scene_viewer_package);
+	struct Cmiss_scene_viewer_module *scene_viewer_module);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2002
 

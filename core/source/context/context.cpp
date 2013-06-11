@@ -66,7 +66,7 @@ struct Context *Cmiss_context_create(const char *id)
 		context->id = duplicate_string(id);
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
-		context->scene_viewer_package = NULL;
+		context->scene_viewer_module = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
 		context->time_keeper = 0;
@@ -98,9 +98,9 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
 			}
-			if (context->scene_viewer_package)
+			if (context->scene_viewer_module)
 			{
-				Cmiss_scene_viewer_package_destroy(&context->scene_viewer_package);
+				Cmiss_scene_viewer_module_destroy(&context->scene_viewer_module);
 			}
 			if (context->any_object_selection)
 			{
@@ -300,13 +300,13 @@ struct Cmiss_time_keeper *Cmiss_context_get_default_time_keeper(struct Context *
 	return time_keeper;
 }
 
-Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
+Cmiss_scene_viewer_module_id Cmiss_context_get_default_scene_viewer_module(
 	Cmiss_context_id context)
 {
-	Cmiss_scene_viewer_package *scene_viewer_package = NULL;
+	Cmiss_scene_viewer_module *scene_viewer_module = NULL;
 	if (context)
 	{
-		if (!context->scene_viewer_package)
+		if (!context->scene_viewer_module)
 		{
 			Cmiss_graphics_module_id graphics_module = Cmiss_context_get_default_graphics_module(context);
 			if (graphics_module)
@@ -321,7 +321,7 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 				default_background_colour.red = 0.0;
 				default_background_colour.green = 0.0;
 				default_background_colour.blue = 0.0;
-				context->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
+				context->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)
 					(&default_background_colour,
 						/* interactive_tool_manager */0,
 						Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
@@ -332,15 +332,15 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 				Cmiss_scene_destroy(&default_scene);
 			}
 		}
-		scene_viewer_package = Cmiss_scene_viewer_package_access(context->scene_viewer_package);
+		scene_viewer_module = Cmiss_scene_viewer_module_access(context->scene_viewer_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_scene_viewer_package.  "
+			"Cmiss_context_get_default_scene_viewer_module.  "
 			"Missing context");
 	}
-	return scene_viewer_package;
+	return scene_viewer_module;
 }
 
 struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(

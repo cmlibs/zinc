@@ -70,7 +70,7 @@ struct Graphics_buffer;
 struct Scene;
 struct MANAGER(Scene);
 */
-struct Cmiss_scene_viewer_package;
+struct Cmiss_scene_viewer_module;
 
 /*
 The Cmiss_scene_viewer which is Public is currently the same object as the
@@ -253,7 +253,7 @@ enum Scene_viewer_drag_mode
 	SV_DRAG_ZOOM
 };
 
-struct Cmiss_scene_viewer_package
+struct Cmiss_scene_viewer_module
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -275,7 +275,7 @@ The default data used to create Cmiss_scene_viewers.
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback))
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback))
 		*destroy_callback_list;
 };
 
@@ -436,8 +436,8 @@ DESCRIPTION :
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
 }; /* struct Scene_viewer */
 
-DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
-	struct Cmiss_scene_viewer_package *, void *, void);
+DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_module_callback, \
+	struct Cmiss_scene_viewer_module *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *, void);
@@ -449,7 +449,7 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 Global functions
 ----------------
 */
-struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -460,39 +460,39 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Creates a Scene_viewer_package.
+Creates a Scene_viewer_module.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_package_add_destroy_callback(struct Cmiss_scene_viewer_package *scene_viewer_package,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,void *user_data);
+int Cmiss_scene_viewer_module_add_destroy_callback(struct Cmiss_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
-Adds a callback to the <scene_viewer_package> that is called back before the scene
+Adds a callback to the <scene_viewer_module> that is called back before the scene
 viewer is destroyed.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_package_remove_destroy_callback(struct Cmiss_scene_viewer_package *scene_viewer_package,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,void *user_data);
+int Cmiss_scene_viewer_module_remove_destroy_callback(struct Cmiss_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Removes the callback calling <function> with <user_data> from
-<scene_viewer_package>.
+<scene_viewer_module>.
 ==============================================================================*/
 
-struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
+struct Graphics_buffer_package *Cmiss_scene_viewer_module_get_graphics_buffer_package(
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
 ==============================================================================*/
 
-struct Scene *Cmiss_scene_viewer_package_get_default_scene(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
+struct Scene *Cmiss_scene_viewer_module_get_default_scene(
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -528,13 +528,13 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module,
 	struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
 
 DESCRIPTION :
-Creates the scene viewer with respect to the cmiss_scene_viewer_package.
+Creates the scene viewer with respect to the cmiss_scene_viewer_module.
 The scene_viewer automatically removes itself from the package when it is
 destroyed.  If the package is destroyed at some point (usually by the
 destruction of the Command data) then all the scene viewers will be
