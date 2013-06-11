@@ -26,7 +26,7 @@ setup(
     author_email='h.sorby@auckland.ac.nz',
     packages=['zinc'],
     package_dir={'zinc': 'zinc'},
-    package_data={'zinc': ['*.so']},
+    package_data={'zinc': ['*.so', '*.pyd']},
     platforms=['any'],
     url='http://pypi.python.org/pypi/PyZinc/',
     license='LICENSE.txt',
