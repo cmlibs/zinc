@@ -37,11 +37,11 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	Cmiss_scene_picker_id scene_picker = Cmiss_scene_create_picker(scene);
 	EXPECT_NE(static_cast<Cmiss_scene_picker *>(0), scene_picker);
 
-	Cmiss_scene_viewer_package_id sv_package = Cmiss_context_get_default_scene_viewer_package(
+	Cmiss_scene_viewer_module_id sv_module = Cmiss_context_get_default_scene_viewer_module(
 		zinc.context);
-	EXPECT_NE(static_cast<Cmiss_scene_viewer_package *>(0), sv_package);
+	EXPECT_NE(static_cast<Cmiss_scene_viewer_module *>(0), sv_module);
 
-	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_package_create_scene_viewer(sv_package,
+	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(sv_module,
 		CMISS_SCENE_VIEWER_BUFFERING_DOUBLE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
 	EXPECT_NE(static_cast<Cmiss_scene_viewer *>(0), sv);
 
@@ -96,7 +96,7 @@ TEST(Cmiss_scene_picker_api, valid_args)
 
 	Cmiss_scene_viewer_destroy(&sv);
 
-	Cmiss_scene_viewer_package_destroy(&sv_package);
+	Cmiss_scene_viewer_module_destroy(&sv_module);
 
 	Cmiss_scene_picker_destroy(&scene_picker);
 
@@ -114,10 +114,10 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	ScenePicker scenePicker = scene.createPicker();
 	EXPECT_EQ(true, scenePicker.isValid());
 
-	SceneViewerPackage sv_package = zinc.context.getDefaultSceneViewerPackage();
-	EXPECT_EQ(true, sv_package.isValid());
+	SceneViewerModule sv_module = zinc.context.getDefaultSceneViewerModule();
+	EXPECT_EQ(true, sv_module.isValid());
 
-	SceneViewer sv = sv_package.createSceneViewer(
+	SceneViewer sv = sv_module.createSceneViewer(
 		SceneViewer::BUFFERING_MODE_DOUBLE, SceneViewer::STEREO_MODE_ANY);
 	EXPECT_EQ(true, sv.isValid());
 
