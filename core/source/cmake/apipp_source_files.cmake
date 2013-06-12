@@ -24,6 +24,7 @@ SET( APIPP_HDRS
     source/api/zinc/fieldtypestime.hpp
     source/api/zinc/fieldtypestrigonometry.hpp
     source/api/zinc/fieldtypesvectoroperators.hpp
+    source/api/zinc/glyph.hpp
     source/api/zinc/graphic.hpp
     source/api/zinc/graphicsfilter.hpp
     source/api/zinc/font.hpp

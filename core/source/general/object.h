@@ -189,7 +189,7 @@ This version assumes the object identifier is "char *name". \
 	ENTER(GET_NAME(object_type)); \
 	if (object&&name_ptr) \
 	{ \
-		if (ALLOCATE(*name_ptr,char,strlen(object->name)+1)) \
+		if (ALLOCATE(*name_ptr,char,(unsigned long int)strlen(object->name)+1)) \
 		{ \
 			strcpy(*name_ptr,object->name); \
 			return_code=1; \

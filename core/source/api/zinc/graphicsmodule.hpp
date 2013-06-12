@@ -42,6 +42,7 @@
 #include "zinc/graphicsmodule.h"
 #include "zinc/region.hpp"
 #include "zinc/rendition.hpp"
+#include "zinc/glyph.hpp"
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/graphicsfilter.hpp"
@@ -110,6 +111,11 @@ public:
 	Rendition getRendition(Region& region)
 	{
 		return Rendition(Cmiss_graphics_module_get_rendition(id, region.getId()));
+	}
+
+	GlyphModule getGlyphModule()
+	{
+		return GlyphModule(Cmiss_graphics_module_get_glyph_module(id));
 	}
 
 	GraphicsMaterial createMaterial()

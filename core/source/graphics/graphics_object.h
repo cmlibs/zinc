@@ -74,6 +74,7 @@ Used to be gtypes.h
 
 #include "zinc/zincconfigure.h"
 
+#include "zinc/types/glyphid.h"
 #include "zinc/graphic.h"
 #include "general/geometry.h"
 #include "general/list.h"
@@ -556,8 +557,11 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph, int mirror_glyph_flag,
-	struct Cmiss_font *font, char **labels, int n_data_components, GLfloat *data,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	Triple base_size, Triple scale_factors, Triple offset,
+	struct Cmiss_font *font, char **labels, Triple label_offset,
+	char *static_label_text[3], int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names);
 /*******************************************************************************
@@ -1367,10 +1371,47 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
 	struct GT_object *glyph);
 
 /**
- * Sets the mirror flag for rendering glyphs in a GT_object.
+ * Sets the glyph repeat mode for all glyph_sets in the GT_object.
  */
-int set_GT_object_mirror_glyph_flag(struct GT_object *graphics_object,
-	int mirror_glyph_flag);
+int set_GT_object_glyph_repeat_mode(struct GT_object *graphics_object,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
+
+/**
+ * Sets the glyph base size for all glyph_sets in the GT_object.
+ */
+int set_GT_object_glyph_base_size(struct GT_object *graphics_object,
+	Triple base_size);
+
+/**
+ * Sets the glyph scale factors for all glyph_sets in the GT_object.
+ */
+int set_GT_object_glyph_scale_factors(struct GT_object *graphics_object,
+	Triple scale_factors);
+
+/**
+ * Sets the glyph offset for all glyph_sets in the GT_object.
+ */
+int set_GT_object_glyph_offset(struct GT_object *graphics_object,
+	Triple offset);
+
+/**
+ * Sets the glyph label offset for all glyph_sets in the GT_object.
+ */
+int set_GT_object_glyph_label_offset(struct GT_object *graphics_object,
+	Triple label_offset);
+
+/**
+ * Sets static labels for all glyph_sets in the GT_object.
+ */
+int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
+	char *static_label_text[3]);
+
+/**
+ * Sets the surface render type for any primitives which support it in the
+ * GT_object.
+ */
+int set_GT_object_surface_render_type(struct GT_object *graphics_object,
+	enum Cmiss_graphics_render_type render_type);
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
@@ -1390,17 +1431,6 @@ DESCRIPTION :
 Ensures the <spectrum> maximum and minimum is at least large enough to include
 the range of data values in <graphics_object>.
 ==============================================================================*/
-
-/**
- * Multiplies the three axes by their <scale> to give the final axes, reversing
- * <final_axis3> if necessary to produce a right handed coordinate system.
- * If <mirror> is true, then the axes are pointed in the opposite direction.
- * If <rebase> is true and the first scale is negative then shift the
- * final_point to the other end of final_axis1.
- */
-int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
-	Triple axis3, Triple scale, int mirror, int rebase, Triple final_point,
-	Triple final_axis1, Triple final_axis2, Triple final_axis3);
 
 struct GT_object_compile_context *CREATE(GT_object_compile_context)(
 	ZnReal time, struct Graphics_buffer *graphics_buffer
@@ -1422,5 +1452,19 @@ LAST MODIFIED : 12 October 2005
 DESCRIPTION :
 Frees the memory for <**context> and sets <*context> to NULL.
 ==============================================================================*/
+
+/**
+ * Internal function for getting type enum for quickly matching standard glyphs for
+ * point, line, cross, for fast alternative rendering
+ */
+enum Cmiss_graphics_glyph_type GT_object_get_glyph_type(
+	struct GT_object *gt_object);
+
+/**
+ * Internal function for setting type enum for quickly matching standard glyphs for
+ * point, line, cross, for fast alternative rendering
+ */
+int GT_object_set_glyph_type(struct GT_object *gt_object,
+	enum Cmiss_graphics_glyph_type glyph_type);
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */

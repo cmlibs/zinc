@@ -205,7 +205,7 @@ PROTOTYPE_NUMBER_IN_LIST_FUNCTION(object_type) \
 	if (list) \
 	{ \
 		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		return cmiss_set->size(); \
+		return static_cast<int>(cmiss_set->size()); \
 	} \
 	display_message(ERROR_MESSAGE, \
 		"NUMBER_IN_LIST(" #object_type ").  Invalid argument"); \

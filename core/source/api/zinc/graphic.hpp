@@ -41,6 +41,7 @@
 
 #include "zinc/graphic.h"
 #include "zinc/field.hpp"
+#include "zinc/glyph.hpp"
 #include "zinc/font.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/spectrum.hpp"
@@ -468,6 +469,27 @@ public:
 		return Cmiss_graphic_point_attributes_set_font(id, font.getId());
 	}
 
+	Glyph getGlyph()
+	{
+		return Glyph(Cmiss_graphic_point_attributes_get_glyph(id));
+	}
+
+	int setGlyph(Glyph& glyph)
+	{
+		return Cmiss_graphic_point_attributes_set_glyph(id, glyph.getId());
+	}
+
+	Glyph::RepeatMode getGlyphRepeatMode()
+	{
+		return static_cast<Glyph::RepeatMode>(Cmiss_graphic_point_attributes_get_glyph_repeat_mode(id));
+	}
+
+	int setGlyphRepeatMode(Glyph::RepeatMode glyphRepeatMode)
+	{
+		return Cmiss_graphic_point_attributes_set_glyph_repeat_mode(id,
+			static_cast<enum Cmiss_glyph_repeat_mode>(glyphRepeatMode));
+	}
+
 	int setGlyphType(Graphic::GlyphType type)
 	{
 		return Cmiss_graphic_point_attributes_set_glyph_type(id,
@@ -484,14 +506,24 @@ public:
 		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
 	}
 
-	bool getMirrorGlyphFlag()
+	int getLabelOffset(int valuesCount, double *valuesOut)
 	{
-		return (0 != Cmiss_graphic_point_attributes_get_mirror_glyph_flag(id));
+		return Cmiss_graphic_point_attributes_get_label_offset(id, valuesCount, valuesOut);
 	}
 
-	int setMirrorGlyphFlag(bool mirrorFlag)
+	int setLabelOffset(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_mirror_glyph_flag(id, (int)mirrorFlag);
+		return Cmiss_graphic_point_attributes_set_label_offset(id, valuesCount, valuesIn);
+	}
+
+	char *getLabelText(int labelNumber)
+	{
+		return Cmiss_graphic_point_attributes_get_label_text(id, labelNumber);
+	}
+
+	int setLabelText(int labelNumber, const char *labelText)
+	{
+		return Cmiss_graphic_point_attributes_set_label_text(id, labelNumber, labelText);
 	}
 
 	int getOffset(int valuesCount, double *valuesOut)

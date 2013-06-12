@@ -50,14 +50,18 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+#include "zinc/types/fontid.h"
+#include "zinc/status.h"
 #include "general/debug.h"
+#include "general/enumerator_private.hpp"
 #include "general/mystring.h"
-#include "graphics/glyph.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_object_private.hpp"
 #include "graphics/defined_graphics_objects.h"
 #include "general/message.h"
 #include "graphics/spectrum.h"
@@ -639,6 +643,200 @@ second component on the second axis.
 Global functions
 ----------------
 */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_glyph_repeat_mode)
+{
+	switch (enumerator_value)
+	{
+		case CMISS_GLYPH_REPEAT_NONE:
+			return "REPEAT_NONE";
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_2D:
+			return "REPEAT_AXES_2D";
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_3D:
+			return "REPEAT_AXES_3D";
+			break;
+		case CMISS_GLYPH_REPEAT_MIRROR:
+			return "REPEAT_MIRROR";
+			break;
+		default:
+			// fall through to normal return
+			break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_glyph_repeat_mode)
+
+int Cmiss_glyph_repeat_mode_get_number_of_glyphs(
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode)
+{
+	switch (glyph_repeat_mode)
+	{
+		case CMISS_GLYPH_REPEAT_NONE:
+			return 1;
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_2D:
+		case CMISS_GLYPH_REPEAT_MIRROR:
+			return 2;
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_3D:
+			return 3;
+			break;
+		default:
+			// fall through to normal return
+			break;
+	}
+	return 0;
+}
+
+bool Cmiss_glyph_repeat_mode_glyph_number_has_label(
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode, int glyph_number)
+{
+	switch (glyph_repeat_mode)
+	{
+		case CMISS_GLYPH_REPEAT_NONE:
+		case CMISS_GLYPH_REPEAT_MIRROR:
+			return (glyph_number == 0);
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_2D:
+			return (glyph_number < 2);
+			break;
+		case CMISS_GLYPH_REPEAT_AXES_3D:
+			return (glyph_number < 3);
+			break;
+		default:
+			// fall through to normal return
+			break;
+	}
+	return false;
+}
+
+void resolve_glyph_axes(
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode, int glyph_number,
+	Triple base_size, Triple scale_factors, Triple offset,
+	Triple point, Triple axis1, Triple axis2, Triple axis3, Triple scale,
+	Triple final_point, Triple final_axis1, Triple final_axis2, Triple final_axis3)
+{
+	switch (glyph_repeat_mode)
+	{
+	case CMISS_GLYPH_REPEAT_NONE:
+	case CMISS_GLYPH_REPEAT_MIRROR:
+	default:
+		{
+			Triple axis_scale;
+			for (int j = 0; j < 3; j++)
+			{
+				const FE_value sign = (scale[j] < 0.0) ? -1.0 : 1.0;
+				axis_scale[j] = sign*base_size[j] + scale[j]*scale_factors[j];
+			}
+			for (int j = 0; j < 3; j++)
+			{
+				final_axis1[j] = axis1[j]*axis_scale[0];
+				final_axis2[j] = axis2[j]*axis_scale[1];
+				final_axis3[j] = axis3[j]*axis_scale[2];
+				final_point[j] = point[j]
+					+ offset[0]*final_axis1[j]
+					+ offset[1]*final_axis2[j]
+					+ offset[2]*final_axis3[j];
+				if (glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)
+				{
+					if (glyph_number == 1)
+					{
+						final_axis1[j] = -final_axis1[j];
+						final_axis2[j] = -final_axis2[j];
+						final_axis3[j] = -final_axis3[j];
+					}
+					if (scale[0] < 0.0)
+					{
+						// shift glyph origin to end of axis1 
+						final_point[j] -= final_axis1[j];
+					}
+				}
+			}
+			/* if required, reverse axis3 to maintain right-handed coordinate system */
+			if (0.0 > (
+				final_axis3[0]*(final_axis1[1]*final_axis2[2] -
+					final_axis1[2]*final_axis2[1]) +
+				final_axis3[1]*(final_axis1[2]*final_axis2[0] -
+					final_axis1[0]*final_axis2[2]) +
+				final_axis3[2]*(final_axis1[0]*final_axis2[1] -
+					final_axis1[1]*final_axis2[0])))
+			{
+				final_axis3[0] = -final_axis3[0];
+				final_axis3[1] = -final_axis3[1];
+				final_axis3[2] = -final_axis3[2];
+			}
+		} break;
+	case CMISS_GLYPH_REPEAT_AXES_2D:
+	case CMISS_GLYPH_REPEAT_AXES_3D:
+		{
+			Triple axis_scale;
+			for (int j = 0; j < 3; j++)
+			{
+				const FE_value sign = (scale[j] < 0.0) ? -1.0 : 1.0;
+				axis_scale[j] = sign*base_size[0] + scale[j]*scale_factors[0];
+			}
+			for (int j = 0; j < 3; j++)
+			{
+				final_point[j] = point[j]
+					+ offset[0]*axis_scale[0]*axis1[j]
+					+ offset[1]*axis_scale[1]*axis2[j]
+					+ offset[2]*axis_scale[2]*axis3[j];
+			}
+			GLfloat *use_axis1, *use_axis2;
+			const GLfloat use_scale = scale[glyph_number];
+			if (glyph_number == 0)
+			{
+				use_axis1 = axis1;
+				use_axis2 = axis2;
+			}
+			else if (glyph_number == 1)
+			{
+				use_axis1 = axis2;
+				use_axis2 = (glyph_repeat_mode == CMISS_GLYPH_REPEAT_AXES_2D) ? axis1 : axis3;
+			}
+			else // if (glyph_number == 2)
+			{
+				use_axis1 = axis3;
+				use_axis2 = axis1;
+			}
+			GLfloat final_scale1 = base_size[0] + use_scale*scale_factors[0];
+			final_axis1[0] = use_axis1[0]*final_scale1;
+			final_axis1[1] = use_axis1[1]*final_scale1;
+			final_axis1[2] = use_axis1[2]*final_scale1;
+			// final_axis3 = normalise(final_axis1 x use_axis2)*scale[0];
+			final_axis3[0] = final_axis1[1]*use_axis2[2] - use_axis2[1]*final_axis1[2];
+			final_axis3[1] = final_axis1[2]*use_axis2[0] - use_axis2[2]*final_axis1[0];
+			final_axis3[2] = final_axis1[0]*use_axis2[1] - final_axis1[1]*use_axis2[0];
+			GLfloat magnitude = sqrt(final_axis3[0]*final_axis3[0] + final_axis3[1]*final_axis3[1] + final_axis3[2]*final_axis3[2]);
+			if (0.0 < magnitude)
+			{
+				GLfloat scaling = (base_size[2] + use_scale*scale_factors[2]) / magnitude;
+				if ((glyph_repeat_mode == CMISS_GLYPH_REPEAT_AXES_2D) && (glyph_number > 0))
+				{
+					scaling *= -1.0;
+				}
+				final_axis3[0] *= scaling;
+				final_axis3[1] *= scaling;
+				final_axis3[2] *= scaling;
+			}
+			// final_axis2 = normalise(final_axis3 x final_axis1)*scale[0];
+			final_axis2[0] = final_axis3[1]*final_axis1[2] - final_axis1[1]*final_axis3[2];
+			final_axis2[1] = final_axis3[2]*final_axis1[0] - final_axis1[2]*final_axis3[0];
+			final_axis2[2] = final_axis3[0]*final_axis1[1] - final_axis3[1]*final_axis1[0];
+			magnitude = sqrt(final_axis2[0]*final_axis2[0] + final_axis2[1]*final_axis2[1] + final_axis2[2]*final_axis2[2]);
+			if (0.0 < magnitude)
+			{
+				GLfloat scaling = (base_size[1] + use_scale*scale_factors[1]) / magnitude;
+				final_axis2[0] *= scaling;
+				final_axis2[1] *= scaling;
+				final_axis2[2] *= scaling;
+			}
+		} break;
+	}			
+}
 
 struct GT_object *make_glyph_arrow_line(const char *name,ZnReal head_length,
 	ZnReal half_head_width)
@@ -1925,32 +2123,6 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 	return (glyph);
 } /* make_glyph_sheet */
 
-struct GT_object *make_glyph_empty(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Creates a graphics object named <name> with no default glyph.
-==============================================================================*/
-{
-	struct GT_object *glyph;
-
-	ENTER(make_glyph_point);
-	if (name)
-	{
-			glyph=CREATE(GT_object)(name,g_POINTSET, (struct Graphical_material *)NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_point.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_point */
-
-
 struct GT_object *make_glyph_sphere(const char *name,int number_of_segments_around,
 	int number_of_segments_down)
 /*******************************************************************************
@@ -2047,176 +2219,357 @@ twice <number_of_segments_down> look remotely spherical.
 	return (glyph);
 } /* make_glyph_sphere */
 
-struct MANAGER(GT_object) *make_standard_glyphs(struct Cmiss_font *font)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Creates a list of standard glyphs for the cmgui applications.
-==============================================================================*/
+struct Cmiss_glyph : public GT_object
 {
-	const char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
-		 *labels_123[] = {"1","2","3"};
-	struct GT_object *glyph;
-	struct MANAGER(GT_object) *glyph_manager;
+};
 
-	ENTER(make_glyph_sphere);
-	glyph_manager = CREATE(MANAGER(GT_object))();
-	if (glyph_manager)
-	{
-		/* add standard glyphs */
-		glyph=make_glyph_arrow_line("arrow_line",0.25,0.125);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
-			12,2.f/3.f,1.f/6.f,/*cone_radius*/0.5f);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1f,0.025f,labels_xyz, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1f,0.025f,labels_fsn, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1f,0.025f,labels_123, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes",/*make_solid*/0,0.1f,0.025f,(const char **)NULL, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1f,0.025f,(const char **)NULL, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1f,0.025f, labels_xyz, 0.1f,font);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cone("cone",12);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cone_solid("cone_solid",12);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cross("cross");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cube_solid("cube_solid");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cube_wireframe("cube_wireframe");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cylinder("cylinder6",6);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cylinder("cylinder",12);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cylinder_solid("cylinder_solid",12);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cylinder("cylinder_hires",48);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_cylinder_solid("cylinder_solid_hires",48);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_sphere("diamond",4,2);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_axes("grid_lines",
-			/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
-			/*labels*/(const char **)NULL, /*label_offset*/0.1f, font);
-		if (glyph)
-		{
-			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_line("line");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_empty("empty");
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_line("line_ticks");
-		if (glyph)
-		{
-			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_point("point",g_POINT_MARKER,0);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_sheet("sheet", /*define_texturepoints*/0);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_sphere("sphere",12,6);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_sphere("sphere_hires",48,24);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		glyph=make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
-		if (glyph)
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"make_standard_glyphs.  Could not create glyph list");
-	}
-	LEAVE;
+Cmiss_glyph_id Cmiss_glyph_access(Cmiss_glyph_id glyph)
+{
+	if (glyph)
+		ACCESS(GT_object)(glyph);
+	return glyph;
+}
 
-	return (glyph_manager);
-} /* make_standard_glyphs */
+int Cmiss_glyph_destroy(Cmiss_glyph_id *glyph_address)
+{
+	if (glyph_address && (*glyph_address))
+	{
+		GT_object **gt_object_address = reinterpret_cast<GT_object **>(glyph_address);
+		DEACCESS(GT_object)(gt_object_address);
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph)
+{
+	return duplicate_string(glyph->name);
+}
+
+int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name)
+{
+	return GT_object_set_name(glyph, name);
+}
+
+int Cmiss_glyph_is_managed(Cmiss_glyph_id glyph)
+{
+	if (glyph)
+		return (int)glyph->is_managed_flag;
+	return 0;
+}
+
+int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, int value)
+{
+	if (glyph)
+	{
+		bool use_is_managed_flag = (0 != value);
+		if (use_is_managed_flag != glyph->is_managed_flag)
+		{
+			glyph->is_managed_flag = use_is_managed_flag;
+			MANAGED_OBJECT_CHANGE(GT_object)(glyph,
+				MANAGER_CHANGE_NOT_RESULT(GT_object));
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+struct Cmiss_glyph_module
+{
+private:
+	struct MANAGER(GT_object) *glyphManager;
+	struct GT_object *defaultPointGlyph;
+	int access_count;
+
+	Cmiss_glyph_module() :
+		glyphManager(CREATE(MANAGER(GT_object))()),
+		defaultPointGlyph(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_glyph_module()
+	{
+		if (defaultPointGlyph)
+		{
+			DEACCESS(GT_object)(&(this->defaultPointGlyph));
+		}
+		DESTROY(MANAGER(GT_object))(&(this->glyphManager));
+	}
+
+	void manage_gt_object_or_destroy(GT_object *gt_object)
+	{
+		char *name = 0;
+		GET_NAME(GT_object)(gt_object, &name);
+		if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(name, this->glyphManager))
+		{
+			gt_object->is_managed_flag = true;
+			ADD_OBJECT_TO_MANAGER(GT_object)(gt_object, this->glyphManager);
+		}
+		else
+		{
+			DESTROY(GT_object)(&gt_object);
+		}
+		DEALLOCATE(name);
+	}
+
+public:
+
+	static Cmiss_glyph_module *create()
+	{
+		return new Cmiss_glyph_module();
+	}
+
+	Cmiss_glyph_module *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_glyph_module* &glyph_module)
+	{
+		if (glyph_module)
+		{
+			--(glyph_module->access_count);
+			if (glyph_module->access_count <= 0)
+			{
+				delete glyph_module;
+			}
+			glyph_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(GT_object) *getGlyphManager()
+	{
+		return glyphManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(GT_object)(this->glyphManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(GT_object)(this->glyphManager);
+	}
+
+	int createStandardGlyphs();
+
+	int createStandardCmguiGlyphs();
+
+	Cmiss_glyph *findGlyphByName(const char *name)
+	{
+		GT_object *gt_object = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(name,
+			reinterpret_cast<MANAGER(GT_object)*>(this->glyphManager));
+		if (gt_object)
+		{
+			ACCESS(GT_object)(gt_object);
+			return reinterpret_cast<Cmiss_glyph_id>(gt_object);
+		}
+		return 0;
+	}
+
+	Cmiss_glyph *getDefaultPointGlyph()
+	{
+		if (this->defaultPointGlyph)
+		{
+			ACCESS(GT_object)(this->defaultPointGlyph);
+			return reinterpret_cast<Cmiss_glyph *>(this->defaultPointGlyph);
+		}
+		return 0;
+	}
+
+	int setDefaultPointGlyph(Cmiss_glyph *glyph)
+	{
+		GT_object *gt_object = reinterpret_cast<GT_object *>(glyph);
+		REACCESS(GT_object)(&this->defaultPointGlyph, gt_object);
+		return CMISS_OK;
+	}
+
+};
+
+int Cmiss_glyph_module::createStandardGlyphs()
+{
+	beginChange();
+	GT_object *glyph = 0;
+
+	glyph = make_glyph_arrow_line("arrow", 1.f/3.f, 0.5);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_arrow_solid("arrow_solid", /*primary_axis*/1,
+		12, 2.f/3.f, 1.f/6.f, /*cone_radius*/0.5f);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_arrow_line("axis", 0.1, 0.5);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_arrow_solid("axis_solid", /*primary_axis*/1,
+		12, 0.9f, 1.f/6.f, /*cone_radius*/0.5f);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cone("cone", 12);
+	manage_gt_object_or_destroy(glyph);
+	
+	glyph = make_glyph_cone_solid("cone_solid", 12);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cross("cross");
+	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_CROSS);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cube_solid("cube_solid");
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cube_wireframe("cube_wireframe");
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cylinder("cylinder", 12);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cylinder_solid("cylinder_solid", 12);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_line("line");
+	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_LINE);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_point("point", g_POINT_MARKER, 0);
+	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_POINT);
+	if (!this->defaultPointGlyph)
+	{
+		setDefaultPointGlyph(static_cast<Cmiss_glyph*>(glyph));
+	}
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_sheet("sheet", /*define_texturepoints*/0);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_sphere("sphere", 12, 6);
+	manage_gt_object_or_destroy(glyph);
+
+	endChange();
+
+	return CMISS_OK;
+}
+
+int Cmiss_glyph_module::createStandardCmguiGlyphs()
+{
+	beginChange();
+	GT_object *glyph = 0;
+
+	glyph = make_glyph_cylinder("cylinder6", 6);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cylinder("cylinder_hires", 48);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_cylinder_solid("cylinder_solid_hires", 48);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_sphere("diamond", 4, 2);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_axes("grid_lines",
+		/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
+		/*labels*/(const char **)NULL, /*label_offset*/0.1f, (Cmiss_font*)0);
+	Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_line("line_ticks");
+	Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_sphere("sphere_hires", 48, 24);
+	manage_gt_object_or_destroy(glyph);
+
+	glyph = make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
+	manage_gt_object_or_destroy(glyph);
+
+	endChange();
+	return CMISS_OK;
+}
+
+Cmiss_glyph_module_id Cmiss_glyph_module_create()
+{
+	return Cmiss_glyph_module::create();
+}
+
+struct MANAGER(GT_object) *Cmiss_glyph_module_get_glyph_manager(
+	Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->getGlyphManager();
+	return 0;
+}
+
+Cmiss_glyph_module_id Cmiss_glyph_module_access(
+	Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->access();
+	return 0;
+}
+
+int Cmiss_glyph_module_destroy(Cmiss_glyph_module_id *glyph_module_address)
+{
+	if (glyph_module_address)
+		return Cmiss_glyph_module::deaccess(*glyph_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_glyph_module_begin_change(Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->beginChange();
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->endChange();
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_glyph_module_create_standard_glyphs(
+	Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->createStandardGlyphs();
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_glyph_module_create_standard_cmgui_glyphs(
+	Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->createStandardCmguiGlyphs();
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
+	Cmiss_glyph_module_id glyph_module, const char *name)
+{
+	if (glyph_module)
+		return glyph_module->findGlyphByName(name);
+	return 0;
+}
+
+Cmiss_glyph_id Cmiss_glyph_module_get_default_point_glyph(
+	Cmiss_glyph_module_id glyph_module)
+{
+	if (glyph_module)
+		return glyph_module->getDefaultPointGlyph();
+	return 0;
+}
+
+int Cmiss_glyph_module_set_default_point_glyph(
+	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id glyph)
+{
+	if (glyph_module)
+		return glyph_module->setDefaultPointGlyph(glyph);
+	return 0;
+}

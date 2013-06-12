@@ -106,10 +106,12 @@ finite element group rendition.
 
 	/* point attributes */
 	struct GT_object *glyph;
-	bool mirror_glyph_flag;
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode;
 	FE_value point_offset[3];
 	FE_value point_base_size[3];
 	FE_value point_scale_factors[3];
+	FE_value label_offset[3];
+	char *label_text[3];
 	struct Computed_field *point_orientation_scale_field;
 	struct Computed_field *signed_scale_field;
 	struct Computed_field *label_field;
@@ -167,6 +169,15 @@ finite element group rendition.
 	enum Cmiss_graphics_coordinate_system coordinate_system;
 // 	/* for accessing objects */
 	int access_count;
+
+	inline Cmiss_graphic *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(Cmiss_graphic **graphic_address);
+
 };
 
 struct Cmiss_graphics_module;
@@ -292,7 +303,7 @@ struct Rendition_command_data
 	struct Cmiss_rendition *rendition;
 	struct Graphical_material *default_material;
 	struct Cmiss_font *default_font;
-	struct MANAGER(GT_object *) glyph_manager;
+	Cmiss_glyph_module_id glyph_module;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
 	/* root_region used for seeding streamlines from the nodes in a region */
@@ -358,6 +369,11 @@ int Cmiss_graphic_modify_in_list(struct Cmiss_graphic *graphic,
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphic);
 PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphic);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphic,position,int);
+
+int Cmiss_graphic::deaccess(Cmiss_graphic **graphic_address)
+{
+	return DEACCESS(Cmiss_graphic)(graphic_address);
+}
 
 /***************************************************************************//**
  * Returns a string summarising the graphic type, name and subset field.
@@ -585,13 +601,6 @@ int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic);
 int Cmiss_graphic_set_circle_discretization(
 	struct Cmiss_graphic *graphic, int circle_discretization);
 
-GT_object *Cmiss_graphic_point_attributes_get_glyph(
-	Cmiss_graphic_point_attributes_id point_attributes);
-
-int Cmiss_graphic_point_attributes_set_glyph(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	GT_object *glyph);
-
 /**
  * Get iso surface decimation threshold.
  */
@@ -704,25 +713,11 @@ int Cmiss_graphic_has_name(struct Cmiss_graphic *graphic,
 	void *name_void);
 
 /***************************************************************************//**
- * LIST(Cmiss_graphic) conditional function returning 1 if the two
- * graphics describe the same geometry.
- */
-int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
-	void *second_graphic_void);
-
-/***************************************************************************//**
  * Cmiss_graphic list conditional function returning 1 if graphic has the
  * name.
  */
 int Cmiss_graphic_same_name(struct Cmiss_graphic *graphic,
 	void *name_void);
-
-/***************************************************************************//**
- * Cmiss_graphic list conditional function returning 1 if the two
- * graphics have the same name or describe EXACTLY the same geometry.
- */
-int Cmiss_graphic_same_name_or_geometry(struct Cmiss_graphic *graphic,
-	void *second_graphic_void);
 
 /***************************************************************************//**
  * Writes out the <graphic> as a text string in the command window with the
@@ -733,7 +728,7 @@ int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
 	void *list_data_void);
 
 /***************************************************************************//**
- * Returns the position of <grpahic> in <list_of_grpahic>.
+ * Returns the position of <graphic> in <list_of_grpahic>.
  */
 int Cmiss_graphic_get_position_in_list(
 	struct Cmiss_graphic *graphic,

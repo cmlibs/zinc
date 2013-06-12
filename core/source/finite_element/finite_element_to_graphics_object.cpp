@@ -88,7 +88,7 @@ Used with iterators for building glyph sets from nodes.
 	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
 	ZnReal *label_bounds;
-	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3], time;
+	FE_value *data_values, *label_bounds_vector, time;
 	GLfloat *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
@@ -221,8 +221,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					++(glyph_set_data->number_of_points);
 					for (j = 0; j < 3; j++)
 					{
-						(*scale)[j] = static_cast<GLfloat>(glyph_set_data->base_size[j] +
-							size[j]*glyph_set_data->scale_factors[j]);
+						(*scale)[j] = static_cast<GLfloat>(size[j]);
 					}
 					for (j = 0; j < number_of_variable_scale_components; j++)
 					{
@@ -230,10 +229,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					}
 					for (j = 0; j < 3; j++)
 					{
-						(*point)[j] = static_cast<GLfloat>(coordinates[j] +
-							glyph_set_data->offset[0]*(*scale)[0]*a[j] +
-							glyph_set_data->offset[1]*(*scale)[1]*b[j] +
-							glyph_set_data->offset[2]*(*scale)[2]*c[j]);
+						(*point)[j] = static_cast<GLfloat>(coordinates[j]);
 						(*axis1)[j] = static_cast<GLfloat>(a[j]);
 						(*axis2)[j] = static_cast<GLfloat>(b[j]);
 						(*axis3)[j] = static_cast<GLfloat>(c[j]);
@@ -470,8 +466,8 @@ The orientation is understood from the number_of_orientation_scale_values as:
 The scaling behaviour depends on the number of vectors interpreted above, where:
 0 = isotropic scaling on all three axes by scalar;
 1 = isotropic scaling on all three axes by magnitude of vector;
-2 = scaling in direction of 2 vectors, ie. they keep their current length, unit
-	vector in 3rd axis;
+2 = scaling in direction of 2 vectors, ie. they keep their current length, scale
+    in 3rd axis equal to magnitude of cross product of first two vectors;
 3 = scaling in direction of 3 vectors - ie. they keep their current length.
 
 Function returns the axes as unit vectors with their magnitudes in the <size>
@@ -793,12 +789,14 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
-	struct Computed_field *coordinate_field, struct GT_object *glyph, int mirror_glyph_flag,
+	struct Computed_field *coordinate_field, struct GT_object *glyph,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Cmiss_font *font, struct Computed_field *label_field,
+	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
 	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
 	struct Computed_field *group_field)
@@ -816,7 +814,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
-		((glyph && offset && base_size && scale_factors &&
+		((glyph && offset && base_size && scale_factors && label_offset &&
 		((!variable_scale_field) ||
 			(3 >=	Computed_field_get_number_of_components(variable_scale_field))))
 		|| !glyph) &&
@@ -914,6 +912,14 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 				ALLOCATE(axis2_list, Triple, number_of_points);
 				ALLOCATE(axis3_list, Triple, number_of_points);
 				ALLOCATE(scale_list, Triple, number_of_points);
+				Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
+				for (i = 0; i < 3; i++)
+				{
+					glyph_base_size[i] = static_cast<GLfloat>(base_size[i]);
+					glyph_scale_factors[i] = static_cast<GLfloat>(scale_factors[i]);
+					glyph_offset[i] = static_cast<GLfloat>(offset[i]);
+					glyph_label_offset[i] = static_cast<GLfloat>(label_offset[i]);
+				}
 				if (point_list && axis1_list && axis2_list && axis3_list && scale_list &&
 					((!n_data_components) || (data && data_values)) &&
 					((!label_field) || labels) &&
@@ -922,12 +928,6 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					Glyph_set_data glyph_set_data;
 					glyph_set_data.number_of_points = 0;
 					/* set up information for the iterator */
-					for (i = 0; i < 3; i++)
-					{
-						glyph_set_data.base_size[i] = base_size[i];
-						glyph_set_data.offset[i] = offset[i];
-						glyph_set_data.scale_factors[i] = scale_factors[i];
-					}
 					glyph_set_data.point = point_list;
 					glyph_set_data.axis1 = axis1_list;
 					glyph_set_data.axis2 = axis2_list;
@@ -1002,12 +1002,14 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 							REALLOCATE(names, names, int, number_of_points);
 						}
 					}
-					glyph_set = CREATE(GT_glyph_set)(final_number_of_points,point_list,
-						axis1_list,axis2_list,axis3_list,scale_list,glyph,mirror_glyph_flag,font,labels,
-						n_data_components,data,
-						label_bounds_dimension,label_bounds_components,label_bounds,
+					glyph_set = CREATE(GT_glyph_set)(final_number_of_points, point_list,
+						axis1_list, axis2_list, axis3_list, scale_list,
+						glyph, glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
+						font, labels, glyph_label_offset, static_label_text,
+						n_data_components, data,
+						label_bounds_dimension, label_bounds_components, label_bounds,
 						label_density_list,
-						/*object_name*/0,names);
+						/*object_name*/0, names);
 				}
 				else
 				{
@@ -2450,45 +2452,15 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, int mirror_glyph_flag,
+	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Cmiss_font *font, struct Computed_field *label_field,
+	FE_value *label_offset, char *static_label_text[3],
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Converts a finite element into a set of glyphs displaying information
-about fields defined over it.
-At each of the <number_of_xi_points> <xi_points> the <glyph> of at least
-<base_size> with the given glyph <offset> is displayed.
-The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field. The
-optional <variable_scale_field> can provide signed scaling independently of the
-glyph axis directions. See function make_glyph_orientation_scale_axes for
-details. The combined scale from the above 2 fields is multiplied in each axis
-by the <scale_factors> then added to the base_size.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the glyph_set, for later colouration by a spectrum.
-The optional <label_field> is written beside each glyph in string form.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-<select_mode> is used in combination with the <element_selected> and
-<selected_ranges> to draw only those points with numbers in or out of the given
-ranges when given value GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED.
-If <element_selected> is true, all points are selected, otherwise selection is
-determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
-numbers are selected.
-If <point_numbers> are supplied then points numbers for OpenGL picking are taken
-from this array, otherwise they are sequential, starting at 0.
-Note:
-- the coordinate and orientation fields are assumed to be rectangular cartesian.
-- the coordinate system of the variable_scale_field is ignored/not used.
-==============================================================================*/
 {
 	char **label, **labels;
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
@@ -2595,6 +2567,14 @@ Note:
 			}
 			/* store element number as object_name for editing GT_object primitives */
 			get_FE_element_identifier(element, &cm);
+			Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
+			for (i = 0; i < 3; i++)
+			{
+				glyph_base_size[i] = static_cast<GLfloat>(base_size[i]);
+				glyph_scale_factors[i] = static_cast<GLfloat>(scale_factors[i]);
+				glyph_offset[i] = static_cast<GLfloat>(offset[i]);
+				glyph_label_offset[i] = static_cast<GLfloat>(label_offset[i]);
+			}
 			if ((data || (!n_data_components)) && ((!label_field) || labels) &&
 				((GRAPHICS_NO_SELECT == select_mode) || names) &&
 				ALLOCATE(point_list, Triple, points_to_draw) &&
@@ -2603,8 +2583,9 @@ Note:
 				ALLOCATE(axis3_list, Triple, points_to_draw) &&
 				ALLOCATE(scale_list, Triple, points_to_draw) &&
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list, glyph, mirror_glyph_flag, font,
-					labels, n_data_components, data,
+					axis1_list, axis2_list, axis3_list, scale_list,
+					glyph, glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
+					font, labels, glyph_label_offset, static_label_text, n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,
 					cm.number, names)))
@@ -2667,7 +2648,7 @@ Note:
 						{
 							for (j = 0; j < 3; j++)
 							{
-								(*scale)[j] = ZnReal(base_size[j] + size[j]*scale_factors[j]);
+								(*scale)[j] = static_cast<GLfloat>(size[j]);
 							}
 							for (j = 0; j < number_of_variable_scale_components; j++)
 							{
@@ -2675,10 +2656,7 @@ Note:
 							}
 							for (j = 0; j < 3; j++)
 							{
-								(*point)[j] = ZnReal(coordinates[j] +
-									offset[0]*(*scale)[0]*a[j] +
-									offset[1]*(*scale)[1]*b[j] +
-									offset[2]*(*scale)[2]*c[j]);
+								(*point)[j] = ZnReal(coordinates[j]);
 								(*axis1)[j] = ZnReal(a[j]);
 								(*axis2)[j] = ZnReal(b[j]);
 								(*axis3)[j] = ZnReal(c[j]);

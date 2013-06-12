@@ -47,6 +47,7 @@ Renders gtObjects to STL stereolithography file.
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/render_stl.h"
 #include "graphics/scene.h"
@@ -258,55 +259,35 @@ int makestl(Stl_context& stl_context, gtObject *graphics_object, ZnReal time);
  * Only surface glyphs can be output; other primitives are silently ignored.
  * Transformations are flattened.
  *
- * @param stl_context output STL file and context data
- * @param number_of_points number of points at which glyphs are drawn
- * @param point_list array of glyph point centres
- * @param axis1_list array of vectors which scale and orient first glyph axis
- * @param axis2_list array of vectors which scale and orient second glyph axis
- * @param axis3_list array of vectors which scale and orient third glyph axis
- * @param glyph the graphics object drawn at each point
+ * @param stl_context output  STL file and context data
+ * @param glyph_set  The glyph_set to output triangulated surfaces from.
  * @param time the time at which the graphics are output
- * @param labels ignored
- * @param number_of_data_components ignored
- * @param data ignored
- * @param material ignored
- * @param spectrum ignored
  * @return 1 on success, 0 on failure
  */
-static int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
-	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list,
-	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
-	int number_of_data_components, GLfloat *data,
-	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time)
+static int draw_glyph_set_stl(Stl_context& stl_context,
+	GT_glyph_set *glyph_set, ZnReal time)
 {
-	int return_code;
-	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
-		temp_axis3, temp_point;
-
-	ENTER(draw_glyph_set_stl);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(labels);
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(data);
-	USE_PARAMETER(material);
-	USE_PARAMETER(spectrum);
-	return_code=0;
-	if ((0<number_of_points) && point_list && axis1_list && axis2_list &&
-		axis3_list && scale_list && glyph)
+	int return_code = 1;
+	if (glyph_set)
 	{
-		axis1 = axis1_list;
-		axis2 = axis2_list;
-		axis3 = axis3_list;
-		point = point_list;
-		scale = scale_list;
-		for (int i=0; i<number_of_points; i++)
+		Triple *axis1 = glyph_set->axis1_list;
+		Triple *axis2 = glyph_set->axis2_list;
+		Triple *axis3 = glyph_set->axis3_list;
+		Triple *point = glyph_set->point_list;
+		Triple *scale = glyph_set->scale_list;
+		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+		GT_object *glyph = glyph_set->glyph;
+		Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+		const int number_of_glyphs =
+			Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+		const int number_of_points = glyph_set->number_of_points;
+		for (int i = 0; i < number_of_points; i++)
 		{
-			int number_of_glyphs = mirror_glyph_flag ? 2 : 1;
-			for (int j=0; j<number_of_glyphs; j++)
+			for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
 			{
-				resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-					/*mirror*/j, /*reverse*/mirror_glyph_flag,
+				resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+					glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+					*point, *axis1, *axis2, *axis3, *scale,
 					temp_point, temp_axis1, temp_axis2, temp_axis3);
 				Transformation_matrix matrix(
 					(double)temp_axis1[0], (double)temp_axis2[0], (double)temp_axis3[0], (double)temp_point[0],
@@ -329,24 +310,14 @@ static int draw_glyph_set_stl(Stl_context& stl_context, int number_of_points,
 			axis3++;
 			scale++;
 		}
-		return_code=1;
 	}
 	else
 	{
-		if (0 == number_of_points)
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_glyph_set_stl. Invalid argument(s)");
-			return_code=0;
-		}
+		display_message(ERROR_MESSAGE, "draw_glyph_set_stl. Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* draw_glyph_set_stl */
+}
 
 /***************************************************************************//**
  * Writes quadrilateral and triangle surface strips to STL file as
@@ -695,20 +666,7 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 									glyph_set,glyph_set_2);
 								if (interpolate_glyph_set != 0)
 								{
-									draw_glyph_set_stl(stl_context,
-										interpolate_glyph_set->number_of_points,
-										interpolate_glyph_set->point_list,
-										interpolate_glyph_set->axis1_list,
-										interpolate_glyph_set->axis2_list,
-										interpolate_glyph_set->axis3_list,
-										interpolate_glyph_set->scale_list,
-										interpolate_glyph_set->glyph,
-										interpolate_glyph_set->mirror_glyph_flag,
-										interpolate_glyph_set->labels,
-										interpolate_glyph_set->n_data_components,
-										interpolate_glyph_set->data,
-										object->default_material,object->spectrum,
-									  time);
+									draw_glyph_set_stl(stl_context, interpolate_glyph_set, time);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -719,15 +677,7 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 						{
 							while (glyph_set)
 							{
-								draw_glyph_set_stl(stl_context,
-									glyph_set->number_of_points,
-									glyph_set->point_list,glyph_set->axis1_list,
-									glyph_set->axis2_list,glyph_set->axis3_list,
-									glyph_set->scale_list,glyph_set->glyph,
-									glyph_set->mirror_glyph_flag,
-									glyph_set->labels,glyph_set->n_data_components,
-									glyph_set->data,object->default_material,object->spectrum,
-									time);
+								draw_glyph_set_stl(stl_context, glyph_set, time);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}

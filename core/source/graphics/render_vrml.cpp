@@ -51,6 +51,7 @@ Renders gtObjects to VRML file
 #include "general/list_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/render_vrml.h"
@@ -606,643 +607,685 @@ b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
 	return (return_code);
 } /* get_orthogonal_axes */
 
-static int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
-	Triple *point_list,Triple *axis1_list,
-	Triple *axis2_list,Triple *axis3_list,Triple *scale_list,
-	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
-	int number_of_data_components, GLfloat *data,
+/**
+ * Defines an object for the <glyph> and then draws that at <number_of_points>
+ * points  given by the positions in <point_list> and oriented and scaled by
+ * <axis1_list>, <axis2_list> and <axis3_list>.
+ */
+static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
-/*******************************************************************************
-LAST MODIFIED : 16 January 2002
-
-DESCRIPTION :
-Defines an object for the <glyph> and then draws that at <number_of_points>
-points  given by the positions in <point_list> and oriented and scaled by
-<axis1_list>, <axis2_list> and <axis3_list>.
-==============================================================================*/
 {
-	char **label, *label_token;
-	ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
-		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f0, f1, j1, j2, j3,
-		c_magnitude, s1, s2, s3, x, y, z;
-	int i, j, number_of_glyphs, number_of_skew_glyph_axes,
-		return_code, skewed_axes;
-	struct Graphical_material *material_copy;
-	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
-		temp_axis3, temp_point;
-
-	ENTER(draw_glyph_set_vrml);
-	/* default return code */
-	return_code=0;
-	const bool data_spectrum = (0 < number_of_data_components) && (0 != data) &&
-		(0 != spectrum) && (0 != material);
-	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
-		axis3_list && scale_list && glyph)
+	int return_code = 1;
+	if (glyph_set)
 	{
-		if (data && (!spectrum))
+		const int number_of_points = glyph_set->number_of_points;
+		if (0 == number_of_points)
+			return 1;
+		int number_of_data_components = glyph_set->n_data_components;
+		const bool data_spectrum = (0 < number_of_data_components) && (0 != glyph_set->data) &&
+			(0 != spectrum) && (0 != material);
+		if (glyph_set->data && (!spectrum))
 		{
 			display_message(WARNING_MESSAGE,"draw_glyph_set_vrml.  Missing spectrum");
 		}
-			point = point_list;
-			axis1 = axis1_list;
-			axis2 = axis2_list;
-			axis3 = axis3_list;
-			scale = scale_list;
-			/* try to draw points and lines faster */
-			if (0==strcmp(glyph->name,"point"))
+		Triple *point = glyph_set->point_list;
+		Triple *axis1 = glyph_set->axis1_list;
+		Triple *axis2 = glyph_set->axis2_list;
+		Triple *axis3 = glyph_set->axis3_list;
+		Triple *scale = glyph_set->scale_list;
+		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+		char **label;
+		ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
+			bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f0, f1, j1, j2, j3,
+			c_magnitude, s1, s2, s3, x, y, z;
+		int i, j, number_of_skew_glyph_axes, skewed_axes;
+		struct Graphical_material *material_copy;
+		GT_object *glyph = glyph_set->glyph;
+		Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+		/* try to draw points and lines faster */
+		Cmiss_graphics_glyph_type glyph_type = glyph ?
+			GT_object_get_glyph_type(glyph) : CMISS_GRAPHICS_GLYPH_NONE;
+		if ((glyph_type == CMISS_GRAPHICS_GLYPH_POINT) && (
+			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
+			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
+		{
+			fprintf(vrml_file,"Shape {\n");
+			fprintf(vrml_file,"  appearance\n");
+			if (material)
 			{
-				fprintf(vrml_file,"Shape {\n");
-				fprintf(vrml_file,"  appearance\n");
-				if (material)
-				{
-					fprintf(vrml_file,"Appearance {\n");
-					fprintf(vrml_file,"  material\n");
-					activate_material_vrml(vrml_file,material,
-						(struct LIST(VRML_prototype) *)NULL,
-						/*no_define_material*/0,/*emissive_only*/1);
-					fprintf(vrml_file,"} #Appearance\n");
-				}
-				else
-				{
-					fprintf(vrml_file,"IS line_appearance\n");
-				}
-				fprintf(vrml_file,"  geometry PointSet {\n");
-				fprintf(vrml_file,"    coord Coordinate {\n");
-				fprintf(vrml_file,"      point [\n");
-				for (i=0;i<number_of_points;i++)
-				{
-					fprintf(vrml_file,"        %f %f %f,\n",
-						(*point)[0],(*point)[1],(*point)[2]);
-					point++;
-				}
-				fprintf(vrml_file,"      ]\n");
-				fprintf(vrml_file,"    }\n");
-				if (data_spectrum)
-				{
-					spectrum_start_render_vrml(vrml_file,spectrum,material);
-					for (i=0;i<number_of_points;i++)
-					{
-						spectrum_render_vrml_value(vrml_file,spectrum,material,
-							number_of_data_components,data+i*number_of_data_components);
-					}
-					spectrum_end_render_vrml(vrml_file, spectrum);
-				}
-				fprintf(vrml_file,"  } #Pointset\n");
-				fprintf(vrml_file,"} #Shape\n");
-			}
-			else if (0 == strcmp(glyph->name, "line"))
-			{
-				const ZnReal f = mirror_glyph_flag ? -1.0 : 0.0;
-				fprintf(vrml_file,"Shape {\n");
-				fprintf(vrml_file,"  appearance\n");
-				if (material)
-				{
-					fprintf(vrml_file,"Appearance {\n");
-					fprintf(vrml_file,"  material\n");
-					activate_material_vrml(vrml_file,material,
-						(struct LIST(VRML_prototype) *)NULL,
-						/*no_define_material*/0,/*emissive_only*/1);
-					fprintf(vrml_file,"} #Appearance\n");
-				}
-				else
-				{
-					fprintf(vrml_file,"IS line_appearance\n");
-				}
-				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
-				fprintf(vrml_file,"    coord Coordinate {\n");
-				fprintf(vrml_file,"      point [\n");
-				for (i=0;i<number_of_points;i++)
-				{
-					f0 = f*(*scale)[0];
-					x = (*point)[0] + f0*(*axis1)[0];
-					y = (*point)[1] + f0*(*axis1)[1];
-					z = (*point)[2] + f0*(*axis1)[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					f1 = (*scale)[0];
-					x = (*point)[0] + f1*(*axis1)[0];
-					y = (*point)[1] + f1*(*axis1)[1];
-					z = (*point)[2] + f1*(*axis1)[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					point++;
-					scale++;
-					axis1++;
-				}
-				fprintf(vrml_file,"      ]\n");
-				fprintf(vrml_file,"    }\n");
-				if (data_spectrum)
-				{
-					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_render_vrml(vrml_file,spectrum,material);
-					for (i=0;i<number_of_points;i++)
-					{
-						spectrum_render_vrml_value(vrml_file,spectrum,material,
-							number_of_data_components,data+i*number_of_data_components);
-					}
-					spectrum_end_render_vrml(vrml_file, spectrum);
-				}
-				fprintf(vrml_file,"    coordIndex [\n");
-				for (i=0;i<number_of_points;i++)
-				{
-					fprintf(vrml_file,"      %d,%d,-1,\n",2*i,2*i+1);
-				}
-				fprintf(vrml_file,"    ]\n");
-				fprintf(vrml_file,"  } #IndexedLineSet\n");
-				fprintf(vrml_file,"} #Shape\n");
-			}
-			else if (0==strcmp(glyph->name,"cross"))
-			{
-				fprintf(vrml_file,"Shape {\n");
-				fprintf(vrml_file,"  appearance\n");
-				if (material)
-				{
-					fprintf(vrml_file,"Appearance {\n");
-					fprintf(vrml_file,"  material\n");
-					activate_material_vrml(vrml_file,material,
-						(struct LIST(VRML_prototype) *)NULL,
-						/*no_define_material*/0,/*emissive_only*/1);
-					fprintf(vrml_file,"} #Appearance\n");
-				}
-				else
-				{
-					fprintf(vrml_file,"IS line_appearance\n");
-				}
-				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
-				fprintf(vrml_file,"    coord Coordinate {\n");
-				fprintf(vrml_file,"      point [\n");
-				for (i=0;i<number_of_points;i++)
-				{
-					resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-						/*mirror*/0, /*rebase*/0,
-						temp_point, temp_axis1, temp_axis2, temp_axis3);
-					/* x-line */
-					x = temp_point[0] - 0.5*temp_axis1[0];
-					y = temp_point[1] - 0.5*temp_axis1[1];
-					z = temp_point[2] - 0.5*temp_axis1[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x += temp_axis1[0];
-					y += temp_axis1[1];
-					z += temp_axis1[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					/* y-line */
-					x = temp_point[0] - 0.5*temp_axis2[0];
-					y = temp_point[1] - 0.5*temp_axis2[1];
-					z = temp_point[2] - 0.5*temp_axis2[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x += temp_axis2[0];
-					y += temp_axis2[1];
-					z += temp_axis2[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					/* z-line */
-					x = temp_point[0] - 0.5*temp_axis3[0];
-					y = temp_point[1] - 0.5*temp_axis3[1];
-					z = temp_point[2] - 0.5*temp_axis3[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x += temp_axis3[0];
-					y += temp_axis3[1];
-					z += temp_axis3[2];
-					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					point++;
-					axis1++;
-					axis2++;
-					axis3++;
-					scale++;
-				}
-				fprintf(vrml_file,"      ]\n");
-				fprintf(vrml_file,"    }\n");
-				if (data_spectrum)
-				{
-					fprintf(vrml_file,"    colorPerVertex FALSE\n");
-					spectrum_start_render_vrml(vrml_file,spectrum,material);
-					for (i=0;i<number_of_points;i++)
-					{
-						for (j=0;j<3;j++)
-						{
-							spectrum_render_vrml_value(vrml_file,spectrum,material,
-								number_of_data_components,data+i*number_of_data_components);
-						}
-					}
-					spectrum_end_render_vrml(vrml_file, spectrum);
-				}
-				fprintf(vrml_file,"    coordIndex [\n");
-				for (i=0;i<number_of_points;i++)
-				{
-					fprintf(vrml_file,"      %d,%d,-1,%d,%d,-1,%d,%d,-1,\n",
-						6*i,6*i+1,6*i+2,6*i+3,6*i+4,6*i+5);
-				}
-				fprintf(vrml_file,"    ]\n");
-				fprintf(vrml_file,"  } #IndexedLineSet\n");
-				fprintf(vrml_file,"} #Shape\n");
+				fprintf(vrml_file,"Appearance {\n");
+				fprintf(vrml_file,"  material\n");
+				activate_material_vrml(vrml_file,material,
+					(struct LIST(VRML_prototype) *)NULL,
+					/*no_define_material*/0,/*emissive_only*/1);
+				fprintf(vrml_file,"} #Appearance\n");
 			}
 			else
 			{
-				if (data_spectrum)
+				fprintf(vrml_file,"IS line_appearance\n");
+			}
+			fprintf(vrml_file,"  geometry PointSet {\n");
+			fprintf(vrml_file,"    coord Coordinate {\n");
+			fprintf(vrml_file,"      point [\n");
+			for (i=0;i<number_of_points;i++)
+			{
+				fprintf(vrml_file,"        %f %f %f,\n",
+					(*point)[0],(*point)[1],(*point)[2]);
+				point++;
+			}
+			fprintf(vrml_file,"      ]\n");
+			fprintf(vrml_file,"    }\n");
+			if (data_spectrum)
+			{
+				spectrum_start_render_vrml(vrml_file,spectrum,material);
+				for (i=0;i<number_of_points;i++)
 				{
-					material_copy = CREATE(Graphical_material)("render_vrml_copy");
+					spectrum_render_vrml_value(vrml_file,spectrum,material,
+						number_of_data_components,glyph_set->data+i*number_of_data_components);
 				}
-				else
+				spectrum_end_render_vrml(vrml_file, spectrum);
+			}
+			fprintf(vrml_file,"  } #Pointset\n");
+			fprintf(vrml_file,"} #Shape\n");
+		}
+		else if ((glyph_type == CMISS_GRAPHICS_GLYPH_LINE) && (
+			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
+			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
+		{
+			const ZnReal f = (glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) ? -1.0 : 0.0;
+			fprintf(vrml_file,"Shape {\n");
+			fprintf(vrml_file,"  appearance\n");
+			if (material)
+			{
+				fprintf(vrml_file,"Appearance {\n");
+				fprintf(vrml_file,"  material\n");
+				activate_material_vrml(vrml_file,material,
+					(struct LIST(VRML_prototype) *)NULL,
+					/*no_define_material*/0,/*emissive_only*/1);
+				fprintf(vrml_file,"} #Appearance\n");
+			}
+			else
+			{
+				fprintf(vrml_file,"IS line_appearance\n");
+			}
+			fprintf(vrml_file,"  geometry IndexedLineSet {\n");
+			fprintf(vrml_file,"    coord Coordinate {\n");
+			fprintf(vrml_file,"      point [\n");
+			for (i=0;i<number_of_points;i++)
+			{
+				f0 = f*(*scale)[0];
+				x = (*point)[0] + f0*(*axis1)[0];
+				y = (*point)[1] + f0*(*axis1)[1];
+				z = (*point)[2] + f0*(*axis1)[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				f1 = (*scale)[0];
+				x = (*point)[0] + f1*(*axis1)[0];
+				y = (*point)[1] + f1*(*axis1)[1];
+				z = (*point)[2] + f1*(*axis1)[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				point++;
+				scale++;
+				axis1++;
+			}
+			fprintf(vrml_file,"      ]\n");
+			fprintf(vrml_file,"    }\n");
+			if (data_spectrum)
+			{
+				fprintf(vrml_file,"    colorPerVertex FALSE\n");
+				spectrum_start_render_vrml(vrml_file,spectrum,material);
+				for (i=0;i<number_of_points;i++)
 				{
-					material_copy = (struct Graphical_material *)NULL;
+					spectrum_render_vrml_value(vrml_file,spectrum,material,
+						number_of_data_components,glyph_set->data+i*number_of_data_components);
 				}
-				number_of_skew_glyph_axes=0;
-				for (i = 0; i < number_of_points; i++)
+				spectrum_end_render_vrml(vrml_file, spectrum);
+			}
+			fprintf(vrml_file,"    coordIndex [\n");
+			for (i=0;i<number_of_points;i++)
+			{
+				fprintf(vrml_file,"      %d,%d,-1,\n",2*i,2*i+1);
+			}
+			fprintf(vrml_file,"    ]\n");
+			fprintf(vrml_file,"  } #IndexedLineSet\n");
+			fprintf(vrml_file,"} #Shape\n");
+		}
+		else if ((glyph_type == CMISS_GRAPHICS_GLYPH_CROSS) &&
+			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+		{
+			fprintf(vrml_file,"Shape {\n");
+			fprintf(vrml_file,"  appearance\n");
+			if (material)
+			{
+				fprintf(vrml_file,"Appearance {\n");
+				fprintf(vrml_file,"  material\n");
+				activate_material_vrml(vrml_file,material,
+					(struct LIST(VRML_prototype) *)NULL,
+					/*no_define_material*/0,/*emissive_only*/1);
+				fprintf(vrml_file,"} #Appearance\n");
+			}
+			else
+			{
+				fprintf(vrml_file,"IS line_appearance\n");
+			}
+			fprintf(vrml_file,"  geometry IndexedLineSet {\n");
+			fprintf(vrml_file,"    coord Coordinate {\n");
+			fprintf(vrml_file,"      point [\n");
+			for (i=0;i<number_of_points;i++)
+			{
+				resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+					glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+					*point, *axis1, *axis2, *axis3, *scale,
+					temp_point, temp_axis1, temp_axis2, temp_axis3);
+				/* x-line */
+				x = temp_point[0] - 0.5*temp_axis1[0];
+				y = temp_point[1] - 0.5*temp_axis1[1];
+				z = temp_point[2] - 0.5*temp_axis1[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				x += temp_axis1[0];
+				y += temp_axis1[1];
+				z += temp_axis1[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				/* y-line */
+				x = temp_point[0] - 0.5*temp_axis2[0];
+				y = temp_point[1] - 0.5*temp_axis2[1];
+				z = temp_point[2] - 0.5*temp_axis2[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				x += temp_axis2[0];
+				y += temp_axis2[1];
+				z += temp_axis2[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				/* z-line */
+				x = temp_point[0] - 0.5*temp_axis3[0];
+				y = temp_point[1] - 0.5*temp_axis3[1];
+				z = temp_point[2] - 0.5*temp_axis3[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				x += temp_axis3[0];
+				y += temp_axis3[1];
+				z += temp_axis3[2];
+				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
+				point++;
+				axis1++;
+				axis2++;
+				axis3++;
+				scale++;
+			}
+			fprintf(vrml_file,"      ]\n");
+			fprintf(vrml_file,"    }\n");
+			if (data_spectrum)
+			{
+				fprintf(vrml_file,"    colorPerVertex FALSE\n");
+				spectrum_start_render_vrml(vrml_file,spectrum,material);
+				for (i=0;i<number_of_points;i++)
 				{
-					if (mirror_glyph_flag)
+					for (j=0;j<3;j++)
 					{
-						number_of_glyphs = 2;
+						spectrum_render_vrml_value(vrml_file,spectrum,material,
+							number_of_data_components,glyph_set->data+i*number_of_data_components);
 					}
-					else
+				}
+				spectrum_end_render_vrml(vrml_file, spectrum);
+			}
+			fprintf(vrml_file,"    coordIndex [\n");
+			for (i=0;i<number_of_points;i++)
+			{
+				fprintf(vrml_file,"      %d,%d,-1,%d,%d,-1,%d,%d,-1,\n",
+					6*i,6*i+1,6*i+2,6*i+3,6*i+4,6*i+5);
+			}
+			fprintf(vrml_file,"    ]\n");
+			fprintf(vrml_file,"  } #IndexedLineSet\n");
+			fprintf(vrml_file,"} #Shape\n");
+		}
+		else if (glyph) // general case
+		{
+			if (data_spectrum)
+			{
+				material_copy = CREATE(Graphical_material)("render_vrml_copy");
+			}
+			else
+			{
+				material_copy = (struct Graphical_material *)NULL;
+			}
+			number_of_skew_glyph_axes=0;
+			const int number_of_glyphs =
+				Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+			for (i = 0; i < number_of_points; i++)
+			{
+				for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
+				{
+					resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+						glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+						*point, *axis1, *axis2, *axis3, *scale,
+						temp_point, temp_axis1, temp_axis2, temp_axis3);
+					/* get the glyph centre as x, y and z */
+					x = temp_point[0];
+					y = temp_point[1];
+					z = temp_point[2];
+					/* store 3 axes in ax, bx and cx */
+					ax1 = temp_axis1[0];
+					ax2 = temp_axis1[1];
+					ax3 = temp_axis1[2];
+					bx1 = temp_axis2[0];
+					bx2 = temp_axis2[1];
+					bx3 = temp_axis2[2];
+					cx1 = temp_axis3[0];
+					cx2 = temp_axis3[1];
+					cx3 = temp_axis3[2];
+					/* get magnitudes of the glyph axes and normalise ax, bx and cx */
+					if (0.0 < (s1 = sqrt(ax1*ax1 + ax2*ax2 + ax3*ax3)))
 					{
-						number_of_glyphs = 1;
+						ax1 /= s1;
+						ax2 /= s1;
+						ax3 /= s1;
 					}
-					for (j = 0; j < number_of_glyphs; j++)
+					if (0.0 < (s2 = sqrt(bx1*bx1 + bx2*bx2 + bx3*bx3)))
 					{
-						resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-							/*mirror*/j, /*rebase*/mirror_glyph_flag,
-							temp_point, temp_axis1, temp_axis2, temp_axis3);
-						/* get the glyph centre as x, y and z */
-						x = temp_point[0];
-						y = temp_point[1];
-						z = temp_point[2];
-						/* store 3 axes in ax, bx and cx */
-						ax1 = temp_axis1[0];
-						ax2 = temp_axis1[1];
-						ax3 = temp_axis1[2];
-						bx1 = temp_axis2[0];
-						bx2 = temp_axis2[1];
-						bx3 = temp_axis2[2];
-						cx1 = temp_axis3[0];
-						cx2 = temp_axis3[1];
-						cx3 = temp_axis3[2];
-						/* get magnitudes of the glyph axes and normalise ax, bx and cx */
-						if (0.0 < (s1 = sqrt(ax1*ax1 + ax2*ax2 + ax3*ax3)))
+						bx1 /= s2;
+						bx2 /= s2;
+						bx3 /= s2;
+					}
+					if (0.0 < (s3 = sqrt(cx1*cx1 + cx2*cx2 + cx3*cx3)))
+					{
+						cx1 /= s3;
+						cx2 /= s3;
+						cx3 /= s3;
+					}
+					/* the three axes are either unit length or zero. Checks:
+							If all three are non-zero, check that the axes are all mutually
+						  orthogonal.
+							If two are non-zero, make sure they are othogonal and get the
+						  third from the cross product.
+							If only one is non-zero, choose any two axes orthogonal to the
+						  first as the remaining axes. */
+					skewed_axes=0;
+					if ((0.0<s1)&&(0.0<s2)&&(0.0<s3))
+					{
+						/* 3 non-zero axes: check dot product of axis1 (x) axis2 and
+								axis2 (x) axis3 are both zero or thereabouts */
+						if ((0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))||
+							(0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3)))
 						{
-							ax1 /= s1;
-							ax2 /= s1;
-							ax3 /= s1;
+							skewed_axes=1;
 						}
-						if (0.0 < (s2 = sqrt(bx1*bx1 + bx2*bx2 + bx3*bx3)))
+					}
+					else if (((0.0<s1)&&(0.0<s2)) ||
+						((0.0<s2)&&(0.0<s3)) || ((0.0<s3)&&(0.0<s1)))
+					{
+						/* 2 non-zero axes: check their dot product is zero or
+								thereabouts, and get third axis as their cross product. */
+						if (0.0==s1)
 						{
-							bx1 /= s2;
-							bx2 /= s2;
-							bx3 /= s2;
-						}
-						if (0.0 < (s3 = sqrt(cx1*cx1 + cx2*cx2 + cx3*cx3)))
-						{
-							cx1 /= s3;
-							cx2 /= s3;
-							cx3 /= s3;
-						}
-						/* the three axes are either unit length or zero. Checks:
-							 If all three are non-zero, check that the axes are all mutually
-						   orthogonal.
-							 If two are non-zero, make sure they are othogonal and get the
-						   third from the cross product.
-							 If only one is non-zero, choose any two axes orthogonal to the
-						   first as the remaining axes. */
-						skewed_axes=0;
-						if ((0.0<s1)&&(0.0<s2)&&(0.0<s3))
-						{
-							/* 3 non-zero axes: check dot product of axis1 (x) axis2 and
-								 axis2 (x) axis3 are both zero or thereabouts */
-							if ((0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))||
-								(0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3)))
+							if (0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3))
 							{
 								skewed_axes=1;
 							}
-						}
-						else if (((0.0<s1)&&(0.0<s2)) ||
-							((0.0<s2)&&(0.0<s3)) || ((0.0<s3)&&(0.0<s1)))
-						{
-							/* 2 non-zero axes: check their dot product is zero or
-								 thereabouts, and get third axis as their cross product. */
-							if (0.0==s1)
+							else
 							{
-								if (0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3))
-								{
-									skewed_axes=1;
-								}
-								else
-								{
-									ax1 = bx2*cx3 - bx3*cx2;
-									ax2 = bx3*cx1 - bx1*cx3;
-									ax3 = bx1*cx2 - bx2*cx1;
-								}
-							}
-							else if (0.0==s2)
-							{
-								if (0.00001 < fabs(cx1*ax1 + cx2*ax2 + cx3*ax3))
-								{
-									skewed_axes=1;
-								}
-								else
-								{
-									bx1 = cx2*ax3 - cx3*ax2;
-									bx2 = cx3*ax1 - cx1*ax3;
-									bx3 = cx1*ax2 - cx2*ax1;
-								}
-							}
-							else /* if (0.0==s3) */
-							{
-								if (0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))
-								{
-									skewed_axes=1;
-								}
-								else
-								{
-									cx1 = ax2*bx3 - ax3*bx2;
-									cx2 = ax3*bx1 - ax1*bx3;
-									cx3 = ax1*bx2 - ax2*bx1;
-								}
+								ax1 = bx2*cx3 - bx3*cx2;
+								ax2 = bx3*cx1 - bx1*cx3;
+								ax3 = bx1*cx2 - bx2*cx1;
 							}
 						}
-						else if ((0.0<s1)||(0.0<s2)||(0<s3))
+						else if (0.0==s2)
 						{
-							/* 1 non-zero axis: Get any two other orthogonal axes */
-							if (0.0<s1)
+							if (0.00001 < fabs(cx1*ax1 + cx2*ax2 + cx3*ax3))
 							{
-								get_orthogonal_axes(ax1,ax2,ax3,&bx1,&bx2,&bx3,&cx1,&cx2,&cx3);
-							}
-							else if (0.0<s2)
-							{
-								get_orthogonal_axes(bx1,bx2,bx3,&cx1,&cx2,&cx3,&ax1,&ax2,&ax3);
-							}
-							else /* if (0.0<s2) */
-							{
-								get_orthogonal_axes(cx1,cx2,cx3,&ax1,&ax2,&ax3,&bx1,&bx2,&bx3);
-							}
-						}
-						else
-						{
-							/* All axes non-zero: Use default axes */
-							ax1 = 1.0;
-							bx2 = 1.0;
-							cx3 = 1.0;
-						}
-						if (skewed_axes)
-						{
-							/* refuse to output the glyph if axes are skew */
-							number_of_skew_glyph_axes++;
-						}
-						else
-						{
-							/* find angles - a_angle and b_angle - and axes - a and b - so
-								that rotating by a_angle about a followed rotating by b_angle
-								about b takes the x-axis to ax, the y-axis to bx and the z-axis
-								to cx */
-							/* a is perpendicular to the projection of ax onto the y-z plane
-								(i) and a_angle is the angle between ax and the x axis.  a_angle
-								must be between 0 and pi because the angle is in the plane
-								defined by the x axis and i and ax must be in the non-negative
-								i half of this plane */
-							if (0.0 < (a_magnitude = sqrt(ax2*ax2 + ax3*ax3)))
-							{
-								a1 = 0.0;
-								a2 = -ax3 / a_magnitude;
-								a3 = ax2 / a_magnitude;
-								a_angle = clamped_acos(ax1);
+								skewed_axes=1;
 							}
 							else
 							{
-								a1 = 0.0;
-								a2 = 1.0;
-								a3 = 0.0;
-								if (0 > ax1)
-								{
-									a_angle = (ZnReal)PI;
-								}
-								else
-								{
-									a_angle = 0.0;
-								}
+								bx1 = cx2*ax3 - cx3*ax2;
+								bx2 = cx3*ax1 - cx1*ax3;
+								bx3 = cx1*ax2 - cx2*ax1;
 							}
-							/* rotating by a_angle about a takes the x-axis onto ax and the
-								y-axis onto j */
-							j1 = -sin(a_angle) * a3;
-							j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
-							j3 = (1.0 - cos(a_angle)) * a2 * a3;
-							/* bx is perpendicular to ax, because they are orthonormal, and
-								j is perpendiculat to ax because they are the images of the y-
-								and x- axes under rotation.  So bx and j are in the plane
-								perpendicular to ax */
-							/* now rotate about ax (b) to get j onto bx */
-							b1 = ax1;
-							b2 = ax2;
-							b3 = ax3;
-							/* because j and bx are unit length cos(b_angle)=j dot b */
-							b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
-							/* acos gives an angle between 0 and pi.  If j cross bx is in the
-								same direction as b, then the angle is clockwise, if it is in
-								the opposite direction then it is anti-clockwise.   */
-							/*???DB.  Lose accuracy fairly badly here.  Need to have
-								tolerance so that there are not different numbers of lines for
-								ndiff */
-#define ZERO_ROTATION_TOLERANCE 0.001
-/*							if (0.0 != b_angle)*/
-							if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
+						}
+						else /* if (0.0==s3) */
+						{
+							if (0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))
 							{
-								/* get c = j1 (x) bx */
-								c1 = j2*bx3 - j3*bx2;
-								c2 = j3*bx1 - j1*bx3;
-								c3 = j1*bx2 - j2*bx1;
-								/* the magnitude of c is the absolute value of sin(b_angle)
-									because j and bx are unit length.  For small theta,
-									sin(theta) is approximately theta */
-								c_magnitude = sqrt(c1*c1 + c2*c2 + c3*c3);
-								if (ZERO_ROTATION_TOLERANCE < fabs(c_magnitude))
-								{
-									dp = b1*c1 + b2*c2 + b3*c3;
-									if (dp < 0.0)
-									{
-										/* make clockwise */
-										b_angle = -b_angle;
-									}
-								}
-								else
-								{
-									/* b_angle is close to +/- PI (have already checked that
-										b_angle isn't near 0 */
-									b_angle = (ZnReal)PI;
-								}
-							}
-							fprintf(vrml_file,"Transform {\n");
-							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
-							/* if possible, try to avoid having two Transform nodes */
-/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
-							if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
-								(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
-							{
-								/* b-rotation must wrap a-rotation to occur after it */
-								fprintf(vrml_file,"  rotation %f %f %f %f\n",b1,b2,b3,b_angle);
-								fprintf(vrml_file,"  children [\n");
-								fprintf(vrml_file,"    Transform {\n");
-							}
-/*							if (0.0 != a_angle)*/
-							if (ZERO_ROTATION_TOLERANCE < fabs(a_angle))
-							{
-								fprintf(vrml_file,"    rotation %f %f %f %f\n",a1,a2,a3,
-									a_angle);
-							}
-/*							else if (0.0 != b_angle)*/
-							else if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
-							{
-								fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
-									b_angle);
-							}
-							fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);
-							fprintf(vrml_file,"    children [\n");
-
-							/* set the spectrum for this datum, if any */
-							if (material_copy)
-							{
-								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
-									(material_copy, material);
-								Spectrum_render_value_on_material(spectrum,material_copy,
-									number_of_data_components,data+i*number_of_data_components);
-								/*???RC temporary until we have a struct Glyph - actual glyph to use
-									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
-								/* note no DEF/USE when coloured by a spectrum as will always be
-									 different every time it is rendered */
-								write_graphics_object_vrml(vrml_file, glyph, time,
-									(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
-									material_copy, /*gt_object_already_defined*/0);
+								skewed_axes=1;
 							}
 							else
 							{
-								write_graphics_object_vrml(vrml_file, glyph, time,
-									vrml_prototype_list, /*object_is_glyph*/1,
-									material, /*gt_object_already_defined*/0<i);
+								cx1 = ax2*bx3 - ax3*bx2;
+								cx2 = ax3*bx1 - ax1*bx3;
+								cx3 = ax1*bx2 - ax2*bx1;
 							}
-							fprintf(vrml_file,"    ]\n");
-/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
-							if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
-								(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
-							{
-								fprintf(vrml_file,"    } #Transform\n");
-								fprintf(vrml_file,"  ]\n");
-							}
-							fprintf(vrml_file,"} #Transform\n");
 						}
 					}
-
-					point++;
-					axis1++;
-					axis2++;
-					axis3++;
-					scale++;
-				}
-				if (0 < number_of_skew_glyph_axes)
-				{
-					display_message(WARNING_MESSAGE, "draw_glyph_set_vrml.  "
-						"%d glyph(s) not rendered because they have skewed axes",
-						number_of_skew_glyph_axes);
-				}
-				if (material_copy)
-				{
-					DESTROY(Graphical_material)(&material_copy);
-				}
-			}
-			label = labels;
-			if (label)
-			{
-				point=point_list;
-				if (data_spectrum)
-				{
-					material_copy = CREATE(Graphical_material)("render_vrml_copy");
-				}
-				else
-				{
-					material_copy = (struct Graphical_material *)NULL;
-				}
-				for (i=0;i<number_of_points;i++)
-				{
-					x = (*point)[0];
-					y = (*point)[1];
-					z = (*point)[2];
-					fprintf(vrml_file,"Transform {\n");
-					fprintf(vrml_file,"  translation %f %f %f\n", x, y, z);
-					fprintf(vrml_file,"  children [\n");
-					fprintf(vrml_file,"    Billboard {\n");
-					fprintf(vrml_file,"      axisOfRotation 0 0 0\n");
-					fprintf(vrml_file,"      children [\n");
-					fprintf(vrml_file,"Shape {\n");
-					fprintf(vrml_file,"  appearance\n");
-					if (material)
+					else if ((0.0<s1)||(0.0<s2)||(0<s3))
 					{
-						fprintf(vrml_file,"Appearance {\n");
-						fprintf(vrml_file,"  material\n");
+						/* 1 non-zero axis: Get any two other orthogonal axes */
+						if (0.0<s1)
+						{
+							get_orthogonal_axes(ax1,ax2,ax3,&bx1,&bx2,&bx3,&cx1,&cx2,&cx3);
+						}
+						else if (0.0<s2)
+						{
+							get_orthogonal_axes(bx1,bx2,bx3,&cx1,&cx2,&cx3,&ax1,&ax2,&ax3);
+						}
+						else /* if (0.0<s2) */
+						{
+							get_orthogonal_axes(cx1,cx2,cx3,&ax1,&ax2,&ax3,&bx1,&bx2,&bx3);
+						}
+					}
+					else
+					{
+						/* All axes non-zero: Use default axes */
+						ax1 = 1.0;
+						bx2 = 1.0;
+						cx3 = 1.0;
+					}
+					if (skewed_axes)
+					{
+						/* refuse to output the glyph if axes are skew */
+						number_of_skew_glyph_axes++;
+					}
+					else
+					{
+						/* find angles - a_angle and b_angle - and axes - a and b - so
+							that rotating by a_angle about a followed rotating by b_angle
+							about b takes the x-axis to ax, the y-axis to bx and the z-axis
+							to cx */
+						/* a is perpendicular to the projection of ax onto the y-z plane
+							(i) and a_angle is the angle between ax and the x axis.  a_angle
+							must be between 0 and pi because the angle is in the plane
+							defined by the x axis and i and ax must be in the non-negative
+							i half of this plane */
+						if (0.0 < (a_magnitude = sqrt(ax2*ax2 + ax3*ax3)))
+						{
+							a1 = 0.0;
+							a2 = -ax3 / a_magnitude;
+							a3 = ax2 / a_magnitude;
+							a_angle = clamped_acos(ax1);
+						}
+						else
+						{
+							a1 = 0.0;
+							a2 = 1.0;
+							a3 = 0.0;
+							if (0 > ax1)
+							{
+								a_angle = (ZnReal)PI;
+							}
+							else
+							{
+								a_angle = 0.0;
+							}
+						}
+						/* rotating by a_angle about a takes the x-axis onto ax and the
+							y-axis onto j */
+						j1 = -sin(a_angle) * a3;
+						j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
+						j3 = (1.0 - cos(a_angle)) * a2 * a3;
+						/* bx is perpendicular to ax, because they are orthonormal, and
+							j is perpendiculat to ax because they are the images of the y-
+							and x- axes under rotation.  So bx and j are in the plane
+							perpendicular to ax */
+						/* now rotate about ax (b) to get j onto bx */
+						b1 = ax1;
+						b2 = ax2;
+						b3 = ax3;
+						/* because j and bx are unit length cos(b_angle)=j dot b */
+						b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
+						/* acos gives an angle between 0 and pi.  If j cross bx is in the
+							same direction as b, then the angle is clockwise, if it is in
+							the opposite direction then it is anti-clockwise.   */
+						/*???DB.  Lose accuracy fairly badly here.  Need to have
+							tolerance so that there are not different numbers of lines for
+							ndiff */
+#define ZERO_ROTATION_TOLERANCE 0.001
+/*							if (0.0 != b_angle)*/
+						if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
+						{
+							/* get c = j1 (x) bx */
+							c1 = j2*bx3 - j3*bx2;
+							c2 = j3*bx1 - j1*bx3;
+							c3 = j1*bx2 - j2*bx1;
+							/* the magnitude of c is the absolute value of sin(b_angle)
+								because j and bx are unit length.  For small theta,
+								sin(theta) is approximately theta */
+							c_magnitude = sqrt(c1*c1 + c2*c2 + c3*c3);
+							if (ZERO_ROTATION_TOLERANCE < fabs(c_magnitude))
+							{
+								dp = b1*c1 + b2*c2 + b3*c3;
+								if (dp < 0.0)
+								{
+									/* make clockwise */
+									b_angle = -b_angle;
+								}
+							}
+							else
+							{
+								/* b_angle is close to +/- PI (have already checked that
+									b_angle isn't near 0 */
+								b_angle = (ZnReal)PI;
+							}
+						}
+						fprintf(vrml_file,"Transform {\n");
+						fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
+						/* if possible, try to avoid having two Transform nodes */
+/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
+						if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
+							(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
+						{
+							/* b-rotation must wrap a-rotation to occur after it */
+							fprintf(vrml_file,"  rotation %f %f %f %f\n",b1,b2,b3,b_angle);
+							fprintf(vrml_file,"  children [\n");
+							fprintf(vrml_file,"    Transform {\n");
+						}
+/*							if (0.0 != a_angle)*/
+						if (ZERO_ROTATION_TOLERANCE < fabs(a_angle))
+						{
+							fprintf(vrml_file,"    rotation %f %f %f %f\n",a1,a2,a3,
+								a_angle);
+						}
+/*							else if (0.0 != b_angle)*/
+						else if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
+						{
+							fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
+								b_angle);
+						}
+						fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);
+						fprintf(vrml_file,"    children [\n");
+
+						/* set the spectrum for this datum, if any */
 						if (material_copy)
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
 								(material_copy, material);
 							Spectrum_render_value_on_material(spectrum,material_copy,
-								number_of_data_components,data+i*number_of_data_components);
-							activate_material_vrml(vrml_file,material_copy,
-								(struct LIST(VRML_prototype) *)NULL,
-								/*no_define*/1,/*emissive_only*/0);
-							/*???RC text is drawn as a textured surface, hence */
+								number_of_data_components,glyph_set->data+i*number_of_data_components);
+							/*???RC temporary until we have a struct Glyph - actual glyph to use
+								is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
+							/* note no DEF/USE when coloured by a spectrum as will always be
+									different every time it is rendered */
+							write_graphics_object_vrml(vrml_file, glyph, time,
+								(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
+								material_copy, /*gt_object_already_defined*/0);
 						}
 						else
 						{
-							activate_material_vrml(vrml_file,material,
-								(struct LIST(VRML_prototype) *)NULL,
-								/*no_define*/1,/*emissive_only*/0);
+							write_graphics_object_vrml(vrml_file, glyph, time,
+								vrml_prototype_list, /*object_is_glyph*/1,
+								material, /*gt_object_already_defined*/0<i);
 						}
-						fprintf(vrml_file,"} #Appearance\n");
-					}
-					else
-					{
-						fprintf(vrml_file,"IS line_appearance\n");
-					}
-					fprintf(vrml_file,"  geometry Text {\n");
-					fprintf(vrml_file,"    string [\n");
-					label_token = duplicate_string(*label);
-					if (label_token)
-					{
-						make_valid_token(&label_token);
-						if (('\"' == label_token[0]) || ('\'' == label_token[0]))
+						fprintf(vrml_file,"    ]\n");
+/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
+						if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
+							(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
 						{
-							fprintf(vrml_file,"      %s\n", label_token);
+							fprintf(vrml_file,"    } #Transform\n");
+							fprintf(vrml_file,"  ]\n");
 						}
-						else
-						{
-							fprintf(vrml_file,"      \"%s\"\n", label_token);
-						}
-						DEALLOCATE(label_token);
+						fprintf(vrml_file,"} #Transform\n");
 					}
-					fprintf(vrml_file,"    ]\n");
-					fprintf(vrml_file,"  } #Text\n");
-					fprintf(vrml_file,"} #Shape\n");
-					fprintf(vrml_file,"      ]\n");
-					fprintf(vrml_file,"    } #Billboard\n");
-					fprintf(vrml_file,"  ]\n");
-					fprintf(vrml_file,"} #Transform\n");
-					point++;
-					label++;
 				}
-				if (material_copy)
-				{
-					DESTROY(Graphical_material)(&material_copy);
-				}
+
+				point++;
+				axis1++;
+				axis2++;
+				axis3++;
+				scale++;
 			}
-			return_code=1;
+			if (0 < number_of_skew_glyph_axes)
+			{
+				display_message(WARNING_MESSAGE, "draw_glyph_set_vrml.  "
+					"%d glyph(s) not rendered because they have skewed axes",
+					number_of_skew_glyph_axes);
+			}
+			if (material_copy)
+			{
+				DESTROY(Graphical_material)(&material_copy);
+			}
+		}
+		/* output label at each point, if supplied */
+		char **static_labels = 0;
+		for (int labelNumber = 0; labelNumber < 3; ++labelNumber)
+		{
+			if (glyph_set->static_label_text[labelNumber])
+			{
+				static_labels = glyph_set->static_label_text;
+				break;
+			}
+		}
+		label = glyph_set->labels;
+		if (label || static_labels)
+		{
+			point=glyph_set->point_list;
+			if (data_spectrum)
+			{
+				material_copy = CREATE(Graphical_material)("render_vrml_copy");
+			}
+			else
+			{
+				material_copy = (struct Graphical_material *)NULL;
+			}
+			const int number_of_glyphs =
+				Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+			for (i = 0; i < number_of_points; i++)
+			{
+				for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
+				{
+					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+						(label && (glyph_number == 0) && *label) || (static_labels && static_labels[glyph_number]))
+					{
+						resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+							*point, *axis1, *axis2, *axis3, *scale,
+							temp_point, temp_axis1, temp_axis2, temp_axis3);
+						if ((glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
+						{
+							for (int j = 0; j < 3; ++j)
+							{
+								temp_point[j] += (
+									(1.0 - glyph_set->label_offset[0])*temp_axis1[j] +
+									glyph_set->label_offset[1]*temp_axis2[j] +
+									glyph_set->label_offset[2]*temp_axis3[j]);
+							}
+						}
+						else
+						{
+							for (int j = 0; j < 3; ++j)
+							{
+								temp_point[j] += (
+									glyph_set->label_offset[0]*temp_axis1[j] +
+									glyph_set->label_offset[1]*temp_axis2[j] +
+									glyph_set->label_offset[2]*temp_axis3[j]);
+							}
+						}
+						x = temp_point[0];
+						y = temp_point[1];
+						z = temp_point[2];
+						fprintf(vrml_file,"Transform {\n");
+						fprintf(vrml_file,"  translation %f %f %f\n", x, y, z);
+						fprintf(vrml_file,"  children [\n");
+						fprintf(vrml_file,"    Billboard {\n");
+						fprintf(vrml_file,"      axisOfRotation 0 0 0\n");
+						fprintf(vrml_file,"      children [\n");
+						fprintf(vrml_file,"Shape {\n");
+						fprintf(vrml_file,"  appearance\n");
+						if (material)
+						{
+							fprintf(vrml_file,"Appearance {\n");
+							fprintf(vrml_file,"  material\n");
+							if (material_copy)
+							{
+								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+									(material_copy, material);
+								Spectrum_render_value_on_material(spectrum,material_copy,
+									number_of_data_components,glyph_set->data+i*number_of_data_components);
+								activate_material_vrml(vrml_file,material_copy,
+									(struct LIST(VRML_prototype) *)NULL,
+									/*no_define*/1,/*emissive_only*/0);
+								/*???RC text is drawn as a textured surface, hence */
+							}
+							else
+							{
+								activate_material_vrml(vrml_file,material,
+									(struct LIST(VRML_prototype) *)NULL,
+									/*no_define*/1,/*emissive_only*/0);
+							}
+							fprintf(vrml_file,"} #Appearance\n");
+						}
+						else
+						{
+							fprintf(vrml_file,"IS line_appearance\n");
+						}
+						fprintf(vrml_file,"  geometry Text {\n");
+						fprintf(vrml_file,"    string [\n");
+						char *text = 0;
+						int error = 0;
+						if (static_labels && static_labels[glyph_number])
+						{
+							append_string(&text, static_labels[glyph_number], &error);
+						}
+						if (label && (*label) && (glyph_number == 0))
+						{
+							append_string(&text, *label, &error);
+						}
+						if (text)
+						{
+							make_valid_token(&text);
+							if (('\"' == text[0]) || ('\'' == text[0]))
+							{
+								fprintf(vrml_file,"      %s\n", text);
+							}
+							else
+							{
+								fprintf(vrml_file,"      \"%s\"\n", text);
+							}
+							DEALLOCATE(text);
+						}
+						fprintf(vrml_file,"    ]\n");
+						fprintf(vrml_file,"  } #Text\n");
+						fprintf(vrml_file,"} #Shape\n");
+						fprintf(vrml_file,"      ]\n");
+						fprintf(vrml_file,"    } #Billboard\n");
+						fprintf(vrml_file,"  ]\n");
+						fprintf(vrml_file,"} #Transform\n");
+					}
+				}
+				point++;
+				axis1++;
+				axis2++;
+				axis3++;
+				scale++;
+				label++;
+			}
+			if (material_copy)
+			{
+				DESTROY(Graphical_material)(&material_copy);
+			}
+		}
 	}
 	else
 	{
-		if (0 == number_of_points)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_glyph_set_vrml. Invalid argument(s)");
-			return_code = 0;
-		}
+		display_message(ERROR_MESSAGE,"draw_glyph_set_vrml. Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* draw_glyph_set_vrml */
+}
 
 static int draw_point_set_vrml(FILE *vrml_file,int n_pts,Triple *point_list,
 	char **text,gtMarkerType marker_type,ZnReal marker_size,int number_of_data_components,
@@ -2175,18 +2218,7 @@ Only writes the geometry field.
 								interpolate_glyph_set=morph_GT_glyph_set(proportion,glyph_set,glyph_set_2);
 								if (interpolate_glyph_set)
 								{
-									draw_glyph_set_vrml(vrml_file,
-										interpolate_glyph_set->number_of_points,
-										interpolate_glyph_set->point_list,
-										interpolate_glyph_set->axis1_list,
-										interpolate_glyph_set->axis2_list,
-										interpolate_glyph_set->axis3_list,
-										interpolate_glyph_set->scale_list,
-										interpolate_glyph_set->glyph,
-										interpolate_glyph_set->mirror_glyph_flag,
-										interpolate_glyph_set->labels,
-										interpolate_glyph_set->n_data_components,
-										interpolate_glyph_set->data,
+									draw_glyph_set_vrml(vrml_file, interpolate_glyph_set,
 										object->default_material,object->spectrum,
 										time,vrml_prototype_list);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
@@ -2199,13 +2231,7 @@ Only writes the geometry field.
 						{
 							while (glyph_set)
 							{
-								draw_glyph_set_vrml(vrml_file,
-									glyph_set->number_of_points,
-									glyph_set->point_list, glyph_set->axis1_list,
-									glyph_set->axis2_list, glyph_set->axis3_list,
-									glyph_set->scale_list, glyph_set->glyph,
-									glyph_set->mirror_glyph_flag, glyph_set->labels,
-									glyph_set->n_data_components, glyph_set->data,
+								draw_glyph_set_vrml(vrml_file, glyph_set,
 									object->default_material, object->spectrum,
 									time, vrml_prototype_list);
 								glyph_set = glyph_set->ptrnext;

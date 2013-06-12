@@ -50,7 +50,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/defined_graphics_objects.h
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
-	source/graphics/glyph.h
+	source/graphics/glyph.hpp
 	source/graphics/graphics_filter.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp

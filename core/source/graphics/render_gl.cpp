@@ -48,6 +48,7 @@ GL rendering calls - API specific.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"
@@ -63,14 +64,14 @@ GL rendering calls - API specific.
 #include "graphics/rendition.hpp"
 #include "graphics/texture.hpp"
 
-/***************************************************************************//**
-																			 * Specifies the rendering type for this graphics_object.  The render function
-																			 * could be split for different types or virtual methods or function callbacks
-																			 * added but much of the code would be repeated with the first strategy and
-																			 * there are a number of different points where the behaviour changes which would
-																			 * need over-riding for the second.  So the current plan is to keep a single
-																			 * routine and switch on this type.
-																			 */
+/**
+ * Specifies the rendering type for this graphics_object.  The render function
+ * could be split for different types or virtual methods or function callbacks
+ * added but much of the code would be repeated with the first strategy and
+ * there are a number of different points where the behaviour changes which would
+ * need over-riding for the second.  So the current plan is to keep a single
+ * routine and switch on this type.
+ */
 enum Graphics_object_rendering_type
 {
 	GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND,
@@ -78,9 +79,9 @@ enum Graphics_object_rendering_type
 	GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT
 };
 
-/***************************************************************************//**
-																			 * Convert graphical object into API object.
-																			 */
+/**
+ * Convert graphical object into API object.
+ */
 static int render_GT_object_opengl_immediate(gtObject *object,
 	int draw_selected, Render_graphics_opengl *renderer,
 	Graphics_object_rendering_type type);
@@ -92,27 +93,27 @@ static int Graphics_object_compile_opengl_display_list(GT_object *graphics_objec
 static int Graphics_object_execute_opengl_display_list(GT_object *graphics_object,
 	Render_graphics_opengl *renderer);
 
-/***************************************************************************//**
-																			 * Call the renderer to compile all the member objects which this GT_object depends
-																			 * on.
-																			 */
+/**
+ * Call the renderer to compile all the member objects which this GT_object depends
+ * on.
+ */
 static int Graphics_object_compile_members_opengl(GT_object *graphics_object_list,
 	Render_graphics_opengl *renderer);
 
-/***************************************************************************//**
-																			 * Rebuilds the display list for each uncreated graphics object in the
-																			 * <graphics_object>, a simple linked list.
-																			 */
+/**
+ * Rebuilds the display list for each uncreated graphics object in the
+ * <graphics_object>, a simple linked list.
+*/
 static int Graphics_object_render_opengl(GT_object *graphics_object,
 	Render_graphics_opengl *renderer, Graphics_object_rendering_type type);
 
-/***************************************************************************//**
-																			 * Compile the vertex buffer object for rendering the specified primitive.
-																			 */
+/**
+ * Compile the vertex buffer object for rendering the specified primitive.
+ */
 static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object,
 	Render_graphics_opengl *renderer);
 
-/****************** Render_graphics_opengl method implementations **************/
+/*==== Render_graphics_opengl method implementations ====*/
 
 int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
 {
@@ -124,9 +125,9 @@ int Render_graphics_opengl::Material_compile(Graphical_material *material)
 	return Material_compile_members_opengl(material, this);
 }
 
-/***************************************************************************//**
-																			 * An implementation of a render class that uses immediate mode glBegin/glEnd.
-																			 */
+/**
+ * An implementation of a render class that uses immediate mode glBegin/glEnd.
+ */
 class Render_graphics_opengl_glbeginend : public Render_graphics_opengl
 {
 public:
@@ -134,9 +135,9 @@ public:
 	  {
 	  }
 
-	  /***************************************************************************//**
-																				   * Execute the Scene.
-																				   */
+	  /**
+		 * Execute the Scene.
+		 */
 	  int Scene_execute(Scene *scene)
 	  {
 		  set_Scene(scene);
@@ -222,7 +223,7 @@ public:
 				  if (picking)
 				  {
 					  /* To pick correctly need additional transformation to interaction volume.
-					  * skip window-relative graphics for now. */
+					   * skip window-relative graphics for now. */
 					  return_code = 0;
 				  }
 				  else
@@ -236,7 +237,7 @@ public:
 						  viewport_width, viewport_height, &left, &right, &bottom, &top))
 					  {
 						  /* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
-						  and +1 to be the far clipping plane */
+						   * and +1 to be the far clipping plane */
 						  glOrtho(left, right, bottom, top, /*nearVal*/1.0, /*farVal*/3.0);
 					  }
 					  else
@@ -300,9 +301,9 @@ Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer()
 	return new Render_graphics_opengl_glbeginend();
 }
 
-/***************************************************************************//**
-																			 * An implementation of a render class that uses client vertex arrays.
-																			 */
+/**
+ * An implementation of a render class that uses client vertex arrays.
+ */
 class Render_graphics_opengl_client_vertex_arrays : public Render_graphics_opengl_glbeginend
 {
 public:
@@ -311,18 +312,18 @@ public:
 	  {
 	  }
 
-	  /***************************************************************************//**
-																				   * Execute the Graphics_object.
-																				   */
+	  /**
+		 * Execute the Graphics_object.
+		 */
 	  int Graphics_object_execute(GT_object *graphics_object)
 	  {
 		  return Graphics_object_render_opengl(graphics_object, this,
 			  GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
 	  }
 
-	  /***************************************************************************//**
-																				   * Execute the Graphics_object.
-																				   */
+	  /**
+		 * Execute the Graphics_object.
+		 */
 	  int Graphics_object_render_immediate(GT_object *graphics_object)
 	  {
 		  return Graphics_object_render_opengl(graphics_object, this,
@@ -332,9 +333,9 @@ public:
 }; /* class Render_graphics_opengl_client_vertex_arrays */
 
 
-/***************************************************************************//**
-																			 * An implementation of a render class that uses client vertex arrays.
-																			 */
+/**
+ * An implementation of a render class that uses client vertex arrays.
+ */
 class Render_graphics_opengl_vertex_buffer_object : public Render_graphics_opengl_glbeginend
 {
 public:
@@ -343,9 +344,9 @@ public:
 	  {
 	  }
 
-	  /***************************************************************************//**
-																				   * Compile the Graphics_object.
-																				   */
+	  /**
+		 * Compile the Graphics_object.
+		 */
 	  int Graphics_object_compile(GT_object *graphics_object)
 	  {
 		  return Render_graphics_opengl_glbeginend::Graphics_object_compile(
@@ -354,18 +355,18 @@ public:
 			  graphics_object, this);
 	  }
 
-	  /***************************************************************************//**
-																				   * Execute the Graphics_object.
-																				   */
+	  /**
+		 * Execute the Graphics_object.
+		 */
 	  int Graphics_object_execute(GT_object *graphics_object)
 	  {
 		  return Graphics_object_render_opengl(graphics_object, this,
 			  GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
 	  }
 
-	  /***************************************************************************//**
-																				   * Execute the Graphics_object.
-																				   */
+	  /**
+		 * Execute the Graphics_object.
+		 */
 	  int Graphics_object_render_immediate(GT_object *graphics_object)
 	  {
 		  return Graphics_object_compile_opengl_vertex_buffer_object(
@@ -402,10 +403,10 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_rende
 	return new Render_graphics_opengl_vertex_buffer_object();
 }
 
-/***************************************************************************//**
-																			 * An implementation of a render class that wraps another opengl renderer in
-																			 * compile and then execute stages.
-																			 */
+/**
+ * An implementation of a render class that wraps another opengl renderer in
+ * compile and then execute stages.
+ */
 template <class Render_immediate> class Render_graphics_opengl_display_list
 	: public Render_immediate
 {
@@ -532,6 +533,36 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_displ
 	return new Render_graphics_opengl_display_list<Render_graphics_opengl_vertex_buffer_object>();
 }
 
+namespace {
+
+inline char *concatenateLabels(char *label1, char *label2, bool &allocatedText)
+{
+	char *text;
+	if (label1)
+	{
+		if (label2)
+		{
+			text = new char[strlen(label1) + strlen(label2) + 1];
+			strcpy(text, label1);
+			strcat(text, label2);
+			allocatedText = true;
+		}
+		else
+		{
+			text = label1;
+			allocatedText = false;
+		}
+	}
+	else
+	{
+		text = label2;
+		allocatedText = false;
+	}
+	return text;
+}
+
+} // namespace
+
 /**
  * Draws graphics object <glyph> at <number_of_points> points given by the
  * positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
@@ -548,38 +579,29 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_displ
  * Enable or disable lighting and update as appropriate for point/line or surface
  * glyphs to minimise state changes.
  */
-static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
-	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
-	struct GT_object *glyph, int mirror_glyph_flag, char **labels,
-	int number_of_data_components, GLfloat *data, int *names,
-	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
-	Triple *label_density_list,
+static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Spectrum *spectrum, struct Cmiss_font *font,
-	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
-	Render_graphics_opengl *renderer, int object_name, int *lighting_off)
+	struct Spectrum *spectrum, int draw_selected,
+	SubObjectGroupHighlightFunctor *highlight_functor,
+	Render_graphics_opengl *renderer, bool& lighting_on)
 {
 	char **label;
 	ZnReal *label_bound;
 	GLfloat transformation[16], x, y, z;
-	Graphics_object_glyph_labels_function glyph_labels_function;
 	GLfloat *datum = 0;
-	int draw_all, i, j, *name = NULL, name_selected = 0, label_bounds_per_glyph = 0,
+	int draw_all, i, *name = NULL, name_selected = 0, label_bounds_per_glyph = 0,
 		return_code;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
 		temp_axis3, temp_point;
 
 	ENTER(draw_glyphsetGL);
-	const bool data_spectrum = (0 != data) && (0 != spectrum);
-	if ((0 == number_of_points) || ((0 < number_of_points) && ((glyph && point_list &&
-		axis1_list && axis2_list && axis3_list && scale_list) || (!glyph && labels))))
+	if (glyph_set)
 	{
-		/*if ((0==number_of_points) ||
-		(draw_selected&&((!names) || (!some_selected)))||
-		((!draw_selected)&&(some_selected && (!selected_name_ranges))))*/
+		const bool data_spectrum = (0 != glyph_set->data) && (0 != spectrum);
+		const int number_of_points = glyph_set->number_of_points;
 		if ((0==number_of_points) ||
-			(draw_selected&&((!names) || (!highlight_functor))))
+			(draw_selected&&((!glyph_set->names) || (!highlight_functor))))
 		{
 			/* nothing to draw */
 			return_code=1;
@@ -587,24 +609,22 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 		else
 		{
 #if defined (OPENGL_API)
+			int number_of_data_components = glyph_set->n_data_components;
 			if ((!data_spectrum)||(render_data=spectrum_start_renderGL
 				(spectrum,material,number_of_data_components)))
 			{
+				int *names = glyph_set->names;
 				draw_all = (!names) ||
 					((!draw_selected)&&(!highlight_functor));
-				point = point_list;
-				axis1 = axis1_list;
-				axis2 = axis2_list;
-				axis3 = axis3_list;
-				scale = scale_list;
-				/* if there is data to plot, start the spectrum rendering */
-				if (data_spectrum)
+				point = glyph_set->point_list;
+				axis1 = glyph_set->axis1_list;
+				axis2 = glyph_set->axis2_list;
+				axis3 = glyph_set->axis3_list;
+				scale = glyph_set->scale_list;
+				datum = glyph_set->data;
+				if (glyph_set->label_density_list)
 				{
-					datum=data;
-				}
-				if (label_density_list)
-				{
-					label_density = label_density_list;
+					label_density = glyph_set->label_density_list;
 				}
 				else
 				{
@@ -616,21 +636,49 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 					/* make space for picking name on name stack */
 					glPushName(0);
 				}
+				char **labels = glyph_set->labels;
 				label=labels;
-				label_bound = label_bounds;
-				if (label_bounds)
+				label_bound = glyph_set->label_bounds;
+				if (label_bound)
 				{
-					label_bounds_per_glyph = 1 << label_bounds_dimension;
+					label_bounds_per_glyph = 1 << glyph_set->label_bounds_dimension;
 				}
 				// try to draw points and lines faster
-				if (!glyph) // labels only
+				GT_object *glyph = glyph_set->glyph;
+				Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+				int object_name = glyph_set->object_name;
+				Cmiss_graphics_glyph_type glyph_type = glyph ?
+					GT_object_get_glyph_type(glyph) : CMISS_GRAPHICS_GLYPH_NONE;
+				// output static labels at each point, if supplied
+				const int number_of_glyphs =
+					Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+				char **static_labels = 0;
+				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
 				{
-					if (!*lighting_off)
+					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+						(0 != glyph_set->static_label_text[glyph_number]))
+					{
+						static_labels = glyph_set->static_label_text;
+						break;
+					}
+				}
+
+				if ((glyph_type == CMISS_GRAPHICS_GLYPH_POINT) &&
+					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+				{
+					if (lighting_on)
 					{
 						/* disable lighting so rendered in flat diffuse colour */
 						glDisable(GL_LIGHTING);
-						*lighting_off = 1;
+						lighting_on = !lighting_on;
 					}
+					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					if (!multiBeginEnd)
+					{
+						// more efficient to render points with one glBegin/glEnd
+						glBegin(GL_POINTS);
+					}
+					/* cannot put glLoadName between glBegin and glEnd */
 					if ((object_name > 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
@@ -648,19 +696,48 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
-							x = (*point)[0];
-							y = (*point)[1];
-							z = (*point)[2];
 							if (names)
 							{
 								glLoadName((GLuint)(*name));
 							}
-							if (labels && *label)
+							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+								*point, *axis1, *axis2, *axis3, *scale,
+								temp_point, temp_axis1, temp_axis2, temp_axis3);
+							if (multiBeginEnd)
 							{
-								Cmiss_font_rendergl_text(font, *label, x, y, z);
+								glBegin(GL_POINTS);
+							}
+							glVertex3fv(temp_point);
+							if (multiBeginEnd)
+							{
+								glEnd();
+							}
+							if ((labels && *label) || static_labels)
+							{
+								Triple lpoint;
+								for (int j = 0; j < 3; ++j)
+								{
+									lpoint[j] = temp_point[j]
+										+ glyph_set->label_offset[0]*temp_axis1[j]
+										+ glyph_set->label_offset[1]*temp_axis2[j]
+										+ glyph_set->label_offset[2]*temp_axis3[j];
+								}
+								bool allocatedText = false;
+								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
+								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								if (allocatedText)
+								{
+									delete[] text;
+								}
 							}
 						}
+						/* advance pointers */
 						point++;
+						axis1++;
+						axis2++;
+						axis3++;
+						scale++;
 						if (data_spectrum)
 						{
 							datum += number_of_data_components;
@@ -674,304 +751,155 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							label++;
 						}
 					}
-				}
-				else if (0 == strcmp(glyph->name, "point"))
-				{
-					if (!*lighting_off)
+					if (!multiBeginEnd)
 					{
-						/* disable lighting so rendered in flat diffuse colour */
-						glDisable(GL_LIGHTING);
-						*lighting_off = 1;
-					}
-					if (names||labels||highlight_functor)
-					{
-						/* cannot put glLoadName between glBegin and glEnd */
-						if ((object_name > 0) && highlight_functor)
-						{
-							name_selected=highlight_functor->call(object_name);
-						}
-						for (i=0;i<number_of_points;i++)
-						{
-							if ((object_name < 1) && highlight_functor)
-							{
-								name_selected = highlight_functor->call(*name);
-							}
-							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-							{
-								/* set the spectrum for this datum, if any */
-								if (data_spectrum)
-								{
-									spectrum_renderGL_value(spectrum,material,render_data,datum);
-								}
-								x = (*point)[0];
-								y = (*point)[1];
-								z = (*point)[2];
-								if (names)
-								{
-									glLoadName((GLuint)(*name));
-								}
-								glBegin(GL_POINTS);
-								glVertex3f(x, y, z);
-								glEnd();
-								if (labels && *label)
-								{
-									Cmiss_font_rendergl_text(font, *label, x, y, z);
-								}
-							}
-							/* advance pointers */
-							point++;
-							if (data_spectrum)
-							{
-								datum += number_of_data_components;
-							}
-							if (names)
-							{
-								name++;
-							}
-							if (labels)
-							{
-								label++;
-							}
-						}
-					}
-					else
-					{
-						/* more efficient if all points put out between glBegin and glEnd */
-						glBegin(GL_POINTS);
-						for (i=0;i<number_of_points;i++)
-						{
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum+=number_of_data_components;
-							}
-							x = (*point)[0];
-							y = (*point)[1];
-							z = (*point)[2];
-							point++;
-							glVertex3f(x,y,z);
-						}
 						glEnd();
 					}
 				}
-				else if (0 == strcmp(glyph->name, "line"))
+				else if ((glyph_type == CMISS_GRAPHICS_GLYPH_LINE) &&
+					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
 				{
-					GLfloat f0, f1;
-					if (!*lighting_off)
+					if (lighting_on)
 					{
 						/* disable lighting so rendered in flat diffuse colour */
 						glDisable(GL_LIGHTING);
-						*lighting_off = 1;
+						lighting_on = !lighting_on;
 					}
-					if (names||labels||highlight_functor)
+					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					if (!multiBeginEnd)
 					{
-						if ((object_name > 0) && highlight_functor)
-						{
-							name_selected=highlight_functor->call(object_name);
-						}
-						/* cannot put glLoadName between glBegin and glEnd */
-						for (i=0;i<number_of_points;i++)
-						{
-							if ((object_name < 1) && highlight_functor)
-							{
-								name_selected = highlight_functor->call(*name);
-							}
-							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-							{
-								/* set the spectrum for this datum, if any */
-								if (data_spectrum)
-								{
-									spectrum_renderGL_value(spectrum,material,render_data,datum);
-								}
-								if (names)
-								{
-									glLoadName((GLuint)(*name));
-								}
-								x = (*point)[0];
-								y = (*point)[1];
-								z = (*point)[2];
-								if (mirror_glyph_flag)
-								{
-									f0 = (*scale)[0];
-									x -= f0*(*axis1)[0];
-									y -= f0*(*axis1)[1];
-									z -= f0*(*axis1)[2];
-								}
-								if (labels && *label)
-								{
-									Cmiss_font_rendergl_text(font, *label, x, y, z);
-								}
-								glBegin(GL_LINES);
-								glVertex3f(x,y,z);
-								f1 = (*scale)[0];
-								x = (*point)[0] + f1*(*axis1)[0];
-								y = (*point)[1] + f1*(*axis1)[1];
-								z = (*point)[2] + f1*(*axis1)[2];
-								glVertex3f(x,y,z);
-								glEnd();
-							}
-							/* advance pointers */
-							point++;
-							axis1++;
-							scale++;
-							if (data_spectrum)
-							{
-								datum+=number_of_data_components;
-							}
-							if (names)
-							{
-								name++;
-							}
-							if (labels)
-							{
-								label++;
-							}
-						}
-					}
-					else
-					{
-						/* more efficient if all lines put out between glBegin and glEnd */
+						// more efficient to render lines with one glBegin/glEnd
 						glBegin(GL_LINES);
-						for (i=0;i<number_of_points;i++)
+					}
+					if ((object_name > 0) && highlight_functor)
+					{
+						name_selected=highlight_functor->call(object_name);
+					}
+					/* cannot put glLoadName between glBegin and glEnd */
+					for (i=0;i<number_of_points;i++)
+					{
+						if ((object_name < 1) && highlight_functor)
+						{
+							name_selected = highlight_functor->call(*name);
+						}
+						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 						{
 							/* set the spectrum for this datum, if any */
 							if (data_spectrum)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum+=number_of_data_components;
-							}
-							x = (*point)[0];
-							y = (*point)[1];
-							z = (*point)[2];
-							if (mirror_glyph_flag)
-							{
-								f0 = (*scale)[0];
-								x -= f0*(*axis1)[0];
-								y -= f0*(*axis1)[1];
-								z -= f0*(*axis1)[2];
-							}
-							glVertex3f(x,y,z);
-							f1 = (*scale)[0];
-							x = (*point)[0] + f1*(*axis1)[0];
-							y = (*point)[1] + f1*(*axis1)[1];
-							z = (*point)[2] + f1*(*axis1)[2];
-							glVertex3f(x,y,z);
-							point++;
-							axis1++;
-							scale++;
-						}
-						glEnd();
-					}
-				}
-				else if (0==strcmp(glyph->name,"cross"))
-				{
-					if (!*lighting_off)
-					{
-						/* disable lighting so rendered in flat diffuse colour */
-						glDisable(GL_LIGHTING);
-						*lighting_off = 1;
-					}
-					if (names||labels||highlight_functor)
-					{
-						if ((object_name > 0) && highlight_functor)
-						{
-							name_selected=highlight_functor->call(object_name);
-						}
-						/* cannot put glLoadName between glBegin and glEnd */
-						for (i=0;i<number_of_points;i++)
-						{
-							if ((object_name < 1) && highlight_functor)
-							{
-								name_selected = highlight_functor->call(*name);
-							}
-							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-							{
-								/* set the spectrum for this datum, if any */
-								if (data_spectrum)
-								{
-									spectrum_renderGL_value(spectrum,material,render_data,datum);
-								}
-								if (names)
-								{
-									glLoadName((GLuint)(*name));
-								}
-								resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-									/*mirror*/0, /*rebase*/0,
-									temp_point, temp_axis1, temp_axis2, temp_axis3);
-
-								x = temp_point[0];
-								y = temp_point[1];
-								z = temp_point[2];
-								if (labels && *label)
-								{
-									Cmiss_font_rendergl_text(font, *label, x, y, z);
-								}
-								glBegin(GL_LINES);
-								/* x-line */
-								x = temp_point[0] - 0.5*temp_axis1[0];
-								y = temp_point[1] - 0.5*temp_axis1[1];
-								z = temp_point[2] - 0.5*temp_axis1[2];
-								glVertex3f(x,y,z);
-								x += temp_axis1[0];
-								y += temp_axis1[1];
-								z += temp_axis1[2];
-								glVertex3f(x,y,z);
-								/* y-line */
-								x = temp_point[0] - 0.5*temp_axis2[0];
-								y = temp_point[1] - 0.5*temp_axis2[1];
-								z = temp_point[2] - 0.5*temp_axis2[2];
-								glVertex3f(x,y,z);
-								x += temp_axis2[0];
-								y += temp_axis2[1];
-								z += temp_axis2[2];
-								glVertex3f(x,y,z);
-								/* z-line */
-								x = temp_point[0] - 0.5*temp_axis3[0];
-								y = temp_point[1] - 0.5*temp_axis3[1];
-								z = temp_point[2] - 0.5*temp_axis3[2];
-								glVertex3f(x,y,z);
-								x += temp_axis3[0];
-								y += temp_axis3[1];
-								z += temp_axis3[2];
-								glVertex3f(x,y,z);
-								glEnd();
-							}
-							/* advance pointers */
-							point++;
-							axis1++;
-							axis2++;
-							axis3++;
-							scale++;
-							if (data_spectrum)
-							{
-								datum += number_of_data_components;
 							}
 							if (names)
 							{
-								name++;
+								glLoadName((GLuint)(*name));
 							}
-							if (labels)
-							{
-								label++;
-							}
-						}
-					}
-					else
-					{
-						/* more efficient if all lines put out between glBegin and glEnd */
-						glBegin(GL_LINES);
-						for (i=0;i<number_of_points;i++)
-						{
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum += number_of_data_components;
-							}
-							resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-								/*mirror*/0, /*rebase*/0,
+							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+								*point, *axis1, *axis2, *axis3, *scale,
 								temp_point, temp_axis1, temp_axis2, temp_axis3);
+							x = temp_point[0];
+							y = temp_point[1];
+							z = temp_point[2];
+							if (multiBeginEnd)
+							{
+								glBegin(GL_LINES);
+							}
+							glVertex3f(x,y,z);
+							x = temp_point[0] + temp_axis1[0];
+							y = temp_point[1] + temp_axis1[1];
+							z = temp_point[2] + temp_axis1[2];
+							glVertex3f(x,y,z);
+							if (multiBeginEnd)
+							{
+								glEnd();
+							}
+							if ((labels && *label) || static_labels)
+							{
+								Triple lpoint;
+								for (int j = 0; j < 3; ++j)
+								{
+									lpoint[j] = temp_point[j]
+										+ glyph_set->label_offset[0]*temp_axis1[j]
+										+ glyph_set->label_offset[1]*temp_axis2[j]
+										+ glyph_set->label_offset[2]*temp_axis3[j];
+								}
+								bool allocatedText = false;
+								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
+								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								if (allocatedText)
+								{
+									delete[] text;
+								}
+							}
+						}
+						point++;
+						axis1++;
+						axis2++;
+						axis3++;
+						scale++;
+						if (data_spectrum)
+						{
+							datum += number_of_data_components;
+						}
+						if (names)
+						{
+							name++;
+						}
+						if (labels)
+						{
+							label++;
+						}
+					}
+					if (!multiBeginEnd)
+					{
+						glEnd();
+					}
+				}
+				else if ((glyph_type == CMISS_GRAPHICS_GLYPH_CROSS) &&
+					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+				{
+					if (lighting_on)
+					{
+						/* disable lighting so rendered in flat diffuse colour */
+						glDisable(GL_LIGHTING);
+						lighting_on = !lighting_on;
+					}
+					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					if (!multiBeginEnd)
+					{
+						// more efficient to render lines with one glBegin/glEnd
+						glBegin(GL_LINES);
+					}
+					if ((object_name > 0) && highlight_functor)
+					{
+						name_selected=highlight_functor->call(object_name);
+					}
+					/* cannot put glLoadName between glBegin and glEnd */
+					for (i=0;i<number_of_points;i++)
+					{
+						if ((object_name < 1) && highlight_functor)
+						{
+							name_selected = highlight_functor->call(*name);
+						}
+						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+						{
+							/* set the spectrum for this datum, if any */
+							if (data_spectrum)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+							}
+							if (names)
+							{
+								glLoadName((GLuint)(*name));
+							}
+							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+								*point, *axis1, *axis2, *axis3, *scale,
+								temp_point, temp_axis1, temp_axis2, temp_axis3);
+							if (multiBeginEnd)
+							{
+								glBegin(GL_LINES);
+							}
 							/* x-line */
 							x = temp_point[0] - 0.5*temp_axis1[0];
 							y = temp_point[1] - 0.5*temp_axis1[1];
@@ -999,83 +927,27 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							y += temp_axis3[1];
 							z += temp_axis3[2];
 							glVertex3f(x,y,z);
-							point++;
-							axis1++;
-							axis2++;
-							axis3++;
-							scale++;
-						}
-						glEnd();
-					}
-				}
-				else // general case
-				{
-					if (*lighting_off)
-					{
-						/* enable lighting for general glyphs */
-						glEnable(GL_LIGHTING);
-						*lighting_off = 0;
-					}
-					const int number_of_glyphs = (mirror_glyph_flag) ? 2 : 1;
-					/* must push and pop the modelview matrix */
-					glMatrixMode(GL_MODELVIEW);
-					if ((object_name > 0) && highlight_functor)
-					{
-						name_selected=highlight_functor->call(object_name);
-					}
-					for (i = 0; i < number_of_points; i++)
-					{
-						if ((object_name < 1) && highlight_functor)
-						{
-							name_selected = highlight_functor->call(*name);
-						}
-						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-						{
-							if (names)
+							if (multiBeginEnd)
 							{
-								glLoadName((GLuint)(*name));
+								glEnd();
 							}
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
+							if ((labels && *label) || static_labels)
 							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-							}
-							for (j = 0; j < number_of_glyphs; j++)
-							{
-								/* store the current modelview matrix */
-								glPushMatrix();
-								resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
-									/*mirror*/j, /*rebase*/mirror_glyph_flag,
-									temp_point, temp_axis1, temp_axis2, temp_axis3);
-
-								/* make transformation matrix for manipulating glyph */
-								transformation[ 0] = temp_axis1[0];
-								transformation[ 1] = temp_axis1[1];
-								transformation[ 2] = temp_axis1[2];
-								transformation[ 3] = 0.0;
-								transformation[ 4] = temp_axis2[0];
-								transformation[ 5] = temp_axis2[1];
-								transformation[ 6] = temp_axis2[2];
-								transformation[ 7] = 0.0;
-								transformation[ 8] = temp_axis3[0];
-								transformation[ 9] = temp_axis3[1];
-								transformation[10] = temp_axis3[2];
-								transformation[11] = 0.0;
-								transformation[12] = temp_point[0];
-								transformation[13] = temp_point[1];
-								transformation[14] = temp_point[2];
-								transformation[15] = 1.0;
-								glMultMatrixf(transformation);
-								renderer->Graphics_object_execute(glyph);
-								glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph);
-								if (glyph_labels_function)
+								Triple lpoint;
+								for (int j = 0; j < 3; ++j)
 								{
-									return_code = (*glyph_labels_function)(scale,
-										label_bounds_dimension, label_bounds_components, label_bound,
-										label_density, material, secondary_material, font, renderer);
+									lpoint[j] = temp_point[j]
+										+ glyph_set->label_offset[0]*temp_axis1[j]
+										+ glyph_set->label_offset[1]*temp_axis2[j]
+										+ glyph_set->label_offset[2]*temp_axis3[j];
 								}
-								/* restore the original modelview matrix */
-								glPopMatrix();
+								bool allocatedText = false;
+								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
+								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								if (allocatedText)
+								{
+									delete[] text;
+								}
 							}
 						}
 						/* advance pointers */
@@ -1088,32 +960,134 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 						{
 							datum += number_of_data_components;
 						}
-						if (label_density_list)
-						{
-							label_density++;
-						}
 						if (names)
 						{
 							name++;
 						}
-						if (label_bounds)
+						if (labels)
 						{
-							label_bound += label_bounds_components * label_bounds_per_glyph;
+							label++;
 						}
 					}
-					/* output label at each point, if supplied */
-					if ((label=labels) && !label_bounds)
+					if (!multiBeginEnd)
 					{
+						glEnd();
+					}
+				}
+				else // general case
+				{
+					if (!lighting_on)
+					{
+						/* enable lighting for general glyphs */
+						glEnable(GL_LIGHTING);
+						lighting_on = !lighting_on;
+					}
+					/* must push and pop the modelview matrix */
+					glMatrixMode(GL_MODELVIEW);
+					if ((object_name > 0) && highlight_functor)
+					{
+						name_selected=highlight_functor->call(object_name);
+					}
+					if (glyph)
+					{
+						Graphics_object_glyph_labels_function glyph_labels_function =
+							Graphics_object_get_glyph_labels_function(glyph);
+						for (i = 0; i < number_of_points; i++)
+						{
+							if ((object_name < 1) && highlight_functor)
+							{
+								name_selected = highlight_functor->call(*name);
+							}
+							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+							{
+								if (names)
+								{
+									glLoadName((GLuint)(*name));
+								}
+								/* set the spectrum for this datum, if any */
+								if (data_spectrum)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
+								}
+								for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
+								{
+									/* store the current modelview matrix */
+									glPushMatrix();
+									resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+										glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+										*point, *axis1, *axis2, *axis3, *scale,
+										temp_point, temp_axis1, temp_axis2, temp_axis3);
+
+									/* make transformation matrix for manipulating glyph */
+									transformation[ 0] = temp_axis1[0];
+									transformation[ 1] = temp_axis1[1];
+									transformation[ 2] = temp_axis1[2];
+									transformation[ 3] = 0.0;
+									transformation[ 4] = temp_axis2[0];
+									transformation[ 5] = temp_axis2[1];
+									transformation[ 6] = temp_axis2[2];
+									transformation[ 7] = 0.0;
+									transformation[ 8] = temp_axis3[0];
+									transformation[ 9] = temp_axis3[1];
+									transformation[10] = temp_axis3[2];
+									transformation[11] = 0.0;
+									transformation[12] = temp_point[0];
+									transformation[13] = temp_point[1];
+									transformation[14] = temp_point[2];
+									transformation[15] = 1.0;
+									glMultMatrixf(transformation);
+									renderer->Graphics_object_execute(glyph);
+									if (glyph_labels_function)
+									{
+										return_code = (*glyph_labels_function)(scale,
+											glyph_set->label_bounds_dimension, glyph_set->label_bounds_components, label_bound,
+											label_density, material, secondary_material, glyph_set->font, renderer);
+									}
+									/* restore the original modelview matrix */
+									glPopMatrix();
+								}
+							}
+							/* advance pointers */
+							point++;
+							axis1++;
+							axis2++;
+							axis3++;
+							scale++;
+							if (data_spectrum)
+							{
+								datum += number_of_data_components;
+							}
+							if (glyph_set->label_density_list)
+							{
+								label_density++;
+							}
+							if (names)
+							{
+								name++;
+							}
+							if (glyph_set->label_bounds)
+							{
+								label_bound += glyph_set->label_bounds_components * label_bounds_per_glyph;
+							}
+						}
+					}
+					if ((labels || static_labels) && !glyph_set->label_bounds)
+					{
+						label = labels;
 						/* Default is to draw the label value at the origin */
 						name=names;
-						if (!*lighting_off)
+						if (lighting_on)
 						{
 							/* disable lighting so rendered in flat diffuse colour */
 							glDisable(GL_LIGHTING);
-							*lighting_off = 1;
+							lighting_on = false;
 						}
-						point=point_list;
-						datum=data;
+						point = glyph_set->point_list;
+						axis1 = glyph_set->axis1_list;
+						axis2 = glyph_set->axis2_list;
+						axis3 = glyph_set->axis3_list;
+						scale = glyph_set->scale_list;
+						datum = glyph_set->data;
 						if ((object_name > 0) && highlight_functor)
 						{
 							name_selected=highlight_functor->call(object_name);
@@ -1124,25 +1098,65 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							{
 								name_selected = highlight_functor->call(*name);
 							}
-							if ((*label) && (draw_all	|| ((name_selected) && draw_selected)
+							if ((static_labels || (label && *label)) && (draw_all	|| ((name_selected) && draw_selected)
 								|| ((!name_selected)&&(!draw_selected))))
 							{
 								if (names)
 								{
 									glLoadName((GLuint)(*name));
 								}
-								x=(*point)[0];
-								y=(*point)[1];
-								z=(*point)[2];
 								/* set the spectrum for this datum, if any */
 								if (data_spectrum)
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-								Cmiss_font_rendergl_text(font, *label, x, y, z);
+								for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
+								{
+									if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+										(labels && (glyph_number == 0) && *label) || (static_labels && static_labels[glyph_number]))
+									{
+										resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+											glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+											*point, *axis1, *axis2, *axis3, *scale,
+											temp_point, temp_axis1, temp_axis2, temp_axis3);
+										if ((glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
+										{
+											for (int j = 0; j < 3; ++j)
+											{
+												temp_point[j] += (
+													(1.0 - glyph_set->label_offset[0])*temp_axis1[j] +
+													glyph_set->label_offset[1]*temp_axis2[j] +
+													glyph_set->label_offset[2]*temp_axis3[j]);
+											}
+										}
+										else
+										{
+											for (int j = 0; j < 3; ++j)
+											{
+												temp_point[j] += (
+													glyph_set->label_offset[0]*temp_axis1[j] +
+													glyph_set->label_offset[1]*temp_axis2[j] +
+													glyph_set->label_offset[2]*temp_axis3[j]);
+											}
+										}
+										bool allocatedText = false;
+										char *text = concatenateLabels(
+											static_labels ? static_labels[glyph_number] : 0,
+											(label && (glyph_number == 0)) ? *label : 0, allocatedText);
+										Cmiss_font_rendergl_text(glyph_set->font, text, temp_point[0], temp_point[1], temp_point[2]);
+										if (allocatedText)
+										{
+											delete[] text;
+										}
+									}
+								}
 							}
 							/* advance pointers */
 							point++;
+							axis1++;
+							axis2++;
+							axis3++;
+							scale++;
 							if (data_spectrum)
 							{
 								datum += number_of_data_components;
@@ -1151,7 +1165,10 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 							{
 								name++;
 							}
-							label++;
+							if (label)
+							{
+								label++;
+							}
 						}
 					}
 				}
@@ -3016,7 +3033,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	ZnReal proportion = 0.0,*times;
 	int itime, name_selected, number_of_times, picking_names, return_code, strip;
 #if defined (OPENGL_API)
-	int lighting_off, line_width;
+	bool lighting_on = true;
+	int line_width;
 #endif /* defined (OPENGL_API) */
 	struct Graphical_material *material, *secondary_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -3124,7 +3142,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						glyph_set = primitive_list1->gt_glyph_set.first;
 						if (glyph_set)
 						{
-							lighting_off = 0;
 #if defined (OPENGL_API)
 							// push enable bit as lighting is switched off and on depending on
 							// whether glyph is points or lines vs. surfaces, whether labels are drawn
@@ -3157,25 +3174,10 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 											glLoadName((GLuint)interpolate_glyph_set->object_name);
 										}
 										/* work out if subobjects selected  */
-										draw_glyphsetGL(interpolate_glyph_set->number_of_points,
-											interpolate_glyph_set->point_list,
-											interpolate_glyph_set->axis1_list,
-											interpolate_glyph_set->axis2_list,
-											interpolate_glyph_set->axis3_list,
-											interpolate_glyph_set->scale_list,
-											interpolate_glyph_set->glyph,
-											interpolate_glyph_set->mirror_glyph_flag,
-											interpolate_glyph_set->labels,
-											interpolate_glyph_set->n_data_components,
-											interpolate_glyph_set->data,
-											interpolate_glyph_set->names,
-											/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-											/*label_density*/NULL,
+										draw_glyphsetGL(interpolate_glyph_set,
 											material, secondary_material, spectrum,
-											interpolate_glyph_set->font,
 											draw_selected, renderer->highlight_functor,
-											renderer, glyph_set->object_name,
-											&lighting_off);
+											renderer, lighting_on);
 										DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 									}
 									glyph_set=glyph_set->ptrnext;
@@ -3192,19 +3194,10 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										glLoadName((GLuint)glyph_set->object_name);
 									}
 									/* work out if subobjects selected  */
-									draw_glyphsetGL(glyph_set->number_of_points,
-										glyph_set->point_list, glyph_set->axis1_list,
-										glyph_set->axis2_list, glyph_set->axis3_list,
-										glyph_set->scale_list, glyph_set->glyph, glyph_set->mirror_glyph_flag,
-										glyph_set->labels, glyph_set->n_data_components,
-										glyph_set->data, glyph_set->names,
-										glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
-										glyph_set->label_bounds, glyph_set->label_density_list,
+									draw_glyphsetGL(glyph_set,
 										material, secondary_material,
-										spectrum, glyph_set->font,
-										draw_selected, renderer->highlight_functor,
-										renderer, glyph_set->object_name,
-										&lighting_off);
+										spectrum, draw_selected, renderer->highlight_functor,
+										renderer, lighting_on);
 									glyph_set=glyph_set->ptrnext;
 								}
 							}
@@ -3367,13 +3360,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								line_2 = primitive_list2->gt_polyline.first;
 							}
 #if defined (OPENGL_API)
-							if (0 != (lighting_off=((g_PLAIN == line->polyline_type)||
-								(g_PLAIN_DISCONTINUOUS == line->polyline_type))))
+							if (lighting_on && ((g_PLAIN == line->polyline_type) ||
+								(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
 							{
 								/* disable lighting so rendered in flat diffuse colour */
 								/*???RC glPushAttrib and glPopAttrib are *very* slow */
 								glPushAttrib(GL_ENABLE_BIT);
 								glDisable(GL_LIGHTING);
+								lighting_on = false;
 							}
 							if (picking_names)
 							{
@@ -3551,7 +3545,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							{
 								glPopName();
 							}
-							if (lighting_off)
+							if (!lighting_on)
 							{
 								/* restore previous lighting state */
 								glPopAttrib();
@@ -3571,13 +3565,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						line = primitive_list1->gt_polyline_vertex_buffers;
 						if (line)
 						{
-							if (0 != (lighting_off=((g_PLAIN == line->polyline_type)||
-								(g_PLAIN_DISCONTINUOUS == line->polyline_type))))
+							if (lighting_on && ((g_PLAIN == line->polyline_type) ||
+								(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
 							{
 								/* disable lighting so rendered in flat diffuse colour */
 								/*???RC glPushAttrib and glPopAttrib are *very* slow */
 								glPushAttrib(GL_ENABLE_BIT);
 								glDisable(GL_LIGHTING);
+								lighting_on = false;
 							}
 							if (picking_names)
 							{
@@ -3793,7 +3788,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							{
 								glPopName();
 							}
-							if (lighting_off)
+							if (!lighting_on)
 							{
 								/* restore previous lighting state */
 								glPopAttrib();

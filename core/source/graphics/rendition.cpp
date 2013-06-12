@@ -43,6 +43,8 @@ FILE : rendition.cpp
 #include <stdio.h>
 #include <math.h>
 #include "zinc/core.h"
+#include "zinc/glyph.h"
+#include "zinc/graphic.h"
 #include "zinc/graphicsmodule.h"
 #include "zinc/node.h"
 #include "zinc/rendition.h"
@@ -861,13 +863,15 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 			Cmiss_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 			Cmiss_graphic_point_attributes_set_font(point_attributes, font);
 			Cmiss_font_destroy(&font);
-			GT_object *glyph = Cmiss_graphic_point_attributes_get_glyph(point_attributes);
+			Cmiss_glyph_id glyph = Cmiss_graphic_point_attributes_get_glyph(point_attributes);
 			if (!glyph)
 			{
-				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-					Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
+				Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(rendition->graphics_module);
+				glyph = Cmiss_glyph_module_get_default_point_glyph(glyph_module);
+				Cmiss_glyph_module_destroy(&glyph_module);
 				Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
 			}
+			Cmiss_glyph_destroy(&glyph);
 			Cmiss_graphic_point_attributes_destroy(&point_attributes);
 		}
 
@@ -1322,10 +1326,9 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_get_range */
 
-GT_object *Cmiss_rendition_get_glyph_from_manager(Cmiss_rendition_id rendition, const char* glyph_name)
+Cmiss_graphics_module_id Cmiss_rendition_get_graphics_module(Cmiss_rendition_id rendition)
 {
-	return FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(glyph_name,
-		Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
+	return Cmiss_graphics_module_access(rendition->graphics_module);
 }
 
 struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region *cmiss_region)
@@ -1761,17 +1764,21 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 {
 	int return_code;
 	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *same_graphic;
 
 	ENTER(Cmiss_region_modify_rendition);
 	if (region && graphic)
 	{
 		if (NULL != (rendition = Cmiss_region_get_rendition_internal(region)))
 		{
-			/* get graphic describing same geometry in list */
-			same_graphic = first_graphic_in_Cmiss_rendition_that(
-				rendition, Cmiss_graphic_same_name_or_geometry,
-				(void *)graphic);
+			Cmiss_graphic *same_graphic = 0;
+			// can only edit graphic with same name
+			char *name = Cmiss_graphic_get_name(graphic);
+			if (name)
+			{
+				same_graphic = first_graphic_in_Cmiss_rendition_that(
+					rendition, Cmiss_graphic_same_name, (void *)name);
+				DEALLOCATE(name);
+			}
 			if (delete_flag)
 			{
 				/* delete */
@@ -3519,8 +3526,8 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 			Material_package_get_default_material(material_package);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
-		rendition_command_data->glyph_manager =
-			Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module);
+		rendition_command_data->glyph_module =
+			Cmiss_graphics_module_get_glyph_module(rendition->graphics_module);
 		rendition_command_data->computed_field_manager =
 			 Cmiss_region_get_Computed_field_manager(rendition->region);
 		rendition_command_data->region = rendition->region;
@@ -3535,6 +3542,30 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 		{
 			DEACCESS(Material_package)(&material_package);
 		}
+		return_code = 1;
+	}
+	return return_code;
+}
+
+int Cmiss_rendition_cleanup_rendition_command_data(
+	struct Rendition_command_data *rendition_command_data)
+{
+	int return_code = 0;
+	if (rendition_command_data)
+	{
+		if (rendition_command_data->default_font)
+		{
+			DEACCESS(Cmiss_font)(&rendition_command_data->default_font);
+		}
+		if (rendition_command_data->default_spectrum)
+		{
+			DEACCESS(Spectrum)(&rendition_command_data->default_spectrum);
+		}
+		if (rendition_command_data->root_region)
+		{
+			Cmiss_region_destroy(&(rendition_command_data->root_region));
+		}
+		Cmiss_glyph_module_destroy(&(rendition_command_data->glyph_module));
 		return_code = 1;
 	}
 	return return_code;
