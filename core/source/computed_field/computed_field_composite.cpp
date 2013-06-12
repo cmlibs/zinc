@@ -967,7 +967,7 @@ Returned field is ACCESSed once.
 					Cmiss_region* region = Computed_field_get_region(field);
 					Cmiss_field_module *field_module = Cmiss_field_module_create(region);
 					Cmiss_field_module_set_field_name(field_module, component_field_name);
-					component_field = Computed_field_create_component(field_module, field, component_number);
+					component_field = Computed_field_create_component(field_module, field, component_number + 1);
 					Cmiss_field_module_destroy(&field_module);
 					DEALLOCATE(component_field_name);
 				}
