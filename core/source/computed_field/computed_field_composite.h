@@ -98,18 +98,16 @@ Returns true if the field is of type composite but with no source_fields, only
 a single source value, equal to <scalar>.
 ==============================================================================*/
 
+/**
+ * Returns a composite field that computes <component_number> of <field>. First
+ * tries to find one in the manager that does this, otherwise makes one of name
+ * 'field.component_name', adds it to the manager and returns it.
+ * Returned field is ACCESSed once.
+ * @param component_number  Component number from 0 to number_of_components-1.
+ */
 struct Computed_field *Computed_field_manager_get_component_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Computed_field *field, int component_number);
-/*******************************************************************************
-LAST MODIFIED : 14 December 2001
-
-DESCRIPTION :
-Returns a composite field that computes <component_number> of <field>. First
-tries to find one in the manager that does this, otherwise makes one of name
-'field.component_name', adds it to the manager and returns it.
-Returned field is ACCESSed once.
-==============================================================================*/
 
 struct Computed_field *Computed_field_create_constant(
 	struct Cmiss_field_module *field_module,

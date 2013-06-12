@@ -579,18 +579,6 @@ DESCRIPTION :
 Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
-struct Computed_field *Computed_field_manager_get_component_wrapper(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct Computed_field *field,int component_no);
-/*******************************************************************************
-LAST MODIFIED : 3 December 1999
-
-DESCRIPTION :
-If a COMPONENT wrapper for <field> <component_no> exists in the
-<computed_field_manager>, it is returned, otherwise a new one is made in the
-manager and returned.
-==============================================================================*/
-
 int list_Computed_field(struct Computed_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 25 January 1999
