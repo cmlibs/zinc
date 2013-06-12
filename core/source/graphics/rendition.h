@@ -122,7 +122,8 @@ DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_scene_region_change, struct Cmiss_r
 struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmiss_region,
 	struct Cmiss_graphics_module *graphics_module);
 
-GT_object *Cmiss_rendition_get_glyph_from_manager(Cmiss_rendition_id rendition, const char* glyph_name);
+/** @return  Handle to graphics module. Up to caller to destroy */
+Cmiss_graphics_module_id Cmiss_rendition_get_graphics_module(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Destroy Cmiss_rendition and clean up the memory it uses.
@@ -483,6 +484,9 @@ Cmiss_field_id Cmiss_rendition_get_selection_group_private_for_highlighting(
 
 int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 	struct Rendition_command_data *rendition_command_data);
+
+int Cmiss_rendition_cleanup_rendition_command_data(
+  struct Rendition_command_data *rendition_command_data);
 
 int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position);

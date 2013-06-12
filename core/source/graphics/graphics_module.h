@@ -145,16 +145,6 @@ struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the default list of the glyphs stored in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the default list of glyphs in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct MANAGER(GT_object) *Cmiss_graphics_module_get_default_glyph_manager(
-		struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the scene manager of graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.

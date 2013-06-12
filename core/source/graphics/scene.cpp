@@ -75,7 +75,7 @@
 #include "graphics/rendition.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
-#include "graphics/glyph.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/light.h"
 #include "graphics/texture.h"

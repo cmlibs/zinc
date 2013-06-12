@@ -110,7 +110,7 @@ public:
 		return Cmiss_graphics_filter_get_name(id);
 	}
 
-	int setName(Cmiss_graphics_filter_id filter, const char *name)
+	int setName(const char *name)
 	{
 		return Cmiss_graphics_filter_set_name(id, name);
 	}

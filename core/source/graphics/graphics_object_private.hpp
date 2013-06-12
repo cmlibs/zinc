@@ -77,6 +77,7 @@ Used to be gtypes.h
 
 #include "zinc/zincconfigure.h"
 
+#include "general/cmiss_set.hpp"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
@@ -117,8 +118,10 @@ the glyph_set to be identified in picking for node position/vector editing.
 	int number_of_points;
 	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
 	char **labels;
+	char *static_label_text[3];
 	struct GT_object *glyph;
-	int mirror_glyph_flag; // if set, draws a second glyph mirrored on axis1
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode;
+	Triple base_size, scale_factors, offset, label_offset;
 	int n_data_components;
 	GLfloat *data;
 	int label_bounds_dimension, label_bounds_components;
@@ -416,6 +419,7 @@ Graphical object data structure.
 	union GT_primitive_list *primitive_lists;
 	struct MANAGER(GT_object) *manager;
 	int manager_change_status;
+	bool is_managed_flag;
 #if defined (OPENGL_API)
 	GLuint display_list;
 
@@ -443,9 +447,56 @@ Graphical object data structure.
 
 	/* Custom per compile code for graphics_objects used as glyphs. */
 	Graphics_object_glyph_labels_function glyph_labels_function;
+	/* identifier for quickly matching standard point, line, cross glyphs */
+	enum Cmiss_graphics_glyph_type glyph_type;
 
 	int access_count;
+
+	inline GT_object *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(GT_object **gt_object_address)
+	{
+		return DEACCESS(GT_object)(gt_object_address);
+	}
 };
+
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class GT_object_identifier : private GT_object
+{
+public:
+	GT_object_identifier(const char *name)
+	{
+		GT_object::name = name;
+	}
+
+	~GT_object_identifier()
+	{
+		GT_object::name = NULL;
+	}
+
+	GT_object *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<GT_object> by name */
+struct GT_object_compare_name_functor
+{
+	bool operator() (const GT_object* gt_object1, const GT_object* gt_object2) const
+	{
+		return strcmp(gt_object1->name, gt_object2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<GT_object *,GT_object_compare_name_functor> Cmiss_set_GT_object;
 
 struct GT_object_compile_context
 /*******************************************************************************

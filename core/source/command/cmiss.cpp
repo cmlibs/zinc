@@ -123,7 +123,7 @@
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/defined_graphics_objects.h"
 #include "graphics/environment_map.h"
-#include "graphics/glyph.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/import_graphics_object.h"
 #include "graphics/iso_field_calculation.h"

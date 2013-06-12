@@ -48,6 +48,7 @@
 
 #include "zinc/status.h"
 #include "zinc/element.h"
+#include "zinc/glyph.h"
 #include "zinc/graphic.h"
 #include "zinc/font.h"
 #include "zinc/graphicsfilter.h"
@@ -55,7 +56,7 @@
 #include "zinc/node.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
-#include "general/indexed_list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/compare.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
@@ -73,9 +74,10 @@
 #include "finite_element/finite_element_to_iso_surfaces.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/rendition.h"
 #include "graphics/font.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
+#include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/graphic.h"
 #include "general/message.h"
@@ -89,11 +91,6 @@
 #	include "cad/computed_field_cad_topology.h"
 #	include "cad/cad_geometry_to_graphics_object.h"
 #endif /* defined(USE_OPENCASCADE) */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_graphic);
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cmiss_graphic,position,int, \
-	compare_int);
 
 struct Cmiss_graphic_select_graphics_data
 {
@@ -350,12 +347,14 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 
 			/* point attributes */
 			graphic->glyph = 0;
-			graphic->mirror_glyph_flag = false;
+			graphic->glyph_repeat_mode = CMISS_GLYPH_REPEAT_NONE;
 			for (int i = 0; i < 3; i++)
 			{
 				graphic->point_offset[i] = 0.0;
 				graphic->point_base_size[i] = 0.0;
 				graphic->point_scale_factors[i] = 1.0;
+				graphic->label_offset[i] = 0.0;
+				graphic->label_text[i] = 0;
 			}
 			graphic->point_orientation_scale_field = 0;
 			graphic->signed_scale_field = 0;
@@ -469,7 +468,7 @@ int DESTROY(Cmiss_graphic)(
 		Cmiss_field_destroy(&(graphic->line_orientation_scale_field));
 		if (graphic->isoscalar_field)
 		{
-				DEACCESS(Computed_field)(&(graphic->isoscalar_field));
+			DEACCESS(Computed_field)(&(graphic->isoscalar_field));
 		}
 		if (graphic->isovalues)
 		{
@@ -477,12 +476,19 @@ int DESTROY(Cmiss_graphic)(
 		}
 		if (graphic->glyph)
 		{
-				GT_object_remove_callback(graphic->glyph, Cmiss_graphic_glyph_change,
-					(void *)graphic);
-				DEACCESS(GT_object)(&(graphic->glyph));
+			GT_object_remove_callback(reinterpret_cast<GT_object*>(graphic->glyph),
+				Cmiss_graphic_glyph_change, (void *)graphic);
+			DEACCESS(GT_object)(reinterpret_cast<GT_object**>(&(graphic->glyph)));
 		}
 		Cmiss_field_destroy(&(graphic->point_orientation_scale_field));
 		Cmiss_field_destroy(&(graphic->signed_scale_field));
+		for (int i = 0; i < 3; i++)
+		{
+			if (graphic->label_text[i])
+			{
+				DEALLOCATE(graphic->label_text[i]);
+			}
+		}
 		if (graphic->label_field)
 		{
 			DEACCESS(Computed_field)(&(graphic->label_field));
@@ -1065,13 +1071,15 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											use_element, top_level_element,
 											graphic_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
-											graphic->glyph, (int)graphic->mirror_glyph_flag,
+											graphic->glyph, graphic->glyph_repeat_mode,
 											graphic->point_base_size, graphic->point_offset,
 											graphic->point_scale_factors,
 											graphic_to_object_data->wrapper_orientation_scale_field,
 											graphic->signed_scale_field, graphic->data_field,
-											graphic->font, graphic->label_field, graphic->select_mode,
-											element_selected, ranges, top_level_xi_point_numbers)))
+											graphic->font, graphic->label_field, graphic->label_offset,
+											graphic->label_text,
+											graphic->select_mode, element_selected, ranges,
+											top_level_xi_point_numbers)))
 									{
 										/* set auxiliary_object_name for glyph_set to
 											 element_graphics_name so we can edit */
@@ -1464,9 +1472,39 @@ int Cmiss_graphic_modify_in_list(struct Cmiss_graphic *graphic,
 } /* Cmiss_graphic_modify_in_list */
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_graphic);
-DECLARE_INDEXED_LIST_FUNCTIONS(Cmiss_graphic);
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_graphic, \
-	position,int,compare_int);
+
+/** functor for ordering Cmiss_set<GT_object> by position */
+struct Cmiss_graphic_compare_position_functor
+{
+	bool operator() (const Cmiss_graphic* graphic1, const Cmiss_graphic* graphic2) const
+	{
+		return (graphic1->position < graphic2->position);
+	}
+};
+
+typedef Cmiss_set<Cmiss_graphic *,Cmiss_graphic_compare_position_functor> Cmiss_set_Cmiss_graphic;
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(Cmiss_graphic)
+
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(/*object_type*/Cmiss_graphic, /*identifier*/position, /*identifier_type*/int)
+{
+	if (list)
+	{
+		CMISS_SET(Cmiss_graphic) *cmiss_set = reinterpret_cast<CMISS_SET(Cmiss_graphic) *>(list);
+		for (CMISS_SET(Cmiss_graphic)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter)
+		{
+			if ((*iter)->position == position)
+			{
+				return *iter;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic,position).  Invalid argument");
+	}
+	return (0);
+}
 
 #if defined (USE_OPENCASCADE)
 
@@ -1852,12 +1890,11 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 	return 0;
 }
 
-/** replace materials and spectrums in existing graphics object */
-int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
+/** replace materials, spectrum and other 'trivial' attributes of existing
+  * graphics object so it doesn't need complete rebuilding */
+int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 {
 	int return_code = 0;
-
-	ENTER(Cmiss_graphic_update_non_trivial_GT_objects);
 	if (graphic && graphic->graphics_object)
 	{
 		set_GT_object_default_material(graphic->graphics_object,
@@ -1875,16 +1912,28 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
 			set_GT_object_glyph(graphic->graphics_object, graphic->glyph);
-			set_GT_object_mirror_glyph_flag(graphic->graphics_object, (int)graphic->mirror_glyph_flag);
-		}
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-		{
+			set_GT_object_glyph_repeat_mode(graphic->graphics_object, graphic->glyph_repeat_mode);
+			Triple base_size, scale_factors, offset, label_offset;
+			for (int i = 0; i < 3; ++i)
+			{
+				base_size[i] = static_cast<GLfloat>(graphic->point_base_size[i]);
+				scale_factors[i] = static_cast<GLfloat>(graphic->point_scale_factors[i]);
+				offset[i] = static_cast<GLfloat>(graphic->point_offset[i]);
+				label_offset[i] = static_cast<GLfloat>(graphic->label_offset[i]);
+			}
+			set_GT_object_glyph_base_size(graphic->graphics_object, base_size);
+			set_GT_object_glyph_scale_factors(graphic->graphics_object, scale_factors);
+			set_GT_object_glyph_offset(graphic->graphics_object, offset);
 			set_GT_object_font(graphic->graphics_object, graphic->font);
+			set_GT_object_glyph_label_offset(graphic->graphics_object, label_offset);
+			set_GT_object_glyph_label_text(graphic->graphics_object, graphic->label_text);
+		}
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
+		{
+			set_GT_object_surface_render_type(graphic->graphics_object, graphic->render_type);
 		}
 		return_code = 1;
 	}
-	LEAVE;
-
 	return return_code;
 }
 
@@ -1899,7 +1948,7 @@ int Cmiss_graphic_set_material(struct Cmiss_graphic *graphic,
 		if (material != graphic->material)
 		{
 			REACCESS(Graphical_material)(&(graphic->material),material);
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 	}
@@ -1927,7 +1976,7 @@ int Cmiss_graphic_set_selected_material(
 		{
 			REACCESS(Graphical_material)(&(graphic->selected_material),
 				selected_material);
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 	}
@@ -2292,9 +2341,11 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					append_string(&graphic_string,name,&error);
 					DEALLOCATE(name);
 				}
-				if (graphic->mirror_glyph_flag)
+				if (graphic->glyph_repeat_mode != CMISS_GLYPH_REPEAT_NONE)
 				{
-					append_string(&graphic_string, " mirror_glyph", &error);
+					append_string(&graphic_string, " ", &error);
+					append_string(&graphic_string,
+						ENUMERATOR_STRING(Cmiss_glyph_repeat_mode)(graphic->glyph_repeat_mode), &error);
 				}
 				sprintf(temp_string," size \"%g*%g*%g\"",graphic->point_base_size[0],
 					graphic->point_base_size[1],graphic->point_base_size[2]);
@@ -2325,13 +2376,55 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				}
 				if (graphic->label_field)
 				{
-					if (GET_NAME(Computed_field)(graphic->label_field,&name))
+					name = Cmiss_field_get_name(graphic->label_field);
+					make_valid_token(&name);
+					append_string(&graphic_string," label ",&error);
+					append_string(&graphic_string,name,&error);
+					DEALLOCATE(name);
+				}
+				const int number_of_glyphs =
+					Cmiss_glyph_repeat_mode_get_number_of_glyphs(graphic->glyph_repeat_mode);
+				bool show_label_text = false;
+				int last_glyph_number_with_label_text = -1;
+				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
+				{
+					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(graphic->glyph_repeat_mode, glyph_number) &&
+						(0 != graphic->label_text[glyph_number]))
 					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphic_string," label ",&error);
-						append_string(&graphic_string,name,&error);
-						DEALLOCATE(name);
+						last_glyph_number_with_label_text = glyph_number;
+					}
+				}
+				if (graphic->label_field || (last_glyph_number_with_label_text >= 0))
+				{
+					sprintf(temp_string," label_offset \"%g,%g,%g\"",graphic->label_offset[0],
+						graphic->label_offset[1],graphic->label_offset[2]);
+					append_string(&graphic_string,temp_string,&error);
+				}
+				if (last_glyph_number_with_label_text >= 0)
+				{
+					append_string(&graphic_string, " label_text ", &error);
+					int number_of_labels = 0;
+					for (int glyph_number = 0; glyph_number <= last_glyph_number_with_label_text; ++glyph_number)
+					{
+						if (Cmiss_glyph_repeat_mode_glyph_number_has_label(graphic->glyph_repeat_mode, glyph_number))
+						{
+							if (number_of_labels > 0)
+							{
+								append_string(&graphic_string, " & ", &error);
+							}
+							if (graphic->label_text[number_of_labels])
+							{
+								char *label_text = duplicate_string(graphic->label_text[number_of_labels]);
+								make_valid_token(&label_text);
+								append_string(&graphic_string, label_text, &error);
+								DEALLOCATE(label_text);
+							}
+							else
+							{
+								append_string(&graphic_string, "\"\"", &error);
+							}
+							++number_of_labels;
+						}
 					}
 				}
 				if (graphic->label_density_field)
@@ -2647,13 +2740,67 @@ int Cmiss_graphic_to_point_object_at_time(
 {
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
-	char **labels = NULL;
 	ENTER(Cmiss_graphic_to_point_object_at_time);
 	if (graphic && field_cache)
 	{
 		Cmiss_field_cache_set_time(field_cache, time);
 		if (!graphic->customised_graphics_object)
 		{
+			FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
+			if (graphic->coordinate_field)
+			{
+				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->coordinate_field, field_cache, 3, coordinates))
+				{
+					display_message(WARNING_MESSAGE, "Coordinate field not defined at point");
+				}
+			}
+			FE_value a[3], b[3], c[3], size[3];
+			FE_value orientationScale[9];
+			int orientationScaleComponentCount = 0;
+			if (graphic->point_orientation_scale_field)
+			{
+				orientationScaleComponentCount = Cmiss_field_get_number_of_components(graphic->point_orientation_scale_field);
+				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->point_orientation_scale_field,
+					field_cache, orientationScaleComponentCount, orientationScale))
+				{
+					display_message(WARNING_MESSAGE, "Orientation scale field not defined at point");
+				}
+			}
+			if (!make_glyph_orientation_scale_axes(orientationScaleComponentCount,
+				orientationScale, a, b, c, size))
+			{
+				display_message(WARNING_MESSAGE, "Invalid orientation scale at point");
+			}
+			if (graphic->signed_scale_field)
+			{
+				FE_value signedScale[3];
+				if (CMISS_OK == Cmiss_field_evaluate_real(graphic->signed_scale_field,
+					field_cache, /*number_of_values*/3, signedScale))
+				{
+					const int componentCount = Cmiss_field_get_number_of_components(graphic->signed_scale_field);
+					for (int j = 0; j < componentCount; j++)
+					{
+						size[j] *= signedScale[j];
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE, "Variable/signed scale field not defined at point");
+				}
+			}
+			FE_value *data = 0;
+			int dataComponentCount = 0;
+			if (graphic->data_field)
+			{
+				dataComponentCount = Cmiss_field_get_number_of_components(graphic->data_field);
+				data = new FE_value[dataComponentCount];
+				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->data_field,
+					field_cache, dataComponentCount, data))
+				{
+					display_message(WARNING_MESSAGE, "Data field not defined at point");
+				}
+			}
+			char **labels = 0;
 			if (graphic->label_field)
 			{
 				ALLOCATE(labels, char *, 1);
@@ -2670,28 +2817,37 @@ int Cmiss_graphic_to_point_object_at_time(
 			ALLOCATE(axis2_list, Triple, 1);
 			ALLOCATE(axis3_list, Triple, 1);
 			ALLOCATE(scale_list, Triple, 1);
+			for (int j = 0; j < 3; j++)
+			{
+				(*point_list)[j] = static_cast<GLfloat>(coordinates[j]);
+				(*axis1_list)[j] = static_cast<GLfloat>(a[j]);
+				(*axis2_list)[j] = static_cast<GLfloat>(b[j]);
+				(*axis3_list)[j] = static_cast<GLfloat>(c[j]);
+				(*scale_list)[j] = static_cast<GLfloat>(size[j]);
+			}
+			GLfloat *floatData = 0;
+			if (data)
+			{
+				ALLOCATE(floatData, GLfloat, dataComponentCount);
+				for (int i = 0; i < dataComponentCount; ++i)
+				{
+					floatData[i] = static_cast<GLfloat>(data[i]);
+				}
+			}
+			Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
+			for (int i = 0; i < 3; i++)
+			{
+				glyph_base_size[i] = static_cast<GLfloat>(graphic->point_base_size[i]);
+				glyph_scale_factors[i] = static_cast<GLfloat>(graphic->point_scale_factors[i]);
+				glyph_offset[i] = static_cast<GLfloat>(graphic->point_offset[i]);
+				glyph_label_offset[i] = static_cast<GLfloat>(graphic->label_offset[i]);
+			}
 			glyph_set = CREATE(GT_glyph_set)(1,
 				point_list, axis1_list, axis2_list, axis3_list, scale_list,
-				graphic->glyph, graphic->mirror_glyph_flag, graphic->font,
-				labels, /*n_data_components*/0, /*data*/(GLfloat *)NULL,
+				graphic->glyph, graphic->glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
+				graphic->font, labels, glyph_label_offset, graphic->label_text, dataComponentCount, floatData,
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
-			/* NOT an error if no glyph_set produced == empty group */
-			(*point_list)[0] = (GLfloat)graphic->point_offset[0];
-			(*point_list)[1] = (GLfloat)graphic->point_offset[1];
-			(*point_list)[2] = (GLfloat)graphic->point_offset[2];
-			(*axis1_list)[0] = (GLfloat)graphic->point_base_size[0];
-			(*axis1_list)[1] = 0.0;
-			(*axis1_list)[2] = 0.0;
-			(*axis2_list)[0] = 0.0;
-			(*axis2_list)[1] = (GLfloat)graphic->point_base_size[1];
-			(*axis2_list)[2] = 0.0;
-			(*axis3_list)[0] = 0.0;
-			(*axis3_list)[1] = 0.0;
-			(*axis3_list)[2] = (GLfloat)graphic->point_base_size[2];
-			(*scale_list)[0] = (GLfloat)graphic->point_scale_factors[0];
-			(*scale_list)[1] = (GLfloat)graphic->point_scale_factors[1];
-			(*scale_list)[2] = (GLfloat)graphic->point_scale_factors[2];
 			if (glyph_set)
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
@@ -2701,6 +2857,7 @@ int Cmiss_graphic_to_point_object_at_time(
 					return_code=0;
 				}
 			}
+			delete[] data;
 		}
 		else
 		{
@@ -3440,13 +3597,13 @@ int Cmiss_graphic_to_graphics_object(
 											GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
 												iteration_nodeset, graphic_to_object_data->field_cache,
 												graphic_to_object_data->rc_coordinate_field,
-												graphic->glyph, (int)graphic->mirror_glyph_flag,
+												graphic->glyph, graphic->glyph_repeat_mode,
 												graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
 												graphic_to_object_data->time,
 												graphic_to_object_data->wrapper_orientation_scale_field,
 												graphic->signed_scale_field, graphic->data_field,
-												graphic->font, graphic->label_field,
-												graphic->label_density_field,
+												graphic->font, graphic->label_field, graphic->label_offset,
+												graphic->label_text, graphic->label_density_field,
 												(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
 												graphic->select_mode,graphic_to_object_data->selection_group_field);
 											/* NOT an error if no glyph_set produced == empty group */
@@ -4234,7 +4391,7 @@ int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
 		if (spectrum != graphic->spectrum)
 		{
 			REACCESS(Spectrum)(&(graphic->spectrum), spectrum);
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return_code = 1;
@@ -4280,7 +4437,8 @@ int Cmiss_graphic_set_render_type(
 		if (graphic->render_type != render_type)
 		{
 			graphic->render_type = render_type;
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 	}
 	else
@@ -4564,13 +4722,23 @@ int Cmiss_graphic_copy_without_graphics_object(
 			Cmiss_graphic_get_point_attributes(destination);
 		if (point_attributes)
 		{
-			Cmiss_graphic_point_attributes_set_glyph(point_attributes, source->glyph);
-			destination->mirror_glyph_flag = source->mirror_glyph_flag;
+			Cmiss_graphic_point_attributes_set_glyph(point_attributes, reinterpret_cast<Cmiss_glyph*>(source->glyph));
+			destination->glyph_repeat_mode = source->glyph_repeat_mode;
 			for (int i = 0; i < 3; i++)
 			{
 				destination->point_base_size[i] = source->point_base_size[i];
 				destination->point_offset[i] = source->point_offset[i];
 				destination->point_scale_factors[i] = source->point_scale_factors[i];
+				destination->label_offset[i] = source->label_offset[i];
+				if (destination->label_text[i])
+				{
+					DEALLOCATE(destination->label_text[i]);
+					destination->label_text[i] = 0;
+				}
+				if (source->label_text[i])
+				{
+					destination->label_text[i] = duplicate_string(source->label_text[i]);
+				}
 			}
 		}
 		else
@@ -4918,15 +5086,20 @@ int Cmiss_graphic_data_FE_region_change(
 	return (return_code);
 } /* Cmiss_graphic_data_FE_region_change */
 
-int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
-	void *second_graphic_void)
+/**
+ * Cmiss_graphic list conditional function returning 1 iff the two
+ * graphic have the same geometry and the same nontrivial appearance
+ * characteristics. Trivial appearance characteristics can be updated in the
+ * graphics object without recalculating it, and include material, spectrum,
+ * glyph scalings etc.
+ */
+int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
+	Cmiss_graphic *second_graphic)
 {
-	int dimension,i,return_code;
-	struct Cmiss_graphic *second_graphic;
+	int dimension, i, return_code;
 
-	ENTER(Cmiss_graphic_same_geometry);
-	if (graphic
-		&&(second_graphic=(struct Cmiss_graphic *)second_graphic_void))
+	ENTER(Cmiss_graphic_same_non_trivial);
+	if (graphic && second_graphic)
 	{
 		return_code=1;
 
@@ -5032,18 +5205,6 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(CMISS_GRAPHIC_POINT==graphic->graphic_type) ))
 		{
 			return_code=
-				(graphic->point_base_size[0]==second_graphic->point_base_size[0])&&
-				(graphic->point_base_size[1]==second_graphic->point_base_size[1])&&
-				(graphic->point_base_size[2]==second_graphic->point_base_size[2])&&
-				(graphic->point_scale_factors[0]==
-					second_graphic->point_scale_factors[0])&&
-				(graphic->point_scale_factors[1]==
-					second_graphic->point_scale_factors[1])&&
-				(graphic->point_scale_factors[2]==
-					second_graphic->point_scale_factors[2])&&
-				(graphic->point_offset[0]==second_graphic->point_offset[0])&&
-				(graphic->point_offset[1]==second_graphic->point_offset[1])&&
-				(graphic->point_offset[2]==second_graphic->point_offset[2])&&
 				(graphic->point_orientation_scale_field==
 					second_graphic->point_orientation_scale_field)&&
 				(graphic->signed_scale_field==
@@ -5126,17 +5287,119 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 						Cmiss_nodeset_match(graphic->seed_nodeset, second_graphic->seed_nodeset)))&&
 				(graphic->seed_node_mesh_location_field==second_graphic->seed_node_mesh_location_field);
 		}
+
+		if (return_code)
+		{
+			return_code =
+				(graphic->data_field==second_graphic->data_field)&&
+				(graphic->texture_coordinate_field==second_graphic->texture_coordinate_field)&&
+				((CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type) ||
+				 (graphic->streamline_data_type==second_graphic->streamline_data_type));
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_same_geometry.  Invalid argument(s)");
+			"Cmiss_graphic_same_non_trivial.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_graphic_same_geometry */
+}
+
+/**
+ * Same as Cmiss_graphic_same_non_trivial except <graphic> must also have
+ * a graphics_object. Used for getting graphics objects from previous graphic
+ * that are the same except for trivial differences such as the material and
+ * spectrum which can be changed in the graphics object to match the new graphic .
+ */
+int Cmiss_graphic_same_non_trivial_with_graphics_object(
+	struct Cmiss_graphic *graphic,void *second_graphic_void)
+{
+	int return_code;
+
+	ENTER(Cmiss_graphic_same_non_trivial_with_graphics_object);
+	if (graphic)
+	{
+		return_code=graphic->graphics_object&&
+			Cmiss_graphic_same_non_trivial(graphic,reinterpret_cast<Cmiss_graphic*>(second_graphic_void));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_same_non_trivial_with_graphics_object.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+namespace {
+
+/* string equality that handles null strings and empty strings */
+inline bool labels_match(const char *label1, const char *label2)
+{
+	return ((label1 == label2)
+		|| ((0 == label1) && (label2[0] == '\0'))
+		|| ((0 == label2) && (label1[0] == '\0'))
+		|| (label1 && label2 && (0 == strcmp(label1, label2))));
+}
+
+};
+
+int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
+	struct Cmiss_graphic *graphic2)
+{
+	int return_code;
+
+	ENTER(Cmiss_graphic_match);
+	if (graphic1 && graphic2)
+	{
+		return
+			Cmiss_graphic_same_non_trivial(graphic1, graphic2) &&
+			(graphic1->visibility_flag == graphic2->visibility_flag) &&
+			(graphic1->material == graphic2->material) &&
+			(graphic1->secondary_material == graphic2->secondary_material) &&
+			(graphic1->line_width == graphic2->line_width) &&
+			(graphic1->selected_material == graphic2->selected_material) &&
+			(graphic1->spectrum == graphic2->spectrum) &&
+			(graphic1->font == graphic2->font) &&
+			(graphic1->render_type == graphic2->render_type) &&
+			(((CMISS_GRAPHIC_POINT != graphic1->graphic_type) &&
+			  (CMISS_GRAPHIC_DATA_POINTS != graphic1->graphic_type) &&
+			  (CMISS_GRAPHIC_NODE_POINTS != graphic1->graphic_type) &&
+			  (CMISS_GRAPHIC_ELEMENT_POINTS != graphic1->graphic_type)) || 
+			((graphic1->glyph == graphic2->glyph) &&
+			 (graphic1->glyph_repeat_mode == graphic2->glyph_repeat_mode) &&
+			 (graphic1->point_base_size[0] == graphic2->point_base_size[0]) &&
+			 (graphic1->point_base_size[1] == graphic2->point_base_size[1]) &&
+			 (graphic1->point_base_size[2] == graphic2->point_base_size[2]) &&
+			 (graphic1->point_scale_factors[0] == graphic2->point_scale_factors[0]) &&
+			 (graphic1->point_scale_factors[1] == graphic2->point_scale_factors[1]) &&
+			 (graphic1->point_scale_factors[2] == graphic2->point_scale_factors[2]) &&
+			 (graphic1->point_offset[0] == graphic2->point_offset[0]) &&
+			 (graphic1->point_offset[1] == graphic2->point_offset[1]) &&
+			 (graphic1->point_offset[2] == graphic2->point_offset[2]) &&
+			 (graphic1->label_offset[0] == graphic2->label_offset[0]) &&
+			 (graphic1->label_offset[1] == graphic2->label_offset[1]) &&
+			 (graphic1->label_offset[2] == graphic2->label_offset[2]) &&
+			 labels_match(graphic1->label_text[0], graphic2->label_text[0]) &&
+			 labels_match(graphic1->label_text[1], graphic2->label_text[1]) &&
+			 labels_match(graphic1->label_text[2], graphic2->label_text[2])));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_match.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_graphic_match */
 
 int Cmiss_graphic_same_name(struct Cmiss_graphic *graphic,
 	void *name_void)
@@ -5150,38 +5413,7 @@ int Cmiss_graphic_same_name(struct Cmiss_graphic *graphic,
 	}
 
 	return (return_code);
-} /* Cmiss_graphic_same_name_or_geometry */
-
-int Cmiss_graphic_same_name_or_geometry(struct Cmiss_graphic *graphic,
-	void *second_graphic_void)
-{
-	int return_code;
-	struct Cmiss_graphic *second_graphic;
-
-	ENTER(Cmiss_graphic_same_name_or_geometry);
-	if (graphic
-		&&(second_graphic=(struct Cmiss_graphic *)second_graphic_void))
-	{
-		if (graphic->name && second_graphic->name)
-		{
-			return_code = (0==strcmp(graphic->name,second_graphic->name));
-		}
-		else
-		{
-			return_code = Cmiss_graphic_same_geometry(graphic,
-				second_graphic_void);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_same_name_or_geometry.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_same_name_or_geometry */
+}
 
 int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
 	void *list_data_void)
@@ -5262,42 +5494,6 @@ int Cmiss_graphic_get_position_in_list(
 	return (position);
 } /* Cmiss_graphic_get_position_in_list */
 
-int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
-	struct Cmiss_graphic *graphic2)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_match);
-	if (graphic1 && graphic2)
-	{
-		return_code=
-			Cmiss_graphic_same_geometry(graphic1, (void *)graphic2) &&
-			(graphic1->visibility_flag == graphic2->visibility_flag) &&
-			(graphic1->material == graphic2->material) &&
-			(graphic1->secondary_material == graphic2->secondary_material) &&
-			(graphic1->line_width == graphic2->line_width) &&
-			(graphic1->selected_material == graphic2->selected_material) &&
-			(graphic1->data_field == graphic2->data_field) &&
-			(graphic1->spectrum == graphic2->spectrum) &&
-			(graphic1->font == graphic2->font) &&
-			(graphic1->render_type == graphic2->render_type) &&
-			(graphic1->texture_coordinate_field ==
-				graphic2->texture_coordinate_field) &&
-			((CMISS_GRAPHIC_STREAMLINES != graphic1->graphic_type) ||
-				(graphic1->streamline_data_type ==
-					graphic2->streamline_data_type));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_match.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_match */
-
 int Cmiss_graphic_copy_and_put_in_list(
 	struct Cmiss_graphic *graphic,void *list_of_graphic_void)
 {
@@ -5364,72 +5560,6 @@ int Cmiss_graphic_type_matches(struct Cmiss_graphic *graphic,
 } /* Cmiss_graphic_type_matches */
 
 /***************************************************************************//**
- * Cmiss_graphic list conditional function returning 1 iff the two
- * graphic have the same geometry and the same nontrivial appearance
- * characteristics. Trivial appearance characteristics are the material,
- * visibility and spectrum.
- */
-int Cmiss_graphic_same_non_trivial(struct Cmiss_graphic *graphic,
-	void *second_graphic_void)
-{
-	int return_code;
-	struct Cmiss_graphic *second_graphic;
-
-	ENTER(Cmiss_graphic_same_non_trivial);
-	if (graphic
-		&&(second_graphic=(struct Cmiss_graphic *)second_graphic_void))
-	{
-		return_code=
-			Cmiss_graphic_same_geometry(graphic,second_graphic_void)&&
-			(graphic->data_field==second_graphic->data_field)&&
-			(graphic->texture_coordinate_field==second_graphic->texture_coordinate_field)&&
-			((CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type)||
-				(graphic->streamline_data_type==
-					second_graphic->streamline_data_type));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_same_non_trivial.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_same_non_trivial */
-
-
-/***************************************************************************//**
- * Same as Cmiss_graphic_same_non_trivial except <graphic> must also have
- * a graphics_object. Used for getting graphics objects from previous graphic
- * that are the same except for trivial differences such as the material and
- * spectrum which can be changed in the graphics object to match the new graphic .
- */
-int Cmiss_graphic_same_non_trivial_with_graphics_object(
-	struct Cmiss_graphic *graphic,void *second_graphic_void)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_same_non_trivial_with_graphics_object);
-
-	if (graphic)
-	{
-		return_code=graphic->graphics_object&&
-			Cmiss_graphic_same_non_trivial(graphic,second_graphic_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_same_non_trivial_with_graphics_object.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_same_non_trivial_with_graphics_object */
-
-/***************************************************************************//**
  * If <graphic> does not already have a graphics object, this function attempts
  * to find graphic in <list_of_graphic> which differ only trivially in material,
  * spectrum etc. AND have a graphics object. If such a graphic is found, the
@@ -5459,15 +5589,13 @@ int Cmiss_graphic_extract_graphics_object_from_list(
 				graphic->graphics_object = matching_graphic->graphics_object;
 				/* make sure graphic and graphics object have same material and
 					 spectrum */
-				Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+				Cmiss_graphic_update_graphics_object_trivial(graphic);
 				graphic->graphics_changed = matching_graphic->graphics_changed;
 				graphic->selected_graphics_changed =
 					matching_graphic->selected_graphics_changed;
-// 				graphic->overlay_flag = matching_graphic->overlay_flag;
-// 				graphic->overlay_order = matching_graphic->overlay_order;
 				/* reset graphics_object and flags in matching_graphic */
 				matching_graphic->graphics_object = (struct GT_object *)NULL;
-				Cmiss_graphic_changed(matching_graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				//Cmiss_graphic_changed(matching_graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 			}
 		}
 	}
@@ -6565,21 +6693,10 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		struct Rendition_command_data rendition_command_data;
 		Cmiss_rendition_fill_rendition_command_data(owning_rendition, &rendition_command_data);
 		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		Cmiss_rendition_cleanup_rendition_command_data(&rendition_command_data);
 		if (modify_rendition_data.graphic)
 		{
 			Cmiss_graphic_destroy(&(modify_rendition_data.graphic));
-		}
-		if (rendition_command_data.default_font)
-		{
-			DEACCESS(Cmiss_font)(&rendition_command_data.default_font);
-		}
-		if (rendition_command_data.default_spectrum)
-		{
-			DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
-		}
-		if (rendition_command_data.root_region)
-		{
-			Cmiss_region_destroy(&(rendition_command_data.root_region));
 		}
 	}
 
@@ -7040,7 +7157,8 @@ int Cmiss_graphic_point_attributes_set_base_size(
 		}
 		if (changed)
 		{
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
 	}
@@ -7068,7 +7186,7 @@ int Cmiss_graphic_point_attributes_set_font(
 		if (font != graphic->font)
 		{
 			REACCESS(Cmiss_font)(&(graphic->font), font);
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
@@ -7076,38 +7194,69 @@ int Cmiss_graphic_point_attributes_set_font(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-GT_object *Cmiss_graphic_point_attributes_get_glyph(
+Cmiss_glyph_id Cmiss_graphic_point_attributes_get_glyph(
 	Cmiss_graphic_point_attributes_id point_attributes)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic && (graphic->glyph))
 	{
-		return ACCESS(GT_object)(graphic->glyph);
+		return reinterpret_cast<Cmiss_glyph_id>(ACCESS(GT_object)(graphic->glyph));
 	}
 	return 0;
 }
 
 int Cmiss_graphic_point_attributes_set_glyph(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	GT_object *glyph)
+	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_glyph_id glyph)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
-		if (glyph != graphic->glyph)
+		GT_object *gt_object = reinterpret_cast<GT_object *>(glyph);
+		if (gt_object != graphic->glyph)
 		{
 			if (graphic->glyph)
 			{
 				GT_object_remove_callback(graphic->glyph,
 					Cmiss_graphic_glyph_change, (void *)graphic);
 			}
-			REACCESS(GT_object)(&(graphic->glyph), glyph);
+			REACCESS(GT_object)(&(graphic->glyph), gt_object);
 			if (glyph)
 			{
 				GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
 					(void *)graphic);
 			}
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+enum Cmiss_glyph_repeat_mode
+	Cmiss_graphic_point_attributes_get_glyph_repeat_mode(
+		Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		return graphic->glyph_repeat_mode;
+	}
+	return CMISS_GLYPH_REPEAT_MODE_INVALID;
+}
+
+int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (glyph_repeat_mode !=
+		CMISS_GLYPH_REPEAT_MODE_INVALID))
+	{
+		if (glyph_repeat_mode != graphic->glyph_repeat_mode)
+		{
+			graphic->glyph_repeat_mode = glyph_repeat_mode;
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
@@ -7123,13 +7272,13 @@ int Cmiss_graphic_point_attributes_set_glyph_type(
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic && glyph_type != CMISS_GRAPHICS_GLYPH_TYPE_INVALID)
 	{
-		GT_object *glyph = 0;
 		const char *glyph_name = 0;
 		switch (glyph_type)
 		{
 		case CMISS_GRAPHICS_GLYPH_TYPE_INVALID:
+			return CMISS_ERROR_ARGUMENT;
+			break;
 		case CMISS_GRAPHICS_GLYPH_NONE:
-			glyph_name = "";
 			break;
 		case CMISS_GRAPHICS_GLYPH_POINT:
 			glyph_name = "point";
@@ -7137,15 +7286,24 @@ int Cmiss_graphic_point_attributes_set_glyph_type(
 		case CMISS_GRAPHICS_GLYPH_LINE:
 			glyph_name = "line";
 			break;
+		case CMISS_GRAPHICS_GLYPH_CROSS:
+			glyph_name = "cross";
+			break;
 		case CMISS_GRAPHICS_GLYPH_SPHERE:
 			glyph_name = "sphere";
 			break;
 		case CMISS_GRAPHICS_GLYPH_AXES_SOLID:
-			glyph_name = "axes_solid";
+			glyph_name = "arrow_solid";
+			Cmiss_graphic_point_attributes_set_glyph_repeat_mode(point_attributes, CMISS_GLYPH_REPEAT_AXES_3D);
 			break;
 		};
-		glyph = Cmiss_rendition_get_glyph_from_manager(graphic->rendition, glyph_name);
+		Cmiss_graphics_module_id graphics_module = Cmiss_rendition_get_graphics_module(graphic->rendition);
+		Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(graphics_module);
+		Cmiss_glyph_id glyph = glyph_name ? Cmiss_glyph_module_find_glyph_by_name(glyph_module, glyph_name) : 0;
 		return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
+		Cmiss_glyph_destroy(&glyph);
+		Cmiss_glyph_module_destroy(&glyph_module);
+		Cmiss_graphics_module_destroy(&graphics_module);
 	}
 	return return_code;
 }
@@ -7177,28 +7335,82 @@ int Cmiss_graphic_point_attributes_set_label_field(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphic_point_attributes_get_mirror_glyph_flag(
-	Cmiss_graphic_point_attributes_id point_attributes)
+int Cmiss_graphic_point_attributes_get_label_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *label_offset)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic)
+	if (graphic && (0 < number) && label_offset)
 	{
-		return graphic->mirror_glyph_flag;
+		const int count = (number > 3) ? 3 : number;
+		for (int i = 0; i < count; ++i)
+		{
+			label_offset[i] = static_cast<double>(graphic->label_offset[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_set_label_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *label_offset)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && label_offset)
+	{
+		bool changed = false;
+		FE_value value = 0.0;
+		for (int i = 2; 0 <= i; --i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(label_offset[i]);
+			}
+			if (graphic->label_offset[i] != value)
+			{
+				graphic->label_offset[i] = value;
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+char *Cmiss_graphic_point_attributes_get_label_text(
+	Cmiss_graphic_point_attributes_id point_attributes, int label_number)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < label_number) && (label_number <= 3) &&
+		(graphic->label_text[label_number - 1]))
+	{
+		return duplicate_string(graphic->label_text[label_number - 1]);
 	}
 	return 0;
 }
 
-int Cmiss_graphic_point_attributes_set_mirror_glyph_flag(
-	Cmiss_graphic_point_attributes_id point_attributes, int mirror_glyph_flag)
+int Cmiss_graphic_point_attributes_set_label_text(
+	Cmiss_graphic_point_attributes_id point_attributes, int label_number,
+	const char *label_text)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic)
+	if (graphic && (0 < label_number) && (label_number <= 3))
 	{
-		bool use_mirror_glyph_flag = (0 != mirror_glyph_flag);
-		if (use_mirror_glyph_flag != graphic->mirror_glyph_flag)
+		if (!labels_match(label_text, graphic->label_text[label_number - 1]))
 		{
-			graphic->mirror_glyph_flag = use_mirror_glyph_flag;
-			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			if (graphic->label_text[label_number - 1])
+			{
+				DEALLOCATE(graphic->label_text[label_number - 1]);
+			}
+			graphic->label_text[label_number - 1] =
+				(label_text && (0 < strlen(label_text))) ? duplicate_string(label_text) : 0;
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
@@ -7246,7 +7458,8 @@ int Cmiss_graphic_point_attributes_set_offset(
 		}
 		if (changed)
 		{
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
 	}
@@ -7322,7 +7535,8 @@ int Cmiss_graphic_point_attributes_set_scale_factors(
 		}
 		if (changed)
 		{
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 		return CMISS_OK;
 	}

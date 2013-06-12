@@ -1,7 +1,6 @@
-/*******************************************************************************
-FILE : graphics_module.cpp
-
-==============================================================================*/
+/**
+ * FILE : graphics_module.cpp
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,12 +36,15 @@ FILE : graphics_module.cpp
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+#include "zinc/glyph.h"
 #include "zinc/graphicsmaterial.h"
+#include "zinc/graphicsmodule.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/font.h"
-#include "graphics/glyph.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/rendition.h"
@@ -71,7 +73,7 @@ struct Startup_material_definition
 struct Cmiss_graphics_module
 {
 	/* attribute managers and defaults: */
-	struct MANAGER(GT_object) *glyph_manager;
+	struct Cmiss_glyph_module *glyph_module;
 	struct Material_package *material_package;
 	void *material_manager_callback_id;
 	struct Light *default_light;
@@ -248,7 +250,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->light_manager = NULL;
 			module->material_package = NULL;
 			module->list_of_lights = NULL;
-			module->glyph_manager = NULL;
+			module->glyph_module = Cmiss_glyph_module_create();
 			module->default_light = NULL;
 			module->default_spectrum = NULL;
 			module->default_scene = NULL;
@@ -397,8 +399,8 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Scene)(&graphics_module->default_scene);
 			if (graphics_module->scene_manager)
 				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
-			if (graphics_module->glyph_manager)
-				DESTROY(MANAGER(GT_object))(&graphics_module->glyph_manager);
+			if (graphics_module->glyph_module)
+				Cmiss_glyph_module_destroy(&(graphics_module->glyph_module));
 			if (graphics_module->default_light)
 				DEACCESS(Light)(&graphics_module->default_light);
 			if (graphics_module->light_manager)
@@ -836,27 +838,15 @@ struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
 	return 0;
 }
 
-struct MANAGER(GT_object) * Cmiss_graphics_module_get_default_glyph_manager(
-		struct Cmiss_graphics_module *graphics_module)
+Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
+	Cmiss_graphics_module_id graphics_module)
 {
-	MANAGER(GT_object) *glyph_list = NULL;
 	if (graphics_module)
 	{
-		if (!graphics_module->glyph_manager)
-		{
-			struct Cmiss_font *default_font = Cmiss_graphics_module_get_default_font(
-				graphics_module);
-			graphics_module->glyph_manager=make_standard_glyphs(default_font);
-			DEACCESS(Cmiss_font)(&default_font);
-		}
-		glyph_list = graphics_module->glyph_manager;
+		Cmiss_glyph_module_access(graphics_module->glyph_module);
+		return graphics_module->glyph_module;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_glyph_manager.  Invalid argument(s)");
-	}
-	return (glyph_list);
+	return 0;
 }
 
 struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(

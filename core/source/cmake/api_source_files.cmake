@@ -26,6 +26,7 @@ SET( API_HDRS
     source/api/zinc/fieldtime.h
     source/api/zinc/fieldtrigonometry.h
     source/api/zinc/fieldvectoroperators.h
+    source/api/zinc/glyph.h
     source/api/zinc/graphic.h
     source/api/zinc/graphicsfilter.h
     source/api/zinc/font.h
@@ -57,6 +58,7 @@ SET( API_HDRS
     source/api/zinc/types/fieldimageprocessingid.h
     source/api/zinc/types/fieldmoduleid.h
     source/api/zinc/types/fieldsubobjectgroupid.h
+    source/api/zinc/types/glyphid.h
     source/api/zinc/types/graphicid.h
     source/api/zinc/types/graphicscoordinatesystem.h
     source/api/zinc/types/graphicsfilterid.h

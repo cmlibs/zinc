@@ -442,7 +442,7 @@ Global functions
 
 DECLARE_ACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 
-/***************************************************************************//**
+/**
  * Custom version handling is_managed_flag.
  */
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_tessellation)

@@ -54,7 +54,6 @@ gtObject/gtWindow management routines.
 
 #include "zinc/zincconfigure.h"
 
-
 #include "zinc/field.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
@@ -62,6 +61,7 @@ gtObject/gtWindow management routines.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -97,7 +97,10 @@ Module types
 
 #define GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE (50)
 
-FULL_DECLARE_INDEXED_LIST_TYPE(GT_object);
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(GT_object)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(GT_object,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(GT_object,name);
+
 FULL_DECLARE_MANAGER_TYPE(GT_object);
 
 /*****************************************************************************//**
@@ -140,14 +143,6 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_vertex_buffer,type,
 DECLARE_INDEXED_LIST_FUNCTIONS(Graphics_vertex_buffer)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphics_vertex_buffer,
 	type,Graphics_vertex_array_attribute_type,compare_int)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
-
-DECLARE_INDEXED_LIST_FUNCTIONS(GT_object)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,
-	const char *,strcmp)
-
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(GT_object,name)
 
 class Graphics_vertex_array_internal
 {
@@ -1251,8 +1246,10 @@ this gets tricky when done on all axes consistently.
 			if (return_code)
 			{
 				glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph, initial->mirror_glyph_flag,
-					initial->font, labels, initial->n_data_components, data,
+					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph, initial->glyph_repeat_mode,
+					initial->base_size, initial->scale_factors, initial->offset,
+					initial->font, labels, initial->label_offset, initial->static_label_text,
+					initial->n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 					/*label_density_list*/(Triple *)NULL,
 					nearest_glyph_set->object_name, names);
@@ -2328,7 +2325,78 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 	return (graphics_object);
 } /* transform_GT_object */
 
-DECLARE_OBJECT_FUNCTIONS(GT_object)
+DECLARE_ACCESS_OBJECT_FUNCTION(GT_object)
+
+/**
+ * Custom version handling is_managed_flag.
+ */
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(GT_object)
+{
+	int return_code;
+	struct GT_object *object;
+
+	ENTER(DEACCESS(GT_object));
+	if (object_address && (object = *object_address))
+	{
+		(object->access_count)--;
+		if (object->access_count <= 0)
+		{
+			return_code = DESTROY(GT_object)(object_address);
+		}
+		else if ((!object->is_managed_flag) && (object->manager) &&
+			((1 == object->access_count) || ((2 == object->access_count) &&
+				(MANAGER_CHANGE_NONE(GT_object) != object->manager_change_status))))
+		{
+			return_code =
+				REMOVE_OBJECT_FROM_MANAGER(GT_object)(object, object->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*object_address = (struct GT_object *)NULL;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DEACCESS(GT_object) */
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(GT_object)
+{
+	int return_code;
+
+	ENTER(REACCESS(GT_object));
+	if (object_address)
+	{
+		return_code = 1;
+		if (new_object)
+		{
+			/* access the new object */
+			(new_object->access_count)++;
+		}
+		if (*object_address)
+		{
+			/* deaccess the current object */
+			DEACCESS(GT_object)(object_address);
+		}
+		/* point to the new object */
+		*object_address = new_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"REACCESS(GT_object).  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* REACCESS(GT_object) */
+
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(GT_object)
 
@@ -2342,8 +2410,11 @@ DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph, int mirror_glyph_flag,
-	struct Cmiss_font *font, char **labels, int n_data_components, GLfloat *data,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	Triple base_size, Triple scale_factors, Triple offset,
+	struct Cmiss_font *font, char **labels, Triple label_offset,
+	char *static_label_text[3], int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names)
 {
@@ -2365,7 +2436,16 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 				glyph_set->glyph = ACCESS(GT_object)(glyph);
 			else
 				glyph_set->glyph = (GT_object *)NULL;
-			glyph_set->mirror_glyph_flag = mirror_glyph_flag;
+			glyph_set->glyph_repeat_mode = glyph_repeat_mode;
+			for (int i = 0; i < 3; ++i)
+			{
+				glyph_set->base_size[i] = base_size[i];
+				glyph_set->scale_factors[i] = scale_factors[i];
+				glyph_set->offset[i] = offset[i];
+				glyph_set->label_offset[i] = label_offset[i];
+				glyph_set->static_label_text[i] =
+					(static_label_text && static_label_text[i]) ? duplicate_string(static_label_text[i]) : 0;
+			}
 			if (font)
 				glyph_set->font = ACCESS(Cmiss_font)(font);
 			else
@@ -2420,6 +2500,13 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		DEALLOCATE(glyph_set->axis3_list);
 		DEALLOCATE(glyph_set->scale_list);
 		DEACCESS(GT_object)(&(glyph_set->glyph));
+		for (i = 0; i < 3; i++)
+		{
+			if (glyph_set->static_label_text[i])
+			{
+				DEALLOCATE(glyph_set->static_label_text[i]);
+			}
+		}
 		if (glyph_set->font)
 		{
 			DEACCESS(Cmiss_font)(&(glyph_set->font));
@@ -3749,10 +3836,13 @@ Allocates memory and assigns fields for a graphics object.
 			object->update_callback_list =
 				(struct Graphics_object_callback_data *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
+			object->glyph_type = CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
 			object->manager = NULL;
+			object->manager_change_status = 0;
+			object->is_managed_flag = false;
 			return_code = 1;
 			switch (object_type)
 			{
@@ -6900,42 +6990,79 @@ Sets the secondary_material of a GT_object.
 	return (return_code);
 } /* set_GT_object_secondary_material */
 
-int GT_object_set_name(struct GT_object *graphics_object, const char *name)
-/*******************************************************************************
-LAST MODIFIED : 30 April 2003
-
-DESCRIPTION :
-Changes the name of <graphics_object> to a copy of <name>.
-==============================================================================*/
+int GT_object_set_name(struct GT_object *gt_object, const char *name)
 {
-	const char *temp_name;
 	int return_code;
 
-	ENTER(GT_object_set_name);
-	if (graphics_object && name)
+	if (gt_object && name)
 	{
-		temp_name = duplicate_string(name);
-		if (temp_name)
+		if (0 == strcmp(gt_object->name, name))
 		{
-			DEALLOCATE(graphics_object->name);
-			graphics_object->name = temp_name;
-			return_code = 1;
+			return 1;
 		}
-		else
+		return_code = 1;
+		Cmiss_set_GT_object *manager_gt_object_list = 0;
+		bool restore_changed_object_to_lists = false;
+		if (gt_object->manager)
 		{
-			return_code = 0;
+			GT_object *existing_gt_object =
+				FIND_BY_IDENTIFIER_IN_MANAGER(GT_object, name)(name, gt_object->manager);
+			if (existing_gt_object && (existing_gt_object != gt_object))
+			{
+				display_message(ERROR_MESSAGE, "GT_object_set_name.  "
+					"gt_object named '%s' already exists.", name);
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				manager_gt_object_list = reinterpret_cast<Cmiss_set_GT_object *>(
+					gt_object->manager->object_list);
+				// this temporarily removes the object from all related lists
+				restore_changed_object_to_lists =
+					manager_gt_object_list->begin_identifier_change(gt_object);
+				if (!restore_changed_object_to_lists)
+				{
+					display_message(ERROR_MESSAGE, "GT_object_set_name.  "
+						"Could not safely change identifier in manager");
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				DEALLOCATE(gt_object->name);
+				gt_object->name = new_name;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (restore_changed_object_to_lists)
+		{
+			manager_gt_object_list->end_identifier_change();
+		}
+		if (gt_object->manager && return_code)
+		{
+			MANAGED_OBJECT_CHANGE(GT_object)(gt_object,
+				MANAGER_CHANGE_IDENTIFIER(GT_object));
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_set_name.  Invalid argument(s)");
+		if (gt_object)
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_object_set_name.  Invalid gt_object name '%s'", name);
+		}
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* GT_object_set_name */
+}
 
 struct Graphical_material *get_GT_object_selected_material
 	(struct GT_object *graphics_object)
@@ -7074,11 +7201,11 @@ int set_GT_object_font(struct GT_object *graphics_object,
 	int return_code = 0;
 	if (graphics_object)
 	{
-		if (graphics_object->primitive_lists)
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
 		{
 			// assume only one time
 			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
-			if (glyph_set->font != font)
+			if (glyph_set && (glyph_set->font != font))
 			{
 				while (glyph_set)
 				{
@@ -7099,11 +7226,11 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
 	int return_code = 0;
 	if (graphics_object)
 	{
-		if (graphics_object->primitive_lists)
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
 		{
 			// assume only one time
 			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
-			if (glyph_set->glyph != glyph)
+			if (glyph_set && (glyph_set->glyph != glyph))
 			{
 				while (glyph_set)
 				{
@@ -7118,22 +7245,214 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
 	return (return_code);
 }
 
-int set_GT_object_mirror_glyph_flag(struct GT_object *graphics_object,
-	int mirror_glyph_flag)
+int set_GT_object_glyph_repeat_mode(struct GT_object *graphics_object,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode)
 {
 	int return_code = 0;
 	if (graphics_object)
 	{
-		if (graphics_object->primitive_lists)
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
 		{
 			// assume only one time
 			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
-			if (glyph_set->mirror_glyph_flag != mirror_glyph_flag)
+			if (glyph_set && (glyph_set->glyph_repeat_mode != glyph_repeat_mode))
 			{
 				while (glyph_set)
 				{
-					glyph_set->mirror_glyph_flag = mirror_glyph_flag;
+					glyph_set->glyph_repeat_mode = glyph_repeat_mode;
 					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph_base_size(struct GT_object *graphics_object,
+	Triple base_size)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set && (
+				(glyph_set->base_size[0] != base_size[0]) ||
+				(glyph_set->base_size[1] != base_size[1]) ||
+				(glyph_set->base_size[2] != base_size[2])))
+			{
+				while (glyph_set)
+				{
+					glyph_set->base_size[0] = base_size[0];
+					glyph_set->base_size[1] = base_size[1];
+					glyph_set->base_size[2] = base_size[2];
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph_scale_factors(struct GT_object *graphics_object,
+	Triple scale_factors)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set && (
+				(glyph_set->scale_factors[0] != scale_factors[0]) ||
+				(glyph_set->scale_factors[1] != scale_factors[1]) ||
+				(glyph_set->scale_factors[2] != scale_factors[2])))
+			{
+				while (glyph_set)
+				{
+					glyph_set->scale_factors[0] = scale_factors[0];
+					glyph_set->scale_factors[1] = scale_factors[1];
+					glyph_set->scale_factors[2] = scale_factors[2];
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph_offset(struct GT_object *graphics_object,
+	Triple offset)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set && (
+				(glyph_set->offset[0] != offset[0]) ||
+				(glyph_set->offset[1] != offset[1]) ||
+				(glyph_set->offset[2] != offset[2])))
+			{
+				while (glyph_set)
+				{
+					glyph_set->offset[0] = offset[0];
+					glyph_set->offset[1] = offset[1];
+					glyph_set->offset[2] = offset[2];
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph_label_offset(struct GT_object *graphics_object,
+	Triple label_offset)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set && (
+				(glyph_set->label_offset[0] != label_offset[0]) ||
+				(glyph_set->label_offset[1] != label_offset[1]) ||
+				(glyph_set->label_offset[2] != label_offset[2])))
+			{
+				while (glyph_set)
+				{
+					glyph_set->label_offset[0] = label_offset[0];
+					glyph_set->label_offset[1] = label_offset[1];
+					glyph_set->label_offset[2] = label_offset[2];
+					glyph_set = glyph_set->ptrnext;
+				}
+				GT_object_changed(graphics_object);
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
+	char *static_label_text[3])
+{
+	int return_code = 0;
+	if (graphics_object && static_label_text)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set)
+			{
+				bool different = false;
+				for (int i = 0; i < 3; ++i)
+				{
+					if ((static_label_text[i] != glyph_set->static_label_text[i]) && (
+						(0 == static_label_text[i]) || (0 == glyph_set->static_label_text[i]) ||
+						(0 != strcmp(static_label_text[i], glyph_set->static_label_text[i]))))
+					{
+						different = true;
+						break;
+					}
+				}
+				if (different)
+				{
+					while (glyph_set)
+					{
+						for (int i = 0; i < 3; ++i)
+						{
+							if (glyph_set->static_label_text[i])
+							{
+								DEALLOCATE(glyph_set->static_label_text[i]);
+							}
+							glyph_set->static_label_text[i] =
+								static_label_text[i] ? duplicate_string(static_label_text[i]) : 0;\
+						}
+						glyph_set = glyph_set->ptrnext;
+					}
+					GT_object_changed(graphics_object);
+				}
+			}
+		}
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int set_GT_object_surface_render_type(struct GT_object *graphics_object,
+	enum Cmiss_graphics_render_type render_type)
+{
+	int return_code = 0;
+	if (graphics_object)
+	{
+		if ((g_SURFACE == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_surface *surface = graphics_object->primitive_lists[0].gt_surface.first;
+			if (surface && (surface->render_type != render_type))
+			{
+				while (surface)
+				{
+					surface->render_type = render_type;
+					surface = surface->ptrnext;
 				}
 				GT_object_changed(graphics_object);
 			}
@@ -7191,62 +7510,6 @@ type.
 
 	return (return_code);
 } /* GT_object_list_contents */
-
-int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
-	Triple axis3, Triple scale, int mirror, int rebase, Triple final_point,
-	Triple final_axis1, Triple final_axis2, Triple final_axis3)
-{
-	int j, return_code;
-
-	ENTER(resolve_glyph_axes);
-	if (point && axis1 && axis2 && axis3 && scale &&
-		final_point && final_axis1 && final_axis2 && final_axis3)
-	{
-		return_code = 1;
-		for (j = 0; j < 3; j++)
-		{
-			final_axis1[j] = axis1[j] * scale[0];
-			final_axis2[j] = axis2[j] * scale[1];
-			final_axis3[j] = axis3[j] * scale[2];
-			final_point[j] = point[j];
-			if (mirror)
-			{
-				final_axis1[j] = -final_axis1[j];
-				final_axis2[j] = -final_axis2[j];
-				final_axis3[j] = -final_axis3[j];
-			}
-			if (rebase)
-			{
-				// if first scale is negative, shift glyph origin to end of axis1 
-				if (scale[0] < 0.0)
-				{
-					final_point[j] -= final_axis1[j];
-				}
-			}
-		}
-		/* if required, reverse axis3 to maintain right-handed coordinate system */
-		if (0.0 > (
-			final_axis3[0]*(final_axis1[1]*final_axis2[2] -
-				final_axis1[2]*final_axis2[1]) +
-			final_axis3[1]*(final_axis1[2]*final_axis2[0] -
-				final_axis1[0]*final_axis2[2]) +
-			final_axis3[2]*(final_axis1[0]*final_axis2[1] -
-				final_axis1[1]*final_axis2[0])))
-		{
-			final_axis3[0] = -final_axis3[0];
-			final_axis3[1] = -final_axis3[1];
-			final_axis3[2] = -final_axis3[2];
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "resolve_glyph_axes. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* resolve_glyph_axes */
 
 struct GT_object_compile_context *CREATE(GT_object_compile_context)(
 	ZnReal time, struct Graphics_buffer *graphics_buffer
@@ -7710,6 +7973,25 @@ int Graphics_vertex_array::clear_buffers()
 Graphics_vertex_array::~Graphics_vertex_array()
 {
 	delete internal;
+}
+
+enum Cmiss_graphics_glyph_type GT_object_get_glyph_type(
+	struct GT_object *gt_object)
+{
+	if (gt_object)
+		return gt_object->glyph_type;
+	return CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
+}
+
+int GT_object_set_glyph_type(struct GT_object *gt_object,
+	enum Cmiss_graphics_glyph_type glyph_type)
+{
+	if (gt_object)
+	{
+		gt_object->glyph_type = glyph_type;
+		return 1;
+	}
+	return 0;
 }
 
 #if 0

@@ -37,6 +37,7 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
+#include "types/glyphid.h"
 #include "types/fontid.h"
 #include "types/graphicsfilterid.h"
 #include "types/graphicsmaterialid.h"
@@ -115,6 +116,17 @@ ZINC_API Cmiss_scene_id Cmiss_graphics_module_create_scene(
  */
 ZINC_API Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
+
+/**
+ * Get the glyph module which stores static graphics for visualising points,
+ * vectors, axes etc. Note on startup no glyphs are defined and glyph module
+ * functions need to be called to set up standard glyphs.
+ *
+ * @param graphics_module  The graphics module to request manager from.
+ * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
+	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
  * Get a rendition of region from graphics module with an access_count incremented

@@ -44,6 +44,7 @@
 #define __CMISS_GRAPHIC_H__
 
 #include "types/fieldid.h"
+#include "types/glyphid.h"
 #include "types/graphicid.h"
 #include "types/fontid.h"
 #include "types/graphicsrendertype.h"
@@ -695,7 +696,7 @@ ZINC_API int Cmiss_graphic_point_attributes_set_base_size(
  * Gets the font in the graphic point attributes used to draw the label field.
  *
  * @param point_attributes  The point attributes to query.
- * @return Handle to font, or 0 if none or error. Up to caller to destroy
+ * @return  Handle to font, or 0 if none or error. Up to caller to destroy
  * returned handle.
  */
 ZINC_API Cmiss_font_id Cmiss_graphic_point_attributes_get_font(
@@ -713,8 +714,53 @@ ZINC_API int Cmiss_graphic_point_attributes_set_font(
 	Cmiss_font_id font);
 
 /**
+ * Gets the glyph in the graphic point attributes used to visualise points.
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return  Handle to glyph, or 0 if none or error. Up to caller to destroy
+ * returned handle.
+ */
+ZINC_API Cmiss_glyph_id Cmiss_graphic_point_attributes_get_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the glyph in the graphic point attributes used to visualise points.
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param glyph  The glyph to set.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_glyph(
+	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_glyph_id glyph);
+
+/**
+ * Return the current glyph repeat mode.
+ * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return  The current glyph repeat mode.
+ */
+ZINC_API enum Cmiss_glyph_repeat_mode
+	Cmiss_graphic_point_attributes_get_glyph_repeat_mode(
+		Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
+ * Sets the glyph repeat mode which controls whether multiple glyphs are drawn
+ * at each point and how.
+ * @see Cmiss_glyph_repeat_mode
+ *
+ * @param point_attributes  The point attributes to modify.
+ * @param glyph_repeat_mode  The new repeat mode.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
+	Cmiss_graphic_point_attributes_id point_attributes,
+	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
+
+/**
  * Sets the glyph use for visualising a graphics point from a reduced set
  * of enumerations.
+ * @deprecated
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_type  The glyph type identifier.
@@ -747,31 +793,61 @@ ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
 	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field);
 
 /**
- * Return whether mirror glyph flag is set.
- * @see Cmiss_graphic_point_attributes_set_mirror
+ * Gets the label offset relative to the glyph axes from its origin.
+ * @see Cmiss_graphic_point_attributes_set_label_offset
  *
- * @param point_attributes  The point attributes to query.
- * @return  1 if mirror glyph flag is set, 0 if not.
- */
-ZINC_API int Cmiss_graphic_point_attributes_get_mirror_glyph_flag(
-	Cmiss_graphic_point_attributes_id point_attributes);
-
-/**
- * Sets whether the glyph is mirrored i.e. drawn twice, the second mirrored
- * about the origin along the first axis. Commonly used with a
- * signed_scale_field to visualise stress and strains using pairs of arrow
- * glyphs pointing inward for compression, outward for tension.
- * Suitable glyphs (line, arrow, cone) span from 0 to 1 along their first axis.
- * Not suitable for sphere, cube etc. which are symmetric about 0 on axis 1.
- * @see Cmiss_graphic_point_attributes_set_signed_scale_field
- * @see Cmiss_graphic_point_attributes_set_offset
- *
- * @param point_attributes  The point attributes to modify.
- * @param mirror_glyph_flag  1 to set, 0 to clear.
+ * @param point_attributes  The point_attributes to query.
+ * @param number  The number of offset values to request, up to 3.
+ * @param label_offset  Array to receive offset values, starting with the first
+ * axis. Must be big enough to contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_mirror_glyph_flag(
-	Cmiss_graphic_point_attributes_id point_attributes, int mirror_glyph_flag);
+ZINC_API int Cmiss_graphic_point_attributes_get_label_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *label_offset);
+
+/**
+ * Sets the label offset relative to the glyph axes from its origin. A unit
+ * offset moves the label the length of the axis vector.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param number  The number of offset values to set, up to 3.
+ * @param label_offset  Array of offset values, starting with the first axis. If
+ * fewer than 3 then zero is assumed for all other offset values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_label_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *label_offset);
+
+/**
+ * Get static label text to be shown near each glyph.
+ * @see Cmiss_graphic_point_attributes_set_label_text
+ *
+ * @param point_attributes  The point_attributes to query.
+ * @param label_number  The label_number to get, from 1 to 3.
+ * @return  Allocated string containing label text, or NULL if none or error.
+ * Up to caller to free using Cmiss_deallocate().
+ */
+ZINC_API char *Cmiss_graphic_point_attributes_get_label_text(
+	Cmiss_graphic_point_attributes_id point_attributes, int label_number);
+
+/**
+ * Set static label text to be shown near each glyph. The number of labels
+ * depends on the glyph repeat mode, one label per glyph for REPEAT_AXES,
+ * one label for REPEAT_NONE and REPEAT_MIRROR. Note the label field value is
+ * written for the first label only, prefixed by the first static label text.
+ * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param label_number  The label_number to set, from 1 to 3.
+ * @param label_text  The string to set as static label text.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_label_text(
+	Cmiss_graphic_point_attributes_id point_attributes, int label_number,
+	const char *label_text);
 
 /**
  * Gets the offset from the point coordinates to where the glyph origin is
@@ -905,15 +981,15 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
  * Sets the signed scale field in the graphic point attributes. Can have from 1
  * to 3 components which multiply the scaling from the orientation scale field
  * on the corresponding axis.
- * Note special behaviour applies when the mirror_glyph_flag is set:
+ * Note special behaviour applies when used with the GLYPH_REPEAT_MIRROR mode:
  * If value is negative on the first axis, the origin of the glyph is moved to
  * the end of the first axis and its direction is reversed. This is commonly
  * used to draw stress and strain with mirrored arrow-like glyphs pointing
  * inward for compression, and outward for tension. Do this by passing a single
  * eigenvalue (of stress or strain tensor) as the signed_scale and the
- * corresponding eigenvector as the orientation_scale field, and set the
- * mirror_glyph_flag. Use a separate points graphic for each eigenvalue.
- * @see Cmiss_graphic_point_attributes_set_mirror
+ * corresponding eigenvector as the orientation_scale field, with repeat mirror.
+ * Use a separate points graphic for each eigenvalue.
+ * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
  *
  * @param point_attributes  The point attributes to modify.
  * @param signed_scale_field  The signed scale field to set.

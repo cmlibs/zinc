@@ -78,19 +78,6 @@ enum Cmiss_graphic_type
 }; /* enum Cmiss_graphics_type */
 
 /**
- *	An enum defining the type of graphic glyph.
- */
-enum Cmiss_graphics_glyph_type
-{
-	CMISS_GRAPHICS_GLYPH_TYPE_INVALID = 0,
-	CMISS_GRAPHICS_GLYPH_NONE,
-	CMISS_GRAPHICS_GLYPH_POINT,
-	CMISS_GRAPHICS_GLYPH_LINE,
-	CMISS_GRAPHICS_GLYPH_SPHERE,
-	CMISS_GRAPHICS_GLYPH_AXES_SOLID
-};
-
-/**
  * An enum defining the type of element dimension to use.
  */
 enum Cmiss_graphic_use_element_type

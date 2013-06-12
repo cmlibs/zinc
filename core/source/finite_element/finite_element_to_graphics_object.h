@@ -164,12 +164,13 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, int mirror_glyph_flag,
+	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, 
 	struct Cmiss_font *font, struct Computed_field *label_field,
+	FE_value *label_offset, char *static_label_text[3],
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
@@ -209,12 +210,13 @@ to be set in the field_cache if needed.
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field,
-	struct GT_object *glyph, int mirror_glyph_flag,
+	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Cmiss_font *font, struct Computed_field *label_field,
+	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
 	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
 	struct Computed_field *group_field);
