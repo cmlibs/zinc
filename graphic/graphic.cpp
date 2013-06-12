@@ -166,8 +166,29 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(gr);
 	EXPECT_NE(static_cast<Cmiss_graphic_point_attributes *>(0), pointattr);
 
+	Cmiss_glyph_id glyph = Cmiss_glyph_module_get_default_point_glyph(zinc.glyph_module);
+	EXPECT_NE((Cmiss_glyph_id)0, glyph);
+	Cmiss_glyph_id temp_glyph = Cmiss_graphic_point_attributes_get_glyph(pointattr);
+	EXPECT_EQ(glyph, temp_glyph);
+	Cmiss_glyph_destroy(&temp_glyph);
+	Cmiss_glyph_destroy(&glyph);
+
+	glyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "sphere");
+	EXPECT_NE((Cmiss_glyph_id)0, glyph);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph(pointattr, glyph));
+	temp_glyph = Cmiss_graphic_point_attributes_get_glyph(pointattr);
+	EXPECT_EQ(glyph, temp_glyph);
+	Cmiss_glyph_destroy(&temp_glyph);
+	Cmiss_glyph_destroy(&glyph);
+
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_TYPE_INVALID));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_SPHERE));
+
+	EXPECT_EQ(CMISS_GLYPH_REPEAT_NONE, Cmiss_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(0, CMISS_GLYPH_REPEAT_MIRROR));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMISS_GLYPH_REPEAT_MODE_INVALID));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMISS_GLYPH_REPEAT_MIRROR));
+	EXPECT_EQ(CMISS_GLYPH_REPEAT_MIRROR, Cmiss_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
 
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	Cmiss_field_id field = Cmiss_field_module_create_constant(zinc.fm, 3, fieldValues);
@@ -240,11 +261,6 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
-	EXPECT_EQ(0, Cmiss_graphic_point_attributes_get_mirror_glyph_flag(pointattr));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_mirror_glyph_flag(0, 1));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_mirror_glyph_flag(pointattr, 1));
-	EXPECT_EQ(1, Cmiss_graphic_point_attributes_get_mirror_glyph_flag(pointattr));
-
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
 	Cmiss_graphic_destroy(&gr);
 }
@@ -254,33 +270,49 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	ZincTestSetupCpp zinc;
 
 	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_POINT);
-	EXPECT_EQ(true, gr.isValid());
+	EXPECT_TRUE(gr.isValid());
 
 	GraphicPointAttributes pointattr = gr.getPointAttributes();
-	EXPECT_EQ(true, pointattr.isValid());
+	EXPECT_TRUE(pointattr.isValid());
+
+	Glyph glyph = zinc.glyphModule.getDefaultPointGlyph();
+	EXPECT_TRUE(glyph.isValid());
+	Glyph tempGlyph = pointattr.getGlyph();
+	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
+
+	glyph = zinc.glyphModule.findGlyphByName("sphere");
+	EXPECT_TRUE(glyph.isValid());
+	EXPECT_EQ(CMISS_OK, pointattr.setGlyph(glyph));
+	tempGlyph = pointattr.getGlyph();
+	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphType(Graphic::GLYPH_TYPE_INVALID));
 	EXPECT_EQ(CMISS_OK, pointattr.setGlyphType(Graphic::GLYPH_TYPE_SPHERE));
 
+	EXPECT_EQ(Glyph::REPEAT_NONE, pointattr.getGlyphRepeatMode());
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_INVALID));
+	EXPECT_EQ(CMISS_OK, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MIRROR));
+	EXPECT_EQ(Glyph::REPEAT_MIRROR, pointattr.getGlyphRepeatMode());
+
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	Field field = zinc.fm.createConstant(sizeof(fieldValues)/sizeof(double), fieldValues);
-	EXPECT_EQ(true, field.isValid());
+	EXPECT_TRUE(field.isValid());
 	Field tempField;
 
-	EXPECT_EQ(false, pointattr.getOrientationScaleField().isValid());
+	EXPECT_FALSE(pointattr.getOrientationScaleField().isValid());
 	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(field));
 	tempField = pointattr.getOrientationScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
 	Field noField;
 	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(noField)); // clear field
-	EXPECT_EQ(false, pointattr.getOrientationScaleField().isValid());
+	EXPECT_FALSE(pointattr.getOrientationScaleField().isValid());
 
-	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
+	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
 	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(field));
 	tempField = pointattr.getSignedScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
 	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(noField)); // clear field
-	EXPECT_EQ(false, pointattr.getSignedScaleField().isValid());
+	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[3];
@@ -314,10 +346,6 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
-
-	EXPECT_EQ(false, pointattr.getMirrorGlyphFlag());
-	EXPECT_EQ(CMISS_OK, pointattr.setMirrorGlyphFlag(true));
-	EXPECT_EQ(true, pointattr.getMirrorGlyphFlag());
 }
 
 TEST(Cmiss_graphic_api, point_attributes_label)
@@ -345,6 +373,22 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_label_field(pointattr, 0));
 	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_point_attributes_get_label_field(pointattr));
 
+	double outputValues[3];
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_label_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_label_offset(pointattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_label_offset(pointattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_label_offset(pointattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_label_offset(pointattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_label_offset(pointattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_label_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+
 	// should start with a default font
 	Cmiss_font_id font = Cmiss_graphic_point_attributes_get_font(pointattr);
 	EXPECT_NE(static_cast<Cmiss_font *>(0), font);
@@ -353,6 +397,21 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 	EXPECT_EQ(static_cast<Cmiss_font *>(0), Cmiss_graphic_point_attributes_get_font(pointattr));
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_font(pointattr, font));
+
+	const char *text = "ABC";
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_label_text(0, 1, text));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_label_text(pointattr, 0, text));
+	EXPECT_EQ((char *)0, Cmiss_graphic_point_attributes_get_label_text(0, 1));
+	EXPECT_EQ((char *)0, Cmiss_graphic_point_attributes_get_label_text(pointattr, 0));
+	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
+	{
+		char *outText;
+		EXPECT_EQ((char *)0, Cmiss_graphic_point_attributes_get_label_text(pointattr, labelNumber));
+		EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_label_text(pointattr, labelNumber, text));
+		outText = Cmiss_graphic_point_attributes_get_label_text(pointattr, labelNumber);
+		EXPECT_STREQ(text, outText);
+		Cmiss_deallocate(outText);
+	}
 
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
 	Cmiss_graphic_destroy(&gr);
@@ -363,14 +422,14 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	ZincTestSetupCpp zinc;
 
 	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_POINT);
-	EXPECT_EQ(true, gr.isValid());
+	EXPECT_TRUE(gr.isValid());
 
 	GraphicPointAttributes pointattr = gr.getPointAttributes();
-	EXPECT_EQ(true, pointattr.isValid());
+	EXPECT_TRUE(pointattr.isValid());
 
 	double values[] = { 1.0, 2.0, 3.0 };
 	Field labelField = zinc.fm.createConstant(sizeof(values)/sizeof(double), values);
-	EXPECT_EQ(true, labelField.isValid());
+	EXPECT_TRUE(labelField.isValid());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(labelField));
 
@@ -379,17 +438,41 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 
 	Field noField;
 	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(noField)); // clear label field
-	EXPECT_EQ(false, pointattr.getLabelField().isValid());
+	EXPECT_FALSE(pointattr.getLabelField().isValid());
+
+	double outputValues[3];
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelOffset(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelOffset(2, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.setLabelOffset(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getLabelOffset(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getLabelOffset(3, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.getLabelOffset(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
 
 	// should start with a default font
 	Font font = pointattr.getFont();
-	EXPECT_EQ(true, font.isValid());
+	EXPECT_TRUE(font.isValid());
 
 	Font noFont;
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(noFont)); // clear font
-	EXPECT_EQ(false, pointattr.getFont().isValid());
+	EXPECT_FALSE(pointattr.getFont().isValid());
 
 	EXPECT_EQ(CMISS_OK, pointattr.setFont(font));
+
+	const char *text = "ABC";
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelText(0, text));
+	EXPECT_EQ((char *)0, pointattr.getLabelText(0));
+	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
+	{
+		char *outText;
+		EXPECT_EQ((char *)0, pointattr.getLabelText(labelNumber));
+		EXPECT_EQ(CMISS_OK, pointattr.setLabelText(labelNumber, text));
+		outText = pointattr.getLabelText(labelNumber);
+		EXPECT_STREQ(text, outText);
+		Cmiss_deallocate(outText);
+	}
 }
 
 TEST(Cmiss_graphic_api, line_attributes)
@@ -459,16 +542,16 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	ZincTestSetupCpp zinc;
 
 	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_CYLINDERS);
-	EXPECT_EQ(true, gr.isValid());
+	EXPECT_TRUE(gr.isValid());
 
 	GraphicLineAttributes lineattr = gr.getLineAttributes();
-	EXPECT_EQ(true, lineattr.isValid());
+	EXPECT_TRUE(lineattr.isValid());
 
 	double value = 1.0;
 	Field orientationScaleField = zinc.fm.createConstant(1, &value);
-	EXPECT_EQ(true, orientationScaleField.isValid());
+	EXPECT_TRUE(orientationScaleField.isValid());
 
-	EXPECT_EQ(false, lineattr.getOrientationScaleField().isValid());
+	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
 	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(orientationScaleField));
 
 	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
@@ -476,7 +559,7 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 
 	Field noField;
 	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(noField)); // clear field
-	EXPECT_EQ(false, lineattr.getOrientationScaleField().isValid());
+	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[3];
