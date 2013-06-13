@@ -45,6 +45,7 @@ FILE : rendition.cpp
 #include "zinc/core.h"
 #include "zinc/glyph.h"
 #include "zinc/graphic.h"
+#include "zinc/graphicsmaterial.h"
 #include "zinc/graphicsmodule.h"
 #include "zinc/node.h"
 #include "zinc/rendition.h"
@@ -875,10 +876,16 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 			Cmiss_graphic_point_attributes_destroy(&point_attributes);
 		}
 
-		struct Material_package *material_package = Cmiss_graphics_module_get_material_package(rendition->graphics_module);
-		Cmiss_graphic_set_material(graphic, Material_package_get_default_material(material_package));
-		Cmiss_graphic_set_selected_material(graphic, Material_package_get_default_selected_material(material_package));
-		DEACCESS(Material_package)(&material_package);
+		struct Cmiss_graphics_material_module *material_module = Cmiss_graphics_module_get_material_module(rendition->graphics_module);
+		Cmiss_graphics_material *default_material =
+			Cmiss_graphics_material_module_get_default_material(material_module);
+		Cmiss_graphic_set_material(graphic, default_material);
+		Cmiss_graphics_material_destroy(&default_material);
+		Cmiss_graphics_material *default_selected =
+			Cmiss_graphics_material_module_get_default_selected_material(material_module);
+		Cmiss_graphic_set_selected_material(graphic, default_selected);
+		Cmiss_graphics_material_destroy(&default_selected);
+		Cmiss_graphics_material_module_destroy(&material_module);
 	}
 	else
 	{
@@ -3519,11 +3526,11 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 	if (rendition)
 	{
 		rendition_command_data->graphics_module = rendition->graphics_module;
-		struct Material_package *material_package =
-			Cmiss_graphics_module_get_material_package(rendition->graphics_module);
+		struct Cmiss_graphics_material_module *material_module =
+			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		rendition_command_data->rendition = rendition;
 		rendition_command_data->default_material =
-			Material_package_get_default_material(material_package);
+			Cmiss_graphics_material_module_get_default_material(material_module);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 		rendition_command_data->glyph_module =
@@ -3538,9 +3545,9 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 			Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
 		rendition_command_data->default_spectrum =
 				Cmiss_graphics_module_get_default_spectrum(rendition->graphics_module);
-		if (material_package)
+		if (material_module)
 		{
-			DEACCESS(Material_package)(&material_package);
+			Cmiss_graphics_material_module_destroy(&material_module);
 		}
 		return_code = 1;
 	}

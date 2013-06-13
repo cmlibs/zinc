@@ -60,6 +60,7 @@ return to direct rendering, as described with these routines.
 #include <string.h>
 #include <math.h>
 
+#include "zinc/status.h"
 #include "zinc/zincconfigure.h"
 
 #include "zinc/fieldmodule.h"
@@ -74,7 +75,6 @@ return to direct rendering, as described with these routines.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
-#include "graphics/graphics_module.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
@@ -84,6 +84,17 @@ return to direct rendering, as described with these routines.
 #include "graphics/render_gl.h"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
+
+struct Startup_material_definition
+{
+	const char *name;
+	double ambient[3];
+	double diffuse[3];
+	double emission[3];
+	double specular[3];
+	double alpha;
+	double shininess;
+};
 
 /*
 Module types
@@ -95,7 +106,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, Cmiss_graphics_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, Cmiss_material_module, void *);
 
 /*
 Module functions
@@ -3197,26 +3208,472 @@ Global functions
 ----------------
 */
 
-struct Material_package *CREATE(Material_package)(
-	struct Cmiss_region *root_region,
-	struct MANAGER(Spectrum) *spectrum_manager)
-/*******************************************************************************
-LAST MODIFIED : 20 May 2005
-
-DESCRIPTION :
-Create a shared information container for Materials.
-==============================================================================*/
+static int Graphical_material_remove_module_if_matching(struct Graphical_material *material,
+	void *material_module_void)
 {
-	struct Material_package *material_package;
-	struct Colour colour;
+	int return_code;
+
+	if (material && material_module_void)
+	{
+		if (material->module == (struct Cmiss_graphics_material_module *)material_module_void)
+		{
+			material->module = (struct Cmiss_graphics_material_module *)NULL;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_remove_module_if_matching.  Invalid argument(s)");
+		return_code = 0;
+	}
+
+	return (return_code);
+}
+
+struct Cmiss_graphics_material_module
+{
+
+private:
+
+	struct MANAGER(Graphical_material) *materialManager;
+	Cmiss_graphics_material *defaultMaterial;
+	struct Graphical_material *defaultSelectedMaterial;
+	struct MANAGER(Spectrum) *spectrumManager;
+	struct LIST(Material_program) *materialProgramList;
+	struct Cmiss_region *root_region;
+	int access_count;
+
+	Cmiss_graphics_material_module() :
+		materialManager(CREATE(MANAGER(Graphical_material))()),
+		defaultMaterial(0),
+		defaultSelectedMaterial(0),
+		spectrumManager(0),
+		materialProgramList(CREATE(LIST(Material_program))()),
+		root_region(0),
+		access_count(1)
+	{
+	}
+
+	~Cmiss_graphics_material_module()
+	{
+		if (defaultMaterial)
+		{
+			Cmiss_graphics_material_destroy(&defaultMaterial);
+		}
+		if (defaultSelectedMaterial)
+		{
+			Cmiss_graphics_material_destroy(&defaultSelectedMaterial);
+		}
+		if (root_region)
+		{
+			DEACCESS(Cmiss_region)(&root_region);
+		}
+		DESTROY(LIST(Material_program))(&materialProgramList);
+		/* Make sure each material no longer points at this module */
+		FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+			Graphical_material_remove_module_if_matching, (void *)this,
+			materialManager);
+		DESTROY(MANAGER(Graphical_material))(&materialManager);
+	}
+
+public:
+
+	static Cmiss_graphics_material_module *create()
+	{
+		return new Cmiss_graphics_material_module();
+	}
+
+	Cmiss_graphics_material_module *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_graphics_material_module* &material_module)
+	{
+		if (material_module)
+		{
+			--(material_module->access_count);
+			if (material_module->access_count <= 0)
+			{
+				delete material_module;
+			}
+			material_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	void setRegion(Cmiss_region_id region)
+	{
+		if (root_region)
+			Cmiss_region_destroy(&region);
+		root_region =  Cmiss_region_access(region);
+	}
+
+	void setSpectrumManager(struct MANAGER(Spectrum) *spectrum_manager)
+	{
+		spectrumManager = spectrum_manager;
+	}
+
+	struct LIST(Material_program) *getMaterialProgramList()
+	{
+		return materialProgramList;
+	}
+
+	struct MANAGER(Spectrum) *getSpectrumManager()
+	{
+		return spectrumManager;
+	}
+
+	struct MANAGER(Cmiss_graphics_material) *getManager()
+	{
+		return materialManager;
+	}
+
+	Cmiss_region *getRegion()
+	{
+		return root_region;
+	}
+
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Cmiss_graphics_material)(this->materialManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Cmiss_graphics_material)(this->materialManager);
+	}
+
+	Cmiss_graphics_material_id createMaterial()
+	{
+		Cmiss_graphics_material_id material = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_graphics_material)(this->materialManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_material,name)(temp_name,
+			this->materialManager));
+		material = Cmiss_graphics_material_create_private();
+		Cmiss_graphics_material_set_name(material, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_material)(material, this->materialManager))
+		{
+			Cmiss_graphics_material_destroy(&material);
+		}
+		material->module = this;
+		return material;
+	}
+
+	Cmiss_graphics_material *findMaterialByName(const char *name)
+	{
+		Cmiss_graphics_material *material = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_material,name)(name,
+			this->materialManager);
+		if (material)
+		{
+			return Cmiss_graphics_material_access(material);
+		}
+		return 0;
+	}
+
+	Cmiss_graphics_material *getDefaultMaterial()
+	{
+		if (this->defaultMaterial)
+		{
+			return Cmiss_graphics_material_access(this->defaultMaterial);
+		}
+		return 0;
+	}
+
+	int setDefaultMaterial(Cmiss_graphics_material *material)
+	{
+		REACCESS(Cmiss_graphics_material)(&this->defaultMaterial, material);
+		return CMISS_OK;
+	}
+
+	Cmiss_graphics_material *getDefaultSelectedMaterial()
+	{
+		if (this->defaultSelectedMaterial)
+		{
+			return Cmiss_graphics_material_access(this->defaultSelectedMaterial);
+		}
+		return 0;
+	}
+
+	int setDefaultSelectedMaterial(Cmiss_graphics_material *material)
+	{
+		REACCESS(Cmiss_graphics_material)(&this->defaultSelectedMaterial, material);
+		return CMISS_OK;
+	}
+
+};
+
+Cmiss_graphics_material_module_id Cmiss_graphics_material_module_access(
+	Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->access();
+	return 0;
+}
+
+int Cmiss_graphics_material_module_destroy(Cmiss_graphics_material_module_id *material_module_address)
+{
+	if (material_module_address)
+		return Cmiss_graphics_material_module::deaccess(*material_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_graphics_material_id Cmiss_graphics_material_module_create_material(
+	Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->createMaterial();
+	return 0;
+}
+
+struct MANAGER(Cmiss_graphics_material) *Cmiss_graphics_material_module_get_manager(
+	Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->getManager();
+	return 0;
+}
+
+struct MANAGER(Spectrum) *Cmiss_graphics_material_module_get_spectrum_manager(
+	struct Cmiss_graphics_material_module *material_module)
+{
+	if (material_module)
+		return material_module->getSpectrumManager();
+	return 0;
+}
+
+Cmiss_region *Cmiss_graphics_material_module_get_region_non_access(
+	struct Cmiss_graphics_material_module *material_module)
+{
+	if (material_module)
+		return material_module->getRegion();
+	return 0;
+
+}
+
+int Cmiss_graphics_material_module_define_standard_materials(
+	Cmiss_graphics_material_module_id material_module)
+{
+	struct Startup_material_definition
+		startup_materials[] =
+		{
+			{"black",
+			 /*ambient*/ { 0.00, 0.00, 0.00},
+			 /*diffuse*/ { 0.00, 0.00, 0.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.30, 0.30, 0.30},
+	 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"blue",
+			 /*ambient*/ { 0.00, 0.00, 0.50},
+			 /*diffuse*/ { 0.00, 0.00, 1.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"bone",
+			 /*ambient*/ { 0.70, 0.70, 0.60},
+			 /*diffuse*/ { 0.90, 0.90, 0.70},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.10, 0.10, 0.10},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"gray50",
+			 /*ambient*/ { 0.50, 0.50, 0.50},
+			 /*diffuse*/ { 0.50, 0.50, 0.50},
+			 /*emission*/{ 0.50, 0.50, 0.50},
+			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"gold",
+			 /*ambient*/ { 1.00, 0.40, 0.00},
+			 /*diffuse*/ { 1.00, 0.70, 0.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*alpha*/1.0,
+			 /*shininess*/0.3},
+			{"green",
+			 /*ambient*/ { 0.00, 0.50, 0.00},
+			 /*diffuse*/ { 0.00, 1.00, 0.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*alpha*/1.0,
+			 /*shininess*/0.1},
+			{"muscle",
+			 /*ambient*/ { 0.40, 0.14, 0.11},
+			 /*diffuse*/ { 0.50, 0.12, 0.10},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.30, 0.50, 0.50},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"red",
+			 /*ambient*/ { 0.50, 0.00, 0.00},
+			 /*diffuse*/ { 1.00, 0.00, 0.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.20, 0.20, 0.20},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2},
+			{"silver",
+			 /*ambient*/ { 0.40, 0.40, 0.40},
+			 /*diffuse*/ { 0.70, 0.70, 0.70},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*alpha*/1.0,
+			 /*shininess*/0.3},
+			{"tissue",
+			 /*ambient*/ { 0.90, 0.70, 0.50},
+			 /*diffuse*/ { 0.90, 0.70, 0.50},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.20, 0.20, 0.30},
+			 /*alpha*/1.0,
+			 /*shininess*/0.2f},
+			/* Used as the default fail_material for texture evaluation. */
+			{"transparent_gray50",
+			 /*ambient*/ { 0.50, 0.50, 0.50},
+			 /*diffuse*/ { 0.50, 0.50, 0.50},
+			 /*emission*/{ 0.50, 0.50, 0.50},
+			 /*specular*/{ 0.50, 0.50, 0.50},
+			 /*alpha*/0.0,
+			 /*shininess*/0.2f},
+			{"white",
+			 /*ambient*/ { 1.00, 1.00, 1.00},
+			 /*diffuse*/ { 1.00, 1.00, 1.00},
+			 /*emission*/{ 0.00, 0.00, 0.00},
+			 /*specular*/{ 0.00, 0.00, 0.00},
+			 /*alpha*/1.0,
+			 /*shininess*/0.0}
+		};
+	int i, return_code;
+	int number_of_startup_materials = sizeof(startup_materials) /
+		sizeof(struct Startup_material_definition);
+	Cmiss_graphics_material *material = 0;
+
+	if (material_module)
+	{
+		for (i = 0; i < number_of_startup_materials; i++)
+		{
+			material = NULL;
+			if (NULL != (material = Cmiss_graphics_material_module_find_material_by_name(
+				material_module, startup_materials[i].name)))
+			{
+				Cmiss_graphics_material_destroy(&material);
+			}
+			else if ((NULL != (material = Cmiss_graphics_material_module_create_material(material_module))) &&
+				Cmiss_graphics_material_set_name(material, startup_materials[i].name))
+			{
+				Cmiss_graphics_material_set_attribute_real3(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
+				Cmiss_graphics_material_set_attribute_real3(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
+				Cmiss_graphics_material_set_attribute_real3(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
+				Cmiss_graphics_material_set_attribute_real3(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
+				Cmiss_graphics_material_set_attribute_real(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
+				Cmiss_graphics_material_set_attribute_real(material,
+					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
+				Cmiss_graphics_material_set_attribute_integer(
+					material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+				material->module = material_module;
+				Cmiss_graphics_material_destroy(&material);
+			}
+		}
+
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_material_module_create_standard_material.  Invalid argument(s)");
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
+int Cmiss_graphics_material_module_begin_change(Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphics_material_module_end_change(Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_graphics_material_id Cmiss_graphics_material_module_find_material_by_name(
+	Cmiss_graphics_material_module_id material_module, const char *name)
+{
+	if (material_module)
+		return material_module->findMaterialByName(name);
+   return 0;
+}
+
+Cmiss_graphics_material_id Cmiss_graphics_material_module_get_default_material(
+	Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->getDefaultMaterial();
+	return 0;
+}
+
+int Cmiss_graphics_material_module_set_default_material(
+	Cmiss_graphics_material_module_id material_module,
+	Cmiss_graphics_material_id material)
+{
+	if (material_module)
+		return material_module->setDefaultMaterial(material);
+	return 0;
+}
+
+Cmiss_graphics_material_id Cmiss_graphics_material_module_get_default_selected_material(
+	Cmiss_graphics_material_module_id material_module)
+{
+	if (material_module)
+		return material_module->getDefaultSelectedMaterial();
+	return 0;
+}
+
+int Cmiss_graphics_material_module_set_default_selected_material(
+	Cmiss_graphics_material_module_id material_module,
+	Cmiss_graphics_material_id material)
+{
+	if (material_module)
+		return material_module->setDefaultSelectedMaterial(material);
+	return 0;
+}
+
+Cmiss_graphics_material_module_id Cmiss_graphics_material_module_create(struct Cmiss_region *root_region,
+	struct MANAGER(Spectrum) *spectrum_manager)
+{
+	Cmiss_graphics_material_module *material_module =
+		Cmiss_graphics_material_module::create();
+	Cmiss_graphics_material *defaultMaterial = 0, *defaultSelectedMaterial = 0;
+	material_module->setRegion(root_region);
+	material_module->setSpectrumManager(spectrum_manager);
 	struct Material_definition
 	{
-		MATERIAL_PRECISION ambient[3];
-		MATERIAL_PRECISION diffuse[3];
-		MATERIAL_PRECISION emission[3];
-		MATERIAL_PRECISION specular[3];
-		MATERIAL_PRECISION alpha;
-		MATERIAL_PRECISION shininess;
+		double ambient[3];
+		double diffuse[3];
+		double emission[3];
+		double specular[3];
+		double alpha;
+		double shininess;
 	}
 	default_material = {
 		/*ambient*/ { 1.00, 1.00, 1.00},
@@ -3226,392 +3683,122 @@ Create a shared information container for Materials.
 		/*alpha*/1.0,
 		/*shininess*/0.0},
 	default_selected = {
-		/*ambient*/ { 1.00, 0.20f, 0.00},
-		/*diffuse*/ { 1.00, 0.20f, 0.00},
+		/*ambient*/ { 1.00, 0.20, 0.00},
+		/*diffuse*/ { 1.00, 0.20, 0.00},
 		/*emission*/{ 0.00, 0.00, 0.00},
 		/*specular*/{ 0.00, 0.00, 0.00},
 		/*alpha*/1.0,
 		/*shininess*/0.0};
+	defaultMaterial = Cmiss_graphics_material_module_create_material(
+		material_module);
+	Cmiss_graphics_material_set_name(defaultMaterial, "default");
+	Cmiss_graphics_material_set_attribute_real3(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
+	Cmiss_graphics_material_set_attribute_real(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
+	Cmiss_graphics_material_set_attribute_real(defaultMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
+	Cmiss_graphics_material_set_attribute_integer(
+		defaultMaterial, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	defaultMaterial->module = material_module;
+	Cmiss_graphics_material_module_set_default_material(
+		material_module, defaultMaterial);
+	Cmiss_graphics_material_destroy(&defaultMaterial);
 
-	ENTER(CREATE(Material_package));
+	defaultSelectedMaterial = Cmiss_graphics_material_module_create_material(
+		material_module);
+	Cmiss_graphics_material_set_name(defaultSelectedMaterial, "default_selected");
+	Cmiss_graphics_material_set_attribute_real3(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
+	Cmiss_graphics_material_set_attribute_real3(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
+	Cmiss_graphics_material_set_attribute_real(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
+	Cmiss_graphics_material_set_attribute_real(defaultSelectedMaterial,
+		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
+	Cmiss_graphics_material_set_attribute_integer(
+		defaultSelectedMaterial, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	defaultSelectedMaterial->module = material_module;
+	Cmiss_graphics_material_module_set_default_selected_material(
+		material_module, defaultSelectedMaterial);
+	Cmiss_graphics_material_destroy(&defaultSelectedMaterial);
 
-	if (ALLOCATE(material_package ,struct Material_package, 1))
-	{
-		material_package->material_manager = CREATE(MANAGER(Graphical_material))();
-		material_package->default_material = (struct Graphical_material *)NULL;
-		material_package->default_selected_material = (struct Graphical_material *)NULL;
-		material_package->material_program_list = CREATE(LIST(Material_program))();
-		material_package->spectrum_manager = spectrum_manager;
-		material_package->root_region = root_region;
-		material_package->access_count = 0;
+	return material_module;
+}
 
-		/* command/cmiss.c overrides the ambient and diffuse colours of the
-			default material to be the "foreground" colour. */
-		material_package->default_material = ACCESS(Graphical_material)(
-			CREATE(Graphical_material)("default"));
-		colour.red   = default_material.ambient[0];
-		colour.green = default_material.ambient[1];
-		colour.blue  = default_material.ambient[2];
-		Graphical_material_set_ambient(material_package->default_material, &colour);
-		colour.red   = default_material.diffuse[0];
-		colour.green = default_material.diffuse[1];
-		colour.blue  = default_material.diffuse[2];
-		Graphical_material_set_diffuse(material_package->default_material, &colour);
-		colour.red   = default_material.emission[0];
-		colour.green = default_material.emission[1];
-		colour.blue  = default_material.emission[2];
-		Graphical_material_set_emission(material_package->default_material, &colour);
-		colour.red   = default_material.specular[0];
-		colour.green = default_material.specular[1];
-		colour.blue  = default_material.specular[2];
-		Graphical_material_set_specular(material_package->default_material, &colour);
-		Graphical_material_set_alpha(material_package->default_material,
-			default_material.alpha);
-		Graphical_material_set_shininess(material_package->default_material,
-			default_material.shininess);
-		Material_package_manage_material(material_package,
-			material_package->default_material);
-
-		material_package->default_selected_material = ACCESS(Graphical_material)(
-			CREATE(Graphical_material)("default_selected"));
-		colour.red   = default_selected.ambient[0];
-		colour.green = default_selected.ambient[1];
-		colour.blue  = default_selected.ambient[2];
-		Graphical_material_set_ambient(material_package->default_selected_material, &colour);
-		colour.red   = default_selected.diffuse[0];
-		colour.green = default_selected.diffuse[1];
-		colour.blue  = default_selected.diffuse[2];
-		Graphical_material_set_diffuse(material_package->default_selected_material, &colour);
-		colour.red   = default_selected.emission[0];
-		colour.green = default_selected.emission[1];
-		colour.blue  = default_selected.emission[2];
-		Graphical_material_set_emission(material_package->default_selected_material, &colour);
-		colour.red   = default_selected.specular[0];
-		colour.green = default_selected.specular[1];
-		colour.blue  = default_selected.specular[2];
-		Graphical_material_set_specular(material_package->default_selected_material, &colour);
-		Graphical_material_set_alpha(material_package->default_selected_material,
-			default_selected.alpha);
-		Graphical_material_set_shininess(material_package->default_selected_material,
-			default_selected.shininess);
-		Material_package_manage_material(material_package,
-			material_package->default_selected_material);
-
-		/* Reset the access count to zero so as these materials are owned by the package
-			and so should not stop it destroying.  Correspondingly the materials must not
-			DEACCESS the package when the package is being destroyed. */
-		material_package->access_count = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Material_package).  Not enough memory");
-	}
-	LEAVE;
-
-	return (material_package);
-} /* CREATE(Material_package) */
-
-static int Graphical_material_remove_package_if_matching(struct Graphical_material *material,
-	void *material_package_void)
-/*******************************************************************************
-LAST MODIFIED : 25 November 2003
-
-DESCRIPTION :
-Iterator function to guarantee that no materials will reference the Material
-package after it has been destroyed.
-==============================================================================*/
+Cmiss_graphics_material *Cmiss_graphics_material_create_private()
 {
-	int return_code;
+	Cmiss_graphics_material *material = 0;
 
-	ENTER(Graphical_material_remove_package_if_matching);
-	if (material && material_package_void)
+	/* allocate memory for structure */
+	if (ALLOCATE(material,struct Graphical_material,1))
 	{
-		if (material->package == (struct Material_package *)material_package_void)
-		{
-			material->package = (struct Material_package *)NULL;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material_remove_package_if_matching.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_material_remove_package_if_matching */
-
-int DESTROY(Material_package)(struct Material_package **material_package_address)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Frees the memory for the material_package.
-==============================================================================*/
-{
-	int return_code;
-	struct Material_package *material_package;
-
-	ENTER(DESTROY(Material));
-	if (material_package_address &&
-		(material_package = *material_package_address))
-	{
-		if (0==material_package->access_count)
-		{
-
-			if (material_package->default_material)
-			{
-				DEACCESS(Graphical_material)(&material_package->default_material);
-			}
-			if (material_package->default_selected_material)
-			{
-				DEACCESS(Graphical_material)(&material_package->default_selected_material);
-			}
-			if (material_package->root_region)
-			{
-				DEACCESS(Cmiss_region)(&material_package->root_region);
-			}
-
-			DESTROY(LIST(Material_program))(&material_package->material_program_list);
-			/* Make sure each material no longer points at this package */
-			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-				Graphical_material_remove_package_if_matching, (void *)material_package,
-				material_package->material_manager);
-			DESTROY(MANAGER(Graphical_material))(&material_package->material_manager);
-			DEALLOCATE(*material_package_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Material_package).  Material_package has non-zero access count");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Material_package).  Missing material package");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Material_package) */
-
-DECLARE_OBJECT_FUNCTIONS(Material_package)
-
-int Material_package_manage_material(struct Material_package *material_package,
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Material_package_manage_material);
-	if (material_package && material_package->material_manager && material)
-	{
-		if (material->package)
-		{
-			display_message(ERROR_MESSAGE,
-				"Material_package_manage_material.  This material is already being managed");
-		}
-		return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(material, material_package->material_manager);
-		if (return_code)
-		{
-			Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
-			/* Cannot ACCESS the package as the package is
-				accessing each material through the MANAGER */
-			material->package = material_package;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_package_manage_material.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Material_package_manage_material */
-
-struct Graphical_material *Material_package_get_default_material(
-	struct Material_package *material_package)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the default material object.
-==============================================================================*/
-{
-	struct Graphical_material *material;
-
-	ENTER(Material_package_get_default_material);
-	if (material_package)
-	{
-		material = material_package->default_material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_package_get_default_material.  Invalid argument(s)");
-		material = (struct Graphical_material *)NULL;
-	}
-	LEAVE;
-
-	return (material);
-} /* Material_package_get_default_material */
-
-struct Graphical_material *Material_package_get_default_selected_material(
-	struct Material_package *material_package)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the default_selected material object.
-==============================================================================*/
-{
-	struct Graphical_material *material;
-
-	ENTER(Material_package_get_default_selected_material);
-	if (material_package)
-	{
-		material = material_package->default_selected_material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_package_get_default_selected_material.  Invalid argument(s)");
-		material = (struct Graphical_material *)NULL;
-	}
-	LEAVE;
-
-	return (material);
-} /* Material_package_get_default_selected_material */
-
-struct MANAGER(Graphical_material) *Material_package_get_material_manager(
-	struct Material_package *material_package)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the material manager.
-==============================================================================*/
-{
-	struct MANAGER(Graphical_material) *material_manager;
-
-	ENTER(Material_package_material_manager);
-	if (material_package)
-	{
-		material_manager = material_package->material_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_package_get_material_manager.  Invalid argument(s)");
-		material_manager = (struct MANAGER(Graphical_material) *)NULL;
-	}
-	LEAVE;
-
-	return (material_manager);
-} /* Material_package_get_default_selected_material */
-
-struct Graphical_material *CREATE(Graphical_material)(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Allocates memory and assigns fields for a material.
-==============================================================================*/
-{
-	struct Graphical_material *material;
-
-	ENTER(CREATE(Graphical_material));
-	if (name)
-	{
-		/* allocate memory for structure */
-		if (ALLOCATE(material,struct Graphical_material,1)&&
-			ALLOCATE(material->name,char,strlen(name)+1))
-		{
-			strcpy((char *)material->name,name);
-			material->access_count=0;
-			material->per_pixel_lighting_flag = 0;
-			material->bump_mapping_flag = 0;
-			(material->ambient).red=1;
-			(material->ambient).green=1;
-			(material->ambient).blue=1;
-			(material->diffuse).red=1;
-			(material->diffuse).green=1;
-			(material->diffuse).blue=1;
-			material->alpha=1;
-			(material->emission).red=0;
-			(material->emission).green=0;
-			(material->emission).blue=0;
-			(material->specular).red=0;
-			(material->specular).green=0;
-			(material->specular).blue=0;
-			material->shininess=0;
-			material->spectrum=(struct Spectrum *)NULL;
-			material->spectrum_manager_callback_id=NULL;
-			(material->image_texture).texture=(struct Texture *)NULL;
-			(material->image_texture).manager = NULL;
-			(material->image_texture).field  = NULL;
-			(material->image_texture).callback_id = NULL;
-			(material->image_texture).material = material;
-			(material->second_image_texture).texture=(struct Texture *)NULL;
-			(material->second_image_texture).manager = NULL;
-			(material->second_image_texture).field  = NULL;
-			(material->second_image_texture).callback_id = NULL;
-			(material->second_image_texture).material = material;
-			(material->third_image_texture).texture=(struct Texture *)NULL;
-			(material->third_image_texture).manager = NULL;
-			(material->third_image_texture).field  = NULL;
-			(material->third_image_texture).callback_id = NULL;
-			(material->third_image_texture).material = material;
-			(material->fourth_image_texture).texture=(struct Texture *)NULL;
-			(material->fourth_image_texture).manager = NULL;
-			(material->fourth_image_texture).field  = NULL;
-			(material->fourth_image_texture).callback_id = NULL;
-			(material->fourth_image_texture).material = material;
-			material->package = (struct Material_package *)NULL;
-			material->lit_volume_normal_scaling[0] = 1.0;
-			material->lit_volume_normal_scaling[1] = 1.0;
-			material->lit_volume_normal_scaling[2] = 1.0;
-			material->lit_volume_normal_scaling[3] = 1.0;
-			material->program = (struct Material_program *)NULL;
-			material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
-			material->is_managed_flag = false;
-			material->manager = (struct MANAGER(Graphical_material) *)NULL;
-			material->manager_change_status = MANAGER_CHANGE_NONE(Graphical_material);
+		material->name = 0;
+		material->access_count=1;
+		material->per_pixel_lighting_flag = 0;
+		material->bump_mapping_flag = 0;
+		(material->ambient).red=1;
+		(material->ambient).green=1;
+		(material->ambient).blue=1;
+		(material->diffuse).red=1;
+		(material->diffuse).green=1;
+		(material->diffuse).blue=1;
+		material->alpha=1;
+		(material->emission).red=0;
+		(material->emission).green=0;
+		(material->emission).blue=0;
+		(material->specular).red=0;
+		(material->specular).green=0;
+		(material->specular).blue=0;
+		material->shininess=0;
+		material->spectrum=(struct Spectrum *)NULL;
+		material->spectrum_manager_callback_id=NULL;
+		(material->image_texture).texture=(struct Texture *)NULL;
+		(material->image_texture).manager = NULL;
+		(material->image_texture).field  = NULL;
+		(material->image_texture).callback_id = NULL;
+		(material->image_texture).material = material;
+		(material->second_image_texture).texture=(struct Texture *)NULL;
+		(material->second_image_texture).manager = NULL;
+		(material->second_image_texture).field  = NULL;
+		(material->second_image_texture).callback_id = NULL;
+		(material->second_image_texture).material = material;
+		(material->third_image_texture).texture=(struct Texture *)NULL;
+		(material->third_image_texture).manager = NULL;
+		(material->third_image_texture).field  = NULL;
+		(material->third_image_texture).callback_id = NULL;
+		(material->third_image_texture).material = material;
+		(material->fourth_image_texture).texture=(struct Texture *)NULL;
+		(material->fourth_image_texture).manager = NULL;
+		(material->fourth_image_texture).field  = NULL;
+		(material->fourth_image_texture).callback_id = NULL;
+		(material->fourth_image_texture).material = material;
+		material->module = (struct Cmiss_graphics_material_module *)NULL;
+		material->lit_volume_normal_scaling[0] = 1.0;
+		material->lit_volume_normal_scaling[1] = 1.0;
+		material->lit_volume_normal_scaling[2] = 1.0;
+		material->lit_volume_normal_scaling[3] = 1.0;
+		material->program = (struct Material_program *)NULL;
+		material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
+		material->is_managed_flag = false;
+		material->manager = (struct MANAGER(Graphical_material) *)NULL;
+		material->manager_change_status = MANAGER_CHANGE_NONE(Graphical_material);
 #if defined (OPENGL_API)
-			material->display_list=0;
-			material->brightness_texture_id=0;
+				material->display_list=0;
+				material->brightness_texture_id=0;
 #endif /* defined (OPENGL_API) */
-			material->compile_status = GRAPHICS_NOT_COMPILED;
-		}
-		else
-		{
-			if (material)
-			{
-				DEALLOCATE(material);
-			}
-			display_message(ERROR_MESSAGE,
-				"CREATE(Graphical_material).  Not enough memory");
-		}
+				material->compile_status = GRAPHICS_NOT_COMPILED;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(Graphical_material).  Missing name");
-		material=(struct Graphical_material *)NULL;
-	}
-	LEAVE;
 
 	return (material);
 } /* CREATE(Graphical_material) */
@@ -3678,12 +3865,12 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			{
 				DEACCESS(Spectrum)(&(material->spectrum));
 			}
-			if (material->package &&
+			if (material->module &&
 				material->spectrum_manager_callback_id)
 			{
 				MANAGER_DEREGISTER(Spectrum)(
 					material->spectrum_manager_callback_id,
-					material->package->spectrum_manager);
+					material->module->getSpectrumManager());
 				material->spectrum_manager_callback_id=NULL;
 			}
 			Material_image_texture_reset(&(material->image_texture));
@@ -3895,13 +4082,13 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		(destination->specular).blue=(source->specular).blue;
 		destination->shininess=source->shininess;
 		destination->alpha=source->alpha;
-		if (source->package)
+		if (source->module)
 		{
-			destination->package = source->package;
+			destination->module = source->module;
 		}
 		else
 		{
-			destination->package = (struct Material_package *)NULL;
+			destination->module = (struct Cmiss_graphics_material_module *)NULL;
 		}
 		REACCESS(Material_program)(&destination->program, source->program);
 		destination->lit_volume_normal_scaling[0] =
@@ -3915,22 +4102,22 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
 		if (destination->spectrum)
 		{
-			if (destination->package &&
+			if (destination->module &&
 				(!destination->spectrum_manager_callback_id))
 			{
 				destination->spectrum_manager_callback_id=
 					MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
-						(void *)destination, destination->package->spectrum_manager);
+						(void *)destination, destination->module->getSpectrumManager());
 			}
 		}
 		else
 		{
-			if (destination->package &&
+			if (destination->module &&
 				destination->spectrum_manager_callback_id)
 			{
 				MANAGER_DEREGISTER(Spectrum)(
 					destination->spectrum_manager_callback_id,
-					destination->package->spectrum_manager);
+					destination->module->getSpectrumManager());
 				destination->spectrum_manager_callback_id=NULL;
 			}
 		}
@@ -4026,12 +4213,12 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material,manager)
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Graphical_material, name, const char *, manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct Cmiss_graphics_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct Cmiss_material_module)
 
 int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct Cmiss_graphics_module *graphics_module)
+	struct Cmiss_material_module *material_module)
 {
-	return MANAGER_SET_OWNER(Graphical_material)(manager, graphics_module);
+	return MANAGER_SET_OWNER(Graphical_material)(manager, material_module);
 }
 
 const char *Graphical_material_name(struct Graphical_material *material)
@@ -4965,12 +5152,12 @@ functions are orginally from the modify_graphical_materil.
 	 {
 			/* Cannot just rely on the COPY functions as when
 				 first created this will be the actual object. */
-			if (material_to_be_modified->package &&
+			if (material_to_be_modified->module &&
 				 (!material_to_be_modified->spectrum_manager_callback_id))
 			{
 				 material_to_be_modified->spectrum_manager_callback_id=
 						MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
-							 (void *)material_to_be_modified, material_to_be_modified->package->spectrum_manager);
+							 (void *)material_to_be_modified, material_to_be_modified->module->getSpectrumManager());
 			}
 
 			/* Specify the input colours */
@@ -5027,12 +5214,12 @@ functions are orginally from the modify_graphical_materil.
 	 }
 	 else
 	 {
-			if (material_to_be_modified->package &&
+			if (material_to_be_modified->module &&
 				 material_to_be_modified->spectrum_manager_callback_id)
 			{
 				 MANAGER_DEREGISTER(Spectrum)(
 						material_to_be_modified->spectrum_manager_callback_id,
-						material_to_be_modified->package->spectrum_manager);
+						material_to_be_modified->module->getSpectrumManager());
 				 material_to_be_modified->spectrum_manager_callback_id=NULL;
 			}
 	 }
@@ -5042,7 +5229,7 @@ functions are orginally from the modify_graphical_materil.
 }
 
 int material_update_material_program(struct Graphical_material *material_to_be_modified,
-	 struct Material_package *material_package, enum Material_program_type type, int return_code)
+	 struct Cmiss_graphics_material_module *material_module, enum Material_program_type type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
@@ -5058,7 +5245,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 				 DEACCESS(Material_program)(&material_to_be_modified->program);
 			}
 			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-				type, material_package->material_program_list);
+				type, material_module->getMaterialProgramList());
 			if (material_to_be_modified->program)
 			{
 				 ACCESS(Material_program)(material_to_be_modified->program);
@@ -5070,7 +5257,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 				 if (material_to_be_modified->program)
 				 {
 						ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified->program,
-							 material_package->material_program_list);
+							 material_module->getMaterialProgramList());
 				 }
 				 else
 				 {
@@ -5094,7 +5281,7 @@ LAST MODIFIED : 4 Dec 2007
 DESCRIPTION : Set up the material program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
-NOTE: I use the pointer to the material_package from the material.
+NOTE: I use the pointer to the material_module from the material.
 ==============================================================================*/
 {
 	 int type;
@@ -5138,7 +5325,7 @@ NOTE: I use the pointer to the material_package from the material.
 	 material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 
 	 return_code = material_update_material_program(material_to_be_modified,
-			material_to_be_modified->package, (Material_program_type)type, return_code);
+			material_to_be_modified->module, (Material_program_type)type, return_code);
 
 	 return return_code;
 }
@@ -5635,7 +5822,8 @@ specified name and the default properties.
 			}
 			else
 			{
-				material=CREATE(Graphical_material)(material_name);
+				material=Cmiss_graphics_material_create_private();
+				Cmiss_graphics_material_set_name(material, material_name);
 				if (material)
 				{
 					Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
@@ -5647,9 +5835,9 @@ specified name and the default properties.
 					}
 					else
 					{
-						DESTROY(Graphical_material)(&material);
 						return_code=0;
 					}
+					Cmiss_graphics_material_destroy(&material);
 				}
 				else
 				{
@@ -5817,7 +6005,7 @@ will work with order_independent_transparency.
 	int modified_type;
 	int dimension;
 	struct Material_order_independent_transparency *data;
-	struct Material_package *material_package;
+	struct Cmiss_graphics_material_module *material_module;
 	struct Material_program *unmodified_program;
 
 	ENTER(compile_Graphical_material_for_order_independent_transparency);
@@ -5826,7 +6014,7 @@ will work with order_independent_transparency.
 			material_order_independent_data_void))
 	{
 		return_code = 1;
-		material_package = material->package;
+		material_module = material->module;
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&
@@ -5933,14 +6121,14 @@ will work with order_independent_transparency.
 			{
 				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
 					Material_program,type)((Material_program_type)modified_type,
-						material_package->material_program_list)))
+						material_module->getMaterialProgramList())))
 				{
 					material->program = ACCESS(Material_program)(
 						CREATE(Material_program)((Material_program_type)modified_type));
 					if (material->program)
 					{
 						ADD_OBJECT_TO_LIST(Material_program)(material->program,
-							material_package->material_program_list);
+							material_module->getMaterialProgramList());
 					}
 					else
 					{
@@ -6338,13 +6526,29 @@ int Cmiss_graphics_material_set_name(
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_name);
-	if (material && material->manager && name)
+	if (material && name)
 	{
-		return_code = MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
-			(material, name, material->manager);
+		return_code = 1;
+		if (material->manager)
+		{
+			return_code = MANAGER_MODIFY_IDENTIFIER(Cmiss_graphics_material, name)(
+				material, name, material->manager);
+		}
+		else
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				if (material->name)
+					DEALLOCATE(material->name);
+				material->name = new_name;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
 	}
-	LEAVE;
 
 	return return_code;
 }

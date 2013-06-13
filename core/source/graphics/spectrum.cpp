@@ -266,7 +266,7 @@ int Cmiss_spectrum_module_set_default_spectrum(
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_graphics_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_spectrum_module, void *);
 
 /*
 Module functions
@@ -434,12 +434,12 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *,manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Spectrum, struct Cmiss_graphics_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Spectrum, struct Cmiss_spectrum_module)
 
 int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
-	struct Cmiss_graphics_module *graphics_module)
+	struct Cmiss_spectrum_module *spectrum_module)
 {
-	return MANAGER_SET_OWNER(Spectrum)(manager, graphics_module);
+	return MANAGER_SET_OWNER(Spectrum)(manager, spectrum_module);
 }
 /*
 Global functions

@@ -98,6 +98,126 @@ enum Cmiss_graphics_material_attribute
 	 */
 };
 
+
+/**
+* Returns a new reference to the graphics_material module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param material_module  The graphics_material module to obtain a new reference to.
+* @return  graphics_material module with incremented reference count.
+*/
+ZINC_API Cmiss_graphics_material_module_id Cmiss_graphics_material_module_access(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Destroys this reference to the graphics_material module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param material_module_address  Address of handle to graphics_material module
+*   to destroy.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_material_module_destroy(
+	Cmiss_graphics_material_module_id *material_module_address);
+
+/**
+ * Create and return a handle to a new graphics_material.
+ *
+ * @param material_module  The handle to the graphics_material module the
+ * graphics_material will belong to.
+ * @return  Handle to the newly created graphics_material if successful, otherwise NULL.
+ */
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_module_create_material(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Begin caching or increment cache level for this graphics_material module. Call this
+* function before making multiple changes to minimise number of change messages
+* sent to clients. Must remember to end_change after completing changes.
+* @see Cmiss_graphics_material_module_end_change
+*
+* @param material_module  The graphics_material_module to begin change cache on.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_material_module_begin_change(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Decrement cache level or end caching of changes for the graphics_material module.
+* Call Cmiss_graphics_material_module_begin_change before making multiple changes
+* and call this afterwards. When change level is restored to zero,
+* cached change messages are sent out to clients.
+*
+* @param material_module  The glyph_module to end change cache on.
+* @return  Status CMISS_OK on success, any other value on failure.
+*/
+ZINC_API int Cmiss_graphics_material_module_end_change(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Find the graphics_material with the specified name, if any.
+*
+* @param material_module  graphics_material module to search.
+* @param name  The name of the graphics_material.
+* @return  Handle to the graphics_material of that name, or 0 if not found.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_module_find_material_by_name(
+	Cmiss_graphics_material_module_id material_module, const char *name);
+
+/**
+* Get the default graphics_material, if any.
+*
+* @param material_module  graphics_material module to query.
+* @return  Handle to the default graphics_material, or 0 if none.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_module_get_default_material(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Set the default graphics_material.
+*
+* @param material_module  graphics_material module to modify
+* @param material  The graphics_material to set as default.
+* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_material_module_set_default_material(
+	Cmiss_graphics_material_module_id material_module,
+	Cmiss_graphics_material_id material);
+
+/**
+* Get the default selected graphics_material, if any.
+*
+* @param material_module  graphics_material module to query.
+* @return  Handle to the default graphics_material, or 0 if none.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_module_get_default_selected_material(
+	Cmiss_graphics_material_module_id material_module);
+
+/**
+* Set the default selected graphics_material.
+*
+* @param material_module  graphics_material module to modify
+* @param material  The graphics_material to set as default.
+* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_material_module_set_default_selected_material(
+	Cmiss_graphics_material_module_id material_module,
+	Cmiss_graphics_material_id material);
+
+/***************************************************************************//**
+ * Define a list of standard cmgui materials and store them as they are managed
+ * by graphics module.
+ *
+ * @param material_module  Pointer to a Material_module object.
+ * @return  Status CMISS_OK if successfully create a list of standard materials
+ * into material module, any other value on failure.
+ */
+ZINC_API int Cmiss_graphics_material_module_define_standard_materials(
+	Cmiss_graphics_material_module_id material_module);
+
 /***************************************************************************//**
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.

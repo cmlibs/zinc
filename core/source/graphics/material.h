@@ -283,7 +283,7 @@ The properties of a material.
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
-	struct Material_package *package;
+	struct Cmiss_graphics_material_module *module;
 	/* The normal calculated from the volume texture needs to be
 		scaled similarly to how it is scaled into coordinate space,
 		we do not take account of rotations or any other distortions.
@@ -307,91 +307,26 @@ The properties of a material.
 DECLARE_LIST_TYPES(Graphical_material);
 
 DECLARE_MANAGER_TYPES(Graphical_material);
-
-struct Material_package
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Provide an opaque container for shared material information.
-==============================================================================*/
-{
-	struct MANAGER(Graphical_material) *material_manager;
-	struct MANAGER(Spectrum) *spectrum_manager;
-	struct Graphical_material *default_material;
-	struct Graphical_material *default_selected_material;
-	struct LIST(Material_program) *material_program_list;
-	struct Cmiss_region *root_region;
-	int access_count;
-}; /* struct Material_package */
-
 /*
 Global functions
 ----------------
 */
-struct Material_package *CREATE(Material_package)(
+
+Cmiss_graphics_material *Cmiss_graphics_material_create_private();
+
+struct Cmiss_graphics_material_module *Cmiss_graphics_material_module_create(
 	struct Cmiss_region *root_region,
 	struct MANAGER(Spectrum) *spectrum_manager);
-/*******************************************************************************
-LAST MODIFIED : 20 May 2005
 
-DESCRIPTION :
-Create a shared information container for Materials.
-==============================================================================*/
+struct MANAGER(Graphical_material) *Cmiss_graphics_material_module_get_manager(
+	struct Cmiss_graphics_material_module *material_module);
 
-int DESTROY(Material_package)(struct Material_package **material_package_address);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
+struct MANAGER(Spectrum) *Cmiss_graphics_material_module_get_spectrum_manager(
+	struct Cmiss_graphics_material_module *material_module);
 
-DESCRIPTION :
-==============================================================================*/
+struct Cmiss_region *Cmiss_graphics_material_module_get_region_non_access(
+	struct Cmiss_graphics_material_module *material_module);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Material_package);
-
-int Material_package_manage_material(struct Material_package *material_package,
-	struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-This puts the <material> into the manager connected with the <material_package>
-and allows the OpenGL states within the materials mangaed by the package to be
-shared.
-==============================================================================*/
-
-struct Graphical_material *Material_package_get_default_material(
-	struct Material_package *material_package);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the default material object.
-==============================================================================*/
-
-struct Graphical_material *Material_package_get_default_selected_material(
-	struct Material_package *material_package);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the default_selected material object.
-==============================================================================*/
-
-struct MANAGER(Graphical_material) *Material_package_get_material_manager(
-	struct Material_package *material_package);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Returns the material manager.
-==============================================================================*/
-
-struct Graphical_material *CREATE(Graphical_material)(const char *name);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-==============================================================================*/
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
 /*******************************************************************************
@@ -653,7 +588,7 @@ LAST MODIFIED : 4 Dec 2007
 DESCRIPTION : Set up the material program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
-NOTE: I use the pointer to the material_package from the material.
+NOTE: I use the pointer to the material_module from the material.
 ==============================================================================*/
 
 int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
@@ -695,7 +630,7 @@ int Material_set_program_uniform_qualifier_variable_value(
  * @return  The owning Graphics_module object.
  */
 int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct Cmiss_graphics_module *graphics_module);
+	struct Cmiss_material_module *material_module);
 
 int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
 
@@ -704,7 +639,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 
 struct Material_program_uniform *CREATE(Material_program_uniform)(char *name);
 
-struct Cmiss_graphics_module *manager_get_owner_Cmiss_graphics_material(manager_Cmiss_graphics_material *manager);
+struct Cmiss_material_module *manager_get_owner_Cmiss_graphics_material(manager_Cmiss_graphics_material *manager);
 
 //struct Material_program_uniform *list_find_by_identifier_Material_program_uniformname(const char *name, list_Material_program_uniform *list);
 #endif

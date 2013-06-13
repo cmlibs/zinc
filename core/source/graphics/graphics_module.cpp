@@ -59,22 +59,11 @@
 #include "general/message.h"
 #include <list>
 
-struct Startup_material_definition
-{
-	const char *name;
-	MATERIAL_PRECISION ambient[3];
-	MATERIAL_PRECISION diffuse[3];
-	MATERIAL_PRECISION emission[3];
-	MATERIAL_PRECISION specular[3];
-	MATERIAL_PRECISION alpha;
-	MATERIAL_PRECISION shininess;
-};
-
 struct Cmiss_graphics_module
 {
 	/* attribute managers and defaults: */
 	struct Cmiss_glyph_module *glyph_module;
-	struct Material_package *material_package;
+	struct Cmiss_graphics_material_module *material_module;
 	void *material_manager_callback_id;
 	struct Light *default_light;
 	struct MANAGER(Light) *light_manager;
@@ -248,7 +237,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 		if (ALLOCATE(module, struct Cmiss_graphics_module, 1))
 		{
 			module->light_manager = NULL;
-			module->material_package = NULL;
+			module->material_module = NULL;
 			module->list_of_lights = NULL;
 			module->glyph_module = Cmiss_glyph_module_create();
 			module->default_light = NULL;
@@ -262,14 +251,13 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
 					(void *)module, Cmiss_font_module_get_manager(module->font_module));
-			module->material_package = ACCESS(Material_package)(CREATE(Material_package)
-				(Cmiss_context_get_default_region(context),
-					Cmiss_spectrum_module_get_manager(module->spectrum_module)));
-			Material_manager_set_owner(
-				Material_package_get_material_manager(module->material_package), module);
+			Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
+			module->material_module = Cmiss_graphics_material_module_create(root_region,
+					Cmiss_spectrum_module_get_manager(module->spectrum_module));
+			Cmiss_region_destroy(&root_region);
 			module->material_manager_callback_id =
 				MANAGER_REGISTER(Graphical_material)(Cmiss_graphics_module_material_manager_callback,
-					(void *)module, Material_package_get_material_manager(module->material_package));
+					(void *)module, Cmiss_graphics_material_module_get_manager(module->material_module));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
 					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
@@ -307,21 +295,15 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	return (module);
 }
 
-struct Material_package *Cmiss_graphics_module_get_material_package(
+struct Cmiss_graphics_material_module *Cmiss_graphics_module_get_material_module(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	struct Material_package *material_package = NULL;
-	if (graphics_module && graphics_module->material_package)
+	if (graphics_module && graphics_module->material_module)
 	{
-		material_package = ACCESS(Material_package)(graphics_module->material_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_material_package.  Invalid argument(s)");
+		return Cmiss_graphics_material_module_access(graphics_module->material_module);
 	}
 
-	return material_package;
+	return 0;
 }
 
 struct Cmiss_graphics_module *Cmiss_graphics_module_access(
@@ -376,7 +358,7 @@ int Cmiss_graphics_module_destroy(
 		if (0 == graphics_module->access_count)
 		{
 			MANAGER_DEREGISTER(Graphical_material)(
-				graphics_module->material_manager_callback_id, Material_package_get_material_manager(graphics_module->material_package));
+				graphics_module->material_manager_callback_id, Cmiss_graphics_material_module_get_manager(graphics_module->material_module));
 			MANAGER_DEREGISTER(Spectrum)(
 				graphics_module->spectrum_manager_callback_id, Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module));
 			MANAGER_DEREGISTER(Cmiss_graphics_filter)(
@@ -415,8 +397,8 @@ int Cmiss_graphics_module_destroy(
 				Cmiss_spectrum_module_destroy(&graphics_module->spectrum_module);
 			if (graphics_module->font_module)
 				Cmiss_font_module_destroy(&graphics_module->font_module);
-			if (graphics_module->material_package)
-				DEACCESS(Material_package)(&graphics_module->material_package);
+			if (graphics_module->material_module)
+				Cmiss_graphics_material_module_destroy(&graphics_module->material_module);
 			if (graphics_module->default_time_keeper)
 				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
 			if (graphics_module->tessellation_module)
@@ -622,152 +604,11 @@ struct Cmiss_spectrum *Cmiss_graphics_module_get_default_spectrum(
 int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	/* only the default material is not in this list because its colour changes
-		 to contrast with the background; colours are R G B */
-
-	struct Startup_material_definition
-		startup_materials[] =
-		{
-			{"black",
-			 /*ambient*/ { 0.00, 0.00, 0.00},
-			 /*diffuse*/ { 0.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30f, 0.30f, 0.30f},
-	 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"blue",
-			 /*ambient*/ { 0.00, 0.00, 0.50f},
-			 /*diffuse*/ { 0.00, 0.00, 1.00f},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20f, 0.20f, 0.20f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"bone",
-			 /*ambient*/ { 0.70f, 0.70f, 0.60f},
-			 /*diffuse*/ { 0.90f, 0.90f, 0.70f},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10f, 0.10f, 0.10f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"gray50",
-			 /*ambient*/ { 0.50f, 0.50f, 0.50f},
-			 /*diffuse*/ { 0.50f, 0.50f, 0.50f},
-			 /*emission*/{ 0.50f, 0.50f, 0.50f},
-			 /*specular*/{ 0.50f, 0.50f, 0.50f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"gold",
-			 /*ambient*/ { 1.00, 0.40f, 0.00},
-			 /*diffuse*/ { 1.00, 0.70f, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50f, 0.50f, 0.50f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3f},
-			{"green",
-			 /*ambient*/ { 0.00, 0.50f, 0.00},
-			 /*diffuse*/ { 0.00, 1.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20f, 0.20f, 0.20f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.1f},
-			{"muscle",
-			 /*ambient*/ { 0.40f, 0.14f, 0.11f},
-			 /*diffuse*/ { 0.50f, 0.12f, 0.10f},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30f, 0.50f, 0.50f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"red",
-			 /*ambient*/ { 0.50f, 0.00, 0.00},
-			 /*diffuse*/ { 1.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20f, 0.20f, 0.20f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"silver",
-			 /*ambient*/ { 0.40f, 0.40f, 0.40f},
-			 /*diffuse*/ { 0.70f, 0.70f, 0.70f},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50f, 0.50f, 0.50f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3f},
-			{"tissue",
-			 /*ambient*/ { 0.90f, 0.70f, 0.50f},
-			 /*diffuse*/ { 0.90f, 0.70f, 0.50f},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20f, 0.20f, 0.30f},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			/* Used as the default fail_material for texture evaluation. */
-			{"transparent_gray50",
-			 /*ambient*/ { 0.50f, 0.50f, 0.50f},
-			 /*diffuse*/ { 0.50f, 0.50f, 0.50f},
-			 /*emission*/{ 0.50f, 0.50f, 0.50f},
-			 /*specular*/{ 0.50f, 0.50f, 0.50f},
-			 /*alpha*/0.0,
-			 /*shininess*/0.2f},
-			{"white",
-			 /*ambient*/ { 1.00, 1.00, 1.00},
-			 /*diffuse*/ { 1.00, 1.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.00, 0.00, 0.00},
-			 /*alpha*/1.0,
-			 /*shininess*/0.0}
-		};
-	int i, return_code;
-	int number_of_startup_materials = sizeof(startup_materials) /
-		sizeof(struct Startup_material_definition);
-	struct Graphical_material *material;
-	struct Colour colour;
-
-	if (graphics_module && graphics_module->material_package)
+	if (graphics_module && graphics_module->material_module)
 	{
-		for (i = 0; i < number_of_startup_materials; i++)
-		{
-			material = NULL;
-			if (NULL != (material = Cmiss_graphics_module_find_material_by_name(graphics_module, startup_materials[i].name)))
-			{
-				Cmiss_graphics_material_destroy(&material);
-			}
-			else if (NULL != (material = CREATE(Graphical_material)(startup_materials[i].name)))
-			{
-				colour.red   = startup_materials[i].ambient[0];
-				colour.green = startup_materials[i].ambient[1];
-				colour.blue  = startup_materials[i].ambient[2];
-				Graphical_material_set_ambient(material, &colour);
-				colour.red   = startup_materials[i].diffuse[0];
-				colour.green = startup_materials[i].diffuse[1];
-				colour.blue  = startup_materials[i].diffuse[2];
-				Graphical_material_set_diffuse(material, &colour);
-				colour.red   = startup_materials[i].emission[0];
-				colour.green = startup_materials[i].emission[1];
-				colour.blue  = startup_materials[i].emission[2];
-				Graphical_material_set_emission(material, &colour);
-				colour.red   = startup_materials[i].specular[0];
-				colour.green = startup_materials[i].specular[1];
-				colour.blue  = startup_materials[i].specular[2];
-				Graphical_material_set_specular(material, &colour);
-				Graphical_material_set_alpha(material, startup_materials[i].alpha);
-				Graphical_material_set_shininess(material,
-					startup_materials[i].shininess);
-				if (!Material_package_manage_material(graphics_module->material_package,
-						material))
-				{
-					DESTROY(Graphical_material)(&material);
-				}
-			}
-		}
-
-		return_code = 1;
+		return Cmiss_graphics_material_module_define_standard_materials(graphics_module->material_module);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_create_standard_material.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return return_code;
+	return 0;
 }
 
 struct Cmiss_font *Cmiss_graphics_module_get_default_font(
@@ -1189,11 +1030,10 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 {
 	struct MANAGER(Graphical_material) *material_manager;
 
-	ENTER(Cmiss_graphics_module_get_material_manager);
-	if (graphics_module && graphics_module->material_package)
+	if (graphics_module && graphics_module->material_module)
 	{
-		material_manager = 	Material_package_get_material_manager(
-			graphics_module->material_package);
+		material_manager = 	Cmiss_graphics_material_module_get_manager(
+			graphics_module->material_module);
 	}
 	else
 	{
@@ -1201,7 +1041,6 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 			"Cmiss_graphics_module_get_material_manager.  Invalid argument(s)");
 		material_manager = (struct MANAGER(Graphical_material) *)NULL;
 	}
-	LEAVE;
 
 	return (material_manager);
 }
@@ -1245,73 +1084,23 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
 Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name)
 {
-	Cmiss_graphics_material_id material = NULL;
-
-	ENTER(Cmiss_graphics_module_find_material_by_name);
-	if (graphics_module && name)
+	if (graphics_module && graphics_module->material_module && name)
 	{
-		struct MANAGER(Graphical_material) *material_manager =
-			Cmiss_graphics_module_get_material_manager(graphics_module);
-		if (material_manager)
-		{
-			if (NULL != (material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
-										 name, material_manager)))
-			{
-				ACCESS(Graphical_material)(material);
-			}
-		}
+		return Cmiss_graphics_material_module_find_material_by_name(
+			graphics_module->material_module, name);
 	}
-	LEAVE;
-
-	return material;
+	return 0;
 }
 
 Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module)
 {
-	Cmiss_graphics_material_id material = NULL;
-	struct MANAGER(Graphical_material) *material_manager =
-		Cmiss_graphics_module_get_material_manager(graphics_module);
-	int i = 0;
-	char *temp_string = NULL;
-	char *num = NULL;
-
-	ENTER(Cmiss_graphics_module_create_material);
-	do
+	if (graphics_module && graphics_module->material_module)
 	{
-		if (temp_string)
-		{
-			DEALLOCATE(temp_string);
-		}
-		ALLOCATE(temp_string, char, 18);
-		strcpy(temp_string, "temp_material");
-		num = strrchr(temp_string, 'l') + 1;
-		sprintf(num, "%i", i);
-		strcat(temp_string, "\0");
-		i++;
+		return Cmiss_graphics_material_module_create_material(
+			graphics_module->material_module);
 	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(temp_string,
-			material_manager));
-
-	if (temp_string)
-	{
-		if (NULL != (material = CREATE(Graphical_material)(temp_string)))
-		{
-			if (Material_package_manage_material(graphics_module->material_package,
-					material))
-			{
-				ACCESS(Graphical_material)(material);
-			}
-			else
-			{
-				DESTROY(Graphical_material)(&material);
-			}
-		}
-		DEALLOCATE(temp_string);
-	}
-	LEAVE;
-
-	return material;
+	return 0;
 }
 
 int Cmiss_graphics_module_add_member_region(
