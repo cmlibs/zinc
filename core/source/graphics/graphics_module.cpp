@@ -381,8 +381,7 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Scene)(&graphics_module->default_scene);
 			if (graphics_module->scene_manager)
 				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
-			if (graphics_module->glyph_module)
-				Cmiss_glyph_module_destroy(&(graphics_module->glyph_module));
+			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
 			if (graphics_module->default_light)
 				DEACCESS(Light)(&graphics_module->default_light);
 			if (graphics_module->light_manager)
