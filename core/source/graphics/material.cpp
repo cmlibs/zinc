@@ -3241,7 +3241,6 @@ private:
 	struct Graphical_material *defaultSelectedMaterial;
 	struct MANAGER(Spectrum) *spectrumManager;
 	struct LIST(Material_program) *materialProgramList;
-	struct Cmiss_region *root_region;
 	int access_count;
 
 	Cmiss_graphics_material_module() :
@@ -3250,7 +3249,6 @@ private:
 		defaultSelectedMaterial(0),
 		spectrumManager(0),
 		materialProgramList(CREATE(LIST(Material_program))()),
-		root_region(0),
 		access_count(1)
 	{
 	}
@@ -3264,10 +3262,6 @@ private:
 		if (defaultSelectedMaterial)
 		{
 			Cmiss_graphics_material_destroy(&defaultSelectedMaterial);
-		}
-		if (root_region)
-		{
-			DEACCESS(Cmiss_region)(&root_region);
 		}
 		DESTROY(LIST(Material_program))(&materialProgramList);
 		/* Make sure each material no longer points at this module */
@@ -3305,12 +3299,6 @@ public:
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	void setRegion(Cmiss_region_id region)
-	{
-		if (root_region)
-			Cmiss_region_destroy(&region);
-		root_region =  Cmiss_region_access(region);
-	}
 
 	void setSpectrumManager(struct MANAGER(Spectrum) *spectrum_manager)
 	{
@@ -3331,12 +3319,6 @@ public:
 	{
 		return materialManager;
 	}
-
-	Cmiss_region *getRegion()
-	{
-		return root_region;
-	}
-
 
 	int beginChange()
 	{
@@ -3450,15 +3432,6 @@ struct MANAGER(Spectrum) *Cmiss_graphics_material_module_get_spectrum_manager(
 	if (material_module)
 		return material_module->getSpectrumManager();
 	return 0;
-}
-
-Cmiss_region *Cmiss_graphics_material_module_get_region_non_access(
-	struct Cmiss_graphics_material_module *material_module)
-{
-	if (material_module)
-		return material_module->getRegion();
-	return 0;
-
 }
 
 int Cmiss_graphics_material_module_define_standard_materials(
@@ -3658,13 +3631,12 @@ int Cmiss_graphics_material_module_set_default_selected_material(
 	return 0;
 }
 
-Cmiss_graphics_material_module_id Cmiss_graphics_material_module_create(struct Cmiss_region *root_region,
+Cmiss_graphics_material_module_id Cmiss_graphics_material_module_create(
 	struct MANAGER(Spectrum) *spectrum_manager)
 {
 	Cmiss_graphics_material_module *material_module =
 		Cmiss_graphics_material_module::create();
 	Cmiss_graphics_material *defaultMaterial = 0, *defaultSelectedMaterial = 0;
-	material_module->setRegion(root_region);
 	material_module->setSpectrumManager(spectrum_manager);
 	struct Material_definition
 	{

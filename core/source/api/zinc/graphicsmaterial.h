@@ -346,21 +346,6 @@ ZINC_API int Cmiss_graphics_material_set_name(
 	Cmiss_graphics_material_id material, const char *name);
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui application however this execute
- * command function will apply to the material being passed into this function
- * only. It takes a string of command as gfx modify material <material> does.
- *
- * NOTE: This function may be removed in the future once more API functions are
- * made available to the users.
- *
- * @param material  Handle to a Cmiss_graphics_material object.
- * @param command  Command to be executed.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
-	const char *command_string);
-
-/***************************************************************************//**
  * Set a cmiss_field containing an image for a Cmiss_graphics_material.
  * This image will be displayed with the material as the corresponding texture.
  * This function read in a general field but it may not work properly if
