@@ -6698,22 +6698,6 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		{
 			Cmiss_graphic_destroy(&(modify_rendition_data.graphic));
 		}
-		if (rendition_command_data.default_font)
-		{
-			DEACCESS(Cmiss_font)(&rendition_command_data.default_font);
-		}
-		if (rendition_command_data.default_spectrum)
-		{
-			DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
-		}
-		if (rendition_command_data.default_material)
-		{
-			Cmiss_graphics_material_destroy(&rendition_command_data.default_material);
-		}
-		if (rendition_command_data.root_region)
-		{
-			Cmiss_region_destroy(&(rendition_command_data.root_region));
-		}
 	}
 
 	return return_code;

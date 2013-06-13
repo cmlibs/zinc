@@ -3526,29 +3526,26 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 	if (rendition)
 	{
 		rendition_command_data->graphics_module = rendition->graphics_module;
-		struct Cmiss_graphics_material_module *material_module =
-			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		rendition_command_data->rendition = rendition;
+		Cmiss_graphics_material_module *material_module =
+			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		rendition_command_data->default_material =
 			Cmiss_graphics_material_module_get_default_material(material_module);
+		Cmiss_graphics_material_module_destroy(&material_module);
+		rendition_command_data->graphical_material_manager =
+			Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
+		rendition_command_data->spectrum_manager =
+			Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
+		rendition_command_data->default_spectrum =
+				Cmiss_graphics_module_get_default_spectrum(rendition->graphics_module);
 		rendition_command_data->glyph_module =
 			Cmiss_graphics_module_get_glyph_module(rendition->graphics_module);
 		rendition_command_data->computed_field_manager =
 			 Cmiss_region_get_Computed_field_manager(rendition->region);
 		rendition_command_data->region = rendition->region;
 		rendition_command_data->root_region = Cmiss_region_get_root(rendition->region);
-		rendition_command_data->graphical_material_manager =
-			Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
-		rendition_command_data->spectrum_manager =
-			Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
-		rendition_command_data->default_spectrum =
-				Cmiss_graphics_module_get_default_spectrum(rendition->graphics_module);
-		if (material_module)
-		{
-			Cmiss_graphics_material_module_destroy(&material_module);
-		}
 		return_code = 1;
 	}
 	return return_code;
@@ -3560,19 +3557,11 @@ int Cmiss_rendition_cleanup_rendition_command_data(
 	int return_code = 0;
 	if (rendition_command_data)
 	{
-		if (rendition_command_data->default_font)
-		{
-			DEACCESS(Cmiss_font)(&rendition_command_data->default_font);
-		}
-		if (rendition_command_data->default_spectrum)
-		{
-			DEACCESS(Spectrum)(&rendition_command_data->default_spectrum);
-		}
-		if (rendition_command_data->root_region)
-		{
-			Cmiss_region_destroy(&(rendition_command_data->root_region));
-		}
+		Cmiss_graphics_material_destroy(&rendition_command_data->default_material);
+		Cmiss_font_destroy(&rendition_command_data->default_font);
+		Cmiss_spectrum_destroy(&rendition_command_data->default_spectrum);
 		Cmiss_glyph_module_destroy(&(rendition_command_data->glyph_module));
+		Cmiss_region_destroy(&(rendition_command_data->root_region));
 		return_code = 1;
 	}
 	return return_code;
