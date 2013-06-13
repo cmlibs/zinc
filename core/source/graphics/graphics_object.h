@@ -1027,6 +1027,13 @@ DESCRIPTION :
 Returns true if <graphics_object> has primitives stored exactly at <time>.
 ==============================================================================*/
 
+/**
+ * Set managed flag of GT_object. If this is set then the object will not be
+ * destroyed while it is in the manager; if not set then the object will be
+ * destroyed while it is only referenced by the manager.
+ */
+int GT_object_set_managed(struct GT_object *graphics_object, int is_managed);
+
 /***************************************************************************//**
  * Returns the vertex buffer set if the graphics_object has one.
  */

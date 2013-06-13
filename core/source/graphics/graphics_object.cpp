@@ -4489,6 +4489,16 @@ Returns true if <graphics_object> has primitives stored exactly at <time>.
 	return (return_code);
 } /* GT_object_has_primitives_at_time */
 
+int GT_object_set_managed(struct GT_object *graphics_object, int is_managed)
+{
+	if (graphics_object)
+	{
+		graphics_object->is_managed_flag = (bool)is_managed;
+		return 1;
+	}
+	return 0;
+}
+
 int GT_object_get_number_of_times(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
