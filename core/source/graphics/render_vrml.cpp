@@ -1168,7 +1168,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 				for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
 				{
 					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
-						(label && (glyph_number == 0) && *label) || (static_labels && static_labels[glyph_number]))
+						((label && (glyph_number == 0) && (*label)) || (static_labels && static_labels[glyph_number])))
 					{
 						resolve_glyph_axes(glyph_repeat_mode, glyph_number,
 							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,

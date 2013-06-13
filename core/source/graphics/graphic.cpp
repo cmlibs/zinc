@@ -2384,7 +2384,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				}
 				const int number_of_glyphs =
 					Cmiss_glyph_repeat_mode_get_number_of_glyphs(graphic->glyph_repeat_mode);
-				bool show_label_text = false;
 				int last_glyph_number_with_label_text = -1;
 				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
 				{
