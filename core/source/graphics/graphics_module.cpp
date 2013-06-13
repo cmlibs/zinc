@@ -252,7 +252,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
 					(void *)module, Cmiss_font_module_get_manager(module->font_module));
 			Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
-			module->material_module = Cmiss_graphics_material_module_create(root_region,
+			module->material_module = Cmiss_graphics_material_module_create(
 					Cmiss_spectrum_module_get_manager(module->spectrum_module));
 			Cmiss_region_destroy(&root_region);
 			module->material_manager_callback_id =

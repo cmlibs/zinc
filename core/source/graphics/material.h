@@ -315,7 +315,6 @@ Global functions
 Cmiss_graphics_material *Cmiss_graphics_material_create_private();
 
 struct Cmiss_graphics_material_module *Cmiss_graphics_material_module_create(
-	struct Cmiss_region *root_region,
 	struct MANAGER(Spectrum) *spectrum_manager);
 
 struct MANAGER(Graphical_material) *Cmiss_graphics_material_module_get_manager(
@@ -323,10 +322,6 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_material_module_get_manager(
 
 struct MANAGER(Spectrum) *Cmiss_graphics_material_module_get_spectrum_manager(
 	struct Cmiss_graphics_material_module *material_module);
-
-struct Cmiss_region *Cmiss_graphics_material_module_get_region_non_access(
-	struct Cmiss_graphics_material_module *material_module);
-
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
 /*******************************************************************************
