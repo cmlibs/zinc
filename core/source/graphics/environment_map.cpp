@@ -44,6 +44,7 @@ The functions for manipulating environment maps.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include "zinc/graphicsmaterial.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/io_stream.h"
@@ -157,7 +158,7 @@ NULL.
 				DEALLOCATE(environment_map->name);
 				for (i=5;i>=0;i--)
 				{
-					DEACCESS(Graphical_material)(&((environment_map->face_material)[i]));
+					Cmiss_graphics_material_destroy(&((environment_map->face_material)[i]));
 				}
 				DEALLOCATE(*environment_map_address);
 				return_code=1;

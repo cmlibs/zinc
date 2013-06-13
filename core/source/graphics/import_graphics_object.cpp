@@ -993,7 +993,8 @@ DESCRIPTION :
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{
-									scanned_material = CREATE(Graphical_material)(matname);
+									scanned_material = Cmiss_graphics_material_create_private();
+									Cmiss_graphics_material_set_name(scanned_material, matname);
 									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
 											(scanned_material, graphical_material_manager)))
@@ -1018,6 +1019,10 @@ DESCRIPTION :
 									new_obj = CREATE(GT_object)(objname, g_VOLTEX, scanned_material);
 									GT_object_set_next_object(obj, new_obj);
 									obj = new_obj;
+								}
+								if (scanned_material)
+								{
+									Cmiss_graphics_material_destroy(&scanned_material);
 								}
 							}
 							else

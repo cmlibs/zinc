@@ -56,6 +56,7 @@
 #include <cmath>
 #include "zinc/types/fontid.h"
 #include "zinc/status.h"
+#include "zinc/graphicsmaterial.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/mystring.h"
@@ -1073,24 +1074,28 @@ The length and width of the arrow heads are specified by the final parameters.
 				glyph = make_glyph_arrow_solid(name, /*primary_axis*/1,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = CREATE(Graphical_material)("red");
+				material = Cmiss_graphics_material_create_private();
+				Cmiss_graphics_material_set_name(material, "red");
 				colour.red = 1;
 				colour.green = 0;
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(glyph, material);
+				Cmiss_graphics_material_destroy(&material);
 				last_object = glyph;
 
 				sprintf(glyph_name, "%s_arrow2", name);
 				arrow2 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/2,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = CREATE(Graphical_material)("green");
+				material = Cmiss_graphics_material_create_private();
+				Cmiss_graphics_material_set_name(material, "green");
 				colour.red = 0;
 				colour.green = 1;
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow2, material);
+				Cmiss_graphics_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow2);
 				last_object = arrow2;
 
@@ -1098,12 +1103,14 @@ The length and width of the arrow heads are specified by the final parameters.
 				arrow3 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/3,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = CREATE(Graphical_material)("blue");
+				material = Cmiss_graphics_material_create_private();
+				Cmiss_graphics_material_set_name(material, "blue");
 				colour.red = 0;
 				colour.green = 0;
 				colour.blue = 1;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow3, material);
+				Cmiss_graphics_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow3);
 				last_object = arrow3;
 				

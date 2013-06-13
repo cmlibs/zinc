@@ -60,5 +60,8 @@
 	struct Cmiss_graphics_material;
 	typedef struct Cmiss_graphics_material * Cmiss_graphics_material_id;
 
+	struct Cmiss_graphics_material_module;
+	typedef struct Cmiss_graphics_material_module * Cmiss_graphics_material_module_id;
+
 #define CMISS_GRAPHICS_MATERIAL_ID_H
 #endif /* CMISS_GRAPHICS_MATERIAL_ID_H */

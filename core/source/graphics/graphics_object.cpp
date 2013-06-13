@@ -56,6 +56,7 @@ gtObject/gtWindow management routines.
 
 #include "zinc/field.h"
 #include "zinc/fieldsubobjectgroup.h"
+#include "zinc/graphicsmaterial.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 #include "general/compare.h"
@@ -3890,7 +3891,7 @@ Allocates memory and assigns fields for a graphics object.
 				object->object_type=object_type;
 				if (default_material)
 				{
-					object->default_material=ACCESS(Graphical_material)(default_material);
+					object->default_material=Cmiss_graphics_material_access(default_material);
 				}
 				else
 				{
@@ -3970,15 +3971,15 @@ and sets <*object> to NULL.
 			DEALLOCATE(object->name);
 			if (object->default_material)
 			{
-				DEACCESS(Graphical_material)(&(object->default_material));
+				Cmiss_graphics_material_destroy(&(object->default_material));
 			}
 			if (object->selected_material)
 			{
-				DEACCESS(Graphical_material)(&(object->selected_material));
+				Cmiss_graphics_material_destroy(&(object->selected_material));
 			}
 			if (object->secondary_material)
 			{
-				DEACCESS(Graphical_material)(&(object->secondary_material));
+				Cmiss_graphics_material_destroy(&(object->secondary_material));
 			}
 			if (object->spectrum)
 			{

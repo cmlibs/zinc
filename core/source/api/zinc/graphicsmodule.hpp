@@ -118,6 +118,11 @@ public:
 		return GlyphModule(Cmiss_graphics_module_get_glyph_module(id));
 	}
 
+	GraphicsMaterialModule getGraphicsMaterialModule()
+	{
+		return GraphicsMaterialModule(Cmiss_graphics_module_get_material_module(id));
+	}
+
 	GraphicsMaterial createMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphics_module_create_material(id));

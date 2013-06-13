@@ -52,6 +52,7 @@
 #include "zinc/graphic.h"
 #include "zinc/font.h"
 #include "zinc/graphicsfilter.h"
+#include "zinc/graphicsmaterial.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
 #include "general/debug.h"
@@ -520,15 +521,15 @@ int DESTROY(Cmiss_graphic)(
 		/* appearance graphic */
 		if (graphic->material)
 		{
-			DEACCESS(Graphical_material)(&(graphic->material));
+			Cmiss_graphics_material_destroy(&(graphic->material));
 		}
 		if (graphic->secondary_material)
 		{
-			DEACCESS(Graphical_material)(&(graphic->secondary_material));
+			Cmiss_graphics_material_destroy(&(graphic->secondary_material));
 		}
 		if (graphic->selected_material)
 		{
-			DEACCESS(Graphical_material)(&(graphic->selected_material));
+			Cmiss_graphics_material_destroy(&(graphic->selected_material));
 		}
 		if (graphic->data_field)
 		{
@@ -6696,6 +6697,22 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		if (modify_rendition_data.graphic)
 		{
 			Cmiss_graphic_destroy(&(modify_rendition_data.graphic));
+		}
+		if (rendition_command_data.default_font)
+		{
+			DEACCESS(Cmiss_font)(&rendition_command_data.default_font);
+		}
+		if (rendition_command_data.default_spectrum)
+		{
+			DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
+		}
+		if (rendition_command_data.default_material)
+		{
+			Cmiss_graphics_material_destroy(&rendition_command_data.default_material);
+		}
+		if (rendition_command_data.root_region)
+		{
+			Cmiss_region_destroy(&(rendition_command_data.root_region));
 		}
 	}
 

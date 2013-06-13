@@ -93,7 +93,7 @@ DECLARE_LIST_TYPES(Spectrum);
 DECLARE_MANAGER_TYPES(Spectrum);
 struct Cmiss_graphics_module;
 #include "general/manager_private.h"
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct Cmiss_graphics_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct Cmiss_spectrum_module);
 
 enum Spectrum_colour_components
 /*******************************************************************************

@@ -164,6 +164,101 @@ public:
 
 };
 
+class GraphicsMaterialModule
+{
+protected:
+	Cmiss_graphics_material_module_id id;
+
+public:
+
+	GraphicsMaterialModule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsMaterialModule(Cmiss_graphics_material_module_id in_graphics_material_module_id) :
+		id(in_graphics_material_module_id)
+	{  }
+
+	GraphicsMaterialModule(const GraphicsMaterialModule& graphicsMaterialModule) :
+		id(Cmiss_graphics_material_module_access(graphicsMaterialModule.id))
+	{  }
+
+	GraphicsMaterialModule& operator=(const GraphicsMaterialModule& graphicsMaterialModule)
+	{
+		Cmiss_graphics_material_module_id temp_id = Cmiss_graphics_material_module_access(
+			graphicsMaterialModule.id);
+		if (0 != id)
+		{
+			Cmiss_graphics_material_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~GraphicsMaterialModule()
+	{
+		if (0 != id)
+		{
+			Cmiss_graphics_material_module_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Cmiss_graphics_material_module_id getId()
+	{
+		return id;
+	}
+
+	GraphicsMaterial createGraphicsMaterial()
+	{
+		return GraphicsMaterial(Cmiss_graphics_material_module_create_material(id));
+	}
+
+	GraphicsMaterial findGraphicsMaterialByName(const char *name)
+	{
+		return GraphicsMaterial(Cmiss_graphics_material_module_find_material_by_name(id, name));
+	}
+
+	int beginChange()
+	{
+		return Cmiss_graphics_material_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_graphics_material_module_end_change(id);
+	}
+
+	int defineStandardMaterials()
+	{
+		return Cmiss_graphics_material_module_define_standard_materials(id);
+	}
+
+	GraphicsMaterial getDefaultGraphicsMaterial()
+	{
+		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_material(id));
+	}
+
+	int setDefaultGraphicsMaterial(GraphicsMaterial &graphicsMaterial)
+	{
+		return Cmiss_graphics_material_module_set_default_material(id, graphicsMaterial.getId());
+	}
+
+	GraphicsMaterial getDefaultSelectedGraphicsMaterial()
+	{
+		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_selected_material(id));
+	}
+
+	int setDefaultSelectedGraphicsMaterial(GraphicsMaterial &graphicsMaterial)
+	{
+		return Cmiss_graphics_material_module_set_default_selected_material(id, graphicsMaterial.getId());
+	}
+};
+
 } // namespace Cmiss
 
 #endif /* __ZN_CMISS_GRAPHICS_MATERIAL_HPP__ */

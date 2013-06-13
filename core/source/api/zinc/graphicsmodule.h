@@ -55,7 +55,19 @@ extern "C" {
 #endif
 
 /***************************************************************************//**
+ * Return the material module in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the material pacakage in graphics module if successfully called,
+ *    otherwise NULL.
+ */
+ZINC_API Cmiss_graphics_material_module_id Cmiss_graphics_module_get_material_module(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
+ *
+ * @deprecated see Cmiss_graphics_material_module_find_material_by_name
  *
  * @param graphics_module  The handle to the graphics module to find the
  * material in.
@@ -67,6 +79,8 @@ ZINC_API Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
 
 /***************************************************************************//**
  * Create and return a handle to a new graphics material.
+ *
+ * @deprecated see Cmiss_graphics_material_module_create_material
  *
  * @param graphics_module  The handle to the graphics module the material will
  * belong to.
@@ -224,6 +238,8 @@ ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_mod
 /***************************************************************************//**
  * Define a list of standard cmgui materials and store them as they are managed
  * by graphics module.
+ *
+ * @deprecated see Cmiss_graphics_material_module_define_standard_materials
  *
  * @param graphics_module  Pointer to a Graphics_module object.
  * @return  Status CMISS_OK if successfully create a list of standard materials
