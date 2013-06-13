@@ -753,6 +753,7 @@ DESCRIPTION :
 								if(!FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 									objname,object_list))
 								{
+									GT_object_set_managed(obj, 1);
 									ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
 								}
 							}
@@ -873,6 +874,7 @@ DESCRIPTION :
 				obj=CREATE(GT_object)(objname, g_VOLTEX, NULL);
 				if (obj)
 				{
+					GT_object_set_managed(obj, 1);
 					ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
 				}
 			}

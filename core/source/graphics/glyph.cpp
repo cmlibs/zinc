@@ -2303,7 +2303,7 @@ private:
 		GET_NAME(GT_object)(gt_object, &name);
 		if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(name, this->glyphManager))
 		{
-			gt_object->is_managed_flag = true;
+			GT_object_set_managed(gt_object, 1);
 			ADD_OBJECT_TO_MANAGER(GT_object)(gt_object, this->glyphManager);
 		}
 		else
