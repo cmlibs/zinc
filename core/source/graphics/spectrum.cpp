@@ -178,6 +178,24 @@ public:
 			ACCESS(Cmiss_spectrum)(this->defaultSpectrum);
 			return this->defaultSpectrum;
 		}
+		else
+		{
+			const char *default_spectrum_name = "default";
+			struct Cmiss_spectrum *spectrum = findSpectrumByName(default_spectrum_name);
+			if (0 != spectrum)
+			{
+				spectrum = createSpectrum();
+				Cmiss_spectrum_set_name(spectrum, "default");
+				Spectrum_set_simple_type(spectrum,	BLUE_TO_RED_SPECTRUM);
+				Spectrum_set_minimum_and_maximum(spectrum,0,1);
+			}
+			if (spectrum)
+			{
+				Cmiss_spectrum_set_attribute_integer(spectrum, CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED, 1);
+				setDefaultSpectrum(spectrum);
+				return spectrum;
+			}
+		}
 		return 0;
 	}
 
