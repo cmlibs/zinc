@@ -174,6 +174,19 @@ public:
 			ACCESS(Cmiss_font)(this->defaultFont);
 			return this->defaultFont;
 		}
+		else
+		{
+			const char *default_font_name = "default";
+			struct Cmiss_font *font = findFontByName(default_font_name);
+			if (NULL == font)
+			{
+				font = createFont();
+				Cmiss_font_set_name(font, "default");
+			}
+			if (font)
+				setDefaultFont(font);
+			return font;
+		}
 		return 0;
 	}
 

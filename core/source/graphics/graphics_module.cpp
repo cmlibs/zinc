@@ -574,30 +574,13 @@ Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 struct Cmiss_spectrum *Cmiss_graphics_module_get_default_spectrum(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	struct Cmiss_spectrum *spectrum = NULL;
-
 	if (graphics_module && graphics_module->spectrum_module)
 	{
-		spectrum = Cmiss_spectrum_module_get_default_spectrum(
+		return Cmiss_spectrum_module_get_default_spectrum(
 			graphics_module->spectrum_module);
-		if (!spectrum)
-		{
-			spectrum = Cmiss_spectrum_module_create_spectrum(graphics_module->spectrum_module);
-			if (spectrum)
-			{
-				Cmiss_spectrum_set_name(spectrum, "default");
-				Cmiss_spectrum_module_set_default_spectrum(graphics_module->spectrum_module, spectrum);
-				if (spectrum)
-				{
-					Spectrum_set_simple_type(spectrum,
-						BLUE_TO_RED_SPECTRUM);
-					Spectrum_set_minimum_and_maximum(spectrum,0,1);
-				}
-			}
-		}
 	}
 
-	return spectrum;
+	return 0;
 }
 
 int Cmiss_graphics_module_define_standard_materials(
@@ -613,24 +596,11 @@ int Cmiss_graphics_module_define_standard_materials(
 struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	struct Cmiss_font *font = NULL;
-
 	if (graphics_module && graphics_module->font_module)
 	{
-		font = Cmiss_font_module_get_default_font(
-			graphics_module->font_module);
-		if (!font)
-		{
-			font = Cmiss_font_module_create_font(graphics_module->font_module);
-			if (font)
-			{
-				Cmiss_font_set_name(font, "default");
-				Cmiss_font_module_set_default_font(graphics_module->font_module, font);
-			}
-		}
+		return Cmiss_font_module_get_default_font(graphics_module->font_module);
 	}
-
-	return font;
+	return 0;
 }
 
 Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
@@ -900,40 +870,13 @@ struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manag
 struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
 	struct Cmiss_graphics_module *graphics_module)
 {
-	const char *default_tessellation_name = "default";
-	struct Cmiss_tessellation *tessellation = NULL;
+
 	if (graphics_module && graphics_module->tessellation_module)
 	{
-		tessellation = Cmiss_tessellation_module_get_default_tessellation(
+		return Cmiss_tessellation_module_get_default_tessellation(
 			graphics_module->tessellation_module);
-		if (NULL == tessellation)
-		{
-			tessellation = Cmiss_tessellation_module_find_tessellation_by_name(
-				graphics_module->tessellation_module, default_tessellation_name);
-			if (NULL == tessellation)
-			{
-				tessellation = Cmiss_tessellation_module_create_tessellation(
-					graphics_module->tessellation_module);
-				Cmiss_tessellation_set_name(tessellation, default_tessellation_name);
-				Cmiss_tessellation_set_attribute_integer(
-					tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
-				const int default_minimum_divisions = 1;
-				Cmiss_tessellation_set_minimum_divisions(tessellation,
-					/*dimensions*/1, &default_minimum_divisions);
-				const int default_refinement_factor = 4;
-				Cmiss_tessellation_set_refinement_factors(tessellation,
-					/*dimensions*/1, &default_refinement_factor);
-				Cmiss_tessellation_module_set_default_tessellation(
-					graphics_module->tessellation_module, tessellation);
-			}
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_tessellation.  Invalid argument(s)");
-	}
-	return tessellation;
+	return 0;
 }
 
 struct Cmiss_tessellation* Cmiss_graphics_module_find_tessellation_by_name(

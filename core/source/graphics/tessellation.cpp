@@ -163,6 +163,31 @@ public:
 			ACCESS(Cmiss_tessellation)(this->defaultTessellation);
 			return this->defaultTessellation;
 		}
+		else
+		{
+			const char *default_tessellation_name = "default";
+			struct Cmiss_tessellation *tessellation = findTessellationByName(default_tessellation_name);
+			if (NULL == tessellation)
+			{
+				tessellation = createTessellation();
+				Cmiss_tessellation_set_name(tessellation, default_tessellation_name);
+
+				const int default_minimum_divisions = 1;
+				Cmiss_tessellation_set_minimum_divisions(tessellation,
+					/*dimensions*/1, &default_minimum_divisions);
+				const int default_refinement_factor = 4;
+				Cmiss_tessellation_set_refinement_factors(tessellation,
+					/*dimensions*/1, &default_refinement_factor);
+			}
+			if (tessellation)
+			{
+				setDefaultTessellation(tessellation);
+				Cmiss_tessellation_set_attribute_integer(
+					tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
+			}
+			return tessellation;
+		}
+
 		return 0;
 	}
 
