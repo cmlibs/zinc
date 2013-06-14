@@ -71,6 +71,7 @@ SET(INTERFACE_SRCS
 	../interface/differentialoperator.i
 	../interface/fieldcache.i
 	../interface/tessellation.i
+	../interface/glyph.i
 	../interface/graphic.i
 	../interface/selection.i
 	../interface/font.i
