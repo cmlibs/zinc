@@ -70,6 +70,7 @@ gtObject/gtWindow management routines.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/decimate_voltex.h"
 #include "graphics/font.h"
+#include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
@@ -4769,64 +4770,48 @@ will produce the range of all the graphics objects.
 						glyph_set = primitive_list->gt_glyph_set.first;
 						while (glyph_set)
 						{
-							number_of_positions=glyph_set->number_of_points;
-							if ((position=glyph_set->point_list)&&(0<number_of_positions))
+							Triple *point = glyph_set->point_list;
+							Triple *axis1 = glyph_set->axis1_list;
+							Triple *axis2 = glyph_set->axis2_list;
+							Triple *axis3 = glyph_set->axis3_list;
+							Triple *scale = glyph_set->scale_list;
+							Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+							int number_of_points = glyph_set->number_of_points;
+							for (i = 0; i < number_of_points; ++i)
 							{
+								resolve_glyph_axes(CMISS_GLYPH_REPEAT_NONE, /*glyph_number*/0,
+									glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+									*point, *axis1, *axis2, *axis3, *scale,
+									temp_point, temp_axis1, temp_axis2, temp_axis3);
 								if (*first)
 								{
-									minimum[0]=(*position)[0];
-									maximum[0]=minimum[0];
-									minimum[1]=(*position)[1];
-									maximum[1]=minimum[1];
-									minimum[2]=(*position)[2];
-									maximum[2]=minimum[2];
-									number_of_positions--;
-									position++;
-									*first=0;
+									for (int k = 0; k < 3; ++k)
+									{
+										maximum[k] = minimum[k] = temp_point[k];
+									}
+									*first = 0;
 								}
-								while (number_of_positions>0)
+								else
 								{
-									temp=(*position)[0];
-									if (temp<minimum[0])
+									for (int k = 0; k < 3; ++k)
 									{
-										minimum[0]=temp;
-									}
-									else
-									{
-										if (temp>maximum[0])
+										if (temp_point[k] < minimum[k])
 										{
-											maximum[0]=temp;
+											minimum[k] = temp_point[k];
+										}
+										else if (temp_point[k] > maximum[k])
+										{
+											maximum[k] = temp_point[k];
 										}
 									}
-									temp=(*position)[1];
-									if (temp<minimum[1])
-									{
-										minimum[1]=temp;
-									}
-									else
-									{
-										if (temp>maximum[1])
-										{
-											maximum[1]=temp;
-										}
-									}
-									temp=(*position)[2];
-									if (temp<minimum[2])
-									{
-										minimum[2]=temp;
-									}
-									else
-									{
-										if (temp>maximum[2])
-										{
-											maximum[2]=temp;
-										}
-									}
-									number_of_positions--;
-									position++;
 								}
+								point++;
+								axis1++;
+								axis2++;
+								axis3++;
+								scale++;
 							}
-							glyph_set=glyph_set->ptrnext;
+							glyph_set = glyph_set->ptrnext;
 						}
 					} break;
 					case g_POINTSET:
