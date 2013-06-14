@@ -1039,7 +1039,12 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 									renderer->Graphics_object_execute(glyph);
 									if (glyph_labels_function)
 									{
-										return_code = (*glyph_labels_function)(scale,
+										Triple label_scale;
+										for (int j = 0; j < 3; ++j)
+										{
+											label_scale[j] = glyph_set->base_size[j] + glyph_set->scale_factors[j]*(*scale)[j];
+										}
+										return_code = (*glyph_labels_function)(&label_scale,
 											glyph_set->label_bounds_dimension, glyph_set->label_bounds_components, label_bound,
 											label_density, material, secondary_material, glyph_set->font, renderer);
 									}
