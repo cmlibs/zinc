@@ -88,7 +88,7 @@ Used with iterators for building glyph sets from nodes.
 	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
 	ZnReal *label_bounds;
-	FE_value *data_values, *label_bounds_vector, time;
+	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3], time;
 	GLfloat *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
@@ -277,11 +277,19 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 						dimension = glyph_set_data->label_bounds_dimension;
 						values = glyph_set_data->label_bounds_values;
 						vector = glyph_set_data->label_bounds_vector;
+						FE_value label_scale[3];
+						for (k = 0; k < 3; ++k)
+						{
+							label_scale[k] = glyph_set_data->base_size[k] + size[k]*glyph_set_data->scale_factors[k];
+						}
 						for (i = 0 ; i < values ; i++)
 						{
 							for (k = 0 ; k < dimension ; k++)
 							{
-								vector[k] = (*point)[k];
+								vector[k] = coordinates[k] + 
+									glyph_set_data->offset[0]*label_scale[0]*a[k] + 
+									glyph_set_data->offset[1]*label_scale[1]*b[k] + 
+									glyph_set_data->offset[2]*label_scale[2]*c[k]; 
 							}
 							for (j = 0 ; j < dimension; j++)
 							{
@@ -293,21 +301,21 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 										{
 											for (k = 0 ; k < dimension ; k++)
 											{
-												vector[k] += (*axis1)[k] * (*scale)[0];
+												vector[k] += a[k]*label_scale[0];
 											}
 										} break;
 										case 1:
 										{
 											for (k = 0 ; k < dimension ; k++)
 											{
-												vector[k] += (*axis2)[k] * (*scale)[1];
+												vector[k] += b[k]*label_scale[1];
 											}
 										} break;
 										case 2:
 										{
 											for (k = 0 ; k < dimension ; k++)
 											{
-												vector[k] += (*axis3)[k] * (*scale)[2];
+												vector[k] += c[k]*label_scale[2];
 											}
 										} break;
 									}
@@ -928,6 +936,12 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					Glyph_set_data glyph_set_data;
 					glyph_set_data.number_of_points = 0;
 					/* set up information for the iterator */
+					for (i = 0; i < 3; i++)
+					{
+						glyph_set_data.base_size[i] = base_size[i];
+						glyph_set_data.offset[i] = offset[i];
+						glyph_set_data.scale_factors[i] = scale_factors[i];
+					}
 					glyph_set_data.point = point_list;
 					glyph_set_data.axis1 = axis1_list;
 					glyph_set_data.axis2 = axis2_list;
