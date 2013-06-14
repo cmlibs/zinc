@@ -43,6 +43,7 @@
 
 %import "region.i"
 %import "rendition.i"
+%import "glyph.i"
 %import "graphicsmaterial.i"
 %import "graphicsfilter.i"
 %import "scene.i"

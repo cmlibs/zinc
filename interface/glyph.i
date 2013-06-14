@@ -1,5 +1,5 @@
 /*******************************************************************************
- * tessellation.i
+ * glyph.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -19,7 +19,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,12 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") tessellation
-
-%include "integervaluesarraytypemap.i"
+%module(package="zinc") glyph
 
 %{
-#include "zinc/tessellation.hpp"
+#include "zinc/glyph.hpp"
 %}
 
-%include "zinc/tessellation.hpp"
+%include "zinc/glyph.hpp"
