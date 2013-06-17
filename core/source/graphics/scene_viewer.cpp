@@ -3488,6 +3488,7 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
 		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
 			cmiss_scene_viewer_module,
 			Cmiss_scene_viewer_module_get_default_scene(cmiss_scene_viewer_module));
+		DEACCESS(Graphics_buffer)(&graphics_buffer);
 	}
 	else
 	{
@@ -6843,7 +6844,7 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-			DESTROY(Graphics_buffer)(&offscreen_buffer);
+			DEACCESS(Graphics_buffer)(&offscreen_buffer);
 		}
 		else
 		{

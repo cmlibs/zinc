@@ -88,7 +88,7 @@ public:
 	{
 		if (graphics_buffer)
 		{
-			DESTROY(Graphics_buffer)(&graphics_buffer);
+			DEACCESS(Graphics_buffer)(&graphics_buffer);
 		}
 	}
 };

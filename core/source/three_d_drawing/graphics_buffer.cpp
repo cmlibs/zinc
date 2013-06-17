@@ -619,13 +619,13 @@ Closes a Graphics buffer instance
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Graphics_buffer).  Missing buffer");
+			"DEACCESS(Graphics_buffer).  Missing buffer");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Graphics_buffer) */
+} /* DEACCESS(Graphics_buffer) */
 
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 

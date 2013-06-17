@@ -66,7 +66,6 @@ struct Context *Cmiss_context_create(const char *id)
 		context->id = duplicate_string(id);
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
-		context->scene_viewer_module = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
 		context->time_keeper = 0;
@@ -97,10 +96,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 				 * has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
-			}
-			if (context->scene_viewer_module)
-			{
-				Cmiss_scene_viewer_module_destroy(&context->scene_viewer_module);
 			}
 			if (context->any_object_selection)
 			{
@@ -306,33 +301,13 @@ Cmiss_scene_viewer_module_id Cmiss_context_get_default_scene_viewer_module(
 	Cmiss_scene_viewer_module *scene_viewer_module = NULL;
 	if (context)
 	{
-		if (!context->scene_viewer_module)
+		Cmiss_graphics_module_id graphics_module = Cmiss_context_get_default_graphics_module(context);
+		if (graphics_module)
 		{
-			Cmiss_graphics_module_id graphics_module = Cmiss_context_get_default_graphics_module(context);
-			if (graphics_module)
-			{
-				struct Light *default_light =
-					Cmiss_graphics_module_get_default_light(graphics_module);
-				struct Light_model *default_light_model =
-					Cmiss_graphics_module_get_default_light_model(graphics_module);
-				struct Scene *default_scene =
-					Cmiss_graphics_module_get_default_scene(graphics_module);
-				Colour default_background_colour;
-				default_background_colour.red = 0.0;
-				default_background_colour.green = 0.0;
-				default_background_colour.blue = 0.0;
-				context->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)
-					(&default_background_colour,
-						/* interactive_tool_manager */0,
-						Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
-						Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
-						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene);
-				DEACCESS(Light_model)(&default_light_model);
-				DEACCESS(Light)(&default_light);
-				Cmiss_scene_destroy(&default_scene);
-			}
+			scene_viewer_module = Cmiss_graphics_module_get_scene_viewer_module(
+				graphics_module);
+			Cmiss_graphics_module_destroy(&graphics_module);
 		}
-		scene_viewer_module = Cmiss_scene_viewer_module_access(context->scene_viewer_module);
 	}
 	else
 	{
