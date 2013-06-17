@@ -14,10 +14,8 @@
 #include <zinc/element.h>
 #include <zinc/fieldvectoroperators.h>
 
-namespace derivative
-{
 #include "test_resources.h"
-}
+
 
 TEST(Cmiss_field_module_create_derivative, invalid_args)
 {
@@ -54,7 +52,7 @@ TEST(Cmiss_field_module_create_derivative, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, derivative::cube_exformat);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f1);
@@ -129,7 +127,7 @@ TEST(Cmiss_field_module_create_curl, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, derivative::cube_exformat);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f1);
@@ -205,7 +203,7 @@ TEST(Cmiss_field_module_create_divergence, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, derivative::cube_exformat);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f1);
@@ -250,7 +248,7 @@ TEST(Cmiss_field_module_create_divergence, grad_mag)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, derivative::cube_exformat);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f1);
@@ -330,7 +328,7 @@ TEST(Cmiss_field_module_create_gradient, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, derivative::cube_exformat);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f1);

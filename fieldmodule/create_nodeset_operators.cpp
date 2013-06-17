@@ -62,7 +62,8 @@ TEST(Cmiss_field_module_create_nodeset_minimum, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, nodes_exnode);
+	Cmiss_region_read_file(root_region,
+		TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 
@@ -138,7 +139,7 @@ TEST(Cmiss_field_module_create_nodeset_maximum, valid_args)
 	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
 	Cmiss_field_module_id fm = Cmiss_region_get_field_module(root_region);
 
-	Cmiss_region_read_file(root_region, nodes_exnode);
+	Cmiss_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 
@@ -164,5 +165,5 @@ TEST(Cmiss_field_module_create_nodeset_maximum, valid_args)
 	Cmiss_field_module_destroy(&fm);
 	Cmiss_region_destroy(&root_region);
 	Cmiss_context_destroy(&context);
-}
+};
 
