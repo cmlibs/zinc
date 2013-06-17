@@ -45,6 +45,7 @@
 #include "types/regionid.h"
 #include "types/renditionid.h"
 #include "types/sceneid.h"
+#include "types/sceneviewerid.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
 
@@ -109,6 +110,17 @@ ZINC_API Cmiss_graphics_module_id Cmiss_graphics_module_access(
  */
 ZINC_API int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
+
+/**
+ * Returns a handle to a scene viewer module
+ * User interface must be enabled before this function can be called successfully.
+ *
+ *
+ * @param graphics_module  The graphics module to request the module from.
+ * @return The scene viewer module if successfully called otherwise NULL.
+ */
+ZINC_API Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
+	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
  * Creates a scene with an access_count of 1. Caller is responsible for calling

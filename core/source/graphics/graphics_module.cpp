@@ -49,6 +49,7 @@
 #include "graphics/material.h"
 #include "graphics/rendition.h"
 #include "graphics/scene.h"
+#include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/light_model.h"
@@ -72,6 +73,7 @@ struct Cmiss_graphics_module
 	void *spectrum_manager_callback_id;
 	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
+	Cmiss_scene_viewer_module_id scene_viewer_module;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
@@ -245,6 +247,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
 			module->default_graphics_filter = NULL;
+			module->scene_viewer_module = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_module=Cmiss_spectrum_module_create();
 			module->font_module = Cmiss_font_module_create();
@@ -377,6 +380,7 @@ int Cmiss_graphics_module_destroy(
 				Cmiss_graphics_module_remove_member_regions_rendition(graphics_module);
 				delete graphics_module->member_regions_list;
 			}
+			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
 			if (graphics_module->default_scene)
 				DEACCESS(Scene)(&graphics_module->default_scene);
 			if (graphics_module->scene_manager)
@@ -658,6 +662,46 @@ Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
 	}
 	return 0;
 }
+
+Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
+	Cmiss_graphics_module_id graphics_module)
+{
+	Cmiss_scene_viewer_module *scene_viewer_module = NULL;
+	if (graphics_module)
+	{
+		if (!graphics_module->scene_viewer_module)
+		{
+			struct Light *default_light =
+				Cmiss_graphics_module_get_default_light(graphics_module);
+			struct Light_model *default_light_model =
+				Cmiss_graphics_module_get_default_light_model(graphics_module);
+			struct Scene *default_scene =
+				Cmiss_graphics_module_get_default_scene(graphics_module);
+			Colour default_background_colour;
+			default_background_colour.red = 0.0;
+			default_background_colour.green = 0.0;
+			default_background_colour.blue = 0.0;
+			graphics_module->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)
+				(&default_background_colour,
+				/* interactive_tool_manager */0,
+				Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
+				Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
+				Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene);
+			DEACCESS(Light_model)(&default_light_model);
+			DEACCESS(Light)(&default_light);
+			Cmiss_scene_destroy(&default_scene);
+		}
+		scene_viewer_module = Cmiss_scene_viewer_module_access(graphics_module->scene_viewer_module);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_get_default_scene_viewer_module.  "
+			"Missing context");
+	}
+	return scene_viewer_module;
+}
+
 
 struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
 		struct Cmiss_graphics_module *graphics_module)

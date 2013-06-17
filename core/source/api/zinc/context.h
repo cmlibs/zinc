@@ -131,6 +131,8 @@ ZINC_API Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
  * Returns a handle to a scene viewer module
  * User interface must be enabled before this function can be called successfully.
  *
+ * @deprecated see Cmiss_graphics_module_get_scene_viewer_module
+ *
  * @param context  Handle to a cmiss_context object.
  * @return The scene viewer module if successfully called otherwise NULL.
  */

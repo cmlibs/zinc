@@ -48,6 +48,7 @@
 #include "zinc/graphicsfilter.hpp"
 #include "zinc/font.hpp"
 #include "zinc/scene.hpp"
+#include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
@@ -175,6 +176,11 @@ public:
 	GraphicsFilter findFilterByName(const char *name)
 	{
 		return GraphicsFilter(Cmiss_graphics_module_find_filter_by_name(id, name));
+	}
+
+	SceneViewerModule getSceneViewerModule()
+	{
+		return SceneViewerModule(Cmiss_graphics_module_get_scene_viewer_module(id));
 	}
 
 	Scene createScene()
