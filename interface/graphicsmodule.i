@@ -47,6 +47,7 @@
 %import "graphicsmaterial.i"
 %import "graphicsfilter.i"
 %import "scene.i"
+%import "sceneviewer.i"
 %import "spectrum.i"
 %import "tessellation.i"
 
