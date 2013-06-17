@@ -8,6 +8,8 @@
 #include <zinc/status.h>
 #include <zinc/stream.h>
 
+#include "test_resources.h"
+
 TEST(region_file_input, invalid_args)
 {
 	Cmiss_context_id context = Cmiss_context_create("test");
@@ -18,7 +20,7 @@ TEST(region_file_input, invalid_args)
 	EXPECT_NE(static_cast<Cmiss_stream_information *>(0), si);
 
 	Cmiss_stream_resource_id sr = Cmiss_stream_information_create_resource_file(
-		si, "region_input.exregion");
+		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
 	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), sr);
 
 	int result = Cmiss_region_read(root_region, si);
