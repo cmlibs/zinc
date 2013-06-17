@@ -1695,13 +1695,16 @@ static int Cmiss_region_merge_private(Cmiss_region_id target_region,
 		if (target_child)
 		{
 			return_code = Cmiss_region_merge_private(target_child, source_child, root_region);
+			Cmiss_region_reaccess_next_sibling(&source_child);
 		}
 		else
 		{
+			Cmiss_region_id sibling_region = Cmiss_region_get_next_sibling(source_child);
 			return_code = Cmiss_region_append_child(target_region, source_child);
+			Cmiss_region_destroy(&source_child);
+			source_child = sibling_region;
 		}
 		Cmiss_region_destroy(&target_child);
-		Cmiss_region_reaccess_next_sibling(&source_child);
 	}
 	Cmiss_region_destroy(&source_child);
 	return (return_code);
