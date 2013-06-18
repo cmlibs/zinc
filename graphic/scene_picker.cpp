@@ -90,6 +90,8 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	result = Cmiss_scene_picker_add_picked_nodes_to_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<Cmiss_graphic *>(0), graphic);
 
+	Cmiss_graphics_filter_destroy(&gf);
+
 	Cmiss_field_group_destroy(&fieldGroup);
 
 	Cmiss_field_destroy(&field);

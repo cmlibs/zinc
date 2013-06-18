@@ -115,7 +115,7 @@ TEST(Cmiss_field_module_create_if, string_constant)
 	EXPECT_EQ('o', outstring[2]);
 
 	Cmiss_deallocate(outstring);
-
+	Cmiss_field_cache_destroy(&fc);
 	Cmiss_field_destroy(&f1);
 	Cmiss_field_destroy(&f2);
 	Cmiss_field_destroy(&f3);
@@ -124,3 +124,4 @@ TEST(Cmiss_field_module_create_if, string_constant)
 	Cmiss_region_destroy(&root_region);
 	Cmiss_context_destroy(&context);
 }
+

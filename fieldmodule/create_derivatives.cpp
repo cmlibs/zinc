@@ -86,6 +86,7 @@ TEST(Cmiss_field_module_create_derivative, valid_args)
 	Cmiss_mesh_destroy(&mesh);
 	Cmiss_field_destroy(&f1);
 	Cmiss_field_destroy(&f2);
+	Cmiss_field_destroy(&ft);
 	Cmiss_field_cache_destroy(&fc);
 	Cmiss_field_module_destroy(&fm);
 	Cmiss_region_destroy(&root_region);

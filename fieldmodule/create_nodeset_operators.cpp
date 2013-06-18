@@ -49,6 +49,8 @@ TEST(Cmiss_field_module_create_nodeset_minimum, invalid_args)
 	Cmiss_field_destroy(&f0);
 	Cmiss_field_destroy(&f1);
 	Cmiss_field_destroy(&f2);
+	Cmiss_field_destroy(&f3);
+	Cmiss_field_destroy(&f4);
 	Cmiss_field_cache_destroy(&fc);
 	Cmiss_nodeset_destroy(&ns);
 	Cmiss_field_module_destroy(&fm);
@@ -126,6 +128,8 @@ TEST(Cmiss_field_module_create_nodeset_maximum, invalid_args)
 	Cmiss_field_destroy(&f0);
 	Cmiss_field_destroy(&f1);
 	Cmiss_field_destroy(&f2);
+	Cmiss_field_destroy(&f3);
+	Cmiss_field_destroy(&f4);
 	Cmiss_field_cache_destroy(&fc);
 	Cmiss_nodeset_destroy(&ns);
 	Cmiss_field_module_destroy(&fm);

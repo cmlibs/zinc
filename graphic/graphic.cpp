@@ -412,7 +412,7 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 		EXPECT_STREQ(text, outText);
 		Cmiss_deallocate(outText);
 	}
-
+	Cmiss_font_destroy(&font);
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
 	Cmiss_graphic_destroy(&gr);
 }
