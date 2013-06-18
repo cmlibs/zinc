@@ -822,7 +822,7 @@ static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_v
 		if (!ADD_OBJECT_TO_MANAGER(Spectrum)( (*spectrum),
 				command_data->spectrum_manager))
 		{
-			DESTROY(Spectrum)(spectrum);
+			DEACCESS(Spectrum)(spectrum);
 			//DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		}
 		else
