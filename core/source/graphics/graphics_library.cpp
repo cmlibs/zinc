@@ -1616,7 +1616,7 @@ appropriately.
 			real_extension_name = NULL;
 			return_code = GLEXTENSION_AVAILABLE;
 		}
-		if (!GLEW_loaded)
+		if (!GLEW_loaded && has_current_context())
 		{
 			GLenum err = glewInit();
 			if (GLEW_OK == err)
