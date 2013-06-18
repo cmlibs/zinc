@@ -74,7 +74,6 @@ struct Cmiss_graphics_module
 	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
 	Cmiss_scene_viewer_module_id scene_viewer_module;
-	struct Spectrum *default_spectrum;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct Light_model *default_light_model;
@@ -243,7 +242,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->list_of_lights = NULL;
 			module->glyph_module = Cmiss_glyph_module_create();
 			module->default_light = NULL;
-			module->default_spectrum = NULL;
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
 			module->default_graphics_filter = NULL;
@@ -394,8 +392,6 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Light_model)(&graphics_module->default_light_model);
 			if (graphics_module->light_model_manager)
 				DESTROY(MANAGER(Light_model))(&graphics_module->light_model_manager);
-			if (graphics_module->default_spectrum)
-				DEACCESS(Spectrum)(&graphics_module->default_spectrum);
 			if (graphics_module->spectrum_module)
 				Cmiss_spectrum_module_destroy(&graphics_module->spectrum_module);
 			if (graphics_module->font_module)

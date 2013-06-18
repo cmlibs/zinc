@@ -182,7 +182,7 @@ public:
 		{
 			const char *default_spectrum_name = "default";
 			struct Cmiss_spectrum *spectrum = findSpectrumByName(default_spectrum_name);
-			if (0 != spectrum)
+			if (0 == spectrum)
 			{
 				spectrum = createSpectrum();
 				Cmiss_spectrum_set_name(spectrum, "default");
