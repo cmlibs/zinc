@@ -40,6 +40,9 @@
 
 #if !defined (CMISS_GRAPHICS_FILTER_ID_H)
 
+	struct Cmiss_graphics_filter_module;
+	typedef struct Cmiss_graphics_filter_module *Cmiss_graphics_filter_module_id;
+
 	struct Cmiss_graphics_filter;
 	typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
 

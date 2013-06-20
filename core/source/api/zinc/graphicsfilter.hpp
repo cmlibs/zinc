@@ -41,6 +41,7 @@
 
 #include "zinc/graphicsfilter.h"
 #include "zinc/graphic.hpp"
+#include "zinc/region.hpp"
 
 namespace zinc
 {
@@ -182,6 +183,115 @@ public:
 	{
 		return Cmiss_graphics_filter_operator_remove_operand(
 			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId());
+	}
+};
+
+class GraphicsFilterModule
+{
+protected:
+	Cmiss_graphics_filter_module_id id;
+
+public:
+
+	GraphicsFilterModule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit GraphicsFilterModule(Cmiss_graphics_filter_module_id in_graphics_filter_module_id) :
+		id(in_graphics_filter_module_id)
+	{  }
+
+	GraphicsFilterModule(const GraphicsFilterModule& graphicsFiltermodule) :
+		id(Cmiss_graphics_filter_module_access(graphicsFiltermodule.id))
+	{  }
+
+	GraphicsFilterModule& operator=(const GraphicsFilterModule& graphicsFiltermodule)
+	{
+		Cmiss_graphics_filter_module_id temp_id = Cmiss_graphics_filter_module_access(
+			graphicsFiltermodule.id);
+		if (0 != id)
+		{
+			Cmiss_graphics_filter_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~GraphicsFilterModule()
+	{
+		if (0 != id)
+		{
+			Cmiss_graphics_filter_module_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Cmiss_graphics_filter_module_id getId()
+	{
+		return id;
+	}
+
+	GraphicsFilter createFilterVisibilityFlags()
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_visibility_flags(id));
+	}
+
+	GraphicsFilter createFilterGraphicName(const char *matchName)
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_name(id, matchName));
+	}
+
+	GraphicsFilter createFilterGraphicType(Graphic::GraphicType graphicType)
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_type(id,
+			static_cast<Cmiss_graphic_type>(graphicType)));
+	}
+
+	GraphicsFilter createFilterRegion(Region& matchRegion)
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_region(
+			id, matchRegion.getId()));
+	}
+
+	GraphicsFilterOperator createFilterOperatorAnd()
+	{
+		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
+			Cmiss_graphics_filter_module_create_filter_operator_and(id)));
+	}
+
+	GraphicsFilterOperator createFilterOperatorOr()
+	{
+		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
+			Cmiss_graphics_filter_module_create_filter_operator_or(id)));
+	}
+
+	GraphicsFilter findFilterByName(const char *name)
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_find_filter_by_name(id, name));
+	}
+
+	int beginChange()
+	{
+		return Cmiss_graphics_filter_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_graphics_filter_module_end_change(id);
+	}
+
+	GraphicsFilter getDefaultFilter()
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_get_default_filter(id));
+	}
+
+	int setDefaultFilter(GraphicsFilter &filter)
+	{
+		return Cmiss_graphics_filter_module_set_default_filter(id, filter.getId());
 	}
 };
 

@@ -139,6 +139,11 @@ public:
 		return GraphicsMaterial(Cmiss_graphics_module_find_material_by_name(id, material_name));
 	}
 
+	GraphicsFilterModule getFilterModule()
+	{
+		return GraphicsFilterModule(Cmiss_graphics_module_get_filter_module(id));
+	}
+
 	GraphicsFilter createFilterVisibilityFlags()
 	{
 		return GraphicsFilter(Cmiss_graphics_module_create_filter_visibility_flags(id));

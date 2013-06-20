@@ -260,8 +260,19 @@ ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_mod
 ZINC_API int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);
 
-/***************************************************************************//**
+/**
+* Get the graphics filter module which stores graphics_filter object.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the graphics filter module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module(
+	Cmiss_graphics_module_id graphics_module);
+
+/**
  * Find the graphics_filter with the supplied name in graphics module, if any.
+ *
+ * @deprecated see Cmiss_graphics_filter_module_find_filter_by_name
  *
  * @param graphics_module  The handle to the graphics module to find the
  * graphics_filter in.
