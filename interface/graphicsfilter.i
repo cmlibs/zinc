@@ -41,6 +41,7 @@
 %module(package="zinc") graphicsfilter
 
 %import "graphic.i"
+%import "region.i"
 
 %{
 #include "zinc/graphicsfilter.hpp"
