@@ -96,22 +96,14 @@ public:
 		return id;
 	}
 
-	enum Attribute
+	bool isManaged()
 	{
-		ATTRIBUTE_INVALID = CMISS_SCENE_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_SCENE_ATTRIBUTE_IS_MANAGED
-	};
-
-	int getAttributeInteger(Attribute attribute)
-	{
-		return Cmiss_scene_get_attribute_integer(id,
-			static_cast<Cmiss_scene_attribute>(attribute));
+		return Cmiss_scene_is_managed(id);
 	}
 
-	int setAttributeInteger(Attribute attribute, int value)
+	int setManaged(bool value)
 	{
-		return Cmiss_scene_set_attribute_integer(id,
-			static_cast<Cmiss_scene_attribute>(attribute), value);
+		return Cmiss_scene_set_managed(id, value);
 	}
 
 	int setRegion(Region& rootRegion)

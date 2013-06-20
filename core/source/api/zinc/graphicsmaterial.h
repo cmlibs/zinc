@@ -53,43 +53,37 @@ extern "C" {
 enum Cmiss_graphics_material_attribute
 {
 	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_INVALID = 0,
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
-	/*!< Boolean as integer, when 0 (default) material is destroyed when no
-	 * longer in use, i.e. when number of external references to it drops to
-	 * zero. Set to 1 to manage material object indefinitely, or until this
-	 * attribute is reset to zero, effectively marking it as pending destruction.
-	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA = 2,
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA = 1,
 	/*!< Opacity of the material. Transparent or translucent objects has
 	 * lower alpha values then an opaque ones. Minimum acceptable value is 0
 	 * and maximum acceptable value is 1. Use attribute_real to get and set
 	 * its values.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT = 3,
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT = 2,
 	/*!< Ambient colour of the material. Ambient colour simulates the colour
 	 * of the material when it does not receive direct illumination.
 	 * Composed of RGB components. Use attribute_real3 to get and set its
 	 * values. Minimum acceptable value is 0 and maximum acceptable value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE = 4,
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE = 3,
 	/*!< Diffuse colour of the material. Diffuse colour response to light that
 	 * comes from one direction and this colour scattered equally in all directions
 	 * once the light hits it. Composed of RGB components. Use attribute_real3
 	 * to get and set its values. Minimum acceptable value is 0 and maximum acceptable
 	 * value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION = 5,
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION = 4,
 	/*!< Emissive colour of the material. Emissive colour simulates colours
 	 * that is originating from the material itself. Composed of RGB components.
 	 * Use attribute_real3 to get and set its values. Minimum acceptable value is 0
 	 * and maximum acceptable value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS = 6,
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS = 5,
 	/*!< Shininess determines the brightness of the highlight. Minimum acceptable
 	 * value is 0 and maximum acceptable value is 1. Use attribute_real to get and
 	 * set its values.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR = 7
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR = 6
 	/*!< Specular colour of the material. Specular colour produces highlights.
 	 * Unlike ambient and diffuse, specular colour depends on location of
 	 * the viewpoint, it is brightest along the direct angle of reflection.
@@ -97,7 +91,6 @@ enum Cmiss_graphics_material_attribute
 	 * Minimum acceptable value is 0 and maximum acceptable value is 1.
 	 */
 };
-
 
 /**
 * Returns a new reference to the graphics_material module with reference count
@@ -238,6 +231,31 @@ ZINC_API enum Cmiss_graphics_material_attribute
 ZINC_API char *Cmiss_graphics_material_attribute_enum_to_string(
 	enum Cmiss_graphics_material_attribute attribute);
 
+/**
+ * Get managed status of graphics material in its owning graphics material module.
+ * @see Cmiss_graphics_material_set_managed
+ *
+ * @param graphics material  The graphics material to query.
+ * @return  1 (true) if graphics material is managed, otherwise 0 (false).
+ */
+ZINC_API int Cmiss_graphics_material_is_managed(Cmiss_graphics_material_id material);
+
+/**
+ * Set managed status of graphics material in its owning graphics material module.
+ * If set (managed) the graphics material will remain indefinitely in the
+ * graphics material module even if no external references are held.
+ * If not set (unmanaged) the graphics material will be automatically removed from the
+ * module when no longer referenced externally, effectively marking it as
+ * pending destruction.
+ * All new objects are unmanaged unless stated otherwise.
+ *
+ * @param graphics material  The graphics material to modify.
+ * @param value  The new value for the managed flag: 0 or 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphics_material_set_managed(Cmiss_graphics_material_id material,
+	int value);
+
 /***************************************************************************//**
  * Access the material, increase the access count of the material by one.
  *
@@ -256,29 +274,6 @@ ZINC_API Cmiss_graphics_material_id Cmiss_graphics_material_access(Cmiss_graphic
  * failure.
  */
 ZINC_API int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
-
-/***************************************************************************//**
- * Get an integer or Boolean attribute of the graphics material.
- *
- * @param material  Handle to the cmiss material.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
- */
-ZINC_API int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute attribute);
-
-/***************************************************************************//**
- * Set an integer or Boolean attribute of the graphics material.
- *
- * @param material  Handle to the cmiss material.
- * @param attribute  The identifier of the integer attribute to set.
- * @param value  The new value for the attribute. For Boolean values use 1 for
- * true in case more options are added in future.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
- * failed or attribute not valid or unable to be set for this material object.
- */
-ZINC_API int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute attribute, int value);
 
 /***************************************************************************//**
  * Get a real value of an attribute of the graphics material.

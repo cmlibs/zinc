@@ -3556,8 +3556,7 @@ int Cmiss_graphics_material_module_define_standard_materials(
 					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
 				Cmiss_graphics_material_set_attribute_real(material,
 					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
-				Cmiss_graphics_material_set_attribute_integer(
-					material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_graphics_material_set_managed(material, 1);
 				material->module = material_module;
 				Cmiss_graphics_material_destroy(&material);
 			}
@@ -3676,8 +3675,7 @@ Cmiss_graphics_material_module_id Cmiss_graphics_material_module_create(
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
 	Cmiss_graphics_material_set_attribute_real(defaultMaterial,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
-	Cmiss_graphics_material_set_attribute_integer(
-		defaultMaterial, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	Cmiss_graphics_material_set_managed(defaultMaterial, 1);
 	defaultMaterial->module = material_module;
 	Cmiss_graphics_material_module_set_default_material(
 		material_module, defaultMaterial);
@@ -3698,8 +3696,7 @@ Cmiss_graphics_material_module_id Cmiss_graphics_material_module_create(
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
 	Cmiss_graphics_material_set_attribute_real(defaultSelectedMaterial,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
-	Cmiss_graphics_material_set_attribute_integer(
-		defaultSelectedMaterial, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	Cmiss_graphics_material_set_managed(defaultSelectedMaterial, 1);
 	defaultSelectedMaterial->module = material_module;
 	Cmiss_graphics_material_module_set_default_selected_material(
 		material_module, defaultSelectedMaterial);
@@ -5798,7 +5795,7 @@ specified name and the default properties.
 				Cmiss_graphics_material_set_name(material, material_name);
 				if (material)
 				{
-					Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+					Cmiss_graphics_material_set_managed(material, 1);
 					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 						graphical_material_manager))
 					{
@@ -6443,54 +6440,28 @@ int Cmiss_graphics_material_destroy(Graphical_material **material_address)
 	return return_code;
 }
 
-int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute attribute)
+int Cmiss_graphics_material_is_managed(Cmiss_graphics_material_id material)
 {
-	int value = 0;
 	if (material)
 	{
-		switch (attribute)
-		{
-		case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
-			value = (int)material->is_managed_flag;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_graphics_material_get_attribute_integer.  Invalid attribute");
-			break;
-		}
+		return (int)material->is_managed_flag;
 	}
-	return value;
+	return 0;
 }
 
-int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute attribute, int value)
+int Cmiss_graphics_material_set_managed(Cmiss_graphics_material_id material, int value)
 {
-	int return_code = 0;
 	if (material)
 	{
-		return_code = 1;
-		int old_value = Cmiss_graphics_material_get_attribute_integer(material, attribute);
-		enum MANAGER_CHANGE(Graphical_material) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material);
-		switch (attribute)
+		int old_value = (int)material->is_managed_flag;
+		material->is_managed_flag = (value != 0);
+		if (value != old_value)
 		{
-		case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
-			material->is_managed_flag = (value != 0);
-			change = MANAGER_CHANGE_NOT_RESULT(Graphical_material);
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_graphics_material_set_attribute_integer.  Invalid attribute");
-			return_code = 0;
-			break;
+			MANAGED_OBJECT_CHANGE(Graphical_material)(material, MANAGER_CHANGE_NOT_RESULT(Graphical_material));
 		}
-		if (Cmiss_graphics_material_get_attribute_integer(material, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Graphical_material)(material, change);
-		}
+		return CMISS_OK;
 	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_graphics_material_set_name(
@@ -6684,9 +6655,6 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
-				enum_string = "IS_MANAGED";
-				break;
 			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 				enum_string = "ALPHA";
 				break;

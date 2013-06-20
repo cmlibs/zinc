@@ -179,6 +179,30 @@ ZINC_API Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
  */
 ZINC_API int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
+/**
+ * Get managed status of field in its owning field module.
+ * @see Cmiss_field_set_managed
+ *
+ * @param field  The field to query.
+ * @return  1 (true) if field is managed, otherwise 0 (false).
+ */
+ZINC_API int Cmiss_field_is_managed(Cmiss_field_id field);
+
+/**
+ * Set managed status of field in its owning field module.
+ * If set (managed) the field will remain indefinitely in the field module even
+ * if no external references are held.
+ * If not set (unmanaged) the field will be automatically removed from the
+ * module when no longer referenced externally, effectively marking it as
+ * pending destruction.
+ * All new objects are unmanaged unless stated otherwise.
+ *
+ * @param field  The field to modify.
+ * @param value  The new value for the managed flag: 0 or 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_field_set_managed(Cmiss_field_id field, int value);
+
 /***************************************************************************//**
  * Assign mesh_location field values at location specified in cache. Only
  * supported by stored_mesh_location field type.

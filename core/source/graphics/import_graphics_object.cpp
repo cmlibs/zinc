@@ -999,7 +999,7 @@ DESCRIPTION :
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
 											(scanned_material, graphical_material_manager)))
 									{
-										Cmiss_graphics_material_set_attribute_integer(scanned_material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+										Cmiss_graphics_material_set_managed(scanned_material, 1);
 									}
 									else
 									{

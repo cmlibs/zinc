@@ -182,8 +182,7 @@ public:
 			if (tessellation)
 			{
 				setDefaultTessellation(tessellation);
-				Cmiss_tessellation_set_attribute_integer(
-					tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_tessellation_set_managed(tessellation, 1);
 			}
 			return tessellation;
 		}
@@ -643,6 +642,32 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
 	return DEACCESS(Cmiss_tessellation)(tessellation_address);
 }
 
+int Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation)
+{
+	if (tessellation)
+	{
+		return (int)tessellation->is_managed_flag;
+	}
+	return 0;
+}
+
+int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
+	int value)
+{
+	if (tessellation)
+	{
+		int old_value = (int)tessellation->is_managed_flag;
+		tessellation->is_managed_flag = (value != 0);
+		if (value != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
+				MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation));
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 	enum Cmiss_tessellation_attribute attribute)
 {
@@ -651,9 +676,6 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 	{
 		switch (attribute)
 		{
-		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
-			value = (int)tessellation->is_managed_flag;
-			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
 			value = tessellation->minimum_divisions_size;
 			break;
@@ -667,42 +689,6 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 		}
 	}
 	return value;
-}
-
-int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute attribute, int value)
-{
-	int return_code = 0;
-	if (tessellation)
-	{
-		return_code = 1;
-		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute);
-		enum MANAGER_CHANGE(Cmiss_tessellation) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation);
-		switch (attribute)
-		{
-		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
-			tessellation->is_managed_flag = (value != 0);
-			change = MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation);
-			break;
-		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
-		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
-			display_message(WARNING_MESSAGE,
-				"Cmiss_tessellation_set_attribute_integer.  Cannot set attribute");
-			return_code = 0;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_tessellation_set_attribute_integer.  Invalid attribute");
-			return_code = 0;
-			break;
-		}
-		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation, change);
-		}
-	}
-	return return_code;
 }
 
 char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
@@ -998,9 +984,6 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
-			enum_string = "IS_MANAGED";
-			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
 			enum_string = "MINIMUM_DIVISIONS_SIZE";
 			break;

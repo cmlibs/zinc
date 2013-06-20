@@ -145,20 +145,12 @@ ZINC_API int Cmiss_tessellation_module_set_default_tessellation(
 enum Cmiss_tessellation_attribute
 {
 	CMISS_TESSELLATION_ATTRIBUTE_INVALID = 0,
-	CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED = 1,
-	/*!< Boolean as integer, when 0 (default) tessellation is destroyed when no
-	 * longer in use, i.e. when number of external references to it drops to
-	 * zero. Set to 1 to manage tessellation object indefinitely, or until this
-	 * attribute is reset to zero, effectively marking it as pending destruction.
-	 */
-
-	CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = 2,
+	CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = 1,
 	/*!< positive integer size of minimum divisions array, defaults to 1 or size
 	 * set in last call to Cmiss_tessellation_set_minimum_divisions.
 	 * @see Cmiss_tessellation_set_minimum_divisions.
 	 */
-
-	CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE = 3
+	CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE = 2
 	/*!< positive integer size of refinement factors array, defaults to 1 or size
 	 * set in last call to Cmiss_tessellation_set_refinement_factors.
 	 * @see Cmiss_tessellation_set_refinement_factors.
@@ -204,6 +196,31 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id t
 ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
 
 /**
+ * Get managed status of tessellation in its owning tessellation_module.
+ * @see Cmiss_tessellation_set_managed
+ *
+ * @param tessellation  The tessellation to query.
+ * @return  1 (true) if tessellation is managed, otherwise 0 (false).
+ */
+ZINC_API int Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation);
+
+/**
+ * Set managed status of tessellation in its owning tessellation module.
+ * If set (managed) the tessellation will remain indefinitely in the tessellation
+ * module even if no external references are held.
+ * If not set (unmanaged) the tessellation will be automatically removed from the
+ * module when no longer referenced externally, effectively marking it as
+ * pending destruction.
+ * All new objects are unmanaged unless stated otherwise.
+ *
+ * @param tessellation  The tessellation to modify.
+ * @param value  The new value for the managed flag: 0 or 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
+	int value);
+
+/**
  * Get an integer or Boolean attribute of the tessellation object.
  *
  * @param tessellation  Handle to the cmiss tessellation.
@@ -212,19 +229,6 @@ ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_addr
  */
 ZINC_API int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 	enum Cmiss_tessellation_attribute attribute);
-
-/**
- * Set an integer or Boolean attribute of the tessellation object.
- *
- * @param tessellation  Handle to the cmiss tessellation.
- * @param attribute  The identifier of the integer attribute to set.
- * @param value  The new value for the attribute. For Boolean values use 1 for
- * true in case more options are added in future.
- * @return  status CMISS_OK if attribute successfully set, any other value if
- * failed or attribute not valid or able to be set for this tessellation object.
- */
-ZINC_API int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute attribute, int value);
 
 /**
  * Return an allocated string containing tessellation name.

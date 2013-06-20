@@ -92,22 +92,14 @@ public:
 		return id;
 	}
 
-	enum Attribute
+	bool isManaged()
 	{
-		ATTRIBUTE_INVALID = CMISS_SPECTRUM_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED
-	};
-
-	int getAttributeInteger(Attribute attribute)
-	{
-		return Cmiss_spectrum_get_attribute_integer(id,
-			static_cast<Cmiss_spectrum_attribute>(attribute));
+		return Cmiss_spectrum_is_managed(id);
 	}
 
-	int setAttributeInteger(Attribute attribute, int value)
+	int setManaged(bool value)
 	{
-		return Cmiss_spectrum_set_attribute_integer(id,
-			static_cast<Cmiss_spectrum_attribute>(attribute), value);
+		return Cmiss_spectrum_set_managed(id, value);
 	}
 
 	char *getName()

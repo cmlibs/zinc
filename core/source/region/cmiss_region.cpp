@@ -1552,7 +1552,7 @@ static int Cmiss_region_merge_fields(Cmiss_region_id target_region,
 			if (!target_field)
 			{
 				target_field = Cmiss_field_module_create_group(target_field_module);
-				Cmiss_field_set_attribute_integer(target_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_field_set_managed(target_field, 1);
 				Cmiss_field_set_name(target_field, name);
 			}
 			Cmiss_field_group_id target_group = Cmiss_field_cast_group(target_field);

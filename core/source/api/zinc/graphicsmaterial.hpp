@@ -98,7 +98,6 @@ public:
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED,
 		ATTRIBUTE_ALPHA = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA,
 		ATTRIBUTE_AMBIENT = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT,
 		ATTRIBUTE_DIFFUSE = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE,
@@ -107,16 +106,14 @@ public:
 		ATTRIBUTE_SPECULAR = CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR
 	};
 
-	int getAttributeInteger(Attribute attribute)
+	bool isManaged()
 	{
-		return Cmiss_graphics_material_get_attribute_integer(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute));
+		return Cmiss_graphics_material_is_managed(id);
 	}
 
-	int setAttributeInteger(Attribute attribute, int value)
+	int setManaged(bool value)
 	{
-		return Cmiss_graphics_material_set_attribute_integer(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), value);
+		return Cmiss_graphics_material_set_managed(id, value);
 	}
 
 	double getAttributeReal(Attribute attribute)

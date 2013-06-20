@@ -52,6 +52,7 @@
 
 #include "zinc/scene.h"
 #include "zinc/scenepicker.h"
+#include "zinc/status.h"
 #include "zinc/graphicsfilter.h"
 #include "zinc/rendition.h"
 #include "computed_field/computed_field.h"
@@ -4493,86 +4494,29 @@ int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
 	return 0;
 }
 
-int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
-	enum Cmiss_scene_attribute attribute)
+int Cmiss_scene_is_managed(Cmiss_scene_id scene)
 {
-	int value = 0;
 	if (scene)
 	{
-		switch (attribute)
-		{
-		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
-			value = (int)scene->is_managed_flag;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_get_attribute_integer.  Invalid attribute");
-			break;
-		}
+		return (int)scene->is_managed_flag;
 	}
-	return value;
+	return 0;
 }
 
-int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
-	enum Cmiss_scene_attribute attribute, int value)
+int Cmiss_scene_set_managed(Cmiss_scene_id scene, int value)
 {
-	int return_code = 0;
 	if (scene)
 	{
-		return_code = 1;
-		int old_value = Cmiss_scene_get_attribute_integer(scene, attribute);
-		enum MANAGER_CHANGE(Cmiss_scene) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_scene);
-		switch (attribute)
+		int old_value = (int)scene->is_managed_flag;
+		scene->is_managed_flag = (value != 0);
+		if (value != old_value)
 		{
-		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
-			scene->is_managed_flag = (value != 0);
-			change = MANAGER_CHANGE_NOT_RESULT(Cmiss_scene);
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_set_attribute_integer.  Invalid attribute");
-			return_code = 0;
-			break;
+			MANAGED_OBJECT_CHANGE(Cmiss_scene)(scene,
+				MANAGER_CHANGE_NOT_RESULT(Cmiss_scene));
 		}
-		if (Cmiss_scene_get_attribute_integer(scene, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_scene)(scene, change);
-		}
+		return CMISS_OK;
 	}
-	return return_code;
-}
-
-class Cmiss_scene_attribute_conversion
-{
-public:
-	static const char *to_string(enum Cmiss_scene_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-			case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
-				enum_string = "IS_MANAGED";
-				break;
-			default:
-				break;
-		}
-		return enum_string;
-	}
-};
-
-enum Cmiss_scene_attribute
-	Cmiss_scene_attribute_enum_from_string(const char  *string)
-{
-	return string_to_enum<enum Cmiss_scene_attribute,
-		Cmiss_scene_attribute_conversion>(string);
-}
-
-char *Cmiss_scene_attribute_enum_to_string(
-	enum Cmiss_scene_attribute attribute)
-{
-	const char *attribute_string = Cmiss_scene_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 struct Cmiss_graphics_module *Cmiss_scene_get_graphics_module(Cmiss_scene_id scene)
