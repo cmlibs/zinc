@@ -54,6 +54,148 @@
 extern "C" {
 #endif
 
+/**
+* Returns a new reference to the graphics_filter module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param graphics_filter_module  The graphics_filter module to obtain a new reference to.
+* @return  graphics_filter module with incremented reference count.
+*/
+ZINC_API Cmiss_graphics_filter_module_id Cmiss_graphics_filter_module_access(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+* Destroys this reference to the graphics_filter module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param graphics_filter_module_address  Address of handle to graphics_filter module
+*   to destroy.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_filter_module_destroy(
+	Cmiss_graphics_filter_module_id *graphics_filter_module_address);
+
+/**
+ * Creates a Cmiss_graphics_filter which matches any graphic with visibility
+ * flag set AND its owning region and all ancestor region renditions' visibility
+ * flags set i.e. rendition visibility flags work hierarchically.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @param scene  Scene to add filter to.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_visibility_flags(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+ * Creates a Cmiss_graphics_filter which matches any graphic with the supplied
+ * name.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @param match_name  The name of a graphic must be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_name(
+	Cmiss_graphics_filter_module_id graphics_filter_module, const char *match_name);
+
+/**
+ * Creates a Cmiss_graphics_filter which matches any graphic with matching
+ * type.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @param graphic_type  The type of a graphic must be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_type(
+	Cmiss_graphics_filter_module_id graphics_filter_module, enum Cmiss_graphic_type graphic_type);
+
+/**
+ * Creates a Cmiss_graphics_filter which matches any graphic in region or any
+ * of its sub-regions.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @param match_region  The region to be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_region(
+	Cmiss_graphics_filter_module_id graphics_filter_module,Cmiss_region_id match_region);
+
+/**
+ * Creates a collective of Cmiss_graphics_filters which matches all supplied
+ * filters.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_and(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+ * Creates a collective of Cmiss_graphics_filters which matches any of the supplied
+ * filters.
+ * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_or(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+* Begin caching or increment cache level for this graphics_filter module. Call this
+* function before making multiple changes to minimise number of change messages
+* sent to clients. Must remember to end_change after completing changes.
+* @see Cmiss_graphics_filter_module_end_change
+*
+* @param graphics_filter_module  The graphics_filter_module to begin change cache on.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_filter_module_begin_change(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+* Decrement cache level or end caching of changes for the graphics_filter module.
+* Call Cmiss_graphics_filter_module_begin_change before making multiple changes
+* and call this afterwards. When change level is restored to zero,
+* cached change messages are sent out to clients.
+*
+* @param graphics_filter_module  The glyph_module to end change cache on.
+* @return  Status CMISS_OK on success, any other value on failure.
+*/
+ZINC_API int Cmiss_graphics_filter_module_end_change(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+* Find the graphics_filter with the specified name, if any.
+*
+* @param graphics_filter_module  graphics_filter module to search.
+* @param name  The name of the graphics_filter.
+* @return  Handle to the graphics_filter of that name, or 0 if not found.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_find_filter_by_name(
+	Cmiss_graphics_filter_module_id graphics_filter_module, const char *name);
+
+/**
+* Get the default graphics_filter, if any.
+*
+* @param graphics_filter_module  graphics_filter module to query.
+* @return  Handle to the default graphics_filter, or 0 if none.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_get_default_filter(
+	Cmiss_graphics_filter_module_id graphics_filter_module);
+
+/**
+* Set the default graphics_filter.
+*
+* @param graphics_filter_module  graphics_filter module to modify
+* @param graphics_filter  The graphics_filter to set as default.
+* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+*/
+ZINC_API int Cmiss_graphics_filter_module_set_default_filter(
+	Cmiss_graphics_filter_module_id graphics_filter_module,
+	Cmiss_graphics_filter_id graphics_filter);
+
 /***************************************************************************//**
  * Labels of graphics_filter attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -149,6 +291,8 @@ ZINC_API int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
  * flags set i.e. rendition visibility flags work hierarchically.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_visibility_flags
+ *
  * @param scene  Scene to add filter to.
  * @return  Handle to the new filter, or NULL on failure.
  */
@@ -159,6 +303,8 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility
  * Creates a Cmiss_graphics_filter which matches any graphic with the supplied
  * name.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_graphic_name
  *
  * @param match_name  The name of a graphic must be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
@@ -171,6 +317,8 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_na
  * type.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_graphic_type
+ *
  * @param graphic_type  The type of a graphic must be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
@@ -181,6 +329,8 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_ty
  * Creates a Cmiss_graphics_filter which matches any graphic in region or any
  * of its sub-regions.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_region
  *
  * @param match_region  The region to be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
@@ -193,6 +343,8 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
  * filters.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_operator_and
+ *
  * @return  Handle to the new filter, or NULL on failure.
  */
 ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
@@ -202,6 +354,8 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_a
  * Creates a collective of Cmiss_graphics_filters which matches any of the supplied
  * filters.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
+ *
+ * @deprecated see Cmiss_graphics_filter_module_create_filter_operator_or
  *
  * @return  Handle to the new filter, or NULL on failure.
  */

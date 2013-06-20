@@ -81,9 +81,8 @@ struct Cmiss_graphics_module
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Cmiss_time_keeper *default_time_keeper;
 	Cmiss_tessellation_module_id tessellation_module;
-	struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager;
+	struct Cmiss_graphics_filter_module *graphics_filter_module;
 	void *graphics_filter_manager_callback_id;
-	Cmiss_graphics_filter *default_graphics_filter;
 	void *tessellation_manager_callback_id;
 	int access_count;
 	std::list<Cmiss_region*> *member_regions_list;
@@ -244,10 +243,10 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_light = NULL;
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
-			module->default_graphics_filter = NULL;
 			module->scene_viewer_module = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_module=Cmiss_spectrum_module_create();
+			module->graphics_filter_module=Cmiss_graphics_filter_module_create();
 			module->font_module = Cmiss_font_module_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
@@ -268,11 +267,9 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
 			module->tessellation_module = Cmiss_tessellation_module_create();
-			module->graphics_filter_manager = CREATE(MANAGER(Cmiss_graphics_filter))();
 			module->graphics_filter_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_graphics_module_graphics_filter_manager_callback,
-					(void *)module, module->graphics_filter_manager);
-			Cmiss_graphics_filter_manager_set_owner_private(module->graphics_filter_manager, module);
+					(void *)module, Cmiss_graphics_filter_module_get_manager(module->graphics_filter_module));
 			module->member_regions_list = new std::list<Cmiss_region*>;
 			module->tessellation_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_tessellation)(Cmiss_graphics_module_tessellation_manager_callback,
@@ -359,11 +356,13 @@ int Cmiss_graphics_module_destroy(
 		if (0 == graphics_module->access_count)
 		{
 			MANAGER_DEREGISTER(Graphical_material)(
-				graphics_module->material_manager_callback_id, Cmiss_graphics_material_module_get_manager(graphics_module->material_module));
+				graphics_module->material_manager_callback_id,
+				Cmiss_graphics_material_module_get_manager(graphics_module->material_module));
 			MANAGER_DEREGISTER(Spectrum)(
 				graphics_module->spectrum_manager_callback_id, Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module));
 			MANAGER_DEREGISTER(Cmiss_graphics_filter)(
-				graphics_module->graphics_filter_manager_callback_id,	graphics_module->graphics_filter_manager);
+				graphics_module->graphics_filter_manager_callback_id,
+				Cmiss_graphics_filter_module_get_manager(graphics_module->graphics_filter_module));
 			MANAGER_DEREGISTER(Cmiss_tessellation)(
 				graphics_module->tessellation_manager_callback_id,
 				Cmiss_tessellation_module_get_manager(graphics_module->tessellation_module));
@@ -398,13 +397,12 @@ int Cmiss_graphics_module_destroy(
 				Cmiss_font_module_destroy(&graphics_module->font_module);
 			if (graphics_module->material_module)
 				Cmiss_graphics_material_module_destroy(&graphics_module->material_module);
+			if (graphics_module->graphics_filter_module)
+				Cmiss_graphics_filter_module_destroy(&graphics_module->graphics_filter_module);
 			if (graphics_module->default_time_keeper)
 				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
 			if (graphics_module->tessellation_module)
 				Cmiss_tessellation_module_destroy(&graphics_module->tessellation_module);
-			if (graphics_module->default_graphics_filter)
-				DEACCESS(Cmiss_graphics_filter)(&graphics_module->default_graphics_filter);
-			DESTROY(MANAGER(Cmiss_graphics_filter))(&graphics_module->graphics_filter_manager);
 			DEALLOCATE(*graphics_module_address);
 		}
 		*graphics_module_address = NULL;
@@ -910,7 +908,6 @@ struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manag
 struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
 	struct Cmiss_graphics_module *graphics_module)
 {
-
 	if (graphics_module && graphics_module->tessellation_module)
 	{
 		return Cmiss_tessellation_module_get_default_tessellation(
@@ -1129,65 +1126,110 @@ int Cmiss_graphics_module_remove_member_region(
 	return (return_code);
 }
 
+Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_access(graphics_module->graphics_filter_module);
+	}
+	return 0;
+}
+
 struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 		struct Cmiss_graphics_module *graphics_module)
 {
-	struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager = NULL;
-
-	if (graphics_module)
+	if (graphics_module && graphics_module->graphics_filter_module)
 	{
-		graphics_filter_manager = graphics_module->graphics_filter_manager;
+		return Cmiss_graphics_filter_module_get_manager(graphics_module->graphics_filter_module);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_graphics_filter_manager.  Invalid argument(s)");
-	}
-
-	return graphics_filter_manager;
+	return 0;
 }
 
 Cmiss_graphics_filter *Cmiss_graphics_module_get_default_filter(
 		struct Cmiss_graphics_module *graphics_module)
 {
-	const char *default_graphics_filter_name = "default";
-	struct Cmiss_graphics_filter *graphics_filter = NULL;
-	if (graphics_module && graphics_module->graphics_filter_manager)
+	if (graphics_module && graphics_module->graphics_filter_module)
 	{
-		if (!graphics_module->default_graphics_filter)
-		{
-			graphics_module->default_graphics_filter =
-				Cmiss_graphics_module_find_filter_by_name(graphics_module, default_graphics_filter_name);
-			if (NULL == graphics_module->default_graphics_filter)
-			{
-				graphics_module->default_graphics_filter = Cmiss_graphics_module_create_filter_visibility_flags(graphics_module);
-				Cmiss_graphics_filter_set_name(graphics_module->default_graphics_filter, default_graphics_filter_name);
-				Cmiss_graphics_filter_set_attribute_integer(
-					graphics_module->default_graphics_filter, CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
-			}
-		}
-		graphics_filter = ACCESS(Cmiss_graphics_filter)(graphics_module->default_graphics_filter);
+		return Cmiss_graphics_filter_module_get_default_filter(
+			graphics_module->graphics_filter_module);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_graphics_filter.  Invalid argument(s)");
-	}
-	return graphics_filter;
+	return 0;
 }
 
 Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name)
 {
-	Cmiss_graphics_filter_id graphics_filter = NULL;
-	if (graphics_module && name)
+	if (graphics_module && graphics_module->graphics_filter_module)
 	{
-		graphics_filter = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_filter, name)(
-			name, Cmiss_graphics_module_get_filter_manager(graphics_module));
-		if (graphics_filter)
-		{
-			ACCESS(Cmiss_graphics_filter)(graphics_filter);
-		}
+		return Cmiss_graphics_filter_module_find_filter_by_name(
+			graphics_module->graphics_filter_module, name);
 	}
-	return graphics_filter;
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility_flags(
+	Cmiss_graphics_module_id graphics_module)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_visibility_flags(
+			graphics_module->graphics_filter_module);
+	}
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
+	Cmiss_graphics_module_id graphics_module, const char *match_name)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_graphic_name(
+			graphics_module->graphics_filter_module, match_name);
+	}
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_type(
+	Cmiss_graphics_module_id graphics_module, enum Cmiss_graphic_type graphic_type)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_graphic_type(
+			graphics_module->graphics_filter_module, graphic_type);
+	}
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
+	Cmiss_graphics_module_id graphics_module, Cmiss_region_id match_region)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_region(
+			graphics_module->graphics_filter_module, match_region);
+	}
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
+	Cmiss_graphics_module_id graphics_module)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_operator_and(
+			graphics_module->graphics_filter_module);
+	}
+	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
+	Cmiss_graphics_module_id graphics_module)
+{
+	if (graphics_module && graphics_module->graphics_filter_module)
+	{
+		return Cmiss_graphics_filter_module_create_filter_operator_or(
+			graphics_module->graphics_filter_module);
+	}
+	return 0;
 }

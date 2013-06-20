@@ -238,6 +238,11 @@ struct Cmiss_graphics_filter_compare_name
 typedef Cmiss_set<Cmiss_graphics_filter *,Cmiss_graphics_filter_compare_name> Cmiss_set_Cmiss_graphics_filter;
 
 int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
-	struct Cmiss_graphics_module *graphics_module);
+	struct Cmiss_graphics_filter_module *graphics_filter_module);
+
+struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_filter_module_get_manager(
+	struct Cmiss_graphics_filter_module *graphics_filter_module);
+
+Cmiss_graphics_filter_module_id Cmiss_graphics_filter_module_create();
 
 #endif /* GRAPHICS_FILTER_HPP_ */
