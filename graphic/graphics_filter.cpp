@@ -33,8 +33,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args)
 	result = Cmiss_graphics_filter_module_set_default_filter(gfm, filter);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_attribute_integer(filter,
-		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_graphics_filter_set_managed(filter, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_graphics_filter_destroy(&filter);
@@ -99,7 +98,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	result = gfm.setDefaultFilter(filter);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = filter.setAttributeInteger(GraphicsFilter::ATTRIBUTE_IS_MANAGED, 1);
+	result = filter.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	filter = gfm.findFilterByName("default");
@@ -137,17 +136,14 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	int result = Cmiss_graphics_filter_set_name(filter, "visibility_flag");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_attribute_integer(filter,
-		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_graphics_filter_set_managed(filter, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = Cmiss_graphics_filter_set_attribute_integer(filter,
 		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE, 0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_get_attribute_integer(filter,
-		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(1, Cmiss_graphics_filter_is_managed(filter));
 
 	result = Cmiss_graphics_filter_get_attribute_integer(filter,
 		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE);
@@ -255,14 +251,13 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	int result = filter.setName("visibility_flag");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = filter.setAttributeInteger(filter.ATTRIBUTE_IS_MANAGED, 1);
+	result = filter.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = filter.setAttributeInteger(filter.ATTRIBUTE_IS_INVERSE, 0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = filter.getAttributeInteger(filter.ATTRIBUTE_IS_MANAGED);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(true, filter.isManaged());
 
 	result = filter.getAttributeInteger(filter.ATTRIBUTE_IS_INVERSE);
 	EXPECT_EQ(0, result);

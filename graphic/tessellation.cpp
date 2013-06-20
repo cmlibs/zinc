@@ -32,8 +32,7 @@ TEST(Cmiss_tessellation_module_api, valid_args)
 	result = Cmiss_tessellation_module_set_default_tessellation(tm, tessellation);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_tessellation_set_attribute_integer(tessellation,
-		CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_tessellation_set_managed(tessellation, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_tessellation_destroy(&tessellation);
@@ -73,8 +72,7 @@ TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 	result = tm.setDefaultTessellation( tessellation);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = tessellation.setAttributeInteger(
-		tessellation.ATTRIBUTE_IS_MANAGED, 1);
+	result = tessellation.setManaged(1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	tessellation = tm.findTessellationByName("default");
@@ -103,12 +101,10 @@ TEST(Cmiss_tessellation_api, valid_args)
 	result = Cmiss_tessellation_module_end_change(tm);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_tessellation_set_attribute_integer(tessellation,
-		CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_tessellation_set_managed(tessellation, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_tessellation_get_attribute_integer(tessellation,
-		CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED);
+	result = Cmiss_tessellation_is_managed(tessellation);
 	EXPECT_EQ(1, result);
 
 	int inValues[3], outValues[3];
@@ -152,13 +148,10 @@ TEST(Cmiss_tessellation_api, valid_args_cpp)
 	result = tm.endChange();
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = tessellation.setAttributeInteger(
-		tessellation.ATTRIBUTE_IS_MANAGED, 1);
+	result = tessellation.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = tessellation.getAttributeInteger(
-		tessellation.ATTRIBUTE_IS_MANAGED);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(true, tessellation.isManaged());
 
 	int inValues[3], outValues[3];
 	inValues[0] = 4;

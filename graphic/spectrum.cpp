@@ -32,8 +32,7 @@ TEST(Cmiss_spectrum_module_api, valid_args)
 	result = Cmiss_spectrum_module_set_default_spectrum(sm, spectrum);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_spectrum_set_attribute_integer(spectrum,
-		CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_spectrum_set_managed(spectrum, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_spectrum_destroy(&spectrum);
@@ -73,8 +72,7 @@ TEST(Cmiss_spectrum_module_api, valid_args_cpp)
 	result = sm.setDefaultSpectrum( spectrum);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = spectrum.setAttributeInteger(
-		spectrum.ATTRIBUTE_IS_MANAGED, 1);
+	result = spectrum.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	spectrum = sm.findSpectrumByName("default");
@@ -103,12 +101,10 @@ TEST(Cmiss_spectrum_api, valid_args)
 	result = Cmiss_spectrum_module_end_change(sm);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_spectrum_set_attribute_integer(spectrum,
-		CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_spectrum_set_managed(spectrum, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_spectrum_get_attribute_integer(spectrum,
-		CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED);
+	result = Cmiss_spectrum_is_managed(spectrum);
 	EXPECT_EQ(1, result);
 
 	result = Cmiss_spectrum_set_rainbow(spectrum);
@@ -147,13 +143,10 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	result = sm.endChange();
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = spectrum.setAttributeInteger(
-		spectrum.ATTRIBUTE_IS_MANAGED, 1);
+	result = spectrum.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = spectrum.getAttributeInteger(
-		spectrum.ATTRIBUTE_IS_MANAGED);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(true, spectrum.isManaged());
 
 	result = spectrum.setRainbow();
 	EXPECT_EQ(CMISS_OK, result);

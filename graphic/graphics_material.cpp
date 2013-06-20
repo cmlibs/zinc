@@ -26,8 +26,7 @@ TEST(Cmiss_graphics_material_module_api, valid_args)
 	result = Cmiss_graphics_material_set_name(material, "temp");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_attribute_integer(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_graphics_material_set_managed(material, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = Cmiss_graphics_material_module_end_change(materialmodule);
@@ -78,8 +77,7 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	result = material.setName("temp");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = material.setAttributeInteger(
-		material.ATTRIBUTE_IS_MANAGED, 1);
+	result = material.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = materialmodule.endChange();
@@ -120,12 +118,10 @@ TEST(Cmiss_graphics_material_api, valid_args)
 	result = Cmiss_graphics_material_module_end_change(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_attribute_integer(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+	result = Cmiss_graphics_material_set_managed(material, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_get_attribute_integer(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED);
+	result = Cmiss_graphics_material_is_managed(material);
 	EXPECT_EQ(1, result);
 
 	double inValue = 0.7, outValue = 0.0;
@@ -212,13 +208,10 @@ TEST(Cmiss_graphics_material_api, valid_args_cpp)
 	result = materialmodule.endChange();
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = material.setAttributeInteger(
-		material.ATTRIBUTE_IS_MANAGED, 1);
+	result = material.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = material.getAttributeInteger(
-		material.ATTRIBUTE_IS_MANAGED);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(true, material.isManaged());
 
 	double inValue = 0.7, outValue = 0.0;
 
