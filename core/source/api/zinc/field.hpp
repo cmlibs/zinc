@@ -132,6 +132,16 @@ public:
 		VALUE_TYPE_MESH_LOCATION = CMISS_FIELD_VALUE_TYPE_MESH_LOCATION
 	};
 
+	bool isManaged()
+	{
+		return Cmiss_field_is_managed(id);
+	}
+
+	int setManaged(bool value)
+	{
+		return Cmiss_field_set_managed(id, value);
+	}
+
 	int getAttributeInteger(Attribute attribute)
 	{
 		return Cmiss_field_get_attribute_integer(id, static_cast<Cmiss_field_attribute>(attribute));

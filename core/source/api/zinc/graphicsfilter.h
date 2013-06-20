@@ -204,13 +204,7 @@ ZINC_API int Cmiss_graphics_filter_module_set_default_filter(
 enum Cmiss_graphics_filter_attribute
 {
 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_INVALID = 0,
-	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED = 1,
-	/*!< Boolean as integer, when 0 (default) graphics_filter is destroyed when no
-	 * longer in use, i.e. when number of external references to it drops to
-	 * zero. Set to 1 to manage graphics_filter object indefinitely, or until this
-	 * attribute is reset to zero, effectively marking it as pending destruction.
-	 */
-	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE = 2
+	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE = 1
 	/*!< Boolean as integer, when 0 (default) the filter returns positive when
 	 * criterion/criteria is/are matched. Set to 1 to invert the result.
 	 */
@@ -254,6 +248,31 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_access(Cmiss_graphics_fi
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_address);
+
+/**
+ * Get managed status of graphics filter in its owning graphics filter module.
+ * @see Cmiss_graphics_filter_set_managed
+ *
+ * @param graphics filter  The graphics filter to query.
+ * @return  1 (true) if graphics filter is managed, otherwise 0 (false).
+ */
+ZINC_API int Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter);
+
+/**
+ * Set managed status of graphics filter in its owning graphics filter module.
+ * If set (managed) the graphics filter will remain indefinitely in the graphics filter module even
+ * if no external references are held.
+ * If not set (unmanaged) the graphics filter will be automatically removed from the
+ * module when no longer referenced externally, effectively marking it as
+ * pending destruction.
+ * All new objects are unmanaged unless stated otherwise.
+ *
+ * @param graphics filter  The graphics filter to modify.
+ * @param value  The new value for the managed flag: 0 or 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
+	int value);
 
 /*******************************************************************************
  * Evaluate either a Cmiss_graphic is shown or hidden with a graphics_filter.

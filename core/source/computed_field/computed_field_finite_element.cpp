@@ -3544,7 +3544,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 					}
 				}
 				Cmiss_field_id field = Computed_field_create_finite_element_internal(field_module, fe_field);
-				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_field_set_managed(field, 1);
 				Cmiss_field_destroy(&field);
 				Cmiss_field_module_destroy(&field_module);
 				char *new_field_name = NULL;
@@ -3602,7 +3602,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 				{
 					field = Computed_field_create_cmiss_number(field_module);
 					Cmiss_field_set_name(field, cmiss_number_field_name);
-					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+					Cmiss_field_set_managed(field, 1);
 				}
 				Cmiss_field_destroy(&field);
 			}
@@ -3614,7 +3614,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 				{
 					field = Computed_field_create_xi_coordinates(field_module);
 					Cmiss_field_set_name(field, xi_field_name);
-					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+					Cmiss_field_set_managed(field, 1);
 				}
 				Cmiss_field_destroy(&field);
 			}

@@ -664,7 +664,7 @@ bool OpenCascadeImporter::addShapeToRegion(const TopoDS_Shape& shape, Cmiss_regi
 	//append_string(&top_name, "_top", &status);
 	Cmiss_field_set_name(cad_topology_field, top_name);
 
-	Cmiss_field_set_attribute_integer(cad_topology_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+	Cmiss_field_set_managed(cad_topology_field, 1);
 	Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology( cad_topology_field );
 
 	// Create shape gs
@@ -681,11 +681,11 @@ bool OpenCascadeImporter::addShapeToRegion(const TopoDS_Shape& shape, Cmiss_regi
 
 	Cmiss_field_id cad_geometry_field = Computed_field_module_create_cad_geometry(field_module, cad_topology_field);
 	Cmiss_field_set_name(cad_geometry_field, geo_name);
-	Cmiss_field_set_attribute_integer(cad_geometry_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+	Cmiss_field_set_managed(cad_geometry_field, 1);
 
 	Cmiss_field_id cad_colour_field = Computed_field_module_create_cad_colour(field_module, cad_topology_field);
 	Cmiss_field_set_name(cad_colour_field, col_name);
-	Cmiss_field_set_attribute_integer(cad_colour_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+	Cmiss_field_set_managed(cad_colour_field, 1);
 
 	if ( cad_topology_field && cad_geometry_field && cad_colour_field )
 	{

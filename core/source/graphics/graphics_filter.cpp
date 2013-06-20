@@ -756,14 +756,12 @@ public:
 			{
 				graphicsFilter = createFilterVisibilityFlags();
 				Cmiss_graphics_filter_set_name(graphicsFilter, default_graphics_filter_name);
-				Cmiss_graphics_filter_set_attribute_integer(
-					graphicsFilter, CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_graphics_filter_set_managed(graphicsFilter, 1);
 			}
 			if (graphicsFilter)
 			{
 				setDefaultFilter(graphicsFilter);
-				Cmiss_graphics_filter_set_attribute_integer(
-					graphicsFilter, CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_graphics_filter_set_managed(graphicsFilter, 1);
 			}
 			return graphicsFilter;
 		}
@@ -997,6 +995,32 @@ int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
 	return return_code;
 }
 
+int Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter)
+{
+	if (filter)
+	{
+		return (int)filter->is_managed_flag;
+	}
+	return 0;
+}
+
+int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
+	int value)
+{
+	if (filter)
+	{
+		int old_value = (int)filter->is_managed_flag;
+		filter->is_managed_flag = (value != 0);
+		if (value != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(filter,
+				MANAGER_CHANGE_NOT_RESULT(Cmiss_graphics_filter));
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
 	enum Cmiss_graphics_filter_attribute attribute)
 {
@@ -1005,9 +1029,6 @@ int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphic
 	{
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
-				value = (int)graphics_filter->is_managed_flag;
-				break;
 			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
 				value = (int)graphics_filter->isInverse();
 				break;
@@ -1033,10 +1054,6 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphic
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_graphics_filter);
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
-				graphics_filter->is_managed_flag = (value != 0);
-				change = MANAGER_CHANGE_NOT_RESULT(Cmiss_graphics_filter);
-			break;
 			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
 				graphics_filter->setInverse(value != 0);
 				change = MANAGER_CHANGE_RESULT(Cmiss_graphics_filter);
@@ -1174,9 +1191,6 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-		case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
-			enum_string = "IS_MANAGED";
-			break;
 		case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
 			enum_string = "IS_INVERSE";
 			break;

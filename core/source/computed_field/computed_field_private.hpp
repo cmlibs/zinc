@@ -94,7 +94,7 @@ public:
 	{
 		if (new_field)
 		{
-			Cmiss_field_set_attribute_integer(new_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+			Cmiss_field_set_managed(new_field, 1);
 			DEACCESS(Computed_field)(&new_field);
 			return 1;
 		}

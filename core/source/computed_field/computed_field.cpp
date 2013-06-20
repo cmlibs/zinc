@@ -3056,6 +3056,38 @@ for matrix operations.
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
 
+int Cmiss_field_is_managed(Cmiss_field_id field)
+{
+	if (field)
+	{
+		return (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT));
+	}
+	return 0;
+}
+
+int Cmiss_field_set_managed(Cmiss_field_id field, int value)
+{
+	if (field)
+	{
+		int old_value = Cmiss_field_is_managed(field);
+		if (value)
+		{
+			field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
+		}
+		else
+		{
+			field->attribute_flags &= ~COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
+		}
+		if (value != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Computed_field)(
+				field, MANAGER_CHANGE_NOT_RESULT(Computed_field));
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
 	enum Cmiss_field_attribute attribute)
 {

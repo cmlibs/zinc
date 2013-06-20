@@ -90,7 +90,6 @@ public:
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_TESSELLATION_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED,
 		ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE,
 		ATTRIBUTE_REFINEMENT_FACTORS_SIZE = CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE
 	};
@@ -100,16 +99,20 @@ public:
 		return id;
 	}
 
+	bool isManaged()
+	{
+		return Cmiss_tessellation_is_managed(id);
+	}
+
+	int setManaged(bool value)
+	{
+		return Cmiss_tessellation_set_managed(id, value);
+	}
+
 	int getAttributeInteger(Attribute attribute)
 	{
 		return Cmiss_tessellation_get_attribute_integer(id,
 			static_cast<Cmiss_tessellation_attribute>(attribute));
-	}
-
-	int setAttributeInteger(Attribute attribute, int value)
-	{
-		return Cmiss_tessellation_set_attribute_integer(id,
-			static_cast<Cmiss_tessellation_attribute>(attribute), value);
 	}
 
 	char *getName()

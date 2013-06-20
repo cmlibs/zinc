@@ -92,13 +92,22 @@ public:
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_GRAPHICS_FILTER_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED,
 		ATTRIBUTE_IS_INVERSE = CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE,
 	};
 
 	Cmiss_graphics_filter_id getId()
 	{
 		return id;
+	}
+
+	bool isManaged()
+	{
+		return Cmiss_graphics_filter_is_managed(id);
+	}
+
+	int setManaged(bool value)
+	{
+		return Cmiss_graphics_filter_set_managed(id, value);
 	}
 
 	int evaluateGraphic(Graphic& graphic)

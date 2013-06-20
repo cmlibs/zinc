@@ -132,26 +132,6 @@ ZINC_API int Cmiss_spectrum_module_set_default_spectrum(
 	Cmiss_spectrum_id spectrum);
 
 /**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
-	const char *string);
-
-/**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param attribute  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_spectrum_attribute_enum_to_string(
-	enum Cmiss_spectrum_attribute attribute);
-
-/**
  * Access the spectrum, increase the access count of the time keeper by one.
  *
  * @param spectrum  handle to the "to be access" cmiss spectrum.
@@ -170,27 +150,25 @@ ZINC_API Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
 ZINC_API int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
 
 /**
- * Get an integer or Boolean attribute of the graphics spectrum.
+ * Get if a spectrum is managed. See Cmiss_spectrum_set_managed for
+ * more information about managed.
  *
- * @param spectrum  Handle to the cmiss spectrum.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ *  @param spectrum  The spectrum to get the managed value from.
+ *  @return true/1 if spectrum is managed, otherwise 0/false.
  */
-ZINC_API int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute attribute);
+ZINC_API int Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum);
 
 /**
- * Set an integer or Boolean attribute of the graphics spectrum.
+ * When the managed status is 0 (default) spectrum is destroyed when no longer
+ * in use, i.e. when number of external references to it drops to
+ * zero. Set to 1 to manage spectrum object indefinitely, or until this
+ * attribute is reset to zero, effectively marking it as pending destruction.
  *
  * @param spectrum  Handle to the cmiss spectrum.
- * @param attribute  The identifier of the integer attribute to set.
- * @param value  The new value for the attribute. For Boolean values use 1 for
- * true in case more options are added in future.
- * @return  status CMISS_OK if attribute successfully set, any other value if
- * failed or attribute not valid or able to be set for this spectrum object.
+ * @param value  boolean as integer value to be assigned
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute attribute, int value);
+ZINC_API int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum, int value);
 
 /**
  * Return an allocated string containing spectrum name.

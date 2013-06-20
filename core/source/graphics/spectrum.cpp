@@ -191,7 +191,7 @@ public:
 			}
 			if (spectrum)
 			{
-				Cmiss_spectrum_set_attribute_integer(spectrum, CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED, 1);
+				Cmiss_spectrum_set_managed(spectrum, 1);
 				setDefaultSpectrum(spectrum);
 				return spectrum;
 			}
@@ -2590,83 +2590,26 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 	return return_code;
 }
 
-int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute attribute)
+int Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum)
 {
-	int value = 0;
 	if (spectrum)
 	{
-		switch (attribute)
-		{
-		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
-			value = (int)spectrum->is_managed_flag;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_spectrum_get_attribute_integer.  Invalid attribute");
-			break;
-		}
+		return (int)spectrum->is_managed_flag;
 	}
-	return value;
+	return 0;
 }
 
-int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute attribute, int value)
+int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum,  int value)
 {
-	int return_code = 0;
 	if (spectrum)
 	{
-		return_code = 1;
-		int old_value = Cmiss_spectrum_get_attribute_integer(spectrum, attribute);
-		enum MANAGER_CHANGE(Spectrum) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum);
-		switch (attribute)
+		int old_value = (int)spectrum->is_managed_flag;
+		spectrum->is_managed_flag = (value != 0);
+		if (value != old_value)
 		{
-		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
-			spectrum->is_managed_flag = (value != 0);
-			change = MANAGER_CHANGE_NOT_RESULT(Spectrum);
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_spectrum_set_attribute_integer.  Invalid attribute");
-			return_code = 0;
-			break;
+			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, MANAGER_CHANGE_NOT_RESULT(Spectrum));
 		}
-		if (Cmiss_spectrum_get_attribute_integer(spectrum, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, change);
-		}
+		return CMISS_OK;
 	}
-	return return_code;
-}
-
-class Cmiss_spectrum_attribute_conversion
-{
-public:
-	static const char *to_string(enum Cmiss_spectrum_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-			case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
-				enum_string = "IS_MANAGED";
-				break;
-			default:
-				break;
-		}
-		return enum_string;
-	}
-};
-
-enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
-	const char *string)
-{
-	return string_to_enum<enum Cmiss_spectrum_attribute,
-	Cmiss_spectrum_attribute_conversion>(string);
-}
-
-char *Cmiss_spectrum_attribute_enum_to_string(enum Cmiss_spectrum_attribute attribute)
-{
-	const char *attribute_string = Cmiss_spectrum_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
+	return CMISS_ERROR_ARGUMENT;
 }

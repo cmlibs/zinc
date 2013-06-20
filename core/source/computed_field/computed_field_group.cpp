@@ -805,7 +805,7 @@ Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id 
 				if (generic_field)
 				{
 					subregion_group = Cmiss_field_cast_group(generic_field);
-					// Not calling Cmiss_field_set_attribute_integer(subregion_group, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
+					// Not calling Cmiss_field_set_managed(subregion_group, 0);
 					Cmiss_field_destroy(&generic_field);
 				}
 				if (!subregion_group)
