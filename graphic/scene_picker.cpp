@@ -55,7 +55,7 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_graphics_filter_id gf = Cmiss_graphics_module_create_filter_graphic_type(zinc.gm,
-		CMISS_GRAPHIC_NODE_POINTS);
+		CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), gf);
 
 	result = Cmiss_scene_picker_set_scene(scene_picker, scene);
@@ -132,7 +132,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	result = sv.viewAll();
 	EXPECT_EQ(CMISS_OK, result);
 
-	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_NODE_POINTS);
+	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
 	EXPECT_EQ(true, gf.isValid());
 
 	result = scenePicker.setScene(scene);

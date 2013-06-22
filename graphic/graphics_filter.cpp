@@ -53,7 +53,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args)
 
 	Cmiss_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_NODE_POINTS);
+	filter = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
 
 	Cmiss_graphics_filter_destroy(&filter);
@@ -110,7 +110,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	filter =  gfm.createFilterGraphicName("lines");
 	EXPECT_EQ(true, filter.isValid());
 
-	filter = gfm.createFilterGraphicType(Graphic::GRAPHIC_NODE_POINTS);
+	filter = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
 	EXPECT_EQ(true, filter.isValid());
 
 	filter = gfm.createFilterRegion(zinc.root_region);
@@ -149,14 +149,26 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE);
 	EXPECT_EQ(0, result);
 
-	Cmiss_graphics_filter_id graphic_type_filter = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINT);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter);
+	Cmiss_graphics_filter_id graphic_type_filter1 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
+	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter1);
+	Cmiss_graphics_filter_id graphic_type_filter2 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_LINES);
+	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter2);
+	Cmiss_graphics_filter_id domain_type_filter1 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_NODES);
+	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), domain_type_filter1);
+	Cmiss_graphics_filter_id domain_type_filter2 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_ELEMENTS_1D);
+	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), domain_type_filter2);
 
-	Cmiss_graphic_id graphic = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_NODE_POINTS);
+	Cmiss_graphic_id graphic = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), graphic);
 
-	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter, graphic);
+	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter1, graphic);
 	EXPECT_EQ(0, result);
+	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter2, graphic);
+	EXPECT_EQ(1, result);
+	result = Cmiss_graphics_filter_evaluate_graphic(domain_type_filter1, graphic);
+	EXPECT_EQ(0, result);
+	result = Cmiss_graphics_filter_evaluate_graphic(domain_type_filter2, graphic);
+	EXPECT_EQ(1, result);
 
 	result = Cmiss_graphics_filter_evaluate_graphic(filter, graphic);
 	EXPECT_EQ(1, result);
@@ -173,10 +185,10 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	Cmiss_graphics_filter_operator_id or_operator = Cmiss_graphics_filter_cast_operator(or_filter);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter_operator *>(0), or_operator);
 
-	result = Cmiss_graphics_filter_operator_append_operand(and_operator, graphic_type_filter);
+	result = Cmiss_graphics_filter_operator_append_operand(and_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_operator_insert_operand_before(and_operator, filter, graphic_type_filter);
+	Cmiss_graphics_filter_operator_insert_operand_before(and_operator, filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = Cmiss_graphics_filter_operator_set_operand_is_active(and_operator, filter, 1);
@@ -185,10 +197,10 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	result = Cmiss_graphics_filter_operator_get_operand_is_active(and_operator, filter);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_set_operand_is_active(and_operator, graphic_type_filter, 1);
+	result = Cmiss_graphics_filter_operator_set_operand_is_active(and_operator, graphic_type_filter1, 1);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_get_operand_is_active(and_operator, graphic_type_filter);
+	result = Cmiss_graphics_filter_operator_get_operand_is_active(and_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	Cmiss_graphics_filter_id temp_filter = Cmiss_graphics_filter_operator_get_first_operand(
@@ -198,13 +210,13 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 
 	Cmiss_graphics_filter_id temp_filter2 = Cmiss_graphics_filter_operator_get_next_operand(
 		and_operator, temp_filter);
-	result = (graphic_type_filter == temp_filter2);
+	result = (graphic_type_filter1 == temp_filter2);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_append_operand(or_operator, graphic_type_filter);
+	result = Cmiss_graphics_filter_operator_append_operand(or_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_operator_insert_operand_before(or_operator, filter, graphic_type_filter);
+	Cmiss_graphics_filter_operator_insert_operand_before(or_operator, filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = Cmiss_graphics_filter_evaluate_graphic(and_filter, graphic);
@@ -214,7 +226,7 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	EXPECT_EQ(1, result);
 
 	result = Cmiss_graphics_filter_operator_remove_operand(
-		or_operator, graphic_type_filter);
+		or_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	Cmiss_graphics_filter_destroy(&temp_filter2);
@@ -231,7 +243,10 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 
 	Cmiss_graphics_filter_destroy(&or_filter);
 
-	Cmiss_graphics_filter_destroy(&graphic_type_filter);
+	Cmiss_graphics_filter_destroy(&graphic_type_filter1);
+	Cmiss_graphics_filter_destroy(&graphic_type_filter2);
+	Cmiss_graphics_filter_destroy(&domain_type_filter1);
+	Cmiss_graphics_filter_destroy(&domain_type_filter2);
 
 	Cmiss_graphics_filter_destroy(&filter);
 
@@ -262,14 +277,26 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	result = filter.getAttributeInteger(filter.ATTRIBUTE_IS_INVERSE);
 	EXPECT_EQ(0, result);
 
-	GraphicsFilter graphic_type_filter = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINT);
-	EXPECT_EQ(true, graphic_type_filter.isValid());
+	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
+	EXPECT_EQ(true, graphic_type_filter1.isValid());
+	GraphicsFilter graphic_type_filter2 = gfm.createFilterGraphicType(Graphic::GRAPHIC_LINES);
+	EXPECT_EQ(true, graphic_type_filter2.isValid());
+	GraphicsFilter domain_type_filter1 = gfm.createFilterDomainType(Field::DOMAIN_NODES);
+	EXPECT_EQ(true, domain_type_filter1.isValid());
+	GraphicsFilter domain_type_filter2 = gfm.createFilterDomainType(Field::DOMAIN_ELEMENTS_1D);
+	EXPECT_EQ(true, domain_type_filter2.isValid());
 
-	Graphic graphic = zinc.ren.createGraphic(Graphic::GRAPHIC_NODE_POINTS);
+	Graphic graphic = zinc.ren.createGraphic(Graphic::GRAPHIC_LINES);
 	EXPECT_EQ(true, graphic.isValid());
 
-	result = graphic_type_filter.evaluateGraphic(graphic);
+	result = graphic_type_filter1.evaluateGraphic(graphic);
 	EXPECT_EQ(0, result);
+	result = graphic_type_filter2.evaluateGraphic(graphic);
+	EXPECT_EQ(1, result);
+	result = domain_type_filter1.evaluateGraphic(graphic);
+	EXPECT_EQ(0, result);
+	result = domain_type_filter2.evaluateGraphic(graphic);
+	EXPECT_EQ(1, result);
 
 	result = filter.evaluateGraphic(graphic);
 	EXPECT_EQ(1, result);
@@ -280,10 +307,10 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	GraphicsFilterOperator or_operator = gfm.createFilterOperatorOr();
 	EXPECT_EQ(true, or_operator.isValid());
 
-	result = and_operator.appendOperand(graphic_type_filter);
+	result = and_operator.appendOperand(graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.insertOperandBefore(filter, graphic_type_filter);
+	result = and_operator.insertOperandBefore(filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = and_operator.setOperandIsActive(filter, 1);
@@ -292,10 +319,10 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	result = and_operator.getOperandIsActive(filter);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.setOperandIsActive(graphic_type_filter, 1);
+	result = and_operator.setOperandIsActive(graphic_type_filter1, 1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.getOperandIsActive(graphic_type_filter);
+	result = and_operator.getOperandIsActive(graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	GraphicsFilter temp_filter = and_operator.getFirstOperand();
@@ -303,13 +330,13 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	EXPECT_EQ(1, result);
 
 	temp_filter = and_operator.getNextOperand(temp_filter);
-	result = (graphic_type_filter.getId() == temp_filter.getId());
+	result = (graphic_type_filter1.getId() == temp_filter.getId());
 	EXPECT_EQ(1, result);
 
-	result = or_operator.appendOperand(graphic_type_filter);
+	result = or_operator.appendOperand(graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = or_operator.insertOperandBefore(filter, graphic_type_filter);
+	result = or_operator.insertOperandBefore(filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = and_operator.evaluateGraphic(graphic);
@@ -318,6 +345,6 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	result = or_operator.evaluateGraphic(graphic);
 	EXPECT_EQ(1, result);
 
-	result = or_operator.removeOperand(graphic_type_filter);
+	result = or_operator.removeOperand(graphic_type_filter1);
 	EXPECT_EQ(1, result);
 }

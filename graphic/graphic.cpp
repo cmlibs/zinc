@@ -23,13 +23,13 @@ TEST(Cmiss_graphic_api, set_use_element_type)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id is = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_ISO_SURFACES);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), is);
+	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
-	int result = Cmiss_graphic_set_use_element_type(is, CMISS_GRAPHIC_USE_ELEMENT_FACES);
+	int result = Cmiss_graphic_set_domain_type(Cmiss_graphic_contours_base_cast(is), CMISS_FIELD_DOMAIN_ELEMENTS_2D);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphic_destroy(&is);
+	Cmiss_graphic_contours_destroy(&is);
 }
 
 TEST(Cmiss_graphic_api, exterior)
@@ -71,8 +71,10 @@ TEST(Cmiss_graphic_api, coordinate_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), coordinate_field);
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_NODE_POINTS);
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_domain_type(gr, CMISS_FIELD_DOMAIN_NODES));
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_coordinate_field(gr, coordinate_field));
 
@@ -111,7 +113,7 @@ TEST(Cmiss_graphic_api, data_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), data_field);
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_NODE_POINTS);
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_data_field(gr, data_field));
@@ -160,10 +162,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_POINT);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+	Cmiss_graphic_points_id gr = Cmiss_rendition_create_graphic_points(zinc.ren);
+	EXPECT_NE(static_cast<Cmiss_graphic_points *>(0), gr);
 
-	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(gr);
+	Cmiss_graphic_point_attributes_id pointattr =
+		Cmiss_graphic_get_point_attributes(Cmiss_graphic_points_base_cast(gr));
 	EXPECT_NE(static_cast<Cmiss_graphic_point_attributes *>(0), pointattr);
 
 	Cmiss_glyph_id glyph = Cmiss_glyph_module_get_default_point_glyph(zinc.glyph_module);
@@ -189,7 +192,6 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMISS_GLYPH_REPEAT_MODE_INVALID));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMISS_GLYPH_REPEAT_MIRROR));
 	EXPECT_EQ(CMISS_GLYPH_REPEAT_MIRROR, Cmiss_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
-
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	Cmiss_field_id field = Cmiss_field_module_create_constant(zinc.fm, 3, fieldValues);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), field);
@@ -262,15 +264,18 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[2]);
 
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
-	Cmiss_graphic_destroy(&gr);
+	Cmiss_graphic_points_destroy(&gr);
 }
 
 TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_POINT);
+	GraphicPoints gr = zinc.ren.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
+	// test can assign to base class handle
+	Graphic tmp(gr);
+	EXPECT_TRUE(tmp.isValid());
 
 	GraphicPointAttributes pointattr = gr.getPointAttributes();
 	EXPECT_TRUE(pointattr.isValid());
@@ -352,10 +357,10 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_POINT);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+	Cmiss_graphic_points_id gr = Cmiss_rendition_create_graphic_points(zinc.ren);
+	EXPECT_NE(static_cast<Cmiss_graphic_points *>(0), gr);
 
-	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(gr);
+	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(Cmiss_graphic_points_base_cast(gr));
 	EXPECT_NE(static_cast<Cmiss_graphic_point_attributes *>(0), pointattr);
 
 	double values[] = { 1.0, 2.0, 3.0 };
@@ -414,14 +419,14 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 	}
 	Cmiss_font_destroy(&font);
 	Cmiss_graphic_point_attributes_destroy(&pointattr);
-	Cmiss_graphic_destroy(&gr);
+	Cmiss_graphic_points_destroy(&gr);
 }
 
 TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_POINT);
+	GraphicPoints gr = zinc.ren.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicPointAttributes pointattr = gr.getPointAttributes();

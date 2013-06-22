@@ -28,7 +28,7 @@ TEST(Cmiss_field_module_create_nodeset_minimum, invalid_args)
 	Cmiss_field_id f1 = Cmiss_field_module_create_nodeset_minimum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(fm, "cmiss_nodes");
+	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), ns);
 
 	Cmiss_field_id f2 = Cmiss_field_module_create_nodeset_minimum(fm, 0, ns);
@@ -69,7 +69,7 @@ TEST(Cmiss_field_module_create_nodeset_minimum, valid_args)
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 
-	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(fm, "cmiss_nodes");
+	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), ns);
 
 	Cmiss_field_id f2 = Cmiss_field_module_create_nodeset_minimum(fm, f1, ns);
@@ -107,7 +107,7 @@ TEST(Cmiss_field_module_create_nodeset_maximum, invalid_args)
 	Cmiss_field_id f1 = Cmiss_field_module_create_nodeset_maximum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(fm, "cmiss_nodes");
+	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), ns);
 
 	Cmiss_field_id f2 = Cmiss_field_module_create_nodeset_maximum(fm, 0, ns);
@@ -147,7 +147,7 @@ TEST(Cmiss_field_module_create_nodeset_maximum, valid_args)
 
 	Cmiss_field_id f1 = Cmiss_field_module_find_field_by_name(fm, "coordinates");
 
-	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(fm, "cmiss_nodes");
+	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), ns);
 
 	Cmiss_field_id f2 = Cmiss_field_module_create_nodeset_maximum(fm, f1, ns);
