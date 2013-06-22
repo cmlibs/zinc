@@ -131,23 +131,12 @@ public:
 	enum GraphicType
 	{
 		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID,
-		GRAPHIC_NODE_POINTS = CMISS_GRAPHIC_NODE_POINTS,
-		GRAPHIC_DATA_POINTS = CMISS_GRAPHIC_DATA_POINTS,
+		GRAPHIC_POINTS = CMISS_GRAPHIC_POINTS,
 		GRAPHIC_LINES = CMISS_GRAPHIC_LINES,
-		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS,
 		GRAPHIC_SURFACES = CMISS_GRAPHIC_SURFACES,
-		GRAPHIC_ISO_SURFACES = CMISS_GRAPHIC_ISO_SURFACES,
-		GRAPHIC_ELEMENT_POINTS = CMISS_GRAPHIC_ELEMENT_POINTS,
+		GRAPHIC_CONTOURS = CMISS_GRAPHIC_CONTOURS,
 		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES,
-		GRAPHIC_POINT = CMISS_GRAPHIC_POINT
-	};
-
-	enum UseElementType
-	{
-		USE_ELEMENT_TYPE_INVALID = CMISS_GRAPHIC_USE_ELEMENT_TYPE_INVALID,
-		USE_ELEMENT_HIGHEST_DIMENSION = CMISS_GRAPHIC_USE_ELEMENT_HIGHEST_DIMENSION,
-		USE_ELEMENT_FACES = CMISS_GRAPHIC_USE_ELEMENT_FACES,
-		USE_ELEMENT_LINES = CMISS_GRAPHIC_USE_ELEMENT_LINES
+		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS
 	};
 
 	enum FaceType
@@ -260,9 +249,14 @@ public:
 			static_cast<Cmiss_graphics_coordinate_system>(coordinateSystem));
 	}
 
-	int setUseElementType(UseElementType useElementType)
+	Field::DomainType getDomainType()
 	{
-		return Cmiss_graphic_set_use_element_type(id, static_cast<Cmiss_graphic_use_element_type>(useElementType));
+		return static_cast<Field::DomainType>(Cmiss_graphic_get_domain_type(id));
+	}
+
+	int setDomainType(Field::DomainType domainType)
+	{
+		return Cmiss_graphic_set_domain_type(id, static_cast<Cmiss_field_domain_type>(domainType));
 	}
 
 	char *getName()
@@ -358,6 +352,23 @@ public:
 			numberOfValues, firstIsovalue, lastIsovalue);
 	}
 
+};
+
+class GraphicPoints : public Graphic
+{
+private:
+	explicit GraphicPoints(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+
+public:
+	GraphicPoints() : Graphic(0) {}
+
+	explicit GraphicPoints(Cmiss_graphic_points_id graphic_points_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_points_id))
+	{}
+
+	GraphicPoints(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_points(graphic.getId())))
+	{}
 };
 
 class GraphicLineAttributes

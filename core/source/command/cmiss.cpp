@@ -263,7 +263,7 @@ int process_modify_element_group(Cmiss_field_group_id group,
 		Cmiss_nodeset_group_id remove_nodeset_group = 0;
 		if (manage_nodes)
 		{
-			Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+			Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 			Cmiss_field_node_group_id modify_node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
 			if ((!modify_node_group) && add_flag)
 				modify_node_group = Cmiss_field_group_create_node_group(group, master_nodeset);

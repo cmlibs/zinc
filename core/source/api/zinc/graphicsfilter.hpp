@@ -249,6 +249,12 @@ public:
 		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_visibility_flags(id));
 	}
 
+	GraphicsFilter createFilterDomainType(Field::DomainType domainType)
+	{
+		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_domain_type(id,
+			static_cast<Cmiss_field_domain_type>(domainType)));
+	}
+
 	GraphicsFilter createFilterGraphicName(const char *matchName)
 	{
 		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_name(id, matchName));

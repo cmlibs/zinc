@@ -49,6 +49,28 @@
 	struct Cmiss_field_cache;
 	typedef struct Cmiss_field_cache *Cmiss_field_cache_id;
 
+/**
+ * An enum specifying the field domain (without domain objects)
+ */
+enum Cmiss_field_domain_type
+{
+	CMISS_FIELD_DOMAIN_TYPE_INVALID = -1,
+	CMISS_FIELD_DOMAIN_POINT,
+		/*!< A single point for the region */
+	CMISS_FIELD_DOMAIN_NODES,
+		/*!< The set of node points */
+	CMISS_FIELD_DOMAIN_DATA,
+		/*!< The set of data points */
+	CMISS_FIELD_DOMAIN_ELEMENTS_1D,
+		/*!< The set of 1-D elements and edge lines of 2-D or 3-D elements */
+	CMISS_FIELD_DOMAIN_ELEMENTS_2D,
+		/*!< The set of 2-D elements and faces of 3-D elements */
+	CMISS_FIELD_DOMAIN_ELEMENTS_3D,
+		/*!< The set of 3-D elements */
+	CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION
+		/*!< The set of elements of highest dimension in region */
+};
+
 	#define CMISS_FIELD_ID_H
 
 #endif /* CMISS_FIELD_ID_H */

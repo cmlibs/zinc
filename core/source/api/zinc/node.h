@@ -78,6 +78,17 @@ ZINC_API enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
 ZINC_API char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
 
 /**
+ * Get a handle to a nodeset by its domain type, either
+ * CMISS_FIELD_DOMAIN_NODES or CMISS_FIELD_DOMAIN_DATA.
+ *
+ * @param field_module  The field module the nodeset belongs to.
+ * @param domain_type  CMISS_FIELD_DOMAIN_NODES or CMISS_FIELD_DOMAIN_DATA.
+ * @return  Handle to the nodeset, or 0 if error.
+ */
+ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_domain_type(
+	Cmiss_field_module_id field_module, enum Cmiss_field_domain_type domain_type);
+
+/**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
  * container of nodes - i.e. Cmiss_node objects. Valid names may be any
  * node_group field, or the following special names:
@@ -89,8 +100,8 @@ ZINC_API char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type
  * is GROUP_NAME.NODESET_NAME, with nodeset names as above.
  *
  * @param field_module  The field module the nodeset belongs to.
- * @param name  The name of the nodeset: "cmiss_nodes" or "cmiss_data".
- * @return  Handle to the nodeset, or NULL if error.
+ * @param name  The name of the nodeset.
+ * @return  Handle to the nodeset, or 0 if error.
  */
 ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name);

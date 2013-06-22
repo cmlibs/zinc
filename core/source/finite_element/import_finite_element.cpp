@@ -3655,8 +3655,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 										if (group && (!nodeset_group))
 										{
 											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-											Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module,
-												use_data ? "cmiss_data" : "cmiss_nodes");
+											Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+												use_data ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 											Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
 											if (!node_group)
 											{

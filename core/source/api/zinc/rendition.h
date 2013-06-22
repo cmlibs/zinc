@@ -111,6 +111,18 @@ ZINC_API Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rend
 ZINC_API Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
 	Cmiss_rendition_id rendition);
 
+/**
+ * Create a points graphic in the rendition. Used to visualise static points,
+ * nodes, data and sampled element points. Must set the domain type after
+ * creation.
+ * @see Cmiss_graphic_set_domain_type
+ *
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @return  Handle to the new points graphic on success, otherwise 0.
+ */
+ZINC_API Cmiss_graphic_points_id Cmiss_rendition_create_graphic_points(
+	Cmiss_rendition_id rendition);
+
 /***************************************************************************//**
  * Return a handle to selection handler for this rendition. User can add and
  * remove callback functions of the selection handler. The callback functions
@@ -161,7 +173,7 @@ ZINC_API Cmiss_graphic_id Cmiss_rendition_get_first_graphic(Cmiss_rendition_id r
  * Get the next graphic after <ref_graphic> on the graphics list of <rendition>.
 
  * @param rendition  Handle to a cmiss_rendition object.
- *  @param ref_grpahic  Handle to a cmiss_graphic object.
+ * @param ref_graphic  Handle to a cmiss_graphic object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
 ZINC_API Cmiss_graphic_id Cmiss_rendition_get_next_graphic(Cmiss_rendition_id rendition,

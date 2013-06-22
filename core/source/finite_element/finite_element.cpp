@@ -10338,6 +10338,39 @@ Up to the calling function to deallocate the returned char string.
 	return (return_code);
 } /* GET_NAME(FE_field_component) */
 
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
+{
+	switch (enumerator_value)
+	{
+	case CMISS_FIELD_DOMAIN_POINT:
+		return "domain_point";
+		break;
+	case CMISS_FIELD_DOMAIN_NODES:
+		return "domain_nodes";
+		break;
+	case CMISS_FIELD_DOMAIN_DATA:
+		return "domain_data";
+		break;
+	case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
+		return "domain_elements_1d";
+		break;
+	case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
+		return "domain_elements_2d";
+		break;
+	case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
+		return "domain_elements_3d";
+		break;
+	case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
+		return "domain_elements_highest_dimension";
+		break;
+	case CMISS_FIELD_DOMAIN_TYPE_INVALID:
+		break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_field_domain_type)
+
 struct FE_node_field_creator *CREATE(FE_node_field_creator)(
 	int number_of_components)
 /*******************************************************************************

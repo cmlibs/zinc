@@ -468,7 +468,7 @@ stored in the nearest_element_data.
 				fe_region = Cmiss_region_get_FE_region(cmiss_region);
 				if (fe_region)
 				{
-					element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+					element_type = Cmiss_graphic_get_domain_dimension(graphic);
 					cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
 					if (element_type == 1)
 					{
@@ -610,13 +610,13 @@ and destroy it once returned.
 				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
 						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				(CMISS_GRAPHIC_ELEMENT_POINTS==
-					Cmiss_graphic_get_graphic_type(graphic)))
+				(CMISS_GRAPHIC_POINTS == Cmiss_graphic_get_graphic_type(graphic)) &&
+				Cmiss_graphic_selects_elements(graphic))
 			{
 				fe_region = Cmiss_region_get_FE_region(cmiss_region);
 				if (fe_region)
 				{
-					element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+					element_type = Cmiss_graphic_get_domain_dimension(graphic);
 					cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
 					if (element_type == 1)
 					{
@@ -910,7 +910,6 @@ no current nearest node or the new node is nearer, it becomes the picked node
 and its "nearest" value is stored in the nearest_node_data.
 ==============================================================================*/
 {
-	enum Cmiss_graphic_type graphic_type;
 	int node_number,return_code;
 	struct FE_node *node;
 	struct FE_region *fe_region;
@@ -937,11 +936,10 @@ and its "nearest" value is stored in the nearest_node_data.
 				&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(
 					rendition,Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				(((CMISS_GRAPHIC_NODE_POINTS==
-					(graphic_type=Cmiss_graphic_get_graphic_type(graphic)))&&
+				(((CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))) &&
 					(!nearest_node_data->use_data)) ||
-					((CMISS_GRAPHIC_DATA_POINTS == graphic_type) &&
-						nearest_node_data->use_data)) &&
+				(((CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic)) &&
+					nearest_node_data->use_data)) &&
 				(cmiss_region = Cmiss_rendition_get_region(rendition)))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
@@ -999,8 +997,7 @@ and its "nearest" value is stored in the nearest_node_data.
 struct Scene_picked_object_get_picked_nodes_data
 {
 	struct LIST(FE_node) *node_list;
-	/* flag set when searching for nearest data point rather than node */
-	int use_data;
+	Cmiss_field_domain_type domain_type; // nodes or data
 };
 
 typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
@@ -1008,8 +1005,7 @@ typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
 struct Scene_picked_object_region_node_map_data
 {
   Region_node_map *node_list;
-	/* flag set when searching for nearest data point rather than node */
-	int use_data;
+	Cmiss_field_domain_type domain_type; // nodes or data
 };
 
 static int Scene_picked_object_get_picked_region_sorted_nodes(
@@ -1025,7 +1021,6 @@ manager, ensures it is in the list.
 	USE_PARAMETER(scene_picked_object);
 	USE_PARAMETER(picked_nodes_data_void);
 
-	enum Cmiss_graphic_type graphic_type;
 	int node_number,return_code;
 	struct Cmiss_region *cmiss_region;
 	struct FE_node *node;
@@ -1033,7 +1028,6 @@ manager, ensures it is in the list.
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic = NULL;
 	struct Scene_picked_object_region_node_map_data *picked_nodes_data;
-
 
 	ENTER(Scene_picked_object_get_picked_nodes);
 	if (scene_picked_object&&(picked_nodes_data=
@@ -1047,16 +1041,12 @@ manager, ensures it is in the list.
 			&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
 				Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-			(((CMISS_GRAPHIC_NODE_POINTS ==
-					(graphic_type = Cmiss_graphic_get_graphic_type(graphic))) &&
-				(!picked_nodes_data->use_data)) ||
-			((CMISS_GRAPHIC_DATA_POINTS == graphic_type) &&
-				picked_nodes_data->use_data)) &&
+			(picked_nodes_data->domain_type == Cmiss_graphic_get_domain_type(graphic)) &&
 			(cmiss_region = Cmiss_rendition_get_region(rendition)))
 		{
 			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
 			fe_region = Cmiss_region_get_FE_region(cmiss_region);
-			if (picked_nodes_data->use_data)
+			if (picked_nodes_data->domain_type == CMISS_FIELD_DOMAIN_DATA)
 			{
 				fe_region = FE_region_get_data_FE_region(fe_region);
 			}
@@ -1089,7 +1079,8 @@ manager, ensures it is in the list.
 } /* Scene_picked_object_get_picked_nodes */
 
 void *Scene_picked_object_list_get_picked_region_sorted_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data)
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	enum Cmiss_field_domain_type domain_type)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -1104,7 +1095,7 @@ nodes, needed since different settings type used for each.
 	ENTER(Scene_picked_object_list_get_picked_nodes);
 	if (scene_picked_object_list)
 	{
-		picked_nodes_data.use_data=use_data;
+		picked_nodes_data.domain_type = domain_type;
 		picked_nodes_data.node_list=new Region_node_map();
 		if (picked_nodes_data.node_list)
 		{
@@ -2873,7 +2864,7 @@ manager, ensures it is in the list.
 			fe_region = Cmiss_region_get_FE_region(cmiss_region);
 			if (fe_region)
 			{
-				element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+				element_type = Cmiss_graphic_get_domain_dimension(graphic);
 				cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
 				if (element_type == 1)
 				{

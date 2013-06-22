@@ -556,7 +556,8 @@ Scene_picked_object referring to the nearest any_object is put there.
 ==============================================================================*/
 
 void *Scene_picked_object_list_get_picked_region_sorted_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data);
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	enum Cmiss_field_domain_type domain_type);
 
 struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
 	struct LIST(Scene_picked_object) *scene_picked_object_list);

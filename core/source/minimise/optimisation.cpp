@@ -220,7 +220,7 @@ int Minimisation::construct_dof_arrays()
 			// should only have one independent field
 			FE_field *fe_field;
 			Computed_field_get_type_finite_element(independentField, &fe_field);
-			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 			Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
 			Cmiss_node_id node = 0;
 			while ((0 != (node = Cmiss_node_iterator_next_non_access(iterator))) && return_code)

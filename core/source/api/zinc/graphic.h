@@ -339,14 +339,27 @@ ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 ZINC_API int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
 
 /**
- * Set the element type to use for the graphic.  Note that this may not be applicable
- * to all graphic types.
+ * Get the field domain type graphics are created from with the graphic.
  *
- * @param graphic Handle to a cmiss_graphic object.
- * @param use_type enum value of the element type to use.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  Handle to the graphic to query.
+ * @return  The domain type of the graphic or CMISS_FIELD_DOMAIN_TYPE_INVALID
+ * on error.
  */
-ZINC_API int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_use_element_type use_type);
+ZINC_API enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Set the field domain type to create graphics from with the graphic.
+ * Note that all domain types are applicable to all graphic types, for example
+ * this attribute cannot be changed for LINES and SURFACES, which always use
+ * 1D and 2D elements domains, respectively.
+ *
+ * @param graphic  Handle to the graphic to modify.
+ * @param domain_type  Enumerated value of the field domain type to use.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
+	enum Cmiss_field_domain_type domain_type);
 
 /**
  * If the graphic is of type contours graphic then this function returns
@@ -363,7 +376,7 @@ ZINC_API Cmiss_graphic_contours_id Cmiss_graphic_cast_contours(Cmiss_graphic_id 
  * Cast contours graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
  * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
- * maintaining returned handle beyond the lifetime of the contours_graphic argument.
+ * maintaining returned handle beyond the lifetime of the contours graphic argument.
  *
  * @param contours_graphic  Handle to the contours graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
@@ -482,6 +495,41 @@ ZINC_API int Cmiss_graphic_contours_get_range_number_of_isovalues(
 ZINC_API int Cmiss_graphic_contours_set_range_isovalues(
 	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
 	double first_isovalue, double last_isovalue);
+
+/**
+ * If the graphic is of type points graphic then this function returns
+ * the points specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new points graphic reference.
+ *
+ * @param graphic  The graphic to be cast.
+ * @return  Points graphic specific representation if the input is the correct
+ * graphic type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_graphic_points_id Cmiss_graphic_cast_points(Cmiss_graphic_id graphic);
+
+/**
+ * Cast points graphic back to its base graphic and return the graphic.
+ * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the points graphic argument.
+ *
+ * @param points_graphic  Handle to the points graphic to cast.
+ * @return  Non-accessed handle to the base graphic or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_points_base_cast(Cmiss_graphic_points_id points_graphic)
+{
+	return (Cmiss_graphic_id)(points_graphic);
+}
+
+/**
+ * Destroys this reference to the points graphic (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param points_address  Address of handle to the points graphic.
+ * @return  Status CMISS_OK if successfully destroyed the points graphic handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_address);
 
 /**
  * If the graphic produces lines or extrusions then returns a handle to the
