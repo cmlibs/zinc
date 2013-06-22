@@ -55,22 +55,6 @@ The function prototypes for creating graphical objects from finite elements.
 Global types
 ------------
 */
-enum Use_element_type
-/*******************************************************************************
-LAST MODIFIED : 20 March 2001
-
-DESCRIPTION :
-For glyph sets - determines whether they are generated from:
-USE_ELEMENTS = CM_ELEMENT or dimension 3
-USE_FACES    = CM_FACE or dimension 2
-USE_LINES    = CM_LINE or dimension 1
-==============================================================================*/
-{
-	USE_ELEMENT_TYPE_INVALID = 0,
-	USE_ELEMENTS = 1,
-	USE_FACES = 2,
-	USE_LINES = 3
-}; /* enum Use_element_type */
 
 struct Displacement_map
 /*******************************************************************************
@@ -149,15 +133,6 @@ array. This is always possible if there is a scalar (or zero scalar), but where
 zero vectors are either read or calculated from the <orientation_scale_values>,
 these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
-
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Use_element_type);
-
-/***************************************************************************//**
- * Returns the dimension expected for the <use_element_type>. If <fe_region> is
- * supplied, USE_ELEMENT returns the highest dimension present in fe_region.
- */
-int Use_element_type_dimension(enum Use_element_type use_element_type,
-	struct FE_region *fe_region);
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	Cmiss_field_cache_id field_cache,

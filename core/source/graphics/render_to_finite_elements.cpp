@@ -97,7 +97,7 @@ struct Render_to_finite_elements_data
 		field_cache(Cmiss_field_module_create_cache(field_module)),
 		render_mode(render_mode),
 		coordinate_field(coordinate_field),
-		master_nodeset(Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes")),
+		master_nodeset(Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES)),
 		nodeset(0),
 		master_mesh_1d(Cmiss_field_module_find_mesh_by_dimension(field_module, 1)),
 		mesh_1d(0),

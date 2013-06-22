@@ -203,6 +203,12 @@ public:
 			id, dimension, static_cast<Cmiss_basis_function_type>(functionType)));
 	}
 
+	Nodeset findNodesetByDomainType(Field::DomainType domainType)
+	{
+		return Nodeset(Cmiss_field_module_find_nodeset_by_domain_type(id,
+			static_cast<Cmiss_field_domain_type>(domainType)));
+	}
+
 	Nodeset findNodesetByName(const char *nodeset_name)
 	{
 		return Nodeset(Cmiss_field_module_find_nodeset_by_name(id,

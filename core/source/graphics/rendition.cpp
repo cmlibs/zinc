@@ -850,7 +850,7 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
-			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&
+			(graphic_type != CMISS_GRAPHIC_POINTS) &&
 			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
 		{
 			Cmiss_tessellation *tessellation = Cmiss_graphics_module_get_default_tessellation(rendition->graphics_module);
@@ -903,8 +903,9 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 	if (rendition && graphic)
 	{
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
+		Cmiss_field_domain_type domain_type = Cmiss_graphic_get_domain_type(graphic);
 
-		if (graphic_type != CMISS_GRAPHIC_POINT)
+		if ((graphic_type != CMISS_GRAPHIC_POINTS) || (domain_type != CMISS_FIELD_DOMAIN_POINT))
 		{
 			Cmiss_field_id coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
 			// could be smarter, e.g. using graphic type
@@ -915,7 +916,7 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 		}
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
-			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&
+			(graphic_type != CMISS_GRAPHIC_POINTS) &&
 			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
 		{
 			Cmiss_tessellation *tessellation = NULL;
@@ -944,7 +945,7 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 		}
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD) &&
-			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&
+			(graphic_type != CMISS_GRAPHIC_POINTS) &&
 			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
 		{
 			Cmiss_graphic_set_native_discretization_field(graphic, rendition->native_discretization_field);
@@ -3325,8 +3326,8 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_group_id selection_group = Cmiss_rendition_get_or_create_selection_group(rendition);
-		Cmiss_nodeset_id temp_nodeset = Cmiss_field_module_find_nodeset_by_name(
-			field_module, use_data ? "cmiss_data" : "cmiss_nodes");
+		Cmiss_nodeset_id temp_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(
+			field_module, use_data ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 		Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(selection_group, temp_nodeset);
 		if (!node_group)
 			node_group = Cmiss_field_group_create_node_group(selection_group, temp_nodeset);
@@ -3681,7 +3682,14 @@ Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
 	Cmiss_rendition_id rendition)
 {
 	return (reinterpret_cast<Cmiss_graphic_contours_id>(
-		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_ISO_SURFACES)));
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_CONTOURS)));
+}
+
+Cmiss_graphic_points_id Cmiss_rendition_create_graphic_points(
+	Cmiss_rendition_id rendition)
+{
+	return (reinterpret_cast<Cmiss_graphic_points_id>(
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_POINTS)));
 }
 
 Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition)

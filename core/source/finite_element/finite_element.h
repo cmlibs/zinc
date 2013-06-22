@@ -452,6 +452,8 @@ or conditional function, eg. add_FE_element_using_node_list_to_list.
 	struct LIST(FE_node) *node_list;
 };
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_field_domain_type);
+
 /*
 Global functions
 ----------------

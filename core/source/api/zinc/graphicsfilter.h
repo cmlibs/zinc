@@ -88,6 +88,18 @@ ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_vis
 	Cmiss_graphics_filter_module_id graphics_filter_module);
 
 /**
+ * Creates a graphics filter which matches any graphic with given domain type.
+ *
+ * @param graphics_filter_module  The module to create the filter in.
+ * @param domain_type  The domain type to be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure. Up to caller to
+ * destroy the returned handle.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_domain_type(
+	Cmiss_graphics_filter_module_id graphics_filter_module,
+	enum Cmiss_field_domain_type domain_type);
+
+/**
  * Creates a Cmiss_graphics_filter which matches any graphic with the supplied
  * name.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.

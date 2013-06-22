@@ -4779,7 +4779,7 @@ will produce the range of all the graphics objects.
 							int number_of_points = glyph_set->number_of_points;
 							for (i = 0; i < number_of_points; ++i)
 							{
-								resolve_glyph_axes(CMISS_GLYPH_REPEAT_NONE, /*glyph_number*/0,
+								resolve_glyph_axes(glyph_set->glyph_repeat_mode, /*glyph_number*/0,
 									glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
 									*point, *axis1, *axis2, *axis3, *scale,
 									temp_point, temp_axis1, temp_axis2, temp_axis3);

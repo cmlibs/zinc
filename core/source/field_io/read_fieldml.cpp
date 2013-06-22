@@ -1459,7 +1459,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// create nodes and set node parameters
 
-	Cmiss_nodeset_id nodes = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+	Cmiss_nodeset_id nodes = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 	Cmiss_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{

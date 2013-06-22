@@ -254,9 +254,9 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
 				{
 					if (((type == CMISS_SCENE_PICKER_OBJECT_DATA) &&
-							(CMISS_GRAPHIC_DATA_POINTS == Cmiss_graphic_get_graphic_type(graphic))) ||
+							(CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic))) ||
 						((type == CMISS_SCENE_PICKER_OBJECT_NODE) &&
-							(CMISS_GRAPHIC_NODE_POINTS == Cmiss_graphic_get_graphic_type(graphic))))
+							(CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))))
 					{
 						if (rendition)
 						{
@@ -267,16 +267,8 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 								if (nodeset)
 									Cmiss_nodeset_destroy(&nodeset);
-								if (type == CMISS_SCENE_PICKER_OBJECT_DATA)
-								{
-									nodeset = Cmiss_field_module_find_nodeset_by_name(
-										field_module, "cmiss_data");
-								}
-								else
-								{
-									nodeset = Cmiss_field_module_find_nodeset_by_name(
-										field_module, "cmiss_nodes");
-								}
+								nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+									(type == CMISS_SCENE_PICKER_OBJECT_DATA) ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 								Cmiss_field_module_destroy(&field_module);
 							}
 							Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodeset,
@@ -334,7 +326,7 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 						{
 							Cmiss_region *region = Cmiss_rendition_get_region(rendition);
 							struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
-							int element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+							int element_type = Cmiss_graphic_get_domain_dimension(graphic);
 							if ((existing_rendition != rendition) ||
 								(current_element_type != element_type))
 							{
@@ -499,7 +491,7 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 							{
 								Cmiss_region *region = Cmiss_rendition_get_region(rendition);
 								struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
-								int element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+								int element_type = Cmiss_graphic_get_domain_dimension(graphic);
 								if ((existing_rendition != rendition) ||
 									(current_element_type != element_type))
 								{
@@ -571,9 +563,9 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
 					{
 						if (((type == CMISS_SCENE_PICKER_OBJECT_DATA) &&
-								(CMISS_GRAPHIC_DATA_POINTS == Cmiss_graphic_get_graphic_type(graphic))) ||
+								(CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic))) ||
 							((type == CMISS_SCENE_PICKER_OBJECT_NODE) &&
-								(CMISS_GRAPHIC_NODE_POINTS == Cmiss_graphic_get_graphic_type(graphic))))
+								(CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))))
 						{
 							if (rendition)
 							{
@@ -584,16 +576,8 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 									if (nodeset)
 										Cmiss_nodeset_destroy(&nodeset);
-									if (type == CMISS_SCENE_PICKER_OBJECT_DATA)
-									{
-										nodeset = Cmiss_field_module_find_nodeset_by_name(
-											field_module, "cmiss_data");
-									}
-									else
-									{
-										nodeset = Cmiss_field_module_find_nodeset_by_name(
-											field_module, "cmiss_nodes");
-									}
+									nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+										(type == CMISS_SCENE_PICKER_OBJECT_DATA) ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 									Cmiss_field_module_destroy(&field_module);
 								}
 								Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodeset,
@@ -656,9 +640,9 @@ Cmiss_graphic_id Cmiss_scene_picker::getNearestGraphic(enum Cmiss_scene_picker_o
 							((type == CMISS_SCENE_PICKER_OBJECT_ELEMENT) &&
 								(Cmiss_graphic_selects_elements(graphic))) ||
 							((type == CMISS_SCENE_PICKER_OBJECT_DATA) &&
-								(CMISS_GRAPHIC_DATA_POINTS == Cmiss_graphic_get_graphic_type(graphic))) ||
+								(CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic))) ||
 							((type == CMISS_SCENE_PICKER_OBJECT_NODE) &&
-								(CMISS_GRAPHIC_NODE_POINTS == Cmiss_graphic_get_graphic_type(graphic))))
+								(CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))))
 						{
 							current_nearest = nearest;
 							if (graphic != nearest_graphic)
@@ -796,17 +780,8 @@ int Cmiss_scene_picker::addPickedNodesToGroup(Cmiss_field_group_id group,
 					if (selection_group)
 					{
 						Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
-						Cmiss_nodeset_id master_nodeset = 0;
-						if (type == CMISS_SCENE_PICKER_OBJECT_DATA)
-						{
-							master_nodeset = Cmiss_field_module_find_nodeset_by_name(
-								field_module, "cmiss_data");
-						}
-						else
-						{
-							master_nodeset = Cmiss_field_module_find_nodeset_by_name(
-								field_module, "cmiss_nodes");
-						}
+						Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+							(type == CMISS_SCENE_PICKER_OBJECT_DATA) ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 						if (master_nodeset)
 						{
 							Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(

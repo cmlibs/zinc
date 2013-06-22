@@ -378,6 +378,28 @@ public:
 	}
 };
 
+class Cmiss_graphics_filter_domain_type : public Cmiss_graphics_filter
+{
+	enum Cmiss_field_domain_type domain_type;
+
+public:
+	Cmiss_graphics_filter_domain_type(enum Cmiss_field_domain_type inDomainType) :
+		domain_type(inDomainType)
+	{
+		filter_type = CMISS_GRAPHICS_FILTER_TYPE_DOMAIN_TYPE;
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic)
+	{
+		return (!isInverse() == (domain_type == Cmiss_graphic_get_domain_type(graphic)));
+	}
+
+	virtual void list_type_specific() const
+	{
+		display_message(INFORMATION_MESSAGE, "%s", ENUMERATOR_STRING(Cmiss_field_domain_type)(domain_type));
+	}
+};
+
 class Cmiss_graphics_filter_graphic_type : public Cmiss_graphics_filter
 {
 	enum Cmiss_graphic_type graphic_type;
@@ -643,6 +665,24 @@ public:
 		return graphics_filter;
 	}
 
+	Cmiss_graphics_filter_id createFilterDomainType(
+		enum Cmiss_field_domain_type domain_type)
+	{
+		Cmiss_graphics_filter_id graphics_filter = 0;
+		if (graphicsFilterManager)
+		{
+			graphics_filter = new Cmiss_graphics_filter_domain_type(domain_type);
+			char *name = getValidTemporaryNameForGraphicsFilter();
+			Cmiss_graphics_filter_set_name(graphics_filter, name);
+			DEALLOCATE(name);
+			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			{
+				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+			}
+		}
+		return graphics_filter;
+	}
+
 	Cmiss_graphics_filter *createFilterGraphicName(const char *match_name)
 	{
 		Cmiss_graphics_filter_id graphics_filter = NULL;
@@ -785,6 +825,18 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_visibility_f
 		return graphics_filter_module->createFilterVisibilityFlags();
 	}
 	return 0;
+}
+
+Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_domain_type(
+	Cmiss_graphics_filter_module_id graphics_filter_module,
+	enum Cmiss_field_domain_type domain_type)
+{
+	if (graphics_filter_module)
+	{
+		return graphics_filter_module->createFilterDomainType(domain_type);
+	}
+	return 0;
+
 }
 
 Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_name(

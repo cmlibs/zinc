@@ -902,6 +902,30 @@ Global functions
 ----------------
 */
 
+Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_domain_type(
+	Cmiss_field_module_id field_module, enum Cmiss_field_domain_type domain_type)
+{
+	Cmiss_nodeset_id nodeset = 0;
+	if (field_module)
+	{
+		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+		FE_region *fe_region = 0;
+		if (CMISS_FIELD_DOMAIN_NODES == domain_type)
+		{
+			fe_region = Cmiss_region_get_FE_region(region);
+		}
+		else if (CMISS_FIELD_DOMAIN_DATA == domain_type)
+		{
+			fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
+		}
+		if (fe_region)
+		{
+			nodeset = new Cmiss_nodeset(fe_region);
+		}
+	}
+	return nodeset;
+}
+
 Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name)
 {
@@ -921,19 +945,13 @@ Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 		}
 		else
 		{
-			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			FE_region *fe_region = 0;
 			if (0 == strcmp(nodeset_name, "cmiss_nodes"))
 			{
-				fe_region = Cmiss_region_get_FE_region(region);
+				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 			}
 			else if (0 == strcmp(nodeset_name, "cmiss_data"))
 			{
-				fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
-			}
-			if (fe_region)
-			{
-				nodeset = new Cmiss_nodeset(fe_region);
+				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_DATA);
 			}
 		}
 	}

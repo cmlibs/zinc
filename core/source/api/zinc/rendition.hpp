@@ -116,6 +116,11 @@ public:
 		return GraphicContours(Cmiss_rendition_create_graphic_contours(id));
 	}
 
+	GraphicPoints createGraphicPoints()
+	{
+		return GraphicPoints(Cmiss_rendition_create_graphic_points(id));
+	}
+
 	SelectionHandler createSelectionHandler()
 	{
 		return SelectionHandler(Cmiss_rendition_create_selection_handler(id));

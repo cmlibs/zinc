@@ -167,13 +167,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 	ENTER(ENUMERATOR_STRING(Cmiss_graphic_type));
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHIC_NODE_POINTS:
+		case CMISS_GRAPHIC_POINTS:
 		{
-			enumerator_string = "node_points";
-		} break;
-		case CMISS_GRAPHIC_DATA_POINTS:
-		{
-			enumerator_string = "data_points";
+			enumerator_string = "points";
 		} break;
 		case CMISS_GRAPHIC_LINES:
 		{
@@ -187,21 +183,13 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 		{
 			enumerator_string = "surfaces";
 		} break;
-		case CMISS_GRAPHIC_ISO_SURFACES:
+		case CMISS_GRAPHIC_CONTOURS:
 		{
-			enumerator_string = "iso_surfaces";
-		} break;
-		case CMISS_GRAPHIC_ELEMENT_POINTS:
-		{
-			enumerator_string = "element_points";
+			enumerator_string = "contours";
 		} break;
 		case CMISS_GRAPHIC_STREAMLINES:
 		{
 			enumerator_string = "streamlines";
-		} break;
-		case CMISS_GRAPHIC_POINT:
-		{
-			enumerator_string = "point";
 		} break;
 		default:
 		{
@@ -225,62 +213,43 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
 		case CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE:
 		{
-			return_code = (graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+			return_code = (graphic_type == CMISS_GRAPHIC_POINTS) ||
 				(graphic_type == CMISS_GRAPHIC_STREAMLINES);
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_GLYPH:
 		case CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD:
 		{
 			return_code =
-				(graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_POINT);
+				(graphic_type == CMISS_GRAPHIC_POINTS);
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD:
 		case CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION:
 		{
-			return_code = (graphic_type != CMISS_GRAPHIC_DATA_POINTS) &&
-				(graphic_type != CMISS_GRAPHIC_NODE_POINTS) &&
-				(graphic_type != CMISS_GRAPHIC_POINT);
+			return_code = 1;
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE:
 		{
 			return_code =
 				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
+				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
 				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD:
 		{
 			return_code =
 				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
+				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
 				(graphic_type == CMISS_GRAPHIC_LINES) ||
 				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG:
 		case CMISS_GRAPHIC_ATTRIBUTE_FACE:
 		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_LINES) ||
-				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
+			return_code = 1;
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH:
 		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_LINES);
-
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS);
+			return_code = 1;
 		} break;
 		default:
 		{
@@ -293,26 +262,16 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 
 struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 	enum Cmiss_graphic_type graphic_type)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Allocates memory for a Cmiss_graphic and initialises its members.
-==============================================================================*/
 {
 	struct Cmiss_graphic *graphic;
 
 	ENTER(CREATE(Cmiss_graphic));
-
-	if ((CMISS_GRAPHIC_NODE_POINTS==graphic_type)||
-		(CMISS_GRAPHIC_DATA_POINTS==graphic_type)||
+	if ((CMISS_GRAPHIC_POINTS==graphic_type)||
 		(CMISS_GRAPHIC_LINES==graphic_type)||
-		(CMISS_GRAPHIC_CYLINDERS==graphic_type)||
 		(CMISS_GRAPHIC_SURFACES==graphic_type)||
-		(CMISS_GRAPHIC_ISO_SURFACES==graphic_type)||
-		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic_type)||
+		(CMISS_GRAPHIC_CONTOURS==graphic_type)||
 		(CMISS_GRAPHIC_STREAMLINES==graphic_type)||
-		(CMISS_GRAPHIC_POINT==graphic_type))
+		(CMISS_GRAPHIC_CYLINDERS==graphic_type))
 	{
 		if (ALLOCATE(graphic,struct Cmiss_graphic,1))
 		{
@@ -338,7 +297,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			}
 			graphic->line_orientation_scale_field = 0;
 
-			/* for iso_surfaces only */
+			/* for contours only */
 			graphic->isoscalar_field=(struct Computed_field *)NULL;
 			graphic->number_of_isovalues=0;
 			graphic->isovalues=(double *)NULL;
@@ -364,8 +323,23 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 
 			graphic->subgroup_field=(struct Computed_field *)NULL;
 			graphic->select_mode=GRAPHICS_SELECT_ON;
-			/* for element_points and iso_surfaces */
-			graphic->use_element_type=USE_ELEMENTS;
+			switch (graphic_type)
+			{
+			case CMISS_GRAPHIC_POINTS:
+				graphic->domain_type = CMISS_FIELD_DOMAIN_POINT;
+				break;
+			case CMISS_GRAPHIC_LINES:
+			case CMISS_GRAPHIC_CYLINDERS:
+				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_1D;
+				break;
+			case CMISS_GRAPHIC_SURFACES:
+				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_2D;
+				break;
+			default:
+				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION;
+				break;
+			}
+
 			/* for element_points only */
 			graphic->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
 			graphic->xi_point_density_field = (struct Computed_field *)NULL;
@@ -401,7 +375,6 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->selected_material=(struct Graphical_material *)NULL;
 			graphic->data_field=(struct Computed_field *)NULL;
 			graphic->spectrum=(struct Spectrum *)NULL;
-			graphic->customised_graphics_object =(struct GT_object *)NULL;
 			graphic->autorange_spectrum_flag = 0;
 			/* for glyphsets */
 			graphic->font = NULL;
@@ -449,10 +422,6 @@ int DESTROY(Cmiss_graphic)(
 		if (graphic->name)
 		{
 			DEALLOCATE(graphic->name);
-		}
-		if (graphic->customised_graphics_object)
-		{
-			DEACCESS(GT_object)(&(graphic->customised_graphics_object));
 		}
 		if (graphic->graphics_object)
 		{
@@ -569,67 +538,50 @@ int DESTROY(Cmiss_graphic)(
 	return (return_code);
 }
 
-/***************************************************************************//**
- * Returns the dimension of the <graphic>, which varies for some graphic types.
- * @param graphic Cmiss graphic
- * @param fe_region  Used for iso_surfaces and element_points with USE_ELEMENT
- * type. Gives the highest dimension for which elements exist. If omitted uses 3.
- * @return the dimension of the graphic
- */
-int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region *fe_region)
+int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic)
 {
 	int dimension;
-
-	ENTER(cmiss_graphic_get_dimension);
 	if (graphic)
 	{
-		switch (graphic->graphic_type)
+		switch (graphic->domain_type)
 		{
-			case CMISS_GRAPHIC_NODE_POINTS:
-			case CMISS_GRAPHIC_DATA_POINTS:
-			case CMISS_GRAPHIC_POINT:
+		case CMISS_FIELD_DOMAIN_POINT:
+		case CMISS_FIELD_DOMAIN_NODES:
+		case CMISS_FIELD_DOMAIN_DATA:
+			dimension = 0;
+			break;
+		case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
+			dimension = 1;
+			break;
+		case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
+			dimension = 2;
+			break;
+		case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
+			dimension = 3;
+			break;
+		case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
+			dimension = 3;
+			if (graphic->rendition)
 			{
-				dimension=0;
-			} break;
-			case CMISS_GRAPHIC_LINES:
-			case CMISS_GRAPHIC_CYLINDERS:
-			{
-				dimension=1;
-			} break;
-			case CMISS_GRAPHIC_SURFACES:
-			{
-				dimension=2;
-			} break;
-			case CMISS_GRAPHIC_STREAMLINES:
-			{
-				// GRC: should be controllable, e.g. via use_element_type
-				dimension = fe_region ? FE_region_get_highest_dimension(fe_region) : 3;
-				if (0 == dimension)
+				dimension = FE_region_get_highest_dimension(graphic->rendition->fe_region);
+				if (0 >= dimension)
 					dimension = 3;
-			} break;
-			case CMISS_GRAPHIC_ELEMENT_POINTS:
-			case CMISS_GRAPHIC_ISO_SURFACES:
-			{
-				dimension=Use_element_type_dimension(graphic->use_element_type, fe_region);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_get_dimension.  Unknown graphic type");
-				dimension=-1;
-			} break;
+			}
+			break;
+		case CMISS_FIELD_DOMAIN_TYPE_INVALID:
+			display_message(ERROR_MESSAGE, "Cmiss_graphic_get_domain_dimension.  Unknown graphic type");
+			dimension = -1;
+			break;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_dimension.  Invalid argument(s)");
-		dimension=0;
+			"Cmiss_graphic_get_domain_dimension.  Invalid argument(s)");
+		dimension = -1;
 	}
-	LEAVE;
-
 	return (dimension);
-} /* Cmiss_graphic_get_dimension */
+}
 
 struct Cmiss_element_conditional_field_data
 {
@@ -693,7 +645,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		Cmiss_element_conditional_field_data conditional_field_data = { graphic_to_object_data->field_cache, graphic->subgroup_field };
 		if (draw_element)
 		{
-			int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
+			int dimension = Cmiss_graphic_get_domain_dimension(graphic);
 			draw_element = FE_element_meets_topological_criteria(element, dimension,
 				graphic->exterior, graphic->face,
 				graphic->subgroup_field ? Cmiss_element_conditional_field_is_true : 0,
@@ -856,7 +808,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							}
 						}
 					} break;
-					case CMISS_GRAPHIC_ISO_SURFACES:
+					case CMISS_GRAPHIC_CONTOURS:
 					{
 						switch (GT_object_get_type(graphic->graphics_object))
 						{
@@ -992,7 +944,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							} break;
 						}
 					} break;
-					case CMISS_GRAPHIC_ELEMENT_POINTS:
+					case CMISS_GRAPHIC_POINTS:
 					{
 						Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 						glyph_set = (struct GT_glyph_set *)NULL;
@@ -1538,12 +1490,11 @@ int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 	ENTER(Cmiss_graphic_selects_elements);
 	if (graphic)
 	{
-		return_code=(GRAPHICS_NO_SELECT != graphic->select_mode)&&(
-			(CMISS_GRAPHIC_LINES==graphic->graphic_type)||
-			(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_SURFACES==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type));
+		return_code = (GRAPHICS_NO_SELECT != graphic->select_mode) && (
+			(CMISS_FIELD_DOMAIN_ELEMENTS_1D == graphic->domain_type) ||
+			(CMISS_FIELD_DOMAIN_ELEMENTS_2D == graphic->domain_type) ||
+			(CMISS_FIELD_DOMAIN_ELEMENTS_3D == graphic->domain_type) ||
+			(CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION == graphic->domain_type));
 	}
 	else
 	{
@@ -1554,7 +1505,7 @@ int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_graphic_selects_elements */
+}
 
 enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	struct Cmiss_graphic *graphic)
@@ -2062,10 +2013,12 @@ char *Cmiss_graphic_get_summary_string(struct Cmiss_graphic *graphic)
 	{
 		sprintf(temp_string, "%i. ", graphic->position);
 	}
-	append_string(&graphic_string,temp_string,&error);
+	append_string(&graphic_string, temp_string, &error);
 	append_string(&graphic_string,
 		ENUMERATOR_STRING(Cmiss_graphic_type)(graphic->graphic_type),
 		&error);
+	append_string(&graphic_string, " ", &error);
+	append_string(&graphic_string, ENUMERATOR_STRING(Cmiss_field_domain_type)(graphic->domain_type), &error);
 	if (graphic->subgroup_field)
 	{
 		char *name = Cmiss_field_get_name(graphic->subgroup_field);
@@ -2080,7 +2033,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail)
 {
 	char *graphic_string = NULL,temp_string[100],*name;
-	int dimension,error,i;
+	int error,i;
 
 	ENTER(Cmiss_graphic_string);
 	graphic_string=(char *)NULL;
@@ -2109,6 +2062,8 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		append_string(&graphic_string,
 			ENUMERATOR_STRING(Cmiss_graphic_type)(graphic->graphic_type),
 			&error);
+		append_string(&graphic_string, " ", &error);
+		append_string(&graphic_string, ENUMERATOR_STRING(Cmiss_field_domain_type)(graphic->domain_type), &error);
 		if (graphic->name)
 		{
 			sprintf(temp_string," as %s", graphic->name);
@@ -2143,8 +2098,8 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 
 		/* for 1-D and 2-D elements only */
-		dimension=Cmiss_graphic_get_dimension(graphic, (struct FE_region *)NULL);
-		if ((1==dimension)||(2==dimension))
+		const int domain_dimension = Cmiss_graphic_get_domain_dimension(graphic);
+		if ((1 == domain_dimension) || (2 == domain_dimension))
 		{
 			if (graphic->exterior)
 			{
@@ -2280,8 +2235,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 		*/
 
-		/* for iso_surfaces only */
-		if (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)
+		if (CMISS_GRAPHIC_CONTOURS == graphic->graphic_type)
 		{
 			if (graphic->isoscalar_field)
 			{
@@ -2329,10 +2283,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 		}
 		/* for node_points, data_points and element_points only */
-		if ((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_POINT==graphic->graphic_type))
+		if (CMISS_GRAPHIC_POINTS == graphic->graphic_type)
 		{
 			if (graphic->glyph)
 			{
@@ -2484,17 +2435,11 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				append_string(&graphic_string," glyph none",&error);
 			}
 		}
-		/* for element_points and iso_surfaces */
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
-		{
-			sprintf(temp_string, " %s",
-				ENUMERATOR_STRING(Use_element_type)(graphic->use_element_type));
-			append_string(&graphic_string,temp_string,&error);
-		}
-		/* for element_points only */
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
+
+		/* for sampling points only */
+		if ((domain_dimension > 0) && (
+			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 		{
 			append_string(&graphic_string," ",&error);
 			append_string(&graphic_string, ENUMERATOR_STRING(Xi_discretization_mode)(
@@ -2529,8 +2474,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 		}
 
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
-			CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
+		if (domain_dimension > 0)
 		{
 			if (graphic->native_discretization_field)
 			{
@@ -2562,8 +2506,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 
 		/* for graphic requiring an exact xi location */
-		if (((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))&&
+		if ((domain_dimension > 0) && (
+			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
 			(XI_DISCRETIZATION_EXACT_XI == graphic->xi_discretization_mode))
 		{
 			sprintf(temp_string," xi %g,%g,%g",
@@ -2709,9 +2654,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				DEALLOCATE(name);
 			}
 			/* for surfaces rendering */
-			if ((CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
-				|| (CMISS_GRAPHIC_SURFACES==graphic->graphic_type)
-				|| (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
+			if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
 			{
 				append_string(&graphic_string," ",&error);
 				append_string(&graphic_string,
@@ -2744,129 +2687,118 @@ int Cmiss_graphic_to_point_object_at_time(
 	if (graphic && field_cache)
 	{
 		Cmiss_field_cache_set_time(field_cache, time);
-		if (!graphic->customised_graphics_object)
+		FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
+		if (graphic->coordinate_field)
 		{
-			FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
-			if (graphic->coordinate_field)
+			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->coordinate_field, field_cache, 3, coordinates))
 			{
-				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->coordinate_field, field_cache, 3, coordinates))
-				{
-					display_message(WARNING_MESSAGE, "Coordinate field not defined at point");
-				}
-			}
-			FE_value a[3], b[3], c[3], size[3];
-			FE_value orientationScale[9];
-			int orientationScaleComponentCount = 0;
-			if (graphic->point_orientation_scale_field)
-			{
-				orientationScaleComponentCount = Cmiss_field_get_number_of_components(graphic->point_orientation_scale_field);
-				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->point_orientation_scale_field,
-					field_cache, orientationScaleComponentCount, orientationScale))
-				{
-					display_message(WARNING_MESSAGE, "Orientation scale field not defined at point");
-				}
-			}
-			if (!make_glyph_orientation_scale_axes(orientationScaleComponentCount,
-				orientationScale, a, b, c, size))
-			{
-				display_message(WARNING_MESSAGE, "Invalid orientation scale at point");
-			}
-			if (graphic->signed_scale_field)
-			{
-				FE_value signedScale[3];
-				if (CMISS_OK == Cmiss_field_evaluate_real(graphic->signed_scale_field,
-					field_cache, /*number_of_values*/3, signedScale))
-				{
-					const int componentCount = Cmiss_field_get_number_of_components(graphic->signed_scale_field);
-					for (int j = 0; j < componentCount; j++)
-					{
-						size[j] *= signedScale[j];
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE, "Variable/signed scale field not defined at point");
-				}
-			}
-			FE_value *data = 0;
-			int dataComponentCount = 0;
-			if (graphic->data_field)
-			{
-				dataComponentCount = Cmiss_field_get_number_of_components(graphic->data_field);
-				data = new FE_value[dataComponentCount];
-				if (CMISS_OK != Cmiss_field_evaluate_real(graphic->data_field,
-					field_cache, dataComponentCount, data))
-				{
-					display_message(WARNING_MESSAGE, "Data field not defined at point");
-				}
-			}
-			char **labels = 0;
-			if (graphic->label_field)
-			{
-				ALLOCATE(labels, char *, 1);
-				*labels = Cmiss_field_evaluate_string(graphic->label_field, field_cache);
-			}
-			GT_object_remove_primitives_at_time(
-				graphic->graphics_object, graphics_object_primitive_time,
-				(GT_object_primitive_object_name_conditional_function *)NULL,
-				(void *)NULL);
-			Triple *point_list, *axis1_list, *axis2_list, *axis3_list,
-				*scale_list;
-			ALLOCATE(point_list, Triple, 1);
-			ALLOCATE(axis1_list, Triple, 1);
-			ALLOCATE(axis2_list, Triple, 1);
-			ALLOCATE(axis3_list, Triple, 1);
-			ALLOCATE(scale_list, Triple, 1);
-			for (int j = 0; j < 3; j++)
-			{
-				(*point_list)[j] = static_cast<GLfloat>(coordinates[j]);
-				(*axis1_list)[j] = static_cast<GLfloat>(a[j]);
-				(*axis2_list)[j] = static_cast<GLfloat>(b[j]);
-				(*axis3_list)[j] = static_cast<GLfloat>(c[j]);
-				(*scale_list)[j] = static_cast<GLfloat>(size[j]);
-			}
-			GLfloat *floatData = 0;
-			if (data)
-			{
-				ALLOCATE(floatData, GLfloat, dataComponentCount);
-				for (int i = 0; i < dataComponentCount; ++i)
-				{
-					floatData[i] = static_cast<GLfloat>(data[i]);
-				}
-			}
-			Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
-			for (int i = 0; i < 3; i++)
-			{
-				glyph_base_size[i] = static_cast<GLfloat>(graphic->point_base_size[i]);
-				glyph_scale_factors[i] = static_cast<GLfloat>(graphic->point_scale_factors[i]);
-				glyph_offset[i] = static_cast<GLfloat>(graphic->point_offset[i]);
-				glyph_label_offset[i] = static_cast<GLfloat>(graphic->label_offset[i]);
-			}
-			glyph_set = CREATE(GT_glyph_set)(1,
-				point_list, axis1_list, axis2_list, axis3_list, scale_list,
-				graphic->glyph, graphic->glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
-				graphic->font, labels, glyph_label_offset, graphic->label_text, dataComponentCount, floatData,
-				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
-			if (glyph_set)
-			{
-				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
-					graphics_object_primitive_time,glyph_set))
-				{
-					DESTROY(GT_glyph_set)(&glyph_set);
-					return_code=0;
-				}
-			}
-			delete[] data;
-		}
-		else
-		{
-			if (graphic->graphics_object != graphic->customised_graphics_object)
-			{
-				REACCESS(GT_object)(&graphic->graphics_object,
-					graphic->customised_graphics_object);
+				display_message(WARNING_MESSAGE, "Coordinate field not defined at point");
 			}
 		}
+		FE_value a[3], b[3], c[3], size[3];
+		FE_value orientationScale[9];
+		int orientationScaleComponentCount = 0;
+		if (graphic->point_orientation_scale_field)
+		{
+			orientationScaleComponentCount = Cmiss_field_get_number_of_components(graphic->point_orientation_scale_field);
+			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->point_orientation_scale_field,
+				field_cache, orientationScaleComponentCount, orientationScale))
+			{
+				display_message(WARNING_MESSAGE, "Orientation scale field not defined at point");
+			}
+		}
+		if (!make_glyph_orientation_scale_axes(orientationScaleComponentCount,
+			orientationScale, a, b, c, size))
+		{
+			display_message(WARNING_MESSAGE, "Invalid orientation scale at point");
+		}
+		if (graphic->signed_scale_field)
+		{
+			FE_value signedScale[3];
+			if (CMISS_OK == Cmiss_field_evaluate_real(graphic->signed_scale_field,
+				field_cache, /*number_of_values*/3, signedScale))
+			{
+				const int componentCount = Cmiss_field_get_number_of_components(graphic->signed_scale_field);
+				for (int j = 0; j < componentCount; j++)
+				{
+					size[j] *= signedScale[j];
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE, "Variable/signed scale field not defined at point");
+			}
+		}
+		FE_value *data = 0;
+		int dataComponentCount = 0;
+		if (graphic->data_field)
+		{
+			dataComponentCount = Cmiss_field_get_number_of_components(graphic->data_field);
+			data = new FE_value[dataComponentCount];
+			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->data_field,
+				field_cache, dataComponentCount, data))
+			{
+				display_message(WARNING_MESSAGE, "Data field not defined at point");
+			}
+		}
+		char **labels = 0;
+		if (graphic->label_field)
+		{
+			ALLOCATE(labels, char *, 1);
+			*labels = Cmiss_field_evaluate_string(graphic->label_field, field_cache);
+		}
+		GT_object_remove_primitives_at_time(
+			graphic->graphics_object, graphics_object_primitive_time,
+			(GT_object_primitive_object_name_conditional_function *)NULL,
+			(void *)NULL);
+		Triple *point_list, *axis1_list, *axis2_list, *axis3_list,
+			*scale_list;
+		ALLOCATE(point_list, Triple, 1);
+		ALLOCATE(axis1_list, Triple, 1);
+		ALLOCATE(axis2_list, Triple, 1);
+		ALLOCATE(axis3_list, Triple, 1);
+		ALLOCATE(scale_list, Triple, 1);
+		for (int j = 0; j < 3; j++)
+		{
+			(*point_list)[j] = static_cast<GLfloat>(coordinates[j]);
+			(*axis1_list)[j] = static_cast<GLfloat>(a[j]);
+			(*axis2_list)[j] = static_cast<GLfloat>(b[j]);
+			(*axis3_list)[j] = static_cast<GLfloat>(c[j]);
+			(*scale_list)[j] = static_cast<GLfloat>(size[j]);
+		}
+		GLfloat *floatData = 0;
+		if (data)
+		{
+			ALLOCATE(floatData, GLfloat, dataComponentCount);
+			for (int i = 0; i < dataComponentCount; ++i)
+			{
+				floatData[i] = static_cast<GLfloat>(data[i]);
+			}
+		}
+		Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
+		for (int i = 0; i < 3; i++)
+		{
+			glyph_base_size[i] = static_cast<GLfloat>(graphic->point_base_size[i]);
+			glyph_scale_factors[i] = static_cast<GLfloat>(graphic->point_scale_factors[i]);
+			glyph_offset[i] = static_cast<GLfloat>(graphic->point_offset[i]);
+			glyph_label_offset[i] = static_cast<GLfloat>(graphic->label_offset[i]);
+		}
+		glyph_set = CREATE(GT_glyph_set)(1,
+			point_list, axis1_list, axis2_list, axis3_list, scale_list,
+			graphic->glyph, graphic->glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
+			graphic->font, labels, glyph_label_offset, graphic->label_text, dataComponentCount, floatData,
+			/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
+			/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
+		if (glyph_set)
+		{
+			if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
+				graphics_object_primitive_time,glyph_set))
+			{
+				DESTROY(GT_glyph_set)(&glyph_set);
+				return_code=0;
+			}
+		}
+		delete[] data;
 	}
 	else
 	{
@@ -2950,31 +2882,6 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 	return return_code;
 }
 #endif /* (USE_OPENCASCADE) */
-
-/***************************************************************************//**
- * @return  1 if all compulsory attributes or fields of graphic are set,
- * 0 otherwise.
- */
-static int Cmiss_graphic_has_all_compulsory_attributes(struct Cmiss_graphic *graphic)
-{
-	int return_code = 1;
-	if (graphic)
-	{
-		if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
-			((XI_DISCRETIZATION_CELL_DENSITY == graphic->xi_discretization_mode) ||
-				(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode)) &&
-			(!graphic->xi_point_density_field))
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
 
 #if defined (USE_OPENCASCADE)
 SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
@@ -3110,102 +3017,73 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 				if ((GRAPHICS_SELECT_ON == graphic->select_mode) ||
 					(GRAPHICS_DRAW_SELECTED == graphic->select_mode))
 				{
-					switch (graphic->graphic_type)
+					SubObjectGroupHighlightFunctor *functor = 0;
+					switch (graphic->domain_type)
 					{
-						case CMISS_GRAPHIC_DATA_POINTS:
+						case CMISS_FIELD_DOMAIN_POINT:
 						{
-							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
-								field_module, "cmiss_data");
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_nodeset(
-								group_field, nodeset);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
-							{
-									delete functor;
-							}
+							// no functor
+						} break;
+						case CMISS_FIELD_DOMAIN_DATA:
+						case CMISS_FIELD_DOMAIN_NODES:
+						{
+							Cmiss_nodeset_id nodeset =
+								Cmiss_field_module_find_nodeset_by_domain_type(field_module, graphic->domain_type);
+							functor = create_highlight_functor_nodeset(group_field, nodeset);
 							Cmiss_nodeset_destroy(&nodeset);
 						} break;
-						case CMISS_GRAPHIC_NODE_POINTS:
+						case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
+						case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
+						case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
+						case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
 						{
-							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
-								field_module, "cmiss_nodes");
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_nodeset(
-								group_field, nodeset);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
-							{
-									delete functor;
-							}
-							Cmiss_nodeset_destroy(&nodeset);
-						} break;
-						case CMISS_GRAPHIC_CYLINDERS:
-						case CMISS_GRAPHIC_LINES:
-						case CMISS_GRAPHIC_ISO_SURFACES:
-						case CMISS_GRAPHIC_ELEMENT_POINTS:
-						{
-							FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
-							int dimension = Cmiss_graphic_get_dimension(graphic, fe_region);
-							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
-							SubObjectGroupHighlightFunctor *functor =
-								create_highlight_functor_element(group_field, temp_mesh);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
-							{
-									delete functor;
-							}
-							Cmiss_mesh_destroy(&temp_mesh);
-						} break;
-						case CMISS_GRAPHIC_SURFACES:
 #if defined(USE_OPENCASCADE)
-						{
-							// test here for domain of object coordinate_field
-							// if it is a cad_geometry do something about it
-							struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-							int return_code = Computed_field_get_domain( graphic->coordinate_field, domain_field_list );
-							if ( return_code )
+							if (graphic->graphic_type == CMISS_GRAPHIC_SURFACES)
 							{
-								// so test for topology domain
-								struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-									( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-								if ( cad_topology_field )
+								// test here for domain of object coordinate_field
+								// if it is a cad_geometry do something about it
+								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+								int return_code = Computed_field_get_domain( graphic->coordinate_field, domain_field_list );
+								if ( return_code )
 								{
-									Cmiss_field_cad_topology_id cad_topology_domain =
-										Cmiss_field_cast_cad_topology(cad_topology_field);
-									SubObjectGroupHighlightFunctor *functor = create_highlight_functor_cad_primitive(
-										group_field, cad_topology_domain);
-									if (!(renderer->set_highlight_functor(functor)) && functor)
+									// so test for topology domain
+									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+										( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+									if ( cad_topology_field )
 									{
-										if (functor)
-											delete functor;
+										Cmiss_field_cad_topology_id cad_topology_domain =
+											Cmiss_field_cast_cad_topology(cad_topology_field);
+										functor = create_highlight_functor_cad_primitive(
+											group_field, cad_topology_domain);
 									}
-									DESTROY_LIST(Computed_field)(&domain_field_list);
-									break;
 								}
+								if ( domain_field_list )
+									DESTROY_LIST(Computed_field)(&domain_field_list);
 							}
-							if ( domain_field_list )
-								DESTROY_LIST(Computed_field)(&domain_field_list);
-						}
-#else
-						{
-							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-								field_module, /*dimension*/2);
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
-								group_field, temp_mesh);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
+							if (!functor)
 							{
-									delete functor;
+#endif // defined(USE_OPENCASCADE)
+							if (graphic->graphic_type != CMISS_GRAPHIC_STREAMLINES)
+							{
+								FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
+								int dimension = Cmiss_graphic_get_domain_dimension(graphic);
+								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+								functor = create_highlight_functor_element(group_field, temp_mesh);
+								Cmiss_mesh_destroy(&temp_mesh);
 							}
-							Cmiss_mesh_destroy(&temp_mesh);
-						} break;
-#endif /* defined(USE_OPENCASCADE) */
-						case CMISS_GRAPHIC_POINT:
-						case CMISS_GRAPHIC_STREAMLINES:
-						{
-							/* no element to select by since go through several */
+#if defined(USE_OPENCASCADE)
+							}
+#endif // defined(USE_OPENCASCADE)
 						} break;
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  "
-								"Unknown graphic type");
+								"cmiss_graphic_to_graphics_object.  Unknown domain type");
 						} break;
+					}
+					if (!(renderer->set_highlight_functor(functor)) && functor)
+					{
+						delete functor;
 					}
 				}
 				Cmiss_field_module_destroy(&field_module);
@@ -3223,7 +3101,7 @@ int Cmiss_graphic_get_iteration_domain(Cmiss_graphic_id graphic,
 		return 0;
 	graphic_to_object_data->master_mesh = 0;
 	graphic_to_object_data->iteration_mesh = 0;
-	int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
+	int dimension = Cmiss_graphic_get_domain_dimension(graphic);
 	if (dimension > 0)
 	{
 		graphic_to_object_data->master_mesh =
@@ -3327,11 +3205,11 @@ int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
 		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
 	if (graphic && graphic_to_object_data &&
-		(((CMISS_GRAPHIC_DATA_POINTS == graphic->graphic_type) &&
+		(((CMISS_FIELD_DOMAIN_DATA == graphic->domain_type) &&
 			(fe_region = graphic_to_object_data->data_fe_region)) ||
 			(fe_region = graphic_to_object_data->fe_region)))
 	{
-		int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
+		int dimension = Cmiss_graphic_get_domain_dimension(graphic);
 		/* all primitives added at time 0.0 */
 		time = 0.0;
 		return_code = 1;
@@ -3339,15 +3217,14 @@ int Cmiss_graphic_to_graphics_object(
 		Cmiss_graphics_filter_id filter = graphic_to_object_data->graphics_filter;
 		if (filter)
 		{
-			/* build only if changed... and complete */
-			if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic) &&
-				  Cmiss_graphic_has_all_compulsory_attributes(graphic))
+			/* build only if visible and changed */
+			if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 			{
 				if (graphic->graphics_changed)
 				{
 					Computed_field *coordinate_field = graphic->coordinate_field;
 					if (coordinate_field ||
-						(graphic->graphic_type == CMISS_GRAPHIC_POINT))
+						(graphic->domain_type == CMISS_FIELD_DOMAIN_POINT))
 					{
 						/* RC coordinate_field to pass to FE_element_to_graphics_object */
 						graphic_to_object_data->rc_coordinate_field = (Cmiss_field_id)0;
@@ -3442,7 +3319,7 @@ int Cmiss_graphic_to_graphics_object(
 										{
 											graphics_object_type = g_SURFACE;
 										} break;
-										case CMISS_GRAPHIC_ISO_SURFACES:
+										case CMISS_GRAPHIC_CONTOURS:
 										{
 											switch (dimension)
 											{
@@ -3471,10 +3348,7 @@ int Cmiss_graphic_to_graphics_object(
 												} break;
 											}
 										} break;
-										case CMISS_GRAPHIC_NODE_POINTS:
-										case CMISS_GRAPHIC_DATA_POINTS:
-										case CMISS_GRAPHIC_ELEMENT_POINTS:
-										case CMISS_GRAPHIC_POINT:
+										case CMISS_GRAPHIC_POINTS:
 										{
 											graphics_object_type = g_GLYPH_SET;
 										} break;
@@ -3541,90 +3415,103 @@ int Cmiss_graphic_to_graphics_object(
 								Cmiss_graphic_get_iteration_domain(graphic, graphic_to_object_data);
 								switch (graphic->graphic_type)
 								{
-									case CMISS_GRAPHIC_NODE_POINTS:
-									case CMISS_GRAPHIC_DATA_POINTS:
+									case CMISS_GRAPHIC_POINTS:
 									{
-										/* currently all nodes put together in a single GT_glyph_set,
-										so rebuild all even if editing a single node or element */
-										GT_object_remove_primitives_at_time(
-											graphic->graphics_object, time,
-											(GT_object_primitive_object_name_conditional_function *)NULL,
-											(void *)NULL);
-										Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
-											(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
-										Cmiss_nodeset_id iteration_nodeset = 0;
-										if (graphic->subgroup_field)
+										switch (graphic->domain_type)
 										{
-											Cmiss_field_group_id group = Cmiss_field_cast_group(graphic->subgroup_field);
-											if (group)
+										case CMISS_FIELD_DOMAIN_NODES:
+										case CMISS_FIELD_DOMAIN_DATA:
 											{
-												Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
-												if (node_group)
+												/* currently all nodes put together in a single GT_glyph_set,
+												so rebuild all even if editing a single node or element */
+												GT_object_remove_primitives_at_time(
+													graphic->graphics_object, time,
+													(GT_object_primitive_object_name_conditional_function *)NULL,
+													(void *)NULL);
+												Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(
+													graphic_to_object_data->field_module, graphic->domain_type);
+												Cmiss_nodeset_id iteration_nodeset = 0;
+												if (graphic->subgroup_field)
 												{
-													iteration_nodeset =
-														Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-													Cmiss_field_node_group_destroy(&node_group);
-												}
-												Cmiss_field_group_destroy(&group);
-											}
-											else
-											{
-												Cmiss_field_node_group_id node_group = Cmiss_field_cast_node_group(graphic->subgroup_field);
-												if (node_group)
-												{
-													// check group is for same master nodeset
-													iteration_nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-													Cmiss_nodeset_id temp_master_nodeset = Cmiss_nodeset_get_master(iteration_nodeset);
-													if (!Cmiss_nodeset_match(master_nodeset, temp_master_nodeset))
+													Cmiss_field_group_id group = Cmiss_field_cast_group(graphic->subgroup_field);
+													if (group)
 													{
-														Cmiss_nodeset_destroy(&iteration_nodeset);
+														Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
+														if (node_group)
+														{
+															iteration_nodeset =
+																Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+															Cmiss_field_node_group_destroy(&node_group);
+														}
+														Cmiss_field_group_destroy(&group);
 													}
-													Cmiss_nodeset_destroy(&temp_master_nodeset);
-													Cmiss_field_node_group_destroy(&node_group);
+													else
+													{
+														Cmiss_field_node_group_id node_group = Cmiss_field_cast_node_group(graphic->subgroup_field);
+														if (node_group)
+														{
+															// check group is for same master nodeset
+															iteration_nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+															Cmiss_nodeset_id temp_master_nodeset = Cmiss_nodeset_get_master(iteration_nodeset);
+															if (!Cmiss_nodeset_match(master_nodeset, temp_master_nodeset))
+															{
+																Cmiss_nodeset_destroy(&iteration_nodeset);
+															}
+															Cmiss_nodeset_destroy(&temp_master_nodeset);
+															Cmiss_field_node_group_destroy(&node_group);
+														}
+														else
+														{
+															iteration_nodeset = Cmiss_nodeset_access(master_nodeset);
+														}
+													}
 												}
 												else
 												{
 													iteration_nodeset = Cmiss_nodeset_access(master_nodeset);
 												}
-											}
-										}
-										else
-										{
-											iteration_nodeset = Cmiss_nodeset_access(master_nodeset);
-										}
-										if (iteration_nodeset)
-										{
-											GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
-												iteration_nodeset, graphic_to_object_data->field_cache,
-												graphic_to_object_data->rc_coordinate_field,
-												graphic->glyph, graphic->glyph_repeat_mode,
-												graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
-												graphic_to_object_data->time,
-												graphic_to_object_data->wrapper_orientation_scale_field,
-												graphic->signed_scale_field, graphic->data_field,
-												graphic->font, graphic->label_field, graphic->label_offset,
-												graphic->label_text, graphic->label_density_field,
-												(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
-												graphic->select_mode,graphic_to_object_data->selection_group_field);
-											/* NOT an error if no glyph_set produced == empty group */
-											if (glyph_set)
-											{
-												if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
-													time,glyph_set))
+												if (iteration_nodeset)
 												{
-													DESTROY(GT_glyph_set)(&glyph_set);
-													return_code=0;
+													GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
+														iteration_nodeset, graphic_to_object_data->field_cache,
+														graphic_to_object_data->rc_coordinate_field,
+														graphic->glyph, graphic->glyph_repeat_mode,
+														graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
+														graphic_to_object_data->time,
+														graphic_to_object_data->wrapper_orientation_scale_field,
+														graphic->signed_scale_field, graphic->data_field,
+														graphic->font, graphic->label_field, graphic->label_offset,
+														graphic->label_text, graphic->label_density_field,
+														(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
+														graphic->select_mode,graphic_to_object_data->selection_group_field);
+													/* NOT an error if no glyph_set produced == empty group */
+													if (glyph_set)
+													{
+														if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
+															time,glyph_set))
+														{
+															DESTROY(GT_glyph_set)(&glyph_set);
+															return_code=0;
+														}
+													}
+													Cmiss_nodeset_destroy(&iteration_nodeset);
 												}
-											}
-											Cmiss_nodeset_destroy(&iteration_nodeset);
+												Cmiss_nodeset_destroy(&master_nodeset);
+											} break;
+											case CMISS_FIELD_DOMAIN_POINT:
+											{
+												Cmiss_graphic_to_point_object_at_time(
+													graphic, graphic_to_object_data->field_cache,
+													graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
+											} break;
+											default: // ELEMENTS
+											{
+												if (graphic_to_object_data->iteration_mesh)
+												{
+													return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
+												}
+											} break;
 										}
-										Cmiss_nodeset_destroy(&master_nodeset);
-									} break;
-									case CMISS_GRAPHIC_POINT:
-									{
-										Cmiss_graphic_to_point_object_at_time(
-											graphic, graphic_to_object_data->field_cache,
-											graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
 									} break;
 									case CMISS_GRAPHIC_LINES:
 									{
@@ -3705,14 +3592,13 @@ int Cmiss_graphic_to_graphics_object(
 										}
 									} break;
 									case CMISS_GRAPHIC_CYLINDERS:
-									case CMISS_GRAPHIC_ELEMENT_POINTS:
 									{
 										if (graphic_to_object_data->iteration_mesh)
 										{
 											return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
 										}
 									} break;
-									case CMISS_GRAPHIC_ISO_SURFACES:
+									case CMISS_GRAPHIC_CONTOURS:
 									{
 										Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 										if (0 < graphic->number_of_isovalues)
@@ -4026,19 +3912,16 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		{
 			return_code = 1;
 		}
-		/* for iso_surfaces only */
-		else if ((CMISS_GRAPHIC_ISO_SURFACES == graphic->graphic_type) &&
+		/* for contours only */
+		else if ((CMISS_GRAPHIC_CONTOURS == graphic->graphic_type) &&
 			(graphic->isoscalar_field &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphic->isoscalar_field, conditional_function, user_data)))
 		{
 			return_code = 1;
 		}
-		/* for node_points, data_points and element_points only */
-		else if (((CMISS_GRAPHIC_POINT==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_NODE_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_DATA_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type)) &&
+		/* point attributes */
+		else if ((CMISS_GRAPHIC_POINTS == graphic->graphic_type) &&
 			((graphic->point_orientation_scale_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
 					graphic->point_orientation_scale_field, conditional_function, user_data)))||
@@ -4054,13 +3937,11 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		{
 			return_code = 1;
 		}
-		/* for element_points with a density field only */
-		else if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))
-			&& ((XI_DISCRETIZATION_CELL_DENSITY ==
-				graphic->xi_discretization_mode) ||
-				(XI_DISCRETIZATION_CELL_POISSON ==
-					graphic->xi_discretization_mode)) &&
+		/* for graphics using a sampling density field only */
+		else if (((CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
+			((XI_DISCRETIZATION_CELL_DENSITY == graphic->xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode)) &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphic->xi_point_density_field, conditional_function, user_data))
 		{
@@ -4071,13 +3952,6 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 			graphic->stream_vector_field &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphic->stream_vector_field, conditional_function, user_data))
-		{
-			return_code = 1;
-		}
-		else if ((CMISS_GRAPHIC_POINT == graphic->graphic_type) &&
-			graphic->label_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphic->label_field, conditional_function, user_data))
 		{
 			return_code = 1;
 		}
@@ -4109,28 +3983,21 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	int return_code;
 
 	ENTER(Cmiss_graphic_uses_changed_FE_field);
-	if (graphic && ((CMISS_GRAPHIC_POINT==graphic->graphic_type) ||
-			graphic->coordinate_field) && fe_field_change_log)
+	if (graphic && fe_field_change_log)
 	{
-		if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))&&
-			graphic->native_discretization_field &&
+		if (graphic->native_discretization_field &&
 			CHANGE_LOG_QUERY(FE_field)(fe_field_change_log,
 				graphic->native_discretization_field, &fe_field_change) &&
 			(CHANGE_LOG_OBJECT_UNCHANGED(FE_field) != fe_field_change))
 		{
 			return_code = 1;
 		}
-		else if (CMISS_GRAPHIC_POINT!=graphic->graphic_type)
+		else
 		{
 			return_code =
 				Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 					graphic, Computed_field_contains_changed_FE_field,
 					(void *)fe_field_change_log);
-		}
-		else
-		{
-			return_code = 1;
 		}
 	}
 	else
@@ -4160,7 +4027,6 @@ int Cmiss_graphic_Computed_field_change(
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		if (change_data->selection_changed && graphic->graphics_object &&
-			(CMISS_GRAPHIC_POINT != graphic->graphic_type) &&
 			(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
 		{
 			Cmiss_graphic_update_selected(graphic, (void *)NULL);
@@ -4236,52 +4102,6 @@ struct GT_object *Cmiss_graphic_get_graphics_object(
 
 	return (graphics_object);
 } /* Cmiss_graphic_get_graphics_object */
-
-int Cmiss_graphic_type_uses_dimension(
-	enum Cmiss_graphic_type graphic_type, int dimension)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_type_uses_dimension);
-	switch (graphic_type)
-	{
-		case CMISS_GRAPHIC_NODE_POINTS:
-		case CMISS_GRAPHIC_DATA_POINTS:
-		case CMISS_GRAPHIC_POINT:
-		{
-			return_code = ((-1 == dimension) || (0 == dimension));
-		} break;
-		case CMISS_GRAPHIC_LINES:
-		case CMISS_GRAPHIC_CYLINDERS:
-		{
-			return_code = ((-1 == dimension) || (1 == dimension));
-		} break;
-		case CMISS_GRAPHIC_SURFACES:
-		{
-			return_code = ((-1 == dimension) || (2 == dimension));
-		} break;
-		case CMISS_GRAPHIC_STREAMLINES:
-		{
-			return_code = ((-1 == dimension) || (2 == dimension) ||
-				(3 == dimension));
-		} break;
-		case CMISS_GRAPHIC_ELEMENT_POINTS:
-		case CMISS_GRAPHIC_ISO_SURFACES:
-		{
-			return_code = ((-1 == dimension) ||
-				(1 == dimension) || (2 == dimension) || (3 == dimension));
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_graphic_type_uses_dimension.  Unknown graphic type");
-			return_code = 0;
-		} break;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_type_uses_dimension */
 
 enum Graphics_select_mode Cmiss_graphic_get_select_mode(
 	struct Cmiss_graphic *graphic)
@@ -4510,29 +4330,6 @@ int Cmiss_graphic_set_streamline_parameters(
 	return (return_code);
 } /* Cmiss_graphic_set_streamline_parameters */
 
-int Cmiss_graphic_set_use_element_type(
-	struct Cmiss_graphic *graphic,enum Use_element_type use_element_type)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_use_element_type);
-	if (graphic&&((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)))
-	{
-		graphic->use_element_type=use_element_type;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_use_element_type.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_use_element_type */
-
 int Cmiss_graphic_get_xi_discretization(
 	struct Cmiss_graphic *graphic,
 	enum Xi_discretization_mode *xi_discretization_mode,
@@ -4542,7 +4339,7 @@ int Cmiss_graphic_get_xi_discretization(
 
 	ENTER(Cmiss_graphic_get_xi_discretization);
 	if (graphic &&
-		((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
+		((CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 	{
 		if (xi_discretization_mode)
@@ -4655,6 +4452,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* copy geometry graphic */
 		/* for all graphic types */
 		destination->graphic_type=source->graphic_type;
+		destination->domain_type = source->domain_type;
 		destination->coordinate_system=source->coordinate_system;
 		REACCESS(Computed_field)(&(destination->coordinate_field),
 			source->coordinate_field);
@@ -4757,14 +4555,9 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Computed_field)(&(destination->subgroup_field),source->subgroup_field);
 		Cmiss_graphic_point_attributes_destroy(&point_attributes);
 
-		if (CMISS_GRAPHIC_POINT==source->graphic_type)
-		{
-			destination->overlay_flag = source->overlay_flag;
-			destination->overlay_order = source->overlay_order;
-		}
+		destination->overlay_flag = source->overlay_flag;
+		destination->overlay_order = source->overlay_order;
 
-		/* for element_points and iso_surfaces */
-		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
 		destination->xi_discretization_mode=source->xi_discretization_mode;
 		REACCESS(Computed_field)(&(destination->xi_point_density_field),
@@ -4937,80 +4730,74 @@ int Cmiss_graphic_FE_region_change(
 	{
 		if (graphic->graphics_object)
 		{
-			switch (graphic->graphic_type)
+			// CMISS_FIELD_DOMAIN_DATA is handled by Cmiss_graphic_data_FE_region_change
+			if (graphic->domain_type == CMISS_FIELD_DOMAIN_NODES)
 			{
-				case CMISS_GRAPHIC_DATA_POINTS:
+				/* must always rebuild if identifiers changed */
+				if ((data->fe_node_change_summary &
+					CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)) ||
+					(Cmiss_graphic_uses_changed_FE_field(graphic,
+						data->fe_field_changes) && (
+							(data->fe_field_change_summary & (
+								CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
+								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
+							((data->fe_field_change_summary &
+								CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) &&
+								(0 < data->number_of_fe_node_changes)))))
 				{
-					/* handled by Cmiss_graphic_data_FE_region_change */
-				} break;
-				case CMISS_GRAPHIC_NODE_POINTS:
+					/* currently node points are always rebuilt from scratch */
+					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				}
+			}
+			else if (0 < Cmiss_graphic_get_domain_dimension(graphic))
+			{
+				fe_field_related_object_change =
+					CHANGE_LOG_OBJECT_UNCHANGED(FE_field);
+				/* must always rebuild if identifiers changed */
+				bool element_identifier_change = false;
+				int number_of_element_changes_all_dimensions = 0;
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
 				{
-					/* must always rebuild if identifiers changed */
-					if ((data->fe_node_change_summary &
-						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)) ||
-						(Cmiss_graphic_uses_changed_FE_field(graphic,
-							data->fe_field_changes) && (
-								(data->fe_field_change_summary & (
-									CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-									CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
-								((data->fe_field_change_summary &
-									CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) &&
-									(0 < data->number_of_fe_node_changes)))))
+					if (data->fe_element_change_summary[dim] &
+						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
 					{
-						/* currently node points are always rebuilt from scratch */
+						element_identifier_change = true;
+					}
+					number_of_element_changes_all_dimensions +=
+						data->number_of_fe_element_changes[dim];
+				}
+				if (element_identifier_change ||
+					(Cmiss_graphic_uses_changed_FE_field(graphic,
+						data->fe_field_changes) && (
+							(data->fe_field_change_summary & (
+								CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
+								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
+							(fe_field_related_object_change = (
+								(data->fe_field_change_summary &
+									CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) && (
+								(0 < data->number_of_fe_node_changes) ||
+								(0 < number_of_element_changes_all_dimensions)))))))
+				{
+					if (fe_field_related_object_change && (
+						((data->number_of_fe_node_changes*2) <
+							FE_region_get_number_of_FE_nodes(data->fe_region)) &&
+						((number_of_element_changes_all_dimensions*4) <
+							FE_region_get_number_of_FE_elements_all_dimensions(data->fe_region))))
+					{
+						data->element_type = Cmiss_graphic_get_domain_dimension(graphic);
+						/* partial rebuild for few node/element field changes */
+						GT_object_remove_primitives_at_time(graphic->graphics_object,
+							(GLfloat)data->time, FE_element_as_graphics_name_is_removed_or_modified,
+							data_void);
+						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD);
+					}
+					else
+					{
+						/* full rebuild for changed identifiers, FE_field definition
+								changes or many node/element field changes */
 						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 					}
-				} break;
-				default:
-				{
-					fe_field_related_object_change =
-						CHANGE_LOG_OBJECT_UNCHANGED(FE_field);
-					/* must always rebuild if identifiers changed */
-					bool element_identifier_change = false;
-					int number_of_element_changes_all_dimensions = 0;
-					for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-					{
-						if (data->fe_element_change_summary[dim] &
-							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
-						{
-							element_identifier_change = true;
-						}
-						number_of_element_changes_all_dimensions +=
-							data->number_of_fe_element_changes[dim];
-					}
-					if (element_identifier_change ||
-						(Cmiss_graphic_uses_changed_FE_field(graphic,
-							data->fe_field_changes) && (
-								(data->fe_field_change_summary & (
-									CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-									CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
-								(fe_field_related_object_change = (
-									(data->fe_field_change_summary &
-										CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) && (
-									(0 < data->number_of_fe_node_changes) ||
-									(0 < number_of_element_changes_all_dimensions)))))))
-					{
-						if (fe_field_related_object_change && (
-							((data->number_of_fe_node_changes*2) <
-								FE_region_get_number_of_FE_nodes(data->fe_region)) &&
-							((number_of_element_changes_all_dimensions*4) <
-								FE_region_get_number_of_FE_elements_all_dimensions(data->fe_region))))
-						{
-							data->element_type = Cmiss_graphic_get_dimension(graphic, data->fe_region);
-							/* partial rebuild for few node/element field changes */
-							GT_object_remove_primitives_at_time(graphic->graphics_object,
-								(GLfloat)data->time, FE_element_as_graphics_name_is_removed_or_modified,
-								data_void);
-							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD);
-						}
-						else
-						{
-							/* full rebuild for changed identifiers, FE_field definition
-								 changes or many node/element field changes */
-							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-						}
-					}
-				} break;
+				}
 			}
 		}
 		else
@@ -5043,29 +4830,19 @@ int Cmiss_graphic_data_FE_region_change(
 	{
 		if (graphic->graphics_object)
 		{
-			switch (graphic->graphic_type)
+			if (graphic->domain_type == CMISS_FIELD_DOMAIN_DATA)
 			{
-				case CMISS_GRAPHIC_DATA_POINTS:
-				case CMISS_GRAPHIC_ELEMENT_POINTS:
-				case CMISS_GRAPHIC_NODE_POINTS:
-				case CMISS_GRAPHIC_POINT:
+				// must ensure changes to fields on host elements/nodes force
+				// data_points to be rebuilt if using embedded fields referencing them:
+				if (((0 < data->number_of_fe_node_changes) ||
+					(data->fe_field_change_summary & (
+						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
+						CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))) &&
+					Cmiss_graphic_uses_changed_FE_field(graphic,
+						data->fe_field_changes))
 				{
-					// must ensure changes to fields on host elements/nodes force
-					// data_points to be rebuilt if using embedded fields referencing them:
-					if (((0 < data->number_of_fe_node_changes) ||
-						(data->fe_field_change_summary & (
-							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
-							CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))) &&
-						Cmiss_graphic_uses_changed_FE_field(graphic,
-							data->fe_field_changes))
-					{
-						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-					}
-				} break;
-				default:
-				{
-					/* do nothing */
-				} break;
+					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				}
 			}
 		}
 		else
@@ -5096,7 +4873,7 @@ int Cmiss_graphic_data_FE_region_change(
 int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 	Cmiss_graphic *second_graphic)
 {
-	int dimension, i, return_code;
+	int i, return_code;
 
 	ENTER(Cmiss_graphic_same_non_trivial);
 	if (graphic && second_graphic)
@@ -5110,6 +4887,7 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 			/* note: different if names are different */
 			return_code=
 				(graphic->graphic_type==second_graphic->graphic_type)&&
+				(graphic->domain_type==second_graphic->domain_type);
 				(graphic->coordinate_field==second_graphic->coordinate_field)&&
 				(graphic->subgroup_field==second_graphic->subgroup_field)&&
 				((((char *)NULL==graphic->name)&&((char *)NULL==second_graphic->name))
@@ -5117,13 +4895,16 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 						(0==strcmp(graphic->name,second_graphic->name))))&&
 				(graphic->select_mode==second_graphic->select_mode);
 		}
+
+		const int domain_dimension = Cmiss_graphic_get_domain_dimension(graphic);
+
 		/* for 1-D and 2-D elements only */
 		if (return_code)
 		{
-			dimension=Cmiss_graphic_get_dimension(graphic, (struct FE_region *)NULL);
-			if ((1==dimension)||(2==dimension))
+			if ((1 == domain_dimension) || (2 == domain_dimension))
 			{
-				return_code=(graphic->exterior == second_graphic->exterior)&&
+				return_code = 
+					(graphic->exterior == second_graphic->exterior) &&
 					(graphic->face == second_graphic->face);
 			}
 		}
@@ -5155,7 +4936,7 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 
 		/* for iso_surfaces only */
 		if (return_code&&
-			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
+			(CMISS_GRAPHIC_CONTOURS==graphic->graphic_type))
 		{
 			return_code=(graphic->number_of_isovalues==
 				second_graphic->number_of_isovalues)&&
@@ -5197,12 +4978,8 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 				}
 			}
 		}
-		/* for node_points, data_points and element_points only */
-		if (return_code&&
-			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-				(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-				(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-				(CMISS_GRAPHIC_POINT==graphic->graphic_type) ))
+
+		if (return_code && (CMISS_GRAPHIC_POINTS == graphic->graphic_type))
 		{
 			return_code=
 				(graphic->point_orientation_scale_field==
@@ -5211,14 +4988,6 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 					second_graphic->signed_scale_field)&&
 				(graphic->label_field==second_graphic->label_field)&&
 				(graphic->label_density_field==second_graphic->label_density_field);
-		}
-		/* for element_points and iso_surfaces */
-		if (return_code&&
-			((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-				(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)))
-		{
-			return_code=
-				(graphic->use_element_type==second_graphic->use_element_type);
 		}
 
 		if (return_code && Cmiss_graphic_type_uses_attribute(
@@ -5248,9 +5017,9 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		}
 
 		/* for element_points only */
-		if (return_code&&
-			((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-				(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
+		if (return_code && (0 < domain_dimension) && (
+			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 		{
 			return_code=
 				(graphic->xi_discretization_mode==
@@ -5265,9 +5034,10 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 				(graphic->seed_element==second_graphic->seed_element);
 		}
 		/* for graphic requiring an exact xi location */
-		if (return_code&&(
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
+		if (return_code && (0 < domain_dimension) && (
+			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
+			(graphic->xi_discretization_mode == XI_DISCRETIZATION_EXACT_XI))
 		{
 			return_code=
 				(graphic->seed_xi[0]==second_graphic->seed_xi[0])&&
@@ -5368,27 +5138,24 @@ int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
 			(graphic1->spectrum == graphic2->spectrum) &&
 			(graphic1->font == graphic2->font) &&
 			(graphic1->render_type == graphic2->render_type) &&
-			(((CMISS_GRAPHIC_POINT != graphic1->graphic_type) &&
-			  (CMISS_GRAPHIC_DATA_POINTS != graphic1->graphic_type) &&
-			  (CMISS_GRAPHIC_NODE_POINTS != graphic1->graphic_type) &&
-			  (CMISS_GRAPHIC_ELEMENT_POINTS != graphic1->graphic_type)) || 
-			((graphic1->glyph == graphic2->glyph) &&
-			 (graphic1->glyph_repeat_mode == graphic2->glyph_repeat_mode) &&
-			 (graphic1->point_base_size[0] == graphic2->point_base_size[0]) &&
-			 (graphic1->point_base_size[1] == graphic2->point_base_size[1]) &&
-			 (graphic1->point_base_size[2] == graphic2->point_base_size[2]) &&
-			 (graphic1->point_scale_factors[0] == graphic2->point_scale_factors[0]) &&
-			 (graphic1->point_scale_factors[1] == graphic2->point_scale_factors[1]) &&
-			 (graphic1->point_scale_factors[2] == graphic2->point_scale_factors[2]) &&
-			 (graphic1->point_offset[0] == graphic2->point_offset[0]) &&
-			 (graphic1->point_offset[1] == graphic2->point_offset[1]) &&
-			 (graphic1->point_offset[2] == graphic2->point_offset[2]) &&
-			 (graphic1->label_offset[0] == graphic2->label_offset[0]) &&
-			 (graphic1->label_offset[1] == graphic2->label_offset[1]) &&
-			 (graphic1->label_offset[2] == graphic2->label_offset[2]) &&
-			 labels_match(graphic1->label_text[0], graphic2->label_text[0]) &&
-			 labels_match(graphic1->label_text[1], graphic2->label_text[1]) &&
-			 labels_match(graphic1->label_text[2], graphic2->label_text[2])));
+			((CMISS_GRAPHIC_POINTS != graphic1->graphic_type) || (
+				(graphic1->glyph == graphic2->glyph) &&
+				(graphic1->glyph_repeat_mode == graphic2->glyph_repeat_mode) &&
+				(graphic1->point_base_size[0] == graphic2->point_base_size[0]) &&
+				(graphic1->point_base_size[1] == graphic2->point_base_size[1]) &&
+				(graphic1->point_base_size[2] == graphic2->point_base_size[2]) &&
+				(graphic1->point_scale_factors[0] == graphic2->point_scale_factors[0]) &&
+				(graphic1->point_scale_factors[1] == graphic2->point_scale_factors[1]) &&
+				(graphic1->point_scale_factors[2] == graphic2->point_scale_factors[2]) &&
+				(graphic1->point_offset[0] == graphic2->point_offset[0]) &&
+				(graphic1->point_offset[1] == graphic2->point_offset[1]) &&
+				(graphic1->point_offset[2] == graphic2->point_offset[2]) &&
+				(graphic1->label_offset[0] == graphic2->label_offset[0]) &&
+				(graphic1->label_offset[1] == graphic2->label_offset[1]) &&
+				(graphic1->label_offset[2] == graphic2->label_offset[2]) &&
+				labels_match(graphic1->label_text[0], graphic2->label_text[0]) &&
+				labels_match(graphic1->label_text[1], graphic2->label_text[1]) &&
+				labels_match(graphic1->label_text[2], graphic2->label_text[2])));
 	}
 	else
 	{
@@ -5641,28 +5408,6 @@ int Cmiss_graphic_set_subgroup_field(
 
 	return (return_code);
 }
-
-enum Use_element_type Cmiss_graphic_get_use_element_type(
-	struct Cmiss_graphic *graphic)
-{
-	enum Use_element_type use_element_type;
-
-	ENTER(Cmiss_graphic_get_use_element_type);
-	if (graphic&&((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)))
-	{
-		use_element_type=graphic->use_element_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_use_element_type.  Invalid argument(s)");
-		use_element_type = USE_ELEMENTS;
-	}
-	LEAVE;
-
-	return (use_element_type);
-} /* Cmiss_graphic_get_use_element_type */
 
 struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
 	Cmiss_graphic_id graphic)
@@ -5932,7 +5677,7 @@ int Cmiss_graphic_get_seed_xi(struct Cmiss_graphic *graphic,
 
 	ENTER(Cmiss_graphic_get_seed_xi);
 	if (graphic&&seed_xi&&(
-		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
+		(CMISS_GRAPHIC_POINTS==graphic->graphic_type)||
 		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
 	{
 		seed_xi[0]=graphic->seed_xi[0];
@@ -5958,7 +5703,7 @@ int Cmiss_graphic_set_seed_xi(struct Cmiss_graphic *graphic,
 
 	ENTER(Cmiss_graphic_set_seed_xi);
 	if (graphic&&seed_xi&&(
-		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
+		(CMISS_GRAPHIC_POINTS==graphic->graphic_type)||
 		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
 	{
 		graphic->seed_xi[0]=seed_xi[0];
@@ -6361,14 +6106,10 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 		return_code = 1;
 		if (graphic->font)
 		{
-			if (((graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-				(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-				(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic->graphic_type == CMISS_GRAPHIC_POINT)) && graphic->label_field)
+			if ((graphic->graphic_type == CMISS_GRAPHIC_POINTS) && graphic->label_field)
 			{
 				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_font)(
 					manager_message, graphic->font);
-				// GRC: following could be smarter, e.g. by checking if actual discretization is changing
 				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_font))
 				{
 					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
@@ -6383,42 +6124,6 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 		return_code = 0;
 	}
 	return return_code;
-}
-
-int Cmiss_graphic_set_customised_graphics_object(
-	struct Cmiss_graphic *graphic, struct GT_object *graphics_object)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_set_customised_graphics_object);
-	if (graphic)
-	{
-		switch (graphic->graphic_type)
-		{
-			case CMISS_GRAPHIC_POINT:
-			{
-				if (graphic->customised_graphics_object != graphics_object)
-				{
-					REACCESS(GT_object)(&(graphic->customised_graphics_object), graphics_object);
-					return_code = 1;
-				}
-			} break;
-			default :
-			{
-				display_message(INFORMATION_MESSAGE,
-					"Cmiss_graphic_customised_graphics_object.  Cannot set customised"
-					"graphics_object for this cmiss graphic type");
-			}break;
-		}
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"Cmiss_graphic_customised_graphics_object.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
@@ -6514,7 +6219,8 @@ Must call Cmiss_graphic_to_graphics_object afterwards to complete.
 	{
 		return_code=1;
 		if (graphic->graphics_object&&
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))
+			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) &&
+			(0 < Cmiss_graphic_get_domain_dimension(graphic)))
 		{
 			Cmiss_graphic_update_selected(graphic, (void *)NULL);
 		}
@@ -6597,11 +6303,8 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMISS_GRAPHIC_NODE_POINTS:
-				enum_string = "NODE_POINTS";
-				break;
-			case CMISS_GRAPHIC_DATA_POINTS:
-				enum_string = "DATA_POINTS";
+			case CMISS_GRAPHIC_POINTS:
+				enum_string = "POINTS";
 				break;
 			case CMISS_GRAPHIC_LINES:
 				enum_string = "LINES";
@@ -6612,17 +6315,11 @@ public:
 			case CMISS_GRAPHIC_SURFACES:
 				enum_string = "SURFACES";
 				break;
-			case CMISS_GRAPHIC_ISO_SURFACES:
-				enum_string = "ISO_SURFACES";
-				break;
-			case CMISS_GRAPHIC_ELEMENT_POINTS:
-				enum_string = "ELEMENT_POINTS";
+			case CMISS_GRAPHIC_CONTOURS:
+				enum_string = "CONTOURS";
 				break;
 			case CMISS_GRAPHIC_STREAMLINES:
 				enum_string = "STREAMLINES";
-				break;
-			case CMISS_GRAPHIC_POINT:
-				enum_string = "POINT";
 				break;
 		default:
 			break;
@@ -6703,21 +6400,41 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 	return return_code;
 }
 
-int Cmiss_graphic_set_use_element_type(Cmiss_graphic_id graphic, enum Cmiss_graphic_use_element_type use_type)
+enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
+	Cmiss_graphic_id graphic)
+{
+	if (graphic)
+		return graphic->domain_type;
+	return CMISS_FIELD_DOMAIN_TYPE_INVALID;
+}
+
+int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
+	enum Cmiss_field_domain_type domain_type)
 {
 	int return_code = 0;
-	if (graphic)
+	if (graphic && (domain_type != CMISS_FIELD_DOMAIN_TYPE_INVALID) &&
+		(graphic->graphic_type != CMISS_GRAPHIC_LINES) &&
+		(graphic->graphic_type != CMISS_GRAPHIC_CYLINDERS) &&
+		(graphic->graphic_type != CMISS_GRAPHIC_SURFACES) &&
+		((graphic->graphic_type != CMISS_GRAPHIC_CONTOURS) ||
+			((domain_type != CMISS_FIELD_DOMAIN_POINT) &&
+			(domain_type != CMISS_FIELD_DOMAIN_NODES) &&
+			(domain_type != CMISS_FIELD_DOMAIN_DATA))))
 	{
-		graphic->use_element_type = static_cast<Use_element_type>(use_type);
-		return_code = CMISS_OK;
+		graphic->domain_type = domain_type;
+		if (domain_type != graphic->domain_type)
+		{
+			graphic->domain_type = domain_type;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
 	}
-
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_graphic_contours_id Cmiss_graphic_cast_contours(Cmiss_graphic_id graphic)
 {
-	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_ISO_SURFACES))
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_CONTOURS))
 	{
 		Cmiss_graphic_access(graphic);
 		return (reinterpret_cast<Cmiss_graphic_contours_id>(graphic));
@@ -6940,6 +6657,21 @@ int Cmiss_graphic_contours_set_range_isovalues(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+Cmiss_graphic_points_id Cmiss_graphic_cast_points(Cmiss_graphic_id graphic)
+{
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_POINTS))
+	{
+		Cmiss_graphic_access(graphic);
+		return (reinterpret_cast<Cmiss_graphic_points_id>(graphic));
+	}
+	return 0;
+}
+
+int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(points_address));
+}
+
 Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
 	Cmiss_graphic_id graphic)
 {
@@ -7093,10 +6825,7 @@ Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
 	Cmiss_graphic_id graphic)
 {
 	if (graphic && (
-		(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-		(graphic->graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-		(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-		(graphic->graphic_type == CMISS_GRAPHIC_POINT)))
+		(graphic->graphic_type == CMISS_GRAPHIC_POINTS)))
 	{
 		Cmiss_graphic_access(graphic);
 		return reinterpret_cast<Cmiss_graphic_point_attributes_id>(graphic);
@@ -7576,7 +7305,7 @@ Cmiss_graphic_element_attributes_id Cmiss_graphic_get_element_attributes(
 	Cmiss_graphic_id graphic)
 {
 	if (graphic &&
-		(graphic->graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS))
+		(graphic->graphic_type == CMISS_GRAPHIC_POINTS))
 	{
 		Cmiss_graphic_access(graphic);
 		return reinterpret_cast<Cmiss_graphic_element_attributes_id>(graphic);

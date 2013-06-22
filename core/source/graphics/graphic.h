@@ -81,6 +81,7 @@ finite element group rendition.
 	struct Computed_field *subgroup_field;
 	struct Computed_field *coordinate_field;
 	enum Graphics_select_mode select_mode;
+	enum Cmiss_field_domain_type domain_type;
 
 	/* for 1-D and 2-D elements only */
 	bool exterior;
@@ -95,7 +96,7 @@ finite element group rendition.
 	FE_value line_scale_factors[3];
 	Cmiss_field_id line_orientation_scale_field;
 
-	/* for iso_surfaces only */
+	/* for contours only */
 	struct Computed_field *isoscalar_field;
 	int number_of_isovalues;
 	/* If the isovalues array is set then these values are used,
@@ -117,8 +118,6 @@ finite element group rendition.
 	struct Computed_field *label_field;
 	struct Computed_field *label_density_field;
 
-	/* for element_points and iso_surfaces */
-	enum Use_element_type use_element_type;
 	/* for element_points only */
 	enum Xi_discretization_mode xi_discretization_mode;
 	struct Computed_field *xi_point_density_field;
@@ -158,7 +157,7 @@ finite element group rendition.
 
 	/* rendering information */
 	/* the graphics_object generated for this settings */
-	struct GT_object *graphics_object, *customised_graphics_object;
+	struct GT_object *graphics_object;
 	/* flag indicating the graphics_object needs rebuilding */
 	int graphics_changed;
 	/* flag indicating that selected graphics have changed */
@@ -204,7 +203,6 @@ enum Cmiss_graphic_attribute
 	CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE,
 	CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION,
 	CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE,
 	CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE,
 };
 
@@ -415,14 +413,14 @@ int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, str
  */
 int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
 
-/***************************************************************************//**
- * Returns the dimension of the <graphic>, which varies for some graphic types.
- * @param graphic Cmiss graphic
- * @param fe_region  Used for iso_surfaces and element_points with USE_ELEMENT
- * type. Gives the highest dimension for which elements exist. If omitted uses 3.
- * @return the dimension of the graphic
+/**
+ * Returns the dimension of the domain used in the graphic. Note for domain
+ * type CMISS_DOMAIN_ELEMENTS_HIGHEST_DIMENSION the region is checked for the
+ * highest dimension.
+ * @param graphic  The graphic to query.
+ * @return  The dimension of the graphic domain, or -1 on error.
  */
-int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region *fe_region);
+int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic);
 
 #if defined (USE_OPENCASCADE)
 /**
@@ -443,14 +441,6 @@ enum Cmiss_graphic_type Cmiss_graphic_get_graphic_type(
  */
 int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_type graphic_type);
-
-/***************************************************************************//**
- * Returns the type of elements used by the graphic.
- * For <graphic> type CMISS_GRAPHIC_ELEMENT_POINTS and
- * CMISS_GRAPHIC_ISO_SURFACES only.
- */
-enum Use_element_type Cmiss_graphic_get_use_element_type(
-	struct Cmiss_graphic *graphic);
 
 /**
  * Gets the field which returns true/non-zero for primitive to be created.
@@ -509,13 +499,6 @@ int Cmiss_graphic_get_visible_graphics_object_range(
 
 struct GT_object *Cmiss_graphic_get_graphics_object(
 	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Returns true if the particular <graphic_type> can deal with nodes/elements of
- * the given <dimension>. Note a <dimension> of -1 is taken to mean any dimension.
- */
-int Cmiss_graphic_type_uses_dimension(
-	enum Cmiss_graphic_type graphic_type, int dimension);
 
 /***************************************************************************//**
  * Returns the enumerator determining whether names are output with the graphics
@@ -656,14 +639,6 @@ int Cmiss_graphic_set_streamline_parameters(
 	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	GLfloat streamline_length);
-
-/***************************************************************************//**
- * Sets the type of elements used by the graphic.
- * For <graphic> type CMISS_GRAPHIC_ELEMENT_POINTS and
- * CMISS_GRAPHIC_ISO_SURFACES only.
- */
-int Cmiss_graphic_set_use_element_type(
-	struct Cmiss_graphic *graphic,enum Use_element_type use_element_type);
 
 /***************************************************************************//**
  * Returns the <xi_discretization_mode> and <xi_point_density_field> controlling
@@ -870,9 +845,6 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
  */
 int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 	void *font_manager_message_void);
-
-int Cmiss_graphic_set_customised_graphics_object(
-	struct Cmiss_graphic *graphic, struct GT_object *graphics_object);
 
 /* Overlay disabled
 int Cmiss_graphic_enable_overlay(struct Cmiss_graphic *graphic, int flag);

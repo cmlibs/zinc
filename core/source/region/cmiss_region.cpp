@@ -1570,13 +1570,13 @@ static int Cmiss_region_merge_fields(Cmiss_region_id target_region,
 				// merge node groups
 				for (int i = 0; i < 2; i++)
 				{
-					const char *nodeset_name = i ? "cmiss_data" : "cmiss_nodes";
-					Cmiss_nodeset_id source_nodeset = Cmiss_field_module_find_nodeset_by_name(source_field_module, nodeset_name);
+					Cmiss_field_domain_type nodeset_domain_type = i ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES;
+					Cmiss_nodeset_id source_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(source_field_module, nodeset_domain_type);
 					Cmiss_field_node_group_id source_node_group = Cmiss_field_group_get_node_group(source_group, source_nodeset);
 					if (source_node_group)
 					{
 						Cmiss_nodeset_group_id source_nodeset_group = Cmiss_field_node_group_get_nodeset(source_node_group);
-						Cmiss_nodeset_id target_nodeset = Cmiss_field_module_find_nodeset_by_name(target_field_module, nodeset_name);
+						Cmiss_nodeset_id target_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(target_field_module, nodeset_domain_type);
 						Cmiss_field_node_group_id target_node_group = Cmiss_field_group_get_node_group(target_group, target_nodeset);
 						if (!target_node_group)
 						{

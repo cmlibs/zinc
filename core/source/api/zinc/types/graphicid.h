@@ -56,37 +56,25 @@ struct Cmiss_graphic_contours;
 typedef struct Cmiss_graphic_contours *Cmiss_graphic_contours_id;
 
 /**
+ * The points derived type specific handle to a Cmiss_graphic.
+ * Used to visualise single points, nodes, data and element points.
+ */
+struct Cmiss_graphic_points;
+typedef struct Cmiss_graphic_points *Cmiss_graphic_points_id;
+
+/**
  * An enum type to define the type of a cmiss_graphic.
  */
 enum Cmiss_graphic_type
 {
 	CMISS_GRAPHIC_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_NODE_POINTS = 1,
-	CMISS_GRAPHIC_DATA_POINTS = 2,
-	CMISS_GRAPHIC_LINES = 3,
-	CMISS_GRAPHIC_CYLINDERS = 4,
-	CMISS_GRAPHIC_SURFACES = 5,
-	CMISS_GRAPHIC_ISO_SURFACES = 6,
-	CMISS_GRAPHIC_ELEMENT_POINTS = 7,
-	CMISS_GRAPHIC_STREAMLINES = 8,
-	CMISS_GRAPHIC_POINT = 9 /*!< CMISS_GRAPHIC_POINT is different from others,
-	 * as the graphics object of this is created by user instead of generated from
-	 * finite element models, it does not require a coordinate field in the
-	 * rendition. To get an idea of what graphics objects are, take a look at
-	 * the glyphs used in points representation they are a set of preset graphics
-	 * object in cmgui. This will be replaced in the future*/
+	CMISS_GRAPHIC_POINTS = 1,
+	CMISS_GRAPHIC_LINES = 2,
+	CMISS_GRAPHIC_SURFACES = 3,
+	CMISS_GRAPHIC_CONTOURS = 4,
+	CMISS_GRAPHIC_STREAMLINES = 5,
+	CMISS_GRAPHIC_CYLINDERS = 6 // GRC: remove
 }; /* enum Cmiss_graphics_type */
-
-/**
- * An enum defining the type of element dimension to use.
- */
-enum Cmiss_graphic_use_element_type
-{
-	CMISS_GRAPHIC_USE_ELEMENT_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_USE_ELEMENT_HIGHEST_DIMENSION,
-	CMISS_GRAPHIC_USE_ELEMENT_FACES,
-	CMISS_GRAPHIC_USE_ELEMENT_LINES
-};
 
 /**
  * An enum defining the faces a graphic may use.
