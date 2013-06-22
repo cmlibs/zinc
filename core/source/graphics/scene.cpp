@@ -936,10 +936,10 @@ and its "nearest" value is stored in the nearest_node_data.
 				&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(
 					rendition,Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				(((CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))) &&
+				((((CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))) &&
 					(!nearest_node_data->use_data)) ||
 				(((CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic)) &&
-					nearest_node_data->use_data)) &&
+					nearest_node_data->use_data))) &&
 				(cmiss_region = Cmiss_rendition_get_region(rendition)))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);

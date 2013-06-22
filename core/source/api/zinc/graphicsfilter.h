@@ -43,6 +43,7 @@
 #ifndef __CMISS_GRAPHICS_FILTER_H__
 #define __CMISS_GRAPHICS_FILTER_H__
 
+#include "types/fieldid.h"
 #include "types/graphicid.h"
 #include "types/graphicsfilterid.h"
 #include "types/graphicsmoduleid.h"
