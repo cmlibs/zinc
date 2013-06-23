@@ -1,98 +1,101 @@
 
 # Defines API_HDRS
 SET( API_HDRS
-    source/api/zinc/context.h
-    source/api/zinc/core.h
-    source/api/zinc/differentialoperator.h
-    source/api/zinc/element.h
-    source/api/zinc/field.h
-    source/api/zinc/fieldalias.h
-    source/api/zinc/fieldarithmeticoperators.h
-    source/api/zinc/fieldcomposite.h
-    source/api/zinc/fieldconditional.h
-    source/api/zinc/fieldconstant.h
-    source/api/zinc/fieldcoordinatetransformation.h
-    source/api/zinc/fieldderivatives.h
-    source/api/zinc/fieldfiniteelement.h
-    source/api/zinc/fieldgroup.h
-    source/api/zinc/fieldimage.h
-    source/api/zinc/fieldimageprocessing.h
-    source/api/zinc/fieldlogicaloperators.h
-    source/api/zinc/fieldmatrixoperators.h
-    source/api/zinc/fieldmodule.h
-    source/api/zinc/fieldnodesetoperators.h
-    source/api/zinc/fieldsceneviewerprojection.h
-    source/api/zinc/fieldsubobjectgroup.h
-    source/api/zinc/fieldtime.h
-    source/api/zinc/fieldtrigonometry.h
-    source/api/zinc/fieldvectoroperators.h
-    source/api/zinc/glyph.h
-    source/api/zinc/graphic.h
-    source/api/zinc/graphicsfilter.h
-    source/api/zinc/font.h
-    source/api/zinc/graphicsmaterial.h
-    source/api/zinc/graphicsmodule.h
-    source/api/zinc/interactivetool.h
-    source/api/zinc/node.h
-    source/api/zinc/optimisation.h
-    source/api/zinc/region.h
-    source/api/zinc/rendition.h
-    source/api/zinc/scene.h
-    source/api/zinc/scenepicker.h
-    source/api/zinc/selection.h
-    source/api/zinc/spectrum.h
-    source/api/zinc/status.h
-    source/api/zinc/stream.h
-    source/api/zinc/tessellation.h
-    source/api/zinc/timenotifier.h
-    source/api/zinc/timekeeper.h
-    source/api/zinc/timesequence.h
-    source/api/zinc/types/contextid.h
-    source/api/zinc/types/differentialoperatorid.h
-    source/api/zinc/types/elementid.h
-    source/api/zinc/types/fieldaliasid.h
-    source/api/zinc/types/fieldfiniteelementid.h
-    source/api/zinc/types/fieldgroupid.h
-    source/api/zinc/types/fieldid.h
-    source/api/zinc/types/fieldimageid.h
-    source/api/zinc/types/fieldimageprocessingid.h
-    source/api/zinc/types/fieldmoduleid.h
-    source/api/zinc/types/fieldsubobjectgroupid.h
-    source/api/zinc/types/glyphid.h
-    source/api/zinc/types/graphicid.h
-    source/api/zinc/types/graphicscoordinatesystem.h
-    source/api/zinc/types/graphicsfilterid.h
-    source/api/zinc/types/fontid.h
-    source/api/zinc/types/graphicsmaterialid.h
-    source/api/zinc/types/graphicsmoduleid.h
-    source/api/zinc/types/graphicsrendertype.h
-    source/api/zinc/types/interactivetoolid.h
-    source/api/zinc/types/nodeid.h
-    source/api/zinc/types/optimisationid.h
-    source/api/zinc/types/regionid.h
-    source/api/zinc/types/renditionid.h
-    source/api/zinc/types/sceneid.h
-    source/api/zinc/types/scenepickerid.h
-    source/api/zinc/types/selectionid.h
-    source/api/zinc/types/spectrumid.h
-    source/api/zinc/types/streamid.h
-    source/api/zinc/types/tessellationid.h
-    source/api/zinc/types/timeid.h
-    source/api/zinc/types/timekeeperid.h
-    source/api/zinc/types/timesequenceid.h )
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/context.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/core.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/differentialoperator.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/element.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/field.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldalias.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldarithmeticoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcomposite.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconditional.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconstant.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcoordinatetransformation.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldderivatives.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldfiniteelement.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldgroup.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimage.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimageprocessing.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldlogicaloperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmatrixoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmodule.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldnodesetoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsceneviewerprojection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsubobjectgroup.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtime.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtrigonometry.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldvectoroperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphic.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsfilter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/font.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmaterial.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmodule.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/interactivetool.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/node.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/region.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/rendition.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scene.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenepicker.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/selection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/spectrum.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/status.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/stream.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/tessellation.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timenotifier.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timekeeper.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timesequence.h)
+
+SET( API_TYPES_HDRS
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/contextid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/differentialoperatorid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/elementid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldaliasid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldfiniteelementid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldgroupid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldimageid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldimageprocessingid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldmoduleid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldsubobjectgroupid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/glyphid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicscoordinatesystem.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsfilterid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmaterialid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmoduleid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsrendertype.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/interactivetoolid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/nodeid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/regionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/renditionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenepickerid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/selectionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/spectrumid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/streamid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/tessellationid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timeid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timekeeperid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timesequenceid.h )
 
 IF( USE_OPENCASCADE )
-    SET( API_HDRS ${API_HDRS}
-        source/api/zinc/fieldcad.h
-        source/api/zinc/types/fieldcadid.h )
+	SET( API_HDRS ${API_HDRS}
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcad.h)
+	SET( API_TYPES_HDRS ${API_TYPES_HDRS}
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldcadid.h )
 ENDIF( USE_OPENCASCADE )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-    SET( API_HDRS ${API_HDRS}
-        source/api/zinc/sceneviewer.h
-        source/api/zinc/sceneviewerinput.h
-        source/api/zinc/types/sceneviewerid.h
-        source/api/zinc/types/sceneviewerinputid.h )
+	SET( API_HDRS ${API_HDRS}
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewer.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewerinput.h)
+	SET( API_TYPES_HDRS ${API_TYPES_HDRS}
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerid.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerinputid.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
-SET( API_HDRS ${API_HDRS} )
