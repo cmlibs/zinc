@@ -54,10 +54,10 @@ TEST(Cmiss_graphic_api, face)
 	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
-	EXPECT_EQ(CMISS_GRAPHIC_FACE_ALL, Cmiss_graphic_get_face(gr));
-	int result = Cmiss_graphic_set_face(gr, CMISS_GRAPHIC_FACE_XI2_0);
+	EXPECT_EQ(CMISS_ELEMENT_FACE_ALL, Cmiss_graphic_get_face(gr));
+	int result = Cmiss_graphic_set_face(gr, CMISS_ELEMENT_FACE_XI2_0);
 	EXPECT_EQ(CMISS_OK, result);
-	EXPECT_EQ(CMISS_GRAPHIC_FACE_XI2_0, Cmiss_graphic_get_face(gr));
+	EXPECT_EQ(CMISS_ELEMENT_FACE_XI2_0, Cmiss_graphic_get_face(gr));
 
 	Cmiss_graphic_destroy(&gr);
 }
