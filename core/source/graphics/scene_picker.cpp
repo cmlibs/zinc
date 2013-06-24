@@ -325,7 +325,6 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 						if (rendition)
 						{
 							Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-							struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
 							int element_type = Cmiss_graphic_get_domain_dimension(graphic);
 							if ((existing_rendition != rendition) ||
 								(current_element_type != element_type))
@@ -490,7 +489,6 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 							if (rendition)
 							{
 								Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-								struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
 								int element_type = Cmiss_graphic_get_domain_dimension(graphic);
 								if ((existing_rendition != rendition) ||
 									(current_element_type != element_type))
