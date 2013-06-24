@@ -7026,13 +7026,19 @@ int Cmiss_graphic_point_attributes_set_glyph_type(
 			Cmiss_graphic_point_attributes_set_glyph_repeat_mode(point_attributes, CMISS_GLYPH_REPEAT_AXES_3D);
 			break;
 		};
-		Cmiss_graphics_module_id graphics_module = Cmiss_rendition_get_graphics_module(graphic->rendition);
-		Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(graphics_module);
-		Cmiss_glyph_id glyph = glyph_name ? Cmiss_glyph_module_find_glyph_by_name(glyph_module, glyph_name) : 0;
-		return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
-		Cmiss_glyph_destroy(&glyph);
-		Cmiss_glyph_module_destroy(&glyph_module);
-		Cmiss_graphics_module_destroy(&graphics_module);
+		if (glyph_name)
+		{
+			Cmiss_graphics_module_id graphics_module = Cmiss_rendition_get_graphics_module(graphic->rendition);
+			Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(graphics_module);
+			Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, glyph_name);
+			if (glyph)
+			{
+				return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
+				Cmiss_glyph_destroy(&glyph);
+			}
+			Cmiss_glyph_module_destroy(&glyph_module);
+			Cmiss_graphics_module_destroy(&graphics_module);
+		}
 	}
 	return return_code;
 }
