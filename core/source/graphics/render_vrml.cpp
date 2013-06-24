@@ -2745,7 +2745,7 @@ graphics_object_tree_iterator_function
 	int return_code = 0;
 	struct Export_to_vrml_data *export_to_vrml_data;
 
-	ENTER(Scene_object_export_to_vrml);
+	ENTER(graphics_object_export_to_vrml);
 	if (gt_object&&(export_to_vrml_data=
 		(struct Export_to_vrml_data *)export_to_vrml_data_void))
 	{

@@ -1326,7 +1326,7 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_get_range.  Invalid argument(s)");
+			"Cmiss_rendition_get_range.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1685,7 +1685,7 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 	if (rendition)
 	{
 		return_code = 1;
-		/* put out the name (position) of the scene_object: */
+		/* put out the name (position) of the rendition: */
 		//
 		//printf("%i \n", rendition->position);
 		glLoadName((GLuint)rendition->position);

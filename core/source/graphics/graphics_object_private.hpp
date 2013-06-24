@@ -30,8 +30,7 @@ Used to be gtypes.h
 	rest of code to use them, so that members of graphics_objects are private.
 13 October 1998
 	SAB Added a callback mechanism so that through GT_object_changed interested
-	objects can automatically be notified of changes (i.e. the Scene_object and
-	consequently the Scene).
+	objects can automatically be notified of changes.
 18 June 2004
    SAB Spilt GT_object out into graphics_object_private.h so that we control
    which files can see the guts.

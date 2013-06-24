@@ -43,10 +43,6 @@
 
 #include "general/callback_class.hpp"
 
-#if defined (USE_SCENE_OBJECT)
-struct Scene_object;
-#endif
-
 struct Cmiss_graphics_filter;
 struct Cmiss_scene;
 #define Scene Cmiss_scene // GRC temp
@@ -54,22 +50,6 @@ struct Graphics_buffer;
 class Render_graphics;
 class Render_graphics_compile_members;
 class Render_graphics_opengl;
-
-#if defined (USE_SCENE_OBJECT)
-/***************************************************************************//**
- * Render scene object.
- */
-int execute_Scene_object(Scene_object *scene_object,
-	Render_graphics_opengl *renderer);
-#endif
-
-#if defined (USE_SCENE_OBJECT)
-/***************************************************************************//**
- * Compile members of a scene_object.
- */
-int Scene_object_compile_members(Scene_object *scene_object,
-	Render_graphics_compile_members *renderer);
-#endif
 
 /***************************************************************************//**
  * To speed up messaging response, graphical_elements put off building

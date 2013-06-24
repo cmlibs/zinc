@@ -46,7 +46,6 @@ Renders gtObjects to STL stereolithography file.
 
 struct Cmiss_scene;
 #define Scene Cmiss_scene // GRC temporary
-struct Scene_object;
 
 /*
 Global functions
@@ -58,7 +57,6 @@ Global functions
  * 
  * @param file_name The name of the file to write to.
  * @param scene The scene to output
- * @param scene_object A scene object to output; if not specified use scene.
  * @return 1 on success, 0 on failure
  */
 int export_to_stl(char *file_name, struct Scene *scene);

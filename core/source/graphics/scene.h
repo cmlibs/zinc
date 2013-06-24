@@ -418,176 +418,6 @@ Iterates through every material used by the scene.
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_picked_object);
 PROTOTYPE_LIST_FUNCTIONS(Scene_picked_object);
 
-struct Scene_picked_object *CREATE(Scene_picked_object)(int hit_no);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Creates a Scene_picked_object for storing picking information in a format
-compatible with objects in our display hierarchy. Creates a blank object that
-must be filled with appropriate data.
-==============================================================================*/
-
-int DESTROY(Scene_picked_object)(
-	struct Scene_picked_object **scene_picked_object_address);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Destroys the Scene_picked_object.
-==============================================================================*/
-
-int Scene_picked_object_add_subobject(
-	struct Scene_picked_object *scene_picked_object,int subobject);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Adds the <subobject> name to the end of the list of names identifying the
-particular picked graphic represented by the <scene_picked_object>.
-==============================================================================*/
-
-int Scene_picked_object_get_number_of_subobjects(
-	struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of integer subobject names identifying the
-<scene_picked_object>.
-==============================================================================*/
-
-int Scene_picked_object_get_subobject(
-	struct Scene_picked_object *scene_picked_object,int subobject_no);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the subobject at position <subobject_no> - where 0 is the first - in
-the list of integer subobject names identifying the <scene_picked_object>.
-==============================================================================*/
-
-double Scene_picked_object_get_farthest(
-	struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the <farthest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-
-int Scene_picked_object_set_farthest(
-	struct Scene_picked_object *scene_picked_object,double farthest);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Sets the <farthest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-
-double Scene_picked_object_get_nearest(
-	struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the <nearest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-
-int Scene_picked_object_set_nearest(
-	struct Scene_picked_object *scene_picked_object,double nearest);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Sets the <nearest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-
-int Scene_picked_object_write(struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Writes the contents of the <scene_picked_object> as:
-scene_object_name[.scene_object_name] subobject_number[ subobject_number...]
-==============================================================================*/
-
-int Scene_picked_objects_have_same_transformation(
-	struct Scene_picked_object *scene_picked_object1,
-	struct Scene_picked_object *scene_picked_object2);
-/*******************************************************************************
-LAST MODIFIED : 23 July 1999
-
-DESCRIPTION :
-Returns true if <scene_picked_object1> and <scene_picked_object2> have the
-same total transformation.
-==============================================================================*/
-
-int Scene_picked_object_get_total_transformation_matrix(
-	struct Scene_picked_object *scene_picked_object,int *transformation_required,
-	double *transformation_matrix);
-/*******************************************************************************
-LAST MODIFIED : 23 July 1999
-
-DESCRIPTION :
-Multiplies the transformation matrices for all the scene_objects in the
-<scene_picked_object>, returning the overall <matrix>. The matrix has 16 values
-in the order of along rows first, which operate on the untransformed homogeneous
-coordinates [x y z h(=1)] to give [x' y' z' h'], with xm = x'/h', etc. as in:
-|x'| |M11 M12 M13 M14| |x|
-|y'|=|M21 M22 M23 M24|.|y|
-|z'| |M31 M32 M33 M34| |z|
-|h'| |M41 M42 M43 M44| |h|
-However, if none of the scene objects have transformations, the flag
-<transformation_required> will be set to 0 and the <transformation_matrix> will
-be set to the identity.
-==============================================================================*/
-
-struct Any_object *Scene_picked_object_list_get_nearest_any_object(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Scene_picked_object **scene_picked_object_address);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-Returns the nearest picked any_object in <scene_picked_object_list>.
-If <scene_picked_object_address> is supplied, the pointer to the
-Scene_picked_object referring to the nearest any_object is put there.
-==============================================================================*/
-
-void *Scene_picked_object_list_get_picked_region_sorted_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	enum Cmiss_field_domain_type domain_type);
-
-struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
-	struct LIST(Scene_picked_object) *scene_picked_object_list);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-Returns the list of all any_objects in the <scene_picked_object_list>.
-==============================================================================*/
-
-struct FE_element *Scene_picked_object_list_get_nearest_element(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Cmiss_region *cmiss_region,
-	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns the nearest picked element in <scene_picked_object_list> that is in
-<cmiss_region> (or in root_region if NULL). If any of the remaining address
-arguments are not NULL, they are filled with the appropriate information
-pertaining to the nearest element.
-<select_elements_enabled> allows top-level/3-D elements to be selected.
-<select_faces_enabled> allows face and 2-D elements to be selected.
-<select_lines_enabled> allows line and 1-D elements to be selected.
-==============================================================================*/
-
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct Cmiss_region *cmiss_region,
@@ -620,29 +450,6 @@ void *Scene_picked_object_list_get_picked_region_cad_primitives(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	int select_surfaces_enabled, int select_lines_enabled);
 #endif /* defined (USE_OPENCASCADE) */
-
-void *Scene_picked_object_list_get_picked_region_sorted_elements(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int select_elements_enabled,int select_faces_enabled,
-	int select_lines_enabled);
-
-struct FE_node *Scene_picked_object_list_get_nearest_node(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int use_data, struct Cmiss_region *cmiss_region,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the nearest picked node in <scene_picked_object_list> that is in
-<cmiss_region> (or any region if NULL). If any of the remaining address
-arguments are not NULL, they are filled with the appropriate information
-pertaining to the nearest node.
-The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each.
-==============================================================================*/
 
 #if defined (USE_OPENCASCADE)
 Cmiss_cad_identifier_id Scene_picked_object_list_get_cad_primitive(
@@ -788,25 +595,6 @@ Note that lights are not included in the scene and must be handled separately!
 Initialises the name stack then calls execute_child_Scene.
 ==============================================================================*/
 
-int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1998
-
-DESCRIPTION :
-If the graphics_object has more than one time, this function ensures that the
-corresponding Scene_objects in this scene have a Time_object.
-==============================================================================*/
-
-int Scene_set_time_behaviour(struct Scene *scene, char *scene_object_name,
-	char *time_object_name, struct Cmiss_time_keeper *time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Creates a Time_object with name <time_object_name> and sets that as the time
-object for the scene_object named <scene_object_name>.
-==============================================================================*/
-
 int Scene_get_graphics_range(struct Scene *scene,
 	double *centre_x, double *centre_y, double *centre_z,
 	double *size_x, double *size_y, double *size_z);
@@ -816,31 +604,6 @@ LAST MODIFIED : 16 October 2001
 DESCRIPTION :
 Finds the range of all visible graphics objects in scene.
 Returns 0 without error if scene is empty.
-==============================================================================*/
-
-int Scene_get_element_group_position(struct Scene *scene,
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-The order in which objects are drawn is important for OpenGL transparency.
-This function returns the position of <cmiss_region> in <scene>, starting
-from 1 at the top. A return value of 0 indicates an error - probably saying
-that the GFE for element_group is not in the scene.
-==============================================================================*/
-
-int Scene_set_element_group_position(struct Scene *scene,
-	struct Cmiss_region *cmiss_region, int position);
-/*******************************************************************************
-LAST MODIFIED : 2 December 200
-
-DESCRIPTION :
-The order in which objects are drawn is important for OpenGL transparency.
-This function sets the position of <cmiss_region> in <scene>, starting
-from 1 at the top. A value less than 1 or greater than the number of graphics
-objects in the list puts <cmiss_region> at the end.
-Scene_object for the group keeps the same name.
 ==============================================================================*/
 
 int list_Scene(struct Scene *scene,void *dummy_void);
@@ -908,31 +671,6 @@ int Scene_export_region_graphics_object(struct Scene *scene,
 	struct Cmiss_region *region, const char *graphic_name,
 	graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
-
-int Scene_picked_object_get_number_of_renditions(
-	struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of scene objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-
-int Scene_picked_object_add_rendition(
-	struct Scene_picked_object *scene_picked_object,
-	struct Cmiss_rendition *rendition);
-
-struct Cmiss_rendition *Scene_picked_object_get_rendition(
-	struct Scene_picked_object *scene_picked_object,int rendition_no);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the scene_object at position <scene_object_no> - where 0 is the first -
-in the list of scene_objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
 
 int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void);
 
