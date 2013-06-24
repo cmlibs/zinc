@@ -3449,7 +3449,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 								else
 								{
 									group_field = Cmiss_field_module_create_group(field_module);
-									Cmiss_field_set_managed(group_field, 1);
+									Cmiss_field_set_managed(group_field, true);
 									if (Cmiss_field_set_name(group_field, region_path))
 									{
 										group = Cmiss_field_cast_group(group_field);

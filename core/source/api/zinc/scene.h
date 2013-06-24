@@ -80,9 +80,9 @@ ZINC_API int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
  * @see Cmiss_scene_set_managed
  *
  * @param scene  The scene to query.
- * @return  1 (true) if scene is managed, otherwise 0 (false).
+ * @return  true if scene is managed, otherwise false.
  */
-ZINC_API int Cmiss_scene_is_managed(Cmiss_scene_id scene);
+ZINC_API bool Cmiss_scene_is_managed(Cmiss_scene_id scene);
 
 /**
  * Set managed status of scene in its owning scene module.
@@ -94,11 +94,11 @@ ZINC_API int Cmiss_scene_is_managed(Cmiss_scene_id scene);
  * All new objects are unmanaged unless stated otherwise.
  *
  * @param scene  The scene to modify.
- * @param value  The new value for the managed flag: 0 or 1.
+ * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_scene_set_managed(Cmiss_scene_id scene,
-	int value);
+	bool value);
 
 /***************************************************************************//**
  * Set the top region of the scene. Rendition from this top region and its child

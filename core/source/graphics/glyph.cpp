@@ -2258,18 +2258,18 @@ int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name)
 	return GT_object_set_name(glyph, name);
 }
 
-int Cmiss_glyph_is_managed(Cmiss_glyph_id glyph)
+bool Cmiss_glyph_is_managed(Cmiss_glyph_id glyph)
 {
 	if (glyph)
-		return (int)glyph->is_managed_flag;
+		return glyph->is_managed_flag;
 	return 0;
 }
 
-int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, int value)
+int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, bool value)
 {
 	if (glyph)
 	{
-		bool use_is_managed_flag = (0 != value);
+		bool use_is_managed_flag = (false != value);
 		if (use_is_managed_flag != glyph->is_managed_flag)
 		{
 			glyph->is_managed_flag = use_is_managed_flag;

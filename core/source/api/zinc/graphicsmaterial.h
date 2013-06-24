@@ -236,9 +236,9 @@ ZINC_API char *Cmiss_graphics_material_attribute_enum_to_string(
  * @see Cmiss_graphics_material_set_managed
  *
  * @param graphics material  The graphics material to query.
- * @return  1 (true) if graphics material is managed, otherwise 0 (false).
+ * @return  true if graphics material is managed, otherwise false.
  */
-ZINC_API int Cmiss_graphics_material_is_managed(Cmiss_graphics_material_id material);
+ZINC_API bool Cmiss_graphics_material_is_managed(Cmiss_graphics_material_id material);
 
 /**
  * Set managed status of graphics material in its owning graphics material module.
@@ -250,11 +250,11 @@ ZINC_API int Cmiss_graphics_material_is_managed(Cmiss_graphics_material_id mater
  * All new objects are unmanaged unless stated otherwise.
  *
  * @param graphics material  The graphics material to modify.
- * @param value  The new value for the managed flag: 0 or 1.
+ * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphics_material_set_managed(Cmiss_graphics_material_id material,
-	int value);
+	bool value);
 
 /***************************************************************************//**
  * Access the material, increase the access count of the material by one.

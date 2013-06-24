@@ -94,7 +94,7 @@ public:
 	{
 		if (new_field)
 		{
-			Cmiss_field_set_managed(new_field, 1);
+			Cmiss_field_set_managed(new_field, true);
 			DEACCESS(Computed_field)(&new_field);
 			return 1;
 		}

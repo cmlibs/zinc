@@ -180,9 +180,9 @@ ZINC_API int Cmiss_glyph_destroy(Cmiss_glyph_id *glyph_address);
  * @see Cmiss_glyph_set_managed
  *
  * @param glyph  The glyph to query.
- * @return  1 (true) if glyph is managed, otherwise 0 (false).
+ * @return  true if glyph is managed, otherwise 0 false.
  */
-ZINC_API int Cmiss_glyph_is_managed(Cmiss_glyph_id glyph);
+ZINC_API bool Cmiss_glyph_is_managed(Cmiss_glyph_id glyph);
 
 /**
  * Set managed status of glyph in its owning glyph module.
@@ -194,10 +194,10 @@ ZINC_API int Cmiss_glyph_is_managed(Cmiss_glyph_id glyph);
  * All new objects are unmanaged unless stated otherwise.
  *
  * @param glyph  The glyph to modify.
- * @param value  The new value for the managed flag: 0 or 1.
+ * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, int value);
+ZINC_API int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, bool value);
 
 /**
  * Return an allocated string containing glyph name.

@@ -796,12 +796,12 @@ public:
 			{
 				graphicsFilter = createFilterVisibilityFlags();
 				Cmiss_graphics_filter_set_name(graphicsFilter, default_graphics_filter_name);
-				Cmiss_graphics_filter_set_managed(graphicsFilter, 1);
+				Cmiss_graphics_filter_set_managed(graphicsFilter, true);
 			}
 			if (graphicsFilter)
 			{
 				setDefaultFilter(graphicsFilter);
-				Cmiss_graphics_filter_set_managed(graphicsFilter, 1);
+				Cmiss_graphics_filter_set_managed(graphicsFilter, true);
 			}
 			return graphicsFilter;
 		}
@@ -1047,21 +1047,21 @@ int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
 	return return_code;
 }
 
-int Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter)
+bool Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter)
 {
 	if (filter)
 	{
-		return (int)filter->is_managed_flag;
+		return filter->is_managed_flag;
 	}
 	return 0;
 }
 
 int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
-	int value)
+	bool value)
 {
 	if (filter)
 	{
-		int old_value = (int)filter->is_managed_flag;
+		bool old_value = filter->is_managed_flag;
 		filter->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
