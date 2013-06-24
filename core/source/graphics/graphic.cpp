@@ -4882,15 +4882,15 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		if (return_code)
 		{
 			/* note: different if names are different */
-			return_code=
-				(graphic->graphic_type==second_graphic->graphic_type)&&
-				(graphic->domain_type==second_graphic->domain_type);
-				(graphic->coordinate_field==second_graphic->coordinate_field)&&
-				(graphic->subgroup_field==second_graphic->subgroup_field)&&
-				((((char *)NULL==graphic->name)&&((char *)NULL==second_graphic->name))
-					||((graphic->name)&&(second_graphic->name)&&
-						(0==strcmp(graphic->name,second_graphic->name))))&&
-				(graphic->select_mode==second_graphic->select_mode);
+			return_code =
+				(graphic->graphic_type == second_graphic->graphic_type) &&
+				(graphic->domain_type == second_graphic->domain_type) &&
+				(graphic->coordinate_field == second_graphic->coordinate_field) &&
+				(graphic->subgroup_field == second_graphic->subgroup_field) &&
+				((graphic->name == second_graphic->name) ||
+					((graphic->name) && (second_graphic->name) &&
+					(0 == strcmp(graphic->name, second_graphic->name)))) &&
+				(graphic->select_mode == second_graphic->select_mode);
 		}
 
 		const int domain_dimension = Cmiss_graphic_get_domain_dimension(graphic);
