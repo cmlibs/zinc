@@ -806,9 +806,9 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
 	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
 
 /**
- * Sets the glyph use for visualising a graphics point from a reduced set
- * of enumerations.
- * @deprecated
+ * Sets the glyph used for visualising a graphics point from a set of
+ * enumerations. Requires standard glyphs to first be created.
+ * @see Cmiss_glyph_module_create_standard_glyphs
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_type  The glyph type identifier.
