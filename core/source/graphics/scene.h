@@ -76,15 +76,6 @@
 #endif /* defined(USE_OPENCASCADE) */
 
 /*
-Global constants
-----------------
-*/
-
-#define SCENE_INPUT_MODIFY_SHIFT   1
-#define SCENE_INPUT_MODIFY_CONTROL 2
-#define SCENE_INPUT_MODIFY_ALT     4
-
-/*
 Global types
 ------------
 */
@@ -232,56 +223,11 @@ public:
 
 typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
 
-enum Scene_input_type
-{
-	SCENE_BUTTON_PRESS,
-	SCENE_MOTION_NOTIFY,
-	SCENE_BUTTON_RELEASE
-}; /* enum Scene_input_type */
-
-
 struct Scene_get_data_range_for_spectrum_data
 {
 	struct Spectrum *spectrum;
 	struct Graphics_object_data_range_struct range;
 };
-
-struct Scene_input_callback_data
-/*******************************************************************************
-LAST MODIFIED : 18 May 1998
-
-DESCRIPTION :
-Package of data to pass to clients of scene input callbacks, describing the
-type of the [mouse] event, the line in space under the mouse at the time of the
-event as defined by points near and far, the button number and shift-key down
-state for button press and release events, and the list of picked objects. The
-viewing direction is also necessary for determining the editing response with
-non-parallel projections.
-==============================================================================*/
-{
-	double viewx,viewy,viewz,nearx,neary,nearz,farx,fary,farz;
-	enum Scene_input_type input_type;
-	int button_number;
-	/* flags indicating the state of the shift, control and alt keys -
-		to use logical OR input_modifier with SCENE_INPUT_MODIFY_SHIFT etc. */
-	int input_modifier;
-	struct LIST(Scene_picked_object) *picked_object_list;
-}; /* Scene_input_callback_data */
-
-typedef void Scene_input_callback_procedure(struct Scene *,void *, \
-	struct Scene_input_callback_data *);
-
-struct Scene_input_callback
-/*******************************************************************************
-LAST MODIFIED : 26 February 1998
-
-DESCRIPTION :
-Contains all information necessary for an input callback from the scene.
-==============================================================================*/
-{
-	Scene_input_callback_procedure *procedure;
-	void *data;
-}; /* struct Scene_input_callback */
 
 struct Scene
 /*******************************************************************************
@@ -303,12 +249,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	enum Scene_change_status change_status;
 
 	struct Cmiss_region *region;
-	struct MANAGER(Light) *light_manager;
-	void *light_manager_callback_id;
 	struct LIST(Light) *list_of_lights;
-	/* routine to call and data to pass to a module that handles scene input */
-	/* such as picking and mouse drags */
-	struct Scene_input_callback input_callback;
 	Rendition_set *list_of_rendition;
 	/* level of cache in effect */
 	int cache;
@@ -460,50 +401,6 @@ Cmiss_cad_identifier_id Scene_picked_object_list_get_cad_primitive(
 	struct Cmiss_rendition **rendition_address,
 	struct Cmiss_graphic **graphic_address);
 #endif /* defined (USE_OPENCASCADE) */
-
-int Scene_get_input_callback(struct Scene *scene,
-	struct Scene_input_callback *scene_input_callback);
-/*******************************************************************************
-LAST MODIFIED : 25 March 1999
-
-DESCRIPTION :
-Fills <scene_input_callback> with the current scene input_callback information.
-==============================================================================*/
-
-int Scene_set_input_callback(struct Scene *scene,
-	struct Scene_input_callback *scene_input_callback);
-/*******************************************************************************
-LAST MODIFIED : 25 March 1999
-
-DESCRIPTION :
-Sets the function that will be called to pass on input information, and the data
-that that function wants to receive.
-==============================================================================*/
-
-int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
-	int button_number,int input_modifier,double viewx,double viewy,double viewz,
-	double nearx,double neary,double nearz,double farx,double fary,double farz,
-	int num_hits
-#if defined (OPENGL_API)
-	,GLuint *select_buffer
-#endif /* defined (OPENGL_API) */
-	);
-/*******************************************************************************
-LAST MODIFIED : 25 July 1998
-
-DESCRIPTION :
-Routine called by Scene_viewers - and in future possibly other Scene clients -
-to tell about input. At present only mouse input is handled; the <input_type>
-says whether it is a mouse button press, motion or button release event, and the
-button_number and whether modifier keys were depressed at the time of the
-event are given in subsequent parameters. The coordinates of two points in
-space, near and far, are given to identify the ray under the mouse pointer at
-the time of the event. The view direction is also needed for clients of pick and
-drag information. Finally, if the event involved selection/picking, the number
-of hits and the select buffer will be set accordingly. The main function of
-this routine is to convert picking information into a list of easy-to-interpret
-Scene_picked_objects to pass to clients of the scene, eg. node editor.
-==============================================================================*/
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume);
