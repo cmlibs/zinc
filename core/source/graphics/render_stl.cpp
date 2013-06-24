@@ -818,52 +818,25 @@ int write_graphics_object_stl(Stl_context& stl_context,
 	ENTER(write_graphics_object_stl)
 	if (graphics_object)
 	{
-		return_code = 1;
-#if defined (TO_BE_IMPLEMENTED)
-		int has_transform = Scene_object_has_transformation(scene_object);
-		if (has_transform)
-		{
-			gtMatrix transformation;
-			Scene_object_get_transformation(scene_object, &transformation);
-			stl_context.push_multiply_transformation(
-				Transformation_matrix(transformation));
-		}
-#endif
-
-#if defined (TO_BE_IMPLEMENTED)
-		if (Scene_object_has_time(scene_object))
-		{
-			time = Scene_object_get_time(scene_object);
-		}
-#endif
-
-
-
 		return_code = makestl(stl_context,graphics_object, time);
-#if defined (TO_BE_IMPLEMENTED)
-		if (has_transform)
-		{
-			stl_context.pop_transformation();
-		}
-#endif
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_scene_object_stl.  Missing scene_object");
+			"write_graphics_object_stl.  Missing graphics_object");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_scene_object_stl */
+} /* write_graphics_object_stl */
 
 int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	void *stl_context_void)
 {
 	int return_code;
 
-	ENTER(Scene_object_to_stl);
+	ENTER(Graphcis_object_to_stl);
 	if (graphics_object && stl_context_void)
 	{
 		return_code = 1;
@@ -873,14 +846,14 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_to_stl.  Invalid argument(s)");
+			"Graphcis_object_to_stl.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* Scene_object_to_stl */
+} /* Graphcis_object_to_stl */
 
 /**************************************************************************//**
  * Renders the visible objects in a scene to STL.

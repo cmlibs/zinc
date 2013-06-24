@@ -147,7 +147,3 @@ ZINC_API int Cmiss_scene_viewer_input_viewport_transform(
 #endif
 
 #endif /* __CMISS_SCENE_VIEWER_INPUT_H__ */
-
-
-
-

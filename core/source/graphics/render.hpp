@@ -236,7 +236,7 @@ public:
 	}
 
 	FE_value time;
-	/** Passed from scene_objects to cmiss_renditions for compilation */
+	/** Passed from cmiss_renditions to graphic for compilation */
 	const char *name_prefix;
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
@@ -365,12 +365,6 @@ public:
 	{
 		return 1;
 	}
-#if defined (USE_SCENE_OBJECT)
-	/***************************************************************************//**
-	 * Compile the Scene_object.
-	 */
-	virtual int Scene_object_compile(Scene_object *scene_object);
-#endif
 
 	virtual int Texture_execute(Texture * /*texture*/)
 	{

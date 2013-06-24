@@ -236,7 +236,7 @@ Tells the scene it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.  Recompiles the scene display list as well
 as the objects in the scene unlike the public Scene_changed which only compiles
 the component objects.
-Private to the Scene and Scene_objects.
+Private to the Scene.
 ==============================================================================*/
 {
 	int return_code;
@@ -266,133 +266,6 @@ Private to the Scene and Scene_objects.
 	return (return_code);
 } /* Scene_changed_private */
 
-struct Scene_picked_object_get_nearest_any_object_data
-{
-	/* "nearest" value from Scene_picked_object for picked_any_object */
-	double nearest;
-	struct Any_object *nearest_any_object;
-	/* information about the nearest any_object */
-	struct Scene_picked_object *scene_picked_object;
-};
-
-static int Scene_picked_object_get_nearest_any_object(
-	struct Scene_picked_object *scene_picked_object,
-	void *nearest_any_object_data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-If the <scene_picked_object> refers to an any_object, the "nearest" value is
-compared with that for the current nearest any_object in the
-<nearest_any_object_data>. If there was no current nearest any_object or the new
-any_object is nearer, it becomes the nearest any_object and its "nearest" value
-is stored in the nearest_any_object_data.
-==============================================================================*/
-{
-	int return_code;
-	//struct Any_object *any_object;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-#endif /* defined (USE_SCENE_OBJECT) */
-	struct Scene_picked_object_get_nearest_any_object_data
-		*nearest_any_object_data;
-
-	ENTER(Scene_picked_object_get_nearest_any_object);
-	if (scene_picked_object&&(nearest_any_object_data=
-		(struct Scene_picked_object_get_nearest_any_object_data	*)
-		nearest_any_object_data_void))
-	{
-		return_code=1;
-		/* proceed only if there is no picked_any_object or object is nearer */
-		if (((struct Any_object *)NULL ==
-			nearest_any_object_data->nearest_any_object) ||
-			(Scene_picked_object_get_nearest(scene_picked_object) <
-				nearest_any_object_data->nearest))
-		{
-			/* if the last scene_object represents an any_object, add it to list */
-#if defined (USE_SCENE_OBJECT)
-			if ((scene_object=Scene_picked_object_get_Scene_object(
-				scene_picked_object,Scene_picked_object_get_number_of_scene_objects(
-					scene_picked_object)-1))&&
-				(any_object=Scene_object_get_represented_object(scene_object)))
-			{
-				nearest_any_object_data->nearest_any_object=any_object;
-				nearest_any_object_data->scene_picked_object=scene_picked_object;
-				nearest_any_object_data->nearest=
-					Scene_picked_object_get_nearest(scene_picked_object);
-			}
-#endif /* defined (USE_SCENE_OBJECT) */
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_nearest_any_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_nearest_any_object */
-
-static int Scene_picked_object_get_picked_any_objects(
-	struct Scene_picked_object *scene_picked_object,
-	void *any_object_list_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-If the <scene_picked_object> refers to an any_object, it is converted into
-an Any_object and added to the <picked_any_objects_list>.
-==============================================================================*/
-{
-	int return_code;
-	//struct Any_object *any_object;
-	struct LIST(Any_object) *any_object_list;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-#endif /* defined (USE_SCENE_OBJECT) */
-
-	ENTER(Scene_picked_object_get_picked_any_objects);
-	if (scene_picked_object&&
-		(any_object_list=(struct LIST(Any_object) *)any_object_list_void))
-	{
-		return_code=1;
-		/* if the last scene_object represents an any_object, add it to list */
-#if defined (USE_SCENE_OBJECT)
-		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
-			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))&&
-			(any_object=Scene_object_get_represented_object(scene_object)))
-		{
-			ADD_OBJECT_TO_LIST(Any_object)(any_object,any_object_list);
-		}
-#endif /* defined (USE_SCENE_OBJECT) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_picked_any_objects.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_picked_any_objects */
-
-struct Scene_picked_object_get_nearest_element_data
-{
-	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
-	/* "nearest" value from Scene_picked_object for picked_element */
-	double nearest;
-	struct FE_element *nearest_element;
-	/* group that the element must be in, or any group if NULL */
-	struct Cmiss_region *cmiss_region;
-	/* information about the nearest element */
-	struct Scene_picked_object *scene_picked_object;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic;
-};
-
 #if defined (USE_OPENCASCADE)
 
 typedef std::multimap<Cmiss_region *, Cmiss_cad_identifier_id> Region_cad_primitive_map;
@@ -420,131 +293,6 @@ struct Scene_picked_object_get_cad_primitive_data
 
 #endif /* defined (USE_OPENCASCADE) */
 
-static int Scene_picked_object_get_nearest_element(
-	struct Scene_picked_object *scene_picked_object,
-	void *nearest_element_data_void)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-If the <scene_picked_object> refers to an element, the "nearest" value is
-compared with that for the current nearest element in the
-<nearest_element_data>. If there was no current nearest element or the new
-element is nearer, it becomes the nearest element and its "nearest" value is
-stored in the nearest_element_data.
-==============================================================================*/
-{
-	int dimension,return_code, element_type = 0;
-	struct CM_element_information cm;
-	struct FE_element *element;
-	struct FE_region *fe_region;
-	struct Cmiss_region *cmiss_region;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic = NULL;
-	struct Scene_picked_object_get_nearest_element_data	*nearest_element_data;
-
-	ENTER(Scene_picked_object_get_nearest_element);
-	if (scene_picked_object&&(nearest_element_data=
-		(struct Scene_picked_object_get_nearest_element_data	*)
-		nearest_element_data_void))
-	{
-		return_code=1;
-		/* proceed only if there is no picked_element or object is nearer */
-		if (((struct FE_element *)NULL==nearest_element_data->nearest_element)||
-			(Scene_picked_object_get_nearest(scene_picked_object) <
-				nearest_element_data->nearest))
-		{
-			/* is the last scene_object a Graphical_element wrapper, and does the
-				 settings for the graphic refer to elements? */
-			if ((NULL != (rendition=Scene_picked_object_get_rendition(
-				scene_picked_object,
-				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
-				&&(NULL != (cmiss_region = Cmiss_rendition_get_region(rendition)))&&
-				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
-						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				(Cmiss_graphic_selects_elements(graphic)))
-			{
-				fe_region = Cmiss_region_get_FE_region(cmiss_region);
-				if (fe_region)
-				{
-					element_type = Cmiss_graphic_get_domain_dimension(graphic);
-					cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
-					if (element_type == 1)
-					{
-						cm.type = CM_LINE;
-					}
-					else if (element_type == 2)
-					{
-						cm.type = CM_FACE;
-					}
-					else
-					{
-						cm.type = CM_ELEMENT;
-					}
-					element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm);
-					if (element)
-					{
-						dimension = get_FE_element_dimension(element);
-						if (((nearest_element_data->select_elements_enabled && ((CM_ELEMENT
-							== cm.type) || (3 == dimension)))
-							|| (nearest_element_data->select_faces_enabled && ((CM_FACE
-								== cm.type) || (2 == dimension)))
-							|| (nearest_element_data->select_lines_enabled && ((CM_LINE
-								== cm.type) || (1 == dimension))))
-							&& ((!nearest_element_data->cmiss_region)
-								|| ((fe_region = Cmiss_region_get_FE_region(
-									nearest_element_data->cmiss_region))
-									&& FE_region_contains_FE_element(fe_region, element))))
-						{
-							nearest_element_data->nearest_element = element;
-							nearest_element_data->scene_picked_object = scene_picked_object;
-							nearest_element_data->rendition = rendition;
-							nearest_element_data->graphic = graphic;
-							nearest_element_data->nearest = Scene_picked_object_get_nearest(
-								scene_picked_object);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Scene_picked_object_get_nearest_element.  "
-								"Invalid element %s %d", CM_element_type_string(cm.type),
-							cm.number);
-						return_code = 0;
-					}
-				}
-			}
-			if (graphic)
-				Cmiss_graphic_destroy(&graphic);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_nearest_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_nearest_element */
-
-struct Scene_picked_object_get_picked_elements_data
-{
-	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
-	struct LIST(FE_element) *picked_element_list;
-};
-
-typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
-
-struct Scene_picked_object_region_element_map_data
-{
-	Region_element_map *element_list;
-	/* flag set when searching for nearest data point rather than node */
-	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
-};
-
 struct Scene_picked_object_get_nearest_element_point_data
 {
 	/* "nearest" value from Scene_picked_object for picked_element_point */
@@ -557,6 +305,177 @@ struct Scene_picked_object_get_nearest_element_point_data
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
 };
+
+struct Cmiss_rendition *Scene_picked_object_get_rendition(
+	struct Scene_picked_object *scene_picked_object,int rendition_no)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the scene_object at position <scene_object_no> - where 0 is the first -
+in the list of scene_objects in the path of our display heirarchy to the
+<scene_picked_object>.
+==============================================================================*/
+{
+	struct Cmiss_rendition *rendition;
+
+	ENTER(Scene_picked_object_get_rendition);
+	if (scene_picked_object&&(0<=rendition_no)&&
+		(rendition_no<scene_picked_object->number_of_renditions))
+	{
+		rendition = scene_picked_object->renditions[rendition_no];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_rendition.  Invalid argument(s)");
+		rendition=(struct Cmiss_rendition *)NULL;
+	}
+	LEAVE;
+
+	return (rendition);
+} /* Scene_picked_object_get_rendition */
+
+int Scene_picked_object_get_number_of_renditions(
+	struct Scene_picked_object *scene_picked_object)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the number of scene objects in the path of our display heirarchy to the
+<scene_picked_object>.
+==============================================================================*/
+{
+	int number_of_renditions;
+
+	ENTER(Scene_picked_object_get_number_of_renditions);
+	if (scene_picked_object)
+	{
+		number_of_renditions = scene_picked_object->number_of_renditions;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_number_of_renditions.  Invalid argument(s)");
+		number_of_renditions=0;
+	}
+	LEAVE;
+
+	return (number_of_renditions);
+} /* Scene_picked_object_get_number_of_renditions */
+
+int Scene_picked_object_get_number_of_subobjects(
+	struct Scene_picked_object *scene_picked_object)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the number of integer subobject names identifying the
+<scene_picked_object>.
+==============================================================================*/
+{
+	int number_of_subobjects;
+
+	ENTER(Scene_picked_object_get_number_of_subobjects);
+	if (scene_picked_object)
+	{
+		number_of_subobjects = scene_picked_object->number_of_subobjects;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_number_of_subobjects.  Invalid argument(s)");
+		number_of_subobjects=0;
+	}
+	LEAVE;
+
+	return (number_of_subobjects);
+} /* Scene_picked_object_get_number_of_subobjects */
+
+
+double Scene_picked_object_get_nearest(
+	struct Scene_picked_object *scene_picked_object)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the <nearest> position at which the <scene_picked_object> was picked.
+==============================================================================*/
+{
+	double nearest;
+
+	ENTER(Scene_picked_object_get_nearest);
+	if (scene_picked_object)
+	{
+		nearest = scene_picked_object->nearest;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest.  Invalid argument(s)");
+		nearest=0.0;
+	}
+	LEAVE;
+
+	return (nearest);
+} /* Scene_picked_object_get_nearest */
+
+int Scene_picked_object_set_nearest(
+	struct Scene_picked_object *scene_picked_object,double nearest)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Sets the <nearest> position at which the <scene_picked_object> was picked.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_picked_object_set_nearest);
+	if (scene_picked_object)
+	{
+		scene_picked_object->nearest = nearest;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_set_nearest.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_set_nearest */
+
+int Scene_picked_object_get_subobject(
+	struct Scene_picked_object *scene_picked_object,int subobject_no)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the subobject at position <subobject_no> - where 0 is the first - in
+the list of integer subobject names identifying the <scene_picked_object>.
+==============================================================================*/
+{
+	int subobject;
+
+	ENTER(Scene_picked_object_get_subobject);
+	if (scene_picked_object&&(0<=subobject_no)&&
+		(subobject_no<scene_picked_object->number_of_subobjects))
+	{
+		subobject = scene_picked_object->subobjects[subobject_no];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_subobject.  Invalid argument(s)");
+		subobject=0;
+	}
+	LEAVE;
+
+	return (subobject);
+} /* Scene_picked_object_get_subobject */
 
 static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
@@ -883,244 +802,6 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 	return (return_code);
 } /* Scene_picked_object_get_picked_element_points */
 
-struct Scene_picked_object_get_nearest_node_data
-{
-	/* "nearest" value from Scene_picked_object for picked_node */
-	double nearest;
-	struct FE_node *nearest_node;
-	/* flag set when searching for nearest data point rather than node */
-	int use_data;
-	/* region that the node must be in, or any region if NULL */
-	struct Cmiss_region *cmiss_region;
-	/* information about the nearest node */
-	struct Scene_picked_object *scene_picked_object;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic;
-};
-
-static int Scene_picked_object_get_nearest_node(
-	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-If the <scene_picked_object> refers to a node, the "nearest" value is compared
-with that for the current nearest node in the <nearest_node_data>. If there was
-no current nearest node or the new node is nearer, it becomes the picked node
-and its "nearest" value is stored in the nearest_node_data.
-==============================================================================*/
-{
-	int node_number,return_code;
-	struct FE_node *node;
-	struct FE_region *fe_region;
-	struct Scene_picked_object_get_nearest_node_data *nearest_node_data;
-	struct Cmiss_region *cmiss_region;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic = NULL;
-
-	ENTER(Scene_picked_object_get_nearest_node);
-	if (scene_picked_object&&(nearest_node_data=
-		(struct Scene_picked_object_get_nearest_node_data	*)nearest_node_data_void))
-	{
-		return_code=1;
-		/* proceed only if there is no picked_node or object is nearer */
-		if (((struct FE_node *)NULL==nearest_node_data->nearest_node)||
-			(Scene_picked_object_get_nearest(scene_picked_object) <
-				nearest_node_data->nearest))
-		{
-			/* is the last scene_object a Graphical_element wrapper, and does the
-				 settings for the graphic refer to node_points or data_points? */
-			if ((NULL != (rendition=Scene_picked_object_get_rendition(
-				scene_picked_object,
-				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
-				&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(
-					rendition,Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				((((CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))) &&
-					(!nearest_node_data->use_data)) ||
-				(((CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic)) &&
-					nearest_node_data->use_data))) &&
-				(cmiss_region = Cmiss_rendition_get_region(rendition)))
-			{
-				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-				fe_region = Cmiss_region_get_FE_region(cmiss_region);
-				if (nearest_node_data->use_data)
-				{
-					fe_region = FE_region_get_data_FE_region(fe_region);
-				}
-				if (fe_region && (node =
-					FE_region_get_FE_node_from_identifier(fe_region, node_number)))
-				{
-					/* is the node in the nearest_node_data->cmiss_region, if supplied */
-					if (nearest_node_data->cmiss_region)
-					{
-						fe_region = Cmiss_region_get_FE_region(nearest_node_data->cmiss_region);
-						if (nearest_node_data->use_data)
-						{
-							fe_region = FE_region_get_data_FE_region(fe_region);
-						}
-					}
-					if ((!nearest_node_data->cmiss_region) ||
-						FE_region_contains_FE_node(fe_region, node))
-					{
-						nearest_node_data->nearest_node=node;
-						nearest_node_data->scene_picked_object=scene_picked_object;
-						nearest_node_data->rendition=rendition;
-						nearest_node_data->graphic=graphic;
-						nearest_node_data->nearest=
-							Scene_picked_object_get_nearest(scene_picked_object);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_picked_object_get_nearest_node.  Invalid node %d",
-						node_number);
-					return_code=0;
-				}
-			}
-			if (graphic)
-				Cmiss_graphic_destroy(&graphic);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_nearest_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_nearest_node */
-
-struct Scene_picked_object_get_picked_nodes_data
-{
-	struct LIST(FE_node) *node_list;
-	Cmiss_field_domain_type domain_type; // nodes or data
-};
-
-typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
-
-struct Scene_picked_object_region_node_map_data
-{
-  Region_node_map *node_list;
-	Cmiss_field_domain_type domain_type; // nodes or data
-};
-
-static int Scene_picked_object_get_picked_region_sorted_nodes(
-	struct Scene_picked_object *scene_picked_object,void *picked_nodes_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-If the <scene_picked_object> refers to a node and the node is in the given
-manager, ensures it is in the list.
-==============================================================================*/
-{
-	USE_PARAMETER(scene_picked_object);
-	USE_PARAMETER(picked_nodes_data_void);
-
-	int node_number,return_code;
-	struct Cmiss_region *cmiss_region;
-	struct FE_node *node;
-	struct FE_region *fe_region;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic = NULL;
-	struct Scene_picked_object_region_node_map_data *picked_nodes_data;
-
-	ENTER(Scene_picked_object_get_picked_nodes);
-	if (scene_picked_object&&(picked_nodes_data=
-		(struct Scene_picked_object_region_node_map_data	*)picked_nodes_data_void))
-	{
-		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to node_points? */
-		if ((NULL != (rendition=Scene_picked_object_get_rendition(scene_picked_object,
-						Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
-			&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
-				Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-			(picked_nodes_data->domain_type == Cmiss_graphic_get_domain_type(graphic)) &&
-			(cmiss_region = Cmiss_rendition_get_region(rendition)))
-		{
-			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-			fe_region = Cmiss_region_get_FE_region(cmiss_region);
-			if (picked_nodes_data->domain_type == CMISS_FIELD_DOMAIN_DATA)
-			{
-				fe_region = FE_region_get_data_FE_region(fe_region);
-			}
-			node = FE_region_get_FE_node_from_identifier(fe_region, node_number);
-			if (node)
-			{
-				picked_nodes_data->node_list->insert(std::make_pair(cmiss_region, node));
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_get_picked_nodes.  Invalid node %d",node_number);
-				return_code=0;
-			}
-		}
-		if (graphic)
-			Cmiss_graphic_destroy(&graphic);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_picked_nodes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-
-	return 1;
-} /* Scene_picked_object_get_picked_nodes */
-
-void *Scene_picked_object_list_get_picked_region_sorted_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	enum Cmiss_field_domain_type domain_type)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Returns the list of all nodes in the <scene_picked_object_list>.
-The <use_data> flag indicates that we are searching for data points instead of
-nodes, needed since different settings type used for each.
-==============================================================================*/
-{
-	struct Scene_picked_object_region_node_map_data picked_nodes_data;
-
-	ENTER(Scene_picked_object_list_get_picked_nodes);
-	if (scene_picked_object_list)
-	{
-		picked_nodes_data.domain_type = domain_type;
-		picked_nodes_data.node_list=new Region_node_map();
-		if (picked_nodes_data.node_list)
-		{
-			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_region_sorted_nodes,(void *)&picked_nodes_data,
-				scene_picked_object_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_list_get_picked_nodes.  "
-				"Could not create node list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
-		picked_nodes_data.node_list=NULL;
-	}
-	LEAVE;
-
-	return ((void *)picked_nodes_data.node_list);
-} /* Scene_picked_object_list_get_picked_nodes */
-
 /*
 Global functions
 ----------------
@@ -1323,9 +1004,6 @@ Closes the scene and disposes of the scene data structure.
 			{
 			  DEACCESS(Cmiss_region)(&scene->region);
 			}
-#if defined (USE_SCENE_OBJECT)
-			DESTROY(LIST(Scene_object))(&(scene->scene_object_list));
-#endif /* defined (USE_SCENE_OBJECT) */
 			DESTROY(LIST(Light))(&(scene->list_of_lights));
 			DEALLOCATE(*scene_address);
 			return_code=1;
@@ -1554,46 +1232,13 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 {
 	int return_code = 0;
 // 	struct LIST(Light) *temp_list_of_lights;
-#if defined (USE_SCENE_OBJECT)
-	struct LIST(Scene_object) *temp_scene_object_list;
-#endif /* defined (USE_SCENE_OBJECT) */
+
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
 	{
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
-#if defined (USE_SCENE_OBJECT)
-		if ((temp_list_of_lights=CREATE(LIST(Light))())&&
-			(temp_scene_object_list=CREATE(LIST(Scene_object))())&&
-			(FOR_EACH_OBJECT_IN_LIST(Light)(Light_to_list,
-				(void *)temp_list_of_lights,source->list_of_lights))&&
-			(FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_copy_to_list,
-				(void *)temp_scene_object_list,source->scene_object_list)))
-		{
-			DESTROY(LIST(Light))(&(destination->list_of_lights));
-			destination->list_of_lights=temp_list_of_lights;
-			DESTROY(LIST(Scene_object))(&(destination->scene_object_list));
-			destination->scene_object_list=temp_scene_object_list;
-			/* NOTE: MUST NOT COPY MANAGER! */
-			destination->compile_status = GRAPHICS_NOT_COMPILED;
-			return_code=1;
-		}
-		else
-		{
-			if (temp_list_of_lights)
-			{
-				DESTROY(LIST(Light))(&temp_list_of_lights);
-				if (temp_scene_object_list)
-				{
-					DESTROY(LIST(Scene_object))(&temp_scene_object_list);
-				}
-			}
-			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name).  Could not copy lists");
-			return_code=0;
-		}
-#endif /* defined (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -1658,37 +1303,6 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,const char *,manager)
-
-#if defined (USE_SCENE_OBJECT)
-int for_each_Scene_object_in_Scene(struct Scene *scene,
-	LIST_ITERATOR_FUNCTION(Scene_object) *iterator_function,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 23 December 1997
-
-DESCRIPTION :
-Allows clients of the <scene> to perform functions with the scene_objects in
-it. For example, render_vrml.c needs to output all the window objects in a scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(for_each_Scene_object_in_Scene);
-	if (scene&&iterator_function)
-	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(iterator_function,
-			user_data,scene->scene_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_each_Scene_object_in_Scene.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_each_Scene_object_in_Scene */
-#endif /* defined (USE_SCENE_OBJECT) */
 
 int Scene_for_each_material(struct Scene *scene,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
@@ -1844,172 +1458,6 @@ int Scene_picked_object_add_rendition(
 	return (return_code);
 } /* Scene_picked_object_add_rendition */
 
-
-
-#if defined (USE_SCENE_OBJECT)
-int Scene_picked_object_add_Scene_object(
-	struct Scene_picked_object *scene_picked_object,
-	struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Adds the <scene_object> to the end of the list specifying the path to the
-picked graphic represented by the <scene_picked_object>.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object **temp_scene_objects;
-
-	ENTER(Scene_picked_object_add_Scene_object);
-	if (scene_picked_object&&scene_object)
-	{
-		if (REALLOCATE(temp_scene_objects,scene_picked_object->scene_objects,
-			struct Scene_object *,scene_picked_object->number_of_scene_objects+1))
-		{
-			scene_picked_object->scene_objects = temp_scene_objects;
-			scene_picked_object->
-				scene_objects[scene_picked_object->number_of_scene_objects]=
-				ACCESS(Scene_object)(scene_object);
-			scene_picked_object->number_of_scene_objects++;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_add_Scene_object.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_add_Scene_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_add_Scene_object */
-
-int Scene_picked_object_get_number_of_scene_objects(
-	struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of scene objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-{
-	int number_of_scene_objects;
-
-	ENTER(Scene_picked_object_get_number_of_scene_objects);
-	if (scene_picked_object)
-	{
-		number_of_scene_objects = scene_picked_object->number_of_scene_objects;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_number_of_scene_objects.  Invalid argument(s)");
-		number_of_scene_objects=0;
-	}
-	LEAVE;
-
-	return (number_of_scene_objects);
-} /* Scene_picked_object_get_number_of_scene_objects */
-
-struct Scene_object *Scene_picked_object_get_Scene_object(
-	struct Scene_picked_object *scene_picked_object,int scene_object_no)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the scene_object at position <scene_object_no> - where 0 is the first -
-in the list of scene_objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_picked_object_get_Scene_object);
-	if (scene_picked_object&&(0<=scene_object_no)&&
-		(scene_object_no<scene_picked_object->number_of_scene_objects))
-	{
-		scene_object = scene_picked_object->scene_objects[scene_object_no];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_Scene_object.  Invalid argument(s)");
-		scene_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (scene_object);
-} /* Scene_picked_object_get_Scene_object */
-#endif /* defined (USE_SCENE_OBJECT) */
-
-
-int Scene_picked_object_get_number_of_renditions(
-	struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of scene objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-{
-	int number_of_renditions;
-
-	ENTER(Scene_picked_object_get_number_of_scene_objects);
-	if (scene_picked_object)
-	{
-		number_of_renditions = scene_picked_object->number_of_renditions;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_number_of_scene_objects.  Invalid argument(s)");
-		number_of_renditions=0;
-	}
-	LEAVE;
-
-	return (number_of_renditions);
-} /* Scene_picked_object_get_number_of_scene_objects */
-
-struct Cmiss_rendition *Scene_picked_object_get_rendition(
-	struct Scene_picked_object *scene_picked_object,int rendition_no)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the scene_object at position <scene_object_no> - where 0 is the first -
-in the list of scene_objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-{
-	struct Cmiss_rendition *rendition;
-
-	ENTER(Scene_picked_object_get_rendition);
-	if (scene_picked_object&&(0<=rendition_no)&&
-		(rendition_no<scene_picked_object->number_of_renditions))
-	{
-		rendition = scene_picked_object->renditions[rendition_no];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_rendition.  Invalid argument(s)");
-		rendition=(struct Cmiss_rendition *)NULL;
-	}
-	LEAVE;
-
-	return (rendition);
-} /* Scene_picked_object_get_rendition */
-
 int Scene_picked_object_add_subobject(
 	struct Scene_picked_object *scene_picked_object,int subobject)
 /*******************************************************************************
@@ -2052,90 +1500,6 @@ particular picked graphic represented by the <scene_picked_object>.
 	return (return_code);
 } /* Scene_picked_object_add_subobject */
 
-int Scene_picked_object_get_number_of_subobjects(
-	struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of integer subobject names identifying the
-<scene_picked_object>.
-==============================================================================*/
-{
-	int number_of_subobjects;
-
-	ENTER(Scene_picked_object_get_number_of_subobjects);
-	if (scene_picked_object)
-	{
-		number_of_subobjects = scene_picked_object->number_of_subobjects;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_number_of_subobjects.  Invalid argument(s)");
-		number_of_subobjects=0;
-	}
-	LEAVE;
-
-	return (number_of_subobjects);
-} /* Scene_picked_object_get_number_of_subobjects */
-
-int Scene_picked_object_get_subobject(
-	struct Scene_picked_object *scene_picked_object,int subobject_no)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the subobject at position <subobject_no> - where 0 is the first - in
-the list of integer subobject names identifying the <scene_picked_object>.
-==============================================================================*/
-{
-	int subobject;
-
-	ENTER(Scene_picked_object_get_subobject);
-	if (scene_picked_object&&(0<=subobject_no)&&
-		(subobject_no<scene_picked_object->number_of_subobjects))
-	{
-		subobject = scene_picked_object->subobjects[subobject_no];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_subobject.  Invalid argument(s)");
-		subobject=0;
-	}
-	LEAVE;
-
-	return (subobject);
-} /* Scene_picked_object_get_subobject */
-
-double Scene_picked_object_get_farthest(
-	struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the <farthest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-{
-	double farthest;
-
-	ENTER(Scene_picked_object_get_farthest);
-	if (scene_picked_object)
-	{
-		farthest = scene_picked_object->farthest;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_farthest.  Invalid argument(s)");
-		farthest=0.0;
-	}
-	LEAVE;
-
-	return (farthest);
-} /* Scene_picked_object_get_farthest */
-
 int Scene_picked_object_set_farthest(
 	struct Scene_picked_object *scene_picked_object,double farthest)
 /*******************************************************************************
@@ -2163,148 +1527,6 @@ Sets the <farthest> position at which the <scene_picked_object> was picked.
 
 	return (return_code);
 } /* Scene_picked_object_set_farthest */
-
-double Scene_picked_object_get_nearest(
-	struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the <nearest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-{
-	double nearest;
-
-	ENTER(Scene_picked_object_get_nearest);
-	if (scene_picked_object)
-	{
-		nearest = scene_picked_object->nearest;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_nearest.  Invalid argument(s)");
-		nearest=0.0;
-	}
-	LEAVE;
-
-	return (nearest);
-} /* Scene_picked_object_get_nearest */
-
-int Scene_picked_object_set_nearest(
-	struct Scene_picked_object *scene_picked_object,double nearest)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Sets the <nearest> position at which the <scene_picked_object> was picked.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_picked_object_set_nearest);
-	if (scene_picked_object)
-	{
-		scene_picked_object->nearest = nearest;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_set_nearest.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_set_nearest */
-
-int Scene_picked_object_write(struct Scene_picked_object *scene_picked_object)
-/*******************************************************************************
-LAST MODIFIED : 19 July 1999
-
-DESCRIPTION :
-Writes the contents of the <scene_picked_object> as:
-hit_no: scene_object_name[.scene_object_name...] subobject_number...
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Scene_picked_object_write);
-	if (scene_picked_object)
-	{
-		display_message(INFORMATION_MESSAGE,"%d: ",scene_picked_object->hit_no);
-#if defined (USE_SCENE_OBJECT)
-		for (i=0;i<scene_picked_object->number_of_scene_objects;i++)
-		{
-			if (0<i)
-			{
-				display_message(INFORMATION_MESSAGE,".");
-			}
-			display_message(INFORMATION_MESSAGE,"%s",
-				scene_picked_object->scene_objects[i]->name);
-		}
-#endif /* defined (USE_SCENE_OBJECT) */
-		for (i=0;i<scene_picked_object->number_of_subobjects;i++)
-		{
-			display_message(INFORMATION_MESSAGE," %d",
-				scene_picked_object->subobjects[i]);
-		}
-		display_message(INFORMATION_MESSAGE,", near=%d far=%d\n",
-			scene_picked_object->nearest,scene_picked_object->farthest);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_write.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_write */
-
-int Scene_picked_objects_have_same_transformation(
-	struct Scene_picked_object *scene_picked_object1,
-	struct Scene_picked_object *scene_picked_object2)
-/*******************************************************************************
-LAST MODIFIED : 23 July 1999
-
-DESCRIPTION :
-Returns true if <scene_picked_object1> and <scene_picked_object2> have the
-same total transformation.
-==============================================================================*/
-{
-	double transformation_matrix1[16],transformation_matrix2[16];
-	int i,return_code,transformation_required1,transformation_required2;
-
-	ENTER(Scene_picked_objects_have_same_transformation);
-	return_code=0;
-	if (scene_picked_object1&&scene_picked_object2)
-	{
-		if (Scene_picked_object_get_total_transformation_matrix(
-			scene_picked_object1,&transformation_required1,transformation_matrix1)&&
-			Scene_picked_object_get_total_transformation_matrix(
-				scene_picked_object2,&transformation_required2,transformation_matrix2)&&
-			(transformation_required1==transformation_required2))
-		{
-			return_code=1;
-			for (i=0;(i>16)&&return_code;i++)
-			{
-				return_code=(transformation_matrix1[i] == transformation_matrix2[i]);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_objects_have_same_transformation.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_objects_have_same_transformation */
 
 int Scene_picked_object_get_total_transformation_matrix(
 	struct Scene_picked_object *scene_picked_object,int *transformation_required,
@@ -2335,42 +1557,6 @@ be set to the identity.
 	if (scene_picked_object&&transformation_required&&transformation_matrix)
 	{
 		number_of_transformations=0;
-#if defined (USE_SCENE_OBJECT)
-		for (k=0;k<scene_picked_object->number_of_scene_objects;k++)
-		{
-			if (Scene_object_has_transformation(
-				scene_picked_object->scene_objects[k]))
-			{
-				number_of_transformations++;
-				Scene_object_get_transformation(scene_picked_object->scene_objects[k],
-					&gt_transformation);
-				if (1==number_of_transformations)
-				{
-					/* transpose gtMatrix */
-					for (i=0;i<4;i++)
-					{
-						for (j=0;j<4;j++)
-						{
-							transformation_matrix[i*4+j] = gt_transformation[j][i];
-						}
-					}
-				}
-				else
-				{
-					/* transpose gtMatrix */
-					for (i=0;i<4;i++)
-					{
-						for (j=0;j<4;j++)
-						{
-							mat1[i*4+j] = gt_transformation[j][i];
-						}
-					}
-					multiply_matrix(4,4,4,transformation_matrix,mat1,mat2);
-					copy_matrix(4,4,mat2,transformation_matrix);
-				}
-			}
-		}
-#endif /* defined (USE_SCENE_OBJECT) */
 		if (!((*transformation_required)=(0<number_of_transformations)))
 		{
 			/* return the identity matrix - just in case */
@@ -2406,145 +1592,6 @@ be set to the identity.
 DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
-
-struct Any_object *Scene_picked_object_list_get_nearest_any_object(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Scene_picked_object **scene_picked_object_address)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-Returns the nearest picked any_object in <scene_picked_object_list>.
-If <scene_picked_object_address> is supplied, the pointer to the
-Scene_picked_object referring to the nearest any_object is put there.
-==============================================================================*/
-{
-	struct Scene_picked_object_get_nearest_any_object_data
-		nearest_any_object_data;
-
-	ENTER(Scene_picked_object_list_get_nearest_any_object);
-	nearest_any_object_data.nearest=0.0;
-	nearest_any_object_data.nearest_any_object=(struct Any_object *)NULL;
-	nearest_any_object_data.scene_picked_object=
-		(struct Scene_picked_object *)NULL;
-	if (scene_picked_object_list)
-	{
-		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-			Scene_picked_object_get_nearest_any_object,
-			(void *)&nearest_any_object_data,scene_picked_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_nearest_any_object.  Invalid argument(s)");
-	}
-	if (scene_picked_object_address)
-	{
-		*scene_picked_object_address=nearest_any_object_data.scene_picked_object;
-	}
-	LEAVE;
-
-	return (nearest_any_object_data.nearest_any_object);
-} /* Scene_picked_object_list_get_nearest_any_object */
-
-struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
-	struct LIST(Scene_picked_object) *scene_picked_object_list)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-Returns the list of all any_objects in the <scene_picked_object_list>.
-==============================================================================*/
-{
-	struct LIST(Any_object) *any_object_list;
-
-	ENTER(Scene_picked_object_list_get_picked_any_objects);
-	if (scene_picked_object_list)
-	{
-		any_object_list=CREATE(LIST(Any_object))();
-		if (any_object_list != 0)
-		{
-			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_any_objects,(void *)any_object_list,
-				scene_picked_object_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_list_get_picked_any_objects.  "
-				"Could not create any_object list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_picked_any_objects.  Invalid argument(s)");
-		any_object_list=(struct LIST(Any_object) *)NULL;
-	}
-	LEAVE;
-
-	return (any_object_list);
-} /* Scene_picked_object_list_get_picked_any_objects */
-
-struct FE_element *Scene_picked_object_list_get_nearest_element(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Cmiss_region *cmiss_region,
-	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns the nearest picked element in <scene_picked_object_list> that is in
-<cmiss_region> (or in root_region if NULL). If any of the remaining address
-arguments are not NULL, they are filled with the appropriate information
-pertaining to the nearest element.
-<select_elements_enabled> allows top-level/3-D elements to be selected.
-<select_faces_enabled> allows face and 2-D elements to be selected.
-<select_lines_enabled> allows line and 1-D elements to be selected.
-==============================================================================*/
-{
-	struct Scene_picked_object_get_nearest_element_data nearest_element_data;
-
-	ENTER(Scene_picked_object_list_get_nearest_element);
-	nearest_element_data.nearest=0.0;
-	nearest_element_data.nearest_element=(struct FE_element *)NULL;
-	nearest_element_data.cmiss_region = cmiss_region;
-	nearest_element_data.select_elements_enabled=select_elements_enabled;
-	nearest_element_data.select_faces_enabled=select_faces_enabled;
-	nearest_element_data.select_lines_enabled=select_lines_enabled;
-	nearest_element_data.scene_picked_object=(struct Scene_picked_object *)NULL;
-	nearest_element_data.rendition=(struct Cmiss_rendition *)NULL;
-	nearest_element_data.graphic=(struct Cmiss_graphic *)NULL;
-	if (scene_picked_object_list)
-	{
-		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-			Scene_picked_object_get_nearest_element,(void *)&nearest_element_data,
-			scene_picked_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_nearest_element.  Invalid argument(s)");
-	}
-	if (scene_picked_object_address)
-	{
-		*scene_picked_object_address=nearest_element_data.scene_picked_object;
-	}
-	if (rendition_address)
-	{
-		*rendition_address=nearest_element_data.rendition;
-	}
-	if (graphic_address)
-	{
-		*graphic_address=nearest_element_data.graphic;
-	}
-	LEAVE;
-
-	return (nearest_element_data.nearest_element);
-} /* Scene_picked_object_list_get_nearest_element */
 
 #if defined (USE_OPENCASCADE)
 static int Scene_picked_object_get_nearest_cad_primitive(
@@ -2825,141 +1872,6 @@ void *Scene_picked_object_list_get_picked_region_cad_primitives(
 
 #endif /* defined (USE_OPENCASCADE) */
 
-static int Scene_picked_object_get_picked_region_sorted_elements(
-	struct Scene_picked_object *scene_picked_object,void *picked_elements_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-If the <scene_picked_object> refers to a element and the element is in the given
-manager, ensures it is in the list.
-==============================================================================*/
-{
-	int dimension, return_code, element_type = 0;
-	struct Cmiss_region *cmiss_region;
-	struct FE_element *element;
-	struct FE_region *fe_region;
-	struct Cmiss_rendition *rendition;
-	struct Cmiss_graphic *graphic = NULL;
-	struct Scene_picked_object_region_element_map_data *picked_elements_data;
-	struct CM_element_information cm;
-	cm.type = CM_ELEMENT_TYPE_INVALID;
-	cm.number = -1;
-
-	ENTER(Scene_picked_object_get_picked_elements);
-	if (scene_picked_object&&(picked_elements_data=
-		(struct Scene_picked_object_region_element_map_data	*)picked_elements_data_void))
-	{
-		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to element_points? */
-		if ((NULL != (rendition=Scene_picked_object_get_rendition(scene_picked_object,
-			Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
-			&&((cmiss_region = Cmiss_rendition_get_region(rendition)))
-			&&(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
-			Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-			(Cmiss_graphic_selects_elements(graphic)))
-		{
-			fe_region = Cmiss_region_get_FE_region(cmiss_region);
-			if (fe_region)
-			{
-				element_type = Cmiss_graphic_get_domain_dimension(graphic);
-				cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
-				if (element_type == 1)
-				{
-					cm.type = CM_LINE;
-				}
-				else if (element_type == 2)
-				{
-					cm.type = CM_FACE;
-				}
-				else
-				{
-					cm.type = CM_ELEMENT;
-				}
-				element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm);
-				if (element)
-				{
-					dimension = get_FE_element_dimension(element);
-					if ((picked_elements_data->select_elements_enabled && ((CM_ELEMENT
-						== cm.type) || (3 == dimension)))
-						|| (picked_elements_data->select_faces_enabled && ((CM_FACE
-							== cm.type) || (2 == dimension)))
-						|| (picked_elements_data->select_lines_enabled && ((CM_LINE
-							== cm.type) || (1 == dimension))))
-					{
-						picked_elements_data->element_list->insert(std::make_pair(
-							cmiss_region, element));
-
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_get_picked_elements.  "
-					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
-				return_code=0;
-			}
-		}
-		if (graphic)
-			Cmiss_graphic_destroy(&graphic);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_picked_nodes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-
-	return 1;
-} /* Scene_picked_object_get_picked_nodes */
-
-void *Scene_picked_object_list_get_picked_region_sorted_elements(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int select_elements_enabled, int select_faces_enabled,
-	int select_lines_enabled)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the list of all elements identified in the <scene_picked_object_list>.
-<select_elements_enabled> allows top-level/3-D elements to be selected.
-<select_faces_enabled> allows face and 2-D elements to be selected.
-<select_lines_enabled> allows line and 1-D elements to be selected.
-==============================================================================*/
-{
-	struct Scene_picked_object_region_element_map_data picked_elements_data;
-
-	ENTER(Scene_picked_object_list_get_picked_elements);
-	if (scene_picked_object_list)
-	{
-		picked_elements_data.select_elements_enabled=select_elements_enabled;
-		picked_elements_data.select_faces_enabled=select_faces_enabled;
-		picked_elements_data.select_lines_enabled=select_lines_enabled;
-		picked_elements_data.element_list=new Region_element_map();
-		if (picked_elements_data.element_list)
-		{
-			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_region_sorted_elements,(void *)&picked_elements_data,
-				scene_picked_object_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_picked_elements.  Invalid argument(s)");
-		picked_elements_data.element_list = NULL;
-	}
-	LEAVE;
-
-	return ((void *)picked_elements_data.element_list);
-} /* Scene_picked_object_list_get_picked_elements */
-
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct Cmiss_region *cmiss_region,
@@ -3060,62 +1972,6 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 	return (picked_element_points_list);
 } /* Scene_picked_object_list_get_picked_element_points */
 
-struct FE_node *Scene_picked_object_list_get_nearest_node(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int use_data, struct Cmiss_region *cmiss_region,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the nearest picked node in <scene_picked_object_list> that is in
-<cmiss_region> (or any region if NULL). If any of the remaining address
-arguments are not NULL, they are filled with the appropriate information
-pertaining to the nearest node.
-The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each.
-==============================================================================*/
-{
-	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
-
-	ENTER(Scene_picked_object_list_get_nearest_node);
-	nearest_node_data.nearest=0.0;
-	nearest_node_data.nearest_node=(struct FE_node *)NULL;
-	nearest_node_data.use_data=use_data;
-	nearest_node_data.cmiss_region = cmiss_region;
-	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
-	nearest_node_data.rendition=(struct Cmiss_rendition *)NULL;
-	nearest_node_data.graphic=(struct Cmiss_graphic *)NULL;
-	if (scene_picked_object_list)
-	{
-		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-			Scene_picked_object_get_nearest_node,(void *)&nearest_node_data,
-			scene_picked_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_nearest_node.  Invalid argument(s)");
-	}
-	if (scene_picked_object_address)
-	{
-		*scene_picked_object_address=nearest_node_data.scene_picked_object;
-	}
-	if (rendition_address)
-	{
-		*rendition_address=nearest_node_data.rendition;
-	}
-	if (graphic_address)
-	{
-		*graphic_address=nearest_node_data.graphic;
-	}
-	LEAVE;
-
-	return (nearest_node_data.nearest_node);
-} /* Scene_picked_object_list_get_nearest_node */
-
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback)
 /*******************************************************************************
@@ -3197,13 +2053,9 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 ==============================================================================*/
 {
 	GLuint *select_buffer_ptr;
-// 	GLuint *select_buffer_ptr,scene_object_no;
 	int hit_no,number_of_names,return_code;
 	struct Scene_input_callback_data scene_input_data;
 	struct Scene_picked_object *scene_picked_object;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-#endif /* defined (USE_SCENE_OBJECT) */
 
 	ENTER(Scene_input);
 	if (scene)
@@ -3234,32 +2086,6 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 							Scene_picked_object_set_farthest(scene_picked_object,
 								(double)(*select_buffer_ptr));
 							select_buffer_ptr++;
-
-							/* first part of names identifies list of scene_objects in path
-								 to picked graphic. Must be at least one; only more that one
-								 if contains child_scene */
-#if defined (USE_SCENE_OBJECT)
-							do
-							{
-								scene_object_no= *select_buffer_ptr;
-								select_buffer_ptr++;
-								number_of_names--;
-								if (scene_object=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,
-									position)(scene_object_no,scene->scene_object_list))
-								{
-									return_code=Scene_picked_object_add_Scene_object(
-										scene_picked_object,scene_object);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Scene_input.  No scene object at position %d",
-										scene_object_no);
-									return_code=0;
-								}
-							}
-							while (return_code&&(SCENE_OBJECT_SCENE==scene_object->type));
-#endif /* defined (USE_SCENE_OBJECT) */
 							if (return_code)
 							{
 								for (;0<number_of_names&&return_code;number_of_names--)
@@ -3470,7 +2296,7 @@ understood for the type of <interaction_volume> passed.
 									Scene_picked_object_set_farthest(scene_picked_object,
 										(double)(*select_buffer_ptr));
 									select_buffer_ptr++;
-									/* first part of names identifies list of scene_objects in
+									/* first part of names identifies list of rendition in
 										 path to picked graphic. Must be at least one; only more
 										 than one if contains child_scene, which then becomes the
 										 parent of the next level of scene objects */
