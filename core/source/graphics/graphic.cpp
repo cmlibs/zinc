@@ -1853,12 +1853,7 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 			graphic->secondary_material);
 		set_GT_object_selected_material(graphic->graphics_object,
 			graphic->selected_material);
-		Cmiss_spectrum *spectrum = 0;
-		if (graphic->data_field)
-		{
-			spectrum = graphic->spectrum;
-		}
-		set_GT_object_Spectrum(graphic->graphics_object, (void *)spectrum);
+		set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
 			set_GT_object_glyph(graphic->graphics_object, graphic->glyph);
@@ -3693,8 +3688,7 @@ int Cmiss_graphic_to_graphics_object(
 										((CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type) &&
 											(STREAM_NO_DATA != graphic->streamline_data_type)))
 									{
-										set_GT_object_Spectrum(graphic->graphics_object,
-											(void *)(graphic->spectrum));
+										set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
 									}
 									/* mark display list as needing updating */
 									graphic->graphics_changed = 0;

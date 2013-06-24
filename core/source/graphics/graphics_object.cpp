@@ -7129,27 +7129,15 @@ Sets the selected_material of a GT_object.
 	return (return_code);
 } /* set_GT_object_selected_material */
 
-/**
- * Sets the spectrum of a GT_object.
- */
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
-	void *spectrum_void)
+	struct Spectrum *spectrum)
 {
 	int return_code;
-	struct Spectrum *spectrum;
-
-	ENTER(set_GT_object_Spectrum);
 	if (graphics_object)
 	{
-		spectrum=(struct Spectrum *)spectrum_void;
 		if (spectrum != graphics_object->spectrum)
 		{
-			ACCESS(Spectrum)(spectrum);
-			if (graphics_object->spectrum)
-			{
-				DEACCESS(Spectrum)(&graphics_object->spectrum);
-			}
-			graphics_object->spectrum=spectrum;
+			REACCESS(Spectrum)(&graphics_object->spectrum, spectrum);
 			GT_object_changed(graphics_object);
 		}
 		return_code=1;
@@ -7160,22 +7148,12 @@ int set_GT_object_Spectrum(struct GT_object *graphics_object,
 			"set_GT_object_Spectrum.  Invalid graphics object");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* set_GT_object_Spectrum */
+}
 
 struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 4 June 1999
-
-DESCRIPTION :
-Gets the spectrum of a GT_object.
-==============================================================================*/
 {
 	struct Spectrum *spectrum;
-
-	ENTER(get_GT_object_spectrum);
 	if (graphics_object)
 	{
 		spectrum = graphics_object->spectrum;
@@ -7186,10 +7164,8 @@ Gets the spectrum of a GT_object.
 			"get_GT_object_spectrum.  Invalid graphics object");
 		spectrum = (struct Spectrum *)NULL;
 	}
-	LEAVE;
-
 	return (spectrum);
-} /* get_GT_object_spectrum */
+}
 
 int set_GT_object_font(struct GT_object *graphics_object,
 	struct Cmiss_font *font)

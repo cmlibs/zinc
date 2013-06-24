@@ -1345,22 +1345,16 @@ DESCRIPTION :
 Sets the selected_material of a GT_object.
 ==============================================================================*/
 
+/**
+ * Sets the spectrum of a GT_object.
+ */
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
-	void *spectrum_void);
-/*******************************************************************************
-LAST MODIFIED : 20 October 1997
+	struct Spectrum *spectrum);
 
-DESCRIPTION :
-Sets the spectrum of a GT_object.
-==============================================================================*/
-
+/**
+ * Gets the spectrum of a GT_object.
+ */
 struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 4 June 1999
-
-DESCRIPTION :
-Gets the spectrum of a GT_object.
-==============================================================================*/
 
 struct Cmiss_font;
 
