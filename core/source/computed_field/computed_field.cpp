@@ -3056,7 +3056,7 @@ for matrix operations.
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
 
-int Cmiss_field_is_managed(Cmiss_field_id field)
+bool Cmiss_field_is_managed(Cmiss_field_id field)
 {
 	if (field)
 	{
@@ -3065,11 +3065,11 @@ int Cmiss_field_is_managed(Cmiss_field_id field)
 	return 0;
 }
 
-int Cmiss_field_set_managed(Cmiss_field_id field, int value)
+int Cmiss_field_set_managed(Cmiss_field_id field, bool value)
 {
 	if (field)
 	{
-		int old_value = Cmiss_field_is_managed(field);
+		bool old_value = Cmiss_field_is_managed(field);
 		if (value)
 		{
 			field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;

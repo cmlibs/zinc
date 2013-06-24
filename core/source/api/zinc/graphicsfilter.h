@@ -267,9 +267,9 @@ ZINC_API int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_addr
  * @see Cmiss_graphics_filter_set_managed
  *
  * @param graphics filter  The graphics filter to query.
- * @return  1 (true) if graphics filter is managed, otherwise 0 (false).
+ * @return  true if graphics filter is managed, otherwise 0 false.
  */
-ZINC_API int Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter);
+ZINC_API bool Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter);
 
 /**
  * Set managed status of graphics filter in its owning graphics filter module.
@@ -281,11 +281,11 @@ ZINC_API int Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter);
  * All new objects are unmanaged unless stated otherwise.
  *
  * @param graphics filter  The graphics filter to modify.
- * @param value  The new value for the managed flag: 0 or 1.
+ * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
-	int value);
+	bool value);
 
 /*******************************************************************************
  * Evaluate either a Cmiss_graphic is shown or hidden with a graphics_filter.

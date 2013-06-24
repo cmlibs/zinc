@@ -182,7 +182,7 @@ public:
 			if (tessellation)
 			{
 				setDefaultTessellation(tessellation);
-				Cmiss_tessellation_set_managed(tessellation, 1);
+				Cmiss_tessellation_set_managed(tessellation, true);
 			}
 			return tessellation;
 		}
@@ -642,21 +642,21 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
 	return DEACCESS(Cmiss_tessellation)(tessellation_address);
 }
 
-int Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation)
+bool Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation)
 {
 	if (tessellation)
 	{
-		return (int)tessellation->is_managed_flag;
+		return tessellation->is_managed_flag;
 	}
 	return 0;
 }
 
 int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
-	int value)
+	bool value)
 {
 	if (tessellation)
 	{
-		int old_value = (int)tessellation->is_managed_flag;
+		bool old_value = tessellation->is_managed_flag;
 		tessellation->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{

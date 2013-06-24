@@ -396,7 +396,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 	}
 	ensemble_field = Cmiss_field_module_create_ensemble(field_module);
 	Cmiss_field_set_name(ensemble_field, name.c_str());
-	Cmiss_field_set_managed(ensemble_field, 1);
+	Cmiss_field_set_managed(ensemble_field, true);
 	Cmiss_field_ensemble_id ensemble = Cmiss_field_cast_ensemble(ensemble_field);
 	Cmiss_field_destroy(&ensemble_field);
 	if (!ensemble)
@@ -937,7 +937,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 				Cmiss_field_module_create_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
 				Cmiss_field_module_create_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
 			Cmiss_field_set_name(parameters, name.c_str());
-			Cmiss_field_set_managed(parameters, 1);
+			Cmiss_field_set_managed(parameters, true);
 		}
 		return_code = readParametersArray(fmlParameters, parameters, name.c_str());
 	}
@@ -1450,7 +1450,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	Cmiss_field_id field = Cmiss_field_module_create_finite_element(field_module, componentCount);
 	Cmiss_field_set_name(field, fieldName.c_str());
-	Cmiss_field_set_managed(field, 1);
+	Cmiss_field_set_managed(field, true);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
 	{
 		// overzealous to help ensure there is at least one 'coordinate' field to define faces

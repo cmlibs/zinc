@@ -191,7 +191,7 @@ public:
 			}
 			if (spectrum)
 			{
-				Cmiss_spectrum_set_managed(spectrum, 1);
+				Cmiss_spectrum_set_managed(spectrum, true);
 				setDefaultSpectrum(spectrum);
 				return spectrum;
 			}
@@ -2590,20 +2590,20 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 	return return_code;
 }
 
-int Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum)
+bool Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum)
 {
 	if (spectrum)
 	{
-		return (int)spectrum->is_managed_flag;
+		return spectrum->is_managed_flag;
 	}
 	return 0;
 }
 
-int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum,  int value)
+int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum,  bool value)
 {
 	if (spectrum)
 	{
-		int old_value = (int)spectrum->is_managed_flag;
+		bool old_value = spectrum->is_managed_flag;
 		spectrum->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{

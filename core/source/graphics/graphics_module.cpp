@@ -801,7 +801,7 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 				Cmiss_scene_set_filter(graphics_module->default_scene, filter);
 				Cmiss_graphics_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
-				Cmiss_scene_set_managed(graphics_module->default_scene, 1);
+				Cmiss_scene_set_managed(graphics_module->default_scene, true);
 				struct MANAGER(Scene) *scene_manager =
 					Cmiss_graphics_module_get_scene_manager(graphics_module);
 				if (!ADD_OBJECT_TO_MANAGER(Scene)(graphics_module->default_scene,

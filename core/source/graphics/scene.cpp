@@ -3311,20 +3311,20 @@ int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
 	return 0;
 }
 
-int Cmiss_scene_is_managed(Cmiss_scene_id scene)
+bool Cmiss_scene_is_managed(Cmiss_scene_id scene)
 {
 	if (scene)
 	{
-		return (int)scene->is_managed_flag;
+		return scene->is_managed_flag;
 	}
 	return 0;
 }
 
-int Cmiss_scene_set_managed(Cmiss_scene_id scene, int value)
+int Cmiss_scene_set_managed(Cmiss_scene_id scene, bool value)
 {
 	if (scene)
 	{
-		int old_value = (int)scene->is_managed_flag;
+		bool old_value = scene->is_managed_flag;
 		scene->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{

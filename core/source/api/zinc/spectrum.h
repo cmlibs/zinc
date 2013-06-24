@@ -154,9 +154,9 @@ ZINC_API int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
  * more information about managed.
  *
  *  @param spectrum  The spectrum to get the managed value from.
- *  @return true/1 if spectrum is managed, otherwise 0/false.
+ *  @return 1 if spectrum is managed, otherwise false.
  */
-ZINC_API int Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum);
+ZINC_API bool Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum);
 
 /**
  * When the managed status is 0 (default) spectrum is destroyed when no longer
@@ -165,10 +165,10 @@ ZINC_API int Cmiss_spectrum_is_managed(Cmiss_spectrum_id spectrum);
  * attribute is reset to zero, effectively marking it as pending destruction.
  *
  * @param spectrum  Handle to the cmiss spectrum.
- * @param value  boolean as integer value to be assigned
+ * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum, int value);
+ZINC_API int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum, bool value);
 
 /**
  * Return an allocated string containing spectrum name.
