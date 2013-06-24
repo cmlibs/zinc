@@ -43,6 +43,7 @@
 #ifndef __CMISS_GRAPHIC_H__
 #define __CMISS_GRAPHIC_H__
 
+#include "types/elementid.h"
 #include "types/fieldid.h"
 #include "types/glyphid.h"
 #include "types/graphicid.h"
@@ -249,14 +250,14 @@ ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
  * Gets the face the graphic is limited to generate graphics for.
  *
  * @param graphic  The graphic to query.
- * @return  The face type of the graphic, or CMISS_GRAPHIC_FACE_INVALID if the
+ * @return  The face type of the graphic, or CMISS_ELEMENT_FACE_INVALID if the
  * graphic is invalid.
  */
-ZINC_API Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
+ZINC_API enum Cmiss_element_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
 
 /**
  * Sets the face the graphic is limited to generate graphics for.
- * e.g. CMISS_GRAPHIC_FACE_XI1_0 generates graphics only on faces and lines
+ * e.g. CMISS_ELEMENT_FACE_XI1_0 generates graphics only on faces and lines
  * where the top-level element 'xi' coordinate equals 0.
  *
  * @param graphic  The graphic to modify.
@@ -264,7 +265,7 @@ ZINC_API Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic,
-	Cmiss_graphic_face_type face);
+	enum Cmiss_element_face_type face);
 
 /**
  * Specifying the coordinate system in which to render the coordinates of graphics.

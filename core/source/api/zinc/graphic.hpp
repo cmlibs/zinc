@@ -40,6 +40,7 @@
 #define __ZN_CMISS_GRAPHIC_HPP__
 
 #include "zinc/graphic.h"
+#include "zinc/element.hpp"
 #include "zinc/field.hpp"
 #include "zinc/glyph.hpp"
 #include "zinc/font.hpp"
@@ -137,18 +138,6 @@ public:
 		GRAPHIC_CONTOURS = CMISS_GRAPHIC_CONTOURS,
 		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES,
 		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS
-	};
-
-	enum FaceType
-	{
-		FACE_INVALID = CMISS_GRAPHIC_FACE_INVALID,
-		FACE_ALL = CMISS_GRAPHIC_FACE_ALL,
-		FACE_XI1_0 = CMISS_GRAPHIC_FACE_XI1_0,
-		FACE_XI1_1 = CMISS_GRAPHIC_FACE_XI1_1,
-		FACE_XI2_0 = CMISS_GRAPHIC_FACE_XI2_0,
-		FACE_XI2_1 = CMISS_GRAPHIC_FACE_XI2_1,
-		FACE_XI3_0 = CMISS_GRAPHIC_FACE_XI3_0,
-		FACE_XI3_1 = CMISS_GRAPHIC_FACE_XI3_1
 	};
 
 	Cmiss_graphic_id getId()
@@ -269,14 +258,14 @@ public:
 		return Cmiss_graphic_set_name(id, name);
 	}
 
-	int setFace(FaceType face)
+	int setFace(Element::FaceType face)
 	{
-		return Cmiss_graphic_set_face(id, static_cast<Cmiss_graphic_face_type>(face));
+		return Cmiss_graphic_set_face(id, static_cast<Cmiss_element_face_type>(face));
 	}
 
-	FaceType getFace()
+	Element::FaceType getFace()
 	{
-		return static_cast<FaceType>(Cmiss_graphic_get_face(id));
+		return static_cast<Element::FaceType>(Cmiss_graphic_get_face(id));
 	}
 
 	int setExterior(int exterior)

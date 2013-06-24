@@ -83,6 +83,18 @@ public:
 		return (0 != id);
 	}
 
+	enum FaceType
+	{
+		FACE_INVALID = CMISS_ELEMENT_FACE_INVALID,
+		FACE_ALL = CMISS_ELEMENT_FACE_ALL,
+		FACE_XI1_0 = CMISS_ELEMENT_FACE_XI1_0,
+		FACE_XI1_1 = CMISS_ELEMENT_FACE_XI1_1,
+		FACE_XI2_0 = CMISS_ELEMENT_FACE_XI2_0,
+		FACE_XI2_1 = CMISS_ELEMENT_FACE_XI2_1,
+		FACE_XI3_0 = CMISS_ELEMENT_FACE_XI3_0,
+		FACE_XI3_1 = CMISS_ELEMENT_FACE_XI3_1
+	};
+
 	Element& operator=(const Element& element)
 	{
 		Cmiss_element_id temp_id = Cmiss_element_access(element.id);

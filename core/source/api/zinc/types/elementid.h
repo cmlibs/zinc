@@ -55,6 +55,21 @@
 	/** Handle to a single finite element object from a mesh */
 	typedef struct Cmiss_element *Cmiss_element_id;
 
+/**
+ * An enum for selecting the faces of elements.
+ */
+enum Cmiss_element_face_type
+{
+	CMISS_ELEMENT_FACE_INVALID = -1,
+	CMISS_ELEMENT_FACE_ALL,   /*!< include all faces */
+	CMISS_ELEMENT_FACE_XI1_0, /*!< only faces where top-level xi1 == 0 */
+	CMISS_ELEMENT_FACE_XI1_1, /*!< only faces where top-level xi1 == 1 */
+	CMISS_ELEMENT_FACE_XI2_0, /*!< only faces where top-level xi2 == 0 */
+	CMISS_ELEMENT_FACE_XI2_1, /*!< only faces where top-level xi2 == 1 */
+	CMISS_ELEMENT_FACE_XI3_0, /*!< only faces where top-level xi3 == 0 */
+	CMISS_ELEMENT_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
+};
+
 	struct Cmiss_element_iterator;
 	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
 

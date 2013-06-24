@@ -2229,7 +2229,7 @@ a return value here indicates that the xi_points have been converted.
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_GRAPHIC_FACE_ALL, element_to_top_level)) &&
+				CMISS_ELEMENT_FACE_ALL, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,
 					top_level_element_dimension, top_level_number_in_xi,

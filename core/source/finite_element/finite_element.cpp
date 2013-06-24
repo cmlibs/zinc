@@ -57,7 +57,6 @@ Functions for manipulating finite element structures.
 #include <cstdlib>
 #include <cstdio>
 
-#include "zinc/types/graphicid.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"
@@ -22324,10 +22323,10 @@ static int FE_element_get_child_face_number(struct FE_element *parent,
  * @return  Parent element matching criteria, or NULL if none found.
  */
 struct FE_element *FE_element_get_parent_on_face(
-	struct FE_element *element, Cmiss_graphic_face_type face,
+	struct FE_element *element, Cmiss_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
-	int face_number = static_cast<int>(face) - CMISS_GRAPHIC_FACE_XI1_0;
+	int face_number = static_cast<int>(face) - CMISS_ELEMENT_FACE_XI1_0;
 	if (element && (0 <= face_number))
 	{
 		int i, j;
@@ -23196,7 +23195,7 @@ output FE_element_field_info is expected to be at this address too.
 } /* FE_element_log_FE_field_changes */
 
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, Cmiss_graphic_face_type face,
+	int dimension, int exterior, Cmiss_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	int i, return_code;
@@ -23232,7 +23231,7 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 						}
 					}
 					/* test for on correct face */
-					if (return_code && (CMISS_GRAPHIC_FACE_XI1_0 <= face))
+					if (return_code && (CMISS_ELEMENT_FACE_XI1_0 <= face))
 					{
 						if (NULL == FE_element_get_parent_on_face(
 							element, face, conditional, conditional_data))
@@ -29391,7 +29390,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_graphic_face_type specified_face, FE_value *element_to_top_level)
+	Cmiss_element_face_type specified_face, FE_value *element_to_top_level)
 {
 	int face_number, i,  size;
 	FE_value *face_to_element;
@@ -29408,7 +29407,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			}
 			if (!parent)
 			{
-				if (CMISS_GRAPHIC_FACE_XI1_0 <= specified_face)
+				if (CMISS_ELEMENT_FACE_XI1_0 <= specified_face)
 				{
 					parent = FE_element_get_parent_on_face(
 						element, specified_face, conditional, conditional_data);
@@ -29556,7 +29555,7 @@ is checked and the <top_level_xi> calculated.
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_GRAPHIC_FACE_ALL, element_to_top_level)))
+				CMISS_ELEMENT_FACE_ALL, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
 				*top_level_element_dimension = (*top_level_element)->shape->dimension;
@@ -29672,7 +29671,7 @@ as remaining values up to this size are cleared to zero.
 
 int get_FE_element_discretization(struct FE_element *element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_graphic_face_type face, struct FE_field *native_discretization_field,
+	Cmiss_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi)
 {
