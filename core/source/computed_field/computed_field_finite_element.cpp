@@ -3614,7 +3614,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 				{
 					field = Computed_field_create_xi_coordinates(field_module);
 					Cmiss_field_set_name(field, xi_field_name);
-					Cmiss_field_set_managed(field, 1);
+					Cmiss_field_set_managed(field, true);
 				}
 				Cmiss_field_destroy(&field);
 			}
