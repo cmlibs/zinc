@@ -540,7 +540,7 @@ int DESTROY(Cmiss_graphic)(
 
 int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic)
 {
-	int dimension;
+	int dimension = -1;
 	if (graphic)
 	{
 		switch (graphic->domain_type)
@@ -570,7 +570,6 @@ int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic)
 			break;
 		case CMISS_FIELD_DOMAIN_TYPE_INVALID:
 			display_message(ERROR_MESSAGE, "Cmiss_graphic_get_domain_dimension.  Unknown graphic type");
-			dimension = -1;
 			break;
 		}
 	}
@@ -578,7 +577,6 @@ int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic)
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_domain_dimension.  Invalid argument(s)");
-		dimension = -1;
 	}
 	return (dimension);
 }
@@ -3065,7 +3063,6 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 #endif // defined(USE_OPENCASCADE)
 							if (graphic->graphic_type != CMISS_GRAPHIC_STREAMLINES)
 							{
-								FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
 								int dimension = Cmiss_graphic_get_domain_dimension(graphic);
 								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 								functor = create_highlight_functor_element(group_field, temp_mesh);
@@ -6411,7 +6408,6 @@ enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
 int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
 	enum Cmiss_field_domain_type domain_type)
 {
-	int return_code = 0;
 	if (graphic && (domain_type != CMISS_FIELD_DOMAIN_TYPE_INVALID) &&
 		(graphic->graphic_type != CMISS_GRAPHIC_LINES) &&
 		(graphic->graphic_type != CMISS_GRAPHIC_CYLINDERS) &&
