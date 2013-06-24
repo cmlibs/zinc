@@ -559,7 +559,7 @@ and destroy it once returned.
 							int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 							Cmiss_graphic_get_top_level_number_in_xi(graphic,
 								MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
-							Cmiss_graphic_face_type face = Cmiss_graphic_get_face(graphic);
+							Cmiss_element_face_type face = Cmiss_graphic_get_face(graphic);
 							native_discretization_field
 								= Cmiss_graphic_get_native_discretization_field(graphic);
 							top_level_element = (struct FE_element *) NULL;

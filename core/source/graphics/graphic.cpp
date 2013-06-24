@@ -287,7 +287,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphic->exterior = false;
-			graphic->face=CMISS_GRAPHIC_FACE_ALL; /* any face */
+			graphic->face=CMISS_ELEMENT_FACE_ALL; /* any face */
 
 			/* line attributes */
 			for (int i = 0; i < 3; i++)
@@ -1790,18 +1790,18 @@ int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphic_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
+enum Cmiss_element_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic)
 {
 	if (graphic)
 	{
 		return graphic->face;
 	}
-	return CMISS_GRAPHIC_FACE_INVALID;
+	return CMISS_ELEMENT_FACE_INVALID;
 }
 
-int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, Cmiss_graphic_face_type face)
+int Cmiss_graphic_set_face(Cmiss_graphic_id graphic, enum Cmiss_element_face_type face)
 {
-	if (graphic && (face != CMISS_GRAPHIC_FACE_INVALID))
+	if (graphic && (face != CMISS_ELEMENT_FACE_INVALID))
 	{
 		if (face != graphic->face)
 		{
@@ -2098,32 +2098,32 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			{
 				append_string(&graphic_string," exterior",&error);
 			}
-			if (CMISS_GRAPHIC_FACE_ALL != graphic->face)
+			if (CMISS_ELEMENT_FACE_ALL != graphic->face)
 			{
 				append_string(&graphic_string," face",&error);
 				switch (graphic->face)
 				{
-					case CMISS_GRAPHIC_FACE_XI1_0:
+					case CMISS_ELEMENT_FACE_XI1_0:
 					{
 						append_string(&graphic_string," xi1_0",&error);
 					} break;
-					case CMISS_GRAPHIC_FACE_XI1_1:
+					case CMISS_ELEMENT_FACE_XI1_1:
 					{
 						append_string(&graphic_string," xi1_1",&error);
 					} break;
-					case CMISS_GRAPHIC_FACE_XI2_0:
+					case CMISS_ELEMENT_FACE_XI2_0:
 					{
 						append_string(&graphic_string," xi2_0",&error);
 					} break;
-					case CMISS_GRAPHIC_FACE_XI2_1:
+					case CMISS_ELEMENT_FACE_XI2_1:
 					{
 						append_string(&graphic_string," xi2_1",&error);
 					} break;
-					case CMISS_GRAPHIC_FACE_XI3_0:
+					case CMISS_ELEMENT_FACE_XI3_0:
 					{
 						append_string(&graphic_string," xi3_0",&error);
 					} break;
-					case CMISS_GRAPHIC_FACE_XI3_1:
+					case CMISS_ELEMENT_FACE_XI3_1:
 					{
 						append_string(&graphic_string," xi3_1",&error);
 					} break;
@@ -2295,19 +2295,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				sprintf(temp_string," size \"%g*%g*%g\"",graphic->point_base_size[0],
 					graphic->point_base_size[1],graphic->point_base_size[2]);
 				append_string(&graphic_string,temp_string,&error);
-				// legacy command uses negative offset as glyph centre
-				Triple glyph_centre;
-				for (int comp_no=0;(comp_no<3);comp_no++)
-				{
-					glyph_centre[comp_no] = graphic->point_offset[comp_no];
-					// want to avoid values of -0.0
-					if (glyph_centre[comp_no] != 0.0f)
-					{
-						glyph_centre[comp_no] = -glyph_centre[comp_no];
-					}
-				}
-				sprintf(temp_string," centre %g,%g,%g",
-					glyph_centre[0], glyph_centre[1], glyph_centre[2]);
+
+				sprintf(temp_string," offset %g,%g,%g",
+					graphic->point_offset[0], graphic->point_offset[1], graphic->point_offset[2]);
 
 				append_string(&graphic_string,temp_string,&error);
 				if (graphic->font)

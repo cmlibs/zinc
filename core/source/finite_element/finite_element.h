@@ -47,7 +47,6 @@ interface to CMISS.
 
 #include "zinc/node.h"
 #include "zinc/element.h"
-#include "zinc/graphic.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"
@@ -2111,7 +2110,7 @@ correct size and should be DEALLOCATED when finished with.
  * @param conditional_data  User data to pass to optional conditional function.
  */
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, Cmiss_graphic_face_type face,
+	int dimension, int exterior, Cmiss_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
 int equivalent_FE_field_in_elements(struct FE_field *field,
@@ -3374,7 +3373,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_graphic_face_type specified_face, FE_value *element_to_top_level);
+	Cmiss_element_face_type specified_face, FE_value *element_to_top_level);
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
@@ -3418,7 +3417,7 @@ as remaining values up to this size are cleared to zero.
  */
 int get_FE_element_discretization(struct FE_element *element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_graphic_face_type face, struct FE_field *native_discretization_field,
+	Cmiss_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);
 

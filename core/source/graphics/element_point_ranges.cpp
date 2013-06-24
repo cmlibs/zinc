@@ -431,7 +431,7 @@ top_level. Assumes <identifier> has been validated.
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_GRAPHIC_FACE_ALL, element_to_top_level)) &&
+				CMISS_ELEMENT_FACE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,

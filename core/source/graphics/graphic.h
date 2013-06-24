@@ -87,7 +87,7 @@ finite element group rendition.
 	bool exterior;
 	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
 		 2 is xi2=0 etc. */
-	Cmiss_graphic_face_type face;
+	Cmiss_element_face_type face;
 	/* For surfaces only at the moment */
 	struct Computed_field *texture_coordinate_field;
 
