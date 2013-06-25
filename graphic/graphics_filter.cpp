@@ -33,7 +33,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args)
 	result = Cmiss_graphics_filter_module_set_default_filter(gfm, filter);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_managed(filter, 1);
+	result = Cmiss_graphics_filter_set_managed(filter, true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_graphics_filter_destroy(&filter);
@@ -136,14 +136,14 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	int result = Cmiss_graphics_filter_set_name(filter, "visibility_flag");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_managed(filter, 1);
+	result = Cmiss_graphics_filter_set_managed(filter, true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = Cmiss_graphics_filter_set_attribute_integer(filter,
 		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE, 0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	EXPECT_EQ(1, Cmiss_graphics_filter_is_managed(filter));
+	EXPECT_TRUE(Cmiss_graphics_filter_is_managed(filter));
 
 	result = Cmiss_graphics_filter_get_attribute_integer(filter,
 		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE);
@@ -151,6 +151,7 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 
 	Cmiss_graphics_filter_id graphic_type_filter1 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter1);
+	EXPECT_FALSE(Cmiss_graphics_filter_is_managed(graphic_type_filter1));
 	Cmiss_graphics_filter_id graphic_type_filter2 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter2);
 	Cmiss_graphics_filter_id domain_type_filter1 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_NODES);
