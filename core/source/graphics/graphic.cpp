@@ -6551,6 +6551,21 @@ int Cmiss_graphic_contours_set_range_isovalues(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+Cmiss_graphic_lines_id Cmiss_graphic_cast_lines(Cmiss_graphic_id graphic)
+{
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_LINES))
+	{
+		Cmiss_graphic_access(graphic);
+		return (reinterpret_cast<Cmiss_graphic_lines_id>(graphic));
+	}
+	return 0;
+}
+
+int Cmiss_graphic_lines_destroy(Cmiss_graphic_lines_id *lines_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(lines_address));
+}
+
 Cmiss_graphic_points_id Cmiss_graphic_cast_points(Cmiss_graphic_id graphic)
 {
 	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_POINTS))
@@ -6564,6 +6579,36 @@ Cmiss_graphic_points_id Cmiss_graphic_cast_points(Cmiss_graphic_id graphic)
 int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_address)
 {
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(points_address));
+}
+
+Cmiss_graphic_streamlines_id Cmiss_graphic_cast_streamlines(Cmiss_graphic_id graphic)
+{
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_STREAMLINES))
+	{
+		Cmiss_graphic_access(graphic);
+		return (reinterpret_cast<Cmiss_graphic_streamlines_id>(graphic));
+	}
+	return 0;
+}
+
+int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *streamlines_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(streamlines_address));
+}
+
+Cmiss_graphic_surfaces_id Cmiss_graphic_cast_surfaces(Cmiss_graphic_id graphic)
+{
+	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_SURFACES))
+	{
+		Cmiss_graphic_access(graphic);
+		return (reinterpret_cast<Cmiss_graphic_surfaces_id>(graphic));
+	}
+	return 0;
+}
+
+int Cmiss_graphic_surfaces_destroy(Cmiss_graphic_surfaces_id *surfaces_address)
+{
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(surfaces_address));
 }
 
 Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(

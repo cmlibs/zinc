@@ -56,11 +56,31 @@ struct Cmiss_graphic_contours;
 typedef struct Cmiss_graphic_contours *Cmiss_graphic_contours_id;
 
 /**
+ * The lines derived type specific handle to a Cmiss_graphic.
+ * Used to visualise 1-D elements and lines/faces of elements.
+ */
+struct Cmiss_graphic_lines;
+typedef struct Cmiss_graphic_points *Cmiss_graphic_lines_id;
+
+/**
  * The points derived type specific handle to a Cmiss_graphic.
  * Used to visualise single points, nodes, data and element points.
  */
 struct Cmiss_graphic_points;
 typedef struct Cmiss_graphic_points *Cmiss_graphic_points_id;
+
+/**
+ * The streamlines derived type specific handle to a Cmiss_graphic.
+ */
+struct Cmiss_graphic_streamlines;
+typedef struct Cmiss_graphic_streamlines *Cmiss_graphic_streamlines_id;
+
+/**
+ * The surfaces derived type specific handle to a Cmiss_graphic.
+ * Used to visualise 2-D elements and faces.
+ */
+struct Cmiss_graphic_surfaces;
+typedef struct Cmiss_graphic_surfaces *Cmiss_graphic_surfaces_id;
 
 /**
  * An enum type to define the type of a cmiss_graphic.

@@ -3687,11 +3687,32 @@ Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
 		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_CONTOURS)));
 }
 
+Cmiss_graphic_lines_id Cmiss_rendition_create_graphic_lines(
+	Cmiss_rendition_id rendition)
+{
+	return (reinterpret_cast<Cmiss_graphic_lines_id>(
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_LINES)));
+}
+
 Cmiss_graphic_points_id Cmiss_rendition_create_graphic_points(
 	Cmiss_rendition_id rendition)
 {
 	return (reinterpret_cast<Cmiss_graphic_points_id>(
 		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_POINTS)));
+}
+
+Cmiss_graphic_streamlines_id Cmiss_rendition_create_graphic_streamlines(
+	Cmiss_rendition_id rendition)
+{
+	return (reinterpret_cast<Cmiss_graphic_streamlines_id>(
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_STREAMLINES)));
+}
+
+Cmiss_graphic_surfaces_id Cmiss_rendition_create_graphic_surfaces(
+	Cmiss_rendition_id rendition)
+{
+	return (reinterpret_cast<Cmiss_graphic_surfaces_id>(
+		Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_SURFACES)));
 }
 
 Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition)

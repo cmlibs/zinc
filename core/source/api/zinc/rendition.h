@@ -112,6 +112,16 @@ ZINC_API Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
 	Cmiss_rendition_id rendition);
 
 /**
+ * Create a lines graphic in the rendition. Used to visualise 1-D elements and
+ * lines/faces of elements.
+ *
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @return  Handle to the new lines graphic on success, otherwise 0.
+ */
+ZINC_API Cmiss_graphic_lines_id Cmiss_rendition_create_graphic_lines(
+	Cmiss_rendition_id rendition);
+
+/**
  * Create a points graphic in the rendition. Used to visualise static points,
  * nodes, data and sampled element points. Must set the domain type after
  * creation.
@@ -121,6 +131,25 @@ ZINC_API Cmiss_graphic_contours_id Cmiss_rendition_create_graphic_contours(
  * @return  Handle to the new points graphic on success, otherwise 0.
  */
 ZINC_API Cmiss_graphic_points_id Cmiss_rendition_create_graphic_points(
+	Cmiss_rendition_id rendition);
+
+/**
+ * Create a streamlines graphic in the rendition.
+ *
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @return  Handle to the new steamlines graphic on success, otherwise 0.
+ */
+ZINC_API Cmiss_graphic_streamlines_id Cmiss_rendition_create_graphic_streamlines(
+	Cmiss_rendition_id rendition);
+
+/**
+ * Create a surfaces graphic in the rendition. Used to visualise 2-D elements
+ * and faces.
+ *
+ * @param rendition  Handle to rendition the graphic is created in.
+ * @return  Handle to the new surfaces graphic on success, otherwise 0.
+ */
+ZINC_API Cmiss_graphic_surfaces_id Cmiss_rendition_create_graphic_surfaces(
 	Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
