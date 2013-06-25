@@ -55,13 +55,13 @@ TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	TessellationModule tm = zinc.gm.getTessellationModule();
-	EXPECT_EQ(true, tm.isValid());
+	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Tessellation tessellation = tm.createTessellation();
-	EXPECT_EQ(true, tessellation.isValid());
+	EXPECT_TRUE(tessellation.isValid());
 
 	result = tessellation.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -76,10 +76,10 @@ TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	tessellation = tm.findTessellationByName("default");
-	EXPECT_EQ(true, tessellation.isValid());
+	EXPECT_TRUE(tessellation.isValid());
 
 	tessellation = tm.getDefaultTessellation();
-	EXPECT_EQ(true, tessellation.isValid());
+	EXPECT_TRUE(tessellation.isValid());
 }
 
 TEST(Cmiss_tessellation_api, valid_args)
@@ -134,13 +134,13 @@ TEST(Cmiss_tessellation_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	TessellationModule tm = zinc.gm.getTessellationModule();
-	EXPECT_EQ(true, tm.isValid());
+	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Tessellation tessellation = tm.createTessellation();
-	EXPECT_EQ(true, tessellation.isValid());
+	EXPECT_TRUE(tessellation.isValid());
 
 	result = tessellation.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -151,7 +151,7 @@ TEST(Cmiss_tessellation_api, valid_args_cpp)
 	result = tessellation.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	EXPECT_EQ(true, tessellation.isManaged());
+	EXPECT_TRUE(tessellation.isManaged());
 
 	int inValues[3], outValues[3];
 	inValues[0] = 4;

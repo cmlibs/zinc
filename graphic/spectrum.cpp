@@ -55,13 +55,13 @@ TEST(Cmiss_spectrum_module_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	SpectrumModule sm = zinc.gm.getSpectrumModule();
-	EXPECT_EQ(true, sm.isValid());
+	EXPECT_TRUE(sm.isValid());
 
 	int result = sm.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Spectrum spectrum = sm.createSpectrum();
-	EXPECT_EQ(true, spectrum.isValid());
+	EXPECT_TRUE(spectrum.isValid());
 
 	result = spectrum.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -76,10 +76,10 @@ TEST(Cmiss_spectrum_module_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	spectrum = sm.findSpectrumByName("default");
-	EXPECT_EQ(true, spectrum.isValid());
+	EXPECT_TRUE(spectrum.isValid());
 
 	spectrum = sm.getDefaultSpectrum();
-	EXPECT_EQ(true, spectrum.isValid());
+	EXPECT_TRUE(spectrum.isValid());
 }
 
 TEST(Cmiss_spectrum_api, valid_args)
@@ -129,13 +129,13 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	SpectrumModule sm = zinc.gm.getSpectrumModule();
-	EXPECT_EQ(true, sm.isValid());
+	EXPECT_TRUE(sm.isValid());
 
 	int result = sm.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Spectrum spectrum = sm.createSpectrum();
-	EXPECT_EQ(true, spectrum.isValid());
+	EXPECT_TRUE(spectrum.isValid());
 
 	result = spectrum.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -146,7 +146,7 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	result = spectrum.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	EXPECT_EQ(true, spectrum.isManaged());
+	EXPECT_TRUE(spectrum.isManaged());
 
 	result = spectrum.setRainbow();
 	EXPECT_EQ(CMISS_OK, result);

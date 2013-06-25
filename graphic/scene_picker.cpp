@@ -114,14 +114,14 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	Scene scene = zinc.gm.createScene();
 
 	ScenePicker scenePicker = scene.createPicker();
-	EXPECT_EQ(true, scenePicker.isValid());
+	EXPECT_TRUE(scenePicker.isValid());
 
 	SceneViewerModule sv_module = zinc.context.getDefaultSceneViewerModule();
-	EXPECT_EQ(true, sv_module.isValid());
+	EXPECT_TRUE(sv_module.isValid());
 
 	SceneViewer sv = sv_module.createSceneViewer(
 		SceneViewer::BUFFERING_MODE_DOUBLE, SceneViewer::STEREO_MODE_ANY);
-	EXPECT_EQ(true, sv.isValid());
+	EXPECT_TRUE(sv.isValid());
 
 	int result = sv.setScene(scene);
 	EXPECT_EQ(CMISS_OK, result);
@@ -133,7 +133,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
-	EXPECT_EQ(true, gf.isValid());
+	EXPECT_TRUE(gf.isValid());
 
 	result = scenePicker.setScene(scene);
 	EXPECT_EQ(CMISS_OK, result);
@@ -146,19 +146,19 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	Element element = scenePicker.getNearestElement();
-	EXPECT_EQ(false, element.isValid());
+	EXPECT_FALSE(element.isValid());
 
 	Node node = scenePicker.getNearestNode();
-	EXPECT_EQ(false, node.isValid());
+	EXPECT_FALSE(node.isValid());
 
 	Graphic graphic = scenePicker.getNearestElementGraphic();
-	EXPECT_EQ(false, graphic.isValid());
+	EXPECT_FALSE(graphic.isValid());
 
 	graphic = scenePicker.getNearestNodeGraphic();
-	EXPECT_EQ(false, graphic.isValid());
+	EXPECT_FALSE(graphic.isValid());
 
 	graphic = scenePicker.getNearestGraphic();
-	EXPECT_EQ(false, graphic.isValid());
+	EXPECT_FALSE(graphic.isValid());
 
 	result = scenePicker.addPickedElementsToGroup(fieldGroup);
 	EXPECT_EQ(CMISS_OK, result);

@@ -52,13 +52,13 @@ TEST(Cmiss_font_module_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	FontModule fontmodule = zinc.gm.getFontModule();
-	EXPECT_EQ(true, fontmodule.isValid());
+	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Font font = fontmodule.createFont();
-	EXPECT_EQ(true, font.isValid());
+	EXPECT_TRUE(font.isValid());
 
 	result = font.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -70,10 +70,10 @@ TEST(Cmiss_font_module_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	font = fontmodule.findFontByName("default");
-	EXPECT_EQ(true, font.isValid());
+	EXPECT_TRUE(font.isValid());
 
 	font = fontmodule.getDefaultFont();
-	EXPECT_EQ(true, font.isValid());
+	EXPECT_TRUE(font.isValid());
 }
 
 TEST(Cmiss_font_api, valid_args)
@@ -141,13 +141,13 @@ TEST(Cmiss_font_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	FontModule fontmodule = zinc.gm.getFontModule();
-	EXPECT_EQ(true, fontmodule.isValid());
+	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	Font font = fontmodule.createFont();
-	EXPECT_EQ(true, font.isValid());
+	EXPECT_TRUE(font.isValid());
 
 	result = font.setName("default");
 	EXPECT_EQ(CMISS_OK, result);

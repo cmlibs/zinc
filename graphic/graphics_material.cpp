@@ -66,13 +66,13 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	GraphicsMaterialModule materialmodule = zinc.gm.getGraphicsMaterialModule();
-	EXPECT_EQ(true, materialmodule.isValid());
+	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	GraphicsMaterial material = materialmodule.createGraphicsMaterial();
-	EXPECT_EQ(true, material.isValid());
+	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
 	EXPECT_EQ(CMISS_OK, result);
@@ -90,13 +90,13 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	material = materialmodule.findGraphicsMaterialByName("temp");
-	EXPECT_EQ(true, material.isValid());
+	EXPECT_TRUE(material.isValid());
 
 	material = materialmodule.getDefaultGraphicsMaterial();
-	EXPECT_EQ(true, material.isValid());
+	EXPECT_TRUE(material.isValid());
 
 	material = materialmodule.getDefaultSelectedGraphicsMaterial();
-	EXPECT_EQ(true, material.isValid());
+	EXPECT_TRUE(material.isValid());
 }
 
 TEST(Cmiss_graphics_material_api, valid_args)
@@ -194,13 +194,13 @@ TEST(Cmiss_graphics_material_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	GraphicsMaterialModule materialmodule = zinc.gm.getGraphicsMaterialModule();
-	EXPECT_EQ(true, materialmodule.isValid());
+	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	GraphicsMaterial material = materialmodule.createGraphicsMaterial();
-	EXPECT_EQ(true, material.isValid());
+	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
 	EXPECT_EQ(CMISS_OK, result);
@@ -211,7 +211,7 @@ TEST(Cmiss_graphics_material_api, valid_args_cpp)
 	result = material.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	EXPECT_EQ(true, material.isManaged());
+	EXPECT_TRUE(material.isManaged());
 
 	double inValue = 0.7, outValue = 0.0;
 

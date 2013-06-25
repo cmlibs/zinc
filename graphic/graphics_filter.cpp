@@ -81,13 +81,13 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
-	EXPECT_EQ(true, gfm.isValid());
+	EXPECT_TRUE(gfm.isValid());
 
 	int result = gfm.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
 	GraphicsFilter filter = gfm.createFilterVisibilityFlags();
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	result = filter.setName("default");
 	EXPECT_EQ(CMISS_OK, result);
@@ -102,25 +102,25 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	filter = gfm.findFilterByName("default");
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.getDefaultFilter();
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter =  gfm.createFilterGraphicName("lines");
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.createFilterRegion(zinc.root_region);
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.createFilterOperatorAnd();
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.createFilterOperatorOr();
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 }
 
 TEST(Cmiss_graphics_filter_api, valid_args)
@@ -259,10 +259,10 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	ZincTestSetupCpp zinc;
 
 	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
-	EXPECT_EQ(true, gfm.isValid());
+	EXPECT_TRUE(gfm.isValid());
 
 	GraphicsFilter filter = gfm.getDefaultFilter();
-	EXPECT_EQ(true, filter.isValid());
+	EXPECT_TRUE(filter.isValid());
 
 	int result = filter.setName("visibility_flag");
 	EXPECT_EQ(CMISS_OK, result);
@@ -273,22 +273,22 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	result = filter.setAttributeInteger(filter.ATTRIBUTE_IS_INVERSE, 0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	EXPECT_EQ(true, filter.isManaged());
+	EXPECT_TRUE(filter.isManaged());
 
 	result = filter.getAttributeInteger(filter.ATTRIBUTE_IS_INVERSE);
 	EXPECT_EQ(0, result);
 
 	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
-	EXPECT_EQ(true, graphic_type_filter1.isValid());
+	EXPECT_TRUE(graphic_type_filter1.isValid());
 	GraphicsFilter graphic_type_filter2 = gfm.createFilterGraphicType(Graphic::GRAPHIC_LINES);
-	EXPECT_EQ(true, graphic_type_filter2.isValid());
+	EXPECT_TRUE(graphic_type_filter2.isValid());
 	GraphicsFilter domain_type_filter1 = gfm.createFilterDomainType(Field::DOMAIN_NODES);
-	EXPECT_EQ(true, domain_type_filter1.isValid());
+	EXPECT_TRUE(domain_type_filter1.isValid());
 	GraphicsFilter domain_type_filter2 = gfm.createFilterDomainType(Field::DOMAIN_ELEMENTS_1D);
-	EXPECT_EQ(true, domain_type_filter2.isValid());
+	EXPECT_TRUE(domain_type_filter2.isValid());
 
 	Graphic graphic = zinc.ren.createGraphic(Graphic::GRAPHIC_LINES);
-	EXPECT_EQ(true, graphic.isValid());
+	EXPECT_TRUE(graphic.isValid());
 
 	result = graphic_type_filter1.evaluateGraphic(graphic);
 	EXPECT_EQ(0, result);
@@ -303,10 +303,10 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	EXPECT_EQ(1, result);
 
 	GraphicsFilterOperator and_operator = gfm.createFilterOperatorAnd();
-	EXPECT_EQ(true, and_operator.isValid());
+	EXPECT_TRUE(and_operator.isValid());
 
 	GraphicsFilterOperator or_operator = gfm.createFilterOperatorOr();
-	EXPECT_EQ(true, or_operator.isValid());
+	EXPECT_TRUE(or_operator.isValid());
 
 	result = and_operator.appendOperand(graphic_type_filter1);
 	EXPECT_EQ(1, result);
