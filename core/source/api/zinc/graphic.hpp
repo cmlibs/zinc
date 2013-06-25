@@ -165,9 +165,29 @@ public:
 		return Cmiss_graphic_set_data_field(id, dataField.getId());
 	}
 
+	Field getSubgroupField()
+	{
+		return Field(Cmiss_graphic_get_subgroup_field(id));
+	}
+
+	int setSubgroupField(Field& subgroupField)
+	{
+		return Cmiss_graphic_set_subgroup_field(id, subgroupField.getId());
+	}
+
+	Field getTextureCoordinateField()
+	{
+		return Field(Cmiss_graphic_get_texture_coordinate_field(id));
+	}
+
 	int setTextureCoordinateField(Field& textureCoordinateField)
 	{
 		return Cmiss_graphic_set_texture_coordinate_field(id, textureCoordinateField.getId());
+	}
+
+	GraphicsMaterial getMaterial()
+	{
+		return GraphicsMaterial(Cmiss_graphic_get_material(id));
 	}
 
 	int setMaterial(GraphicsMaterial& graphicsMaterial)
@@ -180,6 +200,11 @@ public:
 	GraphicPointAttributes getPointAttributes();
 
 	GraphicElementAttributes getElementAttributes();
+
+	GraphicsMaterial getSelectedMaterial()
+	{
+		return GraphicsMaterial(Cmiss_graphic_get_selected_material(id));
+	}
 
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
 	{
@@ -343,6 +368,23 @@ public:
 
 };
 
+class GraphicLines : public Graphic
+{
+private:
+	explicit GraphicLines(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+
+public:
+	GraphicLines() : Graphic(0) {}
+
+	explicit GraphicLines(Cmiss_graphic_lines_id graphic_lines_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_lines_id))
+	{}
+
+	GraphicLines(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_lines(graphic.getId())))
+	{}
+};
+
 class GraphicPoints : public Graphic
 {
 private:
@@ -357,6 +399,40 @@ public:
 
 	GraphicPoints(Graphic& graphic)
 		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_points(graphic.getId())))
+	{}
+};
+
+class GraphicStreamlines : public Graphic
+{
+private:
+	explicit GraphicStreamlines(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+
+public:
+	GraphicStreamlines() : Graphic(0) {}
+
+	explicit GraphicStreamlines(Cmiss_graphic_streamlines_id graphic_streamlines_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_streamlines_id))
+	{}
+
+	GraphicStreamlines(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_streamlines(graphic.getId())))
+	{}
+};
+
+class GraphicSurfaces : public Graphic
+{
+private:
+	explicit GraphicSurfaces(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+
+public:
+	GraphicSurfaces() : Graphic(0) {}
+
+	explicit GraphicSurfaces(Cmiss_graphic_surfaces_id graphic_surfaces_id)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_surfaces_id))
+	{}
+
+	GraphicSurfaces(Graphic& graphic)
+		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_surfaces(graphic.getId())))
 	{}
 };
 

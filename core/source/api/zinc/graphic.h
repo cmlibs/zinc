@@ -415,7 +415,7 @@ ZINC_API int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
 	enum Cmiss_field_domain_type domain_type);
 
 /**
- * If the graphic is of type contours graphic then this function returns
+ * If the graphic is of type contours then this function returns
  * the contours specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the new contours graphic reference.
  *
@@ -550,7 +550,42 @@ ZINC_API int Cmiss_graphic_contours_set_range_isovalues(
 	double first_isovalue, double last_isovalue);
 
 /**
- * If the graphic is of type points graphic then this function returns
+ * If the graphic is of type lines then this function returns
+ * the lines specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new lines graphic reference.
+ *
+ * @param graphic  The graphic to be cast.
+ * @return  Lines graphic specific representation if the input is the correct
+ * graphic type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_graphic_lines_id Cmiss_graphic_cast_lines(Cmiss_graphic_id graphic);
+
+/**
+ * Cast lines graphic back to its base graphic and return the graphic.
+ * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the lines graphic argument.
+ *
+ * @param lines_graphic  Handle to the lines graphic to cast.
+ * @return  Non-accessed handle to the base graphic or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_lines_base_cast(Cmiss_graphic_lines_id lines_graphic)
+{
+	return (Cmiss_graphic_id)(lines_graphic);
+}
+
+/**
+ * Destroys this reference to the lines graphic (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param lines_address  Address of handle to the lines graphic.
+ * @return  Status CMISS_OK if successfully destroyed the lines graphic handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_lines_destroy(Cmiss_graphic_lines_id *lines_address);
+
+/**
+ * If the graphic is of type points then this function returns
  * the points specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the new points graphic reference.
  *
@@ -583,6 +618,76 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_points_base_cast(Cmiss_graphic_poin
  * any other value on failure.
  */
 ZINC_API int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_address);
+
+/**
+ * If the graphic is of type streamlines then this function returns
+ * the streamlines specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new streamlines graphic reference.
+ *
+ * @param graphic  The graphic to be cast.
+ * @return  Streamlines graphic specific representation if the input is the correct
+ * graphic type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_graphic_streamlines_id Cmiss_graphic_cast_streamlines(Cmiss_graphic_id graphic);
+
+/**
+ * Cast streamlines graphic back to its base graphic and return the graphic.
+ * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the streamlines graphic argument.
+ *
+ * @param streamlines_graphic  Handle to the streamlines graphic to cast.
+ * @return  Non-accessed handle to the base graphic or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_streamlines_base_cast(Cmiss_graphic_streamlines_id streamlines_graphic)
+{
+	return (Cmiss_graphic_id)(streamlines_graphic);
+}
+
+/**
+ * Destroys this reference to the streamlines graphic (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param streamlines_address  Address of handle to the streamlines graphic.
+ * @return  Status CMISS_OK if successfully destroyed the streamlines graphic handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *streamlines_address);
+
+/**
+ * If the graphic is of type surfaces then this function returns
+ * the surfaces specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new surfaces graphic reference.
+ *
+ * @param graphic  The graphic to be cast.
+ * @return  Surfaces graphic specific representation if the input is the correct
+ * graphic type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_graphic_surfaces_id Cmiss_graphic_cast_surfaces(Cmiss_graphic_id graphic);
+
+/**
+ * Cast surfaces graphic back to its base graphic and return the graphic.
+ * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the surfaces graphic argument.
+ *
+ * @param surfaces_graphic  Handle to the surfaces graphic to cast.
+ * @return  Non-accessed handle to the base graphic or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_surfaces_base_cast(Cmiss_graphic_surfaces_id surfaces_graphic)
+{
+	return (Cmiss_graphic_id)(surfaces_graphic);
+}
+
+/**
+ * Destroys this reference to the surfaces graphic (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param surfaces_address  Address of handle to the surfaces graphic.
+ * @return  Status CMISS_OK if successfully destroyed the surfaces graphic handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_graphic_surfaces_destroy(Cmiss_graphic_surfaces_id *surfaces_address);
 
 /**
  * If the graphic produces lines or extrusions then returns a handle to the
