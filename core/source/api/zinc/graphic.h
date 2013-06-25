@@ -91,9 +91,10 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_coordinate_field(
 /**
  * Sets the field supplying coordinates for the graphic.
  *
- * @param graphic  The graphic to be modified.
- * @param coordinate_field  The field to use as the coordinate field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  The graphic to modify.
+ * @param coordinate_field  The field to use as the coordinate field. May have
+ * from 1 to 3 components.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
@@ -118,23 +119,44 @@ ZINC_API int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id data_field);
 
 /**
- * Sets the material giving the colour/shading of the graphic.
+ * Gets the material giving the colour/shading of the graphic when unselected.
  *
- * @param graphic  The graphic to be modified.
- * @param material  The standard/unselected material colour.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  The graphic to query.
+ * @return  Handle to material, or 0 if error. Up to caller to destroy returned
+ * handle.
  */
-ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
+ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_material(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Sets the material giving the colour/shading of the graphic when unselected.
+ *
+ * @param graphic  The graphic to modify.
+ * @param material  The standard/unselected material.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
+	Cmiss_graphics_material_id material);
+
+/**
+ * Gets the material giving the colour/shading of the graphic when selected.
+ *
+ * @param graphic  The graphic to query.
+ * @return  Handle to material, or 0 if error. Up to caller to destroy returned
+ * handle.
+ */
+ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_selected_material(
+	Cmiss_graphic_id graphic);
 
 /**
  * Set the material giving the colour/shading of the graphic when selected.
  *
- * @param graphic  The graphic to be modified.
- * @param material  The selected/highlight material.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  The graphic to modify.
+ * @param selected_material  The selected/highlight material.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_selected_material(
-	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
+ZINC_API int Cmiss_graphic_set_selected_material(Cmiss_graphic_id graphic,
+	Cmiss_graphics_material_id selected_material);
 
 /**
  * Gets the spectrum used with the data field to colour the graphic.
@@ -156,39 +178,69 @@ ZINC_API int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
 	Cmiss_spectrum_id spectrum);
 
 /**
- * Set the texture coordinate field of the cmiss graphic.
+ * Gets the field which returns true/non-zero for primitive to be created.
  *
- * Texture coordinate field is use to set up and describe how a texture should
- * be mapped to a region.
- *
- * @param graphic  The graphic to be edit
- * @param texture_coordiante_field  The cmiss_field to be set as the texture
- *   texture coordinate field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  The graphic to be queried.
+ * @return  Handle to subgroup field, or 0 if none or error.
+ * Up to caller to destroy returned handle.
  */
-ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id texture_coordiante_field);
+ZINC_API Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic);
 
 /**
- * Returns the tessellation object of the graphics or NULL if none.
+ * Sets optional field which causes graphics to be generated only for parts of
+ * the domain where its value is true/non-zero. Commonly a group, node_group or
+ * element_group field which is efficiently iterated over. Note general fields
+ * are evaluated at an arbitrary location in elements.
+ *
+ * @param graphic  The graphic to be modified.
+ * @param subgroup_field  Scalar subgroup field.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_subgroup_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id subgroup_field);
+
+/**
+ * Returns the tessellation object of the graphic.
  * Caller must destroy reference.
  *
- * @param graphic  The graphic to be edit
- *
- * @return  tessellation for graphic or NULL if none.
+ * @param graphic  The graphic to query.
+ * @return  Handle to tessellation, or 0 if none or error.
  */
 ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
 
 /**
  * Sets the tessellation object of the graphics.
  *
- * @param graphic  The graphic to be edit
- * @param tessellation  The tessellation object to be set for graphic
+ * @param graphic  The graphic to modify.
+ * @param tessellation  The tessellation object to be set for graphic.
  *
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_set_tessellation(
-		Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
+	Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
+
+/**
+ * Get the texture coordinate field of the graphic.
+ * Caller must destroy reference.
+ *
+ * @param graphic  The graphic to query.
+ * @return  Handle to field, or 0 if none or error.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Set the texture coordinate field of the graphic. Values of this field specify
+ * mapping of the material's image field to coordinates in the graphic.
+ * The texture coordinate field is currently unused by POINTS and STREAMLINES.
+ *
+ * @param graphic  The graphic to query.
+ * @param texture_coordinate_field  The field to be set as the texture
+ * coordinate field, or 0 for none. Field must have from 1 to 3 components.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id texture_coordinate_field);
 
 /**
  * Get the render type of the graphic.

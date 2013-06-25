@@ -306,7 +306,7 @@ struct Rendition_command_data
 	struct Cmiss_region *region;
 	/* root_region used for seeding streamlines from the nodes in a region */
 	struct Cmiss_region *root_region;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
+	Cmiss_graphics_material_module_id graphics_material_module;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
 }; /* struct Rendition_command_data */
@@ -442,28 +442,6 @@ enum Cmiss_graphic_type Cmiss_graphic_get_graphic_type(
 int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_type graphic_type);
 
-/**
- * Gets the field which returns true/non-zero for primitive to be created.
- *
- * @param graphic  The graphic to be queried.
- * @return  Handle to subgroup field, or 0 if none or error.
- * Up to caller to destroy returned handle.
- */
-Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic);
-
-/**
- * Sets optional field which returns true/non-zero for primitive to be created.
- * Commonly a group, node_group or element_group field which is efficiently
- * iterated over. Note general fields are evaluated at an arbitrary location in
- * elements.
- *
- * @param graphic  The graphic to be modified.
- * @param subgroup_field  Scalar subgroup field.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-int Cmiss_graphic_set_subgroup_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id subgroup_field);
-
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
 
@@ -516,18 +494,6 @@ enum Graphics_select_mode Cmiss_graphic_get_select_mode(
 int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
 	enum Graphics_select_mode select_mode);
 
-/***************************************************************************//**
- * Returns the material used by <graphic>.
- */
-struct Graphical_material *Cmiss_graphic_get_material(
-	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Returns the selected material used by <graphic>.
- */
-struct Graphical_material *Cmiss_graphic_get_selected_material(
-	struct Cmiss_graphic *graphic);
-
 /**
  * Gets the streamline data type which allows extended options for colouring
  * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
@@ -542,12 +508,6 @@ enum Streamline_data_type Cmiss_graphic_get_streamline_data_type(
  */
 int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
 	enum Streamline_data_type streamline_data_type);
-
-/***************************************************************************//**
- * Returns the texture coordinate field used by <graphic>.
- */
-struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
-	struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
  * Returns the fixed discretization <graphic>.

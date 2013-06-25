@@ -1966,10 +1966,11 @@ int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
 	{
 		/* Could be smarter if there was a reduced number used by the
 			scene, however for now just do every material in the manager */
-		MANAGER(Graphical_material) *graphical_material_manager =
-				Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
+		Cmiss_graphics_material_module_id material_module =
+			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-			iterator_function, user_data, graphical_material_manager);
+			iterator_function, user_data, Cmiss_graphics_material_module_get_manager(material_module));
+		Cmiss_graphics_material_module_destroy(&material_module);
 	}
 	else
 	{
@@ -3533,8 +3534,8 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 		rendition_command_data->default_material =
 			Cmiss_graphics_material_module_get_default_material(material_module);
 		Cmiss_graphics_material_module_destroy(&material_module);
-		rendition_command_data->graphical_material_manager =
-			Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
+		rendition_command_data->graphics_material_module =
+			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
 		rendition_command_data->spectrum_manager =
@@ -3558,6 +3559,7 @@ int Cmiss_rendition_cleanup_rendition_command_data(
 	int return_code = 0;
 	if (rendition_command_data)
 	{
+		Cmiss_graphics_material_module_destroy(&(rendition_command_data->graphics_material_module));
 		Cmiss_graphics_material_destroy(&rendition_command_data->default_material);
 		Cmiss_font_destroy(&rendition_command_data->default_font);
 		Cmiss_spectrum_destroy(&rendition_command_data->default_spectrum);
