@@ -655,6 +655,30 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_streamlines_base_cast(Cmiss_graphic
 ZINC_API int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *streamlines_address);
 
 /**
+ * Gets the vector field the streamline is tracking along.
+ *
+ * @param streamlines_graphic  The streamlines graphic to query.
+ * @return  Handle to stream vector field, or 0 if none or error.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_streamlines_get_stream_vector_field(
+	Cmiss_graphic_streamlines_id streamlines_graphic);
+
+/**
+ * Sets the vector field to track the streamline along.
+ * For a 3-D domain with a 3-D coordinate field, can have 3, 6 or 9 components;
+ * extra components set the lateral axes for extruded profiles.
+ * For a 2-D domain the stream vector may have 2 components.
+ *
+ * @param streamlines_graphic  The streamlines graphic to modify.
+ * @param stream_vector_field  The field to track the streamline along.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_streamlines_set_stream_vector_field(
+	Cmiss_graphic_streamlines_id streamlines_graphic,
+	Cmiss_field_id stream_vector_field);
+
+/**
  * If the graphic is of type surfaces then this function returns
  * the surfaces specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the new surfaces graphic reference.

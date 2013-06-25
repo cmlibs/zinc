@@ -6182,7 +6182,9 @@ int Cmiss_graphic_set_rendition_for_list_private(struct Cmiss_graphic *graphic, 
 
 Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic)
 {
-	return (ACCESS(Cmiss_graphic)(graphic));
+	if (graphic)
+		return (ACCESS(Cmiss_graphic)(graphic));
+	return 0;
 }
 
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
@@ -6594,6 +6596,34 @@ Cmiss_graphic_streamlines_id Cmiss_graphic_cast_streamlines(Cmiss_graphic_id gra
 int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *streamlines_address)
 {
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(streamlines_address));
+}
+
+Cmiss_field_id Cmiss_graphic_streamlines_get_stream_vector_field(
+	Cmiss_graphic_streamlines_id streamlines_graphic)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic && (graphic->stream_vector_field))
+	{
+		return ACCESS(Computed_field)(graphic->stream_vector_field);
+	}
+	return 0;
+}
+
+int Cmiss_graphic_streamlines_set_stream_vector_field(
+	Cmiss_graphic_streamlines_id streamlines_graphic,
+	Cmiss_field_id stream_vector_field)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic)
+	{
+		if (stream_vector_field != graphic->stream_vector_field)
+		{
+			REACCESS(Computed_field)(&(graphic->stream_vector_field), stream_vector_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_graphic_surfaces_id Cmiss_graphic_cast_surfaces(Cmiss_graphic_id graphic)

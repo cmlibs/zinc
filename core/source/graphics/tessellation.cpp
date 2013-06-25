@@ -634,7 +634,9 @@ struct Cmiss_tessellation *Cmiss_tessellation_create_private()
 
 Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation)
 {
-	return ACCESS(Cmiss_tessellation)(tessellation);
+	if (tessellation)
+		return ACCESS(Cmiss_tessellation)(tessellation);
+	return 0;
 }
 
 int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
