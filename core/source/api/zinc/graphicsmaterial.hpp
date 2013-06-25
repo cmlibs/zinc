@@ -210,12 +210,12 @@ public:
 		return id;
 	}
 
-	GraphicsMaterial createGraphicsMaterial()
+	GraphicsMaterial createMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphics_material_module_create_material(id));
 	}
 
-	GraphicsMaterial findGraphicsMaterialByName(const char *name)
+	GraphicsMaterial findMaterialByName(const char *name)
 	{
 		return GraphicsMaterial(Cmiss_graphics_material_module_find_material_by_name(id, name));
 	}
@@ -235,22 +235,22 @@ public:
 		return Cmiss_graphics_material_module_define_standard_materials(id);
 	}
 
-	GraphicsMaterial getDefaultGraphicsMaterial()
+	GraphicsMaterial getDefaultMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_material(id));
 	}
 
-	int setDefaultGraphicsMaterial(GraphicsMaterial &graphicsMaterial)
+	int setDefaultMaterial(GraphicsMaterial &graphicsMaterial)
 	{
 		return Cmiss_graphics_material_module_set_default_material(id, graphicsMaterial.getId());
 	}
 
-	GraphicsMaterial getDefaultSelectedGraphicsMaterial()
+	GraphicsMaterial getDefaultSelectedMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_selected_material(id));
 	}
 
-	int setDefaultSelectedGraphicsMaterial(GraphicsMaterial &graphicsMaterial)
+	int setDefaultSelectedMaterial(GraphicsMaterial &graphicsMaterial)
 	{
 		return Cmiss_graphics_material_module_set_default_selected_material(id, graphicsMaterial.getId());
 	}
