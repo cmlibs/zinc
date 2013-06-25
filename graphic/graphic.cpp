@@ -36,7 +36,7 @@ TEST(Cmiss_graphic_api, exterior)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(0, Cmiss_graphic_get_exterior(gr));
@@ -51,7 +51,7 @@ TEST(Cmiss_graphic_api, face)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_graphic_lines_base_cast(Cmiss_rendition_create_graphic_lines(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(CMISS_ELEMENT_FACE_ALL, Cmiss_graphic_get_face(gr));
@@ -139,7 +139,7 @@ TEST(Cmiss_graphic_api, material)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
@@ -162,11 +162,32 @@ TEST(Cmiss_graphic_api, material)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic_api, material_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicLines gr = zinc.ren.createGraphicLines();
+	EXPECT_TRUE(gr.isValid());
+
+	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterial defaultMaterial = materialModule.getDefaultGraphicsMaterial();
+	GraphicsMaterial tempMaterial = gr.getMaterial();
+	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
+
+	GraphicsMaterial material = materialModule.createGraphicsMaterial();
+	EXPECT_EQ(CMISS_OK, gr.setMaterial(material));
+	tempMaterial = gr.getMaterial();
+	EXPECT_EQ(material.getId(), tempMaterial.getId());
+
+	GraphicsMaterial noMaterial;
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setMaterial(noMaterial));
+}
+
 TEST(Cmiss_graphic_api, selected_material)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
@@ -189,11 +210,32 @@ TEST(Cmiss_graphic_api, selected_material)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic_api, selected_material_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicLines gr = zinc.ren.createGraphicLines();
+	EXPECT_TRUE(gr.isValid());
+
+	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedGraphicsMaterial();
+	GraphicsMaterial tempSelectedMaterial = gr.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
+
+	GraphicsMaterial selectedMaterial = materialModule.createGraphicsMaterial();
+	EXPECT_EQ(CMISS_OK, gr.setSelectedMaterial(selectedMaterial));
+	tempSelectedMaterial = gr.getSelectedMaterial();
+	EXPECT_EQ(selectedMaterial.getId(), tempSelectedMaterial.getId());
+
+	GraphicsMaterial noMaterial;
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
+}
+
 TEST(Cmiss_graphic_api, spectrum)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_spectrum_id spectrum = Cmiss_graphics_module_create_spectrum(zinc.gm);
@@ -247,21 +289,55 @@ TEST(Cmiss_graphic_api, subgroup_field)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic_api, subgroup_field_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicPoints gr = zinc.ren.createGraphicPoints();
+	EXPECT_TRUE(gr.isValid());
+	EXPECT_EQ(CMISS_OK, gr.setDomainType(Field::DOMAIN_NODES));
+
+	Field tempSubgroupField = gr.getSubgroupField();
+	EXPECT_FALSE(tempSubgroupField.isValid());
+
+	const double value = 1.0;
+	Field subgroupField = zinc.fm.createConstant(1, &value);
+	EXPECT_TRUE(subgroupField.isValid());
+	EXPECT_EQ(CMISS_OK, gr.setSubgroupField(subgroupField));
+
+	// subgroup field must be scalar
+	double values2[] = { 1.0, 2.0 };
+	Field badSubgroupField = zinc.fm.createConstant(2, values2);
+	EXPECT_TRUE(badSubgroupField.isValid());
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setSubgroupField(badSubgroupField));
+
+	// previous subgroup field should be left unchanged
+	tempSubgroupField = gr.getSubgroupField();
+	EXPECT_EQ(subgroupField.getId(), tempSubgroupField.getId());
+
+	Field noField;
+	EXPECT_EQ(CMISS_OK, gr.setSubgroupField(noField)); // clear subgroup field
+	tempSubgroupField = gr.getSubgroupField();
+	EXPECT_FALSE(tempSubgroupField.isValid());
+}
+
 TEST(Cmiss_graphic_api, tessellation)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_tessellation_module_id tessellation_module = Cmiss_graphics_module_get_tessellation_module(zinc.gm);
 	Cmiss_tessellation_id default_tessellation = Cmiss_tessellation_module_get_default_tessellation(tessellation_module);
+	EXPECT_NE(static_cast<Cmiss_tessellation_id>(0), default_tessellation);
 	Cmiss_tessellation_id temp_tessellation = Cmiss_graphic_get_tessellation(gr);
 	EXPECT_EQ(default_tessellation, temp_tessellation);
 	Cmiss_tessellation_destroy(&temp_tessellation);
 	Cmiss_tessellation_destroy(&default_tessellation);
 
 	Cmiss_tessellation_id tessellation = Cmiss_tessellation_module_create_tessellation(tessellation_module);
+	EXPECT_NE(static_cast<Cmiss_tessellation_id>(0), tessellation);
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation(gr, tessellation));
 	temp_tessellation = Cmiss_graphic_get_tessellation(gr);
 	EXPECT_EQ(tessellation, temp_tessellation);
@@ -275,11 +351,35 @@ TEST(Cmiss_graphic_api, tessellation)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic_api, tessellation_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.ren.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	TessellationModule tessellationModule = zinc.gm.getTessellationModule();
+	Tessellation defaultTessellation = tessellationModule.getDefaultTessellation();
+	Tessellation tempTessellation = gr.getTessellation();
+	EXPECT_EQ(defaultTessellation.getId(), tempTessellation.getId());
+
+	Tessellation tessellation = tessellationModule.createTessellation();
+	EXPECT_TRUE(tessellation.isValid());
+	EXPECT_EQ(CMISS_OK, gr.setTessellation(tessellation));
+	tempTessellation = gr.getTessellation();
+	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
+
+	Tessellation noTessellation;
+	EXPECT_EQ(CMISS_OK, gr.setTessellation(noTessellation)); // clear tessellation
+	tempTessellation = gr.getTessellation();
+	EXPECT_FALSE(tempTessellation.isValid());
+}
+
 TEST(Cmiss_graphic_api, texture_coordinate_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
@@ -289,9 +389,6 @@ TEST(Cmiss_graphic_api, texture_coordinate_field)
 
 	EXPECT_EQ((Cmiss_field_id)0, Cmiss_graphic_get_texture_coordinate_field(gr));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_texture_coordinate_field(gr, texture_coordinate_field));
-	Cmiss_field_id temp_texture_coordinate_field = Cmiss_graphic_get_texture_coordinate_field(gr);
-	EXPECT_EQ(texture_coordinate_field, temp_texture_coordinate_field);
-	Cmiss_field_destroy(&temp_texture_coordinate_field);
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
@@ -300,7 +397,9 @@ TEST(Cmiss_graphic_api, texture_coordinate_field)
 	EXPECT_NE(static_cast<Cmiss_field *>(0), bad_texture_coordinate_field);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_texture_coordinate_field(gr, bad_texture_coordinate_field));
 	Cmiss_field_destroy(&bad_texture_coordinate_field);
-	temp_texture_coordinate_field = Cmiss_graphic_get_texture_coordinate_field(gr);
+
+	// previous texture coordinate field should be left unchanged
+	Cmiss_field_id temp_texture_coordinate_field = Cmiss_graphic_get_texture_coordinate_field(gr);
 	EXPECT_EQ(texture_coordinate_field, temp_texture_coordinate_field);
 	Cmiss_field_destroy(&temp_texture_coordinate_field);
 	Cmiss_field_destroy(&texture_coordinate_field);
@@ -309,6 +408,37 @@ TEST(Cmiss_graphic_api, texture_coordinate_field)
 	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_texture_coordinate_field(gr));
 
 	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, texture_coordinate_field_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicSurfaces gr = zinc.ren.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	Field tempTextureCoordinateField = gr.getTextureCoordinateField();
+	EXPECT_FALSE(tempTextureCoordinateField.isValid());
+
+	const double values[] = { 1.0, 2.0, 3.0 };
+	Field textureCoordinateField = zinc.fm.createConstant(3, values);
+	EXPECT_TRUE(textureCoordinateField.isValid());
+	EXPECT_EQ(CMISS_OK, gr.setTextureCoordinateField(textureCoordinateField));
+
+	// coordinate field cannot have more than 3 components
+	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
+	Field badTextureCoordinateField = zinc.fm.createConstant(4, values4);
+	EXPECT_TRUE(badTextureCoordinateField.isValid());
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setTextureCoordinateField(badTextureCoordinateField));
+
+	// previous texture coordinate field should be left unchanged
+	tempTextureCoordinateField = gr.getTextureCoordinateField();
+	EXPECT_EQ(textureCoordinateField.getId(), tempTextureCoordinateField.getId());
+
+	Field noField;
+	EXPECT_EQ(CMISS_OK, gr.setTextureCoordinateField(noField)); // clear texture coordinate field
+	tempTextureCoordinateField = gr.getTextureCoordinateField();
+	EXPECT_FALSE(tempTextureCoordinateField.isValid());
 }
 
 TEST(Cmiss_graphic_api, point_attributes_glyph)
