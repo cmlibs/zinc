@@ -1722,7 +1722,6 @@ Cmiss_field_id Cmiss_graphic_get_coordinate_field(Cmiss_graphic_id graphic)
 int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field)
 {
-	int return_code = 0;
 	if (graphic && ((0 == coordinate_field) ||
 		(3 >= Computed_field_get_number_of_components(coordinate_field))))
 	{
@@ -1731,9 +1730,9 @@ int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 			REACCESS(Computed_field)(&(graphic->coordinate_field), coordinate_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		return_code = 1;
+		return CMISS_OK;
 	}
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_field_id Cmiss_graphic_get_data_field(Cmiss_graphic_id graphic)
@@ -1882,40 +1881,46 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 	return return_code;
 }
 
-int Cmiss_graphic_set_material(struct Cmiss_graphic *graphic,
-	struct Graphical_material *material)
+Cmiss_graphics_material_id Cmiss_graphic_get_material(
+	Cmiss_graphic_id graphic)
 {
-	int return_code = 1;
+	if (graphic)
+	{
+		return ACCESS(Graphical_material)(graphic->material);
+	}
+	return 0;
+}
 
-	ENTER(Cmiss_graphic_set_material);
-	if (graphic&&material)
+int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
+	Cmiss_graphics_material_id material)
+{
+	if (graphic && material)
 	{
 		if (material != graphic->material)
 		{
-			REACCESS(Graphical_material)(&(graphic->material),material);
+			REACCESS(Graphical_material)(&(graphic->material), material);
 			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_material.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return CMISS_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* Cmiss_graphic_set_material */
-
-int Cmiss_graphic_set_selected_material(
-	struct Cmiss_graphic *graphic,
-	struct Graphical_material *selected_material)
+struct Graphical_material *Cmiss_graphic_get_selected_material(
+	struct Cmiss_graphic *graphic)
 {
-	int return_code = 1;
+	if (graphic)
+	{
+		return ACCESS(Graphical_material)(graphic->selected_material);
+	}
+	return 0;
+}
 
-	ENTER(Cmiss_graphic_set_selected_material);
-	if (graphic&&selected_material)
+int Cmiss_graphic_set_selected_material(Cmiss_graphic_id graphic,
+	Cmiss_graphics_material_id selected_material)
+{
+	if (graphic && selected_material)
 	{
 		if (selected_material != graphic->selected_material)
 		{
@@ -1924,16 +1929,9 @@ int Cmiss_graphic_set_selected_material(
 			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_selected_material.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic)
@@ -4128,48 +4126,6 @@ int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
 	return (return_code);
 } /* Cmiss_graphic_set_select_mode */
 
-struct Graphical_material *Cmiss_graphic_get_material(
-	struct Cmiss_graphic *graphic)
-{
-	struct Graphical_material *material;
-
-	ENTER(Cmiss_graphic_get_material);
-	if (graphic)
-	{
-		material=graphic->material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_material.  Invalid argument(s)");
-		material=(struct Graphical_material *)NULL;
-	}
-	LEAVE;
-
-	return (material);
-} /* Cmiss_graphic_get_material */
-
-struct Graphical_material *Cmiss_graphic_get_selected_material(
-	struct Cmiss_graphic *graphic)
-{
-	struct Graphical_material *selected_material;
-
-	ENTER(Cmiss_graphic_get_selected_material);
-	if (graphic)
-	{
-		selected_material=graphic->selected_material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_selected_material.  Invalid argument(s)");
-		selected_material=(struct Graphical_material *)NULL;
-	}
-	LEAVE;
-
-	return (selected_material);
-} /* Cmiss_graphic_get_selected_material */
-
 Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic)
 {
 	Cmiss_spectrum_id spectrum = 0;
@@ -5371,49 +5327,32 @@ Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic)
 int Cmiss_graphic_set_subgroup_field(
 	struct Cmiss_graphic *graphic, struct Computed_field *subgroup_field)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_subgroup_field);
-	if (graphic)
+	if (graphic && (0 == subgroup_field) ||
+		(1 == Computed_field_get_number_of_components(subgroup_field)))
 	{
-		REACCESS(Computed_field)(&(graphic->subgroup_field), subgroup_field);
-		return_code=1;
+		if (subgroup_field != graphic->subgroup_field)
+		{
+			REACCESS(Computed_field)(&(graphic->subgroup_field), subgroup_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_subgroup_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
 }
 
-struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
+Cmiss_tessellation_id Cmiss_graphic_get_tessellation(
 	Cmiss_graphic_id graphic)
 {
-	struct Cmiss_tessellation *tessellation = NULL;
-	if (graphic)
+	if (graphic && graphic->tessellation)
 	{
-		tessellation=graphic->tessellation;
-		if (tessellation)
-		{
-			ACCESS(Cmiss_tessellation)(tessellation);
-		}
+		return ACCESS(Cmiss_tessellation)(graphic->tessellation);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_tessellation.  Invalid argument(s)");
-	}
-	return (tessellation);
+	return 0;
 }
 
 int Cmiss_graphic_set_tessellation(
 	Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation)
 {
-	int return_code = 1;
 	if (graphic)
 	{
 		if (tessellation != graphic->tessellation)
@@ -5421,14 +5360,9 @@ int Cmiss_graphic_set_tessellation(
 			REACCESS(Cmiss_tessellation)(&(graphic->tessellation), tessellation);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_tessellation.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
@@ -5744,51 +5678,31 @@ int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width)
 	return (return_code);
 } /* Cmiss_graphic_set_line_width */
 
-struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
-	struct Cmiss_graphic *graphic)
+Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
+	Cmiss_graphic_id graphic)
 {
-	struct Computed_field *texture_coordinate_field;
-
-	ENTER(Cmiss_graphic_get_texture_coordinate_field);
-	if (graphic)
+	if (graphic && graphic->texture_coordinate_field)
 	{
-		texture_coordinate_field=graphic->texture_coordinate_field;
+		return ACCESS(Computed_field)(graphic->texture_coordinate_field);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_texture_coordinate_field.  Invalid argument(s)");
-		texture_coordinate_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (texture_coordinate_field);
-} /* Cmiss_graphic_get_texture_coordinate_field */
+	return 0;
+}
 
 int Cmiss_graphic_set_texture_coordinate_field(
-   struct Cmiss_graphic *graphic, struct Computed_field *texture_coordinate_field)
+	Cmiss_graphic_id graphic, Cmiss_field_id texture_coordinate_field)
 {
-	int return_code = 1;
-
-	ENTER(Cmiss_graphic_set_texture_coordinate_field);
-	if (graphic)
+	if (graphic && (0 == texture_coordinate_field) ||
+		(3 >= Computed_field_get_number_of_components(texture_coordinate_field)))
 	{
 		if (texture_coordinate_field != graphic->texture_coordinate_field)
 		{
 			REACCESS(Computed_field)(&graphic->texture_coordinate_field, texture_coordinate_field);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		return_code = 0;
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_texture_coordinate_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_texture_coordinate_field */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 	struct Cmiss_graphic *graphic)

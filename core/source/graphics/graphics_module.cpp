@@ -1003,26 +1003,6 @@ int Cmiss_graphics_module_enable_renditions(
 	return (return_code);
 }
 
-struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Graphical_material) *material_manager;
-
-	if (graphics_module && graphics_module->material_module)
-	{
-		material_manager = 	Cmiss_graphics_material_module_get_manager(
-			graphics_module->material_module);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_material_manager.  Invalid argument(s)");
-		material_manager = (struct MANAGER(Graphical_material) *)NULL;
-	}
-
-	return (material_manager);
-}
-
 struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(
 	struct Cmiss_graphics_module *graphics_module)
 {

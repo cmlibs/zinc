@@ -73,16 +73,6 @@ struct Cmiss_graphics_module;
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
 
 /***************************************************************************//**
- * Return Graphical_material manager in the Cmiss_graphics_module.
- *
- * @param cmiss_graphics_module  the pointer to the cmiss_graphics_module
- * @return  the material manager in the graphics_module if exists,
- *   otherwise NULL
- */
-struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the manager of light in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
