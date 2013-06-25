@@ -66,7 +66,7 @@ TEST(Cmiss_graphic_api, coordinate_field)
 {
 	ZincTestSetup zinc;
 
-	double values[] = { 1.0, 2.0, 3.0 };
+	const double values[] = { 1.0, 2.0, 3.0 };
 	Cmiss_field_id coordinate_field = Cmiss_field_module_create_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), coordinate_field);
@@ -79,16 +79,16 @@ TEST(Cmiss_graphic_api, coordinate_field)
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_coordinate_field(gr, coordinate_field));
 
 	// coordinate field cannot have more than 3 components
-	double values4[] = { 1.0, 2.0, 3.0, 4.0 };
+	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
 	Cmiss_field_id bad_coordinate_field = Cmiss_field_module_create_constant(zinc.fm,
 		sizeof(values4)/sizeof(double), values4);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), bad_coordinate_field);
 	// previous coordinate field should be left unchanged
-	EXPECT_NE(CMISS_OK, Cmiss_graphic_set_coordinate_field(gr, bad_coordinate_field));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_coordinate_field(gr, bad_coordinate_field));
 	Cmiss_field_destroy(&bad_coordinate_field);
 
 	Cmiss_field_id temp_coordinate_field = Cmiss_graphic_get_coordinate_field(gr);
-	EXPECT_EQ(temp_coordinate_field, coordinate_field);
+	EXPECT_EQ(coordinate_field, temp_coordinate_field);
 	Cmiss_field_destroy(&temp_coordinate_field);
 	Cmiss_field_destroy(&coordinate_field);
 
@@ -135,6 +135,60 @@ TEST(Cmiss_graphic_api, data_field)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic_api, material)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
+	Cmiss_graphics_material_id default_material = Cmiss_graphics_material_module_get_default_material(material_module);
+	Cmiss_graphics_material_id temp_material = Cmiss_graphic_get_material(gr);
+	EXPECT_EQ(default_material, temp_material);
+	Cmiss_graphics_material_destroy(&temp_material);
+	Cmiss_graphics_material_destroy(&default_material);
+
+	Cmiss_graphics_material_id material = Cmiss_graphics_material_module_create_material(material_module);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_material(gr, material));
+	temp_material = Cmiss_graphic_get_material(gr);
+	EXPECT_EQ(material, temp_material);
+	Cmiss_graphics_material_destroy(&temp_material);
+	Cmiss_graphics_material_destroy(&material);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_material(gr, 0));
+
+	Cmiss_graphics_material_module_destroy(&material_module);
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, selected_material)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
+	Cmiss_graphics_material_id default_selected_material = Cmiss_graphics_material_module_get_default_selected_material(material_module);
+	Cmiss_graphics_material_id temp_selected_material = Cmiss_graphic_get_selected_material(gr);
+	EXPECT_EQ(default_selected_material, temp_selected_material);
+	Cmiss_graphics_material_destroy(&temp_selected_material);
+	Cmiss_graphics_material_destroy(&default_selected_material);
+
+	Cmiss_graphics_material_id selected_material = Cmiss_graphics_material_module_create_material(material_module);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_selected_material(gr, selected_material));
+	temp_selected_material = Cmiss_graphic_get_selected_material(gr);
+	EXPECT_EQ(selected_material, temp_selected_material);
+	Cmiss_graphics_material_destroy(&temp_selected_material);
+	Cmiss_graphics_material_destroy(&selected_material);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_selected_material(gr, 0));
+
+	Cmiss_graphics_material_module_destroy(&material_module);
+	Cmiss_graphic_destroy(&gr);
+}
+
 TEST(Cmiss_graphic_api, spectrum)
 {
 	ZincTestSetup zinc;
@@ -154,6 +208,105 @@ TEST(Cmiss_graphic_api, spectrum)
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_spectrum(gr, 0));
 	EXPECT_EQ(static_cast<Cmiss_spectrum *>(0), Cmiss_graphic_get_spectrum(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, subgroup_field)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_domain_type(gr, CMISS_FIELD_DOMAIN_NODES));
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_subgroup_field(gr));
+
+	const double value = 1.0;
+	Cmiss_field_id subgroup_field = Cmiss_field_module_create_constant(zinc.fm, 1, &value);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), subgroup_field);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_subgroup_field(gr, subgroup_field));
+
+	// subgroup field must be scalar
+	double values2[] = { 1.0, 2.0 };
+	Cmiss_field_id bad_subgroup_field = Cmiss_field_module_create_constant(zinc.fm,
+		sizeof(values2)/sizeof(double), values2);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), bad_subgroup_field);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_subgroup_field(gr, bad_subgroup_field));
+	Cmiss_field_destroy(&bad_subgroup_field);
+
+	// previous subgroup field should be left unchanged
+	Cmiss_field_id temp_subgroup_field = Cmiss_graphic_get_subgroup_field(gr);
+	EXPECT_EQ(subgroup_field, temp_subgroup_field);
+	Cmiss_field_destroy(&temp_subgroup_field);
+	Cmiss_field_destroy(&subgroup_field);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_subgroup_field(gr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_subgroup_field(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, tessellation)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_tessellation_module_id tessellation_module = Cmiss_graphics_module_get_tessellation_module(zinc.gm);
+	Cmiss_tessellation_id default_tessellation = Cmiss_tessellation_module_get_default_tessellation(tessellation_module);
+	Cmiss_tessellation_id temp_tessellation = Cmiss_graphic_get_tessellation(gr);
+	EXPECT_EQ(default_tessellation, temp_tessellation);
+	Cmiss_tessellation_destroy(&temp_tessellation);
+	Cmiss_tessellation_destroy(&default_tessellation);
+
+	Cmiss_tessellation_id tessellation = Cmiss_tessellation_module_create_tessellation(tessellation_module);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation(gr, tessellation));
+	temp_tessellation = Cmiss_graphic_get_tessellation(gr);
+	EXPECT_EQ(tessellation, temp_tessellation);
+	Cmiss_tessellation_destroy(&temp_tessellation);
+	Cmiss_tessellation_destroy(&tessellation);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation(gr, 0));
+	EXPECT_EQ(static_cast<Cmiss_tessellation_id>(0), Cmiss_graphic_get_tessellation(gr));
+
+	Cmiss_tessellation_module_destroy(&tessellation_module);
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, texture_coordinate_field)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	const double values[] = { 1.0, 2.0, 3.0 };
+	Cmiss_field_id texture_coordinate_field = Cmiss_field_module_create_constant(zinc.fm,
+		sizeof(values)/sizeof(double), values);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), texture_coordinate_field);
+
+	EXPECT_EQ((Cmiss_field_id)0, Cmiss_graphic_get_texture_coordinate_field(gr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_texture_coordinate_field(gr, texture_coordinate_field));
+	Cmiss_field_id temp_texture_coordinate_field = Cmiss_graphic_get_texture_coordinate_field(gr);
+	EXPECT_EQ(texture_coordinate_field, temp_texture_coordinate_field);
+	Cmiss_field_destroy(&temp_texture_coordinate_field);
+
+	// coordinate field cannot have more than 3 components
+	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
+	Cmiss_field_id bad_texture_coordinate_field = Cmiss_field_module_create_constant(zinc.fm,
+		sizeof(values4)/sizeof(double), values4);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), bad_texture_coordinate_field);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_texture_coordinate_field(gr, bad_texture_coordinate_field));
+	Cmiss_field_destroy(&bad_texture_coordinate_field);
+	temp_texture_coordinate_field = Cmiss_graphic_get_texture_coordinate_field(gr);
+	EXPECT_EQ(texture_coordinate_field, temp_texture_coordinate_field);
+	Cmiss_field_destroy(&temp_texture_coordinate_field);
+	Cmiss_field_destroy(&texture_coordinate_field);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_texture_coordinate_field(gr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_texture_coordinate_field(gr));
 
 	Cmiss_graphic_destroy(&gr);
 }
