@@ -5327,8 +5327,8 @@ Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic)
 int Cmiss_graphic_set_subgroup_field(
 	struct Cmiss_graphic *graphic, struct Computed_field *subgroup_field)
 {
-	if (graphic && (0 == subgroup_field) ||
-		(1 == Computed_field_get_number_of_components(subgroup_field)))
+	if (graphic && ((0 == subgroup_field) ||
+		(1 == Computed_field_get_number_of_components(subgroup_field))))
 	{
 		if (subgroup_field != graphic->subgroup_field)
 		{
@@ -5691,8 +5691,8 @@ Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
 int Cmiss_graphic_set_texture_coordinate_field(
 	Cmiss_graphic_id graphic, Cmiss_field_id texture_coordinate_field)
 {
-	if (graphic && (0 == texture_coordinate_field) ||
-		(3 >= Computed_field_get_number_of_components(texture_coordinate_field)))
+	if (graphic && ((0 == texture_coordinate_field) ||
+		(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
 		if (texture_coordinate_field != graphic->texture_coordinate_field)
 		{
