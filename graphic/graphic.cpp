@@ -170,11 +170,11 @@ TEST(Cmiss_graphic_api, material_cpp)
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
-	GraphicsMaterial defaultMaterial = materialModule.getDefaultGraphicsMaterial();
+	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
 	GraphicsMaterial tempMaterial = gr.getMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
 
-	GraphicsMaterial material = materialModule.createGraphicsMaterial();
+	GraphicsMaterial material = materialModule.createMaterial();
 	EXPECT_EQ(CMISS_OK, gr.setMaterial(material));
 	tempMaterial = gr.getMaterial();
 	EXPECT_EQ(material.getId(), tempMaterial.getId());
@@ -218,11 +218,11 @@ TEST(Cmiss_graphic_api, selected_material_cpp)
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
-	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedGraphicsMaterial();
+	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedMaterial();
 	GraphicsMaterial tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
 
-	GraphicsMaterial selectedMaterial = materialModule.createGraphicsMaterial();
+	GraphicsMaterial selectedMaterial = materialModule.createMaterial();
 	EXPECT_EQ(CMISS_OK, gr.setSelectedMaterial(selectedMaterial));
 	tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(selectedMaterial.getId(), tempSelectedMaterial.getId());

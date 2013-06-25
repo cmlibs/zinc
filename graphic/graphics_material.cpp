@@ -71,7 +71,7 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	int result = materialmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
-	GraphicsMaterial material = materialmodule.createGraphicsMaterial();
+	GraphicsMaterial material = materialmodule.createMaterial();
 	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
@@ -86,16 +86,16 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	result = materialmodule.defineStandardMaterials();
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = materialmodule.setDefaultGraphicsMaterial(material);
+	result = materialmodule.setDefaultMaterial(material);
 	EXPECT_EQ(CMISS_OK, result);
 
-	material = materialmodule.findGraphicsMaterialByName("temp");
+	material = materialmodule.findMaterialByName("temp");
 	EXPECT_TRUE(material.isValid());
 
-	material = materialmodule.getDefaultGraphicsMaterial();
+	material = materialmodule.getDefaultMaterial();
 	EXPECT_TRUE(material.isValid());
 
-	material = materialmodule.getDefaultSelectedGraphicsMaterial();
+	material = materialmodule.getDefaultSelectedMaterial();
 	EXPECT_TRUE(material.isValid());
 }
 
@@ -199,7 +199,7 @@ TEST(Cmiss_graphics_material_api, valid_args_cpp)
 	int result = materialmodule.beginChange();
 	EXPECT_EQ(CMISS_OK, result);
 
-	GraphicsMaterial material = materialmodule.createGraphicsMaterial();
+	GraphicsMaterial material = materialmodule.createMaterial();
 	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
