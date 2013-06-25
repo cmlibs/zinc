@@ -417,6 +417,17 @@ public:
 	GraphicStreamlines(Graphic& graphic)
 		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_streamlines(graphic.getId())))
 	{}
+
+	Field getStreamVectorField()
+	{
+		return Field(Cmiss_graphic_streamlines_get_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id)));
+	}
+
+	int setStreamVectorField(Field& field)
+	{
+		return Cmiss_graphic_streamlines_set_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id), field.getId());
+	}
+
 };
 
 class GraphicSurfaces : public Graphic
