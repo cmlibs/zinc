@@ -47,6 +47,8 @@ The public interface to the Cmiss_rendition.
 #include "types/fieldid.h"
 #include "types/fieldgroupid.h"
 #include "types/graphicid.h"
+#include "types/graphicsfilterid.h"
+#include "types/nodeid.h"
 #include "types/regionid.h"
 #include "types/renditionid.h"
 #include "types/selectionid.h"
@@ -89,6 +91,38 @@ ZINC_API int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
+
+/**
+ * Creates a cloud of points (nodes) in the supplied nodeset sampled at random
+ * locations according to a Poisson distribution on the lines and surfaces that
+ * are in the rendition tree (filtered by the optional filter), i.e. including
+ * all its descendents. Points/nodes are created with the next available
+ * identifier. The density of points is set by supplied arguments and may be
+ * scaled by data values stored in each graphic.
+ *
+ * @param rendition  The root rendition containing graphics to convert.
+ * @param filter  The filter determining which graphics from the rendition tree
+ * are converted. If not supplied then all graphics are converted.
+ * @param nodeset  The nodeset to add nodes to.
+ * @param coordinate_field  The coordinate field to be defined and assigned on
+ * the new nodes. Must be from the same region as the nodeset.
+ * @param line_density  The expected number of points per unit length for lines.
+ * @param line_density_scale_factor  If a line graphic has a data field the mean
+ * value of its first component multiplied by this factor is added to the
+ * expected value.
+ * @param surface_density  The expected number of points per unit area of
+ * surfaces.
+ * @param surface_density_scale_factor  If a surface graphic has a data field
+ * the mean value of its first component multiplied by this factor is added to
+ * the expected value.
+ * @return  Status CMISS_OK on success, otherwise some other error code
+ * including CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_rendition_convert_to_point_cloud(Cmiss_rendition_id rendition,
+	Cmiss_graphics_filter_id filter, Cmiss_nodeset_id nodeset,
+	Cmiss_field_id coordinate_field,
+	double line_density, double line_density_scale_factor,
+	double surface_density, double surface_density_scale_factor);
 
 /**
  * Create a graphic of the given type in the rendition.

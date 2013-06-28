@@ -87,10 +87,13 @@ struct Render_to_finite_elements_data
 	Cmiss_mesh_id master_mesh_2d, mesh_2d;
 	Cmiss_node_template_id node_template;
 	Cmiss_element_template_id line_element_template, triangle_element_template, square_element_template;
+	FE_value line_density, line_density_scale_factor, surface_density, surface_density_scale_factor;
 
 	Render_to_finite_elements_data(Cmiss_region_id region,
 			Cmiss_field_group_id group, enum Render_to_finite_elements_mode render_mode,
-			Cmiss_field_id coordinate_field) :
+			Cmiss_field_id coordinate_field, Cmiss_nodeset_id nodeset_in,
+			FE_value line_density_in, FE_value line_density_scale_factor_in,
+			FE_value surface_density_in, FE_value surface_density_scale_factor_in) :
 		region(region),
 		group(group),
 		field_module(Cmiss_region_get_field_module(region)),
@@ -106,15 +109,26 @@ struct Render_to_finite_elements_data
 		node_template(0),
 		line_element_template(0),
 		triangle_element_template(0),
-		square_element_template(0)
+		square_element_template(0),
+		line_density(line_density_in),
+		line_density_scale_factor(line_density_scale_factor_in),
+		surface_density(surface_density_in),
+		surface_density_scale_factor(surface_density_scale_factor_in)
 	{
 		if (group)
 		{
 			Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
-			if (!node_group)
-				node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
-			nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-			Cmiss_field_node_group_destroy(&node_group);
+			if (nodeset_in && (RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode))
+			{
+				nodeset = Cmiss_nodeset_access(nodeset_in);
+			}
+			else
+			{
+				if (!node_group)
+					node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
+				nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+				Cmiss_field_node_group_destroy(&node_group);
+			}
 			Cmiss_field_element_group_id element_group_1d = Cmiss_field_group_get_element_group(group, master_mesh_1d);
 			if (!element_group_1d)
 				element_group_1d = Cmiss_field_group_create_element_group(group, master_mesh_1d);
@@ -125,11 +139,10 @@ struct Render_to_finite_elements_data
 				element_group_2d = Cmiss_field_group_create_element_group(group, master_mesh_2d);
 			mesh_2d = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group_2d));
 			Cmiss_field_element_group_destroy(&element_group_2d);
-
 		}
 		else
 		{
-			nodeset = Cmiss_nodeset_access(master_nodeset);
+			nodeset = Cmiss_nodeset_access(nodeset_in && (RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode) ? nodeset_in : master_nodeset);
 			mesh_1d = Cmiss_mesh_access(master_mesh_1d);
 			mesh_2d = Cmiss_mesh_access(master_mesh_2d);
 		}
@@ -256,6 +269,20 @@ struct Render_node
 		Cmiss_node_destroy(&(this->fe_node));
 	}
 
+	/** transfer allocated data from source to this */
+	void transfer(Render_node& source)
+	{
+		this->coordinates[0] = source.coordinates[0];
+		this->coordinates[1] = source.coordinates[1];
+		this->coordinates[2] = source.coordinates[2];
+		delete[] this->data;
+		this->data = source.data;
+		source.data = 0;
+		Cmiss_node_destroy(&(this->fe_node));
+		this->fe_node = source.fe_node;
+		source.fe_node = 0;
+	}
+
 	/**
 	 * Depending on the render mode, either stores coordinates and data, or
 	 * Generates a finite_element node at the specified location
@@ -314,17 +341,14 @@ int Render_to_finite_elements_data::addLine(int number_of_data_components, struc
 			length = sqrt(side[0] * side[0]
 				+ side[1] * side[1]
 				+ side[2] * side[2]);
+			density = line_density;
 			if (number_of_data_components)
 			{
-				density = (node1->data[0] + node2->data[0]) / 3.0;
-				if (density < 0.0)
-				{
-					density = 0.0;
-				}
+				density += line_density_scale_factor*(node1->data[0] + node2->data[0])*0.5;
 			}
-			else
+			if (density < 0.0)
 			{
-				density = 1.0;
+				density = 0.0;
 			}
 			expected_number = length * density;
 			/* get actual_number = sample from Poisson distribution with
@@ -408,17 +432,14 @@ int Render_to_finite_elements_data::addTriangle(int number_of_data_components,
 			area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
 			area = sqrt ( area * (area - coordinate_1) *
 				(area - coordinate_2) * (area - coordinate_3));
+			density = surface_density;
 			if (number_of_data_components)
 			{
-				density = (node1->data[0] + node2->data[0] + node3->data[0]) / 3.0;
-				if (density < 0.0)
-				{
-					density = 0.0;
-				}
+				density += surface_density_scale_factor*(node1->data[0] + node2->data[0] + node3->data[0])/3.0;
 			}
-			else
+			if (density < 0.0)
 			{
-				density = 1.0;
+				density = 0.0;
 			}
 			expected_number = area * density;
 			/* get actual_number = sample from Poisson distribution with
@@ -540,7 +561,6 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
 	{
 		return_code=1;
-		Render_node *nodes = 0;
 		switch (polyline_type)
 		{
 			case g_PLAIN:
@@ -567,34 +587,21 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 			{
 				data_ptr = new FE_value[number_of_data_components];
 			}
-			nodes = new Render_node[number_of_points];
-			if (0 != nodes)
+			Render_node *nodes = new Render_node[number_of_points];
+			for (i = 0; i < number_of_points; i++)
 			{
-				for (i = 0 ; return_code && (i < number_of_points) ; i++)
+				if (number_of_data_components)
 				{
-					if (number_of_data_components)
-					{
-						CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
-					}
-					CAST_TO_FE_VALUE(position, point_list[i], 3);
-					nodes[i].assign(*data, position, number_of_data_components, data_ptr);
-					if (number_of_data_components)
-					{
-						data_values_ptr += number_of_data_components;
-					}
+					CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
+				}
+				CAST_TO_FE_VALUE(position, point_list[i], 3);
+				nodes[i].assign(*data, position, number_of_data_components, data_ptr);
+				if (number_of_data_components)
+				{
+					data_values_ptr += number_of_data_components;
 				}
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"render_voltex_to_finite_elements.  "
-					"Unable to allocate node array");
-				return_code = 0;
-			}
 			delete[] data_ptr;
-		}
-		if (return_code)
-		{
 			switch (polyline_type)
 			{
 				case g_PLAIN:
@@ -620,8 +627,8 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 					/* Do nothing */
 				} break;
 			}
+			delete[] nodes;
 		}
-		delete[] nodes;
 	}
 	else
 	{
@@ -1056,6 +1063,75 @@ DESCRIPTION :
 						return_code=0;
 					}
 				} break;
+				case g_POLYLINE_VERTEX_BUFFERS:
+				{
+					unsigned int line_index;
+					unsigned int line_count = object->vertex_array->get_number_of_vertices(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+					unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+						data_values_per_vertex = 0, data_vertex_count = 0;
+					GLfloat *position_buffer = 0;
+					GLfloat *data_buffer = 0;
+					object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+						&position_buffer, &position_values_per_vertex, &position_vertex_count);
+					object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						&data_buffer, &data_values_per_vertex, &data_vertex_count);
+					Render_node lastNode, thisNode;
+
+					FE_value *position = new FE_value[(position_values_per_vertex > 3) ? position_values_per_vertex : 3];
+					for (unsigned int j = 0; j < 3; ++j)
+					{
+						position[j] = 0.0;
+					}
+					FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
+					for (line_index = 0; line_index < line_count; line_index++)
+					{
+						unsigned int i, index_start, index_count;
+						GLfloat *position_vertex = 0;
+						GLfloat *data_vertex = 0;
+
+						object->vertex_array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+							line_index, 1, &index_start);
+						object->vertex_array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+							line_index, 1, &index_count);
+
+						position_vertex = position_buffer +
+							position_values_per_vertex * index_start;
+						if (data_buffer)
+						{
+							data_vertex = data_buffer +
+								data_values_per_vertex * index_start;
+						}
+						for (i = 0; i < index_count; ++i)
+						{
+							for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+							{
+								position[j] = static_cast<FE_value>(position_vertex[j]);
+							}
+							position_vertex += position_values_per_vertex;
+							if (data_buffer)
+							{
+								for (unsigned int j = 0; j < data_values_per_vertex; ++j)
+								{
+									data_values[j] = static_cast<FE_value>(data_vertex[j]);
+								}
+								data_vertex += data_values_per_vertex;
+							}
+							thisNode.assign(*data, position, data_values_per_vertex, data_values);
+							if (i)
+							{
+								data->addLine(data_values_per_vertex, &lastNode, &thisNode);
+							}
+							lastNode.transfer(thisNode);
+						}
+					}
+					delete[] data_values;
+					delete[] position;
+				} break;
 				case g_SURFACE:
 				{
 					surface = primitive_list1->gt_surface.first;
@@ -1164,6 +1240,7 @@ DESCRIPTION :
 			case g_VOLTEX:
 			case g_SURFACE:
 			case g_POLYLINE:
+			case g_POLYLINE_VERTEX_BUFFERS:
 			{
 				return_code = Graphics_object_render_to_finite_elements(gt_object,
 					time, data);
@@ -1226,13 +1303,17 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_region,
 	const char *graphic_name, enum Render_to_finite_elements_mode render_mode,
 	Cmiss_region_id region, Cmiss_field_group_id group,
-	Cmiss_field_id coordinate_field)
+	Cmiss_field_id coordinate_field, Cmiss_nodeset_id nodeset,
+	FE_value line_density, FE_value line_density_scale_factor,
+	FE_value surface_density, FE_value surface_density_scale_factor)
 {
 	int return_code;
 	if (scene && region && coordinate_field)
 	{
 		return_code = build_Scene(scene);
-		Render_to_finite_elements_data data(region, group, render_mode, coordinate_field);
+		Render_to_finite_elements_data data(region, group, render_mode, coordinate_field,
+			nodeset, line_density, line_density_scale_factor,
+			surface_density, surface_density_scale_factor);
 		if (data.checkValidCoordinateField())
 		{
 			if (!source_region)

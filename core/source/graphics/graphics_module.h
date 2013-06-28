@@ -52,6 +52,7 @@ DESCRIPTION :
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/light.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "time/time_keeper.hpp"

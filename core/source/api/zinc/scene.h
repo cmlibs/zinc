@@ -131,21 +131,22 @@ ZINC_API int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
 /***************************************************************************//**
  * Get the filter currently used in <scene>.
  *
- * @param scene  Scene to get the filters from.
- * @return  filter if successful, otherwise NULL.
+ * @param scene  The scene to query.
+ * @return  Handle filter if successful, otherwise NULL.
  */
 ZINC_API Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
 
 /***************************************************************************//**
- * Set the filter to be used in <scene>. No graphics will be shown until a filter
+ * Set the filter to be used in scene. No graphics will be shown until a filter
  * showing graphic is set for a scene.
  *
- * @param scene  Scene to set filter for.
- * @param filter  Filter to be set for scene.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param scene  The scene to modify.
+ * @param filter  Filter to set for scene.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
-/***************************************************************************//**
+
+/**
  * Create a scene picker which user can use to define a picking volume and
  * find the onjects included in this volume.
  *

@@ -49,6 +49,7 @@ FILE : rendition.cpp
 #include "zinc/graphicsmodule.h"
 #include "zinc/node.h"
 #include "zinc/rendition.h"
+#include "zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
@@ -70,6 +71,7 @@ FILE : rendition.cpp
 #include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
+#include "graphics/render_to_finite_elements.h"
 #include "graphics/spectrum.h"
 #include "time/time.h"
 #include "time/time_keeper.hpp"
@@ -3664,6 +3666,45 @@ in an easy-to-interpret matrix multiplication form.
 
 	return (return_code);
 } /* list_Cmiss_rendition_transformation */
+
+int Cmiss_rendition_convert_to_point_cloud(Cmiss_rendition_id rendition,
+	Cmiss_graphics_filter_id filter, Cmiss_nodeset_id nodeset,
+	Cmiss_field_id coordinate_field,
+	double line_density, double line_density_scale_factor,
+	double surface_density, double surface_density_scale_factor)
+{
+	Cmiss_region_id destination_region = Cmiss_nodeset_get_region_internal(nodeset);
+	if (rendition && nodeset && coordinate_field &&
+		(Computed_field_get_region(coordinate_field) == destination_region) &&
+		(CMISS_FIELD_VALUE_TYPE_REAL == Cmiss_field_get_value_type(coordinate_field)) &&
+		(3 >= Cmiss_field_get_number_of_components(coordinate_field)))
+	{
+		Cmiss_scene_id scene = CREATE(Scene)();
+		Cmiss_scene_set_region(scene, rendition->region);
+		if (filter)
+		{
+			Cmiss_scene_set_filter(scene, filter);
+		}
+		else
+		{
+			// temporary until default behaviour with no filter is to show everything
+			Cmiss_graphics_filter_module_id filterModule = Cmiss_graphics_module_get_filter_module(rendition->graphics_module);
+			Cmiss_graphics_filter_id showAllFilter = Cmiss_graphics_filter_module_create_filter_operator_and(filterModule);
+			Cmiss_scene_set_filter(scene, showAllFilter);
+			Cmiss_graphics_filter_destroy(&showAllFilter);
+			Cmiss_graphics_filter_module_destroy(&filterModule);
+		}
+		int return_code = render_to_finite_elements(scene, rendition->region,
+			/*graphic_name*/static_cast<const char *>(0),
+			RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD, destination_region,
+			static_cast<Cmiss_field_group_id>(0), coordinate_field, nodeset,
+			line_density, line_density_scale_factor,
+			surface_density, surface_density_scale_factor);
+		DEACCESS(Scene)(&scene);
+		return return_code ? CMISS_OK : CMISS_ERROR_GENERAL;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
 Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 		enum Cmiss_graphic_type graphic_type)
