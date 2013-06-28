@@ -4840,7 +4840,7 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		{
 			if ((1 == domain_dimension) || (2 == domain_dimension))
 			{
-				return_code = 
+				return_code =
 					(graphic->exterior == second_graphic->exterior) &&
 					(graphic->face == second_graphic->face);
 			}
@@ -6496,7 +6496,7 @@ double Cmiss_graphic_contours_get_range_first_isovalue(
 			return graphic->first_isovalue;
 		}
 	}
-	return 0.0;	
+	return 0.0;
 }
 
 double Cmiss_graphic_contours_get_range_last_isovalue(
@@ -6510,7 +6510,7 @@ double Cmiss_graphic_contours_get_range_last_isovalue(
 			return graphic->last_isovalue;
 		}
 	}
-	return 0.0;	
+	return 0.0;
 }
 
 int Cmiss_graphic_contours_get_range_number_of_isovalues(
@@ -6524,7 +6524,7 @@ int Cmiss_graphic_contours_get_range_number_of_isovalues(
 			return graphic->number_of_isovalues;
 		}
 	}
-	return 0;	
+	return 0;
 }
 
 int Cmiss_graphic_contours_set_range_isovalues(

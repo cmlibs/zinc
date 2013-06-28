@@ -41,6 +41,7 @@ Wraps itk::MeanImageFilter
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include "zinc/fieldimageprocessing.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
@@ -79,7 +80,7 @@ public:
 	{
 		if (seed_points) {
 			delete [] seed_points;
-		}				
+		}
 	}
 
 private:
@@ -88,7 +89,7 @@ private:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_connected_threshold_image_filter(field->source_fields[0],
- 		  lower_threshold, upper_threshold, replace_value, num_seed_points, seed_points);
+		  lower_threshold, upper_threshold, replace_value, num_seed_points, seed_points);
 	}
 
 	const char *get_type_string()
@@ -135,7 +136,7 @@ Compare the type specific data.
 					return_code = 0;
 				}
 			}
-		
+
 		}
 		else
 		{
@@ -187,9 +188,9 @@ and generate the outputImage.
 		int i, j, dimension, num_seed_points;
 
 		typedef itk::ConnectedThresholdImageFilter< ImageType , ImageType > FilterType;
-		
+
 		typename FilterType::Pointer filter = FilterType::New();
-		
+
 		filter->SetLower( connected_threshold_image_filter->lower_threshold );
 		filter->SetUpper( connected_threshold_image_filter->upper_threshold );
 		filter->SetReplaceValue( connected_threshold_image_filter->replace_value );
@@ -216,11 +217,11 @@ and generate the outputImage.
 			filter->AddSeed(seedIndex);
 		}
 
-		
+
 		return_code = connected_threshold_image_filter->update_output_image
 			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
-		
+
 		return (return_code);
 	} /* set_filter */
 
@@ -230,7 +231,7 @@ Computed_field_connected_threshold_image_filter::Computed_field_connected_thresh
 	Computed_field *source_field, double lower_threshold, double upper_threshold,
 	double replace_value, int num_seed_points, const double *seed_points_in) :
 	computed_field_image_filter(source_field),
-	lower_threshold(lower_threshold), upper_threshold(upper_threshold), 
+	lower_threshold(lower_threshold), upper_threshold(upper_threshold),
   replace_value(replace_value), num_seed_points(num_seed_points)
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
@@ -290,7 +291,7 @@ DESCRIPTION :
 
 		for (i = 0; i < dimension*num_seed_points; i++) {
 			display_message(INFORMATION_MESSAGE," %g",seed_points[i]);
-		}		
+		}
 		display_message(INFORMATION_MESSAGE,"\n");
 
 	}
@@ -317,7 +318,7 @@ Returns allocated command string for reproducing field. Includes type.
 	int error;
 	int i;
 
-	
+
 	ENTER(Computed_field_connected_threshold_image_filter::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
@@ -332,15 +333,15 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		sprintf(temp_string, " lower_threshold %g", lower_threshold);
-		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " upper_threshold %g", upper_threshold);	
-		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " replace_value %g", replace_value);	
-		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " num_seed_points %d", num_seed_points);	
-		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " dimension %d", dimension);	
-		append_string(&command_string, temp_string, &error);		
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " upper_threshold %g", upper_threshold);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " replace_value %g", replace_value);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " num_seed_points %d", num_seed_points);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " dimension %d", dimension);
+		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " seed_points", &error);
 		for (i = 0; i < dimension*num_seed_points; i++)
 		{
@@ -389,14 +390,14 @@ struct Computed_field *Cmiss_field_module_create_connected_threshold_image_filte
 }
 
 int Cmiss_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
-  struct Computed_field **source_field, double *lower_threshold, double *upper_threshold, 
+  struct Computed_field **source_field, double *lower_threshold, double *upper_threshold,
 	  double *replace_value, int *num_seed_points, int *seed_dimension, double **seed_points)
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, 
-the source_field and thresholds used by it are returned - 
+If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER,
+the source_field and thresholds used by it are returned -
 otherwise an error is reported.
 ==============================================================================*/
 {
@@ -421,7 +422,7 @@ otherwise an error is reported.
 		for (i=0; i < seed_points_length;i++) {
 			(*seed_points)[i]=core->seed_points[i];
 		}
-		
+
 		return_code = 1;
 	}
 	else
