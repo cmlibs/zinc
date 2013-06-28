@@ -170,3 +170,5 @@
 %apply (int valuesCount, double *valuesOut) { (int coordinatesCount, double *coordinatesOut)};
 
 %apply (int valuesCount, const double *valuesIn) { (int timesCount, const double *timesIn) };
+
+%apply (int valuesCount, const double *valuesIn) { (int seedPointsCount, const double *seedPoints) };

@@ -62,6 +62,7 @@
 #include "zinc/fieldtypesfiniteelement.hpp"
 #include "zinc/fieldtypesgroup.hpp"
 #include "zinc/fieldtypesimage.hpp"
+#include "zinc/fieldtypesimageprocessing.hpp"
 #include "zinc/fieldtypeslogicaloperators.hpp"
 #include "zinc/fieldtypesmatrixoperators.hpp"
 #include "zinc/fieldtypesnodesetoperators.hpp"
