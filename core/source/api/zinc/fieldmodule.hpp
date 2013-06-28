@@ -117,6 +117,8 @@ class FieldCrossProduct3D;
 class FieldDotProduct;
 class FieldMagnitude;
 class FieldNormalise;
+class FieldCurvatureAnisotropicDiffusionImageFilter;
+class FieldConnectedThresholdImageFilter;
 class TimeKeeper;
 
 class FieldModule
@@ -375,6 +377,13 @@ public:
 	FieldMagnitude createMagnitude(Field& sourceField);
 
 	FieldNormalise createNormalise(Field& sourceField);
+
+	FieldCurvatureAnisotropicDiffusionImageFilter createCurvatureAnisotropicDiffusionImageFilter(
+		Field& sourceField, double timeStep, double conductance, int numIterations);
+
+	FieldConnectedThresholdImageFilter createConnectedThresholdImageFilter(Field& sourceField,
+		double lowerThreshold, double upperThreshold, double replaceValue,
+		int dimension, int seedPointsCount, const double *seedPoints);
 
 };
 

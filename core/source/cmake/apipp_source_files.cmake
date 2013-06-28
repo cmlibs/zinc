@@ -17,6 +17,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesfiniteelement.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesgroup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesimage.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesimageprocessing.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypeslogicaloperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesmatrixoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesnodesetoperators.hpp
