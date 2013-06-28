@@ -7,6 +7,7 @@ import unittest
 
 from zinc.context import Context
 from zinc.graphic import Graphic
+from zinc.field import Field
 
 class GraphicTestCase(unittest.TestCase):
 
@@ -14,26 +15,30 @@ class GraphicTestCase(unittest.TestCase):
     def setUp(self):
         self.context = Context('graphictest')
         root_region = self.context.getDefaultRegion()
-        graphics_module = self.context.getDefaultGraphicsModule()
-        graphics_module.enableRenditions(root_region)
-        self.rendition = graphics_module.getRendition(root_region)
+        self.graphics_module = self.context.getDefaultGraphicsModule()
+        self.graphics_module.enableRenditions(root_region)
+        self.rendition = self.graphics_module.getRendition(root_region)
 
 
     def tearDown(self):
+        del self.graphics_module
         del self.rendition
         del self.context
 
 
     def testGraphicCreation(self):
-        graphic = self.rendition.createGraphic(Graphic.GRAPHIC_POINT)
+        graphic = self.rendition.createGraphicPoints()
         self.assertTrue(graphic.isValid())
+        result = graphic.setDomainType(Field.DOMAIN_NODES)
         attributes = graphic.getPointAttributes()
         self.assertTrue(attributes.isValid())
-        result = attributes.setGlyphType(Graphic.GLYPH_TYPE_AXES)
+        glyph_module = self.graphics_module.getGlyphModule()
+        glyph_module.createStandardGlyphs()
+        result = attributes.setGlyphType(Graphic.GLYPH_TYPE_SPHERE)
         self.assertEqual(1, result)
 
     def testGraphicSetBaseSize(self):
-        graphic = self.rendition.createGraphic(Graphic.GRAPHIC_POINT)
+        graphic = self.rendition.createGraphicPoints()
         self.assertTrue(graphic.isValid())
         attributes = graphic.getPointAttributes()
         result = attributes.setBaseSize([1])
@@ -44,7 +49,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual(1, result)
 
     def testGraphicGetBaseSize(self):
-        graphic = self.rendition.createGraphic(Graphic.GRAPHIC_POINT)
+        graphic = self.rendition.createGraphicPoints()
         self.assertTrue(graphic.isValid())
         attributes = graphic.getPointAttributes()
         result = attributes.setBaseSize(5.4)
