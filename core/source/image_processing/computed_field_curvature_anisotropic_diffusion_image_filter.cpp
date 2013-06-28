@@ -42,6 +42,7 @@ Wraps itk::CurvatureAnisotropicDiffusionImageFilter
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include "zinc/fieldimageprocessing.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
@@ -67,7 +68,7 @@ public:
 	double timeStep;
 	double conductance;
 	int numIterations;
-       
+
 
 	Computed_field_curvature_anisotropic_diffusion_image_filter(Computed_field *source_field,
 		double timeStep, double conductance, int numIterations);
@@ -112,7 +113,7 @@ Compare the type specific data.
 	if (field && (other = dynamic_cast<Computed_field_curvature_anisotropic_diffusion_image_filter*>(other_core)))
 	{
 		if ((dimension == other->dimension)
-		        && (timeStep == other->timeStep)
+				&& (timeStep == other->timeStep)
 			&& (conductance == other->conductance)
 			&& (numIterations == other->numIterations))
 		{
@@ -189,12 +190,12 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		sprintf(temp_string, " timeStep %g", timeStep);
-		append_string(&command_string, temp_string, &error);	
+		append_string(&command_string, temp_string, &error);
 		sprintf(temp_string, " conductance %g", conductance);
-		append_string(&command_string, temp_string, &error);	
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " numIterations %d", numIterations);	
-		append_string(&command_string, temp_string, &error);		
+		sprintf(temp_string, " numIterations %d", numIterations);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
@@ -240,25 +241,25 @@ and generate the outputImage.
 		int return_code;
 
 		typedef itk::CurvatureAnisotropicDiffusionImageFilter< ImageType , ImageType > FilterType;
-		
+
 		typename FilterType::Pointer filter = FilterType::New();
 
 		filter->SetTimeStep( curvature_anisotropic_diffusion_image_filter->timeStep );
 		filter->SetConductanceParameter( curvature_anisotropic_diffusion_image_filter->conductance );
 		filter->SetNumberOfIterations( curvature_anisotropic_diffusion_image_filter->numIterations);
-		
+
 		return_code = curvature_anisotropic_diffusion_image_filter->update_output_image
 			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
-		
+
 		return (return_code);
 	} /* set_filter */
 
 }; /* template < class ImageType > class Computed_field_curvature_anisotropic_diffusion_image_filter_Functor */
 
 Computed_field_curvature_anisotropic_diffusion_image_filter::Computed_field_curvature_anisotropic_diffusion_image_filter(
-	Computed_field *source_field, double timeStep, double conductance, int numIterations) : 
-	computed_field_image_filter(source_field), 
+	Computed_field *source_field, double timeStep, double conductance, int numIterations) :
+	computed_field_image_filter(source_field),
 	timeStep(timeStep), conductance(conductance), numIterations(numIterations)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
