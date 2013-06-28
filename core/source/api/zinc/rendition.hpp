@@ -41,6 +41,7 @@
 
 #include "zinc/rendition.h"
 #include "zinc/graphic.hpp"
+#include "zinc/graphicsfilter.hpp"
 #include "zinc/fieldtypesgroup.hpp"
 #include "zinc/selection.hpp"
 
@@ -103,6 +104,16 @@ public:
 	int endChange()
 	{
 		return Cmiss_rendition_end_change(id);
+	}
+
+	int convertToPointCloud(GraphicsFilter& filter, Nodeset& nodeset,
+		Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
+		double surfaceDensity, double surfaceDensityScaleFactor)
+	{
+		return Cmiss_rendition_convert_to_point_cloud(id, filter.getId(),
+			nodeset.getId(), coordinateField.getId(),
+			lineDensity, lineDensityScaleFactor,
+			surfaceDensity, surfaceDensityScaleFactor);
 	}
 
 	Graphic createGraphic(Graphic::GraphicType graphicType)

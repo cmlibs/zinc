@@ -3043,26 +3043,24 @@ Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene)
 
 int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
 {
-	int return_code = 1;
 	if (scene)
 	{
-		return_code = REACCESS(Cmiss_graphics_filter)(&scene->filter, filter);
-		if (return_code && scene->list_of_rendition)
+		if (filter != scene->filter)
 		{
-			scene->build = 1;
-			scene->change_status = SCENE_CHANGE;
-			if (scene->manager)
+			REACCESS(Cmiss_graphics_filter)(&scene->filter, filter);
+			if (scene->list_of_rendition)
 			{
-				Scene_refresh(scene);
+				scene->build = 1;
+				scene->change_status = SCENE_CHANGE;
+				if (scene->manager)
+				{
+					Scene_refresh(scene);
+				}
 			}
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)

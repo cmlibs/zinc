@@ -44,6 +44,7 @@ Renders gtObjects to VRML file
 #if !defined (RENDER_TO_FINITE_ELEMENTS_H)
 #define RENDER_TO_FINITE_ELEMENTS_H
 
+#include "zinc/node.h"
 #include "general/enumerator.h"
 
 /*
@@ -72,14 +73,18 @@ Global functions
 ----------------
 */
 
-/**************************************************************************//**
+/**
  * Renders the visible objects as finite elements into the specified <fe_region>.
  * @param region  Region to put new elements in.
  * @param group  Optional group to put new elements in.
+ * @param nodeset  For SURFACE_POINT_CLOUD render_mode only, the nodeset to put
+ * points in.
  */
 int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_region,
 	const char *graphic_name, enum Render_to_finite_elements_mode render_mode,
 	Cmiss_region_id region, Cmiss_field_group_id group,
-	Cmiss_field_id coordinate_field);
+	Cmiss_field_id coordinate_field, Cmiss_nodeset_id nodeset,
+	FE_value line_density, FE_value line_density_scale_factor,
+	FE_value surface_density, FE_value surface_density_scale_factor);
 
 #endif /* !defined (RENDER_TO_FINITE_ELEMENTS_H) */
