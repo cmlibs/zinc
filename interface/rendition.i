@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Rendition.i
- * 
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -40,6 +40,7 @@
 
 %module(package="zinc") rendition
 
+%import "graphicsfilter.i"
 %import "graphic.i"
 %import "selection.i"
 
