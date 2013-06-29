@@ -50,6 +50,7 @@
 %import "stream.i"
 %import "fieldmodule.i"
 %import "fieldcache.i"
+%import "region.i"
 
 %{
 #include "zinc/fieldtypesalias.hpp"
@@ -72,7 +73,6 @@
 #include "zinc/fieldtypestrigonometry.hpp"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
-using namespace zinc;
 %}
 
 %include "zinc/field.hpp"
