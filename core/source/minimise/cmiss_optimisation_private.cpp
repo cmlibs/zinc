@@ -99,7 +99,7 @@ Cmiss_optimisation_id Cmiss_field_module_create_optimisation(Cmiss_field_module_
 Cmiss_optimisation_id Cmiss_optimisation_access(Cmiss_optimisation_id optimisation)
 {
 	if (optimisation)
-		optimisation->access();
+		return optimisation->access();
 
 	return 0;
 }
@@ -134,22 +134,22 @@ int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 class Cmiss_optimisation_method_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_optimisation_method method)
-    {
-    	const char *enum_string = 0;
-    	switch (method)
-    	{
-    		case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
-    			enum_string = "QUASI_NEWTON";
-    			break;
-    		case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
-    			enum_string = "LEAST_SQUARES_QUASI_NEWTON";
-    			break;
-    		default:
-    			break;
-    	}
-    	return enum_string;
-    }
+	static const char *to_string(enum Cmiss_optimisation_method method)
+	{
+		const char *enum_string = 0;
+		switch (method)
+		{
+			case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
+				enum_string = "QUASI_NEWTON";
+				break;
+			case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
+				enum_string = "LEAST_SQUARES_QUASI_NEWTON";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_optimisation_method
@@ -289,46 +289,46 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 class Cmiss_optimisation_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_optimisation_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        	case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
-        		enum_string = "FUNCTION_TOLERANCE";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
-        		enum_string = "GRADIENT_TOLERANCE";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
-        		enum_string = "STEP_TOLERANCE";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
-        		enum_string = "MAXIMUM_ITERATIONS";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
-        		enum_string = "MAXIMUM_FUNCTION_EVALUATIONS";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
-        		enum_string = "MAXIMUM_STEP";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
-        		enum_string = "MINIMUM_STEP";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
-        		enum_string = "LINESEARCH_TOLERANCE";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
-        		enum_string = "MAXIMUM_BACKTRACK_ITERATIONS";
-        		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
-        		enum_string = "TRUST_REGION_SIZE";
-        		break;
-        	default:
-        		break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_optimisation_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+				enum_string = "FUNCTION_TOLERANCE";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+				enum_string = "GRADIENT_TOLERANCE";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+				enum_string = "STEP_TOLERANCE";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
+				enum_string = "MAXIMUM_ITERATIONS";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
+				enum_string = "MAXIMUM_FUNCTION_EVALUATIONS";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+				enum_string = "MAXIMUM_STEP";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+				enum_string = "MINIMUM_STEP";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+				enum_string = "LINESEARCH_TOLERANCE";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+				enum_string = "MAXIMUM_BACKTRACK_ITERATIONS";
+				break;
+			case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
+				enum_string = "TRUST_REGION_SIZE";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_optimisation_attribute Cmiss_optimisation_attribute_enum_from_string(
