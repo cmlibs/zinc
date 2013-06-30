@@ -57,6 +57,7 @@ private:
 	{	}
 
 	friend FieldImage FieldModule::createImage();
+	friend FieldImage FieldModule::createImageWithDomain(Field& domain_field);
 	friend FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field);
 
 public:
@@ -292,6 +293,12 @@ inline FieldImage FieldModule::createImage()
 {
 	return FieldImage(Cmiss_field_module_create_image(id,
 		0, 0));
+}
+
+inline FieldImage FieldModule::createImageWithDomain(Field& domain_field)
+{
+	return FieldImage(Cmiss_field_module_create_image(id,
+		domain_field.getId(), 0));
 }
 
 inline FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field)

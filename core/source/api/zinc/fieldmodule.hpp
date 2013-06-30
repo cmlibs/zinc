@@ -120,6 +120,7 @@ class FieldNormalise;
 class FieldCurvatureAnisotropicDiffusionImageFilter;
 class FieldConnectedThresholdImageFilter;
 class TimeKeeper;
+class Optimisation;
 
 class FieldModule
 {
@@ -294,6 +295,8 @@ public:
 	FieldGroup createGroup();
 
 	FieldImage createImage();
+
+	FieldImage createImageWithDomain(Field& domain_field);
 
 	FieldImage createImageFromSource(Field& domain_field, Field& source_field);
 
