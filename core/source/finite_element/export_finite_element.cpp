@@ -950,6 +950,7 @@ are passed to this function.
 						{
 							if ((field =
 								get_FE_field_order_info_field(field_order_info, field_no)) &&
+								FE_field_is_defined_in_element(field, element) &&
 								(number_of_components =
 									get_FE_field_number_of_components(field)))
 							{
