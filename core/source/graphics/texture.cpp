@@ -55,7 +55,7 @@ The functions for manipulating graphical textures.
 // Visual Studio/cl doesn't implement this yet.
 double log2(ZnReal value)
 {
-	return log(value) / M_LN2;  
+	return log(value) / M_LN2;
 }
 long lround(ZnReal d)
 {
@@ -213,7 +213,7 @@ Module functions
 static GLenum Texture_get_target_enum(Texture *texture)
 {
 	GLenum texture_target = GL_TEXTURE_1D;
-	
+
 	switch (texture->dimension)
 	{
 		case 1:
@@ -284,7 +284,7 @@ DESCRIPTION :
 		property = (struct Texture_property *)NULL;
 	}
 	LEAVE;
-	
+
 	return (property);
 } /* CREATE(Texture_property) */
 
@@ -375,7 +375,7 @@ DESCRIPTION :
 		texture_tiling = (struct Texture_tiling *)NULL;
 	}
 	LEAVE;
-	
+
 	return (texture_tiling);
 } /* CREATE(Texture_tiling) */
 #endif /* defined (OPENGL_API) */
@@ -565,7 +565,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Texture_get_type_and_format_from_storage_type */
 #endif /* defined (OPENGL_API) */
-	
+
 #if defined (OPENGL_API)
 static int Texture_get_hardware_storage_format(
 	enum Texture_compression_mode compression_mode, int number_of_components,
@@ -843,7 +843,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -864,7 +864,7 @@ GL_EXT_texture_object extension.
 					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
 					glTexEnvi(GL_TEXTURE_ENV,GL_SRC2_RGB,GL_TEXTURE);
 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
- 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND2_RGB,GL_SRC_COLOR);
 				}
 				else
@@ -876,7 +876,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -906,7 +906,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -936,7 +936,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -965,7 +965,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -995,7 +995,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -1025,7 +1025,7 @@ GL_EXT_texture_object extension.
 					return_code=0;
 				}
 #else /* defined (GL_VERSION_1_3) */
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
 					"which was not compiled into this executable.");
@@ -1034,7 +1034,7 @@ GL_EXT_texture_object extension.
 			} break;
 			default:
 			{
- 				display_message(ERROR_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"direct_render_Texture_environment.  "
 					"Unknown texture environment combine mode.");
 					return_code=0;
@@ -1066,7 +1066,7 @@ GL_EXT_texture_object extension.
 #  endif /* defined (GL_EXT_texture3D) */
 					)
 				{
-					/* Note that while to strictly satisfy the GL_EXT_texture3D 
+					/* Note that while to strictly satisfy the GL_EXT_texture3D
 						all these uses should have the EXT delimiter the SGI
 						OpenGL is version 1.1 with GL_EXT_texture3D but supplies
 						all the 1.2 compliant symbols, so the code is simpler with
@@ -1118,7 +1118,7 @@ tiles (and <texture_tiling> wasn't NULL.
 	char *cmiss_max_texture_size;
 	int max_texture_size_int, next_reduction, pixel_size = 0, return_code;
 	GLenum format = GL_COLOR_INDEX, type = GL_INT;
-	GLint max_texture_size, number_of_components, test_width, 
+	GLint max_texture_size, number_of_components, test_width,
 		hardware_texture_format;
 #endif /* defined (OPENGL_API) */
 
@@ -1163,11 +1163,11 @@ tiles (and <texture_tiling> wasn't NULL.
 		  char env_buffer[1024];
 		  cmiss_max_texture_size = NULL;
 		  if (GetEnvironmentVariable("CMISS_MAX_TEXTURE_SIZE",
-		      env_buffer, sizeof(env_buffer))
-		      && (cmiss_max_texture_size = env_buffer))
+			  env_buffer, sizeof(env_buffer))
+			  && (cmiss_max_texture_size = env_buffer))
 #else /* defined (WIN32_SYSTEM) */
 		  cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE");
-		  if (cmiss_max_texture_size)	
+		  if (cmiss_max_texture_size)
 #endif /* defined (WIN32_SYSTEM) */
 		  {
 				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
@@ -1384,7 +1384,7 @@ tiles (and <texture_tiling> wasn't NULL.
 						 */
 						if (texture->wrap_mode == TEXTURE_CLAMP_EDGE_WRAP)
 						{
-							(*texture_tiling)->overlap = 1;							
+							(*texture_tiling)->overlap = 1;
 						}
 						else
 						{
@@ -1394,7 +1394,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					default:
 					{
 						(*texture_tiling)->overlap = 0;
-					} break;			
+					} break;
 				}
 				for (i = 0 ; i < texture->dimension ; i++)
 				{
@@ -1403,13 +1403,13 @@ tiles (and <texture_tiling> wasn't NULL.
 				}
 				if (texture->dimension > 0)
 				{
-					(*texture_tiling)->tile_size[0] = 
+					(*texture_tiling)->tile_size[0] =
 						texture->width_texels/(*texture_tiling)->texture_tiles[0];
- 					(*texture_tiling)->tile_coordinate_range[0] = 
+					(*texture_tiling)->tile_coordinate_range[0] =
 						texture->width /(GLfloat)(*texture_tiling)->texture_tiles[0]
 						* ((GLfloat)texture->width_texels /
 						(GLfloat)texture->original_width_texels);
-					(*texture_tiling)->coordinate_scaling[0] = 
+					(*texture_tiling)->coordinate_scaling[0] =
 						(*texture_tiling)->texture_tiles[0];
 					while (((*texture_tiling)->texture_tiles[0] > 1) &&
 						(ceil((GLfloat)texture->width_texels/
@@ -1417,19 +1417,19 @@ tiles (and <texture_tiling> wasn't NULL.
 						> (*texture_tiling)->texture_tiles[0]))
 					{
 						(*texture_tiling)->texture_tiles[0]++;
-					}					
-					(*texture_tiling)->image_coordinate_range[0] = 
+					}
+					(*texture_tiling)->image_coordinate_range[0] =
 						texture->width;
 				}
 				if (texture->dimension > 1)
 				{
-					(*texture_tiling)->tile_size[1] = 
+					(*texture_tiling)->tile_size[1] =
 						texture->height_texels/(*texture_tiling)->texture_tiles[1];
 					(*texture_tiling)->tile_coordinate_range[1] =
 						texture->height/(GLfloat)(*texture_tiling)->texture_tiles[1]
 						* ((GLfloat)texture->height_texels /
 						(GLfloat)texture->original_height_texels);
-					(*texture_tiling)->coordinate_scaling[1] = 
+					(*texture_tiling)->coordinate_scaling[1] =
 						(*texture_tiling)->texture_tiles[1];
 					while (((*texture_tiling)->texture_tiles[1] > 1) &&
 						(ceil((GLfloat)texture->height_texels/
@@ -1438,18 +1438,18 @@ tiles (and <texture_tiling> wasn't NULL.
 					{
 						(*texture_tiling)->texture_tiles[1]++;
 					}
-					(*texture_tiling)->image_coordinate_range[1] = 
+					(*texture_tiling)->image_coordinate_range[1] =
 						texture->height;
 				}
 				if (texture->dimension > 2)
 				{
-					(*texture_tiling)->tile_size[2] = 
+					(*texture_tiling)->tile_size[2] =
 						texture->depth_texels/(*texture_tiling)->texture_tiles[2];
 					(*texture_tiling)->tile_coordinate_range[2] =
 						texture->depth/(GLfloat)(*texture_tiling)->texture_tiles[2]
 						* ((GLfloat)texture->depth_texels /
 						(GLfloat)texture->original_depth_texels);
-					(*texture_tiling)->coordinate_scaling[2] = 
+					(*texture_tiling)->coordinate_scaling[2] =
 						(*texture_tiling)->texture_tiles[2];
 					while (((*texture_tiling)->texture_tiles[2] > 1) &&
 						(ceil((GLfloat)texture->depth_texels/
@@ -1458,7 +1458,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					{
 						(*texture_tiling)->texture_tiles[2]++;
 					}
-					(*texture_tiling)->image_coordinate_range[2] = 
+					(*texture_tiling)->image_coordinate_range[2] =
 						texture->depth;
 				}
 				number_of_tiles = 1;
@@ -1501,7 +1501,7 @@ tiles (and <texture_tiling> wasn't NULL.
 #if defined (OPENGL_API)
 /***************************************************************************//**
  * Returns an resized image representing a scaling of the <source_image>
- *  
+ *
  * @param texture The source_image and returned image are assumed to
  * be stored consistently with the format described by this texture
  * @param source_image The incoming image data downsampled to calculate the resized image
@@ -1583,7 +1583,7 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 										int c_end = (int)ceil(source_width_end);
 										double xi_c_start = 1.0 - (source_width_start - (double)c_start);
 										double xi_c_end =  1.0 - ((double)c_end - source_width_end);
-										source = source_image + bytes_per_pixel * c_start + 
+										source = source_image + bytes_per_pixel * c_start +
 											source_row_width_bytes * (b_start + source_height_texels * a_start);
 										for (n = 0; n < number_of_components; n++)
 										{
@@ -1628,10 +1628,10 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 											destination++;
 #if defined (DEBUG_CODE)
 //											printf(" %lf-%lf(%d-%d) %lf-%lf(%d-%d) %lf-%lf(%d-%d)  axi %lf %lf bxi %lf %lf cxi %lf %lf\n       number %lf %lf accumulation %lf\n",
-//													source_depth_start, source_depth_end, a_start, a_end, 
+//													source_depth_start, source_depth_end, a_start, a_end,
 //													source_height_start, source_height_end, b_start, b_end,
 //													source_width_start, source_width_end, c_start, c_end,
-//													xi_a_start, xi_a_end, xi_b_start, xi_b_end, xi_c_start, xi_c_end, 
+//													xi_a_start, xi_a_end, xi_b_start, xi_b_end, xi_c_start, xi_c_end,
 //													number_of_accumulated_pixels, xi_accumulator, accumulator);
 #endif // defined (DEBUG_CODE)
 										}
@@ -1670,7 +1670,7 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 										int c_end = (int)ceil(source_width_end);
 										double xi_c_start = 1.0 - (source_width_start - (double)c_start);
 										double xi_c_end =  1.0 - ((double)c_end - source_width_end);
-										source = source_image + bytes_per_pixel * c_start + 
+										source = source_image + bytes_per_pixel * c_start +
 											source_row_width_bytes * (b_start + source_height_texels * a_start);
 										for (n = 0; n < number_of_components; n++)
 										{
@@ -1808,7 +1808,7 @@ storage to power of two size in each direction.
 ==============================================================================*/
 {
 	static unsigned char fill_byte = 0;
-	int bytes_per_pixel, k, j, number_of_components, original_padded_width_bytes, 
+	int bytes_per_pixel, k, j, number_of_components, original_padded_width_bytes,
 		padded_width_bytes, return_code, width, height, depth;
 	unsigned char *destination, *source, *texture_image;
 
@@ -1870,28 +1870,28 @@ storage to power of two size in each direction.
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
 					depth*height*padded_width_bytes))
 			{
-				source = texture_image + original_padded_width_bytes * 
+				source = texture_image + original_padded_width_bytes *
 					texture->height_texels * texture->depth_texels;
-				
+
 				destination = texture_image + padded_width_bytes *
 					height * depth;
 
 				/* Start at the end to try and reduce overlaps */
 				if (depth > texture->depth_texels)
 				{
-					destination -= padded_width_bytes * height * 
+					destination -= padded_width_bytes * height *
 						(depth - texture->depth_texels);
-					memset(destination, fill_byte, 
-						padded_width_bytes * height * 
+					memset(destination, fill_byte,
+						padded_width_bytes * height *
 						(depth - texture->depth_texels));
 				}
 				for (k = texture->depth_texels - 1; k >= 0 ; k--)
 				{
 					if (height > texture->height_texels)
 					{
-						destination -= padded_width_bytes * 
+						destination -= padded_width_bytes *
 							(height - texture->height_texels);
-						memset(destination, fill_byte, 
+						memset(destination, fill_byte,
 							padded_width_bytes * (height - texture->height_texels));
 					}
 
@@ -1899,14 +1899,14 @@ storage to power of two size in each direction.
 					{
 						source -= original_padded_width_bytes;
 						destination -= padded_width_bytes;
-					
+
 						/* Use memmove as we may be overlapping */
-						memmove(destination, source, original_padded_width_bytes); 
+						memmove(destination, source, original_padded_width_bytes);
 
 						if (padded_width_bytes > original_padded_width_bytes)
 						{
 							/* Set the rest of the row to empty */
-							memset(destination + original_padded_width_bytes, 
+							memset(destination + original_padded_width_bytes,
 								fill_byte, padded_width_bytes - original_padded_width_bytes);
 						}
 					}
@@ -1940,9 +1940,9 @@ LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Creates a sub_image based on <tile_number> and <texture_tiling> which
-is a part of the total texture.  If <tile_image> initially points at a NULL 
+is a part of the total texture.  If <tile_image> initially points at a NULL
 then it is allocated, otherwise it is assumed large enough for the image tile
-and overwritten. 
+and overwritten.
 ==============================================================================*/
 {
 	int bytes_per_pixel, copy_row_width_bytes = 0, end_x = 0, end_y = 0, end_z = 0, i,
@@ -1961,7 +1961,7 @@ and overwritten.
 		number_of_components =
 			Texture_storage_type_get_number_of_components(texture->storage);
 		number_of_bytes_per_component = texture->number_of_bytes_per_component;
-		bytes_per_pixel = 
+		bytes_per_pixel =
 			number_of_bytes_per_component * number_of_components;
 		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
 		cropped_size[0] = texture_tiling->tile_size[0]
@@ -1971,7 +1971,7 @@ and overwritten.
 			cropped_size[i] = texture_tiling->tile_size[i]
 				- 2 * texture_tiling->overlap;
 		}
-		tile_row_width_bytes = 
+		tile_row_width_bytes =
 			4*((texture_tiling->tile_size[0]*bytes_per_pixel + 3)/4);
 		if (!*tile_image)
 		{
@@ -2109,7 +2109,7 @@ and overwritten.
 			start_x * bytes_per_pixel;
 		destination = *tile_image;
 		destination_z_start = destination;
-		destination += pad_z_start * texture_tiling->tile_size[1] * tile_row_width_bytes;		
+		destination += pad_z_start * texture_tiling->tile_size[1] * tile_row_width_bytes;
 		for (z = start_z ; z < end_z ; z++)
 		{
 			destination_y_start = destination;
@@ -2151,26 +2151,26 @@ and overwritten.
 			for (i = 0 ; i < pad_y_end ; i++)
 			{
 				/* Repeat the last row, edge_clamping, copy from destination */
-				unsigned char *destination_last_row = destination - tile_row_width_bytes; 
+				unsigned char *destination_last_row = destination - tile_row_width_bytes;
 				memcpy(destination, destination_last_row, tile_row_width_bytes);
 				destination += tile_row_width_bytes;
 			}
 			source += source_row_width_bytes * (texture->height_texels -
 				texture_tiling->tile_size[1]);
 #if defined (DEBUG_CODE)
-			unsigned char *expected_destination = *tile_image + tile_row_width_bytes * texture_tiling->tile_size[1] * (z - start_z + 1); 
+			unsigned char *expected_destination = *tile_image + tile_row_width_bytes * texture_tiling->tile_size[1] * (z - start_z + 1);
 			if (destination != expected_destination)
 			{
 				printf("destination mismatch %p %p %d\n", destination, expected_destination,
 					destination - expected_destination);
 			}
-#endif // defined (DEBUG_CODE)			
+#endif // defined (DEBUG_CODE)
 		}
 		for (i = 0 ; i < pad_z_start ; i++)
 		{
 			/* Repeat the first row, edge_clamping,
 			 * easier to do after we have already padded the row so copy from destination */
-			unsigned char *destination_first_depth = destination_z_start + 
+			unsigned char *destination_first_depth = destination_z_start +
 				tile_row_width_bytes * texture_tiling->tile_size[1] * pad_z_start;
 			memcpy(destination_z_start, destination_first_depth,
 				tile_row_width_bytes * texture_tiling->tile_size[1]);
@@ -2179,7 +2179,7 @@ and overwritten.
 		for (i = 0 ; i < pad_z_end ; i++)
 		{
 			/* Repeat the last row, edge_clamping, copy from destination */
-			unsigned char *destination_last_depth = destination - tile_row_width_bytes * texture_tiling->tile_size[1]; 
+			unsigned char *destination_last_depth = destination - tile_row_width_bytes * texture_tiling->tile_size[1];
 			memcpy(destination, destination_last_depth, tile_row_width_bytes * texture_tiling->tile_size[1]);
 			destination += tile_row_width_bytes * texture_tiling->tile_size[1];
 		}
@@ -2243,13 +2243,13 @@ Separating this out so we can set it for each activated tile.
 				else
 				{
 					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture wrap mode %s not supported on this hardware.", 
+						"Texture wrap mode %s not supported on this hardware.",
 						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_2) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
+					"Texture wrap mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_2) */
@@ -2266,13 +2266,13 @@ Separating this out so we can set it for each activated tile.
 				else
 				{
 					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture wrap mode %s not supported on this hardware.", 
+						"Texture wrap mode %s not supported on this hardware.",
 						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_3) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
+					"Texture wrap mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_3) */
@@ -2289,13 +2289,13 @@ Separating this out so we can set it for each activated tile.
 				else
 				{
 					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture wrap mode %s not supported on this hardware.", 
+						"Texture wrap mode %s not supported on this hardware.",
 						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
+					"Texture wrap mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_4) */
@@ -2332,7 +2332,7 @@ Separating this out so we can set it for each activated tile.
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture filter mode %s was not compiled into this executable.", 
+					"Texture filter mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_4) */
@@ -2350,7 +2350,7 @@ Separating this out so we can set it for each activated tile.
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture filter mode %s was not compiled into this executable.", 
+					"Texture filter mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_4) */
@@ -2368,12 +2368,12 @@ Separating this out so we can set it for each activated tile.
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-					"Texture filter mode %s was not compiled into this executable.", 
+					"Texture filter mode %s was not compiled into this executable.",
 					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
 				return_code = 0;
 #endif /* defined (GL_VERSION_1_4) */
 			} break;
- 		}
+		}
 		values[0]=(texture->combine_colour).red;
 		values[1]=(texture->combine_colour).green;
 		values[2]=(texture->combine_colour).blue;
@@ -2394,7 +2394,7 @@ Separating this out so we can set it for each activated tile.
 #if defined (OPENGL_API)
 /***************************************************************************//**
  * Calculates and loads software mipmap levels for the texture.
- * 
+ *
  * @param texture The currently active texture for which mipmaps should be loaded.
  * @param renderer  The currently operating renderer.
  * @return Returns 1 if successful.
@@ -2405,12 +2405,12 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 	int hardware_storage_format, GLenum format, GLenum type)
 {
 	int return_code;
-	
+
 	if (texture && renderer)
 	{
 		int max_size;
 		unsigned int number_of_levels;
-		
+
 		max_size = render_width;
 		if ((texture->dimension > 1) && render_height > max_size)
 		{
@@ -2420,19 +2420,19 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 		{
 			max_size = render_depth;
 		}
-		
+
 		number_of_levels = (unsigned int)floor(log2(max_size)) + 1;
-		
+
 #if defined (DEBUG_CODE)
 		printf("Max size %d levels %u\n", max_size, number_of_levels);
 #endif // defined (DEBUG_CODE)
-		
+
 		unsigned char *previous_mipmap_image = source_image;
 		int previous_mipmap_width = render_width;
 		int previous_mipmap_height = render_height;
 		int previous_mipmap_depth = render_depth;
-		
-		
+
+
 		double scaling = 1.0;
 		unsigned int level;
 		for (level = 1 ; (NULL != previous_mipmap_image) && (level < number_of_levels) ; level++)
@@ -2449,7 +2449,7 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 			int level_depth = (int)floor((double)render_depth / scaling);
 			if (level_depth < 1)
 				level_depth = 1;
-			
+
 #if defined (DEBUG_CODE)
 			printf(" Level %u (%d,%d,%d)\n", level, level_width, level_height, level_depth);
 #endif // defined (DEBUG_CODE)
@@ -2457,7 +2457,7 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 			unsigned char *mipmap_image = Texture_get_resized_image(texture,
 				previous_mipmap_image, previous_mipmap_width, previous_mipmap_height, previous_mipmap_depth,
 				level_width, level_height, level_depth, TEXTURE_RESIZE_LINEAR_FILTER);
-			
+
 			if (mipmap_image)
 			{
 				switch (texture->dimension)
@@ -2508,7 +2508,7 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 	#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 						}
 	#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-					} break;	
+					} break;
 				}
 			}
 
@@ -2536,9 +2536,9 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 	}
 	else
 	{
-		return_code = 0;		
+		return_code = 0;
 	}
-	
+
 	return (return_code);
 } /* Texture_generate_software_mipmaps */
 #endif /* defined (OPENGL_API) */
@@ -2699,7 +2699,7 @@ Directly outputs the commands setting up the <texture>.
 										"Reducing width from %d to %d for display only",
 										texture->name,
 										texture->width_texels,
-										texture->rendered_width_texels); 
+										texture->rendered_width_texels);
 								} break;
 								case 2:
 								{
@@ -2714,7 +2714,7 @@ Directly outputs the commands setting up the <texture>.
 										texture->name,
 										texture->width_texels, texture->height_texels,
 										texture->rendered_width_texels,
-										texture->rendered_height_texels); 
+										texture->rendered_height_texels);
 								} break;
 								case 3:
 								{
@@ -2730,9 +2730,9 @@ Directly outputs the commands setting up the <texture>.
 										texture->name,
 										texture->width_texels, texture->height_texels,
 										texture->depth_texels,
-										texture->rendered_width_texels, 
+										texture->rendered_width_texels,
 										texture->rendered_height_texels,
-										texture->rendered_depth_texels); 
+										texture->rendered_depth_texels);
 								} break;
 								default:
 								{
@@ -2862,7 +2862,7 @@ Directly outputs the commands setting up the <texture>.
 								case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 								{
 									if (!Graphics_library_check_extension(GL_SGIS_generate_mipmap))
-									{	
+									{
 										Texture_generate_software_mipmaps(texture, renderer, rendered_image,
 											render_tile_width, render_tile_height, render_tile_depth,
 											hardware_storage_format, format, type);
@@ -2907,8 +2907,8 @@ static int Texture_update_default_physical_size(struct Texture *texture)
 LAST MODIFIED : 13 July 2006
 
 DESCRIPTION :
-If the texture has a pixel dimension of greater than 1 in any particular 
-dimension then the corresponding default physical size is changed from 
+If the texture has a pixel dimension of greater than 1 in any particular
+dimension then the corresponding default physical size is changed from
 the initial 0 to 1.
 ==============================================================================*/
 {
@@ -3626,7 +3626,7 @@ int Texture_copy_without_identifier(struct Texture *source, struct Texture *dest
 				} break;
 				default:
 				{
-	 				if ((0 < image_size) && REALLOCATE(destination_image,
+					if ((0 < image_size) && REALLOCATE(destination_image,
 						destination->image, unsigned char, image_size))
 					{
 						destination->image = destination_image;
@@ -3884,9 +3884,9 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 				case TEXTURE_SUBTRACT:
 				case TEXTURE_MODULATE_SCALE_4:
 				case TEXTURE_BLEND_SCALE_4:
- 				case TEXTURE_ADD_SCALE_4:
+				case TEXTURE_ADD_SCALE_4:
 				case TEXTURE_SUBTRACT_SCALE_4:
- 				case TEXTURE_INVERT_ADD_SCALE_4:
+				case TEXTURE_INVERT_ADD_SCALE_4:
 				case TEXTURE_INVERT_SUBTRACT_SCALE_4:
 				{
 #if defined (GL_VERSION_1_3)
@@ -4077,7 +4077,7 @@ Sets the texture filter: linear or nearest.
 		if ((TEXTURE_LINEAR_FILTER==filter_mode)||
 			(TEXTURE_NEAREST_FILTER==filter_mode)
 #if defined (GL_VERSION_1_4)
-			/* Cannot do the runtime test here as the graphics may not be 
+			/* Cannot do the runtime test here as the graphics may not be
 				initialised yet or we may just want to evaluate the texture as a field */
 			|| (TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER==filter_mode)
 			|| (TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER==filter_mode)
@@ -4703,7 +4703,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				4*((texture_width*bytes_per_pixel + 3)/4);
 			/* Allocate depth in blocks.  Maybe I should just allow the malloc
 				implementation to do this, however this also worked around a bug
-				that was arising in valgrind where valgrind would crash on the 
+				that was arising in valgrind where valgrind would crash on the
 				realloc for some of the examples. */
 			allocate_texture_depth = 5 * ((texture_depth + 4) / 5);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
@@ -4851,15 +4851,15 @@ texture, and must be given a value.
 		}
 #endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
 #if defined (SGI_DIGITAL_MEDIA)
-		/* If dm_buffers are available then use them, 
+		/* If dm_buffers are available then use them,
 		 otherwise default to normal texture storage*/
 		graphics_buffer = create_Graphics_buffer_shared_offscreen(
-			graphics_buffer_package, texture_width, texture_height, 
+			graphics_buffer_package, texture_width, texture_height,
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/0,
 			/*minimum_accumulation_buffer_depth*/0);
 		if(graphics_buffer && (ACCESS(Graphics_buffer)(graphics_buffer))
-			&& (GRAPHICS_BUFFER_INVALID_TYPE != (graphics_buffer_type = 
+			&& (GRAPHICS_BUFFER_INVALID_TYPE != (graphics_buffer_type =
 			Graphics_buffer_get_type(graphics_buffer))))
 		{
 			texture->graphics_buffer = graphics_buffer;
@@ -4867,7 +4867,7 @@ texture, and must be given a value.
 			DEALLOCATE(texture->image);
 			texture->image = (void *)NULL;
 
-			X3d_movie_bind_to_graphics_buffer(movie, 
+			X3d_movie_bind_to_graphics_buffer(movie,
 				texture->graphics_buffer);
 
 			switch(graphics_buffer_type)
@@ -4933,12 +4933,12 @@ texture, and must be given a value.
 				if (ALLOCATE(texture_image, unsigned char,
 					texture_height*destination_row_width_bytes))
 				{
-					X3d_movie_bind_to_image_buffer(movie, texture_image, 
+					X3d_movie_bind_to_image_buffer(movie, texture_image,
 						image_width, image_height, texture_width - image_width);
 
 					memset((void *)texture_image,0x00,
 						destination_row_width_bytes*texture_height);
-					X3d_movie_render_to_image_buffer(movie, texture_image, 
+					X3d_movie_render_to_image_buffer(movie, texture_image,
 						image_width, image_height, texture_width - image_width,
 						0, 15);
 
@@ -5064,8 +5064,8 @@ DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
 to the physical size.  Each texel is assumed to apply exactly
 at its centre and the filter_mode used to determine whether the pixels are
-interpolated or not.  When closer than half a texel to a boundary the colour 
-is constant from the half texel location to the edge. 
+interpolated or not.  When closer than half a texel to a boundary the colour
+is constant from the half texel location to the edge.
 ==============================================================================*/
 {
 	ZnReal local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
@@ -5140,8 +5140,8 @@ is constant from the half texel location to the edge.
 			} break;
 			case TEXTURE_CLAMP_BORDER_WRAP:
 			{
-				/* Technically we should be merging to the border using the 
-					current filter, so this is correct for nearest but the colour 
+				/* Technically we should be merging to the border using the
+					current filter, so this is correct for nearest but the colour
 					should blend to the border colour 1/2 a pixel outside the texture
 					for linear.  We are also doing clamp to edge for the values inside
 					the texture range rather than blending to the border colour. */
@@ -5427,7 +5427,7 @@ is constant from the half texel location to the edge.
 										short_value =
 											(((unsigned short)(*(pixel_ptr + 1))) << 8) + (*pixel_ptr);
 #else /* (1234==BYTE_ORDER) */
-										short_value = 
+										short_value =
 											(((unsigned short)(*pixel_ptr)) << 8) + (*(pixel_ptr + 1));
 #endif /* (1234==BYTE_ORDER) */
 										values[n] += (double)short_value * weight;
@@ -5475,7 +5475,7 @@ is constant from the half texel location to the edge.
 							short_value =
 								(((unsigned short)(*(pixel_ptr + 1))) << 8) + (*pixel_ptr);
 #else /* (1234==BYTE_ORDER) */
-							short_value = 
+							short_value =
 								(((unsigned short)(*pixel_ptr)) << 8) + (*(pixel_ptr + 1));
 #endif /* (1234==BYTE_ORDER) */
 							values[n] = (double)short_value / component_max;
@@ -5804,7 +5804,7 @@ These will only be defined if they have been rendered.
 		{
 			GLenum gl_parameter;
 			GLint gl_value;
-			
+
 			/* get the corresponding value */
 			switch (graphics_parameter)
 			{
@@ -5852,7 +5852,7 @@ These will only be defined if they have been rendered.
 } /* Texture_get_graphics_storage_size */
 
 int Texture_get_original_size(struct Texture *texture,
-	int *original_width_texels, int *original_height_texels, 
+	int *original_width_texels, int *original_height_texels,
 	int *original_depth_texels)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
@@ -5958,7 +5958,7 @@ int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture,
 LAST MODIFIED : 26 May 2007
 
 DESCRIPTION :
-Returns the texture coordinates sizes of the texture.  
+Returns the texture coordinates sizes of the texture.
 This is the same as the physical size above.  When rendered the
 texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
 left of the texture and
@@ -6010,7 +6010,7 @@ int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture,
 LAST MODIFIED : 26 May 2007
 
 DESCRIPTION :
-Returns the texture coordinates sizes of the texture.  
+Returns the texture coordinates sizes of the texture.
 This is the same as the physical size above.  When rendered the
 texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
 left of the texture and
@@ -6329,7 +6329,7 @@ Sets how textures coordinates outside [0,1] are handled.
 		if((TEXTURE_CLAMP_WRAP==wrap_mode)
 			||(TEXTURE_REPEAT_WRAP==wrap_mode)
 #if defined (GL_VERSION_1_2)
-			/* Cannot do the runtime test here as the graphics may not be 
+			/* Cannot do the runtime test here as the graphics may not be
 				initialised yet or we may just want to evaluate the texture as a field */
 			|| (TEXTURE_CLAMP_EDGE_WRAP==wrap_mode)
 #endif /* defined (GL_VERSION_1_2) */
@@ -6376,14 +6376,14 @@ Sets how textures coordinates outside [0,1] are handled.
 	return (return_code);
 } /* Texture_set_wrap_mode */
 
-int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+int Cmiss_texture_write_to_file(Cmiss_texture_id texture,
    const char *filename)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2007
 
 DESCRIPTION :
 Writes the <texture> to file <filename>.
-I think it is best to write a separate function if you want to write a 
+I think it is best to write a separate function if you want to write a
 3D texture to a file sequence rather than handle it with this function.
 ==============================================================================*/
 {
@@ -6430,7 +6430,7 @@ I think it is best to write a separate function if you want to write a
 		return_code=0;
 	}
 	LEAVE;
-  
+
 	return (return_code);
 } /* Cmiss_texture_write_to_file */
 
@@ -6443,7 +6443,7 @@ DESCRIPTION :
 Writes the <texture_property> to the command window.
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
 
 	ENTER(list_Texture_property);
 	USE_PARAMETER(dummy);
@@ -6471,7 +6471,7 @@ DESCRIPTION :
 Writes the properties of the <texture> to the command window.
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
 
 	ENTER(list_Texture);
 	USE_PARAMETER(dummy);
@@ -6504,7 +6504,7 @@ Writes the properties of the <texture> to the command window.
 				texture->start_file_number,
 				texture->stop_file_number,
 				texture->file_number_increment);
- 		}
+		}
 		/* write the original image size */
 		display_message(INFORMATION_MESSAGE,
 			"  original width (texels) = %d, original height (texels) = %d, "
@@ -6579,7 +6579,7 @@ Writes the properties of the <texture> to the command window.
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
 
 		display_message(INFORMATION_MESSAGE,"  storage used in graphics : %d\n",
-		     Cmiss_texture_get_graphics_storage_size(texture));
+			 Cmiss_texture_get_graphics_storage_size(texture));
 		/* write the rendered image size */
 		display_message(INFORMATION_MESSAGE,
 			"  rendered width (texels) = %d, rendered height (texels) = %d, "
@@ -6597,9 +6597,9 @@ Writes the properties of the <texture> to the command window.
 		} break;
 		default:
 		{
-		} break;		
+		} break;
 		}
-		
+
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
 			"  colour : red = %.3g, green = %.3g, blue = %.3g\n",
@@ -6665,7 +6665,7 @@ The command is started with the string pointed to by <command_prefix>.
 				texture->start_file_number,
 				texture->stop_file_number,
 				texture->file_number_increment);
- 		}
+		}
 		if (texture->movie)
 		{
 			display_message(INFORMATION_MESSAGE," movie");
@@ -6753,7 +6753,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 					{
 						display_message(ERROR_MESSAGE,
 							"Texture_execute_opengl_texture_object.  PBUFFER not supported");
-						return_code=0;								
+						return_code=0;
 					} break;
 					default:
 					{
@@ -6777,7 +6777,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 				}
 				glBindTexture(texture_target, texture->texture_id);
 				direct_render_Texture_environment(texture);
-				if(texture->storage==TEXTURE_DMBUFFER || 
+				if(texture->storage==TEXTURE_DMBUFFER ||
 					texture->storage==TEXTURE_PBUFFER)
 				{
 					//-- Graphics_buffer_make_read_current(texture->graphics_buffer);
@@ -6815,7 +6815,7 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 
 	ENTER(Texture_execute_opengl_texture_object);
 	USE_PARAMETER(renderer);
-	/* Passed graphics_buffer through here as was using it to 
+	/* Passed graphics_buffer through here as was using it to
 		do special compilation for Intel graphics driver, but found
 		a more complete work around in the graphics_buffer creation.
 		This parameter is still better than the NULL from before. */
@@ -6835,7 +6835,7 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 		else
 		{
 			glBindTexture(texture_target, texture->texture_id);
-			/* As we have bound the texture we only need the 
+			/* As we have bound the texture we only need the
 				environment in the display list */
 			direct_render_Texture_environment(texture);
 		}
@@ -6993,7 +6993,7 @@ by vertex programs.
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 #if defined (GL_VERSION_2_0)
 	GLint loc1 = -1;
-#endif 
+#endif
 
 	ENTER(Texture_execute_vertex_program_environment);
 	return_code=0;
@@ -7032,7 +7032,7 @@ by vertex programs.
 				texture_scaling[2] = 1.0;
 			}
 			texture_scaling[3] = 1.0;
-			
+
 			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
 			{
 				GLint flag;
@@ -7229,7 +7229,7 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 {
 	GLuint type = GL_TEXTURE_2D;
 	GLuint texture_object_id;
-	
+
 	GLuint format, iformat;
 	format = 0;
 	if (alpha)
@@ -7240,7 +7240,7 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 	{
 		iformat = GL_RGB;
 	}
-	
+
 #if defined (GL_ARB_texture_float)
 	if (Graphics_library_check_extension(GL_ARB_texture_float))
 	{
@@ -7299,18 +7299,18 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 	}
    if (format)
    {
-   	glGenTextures (1, &texture_object_id);
-   	glBindTexture(type,texture_object_id);
-   	
-   	// set texture parameters
-   	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   	glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   	glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glGenTextures (1, &texture_object_id);
+	glBindTexture(type,texture_object_id);
 
-   	glTexImage2D(type,0,format,width,height,0,iformat,GL_FLOAT,buffer);
+	// set texture parameters
+	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-   	glBindTexture(type,0);
+	glTexImage2D(type,0,format,width,height,0,iformat,GL_FLOAT,buffer);
+
+	glBindTexture(type,0);
 	}
    else
    {
@@ -7347,7 +7347,7 @@ int Texture_set_texture_tiling_enabled(struct Texture *texture, int enable_textu
 	ENTER(Texture_set_texture_tiling_enabled);
 	if (texture)
 	{
-      if (enable_texture_tiling != texture->allow_texture_tiling)
+	  if (enable_texture_tiling != texture->allow_texture_tiling)
 		{
 			texture->allow_texture_tiling = enable_texture_tiling;
 				/* display list needs to be compiled again */
