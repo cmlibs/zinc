@@ -209,6 +209,11 @@ public:
 		return Cmiss_region_write(id, streamInformation.getId());
 	}
 
+	int writeFile(const char *fileName)
+	{
+		return Cmiss_region_write_file(id, fileName);
+	}
+
 	StreamInformationRegion createStreamInformation();
 
 };
