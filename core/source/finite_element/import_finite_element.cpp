@@ -193,7 +193,7 @@ is in the root_region itself. The REGION_PATH must end in
 					/* get existing element and check it has the dimension, or create
 						 a dummy element with unspecified shape and the dimension */
 					if (NULL != (element = FE_region_get_or_create_FE_element_with_identifier(
-						fe_region, &cm, dimension)))
+						fe_region, dimension, cm.number, static_cast<FE_element_shape *>(0))))
 					{
 						*element_address = element;
 						/* now read the xi position */
@@ -2942,7 +2942,7 @@ in a grid field.
 										 with dimension one less than parent element */
 									if (NULL != (face_element =
 										FE_region_get_or_create_FE_element_with_identifier(
-											fe_region, &face_identifier, dimension - 1)))
+											fe_region, dimension - 1, face_identifier.number, static_cast<FE_element_shape *>(0))))
 									{
 										if (!set_FE_element_face(element, i, face_element))
 										{
