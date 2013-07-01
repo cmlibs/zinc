@@ -28100,11 +28100,35 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 			FE_element_field_add_FE_field_to_list, (void *)changed_fe_field_list,
 			source_fields->element_field_list);
 
-		if (!FE_element_shape_and_faces_match(source,
-			/*global_fe_region*/(struct FE_region *)NULL, destination))
+		if (destination->shape && source->shape &&
+			(destination->shape->dimension == source->shape->dimension))
+		{
+			if ((0 == destination->shape->type) && (0 == destination->faces) &&
+				(0 != source->shape->type))
+			{
+				// dummy element, probably from element:xi location
+				set_FE_element_shape(destination, source->shape);
+				if (source->faces)
+				{
+					int number_of_faces = source->shape->number_of_faces;
+					for (i = 0; i < number_of_faces; ++i)
+					{
+						set_FE_element_face(destination, i, source->faces[i]);
+					}
+				}
+			}
+			else if (!FE_element_shape_and_faces_match(source,
+				/*global_fe_region*/(struct FE_region *)NULL, destination))
+			{
+				display_message(ERROR_MESSAGE,
+					"merge_FE_element.  Inconsistent element shapes");
+				return_code = 0;
+			}
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"merge_FE_element.  Inconsistent or missing element shape(s)");
+				"merge_FE_element.  Missing or inconsistent element shapes or dimension");
 			return_code = 0;
 		}
 

@@ -4042,32 +4042,18 @@ struct FE_element *FE_region_get_top_level_FE_element_from_identifier(
 }
 
 struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
-	struct FE_region *fe_region, struct CM_element_information *identifier,
-	int dimension)
-/*******************************************************************************
-LAST MODIFIED : 27 May 2003
-
-DESCRIPTION :
-Convenience function returning an existing element with <identifier> from
-<fe_region> or any of its ancestors. Existing elements are checked against the
-<dimension> and no element is returned if the dimension is different.
-If no existing element is found, a new element with the given <identifier> and
-and unspecified shape of the given <dimension> is created.
-If the returned element is not already in <fe_region> it is merged before
-return.
-It is expected that the calling function has wrapped calls to this function
-with FE_region_begin/end_change.
-==============================================================================*/
+	struct FE_region *fe_region, int dimension, int identifier,
+	struct FE_element_shape *element_shape)
 {
-	struct FE_element *element;
-
-	ENTER(FE_region_get_or_create_FE_element_with_identifier);
-	element = (struct FE_element *)NULL;
-	if (fe_region && identifier &&
-		(1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	struct FE_element *element = 0;
+	int element_shape_dimension = 0;
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS) &&
+		((!element_shape) || (get_FE_element_shape_dimension(element_shape, &element_shape_dimension) &&
+		(element_shape_dimension == dimension))))
 	{
-		struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
-		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(identifier, element_list);
+		CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier};
+		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm,
+			FE_region_get_element_list(fe_region, dimension));
 		if (!element)
 		{
 			/* get the ultimate master FE_region for complete list of elements */
@@ -4078,20 +4064,26 @@ with FE_region_begin/end_change.
 			}
 			if (master_fe_region != fe_region)
 			{
-				element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-					identifier, FE_region_get_element_list(master_fe_region, dimension));
+				element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm,
+					FE_region_get_element_list(master_fe_region, dimension));
 			}
 			if (!element)
 			{
-				struct FE_element_shape *element_shape;
-				/* create an element with an unspecified shape of <dimension> */
-				element_shape =	CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL, fe_region);
+				struct FE_element_shape *temp_element_shape = 0;
+				if (!element_shape)
+				{
+					element_shape = temp_element_shape = CREATE(FE_element_shape)(
+						dimension, /*type*/(int *)NULL, fe_region);
+					ACCESS(FE_element_shape)(temp_element_shape);
+				}
 				if (element_shape)
 				{
-					ACCESS(FE_element_shape)(element_shape);
-					element = CREATE(FE_element)(identifier, element_shape,
+					element = CREATE(FE_element)(&cm, element_shape,
 						master_fe_region, /*template_element*/(struct FE_element *)NULL);
-					DEACCESS(FE_element_shape)(&element_shape);
+					if (temp_element_shape)
+					{
+						DEACCESS(FE_element_shape)(&temp_element_shape);
+					}
 				}
 				if (!element)
 				{
@@ -4119,10 +4111,8 @@ with FE_region_begin/end_change.
 			"FE_region_get_or_create_FE_element_with_identifier.  "
 			"Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (element);
-} /* FE_region_get_or_create_FE_element_with_identifier */
+}
 
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,
 	int dimension, int start_identifier)
@@ -6058,7 +6048,7 @@ struct FE_regions_merge_embedding_data
 	struct FE_region *source_current_fe_region;
 };
 
-/***************************************************************************//**
+/**
  * Returns the global element equivalent for <element> using the information in
  * the <embedding_data>.
  * Note: currently only supports embedding in local or root FE_region.
@@ -6068,11 +6058,8 @@ static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 	struct FE_regions_merge_embedding_data *embedding_data,
 	struct FE_element *element)
 {
-	struct CM_element_information identifier;
 	struct FE_element *global_element;
-
-	ENTER(FE_regions_merge_embedding_data_get_global_element);
-	if (embedding_data && get_FE_element_identifier(element, &identifier))
+	if (embedding_data)
 	{
 		FE_region *source_fe_region = FE_element_get_FE_region(element);
 		FE_region *global_fe_region = embedding_data->target_root_fe_region;
@@ -6080,9 +6067,12 @@ static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 		{
 			global_fe_region = embedding_data->target_fe_region;
 		}
-		int dimension = get_FE_element_dimension(element);
-		global_element = FE_region_get_FE_element_from_identifier(
-			global_fe_region, dimension, identifier.number);
+		int dimension = Cmiss_element_get_dimension(element);
+		int identifier = Cmiss_element_get_identifier(element);
+		struct FE_element_shape *element_shape = 0;
+		get_FE_element_shape(element, &element_shape);
+		global_element = FE_region_get_or_create_FE_element_with_identifier(
+			global_fe_region, dimension, identifier, element_shape);
 	}
 	else
 	{
@@ -6091,10 +6081,8 @@ static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 			"Invalid argument(s)");
 		global_element = (struct FE_element *)NULL;
 	}
-	LEAVE;
-
 	return (global_element);
-} /* FE_regions_merge_embedding_data_get_global_element */
+}
 
 struct FE_node_merge_into_FE_region_data
 /*******************************************************************************

@@ -774,25 +774,18 @@ struct FE_element *FE_region_get_FE_element_from_identifier_deprecated(
 struct FE_element *FE_region_get_top_level_FE_element_from_identifier(
 	struct FE_region *fe_region, int identifier);
 
+/**
+ * Convenience function returning an existing element of dimension and
+ * identifier from fe_region or any of its ancestors. If no existing element is
+ * found, a new element is created with the given identifier and the supplied
+ * shape, or unspecified shape of the given dimension if no shape provided.
+ * If the returned element is not already in fe_region it is merged.
+ * It is expected that the calling function has wrapped calls to this function
+ * with FE_region_begin/end_change.
+ */
 struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
-	struct FE_region *fe_region, struct CM_element_information *identifier,
-	int dimension);
-/*******************************************************************************
-LAST MODIFIED : 27 May 2003
-
-DESCRIPTION :
-Convenience function returning an existing element with <identifier> from
-<fe_region> or any of its ancestors. Existing elements are checked against the
-<dimension> and no element is returned if the dimension is different.
-If no existing element is found, a new element with the given <identifier> and
-and unspecified shape of the given <dimension> is created.
-If the returned element is not already in <fe_region> it is merged before
-return.
-It is expected that the calling function has wrapped calls to this function
-with FE_region_begin/end_change.
-???RC Could eventually allow the shape of newly created elements to be other
-than 'unspecified'.
-==============================================================================*/
+	struct FE_region *fe_region, int dimension, int identifier,
+	struct FE_element_shape *element_shape);
 
 /***************************************************************************//**
  * Returns the next unused element number for elements of <dimension> in
