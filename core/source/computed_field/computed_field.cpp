@@ -180,127 +180,26 @@ Module functions
 ----------------
 */
 
-/***************************************************************************//**
- * Field iterator function ensuring field and any of its source fields are
- * marked in manager with MANAGER_CHANGE_DEPENDENCY if any source fields have
- * content or dependency change.
- * No manager messages are sent during processing.
- * To be called only by Computed_field_manager_update_dependencies.
- * @return  1 normally, 0 if invalid arguments.
- */
-static int Computed_field_check_dependency_iterator(struct Computed_field *field,
-	void *dummy_void)
+/** override to set change status of fields which depend on changed fields */
+static inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
+	struct MANAGER(Computed_field) *manager)
 {
-	USE_PARAMETER(dummy_void);
-	if (field)
+	Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(manager->object_list);
+	for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
 	{
+		Cmiss_field_id field = *iter;
 		field->core->check_dependency();
-		return 1;
 	}
-	return 0;
 }
 
-static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manager)
-/***************************************************************************//**
- * Special version for Computed_field which handles:
- * - propagating field changes to dependencies
- * - field type-specific change details
- * Send a manager message to registered clients about changes to objects in
- * the manager's changed_object_list and removed_object_list, if any.
- * Change information is copied out of the manager and objects before the
- * message is sent.
- */
+/** Override to extract type-specific change details from field */
+static inline struct Cmiss_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Computed_field)(
+	struct Computed_field *field)
 {
-	ENTER(MANAGER_UPDATE(Computed_field));
-	if (manager)
-	{
-		int number_of_changed_objects, number_of_removed_objects;
+	return field->core->extract_change_detail();
+}
 
-		number_of_changed_objects =
-			NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
-		number_of_removed_objects =
-			NUMBER_IN_LIST(Computed_field)(manager->removed_object_list);
-		if (number_of_changed_objects || number_of_removed_objects)
-		{
-			int i;
-			struct MANAGER_CALLBACK_ITEM(Computed_field) *item;
-			struct MANAGER_MESSAGE(Computed_field) message;
-			struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field) *object_change;
-
-			/* add objects changed by dependency */
-			FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-				Computed_field_check_dependency_iterator, (void *)NULL, manager);
-			/* update count with dependency changes */
-			number_of_changed_objects =
-				NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
-			/* prepare message, transferring change details from objects to it */
-			if (ALLOCATE(message.object_changes,
-				struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field),
-				number_of_changed_objects + number_of_removed_objects))
-			{
-				message.change_summary = MANAGER_CHANGE_NONE(Computed_field);
-				message.number_of_changed_objects =
-					number_of_changed_objects + number_of_removed_objects;
-				object_change = message.object_changes;
-				for (i = 0; i < number_of_changed_objects; i++)
-				{
-					object_change->object = ACCESS(Computed_field)(
-						FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
-							(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL,
-							manager->changed_object_list));
-					object_change->change = object_change->object->manager_change_status;
-					object_change->object->manager_change_status =
-						MANAGER_CHANGE_NONE(Computed_field);
-					REMOVE_OBJECT_FROM_LIST(Computed_field)(object_change->object,
-						manager->changed_object_list);
-					object_change->detail = object_change->object->core->extract_change_detail();
-					message.change_summary |= object_change->change;
-					object_change++;
-				}
-				for (i = 0; i < number_of_removed_objects; i++)
-				{
-					object_change->object = ACCESS(Computed_field)(
-						FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
-							(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL,
-							manager->removed_object_list));
-					object_change->change = object_change->object->manager_change_status;
-					REMOVE_OBJECT_FROM_LIST(Computed_field)(object_change->object,
-						manager->removed_object_list);
-					object_change->detail = object_change->object->core->extract_change_detail();
-					message.change_summary |= object_change->change;
-					object_change++;
-				}
-				/* send message to clients */
-				item = manager->callback_list;
-				while (item)
-				{
-					(item->callback)(&message, item->user_data);
-					item = item->next;
-				}
-				/* clean up message */
-				object_change = message.object_changes;
-				for (i = message.number_of_changed_objects; i > 0; i--)
-				{
-					delete object_change->detail;
-					DEACCESS(Computed_field)(&(object_change->object));
-					object_change++;
-				}
-				DEALLOCATE(message.object_changes);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_UPDATE(Computed_field).  Could not build message");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_UPDATE(Computed_field).  Invalid argument(s)");
-	}
-	LEAVE;
-} /* MANAGER_UPDATE(Computed_field) */
+DECLARE_MANAGER_UPDATE_FUNCTION(Computed_field)
 
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Computed_field)
 

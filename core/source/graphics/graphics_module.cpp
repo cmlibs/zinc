@@ -887,34 +887,6 @@ Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
 	return 0;
 }
 
-struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Cmiss_tessellation) *tessellation_manager = NULL;
-	if (graphics_module && graphics_module->tessellation_module)
-	{
-		tessellation_manager = Cmiss_tessellation_module_get_manager(
-			graphics_module->tessellation_module);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_tessellation_manager.  Invalid argument(s)");
-	}
-	return tessellation_manager;
-}
-
-struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->tessellation_module)
-	{
-		return Cmiss_tessellation_module_get_default_tessellation(
-			graphics_module->tessellation_module);
-	}
-	return 0;
-}
-
 struct Cmiss_tessellation* Cmiss_graphics_module_find_tessellation_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name)
 {

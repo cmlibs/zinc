@@ -165,26 +165,6 @@ struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
 struct Light_model *Cmiss_graphics_module_get_default_light_model(
 	struct Cmiss_graphics_module *graphics_module);
 
-/***************************************************************************//**
- * Return the manager of tessellation objects in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the manager of tessellation in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the default tessellation in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the default tessellation in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
-	struct Cmiss_graphics_module *graphics_module);
-
 struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	struct Cmiss_graphics_module *module);
 

@@ -2363,9 +2363,9 @@ public:
 		return MANAGER_END_CACHE(GT_object)(this->glyphManager);
 	}
 
-	int createStandardGlyphs();
+	int defineStandardGlyphs();
 
-	int createStandardCmguiGlyphs();
+	int defineStandardCmguiGlyphs();
 
 	Cmiss_glyph *findGlyphByName(const char *name)
 	{
@@ -2398,7 +2398,7 @@ public:
 
 };
 
-int Cmiss_glyph_module::createStandardGlyphs()
+int Cmiss_glyph_module::defineStandardGlyphs()
 {
 	beginChange();
 	GT_object *glyph = 0;
@@ -2462,7 +2462,7 @@ int Cmiss_glyph_module::createStandardGlyphs()
 	return CMISS_OK;
 }
 
-int Cmiss_glyph_module::createStandardCmguiGlyphs()
+int Cmiss_glyph_module::defineStandardCmguiGlyphs()
 {
 	beginChange();
 	GT_object *glyph = 0;
@@ -2541,19 +2541,19 @@ int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_glyph_module_create_standard_glyphs(
+int Cmiss_glyph_module_define_standard_glyphs(
 	Cmiss_glyph_module_id glyph_module)
 {
 	if (glyph_module)
-		return glyph_module->createStandardGlyphs();
+		return glyph_module->defineStandardGlyphs();
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_glyph_module_create_standard_cmgui_glyphs(
+int Cmiss_glyph_module_define_standard_cmgui_glyphs(
 	Cmiss_glyph_module_id glyph_module)
 {
 	if (glyph_module)
-		return glyph_module->createStandardCmguiGlyphs();
+		return glyph_module->defineStandardCmguiGlyphs();
 	return CMISS_ERROR_ARGUMENT;
 }
 

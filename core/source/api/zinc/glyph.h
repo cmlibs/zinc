@@ -94,7 +94,7 @@ ZINC_API int Cmiss_glyph_module_begin_change(Cmiss_glyph_module_id glyph_module)
 ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
 
 /**
- * Creates a selection of standard glyphs for visualising points, vectors etc.
+ * Defines a selection of standard glyphs for visualising points, vectors etc.
  * Graphics for all standard glyphs fit in a unit cube which:
  * 1. for orientable glyphs e.g. line, arrow, cylinder: span [0,1] on axis 1,
  *    and [-0.5,0.5] on axes 2 and 3 (except line which has no width).
@@ -118,12 +118,11 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
  * If not already set, the default glyph is set to "point" by this function.
- * Note: for now all circles are approximated by 12 line segments.
  *
  * @param glyph_module  The glyph module to create the glyph in.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_module_create_standard_glyphs(
+ZINC_API int Cmiss_glyph_module_define_standard_glyphs(
 	Cmiss_glyph_module_id glyph_module);
 
 /**

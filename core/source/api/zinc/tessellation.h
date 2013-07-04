@@ -117,64 +117,54 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_find_tessellation_by_na
 	Cmiss_tessellation_module_id tessellation_module, const char *name);
 
 /**
-* Get the default tessellation, if any.
-*
-* @param tessellation_module  Tessellation module to query.
-* @return  Handle to the default tessellation, or 0 if none.
-* 	Up to caller to destroy returned handle.
-*/
+ * Get the default tessellation to be used by new lines, surfaces and
+ * isosurfaces graphics. If there is none, one is automatically created with
+ * minimum divisions 1, refinement factors 4, and circle divisions 12,
+ * and given the name "default".
+ *
+ * @param tessellation_module  Tessellation module to query.
+ * @return  Handle to the default tessellation, or 0 on error.
+ * Up to caller to destroy returned handle.
+ */
 ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_tessellation(
 	Cmiss_tessellation_module_id tessellation_module);
 
 /**
-* Set the default tessellation.
-*
-* @param tessellation_module  Tessellation module to modify
-* @param tessellation  The tessellation to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
-*/
+ * Set the default tessellation to be used by new lines, surfaces and
+ * isosurfaces graphics.
+ *
+ * @param tessellation_module  Tessellation module to modify.
+ * @param tessellation  The tessellation to set as default.
+ * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ */
 ZINC_API int Cmiss_tessellation_module_set_default_tessellation(
 	Cmiss_tessellation_module_id tessellation_module,
 	Cmiss_tessellation_id tessellation);
 
 /**
- * Labels of tessellation attributes which may be set or obtained using generic
- * get/set_attribute functions.
- * Note: not all attributes can be set.
+ * Get the default tessellation to be used by new points and streamlines
+ * graphics. If there is none, one is automatically created with
+ * minimum divisions 1, refinement factors 1, and circle divisions 12,
+ * and given the name "default_points".
+ *
+ * @param tessellation_module  Tessellation module to query.
+ * @return  Handle to the default points tessellation, or 0 on error.
+ * Up to caller to destroy returned handle.
  */
-enum Cmiss_tessellation_attribute
-{
-	CMISS_TESSELLATION_ATTRIBUTE_INVALID = 0,
-	CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = 1,
-	/*!< positive integer size of minimum divisions array, defaults to 1 or size
-	 * set in last call to Cmiss_tessellation_set_minimum_divisions.
-	 * @see Cmiss_tessellation_set_minimum_divisions.
-	 */
-	CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE = 2
-	/*!< positive integer size of refinement factors array, defaults to 1 or size
-	 * set in last call to Cmiss_tessellation_set_refinement_factors.
-	 * @see Cmiss_tessellation_set_refinement_factors.
-	 */
-};
+ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_points_tessellation(
+	Cmiss_tessellation_module_id tessellation_module);
 
 /**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
+ * Set the default tessellation to be used by new points and streamlines
+ * graphics.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param tessellation_module  Tessellation module to modify.
+ * @param tessellation  The tessellation to set as default for points.
+ * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API enum Cmiss_tessellation_attribute
-	Cmiss_tessellation_attribute_enum_from_string(const char  *string);
-/**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
- *
- * @param attribute  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *Cmiss_tessellation_attribute_enum_to_string(
-	enum Cmiss_tessellation_attribute attribute);
+ZINC_API int Cmiss_tessellation_module_set_default_points_tessellation(
+	Cmiss_tessellation_module_id tessellation_module,
+	Cmiss_tessellation_id tessellation);
 
 /**
  * Returns a new reference to the tessellation with reference count incremented.
@@ -194,6 +184,30 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id t
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
+
+/**
+ * Gets the number of line segments used to approximate circles in graphics
+ * produced with this tessellation. This applies to lines with a circle profile,
+ * and to sphere, cylinder and other glyphs with circular features.
+ *
+ * @param tessellation  The tessellation to query.
+ * @return  The number of circle divisions, or 0 on error.
+ */
+ZINC_API int Cmiss_tessellation_get_circle_divisions(
+	Cmiss_tessellation_id tessellation);
+
+/**
+ * Sets the number of line segments used to approximate circles in graphics
+ * produced with this tessellation. This applies to lines with a circle profile,
+ * and to sphere, cylinder and other glyphs with circular features.
+ *
+ * @param tessellation  The tessellation to modify.
+ * @param circleDivisions  The number of line segments used to approximate a
+ * a circle, at least 3, but larger even numbers are recommended.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_tessellation_set_circle_divisions(
+	Cmiss_tessellation_id tessellation, int circleDivisions);
 
 /**
  * Get managed status of tessellation in its owning tessellation_module.
@@ -221,16 +235,6 @@ ZINC_API int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
 	bool value);
 
 /**
- * Get an integer or Boolean attribute of the tessellation object.
- *
- * @param tessellation  Handle to the cmiss tessellation.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
- */
-ZINC_API int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute attribute);
-
-/**
  * Return an allocated string containing tessellation name.
  *
  * @param tessellation  handle to the cmiss tessellation.
@@ -251,66 +255,71 @@ ZINC_API int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, con
 
 /**
  * Gets the minimum number of line segments used to approximate curves in each
- * dimension for coarse tessellation.
+ * element dimension for coarse tessellation.
  *
  * @see Cmiss_tessellation_set_minimum_divisions
- * @param tessellation  The tessellation object to query.
- * @param size  The size of the minimum_divisions array to fill. Values for
- * dimensions beyond the size set use the last divisions value.
- * @param minimum_divisions  Array to receive numbers of divisions.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param tessellation  The tessellation to query.
+ * @param valuesCount  The size of the minimum_divisions array to fill. Values
+ * for dimensions beyond the size set use the last divisions value.
+ * @param valuesOut  Array to receive numbers of divisions.
+ * @return  The actual number of minimum divisions values that have been
+ * explicitly set using Cmiss_tessellation_set_minimum_divisions. This can be
+ * more than the number requested, so a second call may be needed with a
+ * larger array. Returns 0 on error.
  */
-ZINC_API int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int size, int *minimum_divisions);
+ZINC_API int Cmiss_tessellation_get_minimum_divisions(
+	Cmiss_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the minimum number of line segments used to approximate curves in each
- * dimension of tessellation. Intended to be used where coarse tessellation is
- * acceptable, e.g. where fields vary linearly over elements.
+ * element dimension of tessellation. Intended to be used where coarse
+ * tessellation is acceptable, e.g. where fields vary linearly over elements.
  * The default minimum_divisions value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
- * @param tessellation  The tessellation object to modify.
- * @param size  The size of the minimum_divisions array, >= 1.
- * @param minimum_divisions  Array of number of divisions (>=1) for each
- * dimension, with the last number in array applying to all higher dimensions.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param tessellation  The tessellation to modify.
+ * @param valuesCount  The size of the valuesIn array, >= 1.
+ * @param valuesIn  Array of number of divisions (>=1) for each dimension, with
+ * the last number in array applying to all higher dimensions.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int size, const int *minimum_divisions);
+ZINC_API int Cmiss_tessellation_set_minimum_divisions(
+	Cmiss_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Gets the refinements to be used in product with the minimum divisions
- * to approximate curves in each dimension for fine tessellation.
+ * to approximate curves in each element dimension for fine tessellation.
  *
  * @see Cmiss_tessellation_set_refinement_factors
- * @param tessellation  The tessellation object to query.
- * @param size  The size of the refinement_factors array to fill. Values for
- * dimensions beyond the size set use the last refinement value.
- * @param refinement_factors  Array to receive refinement factors.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param tessellation  The tessellation to query.
+ * @param valuesCount  The size of the refinement_factors array to fill. Values
+ * for dimensions beyond the size set use the last refinement value.
+ * @param valuesOut  Array to receive refinement factors.
+ * @return  The actual number of refinement factor values that have been
+ * explicitly set using Cmiss_tessellation_set_refinement_factors. This can be
+ * more than the number requested, so a second call may be needed with a
+ * larger array. Returns 0 on error.
  */
-ZINC_API int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
-	int size, int *refinement_factors);
+ZINC_API int Cmiss_tessellation_get_refinement_factors(
+	Cmiss_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the refinements to be used in product with the minimum divisions
- * to approximate curves in each dimension for fine tessellation. To be used
- * e.g. where fields vary non-linearly over elements, or greater data sampling
- * is needed for rendering with a spectrum.
+ * to approximate curves in each element dimension for fine tessellation.
+ * To be used e.g. where fields vary non-linearly over elements.
  * The default refinement_factors value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
  * @see Cmiss_tessellation_set_minimum_divisions
- * @param tessellation  The tessellation object to modify.
- * @param size  The size of the refinement_factors array, >= 1.
- * @param refinement_factors  Array of number of fine subdivisions (>=1) per
+ * @param tessellation  The tessellation to modify.
+ * @param valuesCount  The size of the refinement_factors array, >= 1.
+ * @param valuesIn  Array of number of fine subdivisions (>=1) per
  * minimum_division for each dimension, with the last number in array
  * applying to all higher dimensions.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
-	int size, const int *refinement_factors);
+ZINC_API int Cmiss_tessellation_set_refinement_factors(
+	Cmiss_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 #ifdef __cplusplus
 }

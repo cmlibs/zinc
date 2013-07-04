@@ -405,11 +405,11 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 } /* CREATE(Cmiss_rendition) */
 
 Cmiss_field_id Cmiss_rendition_guess_coordinate_field(
-	struct Cmiss_rendition *rendition, Cmiss_graphic_type graphic_type)
+	struct Cmiss_rendition *rendition, Cmiss_field_domain_type domain_type)
 {
 	Cmiss_field_id coordinate_field = 0;
 	// could be smarter here:
-	USE_PARAMETER(graphic_type);
+	USE_PARAMETER(domain_type);
 	/* if we don't have a computed_field_manager, we are working on an
 	   "editor copy" which does not update graphics; the
 	   default_coordinate_field will have been supplied by the global object */
@@ -829,20 +829,6 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 DECLARE_OBJECT_FUNCTIONS(Cmiss_rendition);
 DEFINE_ANY_OBJECT(Cmiss_rendition);
 
-/***************************************************************************//**
- * List/manager iterator function returning true if the tessellation has
- * coarse and fine divisions both equal to those of rendition.
- */
-int Cmiss_tessellation_has_fixed_divisions(struct Cmiss_tessellation *tessellation, void *rendition_void)
-{
-	Cmiss_rendition *rendition = (Cmiss_rendition *)rendition_void;
-	if (tessellation && rendition)
-	{
-		return Cmiss_tessellation_has_fixed_divisions(tessellation, rendition->element_divisions_size, rendition->element_divisions);
-	}
-	return 0;
-}
-
 int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic)
 {
@@ -851,14 +837,15 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 	{
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
-			(graphic_type != CMISS_GRAPHIC_POINTS) &&
-			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
-		{
-			Cmiss_tessellation *tessellation = Cmiss_graphics_module_get_default_tessellation(rendition->graphics_module);
-			Cmiss_graphic_set_tessellation(graphic, tessellation);
-			Cmiss_tessellation_destroy(&tessellation);
-		}
+		Cmiss_tessellation_module_id tessellationModule =
+			Cmiss_graphics_module_get_tessellation_module(rendition->graphics_module);
+		Cmiss_tessellation *tessellation =
+			((graphic_type == CMISS_GRAPHIC_POINTS) || (graphic_type == CMISS_GRAPHIC_STREAMLINES)) ?
+			Cmiss_tessellation_module_get_default_points_tessellation(tessellationModule) :
+			Cmiss_tessellation_module_get_default_tessellation(tessellationModule);
+		Cmiss_graphic_set_tessellation(graphic, tessellation);
+		Cmiss_tessellation_destroy(&tessellation);
+		Cmiss_tessellation_module_destroy(&tessellationModule);
 
 		Cmiss_graphic_point_attributes_id point_attributes = Cmiss_graphic_get_point_attributes(graphic);
 		if (point_attributes)
@@ -898,6 +885,10 @@ int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *renditi
 	return return_code;
 }
 
+/**
+ * Apply legacy default coordinate field, element, circle and native discretization.
+ * Assumes Cmiss_rendition_set_minimum_graphic_defaults has been called first
+ */
 int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic)
 {
@@ -910,55 +901,38 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 		if ((graphic_type != CMISS_GRAPHIC_POINTS) || (domain_type != CMISS_FIELD_DOMAIN_POINT))
 		{
 			Cmiss_field_id coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
-			// could be smarter, e.g. using graphic type
 			if (!coordinate_field)
-				coordinate_field = Cmiss_rendition_guess_coordinate_field(rendition, graphic_type);
+				coordinate_field = Cmiss_rendition_guess_coordinate_field(rendition, domain_type);
 			if (coordinate_field)
 				Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
 		}
 
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
-			(graphic_type != CMISS_GRAPHIC_POINTS) &&
-			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
+		bool use_element_discretization = (0 != rendition->element_divisions) &&
+			(graphic_type != CMISS_GRAPHIC_POINTS) && (graphic_type != CMISS_GRAPHIC_STREAMLINES);
+		bool use_circle_discretization = (rendition->circle_discretization >= 3) &&
+			(graphic_type == CMISS_GRAPHIC_CYLINDERS);
+		if (use_element_discretization || use_circle_discretization)
 		{
-			Cmiss_tessellation *tessellation = NULL;
-			if (rendition->element_divisions)
-			{
-				// legacy general element_discretization set: find or create matching fixed tessellation
-				tessellation = FIRST_OBJECT_IN_MANAGER_THAT(Cmiss_tessellation)(
-					Cmiss_tessellation_has_fixed_divisions, (void *)rendition,
-					Cmiss_graphics_module_get_tessellation_manager(rendition->graphics_module));
-				if (tessellation)
-				{
-					ACCESS(Cmiss_tessellation)(tessellation);
-				}
-				else
-				{
-					tessellation = Cmiss_graphics_module_create_tessellation(rendition->graphics_module);
-					Cmiss_tessellation_set_minimum_divisions(tessellation, rendition->element_divisions_size, rendition->element_divisions);
-				}
-			}
-			else
-			{
-				tessellation = Cmiss_graphics_module_get_default_tessellation(rendition->graphics_module);
-			}
+			Cmiss_tessellation_module_id tessellationModule =
+				Cmiss_graphics_module_get_tessellation_module(rendition->graphics_module);
+			Cmiss_tessellation_id currentTessellation = Cmiss_graphic_get_tessellation(graphic);
+			Cmiss_tessellation_id tessellation =
+				Cmiss_tessellation_module_find_or_create_fixed_tessellation(tessellationModule,
+					use_element_discretization ? rendition->element_divisions_size : 0,
+					use_element_discretization ? rendition->element_divisions : 0,
+					use_circle_discretization ? rendition->circle_discretization : 0,
+					currentTessellation);
 			Cmiss_graphic_set_tessellation(graphic, tessellation);
-			DEACCESS(Cmiss_tessellation)(&tessellation);
-		}
+			Cmiss_tessellation_destroy(&tessellation);
+			Cmiss_tessellation_destroy(&currentTessellation);
+			Cmiss_tessellation_module_destroy(&tessellationModule);
+		}	
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD) &&
 			(graphic_type != CMISS_GRAPHIC_POINTS) &&
 			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
 		{
 			Cmiss_graphic_set_native_discretization_field(graphic, rendition->native_discretization_field);
-		}
-
-		if (graphic_type == CMISS_GRAPHIC_CYLINDERS)
-		{
-			if (rendition->circle_discretization > 1)
-			{
-				Cmiss_graphic_set_circle_discretization(graphic, rendition->circle_discretization);
-			}
 		}
 	}
 	else
@@ -3536,7 +3510,7 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 		rendition_command_data->default_material =
 			Cmiss_graphics_material_module_get_default_material(material_module);
 		Cmiss_graphics_material_module_destroy(&material_module);
-		rendition_command_data->graphics_material_module =
+		rendition_command_data->material_module =
 			Cmiss_graphics_module_get_material_module(rendition->graphics_module);
 		rendition_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
@@ -3550,6 +3524,8 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 			 Cmiss_region_get_Computed_field_manager(rendition->region);
 		rendition_command_data->region = rendition->region;
 		rendition_command_data->root_region = Cmiss_region_get_root(rendition->region);
+		rendition_command_data->tessellation_module =
+			Cmiss_graphics_module_get_tessellation_module(rendition->graphics_module);
 		return_code = 1;
 	}
 	return return_code;
@@ -3561,12 +3537,13 @@ int Cmiss_rendition_cleanup_rendition_command_data(
 	int return_code = 0;
 	if (rendition_command_data)
 	{
-		Cmiss_graphics_material_module_destroy(&(rendition_command_data->graphics_material_module));
+		Cmiss_graphics_material_module_destroy(&(rendition_command_data->material_module));
 		Cmiss_graphics_material_destroy(&rendition_command_data->default_material);
 		Cmiss_font_destroy(&rendition_command_data->default_font);
 		Cmiss_spectrum_destroy(&rendition_command_data->default_spectrum);
 		Cmiss_glyph_module_destroy(&(rendition_command_data->glyph_module));
 		Cmiss_region_destroy(&(rendition_command_data->root_region));
+		Cmiss_tessellation_module_destroy(&(rendition_command_data->tessellation_module));
 		return_code = 1;
 	}
 	return return_code;

@@ -134,12 +134,41 @@ Local functions
 ---------------
 */
 
+#define MANAGER_UPDATE_DEPENDENCIES_( object_type )  manager_update_dependencies_ ## object_type
+#define MANAGER_UPDATE_DEPENDENCIES( object_type )  MANAGER_UPDATE_DEPENDENCIES_(object_type)
+
+/**
+ * Called before manager messages are sent out.
+ * Override if objects depend on one another so dependent objects are marked as
+ * MANAGER_CHANGE_DEPENDENCY. Examples uses include field, graphics_filter.
+ */
+#define DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION( object_type ) \
+static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(object_type) *manager) \
+{ \
+	USE_PARAMETER(manager); \
+}
+
+#define MANAGER_EXTRACT_CHANGE_DETAIL_( object_type )  manager_extract_change_detail_ ## object_type
+#define MANAGER_EXTRACT_CHANGE_DETAIL( object_type )  MANAGER_EXTRACT_CHANGE_DETAIL_(object_type)
+
+/**
+ * Override to extract change details from object, if any.
+ * Note: Change details must be freed by delete operator!
+ * Example uses include field, tessellation.
+ */
+#define DECLARE_DEFAULT_MANAGER_EXTRACT_CHANGE_DETAIL_FUNCTION( object_type ) \
+static void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object) \
+{ \
+	USE_PARAMETER(object); \
+	return 0; \
+}
+
 #define MANAGER_UPDATE_( object_type )  manager_update_ ## object_type
 #define MANAGER_UPDATE( object_type )  MANAGER_UPDATE_(object_type)
 
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
-/*************************************************************************//** \
+/** \
  * Send a manager message to registered clients about changes to objects in \
  * the manager's changed_object_list and removed_object_list, if any. \
  * Change information is copied out of the manager and objects before the \
@@ -163,6 +192,10 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 			struct MANAGER_MESSAGE(object_type) message; \
 			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
 			\
+			MANAGER_UPDATE_DEPENDENCIES(object_type)(manager); \
+			/* update count with dependency changes */ \
+			number_of_changed_objects = \
+				NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
 			/* prepare message, transferring change details from objects to it */ \
 			if (ALLOCATE(message.object_changes, \
 				struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type), \
@@ -183,7 +216,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 						MANAGER_CHANGE_NONE(object_type); \
 					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
 						manager->changed_object_list); \
-					object_change->detail = 0; \
+					object_change->detail = MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(object_change->object); \
 					message.change_summary |= object_change->change; \
 					object_change++; \
 				} \
@@ -196,7 +229,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 					object_change->change = object_change->object->manager_change_status; \
 					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
 						manager->removed_object_list); \
-					object_change->detail = 0; \
+					object_change->detail = MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(object_change->object); \
 					message.change_summary |= object_change->change; \
 					object_change++; \
 				} \
@@ -211,6 +244,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 				object_change = message.object_changes; \
 				for (i = message.number_of_changed_objects; i > 0; i--) \
 				{ \
+					delete object_change->detail; \
 					DEACCESS(object_type)(&(object_change->object)); \
 					object_change++; \
 				} \
@@ -1400,6 +1434,8 @@ DECLARE_MANAGER_GET_OWNER_FUNCTION(object_type, owner_type) \
 DECLARE_MANAGER_SET_OWNER_FUNCTION(object_type, owner_type)
 
 #define DECLARE_LOCAL_MANAGER_FUNCTIONS(object_type) \
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(object_type) \
+DECLARE_DEFAULT_MANAGER_EXTRACT_CHANGE_DETAIL_FUNCTION(object_type) \
 DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(object_type)

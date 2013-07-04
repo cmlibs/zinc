@@ -570,8 +570,6 @@ private:
 		undefine_fields.push_back(fe_field);
 	}
 
-	int hasFields() { return fields.size(); }
-
 	void clearTemplateNode()
 	{
 		REACCESS(FE_node)(&template_node, NULL);
@@ -1308,7 +1306,9 @@ int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
 
 Cmiss_node_id Cmiss_node_access(Cmiss_node_id node)
 {
-	return ACCESS(FE_node)(node);
+	if (node)
+		return ACCESS(FE_node)(node);
+	return 0;
 }
 
 int Cmiss_node_destroy(Cmiss_node_id *node_address)

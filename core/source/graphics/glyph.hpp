@@ -79,7 +79,7 @@ struct MANAGER(GT_object) *Cmiss_glyph_module_get_glyph_manager(
 /**
  * Create extra glyphs such as line_ticks, diamond, only used in cmgui
  */
-int Cmiss_glyph_module_create_standard_cmgui_glyphs(
+int Cmiss_glyph_module_define_standard_cmgui_glyphs(
 	Cmiss_glyph_module_id glyph_module);
 
 #endif /* !defined (GLYPH_H) */

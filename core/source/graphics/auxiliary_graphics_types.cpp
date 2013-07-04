@@ -96,48 +96,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphics_select_mode)
 
-int check_Circle_discretization(int *circle_discretization)
-/*******************************************************************************
-LAST MODIFIED : 11 December 1998
-
-DESCRIPTION :
-Ensures the <circle_discretization> is within the bounds of the minimum of 2
-and the maximum read in from the defaults.
-???RC user_interface argument not checked as may not be needed in
-read_Circle_discretization_defaults().
-==============================================================================*/
-{
-	int return_code;
-	int initial_value;
-
-	ENTER(check_Circle_discretization);
-	if (circle_discretization)
-	{
-		initial_value = *circle_discretization;
-		if (2 > *circle_discretization)
-		{
-			*circle_discretization=2;
-		}
-		if (*circle_discretization != initial_value)
-		{
-			display_message(WARNING_MESSAGE,
-				"Circle discretization values must be at least 2\n"
-				"%d changed to %d",initial_value,
-				*circle_discretization);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"check_Circle_discretization.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return return_code;
-} /* check_Circle_discretization */
-
 int check_Element_discretization(struct Element_discretization
 	*element_discretization)
 /*******************************************************************************

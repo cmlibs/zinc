@@ -180,9 +180,9 @@ public:
 		return Cmiss_glyph_module_end_change(id);
 	}
 
-	int createStandardGlyphs()
+	int defineStandardGlyphs()
 	{
-		return Cmiss_glyph_module_create_standard_glyphs(id);
+		return Cmiss_glyph_module_define_standard_glyphs(id);
 	}
 
 	Glyph findGlyphByName(const char *name)
