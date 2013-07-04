@@ -35,7 +35,7 @@ public:
 		EXPECT_NE(static_cast<Cmiss_field_module *>(0), fm);
 		EXPECT_NE(static_cast<Cmiss_graphics_module *>(0), gm);
 		EXPECT_NE(static_cast<Cmiss_glyph_module *>(0), glyph_module);
-		EXPECT_EQ(CMISS_OK, Cmiss_glyph_module_create_standard_glyphs(glyph_module));
+		EXPECT_EQ(CMISS_OK, Cmiss_glyph_module_define_standard_glyphs(glyph_module));
 		EXPECT_NE(static_cast<Cmiss_rendition *>(0), ren);
 	}
 

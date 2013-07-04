@@ -36,7 +36,7 @@ public:
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(gm.isValid());
 		EXPECT_TRUE(glyphModule.isValid());
-		EXPECT_EQ(CMISS_OK, glyphModule.createStandardGlyphs());
+		EXPECT_EQ(CMISS_OK, glyphModule.defineStandardGlyphs());
 		EXPECT_TRUE(ren.isValid());
 	}
 
