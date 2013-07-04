@@ -210,7 +210,6 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 
 	switch (attribute)
 	{
-		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
 		case CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE:
 		{
 			return_code = (graphic_type == CMISS_GRAPHIC_POINTS) ||
@@ -345,12 +344,6 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->xi_point_density_field = (struct Computed_field *)NULL;
 			graphic->native_discretization_field=(struct FE_field *)NULL;
 			graphic->tessellation=NULL;
-			/* default to 1*1*1 discretization for fastest possible display.
-				 Important since model may have a *lot* of elements */
-			graphic->discretization.number_in_xi1=1;
-			graphic->discretization.number_in_xi2=1;
-			graphic->discretization.number_in_xi3=1;
-			graphic->circle_discretization=6;
 			/* for settings starting in a particular element */
 			graphic->seed_element=(struct FE_element *)NULL;
 			/* for settings requiring an exact xi location */
@@ -737,7 +730,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic->data_field, graphic->line_base_size,
 									graphic->line_scale_factors, graphic->line_orientation_scale_field,
 									number_in_xi[0],
-									graphic->circle_discretization,
+									Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
 									graphic->texture_coordinate_field,
 									top_level_element, graphic->render_type,
 									graphic_to_object_data->time)))
@@ -2137,16 +2130,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
-			CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-		{
-			sprintf(temp_string, " discretization \"%d*%d*%d\"",
-				graphic->discretization.number_in_xi1,
-				graphic->discretization.number_in_xi2,
-				graphic->discretization.number_in_xi3);
-			append_string(&graphic_string,temp_string,&error);
-		}
-
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
 			CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
 		{
 			append_string(&graphic_string, " tessellation ", &error);
@@ -2178,9 +2161,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 		if (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
 		{
-			sprintf(temp_string," circle_discretization %d",
-				graphic->circle_discretization);
-			append_string(&graphic_string,temp_string,&error);
 			const FE_value constant_radius = 0.5*graphic->line_base_size[0];
 			const FE_value radius_scale_factor = 0.5*graphic->line_scale_factors[0];
 			if (0.0 != constant_radius)
@@ -4332,39 +4312,6 @@ int Cmiss_graphic_set_xi_discretization(
 	return (return_code);
 } /* Cmiss_graphic_set_xi_discretization */
 
-int Cmiss_graphic_set_discretization(
-  struct Cmiss_graphic *graphic, struct Element_discretization *discretization)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_discretization);
-	if (graphic && discretization && Cmiss_graphic_type_uses_attribute(
-		graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-	{
-		if ((graphic->discretization.number_in_xi1 !=
-				discretization->number_in_xi1) ||
-			(graphic->discretization.number_in_xi2 !=
-				discretization->number_in_xi2) ||
-			(graphic->discretization.number_in_xi3 !=
-				discretization->number_in_xi3))
-		{
-			graphic->discretization.number_in_xi1=discretization->number_in_xi1;
-			graphic->discretization.number_in_xi2=discretization->number_in_xi2;
-			graphic->discretization.number_in_xi3=discretization->number_in_xi3;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_discretization.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_discretization */
-
 int Cmiss_graphic_copy_without_graphics_object(
 	struct Cmiss_graphic *destination, struct Cmiss_graphic *source)
 {
@@ -4499,13 +4446,6 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->xi_discretization_mode=source->xi_discretization_mode;
 		REACCESS(Computed_field)(&(destination->xi_point_density_field),
 			source->xi_point_density_field);
-		destination->discretization.number_in_xi1=
-			source->discretization.number_in_xi1;
-		destination->discretization.number_in_xi2=
-			source->discretization.number_in_xi2;
-		destination->discretization.number_in_xi3=
-			source->discretization.number_in_xi3;
-		destination->circle_discretization=source->circle_discretization;
 		REACCESS(FE_field)(&(destination->native_discretization_field),
 			source->native_discretization_field);
 		REACCESS(Cmiss_tessellation)(&(destination->tessellation),
@@ -4852,9 +4792,8 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 			(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
 		{
-			if ((graphic->line_orientation_scale_field !=
-					second_graphic->line_orientation_scale_field) ||
-				(graphic->circle_discretization != second_graphic->circle_discretization))
+			if (graphic->line_orientation_scale_field !=
+				second_graphic->line_orientation_scale_field)
 			{
 				return_code = 0;
 			}
@@ -4931,18 +4870,6 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
 		{
 			return_code = (graphic->tessellation == second_graphic->tessellation);
-		}
-
-		if (return_code && Cmiss_graphic_type_uses_attribute(
-			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-		{
-			return_code =
-				(graphic->discretization.number_in_xi1 ==
-					second_graphic->discretization.number_in_xi1) &&
-				(graphic->discretization.number_in_xi2 ==
-					second_graphic->discretization.number_in_xi2) &&
-				(graphic->discretization.number_in_xi3 ==
-					second_graphic->discretization.number_in_xi3);
 		}
 
 		if (return_code && Cmiss_graphic_type_uses_attribute(
@@ -5365,30 +5292,6 @@ int Cmiss_graphic_set_tessellation(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
-	struct Element_discretization *discretization)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_discretization);
-	if (graphic&&discretization)
-	{
-		discretization->number_in_xi1=graphic->discretization.number_in_xi1;
-		discretization->number_in_xi2=graphic->discretization.number_in_xi2;
-		discretization->number_in_xi3=graphic->discretization.number_in_xi3;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_discretization.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_discretization */
-
 int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 	int max_dimensions, int *top_level_number_in_xi)
 {
@@ -5425,14 +5328,6 @@ int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 					delete [] refinement_factors;
 				}
 			}
-		}
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-		{
-			top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
-			if (max_dimensions > 1)
-				top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
-			if (max_dimensions > 2)
-				top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
 		}
 	}
 	else
@@ -5483,52 +5378,6 @@ int Cmiss_graphic_set_native_discretization_field(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_set_native_discretization_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic)
-{
-	int circle_discretization;
-
-	ENTER(Cmiss_graphic_get_discretization);
-	if (graphic)
-	{
-	 circle_discretization = graphic->circle_discretization;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_circle_discretization.  Invalid argument(s)");
-		circle_discretization = 0;
-	}
-	LEAVE;
-
-	return (circle_discretization);
-} /* Cmiss_graphic_get_discretization */
-
-int Cmiss_graphic_set_circle_discretization(
-	struct Cmiss_graphic *graphic,int circle_discretization)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_circle_discretization);
-	if (graphic)
-	{
-		if (graphic->circle_discretization != circle_discretization
-			&& (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type))
-		{
-			graphic->circle_discretization = circle_discretization;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_circle_discretization.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -5972,12 +5821,23 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 		return_code = 1;
 		if (graphic->tessellation)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_tessellation)(
-				manager_message, graphic->tessellation);
-			// GRC: following could be smarter, e.g. by checking if actual discretization is changing
+			const Cmiss_tessellation_change_detail *change_detail = 0;
+			int change_flags = Cmiss_tessellation_manager_message_get_object_change_and_detail(
+				manager_message, graphic->tessellation, &change_detail);
 			if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_tessellation))
 			{
-				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				if (change_detail->isElementDivisionsChanged() &&
+					(0 < Cmiss_graphic_get_domain_dimension(graphic)))
+				{
+					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+				}
+				else if (change_detail->isCircleDivisionsChanged())
+				{
+					if (CMISS_GRAPHIC_CYLINDERS == graphic->graphic_type)
+					{
+						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+					}
+				}
 			}
 		}
 	}
@@ -7301,56 +7161,6 @@ int Cmiss_graphic_element_attributes_destroy(
 {
 	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(element_attributes_address));
 }
-
-int Cmiss_graphic_element_attributes_set_discretization(
-	Cmiss_graphic_element_attributes_id element_attributes, int number,
-	const int *discretization)
-{
-	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(element_attributes);
-	if (graphic && (0 < number) && discretization)
-	{
-		bool changed = false;
-		FE_value value = 0.0;
-		for (int i = 0; i < 3; ++i)
-		{
-			if (i < number)
-			{
-				value = static_cast<FE_value>(discretization[i]);
-			}
-			switch (i)
-			{
-			case 0:
-				if (graphic->discretization.number_in_xi1 != value)
-				{
-					graphic->discretization.number_in_xi1 = value;
-					changed = true;
-				}
-				break;
-			case 1:
-				if (graphic->discretization.number_in_xi2 != value)
-				{
-					graphic->discretization.number_in_xi2 = value;
-					changed = true;
-				}
-				break;
-			case 2:
-				if (graphic->discretization.number_in_xi3 != value)
-				{
-					graphic->discretization.number_in_xi3 = value;
-					changed = true;
-				}
-				break;
-			}
-		}
-		if (changed)
-		{
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-		}
-		return CMISS_OK;
-	}
-	return CMISS_ERROR_ARGUMENT;
-}
-
 
 int Cmiss_graphic_element_attributes_set_discretization_mode(
 	Cmiss_graphic_element_attributes_id element_attributes, Cmiss_graphics_xi_discretization_mode mode)

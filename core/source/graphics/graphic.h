@@ -123,8 +123,6 @@ finite element group rendition.
 	struct Computed_field *xi_point_density_field;
 	struct FE_field *native_discretization_field;
 	struct Cmiss_tessellation *tessellation;
-	struct Element_discretization discretization;
-	int circle_discretization;
 	int overlay_flag;
 	int overlay_order;
 	/* for settings starting in a particular element */
@@ -193,7 +191,6 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
  */
 enum Cmiss_graphic_attribute
 {
-	CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION,
 	CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG,
 	CMISS_GRAPHIC_ATTRIBUTE_FACE,
 	CMISS_GRAPHIC_ATTRIBUTE_GLYPH,
@@ -306,7 +303,8 @@ struct Rendition_command_data
 	struct Cmiss_region *region;
 	/* root_region used for seeding streamlines from the nodes in a region */
 	struct Cmiss_region *root_region;
-	Cmiss_graphics_material_module_id graphics_material_module;
+	Cmiss_graphics_material_module_id material_module;
+	Cmiss_tessellation_module_id tessellation_module;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
 }; /* struct Rendition_command_data */
@@ -509,19 +507,10 @@ enum Streamline_data_type Cmiss_graphic_get_streamline_data_type(
 int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
 	enum Streamline_data_type streamline_data_type);
 
-/***************************************************************************//**
- * Returns the fixed discretization <graphic>.
- */
-int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
-	struct Element_discretization *discretization);
-
-int Cmiss_graphic_set_discretization(
-  struct Cmiss_graphic *graphic, struct Element_discretization *discretization);
-
-/***************************************************************************//**
+/**
  * Fills the top_level_number_in_xi array with the discretization computed for
- * the graphic taking into account the tessellation, non-linearity of the
- * coordinate field and fixed discretization, if supported for graphic type.
+ * the graphic taking into account the tessellation and non-linearity of the
+ * coordinate field.
  *
  * @param max_dimensions  Size of supplied top_level_number_in_xi array.
  * @param top_level_number_in_xi  Array to receive values.
@@ -529,7 +518,7 @@ int Cmiss_graphic_set_discretization(
 int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 	int max_dimensions, int *top_level_number_in_xi);
 
-/***************************************************************************//**
+/**
  * Returns the native_discretization field used by <graphic>.
  * For type CMISS_GRAPHIC_ELEMENT_POINTS only.
  */
@@ -538,11 +527,6 @@ struct FE_field *Cmiss_graphic_get_native_discretization_field(
 
 int Cmiss_graphic_set_native_discretization_field(
 	  struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field);
-
-int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic);
-
-int Cmiss_graphic_set_circle_discretization(
-	struct Cmiss_graphic *graphic, int circle_discretization);
 
 /**
  * Get iso surface decimation threshold.

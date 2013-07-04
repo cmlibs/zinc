@@ -50,6 +50,45 @@
 
 struct Cmiss_graphics_module;
 
+class Cmiss_tessellation_change_detail
+{
+	bool circleDivisionsChanged;
+	bool elementDivisionsChanged;
+
+public:
+
+	Cmiss_tessellation_change_detail() :
+		circleDivisionsChanged(false),
+		elementDivisionsChanged(false)
+	{ }
+
+	void clear()
+	{
+		circleDivisionsChanged = false;
+		elementDivisionsChanged = false;
+	}
+
+	bool isCircleDivisionsChanged() const
+	{
+		return circleDivisionsChanged;
+	}
+
+	void setCircleDivisionsChanged()
+	{
+		circleDivisionsChanged = true;
+	}
+
+	bool isElementDivisionsChanged() const
+	{
+		return elementDivisionsChanged;
+	}
+
+	void setElementDivisionsChanged()
+	{
+		elementDivisionsChanged = true;
+	}
+};
+
 /***************************************************************************//**
  * Object describing how elements / continuous field domains are  tessellated
  * or sampled into graphics.
@@ -87,25 +126,36 @@ struct MANAGER(Cmiss_tessellation) *Cmiss_tessellation_module_get_manager(
 int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellation) *manager,
 	struct Cmiss_tessellation_module *tessellation_module);
 
-/***************************************************************************//**
- * Create and return a handle to a new tessellation.
- * Private; only to be called from tessellation_module.
+/**
+ * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_tessellation) but also returns
+ * change_detail for tessellation, if any.
  *
- * @return  Handle to the newly created tessellation if successful, otherwise NULL.
+ * @param message  The tessellation manager change message.
+ * @param tessellation  The tessellation to query about.
+ * @param change_detail_address  Address to put const change detail in.
+ * @return  manager change flags for the object.
  */
-struct Cmiss_tessellation *Cmiss_tessellation_create_private();
+int Cmiss_tessellation_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, Cmiss_tessellation *tessellation,
+	const Cmiss_tessellation_change_detail **change_detail_address);
 
-/***************************************************************************//**
- * Internal function returning true if the tessellation has coarse and fine
- * divisions both equal to the fixed divisions supplied.
+/**
+ * Internal function finding or creating a tessellation with coarse and fine
+ * divisions equal to the fixed divisions supplied, and with matching circle
+ * divisions. Match for either can be omitted.
  *
- * @param tessellation  The tessellation to query.
- * @param dimensions  The size of the fixed_divisions array.
- * @param fixed_divisions  Array of divisions to match.
- * @return  1 on success, 0 on failure.
+ * @param tessellationModule  The tessellation module to search or create in.
+ * @param elementDivisionsCount  The size of the fixed_divisions array. 0 to omit.
+ * @param elementDivisions  Array of divisions to match. 0 to omit.
+ * @param circleDivisions  Number of circle divisions. 0 to omit.
+ * @param defaultTessellation  Tessellation to get defaults from where element
+ * or circle divisions are omitted.
+ * @return  Handle to tessellation or 0 if error. Up to caller to destroy.
  */
-int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, int *fixed_divisions);
+Cmiss_tessellation_id Cmiss_tessellation_module_find_or_create_fixed_tessellation(
+	Cmiss_tessellation_module_id tessellationModule,
+	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
+	Cmiss_tessellation_id defaultTessellation);
 
 /***************************************************************************//**
  * Function to process the string to be passed into an tessellation object.

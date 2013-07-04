@@ -202,11 +202,12 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
  * Attempt to guess which field is the most appropriate to use as a coordinate
  * field for graphics.
  * @param rendition  The rendition whose graphics need a coordinate field.
- * @param graphic_type  Type of graphic to get coordinate field for.
+ * @param domain_type  Type of domain to get coordinate field for. Not used
+ * currently.
  * @return non-accessed field
  */
 Cmiss_field_id Cmiss_rendition_guess_coordinate_field(
-	struct Cmiss_rendition *rendition, Cmiss_graphic_type graphic_type);
+	struct Cmiss_rendition *rendition, Cmiss_field_domain_type domain_type);
 
 /***************************************************************************//**
  * Iterates through every material used by the scene.

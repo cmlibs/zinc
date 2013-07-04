@@ -87,13 +87,6 @@ public:
 		return (0 != id);
 	}
 
-	enum Attribute
-	{
-		ATTRIBUTE_INVALID = CMISS_TESSELLATION_ATTRIBUTE_INVALID,
-		ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE,
-		ATTRIBUTE_REFINEMENT_FACTORS_SIZE = CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE
-	};
-
 	Cmiss_tessellation_id getId()
 	{
 		return id;
@@ -109,10 +102,14 @@ public:
 		return Cmiss_tessellation_set_managed(id, value);
 	}
 
-	int getAttributeInteger(Attribute attribute)
+	int getCircleDivisions()
 	{
-		return Cmiss_tessellation_get_attribute_integer(id,
-			static_cast<Cmiss_tessellation_attribute>(attribute));
+		return Cmiss_tessellation_get_circle_divisions(id);
+	}
+
+	int setCircleDivisions(int circleDivisions)
+	{
+		return Cmiss_tessellation_set_circle_divisions(id, circleDivisions);
 	}
 
 	char *getName()
@@ -224,6 +221,16 @@ public:
 	int setDefaultTessellation(Tessellation &tessellation)
 	{
 		return Cmiss_tessellation_module_set_default_tessellation(id, tessellation.getId());
+	}
+
+	Tessellation getDefaultPointsTessellation()
+	{
+		return Tessellation(Cmiss_tessellation_module_get_default_points_tessellation(id));
+	}
+
+	int setDefaultPointsTessellation(Tessellation &tessellation)
+	{
+		return Cmiss_tessellation_module_set_default_points_tessellation(id, tessellation.getId());
 	}
 };
 

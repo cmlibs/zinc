@@ -3567,7 +3567,7 @@ int Cmiss_graphics_material_module_define_standard_materials(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_material_module_create_standard_material.  Invalid argument(s)");
+			"Cmiss_graphics_material_module_define_standard_materials.  Invalid argument(s)");
 		return_code = 0;
 	}
 

@@ -55,6 +55,9 @@ Module types
 ------------
 */
 
+/* forward declaration */
+struct Cmiss_tessellation *Cmiss_tessellation_create_private();
+
 struct Cmiss_tessellation_module
 {
 
@@ -62,21 +65,21 @@ private:
 
 	struct MANAGER(Cmiss_tessellation) *tessellationManager;
 	Cmiss_tessellation *defaultTessellation;
+	Cmiss_tessellation *defaultPointsTessellation;
 	int access_count;
 
 	Cmiss_tessellation_module() :
 		tessellationManager(CREATE(MANAGER(Cmiss_tessellation))()),
 		defaultTessellation(0),
+		defaultPointsTessellation(0),
 		access_count(1)
 	{
 	}
 
 	~Cmiss_tessellation_module()
 	{
-		if (defaultTessellation)
-		{
-			DEACCESS(Cmiss_tessellation)(&(this->defaultTessellation));
-		}
+		Cmiss_tessellation_destroy(&this->defaultTessellation);
+		Cmiss_tessellation_destroy(&this->defaultPointsTessellation);
 		DESTROY(MANAGER(Cmiss_tessellation))(&(this->tessellationManager));
 	}
 
@@ -161,38 +164,58 @@ public:
 		if (this->defaultTessellation)
 		{
 			ACCESS(Cmiss_tessellation)(this->defaultTessellation);
-			return this->defaultTessellation;
 		}
 		else
 		{
-			const char *default_tessellation_name = "default";
-			struct Cmiss_tessellation *tessellation = findTessellationByName(default_tessellation_name);
-			if (NULL == tessellation)
-			{
-				tessellation = createTessellation();
-				Cmiss_tessellation_set_name(tessellation, default_tessellation_name);
-
-				const int default_minimum_divisions = 1;
-				Cmiss_tessellation_set_minimum_divisions(tessellation,
-					/*dimensions*/1, &default_minimum_divisions);
-				const int default_refinement_factor = 4;
-				Cmiss_tessellation_set_refinement_factors(tessellation,
-					/*dimensions*/1, &default_refinement_factor);
-			}
-			if (tessellation)
-			{
-				setDefaultTessellation(tessellation);
-				Cmiss_tessellation_set_managed(tessellation, true);
-			}
-			return tessellation;
+			this->beginChange();
+			Cmiss_tessellation *tessellation = createTessellation();
+			Cmiss_tessellation_set_name(tessellation, "default");
+			const int default_minimum_divisions = 1;
+			Cmiss_tessellation_set_minimum_divisions(tessellation,
+				/*dimensions*/1, &default_minimum_divisions);
+			const int default_refinement_factor = 4;
+			Cmiss_tessellation_set_refinement_factors(tessellation,
+				/*dimensions*/1, &default_refinement_factor);
+			Cmiss_tessellation_set_circle_divisions(tessellation, 12);
+			this->setDefaultTessellation(tessellation);
+			this->endChange();
 		}
-
-		return 0;
+		return this->defaultTessellation;
 	}
 
 	int setDefaultTessellation(Cmiss_tessellation *tessellation)
 	{
 		REACCESS(Cmiss_tessellation)(&this->defaultTessellation, tessellation);
+		return CMISS_OK;
+	}
+
+	Cmiss_tessellation *getDefaultPointsTessellation()
+	{
+		if (this->defaultPointsTessellation)
+		{
+			ACCESS(Cmiss_tessellation)(this->defaultPointsTessellation);
+		}
+		else
+		{
+			this->beginChange();
+			Cmiss_tessellation *tessellation = createTessellation();
+			Cmiss_tessellation_set_name(tessellation, "default_points");
+			const int default_minimum_divisions = 1;
+			Cmiss_tessellation_set_minimum_divisions(tessellation,
+				/*dimensions*/1, &default_minimum_divisions);
+			const int default_refinement_factor = 1;
+			Cmiss_tessellation_set_refinement_factors(tessellation,
+				/*dimensions*/1, &default_refinement_factor);
+			Cmiss_tessellation_set_circle_divisions(tessellation, 12);
+			this->setDefaultPointsTessellation(tessellation);
+			this->endChange();
+		}
+		return this->defaultPointsTessellation;
+	}
+
+	int setDefaultPointsTessellation(Cmiss_tessellation *tessellation)
+	{
+		REACCESS(Cmiss_tessellation)(&this->defaultPointsTessellation, tessellation);
 		return CMISS_OK;
 	}
 
@@ -221,17 +244,22 @@ struct Cmiss_tessellation
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Cmiss_tessellation) *manager;
 	int manager_change_status;
+	int circleDivisions;
 	int minimum_divisions_size;
 	int *minimum_divisions;
 	int refinement_factors_size;
 	int *refinement_factors;
+	Cmiss_tessellation_change_detail changeDetail;
 	bool is_managed_flag;
 	int access_count;
+
+protected:
 
 	Cmiss_tessellation() :
 		name(NULL),
 		manager(NULL),
 		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_tessellation)),
+		circleDivisions(12),
 		minimum_divisions_size(1),
 		minimum_divisions(NULL),
 		refinement_factors_size(1),
@@ -259,6 +287,47 @@ struct Cmiss_tessellation
 		{
 			DEALLOCATE(refinement_factors);
 		}
+	}
+
+public:
+
+	/** must construct on the heap with this function */
+	static Cmiss_tessellation *create()
+	{
+		return new Cmiss_tessellation();
+	}
+
+	Cmiss_tessellation& operator=(const Cmiss_tessellation& source)
+	{
+		this->set_minimum_divisions(source.minimum_divisions_size, source.minimum_divisions);
+		this->set_refinement_factors(source.refinement_factors_size, source.refinement_factors);
+		this->setCircleDivisions(source.circleDivisions);
+		return *this;
+	}
+
+	Cmiss_tessellation_change_detail *extractChangeDetail()
+	{
+		Cmiss_tessellation_change_detail *change_detail = new Cmiss_tessellation_change_detail(this->changeDetail);
+		this->changeDetail.clear();
+		return change_detail;
+	}
+
+	int getCircleDivisions() const
+	{
+		return this->circleDivisions;
+	}
+
+	int setCircleDivisions(int inCircleDivisions)
+	{
+		int useCircleDivisions = (inCircleDivisions > 3) ? inCircleDivisions : 3;
+		if (useCircleDivisions != this->circleDivisions)
+		{
+			this->circleDivisions = useCircleDivisions;
+			this->changeDetail.setCircleDivisionsChanged();
+			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+		}
+		return (inCircleDivisions == this->circleDivisions) ? CMISS_OK : CMISS_ERROR_ARGUMENT;
 	}
 
 	/** get minimum divisions for a particular dimension >= 0 */
@@ -315,6 +384,7 @@ struct Cmiss_tessellation
 		{
 			minimum_divisions[i] = in_minimum_divisions[i];
 		}
+		this->changeDetail.setElementDivisionsChanged();
 		MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
 		return 1;
@@ -346,6 +416,7 @@ struct Cmiss_tessellation
 		{
 			refinement_factors[i] =  in_refinement_factors[i];
 		}
+		this->changeDetail.setElementDivisionsChanged();
 		MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
 		return 1;
@@ -371,7 +442,7 @@ struct Cmiss_tessellation
 		{
 			display_message(INFORMATION_MESSAGE, "1");
 		}
-		display_message(INFORMATION_MESSAGE, "\";\n");
+		display_message(INFORMATION_MESSAGE, "\" circle_divisions %d;\n", circleDivisions);
 	}
 
 	inline Cmiss_tessellation *access()
@@ -380,9 +451,32 @@ struct Cmiss_tessellation
 		return this;
 	}
 
-	static inline int deaccess(Cmiss_tessellation **tessellation_address)
+	/** deaccess handling is_managed_flag */
+	static inline int deaccess(Cmiss_tessellation **object_address)
 	{
-		return DEACCESS(Cmiss_tessellation)(tessellation_address);
+		int return_code = 1;
+		Cmiss_tessellation *object;
+		if (object_address && (object = *object_address))
+		{
+			(object->access_count)--;
+			if (object->access_count <= 0)
+			{
+				delete object;
+				object = 0;
+			}
+			else if ((!object->is_managed_flag) && (object->manager) &&
+				((1 == object->access_count) || ((2 == object->access_count) &&
+					(MANAGER_CHANGE_NONE(Cmiss_tessellation) != object->manager_change_status))))
+			{
+				return_code = REMOVE_OBJECT_FROM_MANAGER(Cmiss_tessellation)(object, object->manager);
+			}
+			*object_address = static_cast<Cmiss_tessellation *>(0);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		return (return_code);
 	}
 
 }; /* struct Cmiss_tessellation */
@@ -421,7 +515,7 @@ struct Cmiss_tessellation_compare_name
 
 typedef Cmiss_set<Cmiss_tessellation *,Cmiss_tessellation_compare_name> Cmiss_set_Cmiss_tessellation;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_tessellation_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_tessellation_module, Cmiss_tessellation_change_detail *);
 
 /*
 Module functions
@@ -430,32 +524,20 @@ Module functions
 
 namespace {
 
-/***************************************************************************//**
- * Frees the memory for the tessellations of <*tessellation_address>.
- * Sets *tessellation_address to NULL.
- */
-int DESTROY(Cmiss_tessellation)(struct Cmiss_tessellation **tessellation_address)
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(Cmiss_tessellation)
+
+/** Override to extract type-specific change details from field */
+static inline Cmiss_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Cmiss_tessellation)(
+	struct Cmiss_tessellation *tessellation)
 {
-	int return_code;
-
-	ENTER(DESTROY(Cmiss_tessellation));
-	if (tessellation_address && (*tessellation_address))
-	{
-		delete *tessellation_address;
-		*tessellation_address = NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_tessellation).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return tessellation->extractChangeDetail();
 }
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Cmiss_tessellation)
+DECLARE_MANAGER_UPDATE_FUNCTION(Cmiss_tessellation)
+
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Cmiss_tessellation)
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Cmiss_tessellation)
 
 } /* anonymous namespace */
 
@@ -464,77 +546,35 @@ Global functions
 ----------------
 */
 
-DECLARE_ACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
+{
+	if (object)
+		return object->access();
+	return 0;
+}
 
-/**
- * Custom version handling is_managed_flag.
- */
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 {
-	int return_code;
-	struct Cmiss_tessellation *object;
-
-	ENTER(DEACCESS(Cmiss_tessellation));
-	if (object_address && (object = *object_address))
-	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
-		{
-			return_code = DESTROY(Cmiss_tessellation)(object_address);
-		}
-		else if ((!object->is_managed_flag) && (object->manager) &&
-			((1 == object->access_count) || ((2 == object->access_count) &&
-				(MANAGER_CHANGE_NONE(Cmiss_tessellation) != object->manager_change_status))))
-		{
-			return_code =
-				REMOVE_OBJECT_FROM_MANAGER(Cmiss_tessellation)(object, object->manager);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*object_address = (struct Cmiss_tessellation *)NULL;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DEACCESS(Cmiss_tessellation) */
+	return Cmiss_tessellation::deaccess(object_address);
+}
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 {
-	int return_code;
-
-	ENTER(REACCESS(Cmiss_tessellation));
 	if (object_address)
 	{
-		return_code = 1;
 		if (new_object)
 		{
-			/* access the new object */
-			(new_object->access_count)++;
+			new_object->access();
 		}
 		if (*object_address)
 		{
-			/* deaccess the current object */
-			DEACCESS(Cmiss_tessellation)(object_address);
+			Cmiss_tessellation::deaccess(object_address);
 		}
-		/* point to the new object */
 		*object_address = new_object;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(Cmiss_tessellation).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(Cmiss_tessellation) */
+	return 0;
+}
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_tessellation)
 
@@ -550,6 +590,33 @@ int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellati
 	struct Cmiss_tessellation_module *tessellation_module)
 {
 	return MANAGER_SET_OWNER(Cmiss_tessellation)(manager, tessellation_module);
+}
+
+int Cmiss_tessellation_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, Cmiss_tessellation *tessellation,
+	const Cmiss_tessellation_change_detail **change_detail_address)
+{
+	if (message && tessellation && change_detail_address)
+	{
+		int i;
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(Cmiss_tessellation) *object_change;
+
+		object_change = message->object_changes;
+		for (i = message->number_of_changed_objects; 0 < i; i--)
+		{
+			if (tessellation == object_change->object)
+			{
+				*change_detail_address = object_change->detail;
+				return (object_change->change);
+			}
+			object_change++;
+		}
+	}
+	if (change_detail_address)
+	{
+		*change_detail_address = 0;
+	}
+	return (MANAGER_CHANGE_NONE(Cmiss_tessellation));
 }
 
 Cmiss_tessellation_module_id Cmiss_tessellation_module_create()
@@ -627,9 +694,26 @@ int Cmiss_tessellation_module_set_default_tessellation(
 	return 0;
 }
 
+Cmiss_tessellation_id Cmiss_tessellation_module_get_default_points_tessellation(
+	Cmiss_tessellation_module_id tessellation_module)
+{
+	if (tessellation_module)
+		return tessellation_module->getDefaultPointsTessellation();
+	return 0;
+}
+
+int Cmiss_tessellation_module_set_default_points_tessellation(
+	Cmiss_tessellation_module_id tessellation_module,
+	Cmiss_tessellation_id tessellation)
+{
+	if (tessellation_module)
+		return tessellation_module->setDefaultPointsTessellation(tessellation);
+	return 0;
+}
+
 struct Cmiss_tessellation *Cmiss_tessellation_create_private()
 {
-	return new Cmiss_tessellation();
+	return Cmiss_tessellation::create();
 }
 
 Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation)
@@ -668,29 +752,6 @@ int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
-}
-
-int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute attribute)
-{
-	int value = 0;
-	if (tessellation)
-	{
-		switch (attribute)
-		{
-		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
-			value = tessellation->minimum_divisions_size;
-			break;
-		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
-			value = tessellation->refinement_factors_size;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"Cmiss_tessellation_get_attribute_integer.  Invalid attribute");
-			break;
-		}
-	}
-	return value;
 }
 
 char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
@@ -774,144 +835,147 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const c
 	return (return_code);
 }
 
-int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, int *minimum_divisions)
+int Cmiss_tessellation_get_circle_divisions(
+	Cmiss_tessellation_id tessellation)
 {
-	int return_code = 1;
-	if (tessellation && (dimensions > 0) && minimum_divisions)
+	if (tessellation)
+		return tessellation->getCircleDivisions();
+	return 0;
+}
+
+int Cmiss_tessellation_set_circle_divisions(
+	Cmiss_tessellation_id tessellation, int circleDivisions)
+{
+	if (tessellation)
+		return tessellation->setCircleDivisions(circleDivisions);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
+	int valuesCount, int *valuesOut)
+{
+	if (tessellation && ((valuesCount == 0) || ((valuesCount > 0) && valuesOut)))
 	{
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < valuesCount; i++)
 		{
-			minimum_divisions[i] = tessellation->get_minimum_divisions_value(i);
+			valuesOut[i] = tessellation->get_minimum_divisions_value(i);
 		}
+		return tessellation->minimum_divisions_size;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_get_minimum_divisions.  Invalid arguments");
-		return_code = 0;
-	}
-	return return_code;
+	return 0;
 }
 
 int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, const int *minimum_divisions)
+	int valuesCount, const int *valuesIn)
 {
-	int return_code = 1;
-	if (tessellation && (dimensions > 0) && minimum_divisions)
+	if (tessellation && (valuesCount > 0) && valuesIn)
 	{
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < valuesCount; i++)
 		{
-			if (minimum_divisions[i] < 1)
+			if (valuesIn[i] < 1)
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_tessellation_set_minimum_divisions.  "
-					"Minimum divisions must be at least 1");
-				return_code = 0;
+				return CMISS_ERROR_ARGUMENT;
 			}
 		}
-		if (return_code)
-		{
-			return_code =
-				tessellation->set_minimum_divisions(dimensions, minimum_divisions);
-		}
+		tessellation->set_minimum_divisions(valuesCount, valuesIn);
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_set_minimum_divisions.  Invalid arguments");
-		return_code = 0;
-	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
-	int dimensions, int *refinement_factors)
+	int valuesCount, int *valuesOut)
 {
-	int return_code = 1;
-	if (tessellation && (dimensions > 0) && refinement_factors)
+	if (tessellation && ((valuesCount == 0) || ((valuesCount > 0) && valuesOut)))
 	{
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < valuesCount; i++)
 		{
-			refinement_factors[i] = tessellation->get_refinement_factors_value(i);
+			valuesOut[i] = tessellation->get_refinement_factors_value(i);
 		}
+		return tessellation->refinement_factors_size;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_get_refinement_factors.  Invalid arguments");
-		return_code = 0;
-	}
-	return return_code;
+	return 0;
 }
 
 int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
-	int dimensions, const int *refinement_factors)
+	int valuesCount, const int *valuesIn)
 {
-	int return_code = 1;
-	if (tessellation && (dimensions > 0) && refinement_factors)
+	if (tessellation && (valuesCount > 0) && valuesIn)
 	{
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < valuesCount; i++)
 		{
-			if (refinement_factors[i] < 1)
+			if (valuesIn[i] < 1)
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_tessellation_set_refinement_factors.  "
-					"Minimum divisions must be at least 1");
-				return_code = 0;
+				return CMISS_ERROR_ARGUMENT;
 			}
 		}
-		if (return_code)
-		{
-			return_code =
-				tessellation->set_refinement_factors(dimensions, refinement_factors);
-		}
+		tessellation->set_refinement_factors(valuesCount, valuesIn);
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_set_refinement_factors.  Invalid arguments");
-		return_code = 0;
-	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
-/***************************************************************************//**
- * Internal function returning true if the tessellation has coarse and fine
- * divisions both equal to the fixed divisions supplied.
- *
- * @param tessellation  The tessellation to query.
- * @param dimensions  The size of the fixed_divisions array.
- * @param fixed_divisions  Array of divisions to match.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, int *fixed_divisions)
+Cmiss_tessellation_id Cmiss_tessellation_module_find_or_create_fixed_tessellation(
+	Cmiss_tessellation_module_id tessellationModule,
+	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
+	Cmiss_tessellation_id defaultTessellation)
 {
-	int return_code = 0;
-	if (tessellation && (dimensions > 0) && fixed_divisions)
+	Cmiss_tessellation_id tessellation = 0;
+	if (tessellationModule && ((0 == elementDivisionsCount) ||
+		((0 < elementDivisionsCount && elementDivisions))) && defaultTessellation)
 	{
-		if ((dimensions >= tessellation->minimum_divisions_size) &&
-			(dimensions >= tessellation->refinement_factors_size))
+		Cmiss_set_Cmiss_tessellation *all_tessellations =
+			reinterpret_cast<Cmiss_set_Cmiss_tessellation *>(tessellationModule->getManager()->object_list);
+		for (Cmiss_set_Cmiss_tessellation::iterator iter = all_tessellations->begin();
+			iter != all_tessellations->end(); ++iter)
 		{
-			return_code = 1;
-			for (int i = 0; i < dimensions; i++)
+			Cmiss_tessellation_id tempTessellation = *iter;
+			bool match = (0 == circleDivisions) || (tempTessellation->circleDivisions == circleDivisions);
+			if (match && (0 < elementDivisionsCount))
 			{
-				if ((tessellation->get_minimum_divisions_value(i) != fixed_divisions[i]) ||
-					(tessellation->get_refinement_factors_value(i) != 1))
+				int count = elementDivisionsCount;
+				if (count < tempTessellation->minimum_divisions_size)
+					count = tempTessellation->minimum_divisions_size;
+				if (count < tempTessellation->refinement_factors_size)
+					count = tempTessellation->refinement_factors_size;
+				int value = 0;
+				for (int i = 0; i < count; i++)
 				{
-					return_code = 0;
-					break;
+					if (i < elementDivisionsCount)
+						value = elementDivisions[i];
+					if ((tempTessellation->get_minimum_divisions_value(i) != value) ||
+						(tempTessellation->get_refinement_factors_value(i) != 1))
+					{
+						match = false;
+						break;
+					}
 				}
 			}
+			if (match)
+			{
+				tessellation = tempTessellation->access();
+				break;
+			}
 		}
+		if (!tessellation)
+		{
+			tessellationModule->beginChange();
+			tessellation = tessellationModule->createTessellation();
+			*tessellation = *defaultTessellation;
+			if (0 < elementDivisionsCount)
+			{
+				tessellation->set_minimum_divisions(elementDivisionsCount, elementDivisions);
+				const int one = 1;
+				tessellation->set_refinement_factors(1, &one);
+			}
+			if (0 != circleDivisions)
+			{
+				tessellation->setCircleDivisions(circleDivisions);
+			}
+			tessellationModule->endChange();
+		}	
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_has_fixed_divisions.  Invalid arguments");
-	}
-	return return_code;
+	return tessellation;
 }
 
 int string_to_divisions(const char *input, int **values_in, int *size_in)
@@ -976,39 +1040,4 @@ int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, vo
 		return 1;
 	}
 	return 0;
-}
-
-class Cmiss_tessellation_attribute_conversion
-{
-public:
-	static const char *to_string(enum Cmiss_tessellation_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
-			enum_string = "MINIMUM_DIVISIONS_SIZE";
-			break;
-		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
-			enum_string = "REFINEMENT_FACTORS_SIZE";
-			break;
-		default:
-			break;
-		}
-		return enum_string;
-	}
-};
-
-enum Cmiss_tessellation_attribute
-	Cmiss_tessellation_attribute_enum_from_string(const char  *string)
-{
-	return string_to_enum<enum Cmiss_tessellation_attribute,
-	Cmiss_tessellation_attribute_conversion>(string);
-}
-
-char *Cmiss_tessellation_attribute_enum_to_string(
-	enum Cmiss_tessellation_attribute attribute)
-{
-	const char *attribute_string = Cmiss_tessellation_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
