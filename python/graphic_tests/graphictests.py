@@ -33,7 +33,7 @@ class GraphicTestCase(unittest.TestCase):
         attributes = graphic.getPointAttributes()
         self.assertTrue(attributes.isValid())
         glyph_module = self.graphics_module.getGlyphModule()
-        glyph_module.createStandardGlyphs()
+        glyph_module.defineStandardGlyphs()
         result = attributes.setGlyphType(Graphic.GLYPH_TYPE_SPHERE)
         self.assertEqual(1, result)
 
