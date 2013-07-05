@@ -221,11 +221,6 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 			return_code =
 				(graphic_type == CMISS_GRAPHIC_POINTS);
 		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD:
-		case CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION:
-		{
-			return_code = 1;
-		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE:
 		{
 			return_code =
@@ -240,15 +235,6 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
 				(graphic_type == CMISS_GRAPHIC_LINES) ||
 				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG:
-		case CMISS_GRAPHIC_ATTRIBUTE_FACE:
-		{
-			return_code = 1;
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH:
-		{
-			return_code = 1;
 		} break;
 		default:
 		{
@@ -2129,34 +2115,28 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 		}
 
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
-			CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+		append_string(&graphic_string, " tessellation ", &error);
+		if (graphic->tessellation)
 		{
-			append_string(&graphic_string, " tessellation ", &error);
-			if (graphic->tessellation)
-			{
-				name = Cmiss_tessellation_get_name(graphic->tessellation);
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				append_string(&graphic_string, name, &error);
-				DEALLOCATE(name);
-			}
-			else
-			{
-				append_string(&graphic_string,"NONE",&error);
-			}
+			name = Cmiss_tessellation_get_name(graphic->tessellation);
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			append_string(&graphic_string, name, &error);
+			DEALLOCATE(name);
+		}
+		else
+		{
+			append_string(&graphic_string,"NONE",&error);
 		}
 
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
 			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(graphic->coordinate_system),&error);
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH))
+
+		if (0 != graphic->line_width)
 		{
-			if (0 != graphic->line_width)
-			{
-				sprintf(temp_string, " line_width %d", graphic->line_width);
-				append_string(&graphic_string,temp_string,&error);
-			}
+			sprintf(temp_string, " line_width %d", graphic->line_width);
+			append_string(&graphic_string,temp_string,&error);
 		}
 
 		if (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
@@ -4866,16 +4846,10 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 				(graphic->label_density_field==second_graphic->label_density_field);
 		}
 
-		if (return_code && Cmiss_graphic_type_uses_attribute(
-			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
-		{
-			return_code = (graphic->tessellation == second_graphic->tessellation);
-		}
-
-		if (return_code && Cmiss_graphic_type_uses_attribute(
-			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
+		if (return_code)
 		{
 			return_code =
+				(graphic->tessellation == second_graphic->tessellation) &&
 				(graphic->native_discretization_field ==
 					second_graphic->native_discretization_field);
 		}
@@ -5365,10 +5339,7 @@ int Cmiss_graphic_set_native_discretization_field(
 	struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field)
 {
 	int return_code;
-
-	ENTER(Cmiss_graphic_set_native_discretization_field);
-	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
-		CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
+	if (graphic)
 	{
 		return_code=1;
 		REACCESS(FE_field)(&(graphic->native_discretization_field),
@@ -5380,8 +5351,6 @@ int Cmiss_graphic_set_native_discretization_field(
 			"Cmiss_graphic_set_native_discretization_field.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
 }
 

@@ -928,8 +928,8 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 			Cmiss_tessellation_module_destroy(&tessellationModule);
 		}	
 
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD) &&
-			(graphic_type != CMISS_GRAPHIC_POINTS) &&
+		if ((0 != rendition->native_discretization_field) &&
+			(0 < Cmiss_graphic_get_domain_dimension(graphic)) &&
 			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
 		{
 			Cmiss_graphic_set_native_discretization_field(graphic, rendition->native_discretization_field);
