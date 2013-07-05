@@ -192,11 +192,16 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
 	}
 }
 
-/** Override to extract type-specific change details from field */
 static inline struct Cmiss_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Computed_field)(
 	struct Computed_field *field)
 {
 	return field->core->extract_change_detail();
+}
+
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Computed_field)(
+	Cmiss_field_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
 }
 
 DECLARE_MANAGER_UPDATE_FUNCTION(Computed_field)
