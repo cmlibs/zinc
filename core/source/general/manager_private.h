@@ -152,15 +152,30 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(objec
 #define MANAGER_EXTRACT_CHANGE_DETAIL( object_type )  MANAGER_EXTRACT_CHANGE_DETAIL_(object_type)
 
 /**
+ * Default function for no per-object change detail. Does nothing.
  * Override to extract change details from object, if any.
- * Note: Change details must be freed by delete operator!
+ * Must be cleaned up by MANAGER_CLEANUP_CHANGE_DETAIL, see below.
  * Example uses include field, tessellation.
  */
 #define DECLARE_DEFAULT_MANAGER_EXTRACT_CHANGE_DETAIL_FUNCTION( object_type ) \
-static void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object) \
+static inline void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object) \
 { \
 	USE_PARAMETER(object); \
 	return 0; \
+}
+
+#define MANAGER_CLEANUP_CHANGE_DETAIL_( object_type )  manager_cleanup_change_detail_ ## object_type
+#define MANAGER_CLEANUP_CHANGE_DETAIL( object_type )  MANAGER_CLEANUP_CHANGE_DETAIL_(object_type)
+
+/**
+ * Default function for no per-object change detail. Does nothing.
+ * Override to clean up change detail object.
+ * Example uses include field, tessellation.
+ */
+#define DECLARE_DEFAULT_MANAGER_CLEANUP_CHANGE_DETAIL_FUNCTION( object_type ) \
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(void **change_detail_address) \
+{ \
+	USE_PARAMETER(change_detail_address); \
 }
 
 #define MANAGER_UPDATE_( object_type )  manager_update_ ## object_type
@@ -244,7 +259,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 				object_change = message.object_changes; \
 				for (i = message.number_of_changed_objects; i > 0; i--) \
 				{ \
-					delete object_change->detail; \
+					MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(&(object_change->detail)); \
 					DEACCESS(object_type)(&(object_change->object)); \
 					object_change++; \
 				} \
@@ -1436,6 +1451,7 @@ DECLARE_MANAGER_SET_OWNER_FUNCTION(object_type, owner_type)
 #define DECLARE_LOCAL_MANAGER_FUNCTIONS(object_type) \
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(object_type) \
 DECLARE_DEFAULT_MANAGER_EXTRACT_CHANGE_DETAIL_FUNCTION(object_type) \
+DECLARE_DEFAULT_MANAGER_CLEANUP_CHANGE_DETAIL_FUNCTION(object_type) \
 DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(object_type)

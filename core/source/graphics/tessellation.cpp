@@ -526,11 +526,16 @@ namespace {
 
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(Cmiss_tessellation)
 
-/** Override to extract type-specific change details from field */
 static inline Cmiss_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Cmiss_tessellation)(
 	struct Cmiss_tessellation *tessellation)
 {
 	return tessellation->extractChangeDetail();
+}
+
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Cmiss_tessellation)(
+	Cmiss_tessellation_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
 }
 
 DECLARE_MANAGER_UPDATE_FUNCTION(Cmiss_tessellation)
