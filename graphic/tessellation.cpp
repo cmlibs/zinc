@@ -30,7 +30,7 @@ TEST(Cmiss_tessellation_module_api, valid_args)
 	EXPECT_EQ(1, result);
 	EXPECT_EQ(4, value);
 	result = Cmiss_tessellation_get_circle_divisions(tessellation);
-	EXPECT_EQ(6, result);
+	EXPECT_EQ(12, result);
 	Cmiss_tessellation_destroy(&tessellation);
 
 	// following should destroy default tessellation as not managed and not used
@@ -47,7 +47,7 @@ TEST(Cmiss_tessellation_module_api, valid_args)
 	EXPECT_EQ(1, result);
 	EXPECT_EQ(1, value);
 	result = Cmiss_tessellation_get_circle_divisions(tessellation);
-	EXPECT_EQ(6, result);
+	EXPECT_EQ(12, result);
 	Cmiss_tessellation_destroy(&tessellation);
 
 	tessellation = Cmiss_tessellation_module_create_tessellation(tm);
@@ -102,7 +102,7 @@ TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 	EXPECT_EQ(1, result);
 	EXPECT_EQ(4, value);
 	result = tessellation.getCircleDivisions();
-	EXPECT_EQ(6, result);
+	EXPECT_EQ(12, result);
 
 	// following should destroy default tessellation as not managed and not used
 	// otherwise it isn't possible to create a tessellation named "default" below
@@ -120,7 +120,7 @@ TEST(Cmiss_tessellation_module_api, valid_args_cpp)
 	EXPECT_EQ(1, result);
 	EXPECT_EQ(1, value);
 	result = tessellation.getCircleDivisions();
-	EXPECT_EQ(6, result);
+	EXPECT_EQ(12, result);
 
 	tessellation = tm.createTessellation();
 	EXPECT_TRUE(tessellation.isValid());
