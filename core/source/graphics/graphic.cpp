@@ -1102,7 +1102,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphic->line_base_size, graphic->line_scale_factors,
 												graphic->line_orientation_scale_field,
 												graphic->streamline_data_type, graphic->data_field,
-												graphic_to_object_data->fe_region)))
+												graphic_to_object_data->fe_region, graphic->render_type)))
 										{
 											if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
 												time, surface))
@@ -1220,7 +1220,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 						graphic->line_base_size, graphic->line_scale_factors,
 						graphic->line_orientation_scale_field,
 						graphic->streamline_data_type, graphic->data_field,
-						graphic_to_object_data->fe_region)))
+						graphic_to_object_data->fe_region, graphic->render_type)))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 							graphic->graphics_object, /*graphics_object_time*/0, surface)))
