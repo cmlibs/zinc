@@ -119,3 +119,57 @@ TEST(Cmiss_graphic_streamlines, stream_vector_field_cpp)
 	tempStreamVectorField = st.getStreamVectorField();
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 }
+
+TEST(Cmiss_graphic_streamlines, track_direction)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+
+	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK, Cmiss_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_track_direction(st, CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK));
+	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK, Cmiss_graphic_streamlines_get_track_direction(st));
+
+	Cmiss_graphic_streamlines_destroy(&st);
+}
+
+TEST(Cmiss_graphic_streamlines, track_direction_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	EXPECT_TRUE(st.isValid());
+
+	EXPECT_EQ(GraphicStreamlines::FORWARD_TRACK, st.getTrackDirection());
+	EXPECT_EQ(CMISS_OK, st.setTrackDirection(GraphicStreamlines::REVERSE_TRACK));
+	EXPECT_EQ(GraphicStreamlines::REVERSE_TRACK, st.getTrackDirection());
+}
+
+TEST(Cmiss_graphic_streamlines, track_length)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+
+	const double trackLength = 500.0;
+	EXPECT_DOUBLE_EQ(1.0, Cmiss_graphic_streamlines_get_track_length(st));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_track_length(st, trackLength));
+	EXPECT_DOUBLE_EQ(trackLength, Cmiss_graphic_streamlines_get_track_length(st));
+
+	Cmiss_graphic_streamlines_destroy(&st);
+}
+
+TEST(Cmiss_graphic_streamlines, track_length_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	EXPECT_TRUE(st.isValid());
+
+	const double trackLength = 500.0;
+	EXPECT_DOUBLE_EQ(1.0, st.getTrackLength());
+	EXPECT_EQ(CMISS_OK, st.setTrackLength(trackLength));
+	EXPECT_DOUBLE_EQ(trackLength, st.getTrackLength());
+}

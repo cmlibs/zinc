@@ -344,8 +344,8 @@ TEST(Cmiss_graphic_api, tessellation)
 	Cmiss_tessellation_destroy(&temp_tessellation);
 	Cmiss_tessellation_destroy(&tessellation);
 
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation(gr, 0));
-	EXPECT_EQ(static_cast<Cmiss_tessellation_id>(0), Cmiss_graphic_get_tessellation(gr));
+	// can't remove tessellation
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_set_tessellation(gr, 0));
 
 	Cmiss_tessellation_module_destroy(&tessellation_module);
 	Cmiss_graphic_destroy(&gr);
@@ -369,10 +369,9 @@ TEST(Cmiss_graphic_api, tessellation_cpp)
 	tempTessellation = gr.getTessellation();
 	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
 
+	// can't remove tessellation
 	Tessellation noTessellation;
-	EXPECT_EQ(CMISS_OK, gr.setTessellation(noTessellation)); // clear tessellation
-	tempTessellation = gr.getTessellation();
-	EXPECT_FALSE(tempTessellation.isValid());
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setTessellation(noTessellation));
 }
 
 TEST(Cmiss_graphic_api, texture_coordinate_field)
@@ -767,11 +766,14 @@ TEST(Cmiss_graphic_api, line_attributes)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_CYLINDERS);
+	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphic_line_attributes_id lineattr = Cmiss_graphic_get_line_attributes(gr);
 	EXPECT_NE(static_cast<Cmiss_graphic_line_attributes *>(0), lineattr);
+	EXPECT_EQ(CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE, Cmiss_graphic_line_attributes_get_shape(lineattr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_shape(lineattr, CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION, Cmiss_graphic_line_attributes_get_shape(lineattr));
 
 	double value = 1.0;
 	Cmiss_field_id orientation_scale_field = Cmiss_field_module_create_constant(zinc.fm, 1, &value);
@@ -789,37 +791,33 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_line_attributes_get_orientation_scale_field(lineattr));
 
 	const double values[] = { 0.5, 1.2 };
-	double outputValues[3];
+	double outputValues[2];
 
 	// check default values = 0.0
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, outputValues));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
-	EXPECT_EQ(0.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_base_size(lineattr, 2, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, 0));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[1], outputValues[1]);
-	EXPECT_EQ(values[1], outputValues[2]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	// check default values = 1.0
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, outputValues));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(1.0, outputValues[0]);
 	EXPECT_EQ(1.0, outputValues[1]);
-	EXPECT_EQ(1.0, outputValues[2]);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_set_scale_factors(lineattr, 2, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, 0));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[1], outputValues[1]);
-	EXPECT_EQ(values[1], outputValues[2]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	Cmiss_graphic_line_attributes_destroy(&lineattr);
 	Cmiss_graphic_destroy(&gr);
@@ -829,11 +827,14 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_CYLINDERS);
+	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_LINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicLineAttributes lineattr = gr.getLineAttributes();
 	EXPECT_TRUE(lineattr.isValid());
+	EXPECT_EQ(GraphicLineAttributes::SHAPE_LINE, lineattr.getShape());
+	EXPECT_EQ(CMISS_OK, lineattr.setShape(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
 
 	double value = 1.0;
 	Field orientationScaleField = zinc.fm.createConstant(1, &value);
@@ -850,26 +851,24 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
-	double outputValues[3];
+	double outputValues[2];
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(2, 0));
 	EXPECT_EQ(CMISS_OK, lineattr.setBaseSize(2, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(3, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.getBaseSize(3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(2, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.getBaseSize(2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[1], outputValues[1]);
-	EXPECT_EQ(values[1], outputValues[2]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(0, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(2, 0));
 	EXPECT_EQ(CMISS_OK, lineattr.setScaleFactors(2, values));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(3, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.getScaleFactors(3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(2, 0));
+	EXPECT_EQ(CMISS_OK, lineattr.getScaleFactors(2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[1], outputValues[1]);
-	EXPECT_EQ(values[1], outputValues[2]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 }
 
