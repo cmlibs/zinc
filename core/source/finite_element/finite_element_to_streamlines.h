@@ -91,7 +91,7 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length,enum Streamline_data_type data_type,
+	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
@@ -107,26 +107,29 @@ in that region.
 expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
+/**
+ * Creates a <GT_surface> streamline from the <coordinate_field> following
+ * <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
+ * the xi coordinates supplied. If <reverse_track> is true, the reverse of the
+ * stream vector is tracked, and the travel_scalar is made negative.
+ * If <fe_region> is not NULL then the function will restrict itself to elements
+ * in that region.
+ * @param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+ * expected to have been set in the field_cache if needed.
+ * @param line_shape  LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
+ * @param line_base_size  width and thickness of line, use depends on shape.
+ * @param line_scale_factors  Ignored. For future use.
+ * @param line_orientation_scale_field  Ignored. For future use.
+ */
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length, FE_value width, enum Streamline_type type,
+	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
+	enum Cmiss_graphic_line_attributes_shape line_shape, int circleDivisions,
+	FE_value *line_base_size, FE_value *line_scale_factors,
+	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
 	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 23 June 2004
-
-DESCRIPTION :
-Creates a <GT_surface> streamline from the <coordinate_field> following
-<stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
-the xi coordinates supplied. If <reverse_track> is true, the reverse of the
-stream vector is tracked, and the travel_scalar is made negative.
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
-@param field_cache  Cmiss_field_cache for evaluating fields with. Time is
-expected to have been set in the field_cache if needed.
-==============================================================================*/
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,

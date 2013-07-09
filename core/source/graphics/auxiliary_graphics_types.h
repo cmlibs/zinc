@@ -49,6 +49,7 @@ represent curves in three xi-directions;
 #define AUXILIARY_GRAPHICS_TYPES_H
 
 #include "zinc/zincconfigure.h"
+#include "zinc/types/graphicid.h"
 #include "zinc/types/graphicsrendertype.h"
 
 #include "general/enumerator.h"
@@ -113,25 +114,6 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	GRAPHICS_DRAW_SELECTED = 3,
 	GRAPHICS_DRAW_UNSELECTED = 4
 }; /* enum Graphics_select_mode */
-
-enum Streamline_type
-/*******************************************************************************
-LAST MODIFIED : 19 March 2001
-
-DESCRIPTION :
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-for automatic creation of choose_enumerator widgets.
-==============================================================================*/
-{
-	STREAM_INVALID = 0,
-	STREAM_EXTRUDED_ELLIPSE = 1,
-	STREAM_LINE = 2,
-	STREAM_EXTRUDED_RECTANGLE = 3,
-	STREAM_RIBBON = 4,
-	STREAM_EXTRUDED_CIRCLE = 5
-};
 
 enum Streamline_data_type
 /*******************************************************************************
@@ -199,7 +181,9 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphics_select_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_render_type);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_streamlines_track_direction);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
 

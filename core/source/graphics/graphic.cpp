@@ -175,10 +175,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 		{
 			enumerator_string = "lines";
 		} break;
-		case CMISS_GRAPHIC_CYLINDERS:
-		{
-			enumerator_string = "cylinders";
-		} break;
 		case CMISS_GRAPHIC_SURFACES:
 		{
 			enumerator_string = "surfaces";
@@ -223,18 +219,14 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE:
 		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
+			return_code = 1;
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD:
 		{
 			return_code =
 				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
 				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
-				(graphic_type == CMISS_GRAPHIC_LINES) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
+				(graphic_type == CMISS_GRAPHIC_LINES);
 		} break;
 		default:
 		{
@@ -255,8 +247,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 		(CMISS_GRAPHIC_LINES==graphic_type)||
 		(CMISS_GRAPHIC_SURFACES==graphic_type)||
 		(CMISS_GRAPHIC_CONTOURS==graphic_type)||
-		(CMISS_GRAPHIC_STREAMLINES==graphic_type)||
-		(CMISS_GRAPHIC_CYLINDERS==graphic_type))
+		(CMISS_GRAPHIC_STREAMLINES==graphic_type))
 	{
 		if (ALLOCATE(graphic,struct Cmiss_graphic,1))
 		{
@@ -275,7 +266,8 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->face=CMISS_ELEMENT_FACE_ALL; /* any face */
 
 			/* line attributes */
-			for (int i = 0; i < 3; i++)
+			graphic->line_shape = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE;
+			for (int i = 0; i < 2; i++)
 			{
 				graphic->line_base_size[i] = 0.0;
 				graphic->line_scale_factors[i] = 1.0;
@@ -314,7 +306,6 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 				graphic->domain_type = CMISS_FIELD_DOMAIN_POINT;
 				break;
 			case CMISS_GRAPHIC_LINES:
-			case CMISS_GRAPHIC_CYLINDERS:
 				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_1D;
 				break;
 			case CMISS_GRAPHIC_SURFACES:
@@ -337,9 +328,8 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->seed_xi[1]=0.5;
 			graphic->seed_xi[2]=0.5;
 			/* for streamlines only */
-			graphic->streamline_type=STREAM_LINE;
 			graphic->stream_vector_field=(struct Computed_field *)NULL;
-			graphic->reverse_track=0;
+			graphic->streamlines_track_direction = CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK;
 			graphic->streamline_length=1.0;
 			graphic->seed_nodeset = (Cmiss_nodeset_id)0;
 			graphic->seed_node_mesh_location_field = (struct Computed_field *)NULL;
@@ -676,68 +666,71 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				{
 					case CMISS_GRAPHIC_LINES:
 					{
-						if (graphic_to_object_data->existing_graphics)
+						if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE == graphic->line_shape)
 						{
-							/* So far ignore these */
-						}
-						if (draw_element)
-						{
-							return_code = FE_element_add_line_to_vertex_array(
-								element, graphic_to_object_data->field_cache,
-								GT_object_get_vertex_set(graphic->graphics_object),
-								graphic_to_object_data->rc_coordinate_field,
-								graphic->data_field,
-								graphic_to_object_data->number_of_data_values,
-								graphic_to_object_data->data_copy_buffer,
-								graphic->texture_coordinate_field,
-								number_in_xi[0], top_level_element,
-								graphic_to_object_data->time);
-						}
-					} break;
-					case CMISS_GRAPHIC_CYLINDERS:
-					{
-						if (graphic_to_object_data->existing_graphics)
-						{
-							surface = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_surface)
-								(graphic_to_object_data->existing_graphics, time,
-									element_graphics_name);
+							if (graphic_to_object_data->existing_graphics)
+							{
+								/* So far ignore these */
+							}
+							if (draw_element)
+							{
+								return_code = FE_element_add_line_to_vertex_array(
+									element, graphic_to_object_data->field_cache,
+									GT_object_get_vertex_set(graphic->graphics_object),
+									graphic_to_object_data->rc_coordinate_field,
+									graphic->data_field,
+									graphic_to_object_data->number_of_data_values,
+									graphic_to_object_data->data_copy_buffer,
+									graphic->texture_coordinate_field,
+									number_in_xi[0], top_level_element,
+									graphic_to_object_data->time);
+							}
 						}
 						else
 						{
-							surface = (struct GT_surface *)NULL;
-						}
-						if (draw_element)
-						{
-							if (surface ||
-								(surface = create_cylinder_from_FE_element(element,
-									graphic_to_object_data->field_cache,
-									graphic_to_object_data->master_mesh,
-									graphic_to_object_data->rc_coordinate_field,
-									graphic->data_field, graphic->line_base_size,
-									graphic->line_scale_factors, graphic->line_orientation_scale_field,
-									number_in_xi[0],
-									Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
-									graphic->texture_coordinate_field,
-									top_level_element, graphic->render_type,
-									graphic_to_object_data->time)))
+							if (graphic_to_object_data->existing_graphics)
 							{
-								if (!GT_OBJECT_ADD(GT_surface)(
-									graphic->graphics_object, time, surface))
+								surface = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_surface)
+									(graphic_to_object_data->existing_graphics, time,
+										element_graphics_name);
+							}
+							else
+							{
+								surface = (struct GT_surface *)NULL;
+							}
+							if (draw_element)
+							{
+								if (surface ||
+									(surface = create_cylinder_from_FE_element(element,
+										graphic_to_object_data->field_cache,
+										graphic_to_object_data->master_mesh,
+										graphic_to_object_data->rc_coordinate_field,
+										graphic->data_field, graphic->line_base_size,
+										graphic->line_scale_factors, graphic->line_orientation_scale_field,
+										number_in_xi[0],
+										Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
+										graphic->texture_coordinate_field,
+										top_level_element, graphic->render_type,
+										graphic_to_object_data->time)))
 								{
-									DESTROY(GT_surface)(&surface);
+									if (!GT_OBJECT_ADD(GT_surface)(
+										graphic->graphics_object, time, surface))
+									{
+										DESTROY(GT_surface)(&surface);
+										return_code = 0;
+									}
+								}
+								else
+								{
 									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							if (surface)
-							{
-								DESTROY(GT_surface)(&surface);
+								if (surface)
+								{
+									DESTROY(GT_surface)(&surface);
+								}
 							}
 						}
 					} break;
@@ -1064,61 +1057,67 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							graphic->xi_point_density_field,
 							&number_of_xi_points, &xi_points))
 						{
-							if (STREAM_LINE == graphic->streamline_type)
+							switch (graphic->line_shape)
 							{
-								for (i = 0; i < number_of_xi_points; i++)
+							case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
 								{
-									initial_xi[0] = xi_points[i][0];
-									initial_xi[1] = xi_points[i][1];
-									initial_xi[2] = xi_points[i][2];
-									if (NULL != (polyline = create_GT_polyline_streamline_FE_element(
-											element, initial_xi, graphic_to_object_data->field_cache,
-											graphic_to_object_data->rc_coordinate_field,
-											graphic_to_object_data->wrapper_stream_vector_field,
-											graphic->reverse_track, graphic->streamline_length,
-											graphic->streamline_data_type, graphic->data_field,
-											graphic_to_object_data->fe_region)))
+									for (i = 0; i < number_of_xi_points; i++)
 									{
-										if (!GT_OBJECT_ADD(GT_polyline)(graphic->graphics_object,
-											time, polyline))
+										initial_xi[0] = xi_points[i][0];
+										initial_xi[1] = xi_points[i][1];
+										initial_xi[2] = xi_points[i][2];
+										if (NULL != (polyline = create_GT_polyline_streamline_FE_element(
+												element, initial_xi, graphic_to_object_data->field_cache,
+												graphic_to_object_data->rc_coordinate_field,
+												graphic_to_object_data->wrapper_stream_vector_field,
+												static_cast<int>(graphic->streamlines_track_direction == CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK),
+												graphic->streamline_length,
+												graphic->streamline_data_type, graphic->data_field,
+												graphic_to_object_data->fe_region)))
 										{
-											DESTROY(GT_polyline)(&polyline);
+											if (!GT_OBJECT_ADD(GT_polyline)(graphic->graphics_object,
+												time, polyline))
+											{
+												DESTROY(GT_polyline)(&polyline);
+											}
 										}
 									}
-								}
-							}
-							else if ((graphic->streamline_type == STREAM_RIBBON)
-								|| (graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)
-								|| (graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)
-								|| (graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
-							{
-								for (i = 0; i < number_of_xi_points; i++)
+								} break;
+							case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+							case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+							case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 								{
-									initial_xi[0] = xi_points[i][0];
-									initial_xi[1] = xi_points[i][1];
-									initial_xi[2] = xi_points[i][2];
-									if (NULL != (surface = create_GT_surface_streamribbon_FE_element(
-											element, initial_xi, graphic_to_object_data->field_cache,
-											graphic_to_object_data->rc_coordinate_field,
-											graphic_to_object_data->wrapper_stream_vector_field,
-											graphic->reverse_track, graphic->streamline_length,
-											graphic->line_base_size[0], graphic->streamline_type,
-											graphic->streamline_data_type, graphic->data_field,
-											graphic_to_object_data->fe_region)))
+									for (i = 0; i < number_of_xi_points; i++)
 									{
-										if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
-											time, surface))
+										initial_xi[0] = xi_points[i][0];
+										initial_xi[1] = xi_points[i][1];
+										initial_xi[2] = xi_points[i][2];
+										if (NULL != (surface = create_GT_surface_streamribbon_FE_element(
+												element, initial_xi, graphic_to_object_data->field_cache,
+												graphic_to_object_data->rc_coordinate_field,
+												graphic_to_object_data->wrapper_stream_vector_field,
+												static_cast<int>(graphic->streamlines_track_direction == CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK),
+												graphic->streamline_length,
+												graphic->line_shape, Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
+												graphic->line_base_size, graphic->line_scale_factors,
+												graphic->line_orientation_scale_field,
+												graphic->streamline_data_type, graphic->data_field,
+												graphic_to_object_data->fe_region)))
 										{
-											DESTROY(GT_surface)(&surface);
+											if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
+												time, surface))
+											{
+												DESTROY(GT_surface)(&surface);
+											}
 										}
 									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_to_graphics_object.  Unknown streamline type");
-								return_code = 0;
+								} break;
+							case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID:
+								{
+									display_message(ERROR_MESSAGE,
+										"FE_element_to_graphics_object.  Unknown streamline type");
+									return_code = 0;
+								} break;
 							}
 						}
 						else
@@ -1180,61 +1179,66 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 		if (element)
 		{
-			if (STREAM_LINE==graphic->streamline_type)
+			switch (graphic->line_shape)
 			{
-				struct GT_polyline *polyline;
-				if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
-						xi, graphic_to_object_data->field_cache,
-						graphic_to_object_data->rc_coordinate_field,
-						graphic_to_object_data->wrapper_stream_vector_field,
-						graphic->reverse_track, graphic->streamline_length,
-						graphic->streamline_data_type, graphic->data_field,
-						graphic_to_object_data->fe_region)))
+			case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
 				{
-					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
-								graphic->graphics_object,
-								/*graphics_object_time*/0,polyline)))
-					{
-						DESTROY(GT_polyline)(&polyline);
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else if ((graphic->streamline_type == STREAM_RIBBON)||
-				(graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
-				(graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
-				(graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
-			{
-				struct GT_surface *surface;
-				if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
+					struct GT_polyline *polyline;
+					if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
 							xi, graphic_to_object_data->field_cache,
 							graphic_to_object_data->rc_coordinate_field,
 							graphic_to_object_data->wrapper_stream_vector_field,
-							graphic->reverse_track, graphic->streamline_length,
-							graphic->line_base_size[0], graphic->streamline_type,
+							static_cast<int>(graphic->streamlines_track_direction == CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK),
+							graphic->streamline_length,
 							graphic->streamline_data_type, graphic->data_field,
 							graphic_to_object_data->fe_region)))
-				{
-					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
-								graphic->graphics_object,
-								/*graphics_object_time*/0,surface)))
 					{
-						DESTROY(GT_surface)(&surface);
+						if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
+									graphic->graphics_object,
+									/*graphics_object_time*/0,polyline)))
+						{
+							DESTROY(GT_polyline)(&polyline);
+						}
 					}
-				}
-				else
+					else
+					{
+						return_code=0;
+					}
+				} break;
+			case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+			case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+			case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 				{
+					struct GT_surface *surface;
+					if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
+						xi, graphic_to_object_data->field_cache,
+						graphic_to_object_data->rc_coordinate_field,
+						graphic_to_object_data->wrapper_stream_vector_field,
+						static_cast<int>(graphic->streamlines_track_direction == CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK),
+						graphic->streamline_length,
+						graphic->line_shape, Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
+						graphic->line_base_size, graphic->line_scale_factors,
+						graphic->line_orientation_scale_field,
+						graphic->streamline_data_type, graphic->data_field,
+						graphic_to_object_data->fe_region)))
+					{
+						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
+							graphic->graphics_object, /*graphics_object_time*/0, surface)))
+						{
+							DESTROY(GT_surface)(&surface);
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				} break;
+			case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID:
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmiss_node_to_streamline.  Unknown streamline type");
 					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_node_to_streamline.  Unknown streamline type");
-				return_code=0;
+				} break;
 			}
 			Cmiss_element_destroy(&element);
 		}
@@ -2139,37 +2143,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			append_string(&graphic_string,temp_string,&error);
 		}
 
-		if (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
-		{
-			const FE_value constant_radius = 0.5*graphic->line_base_size[0];
-			const FE_value radius_scale_factor = 0.5*graphic->line_scale_factors[0];
-			if (0.0 != constant_radius)
-			{
-				sprintf(temp_string, " constant_radius %g", constant_radius);
-				append_string(&graphic_string,temp_string,&error);
-			}
-			if (graphic->line_orientation_scale_field)
-			{
-				if (GET_NAME(Computed_field)(graphic->line_orientation_scale_field, &name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&graphic_string," radius_scalar ",&error);
-					append_string(&graphic_string,name,&error);
-					DEALLOCATE(name);
-					if (1.0 != radius_scale_factor)
-					{
-						sprintf(temp_string, " scale_factor %g", radius_scale_factor);
-						append_string(&graphic_string,temp_string,&error);
-					}
-				}
-				else
-				{
-					DEALLOCATE(graphic_string);
-					error=1;
-				}
-			}
-		}
 		/* overlay is temporarily disabled, instead the functionality is replaced
 			 by coordinate_system
 		if (CMISS_GRAPHIC_STATIC==graphic->graphic_type)
@@ -2233,7 +2206,49 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				append_string(&graphic_string,temp_string,&error);
 			}
 		}
-		/* for node_points, data_points and element_points only */
+
+		// line attributes
+		if ((graphic->graphic_type == CMISS_GRAPHIC_LINES) ||
+			(graphic->graphic_type == CMISS_GRAPHIC_STREAMLINES))
+		{
+			append_string(&graphic_string," ",&error);
+			append_string(&graphic_string,
+				ENUMERATOR_STRING(Cmiss_graphic_line_attributes_shape)(graphic->line_shape),&error);
+
+			append_string(&graphic_string, " line_base_size ", &error);
+			if (graphic->line_base_size[1] == graphic->line_base_size[0])
+			{
+				sprintf(temp_string, "%g", graphic->line_base_size[0]);
+			}
+			else
+			{
+				sprintf(temp_string, "\"%g*%g\"", graphic->line_base_size[0], graphic->line_base_size[1]);
+			}
+			append_string(&graphic_string, temp_string, &error);
+
+			if (graphic->line_orientation_scale_field)
+			{
+				name = Cmiss_field_get_name(graphic->line_orientation_scale_field);
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&graphic_string, " line_orientation_scale ", &error);
+				append_string(&graphic_string, name, &error);
+				DEALLOCATE(name);
+
+				append_string(&graphic_string, " line_scale_factors ", &error);
+				if (graphic->line_scale_factors[1] == graphic->line_scale_factors[0])
+				{
+					sprintf(temp_string,"%g", graphic->line_scale_factors[0]);
+				}
+				else
+				{
+					sprintf(temp_string,"\"%g*%g\"", graphic->line_scale_factors[0], graphic->line_scale_factors[1]);
+				}
+				append_string(&graphic_string,temp_string,&error);
+			}
+		}
+
+		// point attributes
 		if (CMISS_GRAPHIC_POINTS == graphic->graphic_type)
 		{
 			if (graphic->glyph)
@@ -2460,9 +2475,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		/* for streamlines only */
 		if (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)
 		{
-			append_string(&graphic_string," ",&error);
-			append_string(&graphic_string,
-				ENUMERATOR_STRING(Streamline_type)(graphic->streamline_type),&error);
 			if (graphic->stream_vector_field)
 			{
 				if (GET_NAME(Computed_field)(graphic->stream_vector_field,&name))
@@ -2479,12 +2491,10 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					error=1;
 				}
 			}
-			if (graphic->reverse_track)
-			{
-				append_string(&graphic_string," reverse_track ",&error);
-			}
-			sprintf(temp_string," length %g width %g ",
-				graphic->streamline_length, graphic->line_base_size[0]);
+			append_string(&graphic_string, " ", &error);
+			append_string(&graphic_string,
+				ENUMERATOR_STRING(Cmiss_graphic_streamlines_track_direction)(graphic->streamlines_track_direction), &error);
+			sprintf(temp_string," length %g ", graphic->streamline_length);
 			append_string(&graphic_string,temp_string,&error);
 			append_string(&graphic_string,
 				ENUMERATOR_STRING(Streamline_data_type)(graphic->streamline_data_type),&error);
@@ -3252,9 +3262,15 @@ int Cmiss_graphic_to_graphics_object(
 									{
 										case CMISS_GRAPHIC_LINES:
 										{
-											graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
+											if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE == graphic->line_shape)
+											{
+												graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
+											}
+											else
+											{
+												graphics_object_type = g_SURFACE;
+											}
 										} break;
-										case CMISS_GRAPHIC_CYLINDERS:
 										case CMISS_GRAPHIC_SURFACES:
 										{
 											graphics_object_type = g_SURFACE;
@@ -3265,7 +3281,6 @@ int Cmiss_graphic_to_graphics_object(
 											{
 												case 3:
 												{
-													//graphics_object_type = g_VOLTEX; // for old isosurfaces
 													graphics_object_type = g_SURFACE; // for new isosurfaces
 												} break;
 												case 2:
@@ -3294,7 +3309,7 @@ int Cmiss_graphic_to_graphics_object(
 										} break;
 										case CMISS_GRAPHIC_STREAMLINES:
 										{
-											if (STREAM_LINE == graphic->streamline_type)
+											if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE == graphic->line_shape)
 											{
 												graphics_object_type = g_POLYLINE;
 											}
@@ -3476,21 +3491,29 @@ int Cmiss_graphic_to_graphics_object(
 										if ( domain_field_list )
 											DESTROY_LIST(Computed_field)(&domain_field_list);
 #endif /* defined(USE_OPENCASCADE) */
-										GT_polyline_vertex_buffers *lines =
-											CREATE(GT_polyline_vertex_buffers)(
-												g_PLAIN, graphic->line_width);
-										if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-											graphic->graphics_object, lines))
+										if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE == graphic->line_shape)
 										{
-											if (graphic_to_object_data->iteration_mesh)
+											GT_polyline_vertex_buffers *lines =
+												CREATE(GT_polyline_vertex_buffers)(
+													g_PLAIN, graphic->line_width);
+											if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+												graphic->graphics_object, lines))
 											{
-												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
+												if (graphic_to_object_data->iteration_mesh)
+												{
+													return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
+												}
+											}
+											else
+											{
+												//DESTROY(GT_polyline_vertex_buffers)(&lines);
+												return_code = 0;
 											}
 										}
-										else
+										else if (graphic_to_object_data->iteration_mesh)
 										{
-											//DESTROY(GT_polyline_vertex_buffers)(&lines);
-											return_code = 0;
+											// cylinders
+											return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
 										}
 									} break;
 									case CMISS_GRAPHIC_SURFACES:
@@ -3529,13 +3552,6 @@ int Cmiss_graphic_to_graphics_object(
 											{
 												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
 											}
-										}
-									} break;
-									case CMISS_GRAPHIC_CYLINDERS:
-									{
-										if (graphic_to_object_data->iteration_mesh)
-										{
-											return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
 										}
 									} break;
 									case CMISS_GRAPHIC_CONTOURS:
@@ -3843,7 +3859,6 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		}
 		/* line attributes */
 		else if (((CMISS_GRAPHIC_LINES==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_CYLINDERS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
 			graphic->line_orientation_scale_field &&
 			Computed_field_or_ancestor_satisfies_condition(
@@ -4170,63 +4185,6 @@ int Cmiss_graphic_set_render_type(
 
 } /* Cmiss_graphic_set_render_type */
 
-int Cmiss_graphic_get_streamline_parameters(
-	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
-	struct Computed_field **stream_vector_field,int *reverse_track,
-	GLfloat *streamline_length)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_streamline_parameters);
-	if (graphic&&streamline_type&&stream_vector_field&&reverse_track&&
-		streamline_length &&
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
-	{
-		*streamline_type=graphic->streamline_type;
-		*stream_vector_field=graphic->stream_vector_field;
-		*reverse_track=graphic->reverse_track;
-		*streamline_length=graphic->streamline_length;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_streamline_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_streamline_parameters */
-
-int Cmiss_graphic_set_streamline_parameters(
-	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	GLfloat streamline_length)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_streamline_parameters);
-	if (graphic && (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
-	{
-		graphic->streamline_type=streamline_type;
-		REACCESS(Computed_field)(&(graphic->stream_vector_field),
-			stream_vector_field);
-		graphic->reverse_track=reverse_track;
-		graphic->streamline_length=streamline_length;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_streamline_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_streamline_parameters */
-
 int Cmiss_graphic_get_xi_discretization(
 	struct Cmiss_graphic *graphic,
 	enum Xi_discretization_mode *xi_discretization_mode,
@@ -4332,13 +4290,13 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->overlay_order = source->overlay_order;
 
 		/* line attributes */
+		destination->line_shape = source->line_shape;
 		if ((CMISS_GRAPHIC_LINES == source->graphic_type) ||
-			(CMISS_GRAPHIC_CYLINDERS == source->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == source->graphic_type))
 		{
 			REACCESS(Computed_field)(&destination->line_orientation_scale_field,
 				source->line_orientation_scale_field);
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 2; i++)
 			{
 				destination->line_base_size[i] = source->line_base_size[i];
 				destination->line_scale_factors[i] = source->line_scale_factors[i];
@@ -4439,10 +4397,9 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->seed_xi[1]=source->seed_xi[1];
 		destination->seed_xi[2]=source->seed_xi[2];
 		/* for streamlines only */
-		destination->streamline_type=source->streamline_type;
 		REACCESS(Computed_field)(&(destination->stream_vector_field),
 			source->stream_vector_field);
-		destination->reverse_track=source->reverse_track;
+		destination->streamlines_track_direction = source->streamlines_track_direction;
 		destination->streamline_length=source->streamline_length;
 		if (destination->seed_nodeset)
 		{
@@ -4769,17 +4726,17 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		/* line attributes */
 		if (return_code && (
 			(CMISS_GRAPHIC_LINES==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
 		{
-			if (graphic->line_orientation_scale_field !=
-				second_graphic->line_orientation_scale_field)
+			if ((graphic->line_shape != second_graphic->line_shape) ||
+				(graphic->line_orientation_scale_field !=
+					second_graphic->line_orientation_scale_field))
 			{
 				return_code = 0;
 			}
 			else
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < 2; i++)
 				{
 					if ((graphic->line_base_size[i] != second_graphic->line_base_size[i]) ||
 						(graphic->line_scale_factors[i] != second_graphic->line_scale_factors[i]))
@@ -4886,9 +4843,8 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		if (return_code&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 		{
 			return_code=
-				(graphic->streamline_type==second_graphic->streamline_type)&&
 				(graphic->stream_vector_field==second_graphic->stream_vector_field)&&
-				(graphic->reverse_track==second_graphic->reverse_track)&&
+				(graphic->streamlines_track_direction == second_graphic->streamlines_track_direction) &&
 				(graphic->streamline_length==second_graphic->streamline_length)&&
 				(((graphic->seed_nodeset==0) && (second_graphic->seed_nodeset==0)) ||
 					((graphic->seed_nodeset) && (second_graphic->seed_nodeset) &&
@@ -5254,7 +5210,7 @@ Cmiss_tessellation_id Cmiss_graphic_get_tessellation(
 int Cmiss_graphic_set_tessellation(
 	Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation)
 {
-	if (graphic)
+	if (graphic && tessellation)
 	{
 		if (tessellation != graphic->tessellation)
 		{
@@ -5802,7 +5758,7 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 				}
 				else if (change_detail->isCircleDivisionsChanged())
 				{
-					if (CMISS_GRAPHIC_CYLINDERS == graphic->graphic_type)
+					if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION == graphic->line_shape)
 					{
 						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 					}
@@ -6035,9 +5991,6 @@ public:
 			case CMISS_GRAPHIC_LINES:
 				enum_string = "LINES";
 				break;
-			case CMISS_GRAPHIC_CYLINDERS:
-				enum_string = "CYLINDERS";
-				break;
 			case CMISS_GRAPHIC_SURFACES:
 				enum_string = "SURFACES";
 				break;
@@ -6139,10 +6092,9 @@ int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
 {
 	if (graphic && (domain_type != CMISS_FIELD_DOMAIN_TYPE_INVALID) &&
 		(graphic->graphic_type != CMISS_GRAPHIC_LINES) &&
-		(graphic->graphic_type != CMISS_GRAPHIC_CYLINDERS) &&
 		(graphic->graphic_type != CMISS_GRAPHIC_SURFACES) &&
-		((graphic->graphic_type != CMISS_GRAPHIC_CONTOURS) ||
-			((domain_type != CMISS_FIELD_DOMAIN_POINT) &&
+		((graphic->graphic_type == CMISS_GRAPHIC_POINTS) ||
+		 ((domain_type != CMISS_FIELD_DOMAIN_POINT) &&
 			(domain_type != CMISS_FIELD_DOMAIN_NODES) &&
 			(domain_type != CMISS_FIELD_DOMAIN_DATA))))
 	{
@@ -6455,6 +6407,58 @@ int Cmiss_graphic_streamlines_set_stream_vector_field(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+enum Cmiss_graphic_streamlines_track_direction
+	Cmiss_graphic_streamlines_get_track_direction(
+		Cmiss_graphic_streamlines_id streamlines_graphic)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic)
+		return graphic->streamlines_track_direction;
+	return CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID;
+}
+
+int Cmiss_graphic_streamlines_set_track_direction(
+	Cmiss_graphic_streamlines_id streamlines_graphic,
+	enum Cmiss_graphic_streamlines_track_direction track_direction)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic && (track_direction != CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID))
+	{
+		if (track_direction != graphic->streamlines_track_direction)
+		{
+			graphic->streamlines_track_direction = track_direction;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+double Cmiss_graphic_streamlines_get_track_length(
+	Cmiss_graphic_streamlines_id streamlines_graphic)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic)
+		return graphic->streamline_length;
+	return 0.0;
+}
+
+int Cmiss_graphic_streamlines_set_track_length(
+	Cmiss_graphic_streamlines_id streamlines_graphic, double length)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(streamlines_graphic);
+	if (graphic && (length >= 0.0))
+	{
+		if (length != graphic->streamline_length)
+		{
+			graphic->streamline_length = length;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 Cmiss_graphic_surfaces_id Cmiss_graphic_cast_surfaces(Cmiss_graphic_id graphic)
 {
 	if (graphic && (graphic->graphic_type == CMISS_GRAPHIC_SURFACES))
@@ -6475,7 +6479,6 @@ Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
 {
 	if (graphic && (
 		(graphic->graphic_type == CMISS_GRAPHIC_LINES) ||
-		(graphic->graphic_type == CMISS_GRAPHIC_CYLINDERS) ||
 		(graphic->graphic_type == CMISS_GRAPHIC_STREAMLINES)))
 	{
 		Cmiss_graphic_access(graphic);
@@ -6504,7 +6507,7 @@ int Cmiss_graphic_line_attributes_get_base_size(
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(line_attributes);
 	if (graphic && (0 < number) && base_size)
 	{
-		const int count = (number > 3) ? 3 : number;
+		const int count = (number > 2) ? 2 : number;
 		for (int i = 0; i < count; ++i)
 		{
 			base_size[i] = static_cast<double>(graphic->line_base_size[i]);
@@ -6522,8 +6525,12 @@ int Cmiss_graphic_line_attributes_set_base_size(
 	if (graphic && (0 < number) && base_size)
 	{
 		bool changed = false;
+		if (graphic->graphic_type == CMISS_GRAPHIC_LINES)
+		{
+			number = 1; // only equal values supported for lines (cylinders)
+		}
 		FE_value value;
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
 			if (i < number)
 			{
@@ -6579,7 +6586,7 @@ int Cmiss_graphic_line_attributes_get_scale_factors(
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(line_attributes);
 	if (graphic && (0 < number) && scale_factors)
 	{
-		const int count = (number > 3) ? 3 : number;
+		const int count = (number > 2) ? 2 : number;
 		for (int i = 0; i < count; ++i)
 		{
 			scale_factors[i] = static_cast<double>(graphic->line_scale_factors[i]);
@@ -6597,8 +6604,12 @@ int Cmiss_graphic_line_attributes_set_scale_factors(
 	if (graphic && (0 < number) && scale_factors)
 	{
 		bool changed = false;
+		if (graphic->graphic_type == CMISS_GRAPHIC_LINES)
+		{
+			number = 1; // only equal values supported for lines (cylinders)
+		}
 		FE_value value;
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
 			if (i < number)
 			{
@@ -6612,6 +6623,37 @@ int Cmiss_graphic_line_attributes_set_scale_factors(
 		}
 		if (changed)
 		{
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+enum Cmiss_graphic_line_attributes_shape Cmiss_graphic_line_attributes_get_shape(
+	Cmiss_graphic_line_attributes_id line_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(line_attributes);
+	if (graphic)
+	{
+		return graphic->line_shape;
+	}
+	return CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID;
+}
+
+int Cmiss_graphic_line_attributes_set_shape(
+	Cmiss_graphic_line_attributes_id line_attributes,
+	enum Cmiss_graphic_line_attributes_shape shape)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(line_attributes);
+	if (graphic && (shape != CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID) &&
+		((graphic->graphic_type == CMISS_GRAPHIC_STREAMLINES) ||
+			(shape == CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE) ||
+			(shape == CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION)))
+	{
+		if (shape != graphic->line_shape)
+		{
+			graphic->line_shape = shape;
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		return CMISS_OK;

@@ -716,7 +716,7 @@ accurate if small), also ensuring that the element is updated.
 static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value *xi, Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length,enum Streamline_data_type data_type,
+	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
 	GLfloat **stream_data, struct FE_region *fe_region)
@@ -1391,7 +1391,7 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length,enum Streamline_data_type data_type,
+	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region)
 {
 	ZnRealType gt_data_type;
@@ -1482,12 +1482,14 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	ZnReal length, FE_value width,enum Streamline_type type,
+	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
+	enum Cmiss_graphic_line_attributes_shape line_shape, int circleDivisions,
+	FE_value *line_base_size, FE_value *line_scale_factors,
+	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
 	struct FE_region *fe_region)
 {
-	double cosw,magnitude,sinw,thickness;
+	double cosw,magnitude,sinw;
 	ZnRealType gt_data_type;
 	GLfloat *data,*datum,*stream_data,stream_datum= 0.0;
 	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
@@ -1498,6 +1500,8 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 		stream_unit_vector = {1.0, 0.0, 0.0},stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
+	USE_PARAMETER(line_scale_factors);
+	USE_PARAMETER(line_orientation_scale_field);
 	if (stream_vector_field)
 	{
 		if (element&&FE_element_is_top_level(element, NULL)&&
@@ -1515,14 +1519,9 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 							(2==number_of_stream_vector_components)))&&
 							(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 		{
-			if (type == STREAM_EXTRUDED_CIRCLE)
-			{
-				thickness = width;
-			}
-			else
-			{
-				thickness = 0.2 * width;
-			}
+			const FE_value width = line_base_size[0];
+			const FE_value thickness = line_base_size[1];
+
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,
 				field_cache, coordinate_field,stream_vector_field,reverse_track,length,
@@ -1531,18 +1530,17 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 			{
 				if (0<number_of_stream_points)
 				{
-					switch (type)
+					switch (line_shape)
 					{
-						case STREAM_EXTRUDED_RECTANGLE:
+						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 						{
 							surface_points_per_step = 8;
 						} break;
-						case STREAM_EXTRUDED_ELLIPSE:
-						case STREAM_EXTRUDED_CIRCLE:
+						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 						{
-							surface_points_per_step = 20;
+							surface_points_per_step = circleDivisions + 1;
 						} break;
-						case STREAM_RIBBON:
+						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 						default:
 						{
 							surface_points_per_step = 2;
@@ -1609,9 +1607,9 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 								cross_thickness[0] = stream_normal[0] * 0.5f * GLfloat(thickness);
 								cross_thickness[1] = stream_normal[1] * 0.5f * GLfloat(thickness);
 								cross_thickness[2] = stream_normal[2] * 0.5f * GLfloat(thickness);
-								switch (type)
+								switch (line_shape)
 								{
-									case STREAM_RIBBON:
+									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 									default:
 									{
 										(*point)[0] = stream_point[0] + cross_width[0];
@@ -1641,8 +1639,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 											datum++;
 										}
 									} break;
-									case STREAM_EXTRUDED_ELLIPSE:
-									case STREAM_EXTRUDED_CIRCLE:
+									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 									{
 										for (d = 0 ; d < surface_points_per_step ; d++)
 										{
@@ -1680,7 +1677,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 											}
 										}
 									} break;
-									case STREAM_EXTRUDED_RECTANGLE:
+									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 									{
 										(*point)[0] = stream_point[0] + cross_width[0]
 										                                            + cross_thickness[0];

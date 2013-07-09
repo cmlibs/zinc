@@ -136,8 +136,7 @@ public:
 		GRAPHIC_LINES = CMISS_GRAPHIC_LINES,
 		GRAPHIC_SURFACES = CMISS_GRAPHIC_SURFACES,
 		GRAPHIC_CONTOURS = CMISS_GRAPHIC_CONTOURS,
-		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES,
-		GRAPHIC_CYLINDERS = CMISS_GRAPHIC_CYLINDERS
+		GRAPHIC_STREAMLINES = CMISS_GRAPHIC_STREAMLINES
 	};
 
 	Cmiss_graphic_id getId()
@@ -418,6 +417,13 @@ public:
 		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_streamlines(graphic.getId())))
 	{}
 
+	enum TrackDirection
+	{
+		TRACK_DIRECTION_INVALID = CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID,
+		FORWARD_TRACK = CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK,
+		REVERSE_TRACK = CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK
+	};
+
 	Field getStreamVectorField()
 	{
 		return Field(Cmiss_graphic_streamlines_get_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id)));
@@ -426,6 +432,28 @@ public:
 	int setStreamVectorField(Field& field)
 	{
 		return Cmiss_graphic_streamlines_set_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id), field.getId());
+	}
+
+	TrackDirection getTrackDirection()
+	{
+		return static_cast<TrackDirection>(
+			Cmiss_graphic_streamlines_get_track_direction(reinterpret_cast<Cmiss_graphic_streamlines_id>(id)));
+	}
+
+	int setTrackDirection(TrackDirection trackDirection)
+	{
+		return Cmiss_graphic_streamlines_set_track_direction(reinterpret_cast<Cmiss_graphic_streamlines_id>(id),
+			static_cast<Cmiss_graphic_streamlines_track_direction>(trackDirection));
+	}
+
+	double getTrackLength()
+	{
+		return Cmiss_graphic_streamlines_get_track_length(reinterpret_cast<Cmiss_graphic_streamlines_id>(id));
+	}
+
+	int setTrackLength(double length)
+	{
+		return Cmiss_graphic_streamlines_set_track_length(reinterpret_cast<Cmiss_graphic_streamlines_id>(id), length);
 	}
 
 };
@@ -473,6 +501,15 @@ public:
 		return (0 != id);
 	}
 
+	enum Shape
+	{
+		SHAPE_INVALID = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID,
+		SHAPE_LINE = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE,
+		SHAPE_RIBBON = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON,
+		SHAPE_CIRCLE_EXTRUSION = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION,
+		SHAPE_SQUARE_EXTRUSION = CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION
+	};
+
 	int getBaseSize(int valuesCount, double *valuesOut)
 	{
 		return Cmiss_graphic_line_attributes_get_base_size(id, valuesCount, valuesOut);
@@ -501,6 +538,16 @@ public:
 	int setScaleFactors(int valuesCount, const double *valuesIn)
 	{
 		return Cmiss_graphic_line_attributes_set_scale_factors(id, valuesCount, valuesIn);
+	}
+
+	Shape getShape()
+	{
+		return static_cast<Shape>(Cmiss_graphic_line_attributes_get_shape(id));
+	}
+
+	int setShape(Shape shape)
+	{
+		return Cmiss_graphic_line_attributes_set_shape(id, static_cast<Cmiss_graphic_line_attributes_shape>(shape));
 	}
 
 };

@@ -76,6 +76,17 @@ struct Cmiss_graphic_streamlines;
 typedef struct Cmiss_graphic_streamlines *Cmiss_graphic_streamlines_id;
 
 /**
+ * Enumeration giving the direction streamlines are tracked relative to
+ * the stream vector field.
+ */
+enum Cmiss_graphic_streamlines_track_direction
+{
+	CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID = 0,
+	CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK = 1,
+	CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK = 2
+};
+
+/**
  * The surfaces derived type specific handle to a Cmiss_graphic.
  * Used to visualise 2-D elements and faces.
  */
@@ -83,7 +94,7 @@ struct Cmiss_graphic_surfaces;
 typedef struct Cmiss_graphic_surfaces *Cmiss_graphic_surfaces_id;
 
 /**
- * An enum type to define the type of a cmiss_graphic.
+ * Enumeration giving the algorithm used to create graphics.
  */
 enum Cmiss_graphic_type
 {
@@ -92,9 +103,8 @@ enum Cmiss_graphic_type
 	CMISS_GRAPHIC_LINES = 2,
 	CMISS_GRAPHIC_SURFACES = 3,
 	CMISS_GRAPHIC_CONTOURS = 4,
-	CMISS_GRAPHIC_STREAMLINES = 5,
-	CMISS_GRAPHIC_CYLINDERS = 6 // GRC: remove
-}; /* enum Cmiss_graphics_type */
+	CMISS_GRAPHIC_STREAMLINES = 5
+};
 
 /**
  * A handle to attributes specifying how points are visualised in a
@@ -109,6 +119,18 @@ typedef struct Cmiss_graphic_point_attributes * Cmiss_graphic_point_attributes_i
  */
 struct Cmiss_graphic_line_attributes;
 typedef struct Cmiss_graphic_line_attributes * Cmiss_graphic_line_attributes_id;
+
+/**
+ * The shape or profile of graphics generated for lines.
+ */
+enum Cmiss_graphic_line_attributes_shape
+{
+	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID = 0,
+	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE = 1,
+	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON = 2,
+	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION = 3,
+	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION = 4
+};
 
 enum Cmiss_graphics_xi_discretization_mode
 {

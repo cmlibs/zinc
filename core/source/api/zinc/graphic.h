@@ -679,6 +679,51 @@ ZINC_API int Cmiss_graphic_streamlines_set_stream_vector_field(
 	Cmiss_field_id stream_vector_field);
 
 /**
+ * Gets the direction in which streamlines are tracked.
+ *
+ * @param streamlines_graphic  The streamlines graphic to query.
+ * @return  The current tracking direction, or
+ * CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID on error.
+ */
+ZINC_API enum Cmiss_graphic_streamlines_track_direction
+	Cmiss_graphic_streamlines_get_track_direction(
+		Cmiss_graphic_streamlines_id streamlines_graphic);
+
+/**
+ * Sets the direction in which streamlines are tracked relative to the stream
+ * vector field.
+ * @see Cmiss_graphic_streamlines_track_direction
+ *
+ * @param streamlines_graphic  The streamlines graphic to modify.
+ * @param track_direction  The new tracking direction.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_streamlines_set_track_direction(
+	Cmiss_graphic_streamlines_id streamlines_graphic,
+	enum Cmiss_graphic_streamlines_track_direction track_direction);
+
+/**
+ * Gets the maximum length streamlines are tracked along.
+ *
+ * @param streamlines_graphic  The streamlines graphic to query.
+ * @return  The track length, or 0.0 if invalid streamlines graphic.
+ */
+ZINC_API double Cmiss_graphic_streamlines_get_track_length(
+	Cmiss_graphic_streamlines_id streamlines_graphic);
+
+/**
+ * Sets the maximum length to track streamlines along.
+ * Default value is 1.0; generally need to adjust this for scale of model
+ * as streamlines can be slow to evaluate.
+ *
+ * @param streamlines_graphic  The streamlines graphic to modify.
+ * @param length  The maximum length to track streamlines along >= 0.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_streamlines_set_track_length(
+	Cmiss_graphic_streamlines_id streamlines_graphic, double length);
+
+/**
  * If the graphic is of type surfaces then this function returns
  * the surfaces specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the new surfaces graphic reference.
@@ -752,7 +797,7 @@ ZINC_API int Cmiss_graphic_line_attributes_destroy(
  * @param line_attributes  The line_attributes to query.
  * @param number  The number of base size values to request, starting with the
  * first lateral axis. If fewer values have been set it is padded with the last
- * base size value. 1 to 3 values can be obtained.
+ * base size value. 1 to 2 values can be obtained.
  * @param base_size  Array to receive base sizes. Must be big enough to contain
  * the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
@@ -763,14 +808,14 @@ ZINC_API int Cmiss_graphic_line_attributes_get_base_size(
 
 /**
  * Sets the base size of the extrusion section, one value for each lateral axis.
- * 1 to 3 values can be set.
+ * 1 to 2 values can be set.
  * For a unit section profile, the final size in each lateral direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
  * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
  * The default base size is zero.
- * Note: only a single base size is used at present. It gives the base diameter
- * of cylinders and the width of streamlines.
+ * Note: for lines (circle_extrusion shape) only one value is currently used;
+ * the second value is constrained to equal the first value.
  *
  * @param line_attributes  The line_attributes to modify.
  * @param number  The number of base size values to set, starting with the
@@ -819,7 +864,7 @@ ZINC_API int Cmiss_graphic_line_attributes_set_orientation_scale_field(
  * @param line_attributes  The line_attributes to query.
  * @param number  The number of scale_factors to request, starting with the
  * first lateral axis. If fewer values have been set it is padded with the last
- * scale factor value. 1 to 3 values can be obtained.
+ * scale factor value. 1 to 2 values can be obtained.
  * @param scale_factors  Array to receive scale factors. Must be big enough to
  * contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
@@ -830,13 +875,14 @@ ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
 
 /**
  * Sets the scale factors used in sizing the extrusion section, one value for
- * each lateral axis. 1 to 3 values can be set.
+ * each lateral axis. 1 to 2 values can be set.
  * For a unit section profile, the final size in each lateral direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
  * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
  * Scale factor values default to 1.
- * Note: only a single scale factor is used at present.
+ * Note: for lines (circle_extrusion shape) only one value is currently used;
+ * the second value is constrained to equal the first value.
  *
  * @param line_attributes  The line_attributes to modify.
  * @param number  The number of scale factor values to set, starting with the
@@ -850,6 +896,32 @@ ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
 ZINC_API int Cmiss_graphic_line_attributes_set_scale_factors(
 	Cmiss_graphic_line_attributes_id line_attributes, int number,
 	const double *scale_factors);
+
+/**
+ * Gets the shape or profile of graphics generated for lines.
+ * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ *
+ * @param line_attributes  The line_attributes to query.
+ * @return  The current shape.
+ */
+ZINC_API enum Cmiss_graphic_line_attributes_shape
+	Cmiss_graphic_line_attributes_get_shape(
+		Cmiss_graphic_line_attributes_id line_attributes);
+
+/**
+ * Sets the shape or profile of graphics generated for lines:
+ * LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
+ * Note: only LINE and CIRCLE_EXTRUSION are supported for graphic_lines type;
+ * all shapes are supported for graphic_streamlines.
+ * @see Cmiss_graphic_line_attributes_shape
+ *
+ * @param line_attributes  The line_attributes to modify.
+ * @param shape  The new shape.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_line_attributes_set_shape(
+	Cmiss_graphic_line_attributes_id line_attributes,
+	enum Cmiss_graphic_line_attributes_shape shape);
 
 /**
  * If the graphic produces points then returns a handle to point attribute
