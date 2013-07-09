@@ -1487,7 +1487,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region)
+	struct FE_region *fe_region, enum Cmiss_graphics_render_type render_type)
 {
 	double cosw,magnitude,sinw;
 	ZnRealType gt_data_type;
@@ -1562,7 +1562,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 						ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
 						&&((g_NO_DATA==gt_data_type)||data))
 					{
-						if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
+						if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_type,
 							g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
 							points, normalpoints, /*tangentpoints*/(Triple *)NULL,
 							/*texturepoints*/(Triple *)NULL,gt_data_type,data)))
