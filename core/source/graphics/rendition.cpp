@@ -910,7 +910,14 @@ int Cmiss_rendition_set_graphics_defaults_gfx_modify(struct Cmiss_rendition *ren
 		bool use_element_discretization = (0 != rendition->element_divisions) &&
 			(graphic_type != CMISS_GRAPHIC_POINTS) && (graphic_type != CMISS_GRAPHIC_STREAMLINES);
 		bool use_circle_discretization = (rendition->circle_discretization >= 3) &&
-			(graphic_type == CMISS_GRAPHIC_CYLINDERS);
+			(graphic_type == CMISS_GRAPHIC_LINES);
+		if (use_circle_discretization)
+		{
+			Cmiss_graphic_line_attributes_id lineAttr = Cmiss_graphic_get_line_attributes(graphic);
+			use_circle_discretization = (Cmiss_graphic_line_attributes_get_shape(lineAttr) ==
+				CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION);
+			Cmiss_graphic_line_attributes_destroy(&lineAttr);
+		}
 		if (use_element_discretization || use_circle_discretization)
 		{
 			Cmiss_tessellation_module_id tessellationModule =

@@ -158,44 +158,57 @@ read_Element_discretization_defaults().
 	return return_code;
 } /* check_Element_discretization */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_line_attributes_shape)
 {
-	const char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(Streamline_type));
 	switch (enumerator_value)
 	{
-		case STREAM_EXTRUDED_ELLIPSE:
+		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
 		{
-			enumerator_string = "ellipse";
+			return "line";
 		} break;
-		case STREAM_LINE:
+		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 		{
-			enumerator_string = "line";
+			return "ribbon";
 		} break;
-		case STREAM_EXTRUDED_RECTANGLE:
+		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 		{
-			enumerator_string = "rectangle";
+			return "circle_extrusion";
 		} break;
-		case STREAM_RIBBON:
+		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 		{
-			enumerator_string = "ribbon";
-		} break;
-		case STREAM_EXTRUDED_CIRCLE:
-		{
-			enumerator_string = "cylinder";
+			return "square_extrusion";
 		} break;
 		default:
 		{
-			enumerator_string = (const char *)NULL;
+			// do nothing
 		} break;
 	}
-	LEAVE;
+	return 0;
+}
 
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(Streamline_type) */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape)
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_streamlines_track_direction)
+{
+	switch (enumerator_value)
+	{
+		case CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK:
+		{
+			return "forward_track";
+		} break;
+		case CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK:
+		{
+			return "reverse_track";
+		} break;
+		default:
+		{
+			// do nothing
+		} break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_streamlines_track_direction)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 {

@@ -92,8 +92,9 @@ finite element group rendition.
 	struct Computed_field *texture_coordinate_field;
 
 	/* line attributes */
-	FE_value line_base_size[3];
-	FE_value line_scale_factors[3];
+	enum Cmiss_graphic_line_attributes_shape line_shape;
+	FE_value line_base_size[2];
+	FE_value line_scale_factors[2];
 	Cmiss_field_id line_orientation_scale_field;
 
 	/* for contours only */
@@ -129,10 +130,11 @@ finite element group rendition.
 	struct FE_element *seed_element;
 	/* for settings requiring an exact xi location */
 	Triple seed_xi;
-	enum Streamline_type streamline_type;
+
+	/* streamlines */
 	struct Computed_field *stream_vector_field;
-	int reverse_track;
-	GLfloat streamline_length;
+	enum Cmiss_graphic_streamlines_track_direction streamlines_track_direction;
+	FE_value streamline_length;
 	enum Streamline_data_type streamline_data_type;
 	/* streamline seed nodeset and field giving mesh location */
 	Cmiss_nodeset_id seed_nodeset;
@@ -562,22 +564,6 @@ int Cmiss_graphic_set_seed_xi(struct Cmiss_graphic *graphic,
 int Cmiss_graphic_get_line_width(struct Cmiss_graphic *graphic);
 
 int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width);
-
-/***************************************************************************//**
- * For graphic_type CMISS_RENDITION_STREAMLINES only.
- */
-int Cmiss_graphic_get_streamline_parameters(
-	struct Cmiss_graphic *graphic,enum Streamline_type *streamline_type,
-	struct Computed_field **stream_vector_field,int *reverse_track,
-	GLfloat *streamline_length);
-
-/***************************************************************************//**
- * For graphic_type CMISS_RENDITION_STREAMLINES only.
- */
-int Cmiss_graphic_set_streamline_parameters(
-	struct Cmiss_graphic *graphic,enum Streamline_type streamline_type,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	GLfloat streamline_length);
 
 /***************************************************************************//**
  * Returns the <xi_discretization_mode> and <xi_point_density_field> controlling
