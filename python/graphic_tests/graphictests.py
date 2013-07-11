@@ -16,18 +16,18 @@ class GraphicTestCase(unittest.TestCase):
         self.context = Context('graphictest')
         root_region = self.context.getDefaultRegion()
         self.graphics_module = self.context.getDefaultGraphicsModule()
-        self.graphics_module.enableRenditions(root_region)
-        self.rendition = self.graphics_module.getRendition(root_region)
+        self.graphics_module.enableScenes(root_region)
+        self.scene = self.graphics_module.getScene(root_region)
 
 
     def tearDown(self):
         del self.graphics_module
-        del self.rendition
+        del self.scene
         del self.context
 
 
     def testGraphicCreation(self):
-        graphic = self.rendition.createGraphicPoints()
+        graphic = self.scene.createGraphicPoints()
         self.assertTrue(graphic.isValid())
         result = graphic.setDomainType(Field.DOMAIN_NODES)
         attributes = graphic.getPointAttributes()
@@ -38,7 +38,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual(1, result)
 
     def testGraphicSetBaseSize(self):
-        graphic = self.rendition.createGraphicPoints()
+        graphic = self.scene.createGraphicPoints()
         self.assertTrue(graphic.isValid())
         attributes = graphic.getPointAttributes()
         result = attributes.setBaseSize([1])
@@ -49,7 +49,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual(1, result)
 
     def testGraphicGetBaseSize(self):
-        graphic = self.rendition.createGraphicPoints()
+        graphic = self.scene.createGraphicPoints()
         self.assertTrue(graphic.isValid())
         attributes = graphic.getPointAttributes()
         result = attributes.setBaseSize(5.4)

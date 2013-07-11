@@ -40,10 +40,7 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportRegion(self):
         from zinc import region
-
-    def testImportRendition(self):
-        from zinc import rendition
-    
+   
     def testImportScene(self):
         from zinc import scene
     
