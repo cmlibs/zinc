@@ -16,7 +16,7 @@ public:
 	Cmiss_region_id root_region;
 	Cmiss_field_module_id fm;
 	Cmiss_graphics_module_id gm;
-	Cmiss_rendition_id ren;
+	Cmiss_scene_id scene;
 
 	ZincTestSetup() :
 		context(Cmiss_context_create("test")),

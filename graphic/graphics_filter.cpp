@@ -159,7 +159,7 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 	Cmiss_graphics_filter_id domain_type_filter2 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_ELEMENTS_1D);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), domain_type_filter2);
 
-	Cmiss_graphic_id graphic = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
+	Cmiss_graphic_id graphic = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), graphic);
 
 	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter1, graphic);
@@ -287,7 +287,7 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	GraphicsFilter domain_type_filter2 = gfm.createFilterDomainType(Field::DOMAIN_ELEMENTS_1D);
 	EXPECT_TRUE(domain_type_filter2.isValid());
 
-	Graphic graphic = zinc.ren.createGraphic(Graphic::GRAPHIC_LINES);
+	Graphic graphic = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
 	EXPECT_TRUE(graphic.isValid());
 
 	result = graphic_type_filter1.evaluateGraphic(graphic);

@@ -7,7 +7,7 @@
 #include <zinc/context.h>
 #include <zinc/region.h>
 #include <zinc/fieldmodule.h>
-#include <zinc/rendition.h>
+#include <zinc/scene.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>
 #include <zinc/graphic.h>
@@ -21,7 +21,7 @@ TEST(Cmiss_graphic_streamlines, create)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_destroy(&st));
@@ -31,7 +31,7 @@ TEST(Cmiss_graphic_streamlines, create_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
 	EXPECT_TRUE(st.isValid());
 }
 
@@ -39,7 +39,7 @@ TEST(Cmiss_graphic_streamlines, cast)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_STREAMLINES);
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_STREAMLINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphic_streamlines_id st = Cmiss_graphic_cast_streamlines(gr);
@@ -56,7 +56,7 @@ TEST(Cmiss_graphic_streamlines, cast_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_STREAMLINES);
+	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_STREAMLINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicStreamlines st(gr);
@@ -74,7 +74,7 @@ TEST(Cmiss_graphic_streamlines, stream_vector_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
@@ -100,7 +100,7 @@ TEST(Cmiss_graphic_streamlines, stream_vector_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
 	EXPECT_TRUE(st.isValid());
 
 	Field tempStreamVectorField = st.getStreamVectorField();
@@ -124,7 +124,7 @@ TEST(Cmiss_graphic_streamlines, track_direction)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
 
 	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK, Cmiss_graphic_streamlines_get_track_direction(st));
@@ -138,7 +138,7 @@ TEST(Cmiss_graphic_streamlines, track_direction_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
 	EXPECT_TRUE(st.isValid());
 
 	EXPECT_EQ(GraphicStreamlines::FORWARD_TRACK, st.getTrackDirection());
@@ -150,7 +150,7 @@ TEST(Cmiss_graphic_streamlines, track_length)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_rendition_create_graphic_streamlines(zinc.ren);
+	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
 
 	const double trackLength = 500.0;
@@ -165,7 +165,7 @@ TEST(Cmiss_graphic_streamlines, track_length_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.ren.createGraphicStreamlines();
+	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
 	EXPECT_TRUE(st.isValid());
 
 	const double trackLength = 500.0;

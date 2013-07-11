@@ -7,7 +7,7 @@
 #include <zinc/context.h>
 #include <zinc/region.h>
 #include <zinc/fieldmodule.h>
-#include <zinc/rendition.h>
+#include <zinc/scene.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>
 #include <zinc/graphic.h>
@@ -23,7 +23,7 @@ TEST(Cmiss_graphic_api, set_use_element_type)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	int result = Cmiss_graphic_set_domain_type(Cmiss_graphic_contours_base_cast(is), CMISS_FIELD_DOMAIN_ELEMENTS_2D);
@@ -36,7 +36,7 @@ TEST(Cmiss_graphic_api, exterior)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(0, Cmiss_graphic_get_exterior(gr));
@@ -51,7 +51,7 @@ TEST(Cmiss_graphic_api, face)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_lines_base_cast(Cmiss_rendition_create_graphic_lines(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_lines_base_cast(Cmiss_scene_create_graphic_lines(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(CMISS_ELEMENT_FACE_ALL, Cmiss_graphic_get_face(gr));
@@ -71,7 +71,7 @@ TEST(Cmiss_graphic_api, coordinate_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), coordinate_field);
 
-	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_scene_create_graphic_points(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_domain_type(gr, CMISS_FIELD_DOMAIN_NODES));
@@ -113,7 +113,7 @@ TEST(Cmiss_graphic_api, data_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), data_field);
 
-	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_scene_create_graphic_points(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_data_field(gr, data_field));
@@ -139,7 +139,7 @@ TEST(Cmiss_graphic_api, material)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
@@ -166,7 +166,7 @@ TEST(Cmiss_graphic_api, material_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicLines gr = zinc.ren.createGraphicLines();
+	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
@@ -187,7 +187,7 @@ TEST(Cmiss_graphic_api, selected_material)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphics_material_module_id material_module = Cmiss_graphics_module_get_material_module(zinc.gm);
@@ -214,7 +214,7 @@ TEST(Cmiss_graphic_api, selected_material_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicLines gr = zinc.ren.createGraphicLines();
+	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
@@ -235,7 +235,7 @@ TEST(Cmiss_graphic_api, spectrum)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_spectrum_id spectrum = Cmiss_graphics_module_create_spectrum(zinc.gm);
@@ -258,7 +258,7 @@ TEST(Cmiss_graphic_api, subgroup_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_rendition_create_graphic_points(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_points_base_cast(Cmiss_scene_create_graphic_points(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_domain_type(gr, CMISS_FIELD_DOMAIN_NODES));
 
@@ -293,7 +293,7 @@ TEST(Cmiss_graphic_api, subgroup_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.ren.createGraphicPoints();
+	GraphicPoints gr = zinc.scene.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
 	EXPECT_EQ(CMISS_OK, gr.setDomainType(Field::DOMAIN_NODES));
 
@@ -325,7 +325,7 @@ TEST(Cmiss_graphic_api, tessellation)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_tessellation_module_id tessellation_module = Cmiss_graphics_module_get_tessellation_module(zinc.gm);
@@ -355,7 +355,7 @@ TEST(Cmiss_graphic_api, tessellation_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphicSurfaces();
+	Graphic gr = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	TessellationModule tessellationModule = zinc.gm.getTessellationModule();
@@ -378,7 +378,7 @@ TEST(Cmiss_graphic_api, texture_coordinate_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
@@ -413,7 +413,7 @@ TEST(Cmiss_graphic_api, texture_coordinate_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicSurfaces gr = zinc.ren.createGraphicSurfaces();
+	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	Field tempTextureCoordinateField = gr.getTextureCoordinateField();
@@ -444,7 +444,7 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_points_id gr = Cmiss_rendition_create_graphic_points(zinc.ren);
+	Cmiss_graphic_points_id gr = Cmiss_scene_create_graphic_points(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_points *>(0), gr);
 
 	Cmiss_graphic_point_attributes_id pointattr =
@@ -553,7 +553,7 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.ren.createGraphicPoints();
+	GraphicPoints gr = zinc.scene.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
 	// test can assign to base class handle
 	Graphic tmp(gr);
@@ -639,7 +639,7 @@ TEST(Cmiss_graphic_api, point_attributes_label)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_points_id gr = Cmiss_rendition_create_graphic_points(zinc.ren);
+	Cmiss_graphic_points_id gr = Cmiss_scene_create_graphic_points(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_points *>(0), gr);
 
 	Cmiss_graphic_point_attributes_id pointattr = Cmiss_graphic_get_point_attributes(Cmiss_graphic_points_base_cast(gr));
@@ -708,7 +708,7 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.ren.createGraphicPoints();
+	GraphicPoints gr = zinc.scene.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicPointAttributes pointattr = gr.getPointAttributes();
@@ -766,7 +766,7 @@ TEST(Cmiss_graphic_api, line_attributes)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_rendition_create_graphic(zinc.ren, CMISS_GRAPHIC_LINES);
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
 	Cmiss_graphic_line_attributes_id lineattr = Cmiss_graphic_get_line_attributes(gr);
@@ -804,7 +804,7 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currenetly constrained to equal values
 
 	// check default values = 1.0
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
@@ -817,7 +817,7 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currenetly constrained to equal values
 
 	Cmiss_graphic_line_attributes_destroy(&lineattr);
 	Cmiss_graphic_destroy(&gr);
@@ -827,7 +827,7 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.ren.createGraphic(Graphic::GRAPHIC_LINES);
+	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicLineAttributes lineattr = gr.getLineAttributes();

@@ -7,7 +7,6 @@
 #include <zinc/context.h>
 #include <zinc/region.h>
 #include <zinc/fieldmodule.h>
-#include <zinc/rendition.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>
 #include <zinc/graphic.h>
@@ -18,7 +17,7 @@ TEST(Cmiss_graphic_contours, create)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_contours_destroy(&is));
@@ -29,7 +28,7 @@ TEST(Cmiss_graphic_contours, cast_contours)
 	ZincTestSetup zinc;
 
 	Cmiss_graphic_id gr = Cmiss_graphic_contours_base_cast(
-		Cmiss_rendition_create_graphic_contours(zinc.ren));
+		Cmiss_scene_create_graphic_contours(zinc.scene));
 
 	Cmiss_graphic_contours_id is = Cmiss_graphic_cast_contours(gr);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
@@ -42,7 +41,7 @@ TEST(Cmiss_graphic_contours, base_cast)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	// No need to destroy the return handle
@@ -55,7 +54,7 @@ TEST(Cmiss_graphic_contours, isoscalar_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_contours_get_isoscalar_field(is));
@@ -80,7 +79,7 @@ TEST(Cmiss_graphic_contours, list_isovalues)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	double outputValues[4];
@@ -104,7 +103,7 @@ TEST(Cmiss_graphic_contours, list_isovalues_null)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	int num = 3;
@@ -125,7 +124,7 @@ TEST(Cmiss_graphic_contours, range_isovalues)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	EXPECT_EQ(0, Cmiss_graphic_contours_get_range_number_of_isovalues(is));
@@ -149,7 +148,7 @@ TEST(Cmiss_graphic_contours, range_isovalues_null)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_contours_id is = Cmiss_rendition_create_graphic_contours(zinc.ren);
+	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
 	const int num = 6;

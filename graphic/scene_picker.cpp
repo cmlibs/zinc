@@ -31,10 +31,7 @@ TEST(Cmiss_scene_picker_api, valid_args)
 
 	Cmiss_field_group_id fieldGroup = Cmiss_field_cast_group(field);
 
-	Cmiss_scene_id scene = Cmiss_graphics_module_create_scene(zinc.gm);
-	EXPECT_NE(static_cast<Cmiss_scene *>(0), scene);
-
-	Cmiss_scene_picker_id scene_picker = Cmiss_scene_create_picker(scene);
+	Cmiss_scene_picker_id scene_picker = Cmiss_scene_create_picker(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_scene_picker *>(0), scene_picker);
 
 	Cmiss_scene_viewer_module_id sv_module = Cmiss_context_get_default_scene_viewer_module(
@@ -45,7 +42,7 @@ TEST(Cmiss_scene_picker_api, valid_args)
 		CMISS_SCENE_VIEWER_BUFFERING_DOUBLE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
 	EXPECT_NE(static_cast<Cmiss_scene_viewer *>(0), sv);
 
-	int result = Cmiss_scene_viewer_set_scene(sv, scene);
+	int result = Cmiss_scene_viewer_set_scene(sv, zinc.scene);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = Cmiss_scene_viewer_set_viewport_size(sv, 512, 512);
@@ -58,7 +55,7 @@ TEST(Cmiss_scene_picker_api, valid_args)
 		CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), gf);
 
-	result = Cmiss_scene_picker_set_scene(scene_picker, scene);
+	result = Cmiss_scene_picker_set_scene(scene_picker, zinc.scene);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = Cmiss_scene_picker_set_graphics_filter(scene_picker, gf);
@@ -102,7 +99,6 @@ TEST(Cmiss_scene_picker_api, valid_args)
 
 	Cmiss_scene_picker_destroy(&scene_picker);
 
-	Cmiss_scene_destroy(&scene);
 }
 
 TEST(Cmiss_scene_picker_api, valid_args_cpp)
@@ -111,9 +107,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 
 	FieldGroup fieldGroup = zinc.fm.createGroup();
 
-	Scene scene = zinc.gm.createScene();
-
-	ScenePicker scenePicker = scene.createPicker();
+	ScenePicker scenePicker = zinc.scene.createPicker();
 	EXPECT_TRUE(scenePicker.isValid());
 
 	SceneViewerModule sv_module = zinc.context.getDefaultSceneViewerModule();
@@ -123,7 +117,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 		SceneViewer::BUFFERING_MODE_DOUBLE, SceneViewer::STEREO_MODE_ANY);
 	EXPECT_TRUE(sv.isValid());
 
-	int result = sv.setScene(scene);
+	int result = sv.setScene(zinc.scene);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = sv.setViewportSize(512, 512);
@@ -135,7 +129,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
 	EXPECT_TRUE(gf.isValid());
 
-	result = scenePicker.setScene(scene);
+	result = scenePicker.setScene(zinc.scene);
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = scenePicker.setGraphicsFilter(gf);

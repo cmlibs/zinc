@@ -12,7 +12,7 @@
 #include <zinc/graphicsfilter.h>
 #include <zinc/node.h>
 #include <zinc/region.h>
-#include <zinc/rendition.h>
+#include <zinc/scene.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -25,7 +25,7 @@
 
 #include "test_resources.h"
 
-TEST(Cmiss_rendition_convert_to_point_cloud, surface_points)
+TEST(Cmiss_scene_convert_to_point_cloud, surface_points)
 {
 	ZincTestSetup zinc;
 
@@ -33,7 +33,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points)
 
 	Cmiss_field_id graphicCoordinateField = Cmiss_field_module_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field_id>(0), graphicCoordinateField);
-	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_rendition_create_graphic_surfaces(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic_id>(0), gr);
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_coordinate_field(gr, graphicCoordinateField));
 	Cmiss_field_destroy(&graphicCoordinateField);
@@ -49,7 +49,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points)
 	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(outputFm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset_id>(0), nodeset);
 
-	EXPECT_EQ(CMISS_OK, Cmiss_rendition_convert_to_point_cloud(zinc.ren,
+	EXPECT_EQ(CMISS_OK, Cmiss_scene_convert_to_point_cloud(zinc.scene,
 		static_cast<Cmiss_graphics_filter_id>(0), nodeset, outputCoordinateField,
 		/*lineDensity*/0.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/100.0, /*surfaceDensityScaleFactor*/0.0));
@@ -64,7 +64,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points)
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_destroy(&gr));
 }
 
-TEST(Cmiss_rendition_convert_to_point_cloud, surface_points_cpp)
+TEST(Cmiss_scene_convert_to_point_cloud, surface_points_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -72,7 +72,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points_cpp)
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
-	GraphicSurfaces su = zinc.ren.createGraphicSurfaces();
+	GraphicSurfaces su = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(su.isValid());
 	EXPECT_EQ(CMISS_OK, su.setCoordinateField(graphicCoordinateField));
 
@@ -94,7 +94,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points_cpp)
 	EXPECT_TRUE(nodeset.isValid());
 
 	GraphicsFilter noFilter;
-	EXPECT_EQ(CMISS_OK, zinc.ren.convertToPointCloud(noFilter,
+	EXPECT_EQ(CMISS_OK, zinc.scene.convertToPointCloud(noFilter,
 		nodeset, outputCoordinateField,
 		/*lineDensity*/0.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/100.0, /*surfaceDensityScaleFactor*/0.0));
@@ -103,7 +103,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, surface_points_cpp)
 	EXPECT_LT(numberOfPoints, 650);
 }
 
-TEST(Cmiss_rendition_convert_to_point_cloud, line_points)
+TEST(Cmiss_scene_convert_to_point_cloud, line_points)
 {
 	ZincTestSetup zinc;
 
@@ -111,7 +111,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, line_points)
 
 	Cmiss_field_id graphicCoordinateField = Cmiss_field_module_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<Cmiss_field_id>(0), graphicCoordinateField);
-	Cmiss_graphic_id gr = Cmiss_graphic_lines_base_cast(Cmiss_rendition_create_graphic_lines(zinc.ren));
+	Cmiss_graphic_id gr = Cmiss_graphic_lines_base_cast(Cmiss_scene_create_graphic_lines(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic_id>(0), gr);
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_coordinate_field(gr, graphicCoordinateField));
 	Cmiss_field_destroy(&graphicCoordinateField);
@@ -127,7 +127,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, line_points)
 	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(outputFm, CMISS_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<Cmiss_nodeset_id>(0), nodeset);
 
-	EXPECT_EQ(CMISS_OK, Cmiss_rendition_convert_to_point_cloud(zinc.ren,
+	EXPECT_EQ(CMISS_OK, Cmiss_scene_convert_to_point_cloud(zinc.scene,
 		static_cast<Cmiss_graphics_filter_id>(0), nodeset, outputCoordinateField,
 		/*lineDensity*/50.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/0.0, /*surfaceDensityScaleFactor*/0.0));
@@ -142,7 +142,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, line_points)
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_destroy(&gr));
 }
 
-TEST(Cmiss_rendition_convert_to_point_cloud, line_points_cpp)
+TEST(Cmiss_scene_convert_to_point_cloud, line_points_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -150,7 +150,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, line_points_cpp)
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
-	GraphicLines su = zinc.ren.createGraphicLines();
+	GraphicLines su = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(su.isValid());
 	EXPECT_EQ(CMISS_OK, su.setCoordinateField(graphicCoordinateField));
 
@@ -166,7 +166,7 @@ TEST(Cmiss_rendition_convert_to_point_cloud, line_points_cpp)
 	EXPECT_TRUE(nodeset.isValid());
 
 	GraphicsFilter noFilter;
-	EXPECT_EQ(CMISS_OK, zinc.ren.convertToPointCloud(noFilter,
+	EXPECT_EQ(CMISS_OK, zinc.scene.convertToPointCloud(noFilter,
 		nodeset, outputCoordinateField,
 		/*lineDensity*/50.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/0.0, /*surfaceDensityScaleFactor*/0.0));

@@ -9,7 +9,7 @@
 #include <zinc/fieldmodule.hpp>
 #include <zinc/glyph.hpp>
 #include <zinc/graphicsmodule.hpp>
-#include <zinc/rendition.hpp>
+#include <zinc/scene.hpp>
 
 using namespace zinc;
 
@@ -21,7 +21,7 @@ public:
 	FieldModule fm;
 	GraphicsModule gm;
 	GlyphModule glyphModule;
-	Rendition ren;
+	Scene scene;
 
 	ZincTestSetupCpp() :
 		context("test"),
@@ -29,15 +29,15 @@ public:
 		fm(root_region.getFieldModule()),
 		gm(context.getDefaultGraphicsModule()),
 		glyphModule(gm.getGlyphModule()),
-		ren(0)
+		scene(0)
 	{
-		EXPECT_EQ(CMISS_OK, gm.enableRenditions(root_region));
-		ren = gm.getRendition(root_region);
+		EXPECT_EQ(CMISS_OK, gm.enableScenes(root_region));
+		scene = gm.getScene(root_region);
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(gm.isValid());
 		EXPECT_TRUE(glyphModule.isValid());
 		EXPECT_EQ(CMISS_OK, glyphModule.defineStandardGlyphs());
-		EXPECT_TRUE(ren.isValid());
+		EXPECT_TRUE(scene.isValid());
 	}
 
 	~ZincTestSetupCpp()

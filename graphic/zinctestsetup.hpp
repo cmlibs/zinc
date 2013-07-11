@@ -10,7 +10,7 @@
 #include <zinc/fieldmodule.h>
 #include <zinc/glyph.h>
 #include <zinc/graphicsmodule.h>
-#include <zinc/rendition.h>
+#include <zinc/scene.h>
 
 class ZincTestSetup
 {
@@ -20,7 +20,7 @@ public:
 	Cmiss_field_module_id fm;
 	Cmiss_graphics_module_id gm;
 	Cmiss_glyph_module_id glyph_module;
-	Cmiss_rendition_id ren;
+	Cmiss_scene_id scene;
 
 	ZincTestSetup() :
 		context(Cmiss_context_create("test")),
@@ -28,20 +28,20 @@ public:
 		fm(Cmiss_region_get_field_module(root_region)),
 		gm(Cmiss_context_get_default_graphics_module(context)),
 		glyph_module(Cmiss_graphics_module_get_glyph_module(gm)),
-		ren(0)
+		scene(0)
 	{
-		EXPECT_EQ(CMISS_OK, Cmiss_graphics_module_enable_renditions(gm, root_region));
-		ren = Cmiss_graphics_module_get_rendition(gm, root_region);
+		EXPECT_EQ(CMISS_OK, Cmiss_graphics_module_enable_scenes(gm, root_region));
+		scene = Cmiss_graphics_module_get_scene(gm, root_region);
 		EXPECT_NE(static_cast<Cmiss_field_module *>(0), fm);
 		EXPECT_NE(static_cast<Cmiss_graphics_module *>(0), gm);
 		EXPECT_NE(static_cast<Cmiss_glyph_module *>(0), glyph_module);
 		EXPECT_EQ(CMISS_OK, Cmiss_glyph_module_define_standard_glyphs(glyph_module));
-		EXPECT_NE(static_cast<Cmiss_rendition *>(0), ren);
+		EXPECT_NE(static_cast<Cmiss_scene *>(0), scene);
 	}
 
 	~ZincTestSetup()
 	{
-		Cmiss_rendition_destroy(&ren);
+		Cmiss_scene_destroy(&scene);
 		Cmiss_glyph_module_destroy(&glyph_module);
 		Cmiss_graphics_module_destroy(&gm);
 		Cmiss_field_module_destroy(&fm);
