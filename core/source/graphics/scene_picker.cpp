@@ -39,7 +39,6 @@
 #include "zinc/status.h"
 #include "zinc/graphicsfilter.h"
 #include "zinc/graphicsmodule.h"
-#include "zinc/scene.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -48,14 +47,15 @@
 #include "graphics/scene.h"
 #include "graphics/scene_picker.hpp"
 #include "graphics/scene_viewer.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
+#include "interaction/interaction_volume.h"
 #include "region/cmiss_region.h"
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 
 Cmiss_scene_picker::Cmiss_scene_picker(Cmiss_graphics_module_id graphics_module_in) :
 	interaction_volume(0),
-	scene(0),
+	top_scene(0),
 	scene_viewer(0),
 	centre_x(0), centre_y(0),
 	size_x(0), size_y(0),
@@ -75,8 +75,8 @@ Cmiss_scene_picker::~Cmiss_scene_picker()
 		DEACCESS(Interaction_volume)(&interaction_volume);
 	if (scene_viewer)
 		Cmiss_scene_viewer_destroy(&scene_viewer);
-	if (scene)
-		Cmiss_scene_destroy(&scene);
+	if (top_scene)
+		Cmiss_scene_destroy(&top_scene);
 	if (filter)
 		Cmiss_graphics_filter_destroy(&filter);
 	if (select_buffer)
@@ -132,26 +132,34 @@ int Cmiss_scene_picker::pickObjects()
 		return CMISS_OK;
 	if (!has_current_context())
 		return CMISS_ERROR_GENERAL;
-	if (scene&&interaction_volume)
+	if (top_scene&&interaction_volume)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_glbeginend_renderer();
 		renderer->picking = 1;
-		Cmiss_graphics_filter_id scene_filter = Cmiss_scene_get_filter(scene);
-		Cmiss_graphics_filter_id combined_filter = scene_filter;
+		Cmiss_graphics_filter_id scene_filter = Cmiss_scene_viewer_get_filter(scene_viewer);
+		Cmiss_graphics_filter_id combined_filter = Cmiss_graphics_filter_access(scene_filter);
 		if (filter)
 		{
-			combined_filter = Cmiss_graphics_module_create_filter_operator_and(
-				graphics_module);
-			Cmiss_graphics_filter_operator_id and_filter = Cmiss_graphics_filter_cast_operator(
-				combined_filter);
-			if (and_filter)
+			Cmiss_graphics_filter_destroy(&combined_filter);
+			if (scene_filter)
 			{
-				Cmiss_graphics_filter_operator_append_operand(and_filter, scene_filter);
-				Cmiss_graphics_filter_operator_append_operand(and_filter, filter);
-				Cmiss_graphics_filter_operator_destroy(&and_filter);
+				combined_filter = Cmiss_graphics_module_create_filter_operator_and(
+					graphics_module);
+				Cmiss_graphics_filter_operator_id and_filter = Cmiss_graphics_filter_cast_operator(
+					combined_filter);
+				if (and_filter)
+				{
+					Cmiss_graphics_filter_operator_append_operand(and_filter, scene_filter);
+					Cmiss_graphics_filter_operator_append_operand(and_filter, filter);
+					Cmiss_graphics_filter_operator_destroy(&and_filter);
+				}
+			}
+			else
+			{
+				combined_filter = Cmiss_graphics_filter_access(filter);
 			}
 		}
-		if (renderer->Scene_compile(scene, combined_filter))
+		if (renderer->Scene_compile(top_scene, combined_filter))
 		{
 			number_of_hits=-1;
 			while (0>number_of_hits)
@@ -190,7 +198,7 @@ int Cmiss_scene_picker::pickObjects()
 					{
 						do
 						{
-							return_code = renderer->Scene_execute(scene);
+							return_code = renderer->Scene_tree_execute(top_scene);
 						}
 						while (return_code && renderer->next_layer());
 					}
@@ -209,7 +217,7 @@ int Cmiss_scene_picker::pickObjects()
 				}
 			}
 		}
-		if (combined_filter && (combined_filter !=scene_filter))
+		if (combined_filter)
 		{
 			Cmiss_graphics_filter_destroy(&combined_filter);
 		}
@@ -232,7 +240,7 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
-		Cmiss_rendition_id rendition = 0, existing_rendition = 0;
+		Cmiss_scene_id picked_scene = 0, existing_scene = 0;
 		Cmiss_graphic_id graphic = 0;
 		Cmiss_nodeset_id nodeset = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
@@ -240,7 +248,7 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 * select_buffer[3] = rendition
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphic position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
@@ -250,20 +258,20 @@ Region_node_map Cmiss_scene_picker::getPickedRegionSortedNodes(
 			next_select_buffer = select_buffer_ptr + number_of_names + 3;
 			if (number_of_names >= 4)
 			{
-				if ((getRenditionAndGraphic(select_buffer_ptr,
-						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
+				if ((getSceneAndGraphic(select_buffer_ptr,
+						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
 				{
 					if (((type == CMISS_SCENE_PICKER_OBJECT_DATA) &&
 							(CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic))) ||
 						((type == CMISS_SCENE_PICKER_OBJECT_NODE) &&
 							(CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))))
 					{
-						if (rendition)
+						if (picked_scene)
 						{
-							Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-							if (existing_rendition != rendition)
+							Cmiss_region *region = Cmiss_scene_get_region(picked_scene);
+							if (existing_scene != picked_scene)
 							{
-								existing_rendition = rendition;
+								existing_scene = picked_scene;
 								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 								if (nodeset)
 									Cmiss_nodeset_destroy(&nodeset);
@@ -298,7 +306,7 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 	{
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
-		Cmiss_rendition_id rendition = 0, existing_rendition = 0;
+		Cmiss_scene_id picked_scene = 0, existing_scene = 0;
 		Cmiss_graphic_id graphic = 0;
 		Cmiss_mesh_id mesh = 0;
 		int current_element_type = 0;
@@ -307,7 +315,7 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 * select_buffer[3] = rendition
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphic position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
@@ -317,19 +325,19 @@ Region_element_map Cmiss_scene_picker::getPickedRegionSortedElements()
 			next_select_buffer = select_buffer_ptr + number_of_names + 3;
 			if (number_of_names >= 3)
 			{
-				if ((getRenditionAndGraphic(select_buffer_ptr,
-					&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
+				if ((getSceneAndGraphic(select_buffer_ptr,
+					&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
 				{
 					if (Cmiss_graphic_selects_elements(graphic))
 					{
-						if (rendition)
+						if (picked_scene)
 						{
-							Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+							Cmiss_region *region = Cmiss_scene_get_region(picked_scene);
 							int element_type = Cmiss_graphic_get_domain_dimension(graphic);
-							if ((existing_rendition != rendition) ||
+							if ((existing_scene != picked_scene) ||
 								(current_element_type != element_type))
 							{
-								existing_rendition = rendition;
+								existing_scene = picked_scene;
 								current_element_type = element_type;
 								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 								if (mesh)
@@ -366,20 +374,20 @@ void Cmiss_scene_picker::reset()
 	number_of_hits = 0;
 }
 
-/*provide a select buffer pointer and return the rendition and graphic */
-int Cmiss_scene_picker::getRenditionAndGraphic(GLuint *select_buffer_ptr,
-	Cmiss_rendition_id *rendition, Cmiss_graphic_id *graphic)
+/*provide a select buffer pointer and return the scene and graphic */
+int Cmiss_scene_picker::getSceneAndGraphic(GLuint *select_buffer_ptr,
+	Cmiss_scene_id *picked_scene, Cmiss_graphic_id *graphic)
 {
-	if (scene && select_buffer_ptr)
+	if (top_scene && select_buffer_ptr)
 	{
-		*rendition = Scene_get_rendition_of_position(scene, (int)(select_buffer_ptr[3]));
-		*graphic = Cmiss_rendition_get_graphic_at_position(*rendition,
+		*picked_scene = Cmiss_scene_get_child_of_position(top_scene, (int)(select_buffer_ptr[3]));
+		*graphic = Cmiss_scene_get_graphic_at_position(*picked_scene,
 			(int)(select_buffer_ptr[4]));
 		return 1;
 	}
 	else
 	{
-		*rendition = 0;
+		*picked_scene = 0;
 		*graphic = 0;
 		return 0;
 	}
@@ -403,12 +411,12 @@ int Cmiss_scene_picker::setScene(Cmiss_scene_id scene_in)
 {
 	if (scene_in)
 	{
-		if (scene_in != scene)
+		if (scene_in != top_scene)
 		{
 			reset();
-			if (scene)
-				Cmiss_scene_destroy(&scene);
-			scene = Cmiss_scene_access(scene_in);
+			if (top_scene)
+				Cmiss_scene_destroy(&top_scene);
+			top_scene = Cmiss_scene_access(scene_in);
 		}
 		return CMISS_OK;
 	}
@@ -456,7 +464,7 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 		int hit_no, number_of_names, current_element_type = 0;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
-		Cmiss_rendition_id rendition = 0, existing_rendition = 0;
+		Cmiss_scene_id picked_scene = 0, existing_scene = 0;
 		Cmiss_graphic_id graphic = 0;
 		Cmiss_mesh_id mesh = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
@@ -464,7 +472,7 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 * select_buffer[3] = rendition
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphic position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
@@ -481,19 +489,19 @@ Cmiss_element_id Cmiss_scene_picker::getNearestElement()
 				nearest = (double)(select_buffer_ptr[1]);
 				if ((nearest_element == NULL) || (nearest < current_nearest))
 				{
-					if ((getRenditionAndGraphic(select_buffer_ptr,
-						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
+					if ((getSceneAndGraphic(select_buffer_ptr,
+						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
 					{
 						if (Cmiss_graphic_selects_elements(graphic))
 						{
-							if (rendition)
+							if (picked_scene)
 							{
-								Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+								Cmiss_region *region = Cmiss_scene_get_region(picked_scene);
 								int element_type = Cmiss_graphic_get_domain_dimension(graphic);
-								if ((existing_rendition != rendition) ||
+								if ((existing_scene != picked_scene) ||
 									(current_element_type != element_type))
 								{
-									existing_rendition = rendition;
+									existing_scene = picked_scene;
 									current_element_type = element_type;
 									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 									if (mesh)
@@ -532,7 +540,7 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
-		Cmiss_rendition_id rendition = 0, existing_rendition = 0;
+		Cmiss_scene_id picked_scene = 0, existing_scene = 0;
 		Cmiss_graphic_id graphic = 0;
 		Cmiss_nodeset_id nodeset = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
@@ -540,7 +548,7 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 * select_buffer[3] = rendition
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphic position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
@@ -557,20 +565,20 @@ Cmiss_node_id Cmiss_scene_picker::getNearestNode(enum Cmiss_scene_picker_object_
 				nearest = (double)(select_buffer_ptr[1]);
 				if ((nearest_node == NULL) || (nearest < current_nearest))
 				{
-					if ((getRenditionAndGraphic(select_buffer_ptr,
-						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
+					if ((getSceneAndGraphic(select_buffer_ptr,
+						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
 					{
 						if (((type == CMISS_SCENE_PICKER_OBJECT_DATA) &&
 								(CMISS_FIELD_DOMAIN_DATA == Cmiss_graphic_get_domain_type(graphic))) ||
 							((type == CMISS_SCENE_PICKER_OBJECT_NODE) &&
 								(CMISS_FIELD_DOMAIN_NODES == Cmiss_graphic_get_domain_type(graphic))))
 						{
-							if (rendition)
+							if (picked_scene)
 							{
-								if (existing_rendition != rendition)
+								if (existing_scene != picked_scene)
 								{
-									existing_rendition = rendition;
-									Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+									existing_scene = picked_scene;
+									Cmiss_region *region = Cmiss_scene_get_region(picked_scene);
 									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 									if (nodeset)
 										Cmiss_nodeset_destroy(&nodeset);
@@ -607,14 +615,14 @@ Cmiss_graphic_id Cmiss_scene_picker::getNearestGraphic(enum Cmiss_scene_picker_o
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
-		Cmiss_rendition_id rendition = 0;
+		Cmiss_scene_id picked_scene = 0;
 		Cmiss_graphic_id graphic = 0, nearest_graphic = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 * select_buffer[3] = rendition
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphic position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
@@ -631,8 +639,8 @@ Cmiss_graphic_id Cmiss_scene_picker::getNearestGraphic(enum Cmiss_scene_picker_o
 				nearest = (double)(select_buffer_ptr[1]);
 				if ((nearest_graphic == NULL) || (nearest < current_nearest))
 				{
-					if ((getRenditionAndGraphic(select_buffer_ptr,
-						&rendition, &graphic) && (0 != rendition) && (0 != graphic)))
+					if ((getSceneAndGraphic(select_buffer_ptr,
+						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
 					{
 						if ((type == CMISS_SCENE_PICKER_OBJECT_ANY) ||
 							((type == CMISS_SCENE_PICKER_OBJECT_ELEMENT) &&

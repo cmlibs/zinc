@@ -52,16 +52,15 @@ GL rendering calls - API specific.
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"
-#include "graphics/scene.h"
+#include "graphics/light.h"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
-#include "graphics/scene.hpp"
 #include "graphics/render_gl.h"
-#include "graphics/rendition.hpp"
+#include "graphics/scene.hpp"
 #include "graphics/texture.hpp"
 
 /**
@@ -135,10 +134,7 @@ public:
 	  {
 	  }
 
-	  /**
-		 * Execute the Scene.
-		 */
-	  int Scene_execute(Scene *scene)
+	  int Scene_tree_execute(Cmiss_scene *scene)
 	  {
 		  set_Scene(scene);
 		  return Scene_render_opengl(scene, this);
@@ -156,19 +152,19 @@ public:
 			  GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	  }
 
-	  int Cmiss_rendition_execute(Cmiss_rendition *cmiss_rendition)
+	  int Cmiss_scene_execute(Cmiss_scene *cmiss_scene)
 	  {
-		  return execute_Cmiss_rendition(cmiss_rendition, this);
+		  return execute_Cmiss_scene(cmiss_scene, this);
 	  }
 
-	  int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
+	  int Cmiss_scene_execute_graphics(Cmiss_scene *cmiss_scene)
 	  {
-		  return Cmiss_rendition_render_opengl(cmiss_rendition, this);
+		  return Cmiss_scene_graphics_render_opengl(cmiss_scene, this);
 	  }
 
-	  int Cmiss_rendition_execute_child_rendition(Cmiss_rendition *cmiss_rendition)
+	  int Cmiss_scene_execute_child_scene(Cmiss_scene *cmiss_scene)
 	  {
-		  return Cmiss_rendition_render_child_rendition(cmiss_rendition, this);
+		  return Cmiss_scene_render_child_scene(cmiss_scene, this);
 	  }
 
 	  int Material_execute(Graphical_material *material)
@@ -420,19 +416,14 @@ public:
 	  {
 	  }
 
-	  int Cmiss_rendition_execute_members_parent(Cmiss_rendition *cmiss_rendition)
+	  int Cmiss_scene_execute_graphics(Cmiss_scene *cmiss_scene)
 	  {
-		  return Render_immediate::Cmiss_rendition_execute_members(cmiss_rendition);
+		  return Cmiss_scene_graphics_render_opengl(cmiss_scene, this);
 	  }
 
-	  int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
+	  int Cmiss_scene_execute_child_scene(Cmiss_scene *cmiss_scene)
 	  {
-		  return Cmiss_rendition_render_opengl(cmiss_rendition, this);
-	  }
-
-	  int Cmiss_rendition_execute_child_rendition(Cmiss_rendition *cmiss_rendition)
-	  {
-		  return Cmiss_rendition_render_child_rendition(cmiss_rendition, this);
+		  return Cmiss_scene_render_child_scene(cmiss_scene, this);
 	  }
 
 	  int Graphics_object_execute_parent(GT_object *graphics_object)

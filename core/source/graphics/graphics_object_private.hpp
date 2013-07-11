@@ -247,7 +247,7 @@ DESCRIPTION :
 }; /* struct GT_polyline */
 
 /***************************************************************************//**
- * Provides the rendition information for the lines stored in the
+ * Provides the scene information for the lines stored in the
  * vertex_array.
  */
 struct GT_polyline_vertex_buffers

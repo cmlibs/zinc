@@ -48,9 +48,9 @@
 #include "computed_field/computed_field_private.hpp"
 #include "zinc/fieldgroup.h"
 #include "zinc/fieldsubobjectgroup.h"
-#include "zinc/rendition.h"
+#include "zinc/scene.h"
 #if defined (USE_OPENCASCADE)
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"

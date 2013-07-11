@@ -50,27 +50,26 @@
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
-#include "graphics/rendition.hpp"
-#include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
+#include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render.hpp"
 
 /****************** Render_graphics_compile_members **********************/
 
-int Render_graphics_compile_members::Scene_compile(Scene *scene, Cmiss_graphics_filter_id graphics_filter)
+int Render_graphics_compile_members::Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter_id graphics_filter)
 {
 	set_Scene(scene);
 	setGraphicsFilter(graphics_filter);
-	return Scene_compile_members(scene, this);
+	return Cmiss_scene_compile_tree(scene, this);
 }
 
-int Render_graphics_compile_members::Cmiss_rendition_compile(Cmiss_rendition *cmiss_rendition)
+int Render_graphics_compile_members::Cmiss_scene_compile(Cmiss_scene *cmiss_scene)
 {
-	return Cmiss_rendition_compile_rendition(cmiss_rendition, this);
+	return Cmiss_scene_compile_scene(cmiss_scene, this);
 }
 
-int Render_graphics_compile_members::Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
+int Render_graphics_compile_members::Cmiss_scene_compile_members(Cmiss_scene *cmiss_scene)
 {
-	return Cmiss_rendition_compile_members_rendition(cmiss_rendition, this);
+	return Cmiss_scene_compile_graphics(cmiss_scene, this);
 }

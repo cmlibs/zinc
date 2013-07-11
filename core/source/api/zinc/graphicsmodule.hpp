@@ -41,13 +41,12 @@
 
 #include "zinc/graphicsmodule.h"
 #include "zinc/region.hpp"
-#include "zinc/rendition.hpp"
+#include "zinc/scene.hpp"
 #include "zinc/glyph.hpp"
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/graphicsfilter.hpp"
 #include "zinc/font.hpp"
-#include "zinc/scene.hpp"
 #include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
@@ -104,14 +103,14 @@ public:
 		return id;
 	}
 	
-	int enableRenditions(Region& region)
+	int enableScenes(Region& region)
 	{
-		return Cmiss_graphics_module_enable_renditions(id, region.getId());
+		return Cmiss_graphics_module_enable_scenes(id, region.getId());
 	}
 
-	Rendition getRendition(Region& region)
+	Scene getScene(Region& region)
 	{
-		return Rendition(Cmiss_graphics_module_get_rendition(id, region.getId()));
+		return Scene(Cmiss_graphics_module_get_scene(id, region.getId()));
 	}
 
 	GlyphModule getGlyphModule()
@@ -186,16 +185,6 @@ public:
 	SceneViewerModule getSceneViewerModule()
 	{
 		return SceneViewerModule(Cmiss_graphics_module_get_scene_viewer_module(id));
-	}
-
-	Scene createScene()
-	{
-		return Scene(Cmiss_graphics_module_create_scene(id));
-	}
-
-	Scene findSceneByName(const char *name)
-	{
-		return Scene(Cmiss_graphics_module_find_scene_by_name(id, name));
 	}
 
 	SpectrumModule getSpectrumModule()

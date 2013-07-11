@@ -52,12 +52,12 @@ enum Cmiss_graphics_coordinate_system
 {
 	CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID = 0,
 	CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL = 1,
-	/*!< The local coordinate system of a Cmiss_rendition, subject to its own
-	 * transformation matrix and those of all parent renditions up to the root
+	/*!< The local coordinate system of a Cmiss_scene, subject to its own
+	 * transformation matrix and those of all parent scenes up to the root
 	 * region of the Cmiss_scene in use, which are world coordinates.*/
 	CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD = 2,
 	/*!< The world coordinate system which Cmiss_scene_viewer viewing parameters
-	 * are specified in, and which Cmiss_rendition transformations (giving local
+	 * are specified in, and which Cmiss_scene transformations (giving local
 	 * coordinates) are ultimately relative to.*/
 	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL = 3,
 	/*!< Distorted normalised window coordinate system which varies from

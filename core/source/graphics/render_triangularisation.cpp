@@ -38,15 +38,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "zinc/rendition.h"
+#include "zinc/scene.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/rendition.h"
-#include "graphics/graphics_object.h"
 #include "graphics/scene.h"
+#include "graphics/graphics_object.h"
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/scene.hpp"
 #include "graphics/render_triangularisation.hpp"
 
 #include <math.h>
@@ -517,11 +515,12 @@ static int graphics_object_export_to_triangularisation(struct GT_object *gt_obje
 	return return_code;
 }
 
-int render_scene_triangularisation(struct Scene *scene, Triangle_mesh *trimesh)
+int render_scene_triangularisation(Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter, Triangle_mesh *trimesh)
 {
 	int return_code = 0;
 
-	return_code = for_each_graphics_object_in_scene(scene,
+	return_code = for_each_graphics_object_in_scene_tree(scene, filter,
 		graphics_object_export_to_triangularisation,(void *)trimesh);
 
 	return return_code;
@@ -532,11 +531,10 @@ Render_graphics_triangularisation::~Render_graphics_triangularisation()
 	delete trimesh;
 }
 
-int Render_graphics_triangularisation::Scene_execute(Scene *scene)
+int Render_graphics_triangularisation::Scene_tree_execute(Cmiss_scene_id scene)
 {
 	set_Scene(scene);
- 	render_scene_triangularisation(scene, trimesh);
-	return 1;
+	return render_scene_triangularisation(scene, this->getGraphicsFilter(), trimesh);
 }
 
 Triangle_mesh *Render_graphics_triangularisation::get_triangle_mesh()

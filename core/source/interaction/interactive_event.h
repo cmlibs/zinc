@@ -50,8 +50,8 @@ Structure describing an interactive event containing:
 #define INTERACTIVE_EVENT_H
 
 #include "general/object.h"
-#include "graphics/scene.h"
 #include "interaction/interaction_volume.h"
+#include "graphics/scene.h"
 
 /*
 Global constants
@@ -90,7 +90,7 @@ Global functions
 
 struct Interactive_event *CREATE(Interactive_event)(
 	enum Interactive_event_type type,int button_number,int input_modifier,
-	struct Interaction_volume *interaction_volume,struct Scene *scene);
+	struct Interaction_volume *interaction_volume, Cmiss_scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 6 May 2005
 
@@ -143,7 +143,7 @@ that the returned volume may be accessed and kept beyond the lifespan of the
 event itself since it is not modifiable.
 ==============================================================================*/
 
-struct Scene *Interactive_event_get_scene(
+Cmiss_scene *Interactive_event_get_scene(
 	struct Interactive_event *interactive_event);
 /*******************************************************************************
 LAST MODIFIED : 10 April 2000

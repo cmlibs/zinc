@@ -66,7 +66,7 @@ struct Cmiss_scene_picker
 {
 private:
 	struct Interaction_volume *interaction_volume;
-	Cmiss_scene_id scene;
+	Cmiss_scene_id top_scene;
 	Cmiss_scene_viewer_id scene_viewer;
 	int centre_x, centre_y, size_x, size_y;
 	Cmiss_graphics_coordinate_system coordinate_system;
@@ -86,9 +86,9 @@ private:
 
 	void reset();
 
-	/*provide a select buffer pointer and return the rendition and graphic */
-	int getRenditionAndGraphic(GLuint *select_buffer_ptr,
-		Cmiss_rendition_id *rendition, Cmiss_graphic_id *graphic);
+	/*provide a select buffer pointer and return the scene and graphic */
+	int getSceneAndGraphic(GLuint *select_buffer_ptr,
+		Cmiss_scene_id *scene, Cmiss_graphic_id *graphic);
 
 public:
 

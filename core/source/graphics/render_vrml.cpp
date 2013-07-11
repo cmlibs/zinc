@@ -56,11 +56,11 @@ Renders gtObjects to VRML file
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/render_vrml.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
+#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 
@@ -2724,7 +2724,8 @@ DESCRIPTION :
 struct Export_to_vrml_data
 {
 	FILE *vrml_file;
-	struct Scene *scene;
+	Cmiss_scene_id scene;
+	Cmiss_graphics_filter_id filter;
 	/* store materials, glyphs and gt_objects that have been DEFined already so
 		 we can USE them again */
 	struct LIST(VRML_prototype) *vrml_prototype_list;
@@ -2788,7 +2789,8 @@ graphics_object_tree_iterator_function
 Global functions
 ----------------
 */
-int export_to_vrml(char *file_name,void *scene_void)
+int export_to_vrml(char *file_name, Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter)
 /******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -2800,12 +2802,10 @@ Renders the visible objects to a VRML file.
 	FILE *vrml_file;
 	int return_code;
 	struct Export_to_vrml_data export_to_vrml_data;
-	struct Scene *scene;
 
-	ENTER(export_to_vrml);
-	if (file_name&&(scene=(struct Scene *)scene_void))
+	if (file_name&&scene)
 	{
-		build_Scene(scene);
+		build_Scene(scene, filter);
 		/* open file and add header */
 		vrml_file=fopen(file_name,"w");
 		if (vrml_file)
@@ -2816,6 +2816,7 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"#VRML V2.0 utf8\n# CMGUI VRML Generator\n");
 			export_to_vrml_data.vrml_file=vrml_file;
 			export_to_vrml_data.scene=scene;
+			export_to_vrml_data.filter=filter;
 			export_to_vrml_data.vrml_prototype_list=NULL;
 			/* 2. Write scene graph */
 			/* transform.... */
@@ -2823,8 +2824,8 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"Group {\n");
 			fprintf(vrml_file,"  children [\n");
 
-			if (Scene_get_graphics_range(scene, &centre_x, &centre_y, &centre_z,
-				&size_x, &size_y, &size_z) &&
+			if (Cmiss_scene_get_global_graphics_range(scene, filter,
+				&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z) &&
 				(radius = sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
 			{
 				fprintf(vrml_file,"    Viewpoint {\n");
@@ -2838,7 +2839,7 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"    } #NavigationInfo\n");
 			export_to_vrml_data.vrml_prototype_list=
 				CREATE(LIST(VRML_prototype))();
-			return_code=for_each_graphics_object_in_scene(scene,
+			return_code=for_each_graphics_object_in_scene_tree(scene, filter,
 				graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
 			DESTROY(LIST(VRML_prototype))(&export_to_vrml_data.vrml_prototype_list);
 			fprintf(vrml_file,"  ]\n");
@@ -2859,7 +2860,6 @@ Renders the visible objects to a VRML file.
 		display_message(ERROR_MESSAGE,"export_to_vrml.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* export_to_vrml */

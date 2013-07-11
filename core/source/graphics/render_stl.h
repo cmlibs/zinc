@@ -45,8 +45,7 @@ Renders gtObjects to STL stereolithography file.
 #define RENDERSTL_H
 
 struct Cmiss_scene;
-#define Scene Cmiss_scene // GRC temporary
-
+struct Cmiss_graphics_filter;
 /*
 Global functions
 ----------------
@@ -57,8 +56,9 @@ Global functions
  * 
  * @param file_name The name of the file to write to.
  * @param scene The scene to output
+ * @param filter The filter on scene
  * @return 1 on success, 0 on failure
  */
-int export_to_stl(char *file_name, struct Scene *scene);
+int export_to_stl(char *file_name, Cmiss_scene *scene, Cmiss_graphics_filter *filter);
 
 #endif /* !defined (RENDERSTL_H) */

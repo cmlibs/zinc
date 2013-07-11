@@ -368,7 +368,7 @@ ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
 ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
 
 /**
- * Set the name of the graphic. Unlike other containers, rendition can contains
+ * Set the name of the graphic. Unlike other containers, scene can contains
  * multiple graphics with the same name.
  *
  * @param graphic  The graphic to be named.

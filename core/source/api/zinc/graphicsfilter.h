@@ -78,8 +78,8 @@ ZINC_API int Cmiss_graphics_filter_module_destroy(
 
 /**
  * Creates a Cmiss_graphics_filter which matches any graphic with visibility
- * flag set AND its owning region and all ancestor region renditions' visibility
- * flags set i.e. rendition visibility flags work hierarchically.
+ * flag set AND its owning region and all ancestor region scenes' visibility
+ * flags set i.e. scene visibility flags work hierarchically.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
  * @param scene  Scene to add filter to.
@@ -319,8 +319,8 @@ ZINC_API int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
 
 /***************************************************************************//**
  * Creates a Cmiss_graphics_filter which matches any graphic with visibility
- * flag set AND its owning region and all ancestor region renditions' visibility
- * flags set i.e. rendition visibility flags work hierarchically.
+ * flag set AND its owning region and all ancestor region scenes' visibility
+ * flags set i.e. scene visibility flags work hierarchically.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
  * @deprecated see Cmiss_graphics_filter_module_create_filter_visibility_flags

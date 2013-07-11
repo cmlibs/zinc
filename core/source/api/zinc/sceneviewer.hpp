@@ -39,6 +39,7 @@
 #include "zinc/sceneviewer.h"
 #include "zinc/sceneviewerinput.h"
 #include "zinc/scene.hpp"
+#include "zinc/graphicsfilter.hpp"
 
 namespace zinc
 {
@@ -196,14 +197,29 @@ public:
 		return id;
 	}
 
+	int renderScene()
+	{
+		return Cmiss_scene_viewer_render_scene(id);
+	}
+
 	int setScene(Scene scene)
 	{
 		return Cmiss_scene_viewer_set_scene(id, scene.getId());
 	}
 
-	int renderScene()
+	Scene getScene()
 	{
-		return Cmiss_scene_viewer_render_scene(id);
+		return Scene(Cmiss_scene_viewer_get_scene(id));
+	}
+
+	int setFilter(GraphicsFilter graphicsFilter)
+	{
+		return Cmiss_scene_viewer_set_filter(id, graphicsFilter.getId());
+	}
+
+	GraphicsFilter getGraphicsFilter()
+	{
+		return GraphicsFilter(Cmiss_scene_viewer_get_filter(id));
 	}
 
 	int setGraphicsBufferWidth(int width)

@@ -45,7 +45,7 @@ struct Cmiss_scene;
 struct Cmiss_graphics_filter;
 #define Scene Cmiss_scene // GRC temp
 struct Cmiss_graphic;
-struct Cmiss_rendition;
+struct Cmiss_scene;
 struct GT_element_group;
 struct Texture;
 struct Graphical_material;
@@ -78,15 +78,10 @@ public:
 	{
 	}
 	
-	/***************************************************************************//**
-	 * Compile the Scene.
-	 */
-	virtual int Scene_compile(Scene *scene, Cmiss_graphics_filter *graphics_filter) = 0;
-	
-	/***************************************************************************//**
-	 * Execute the Scene.
-	 */
-	virtual int Scene_execute(Scene *scene) = 0;
+	virtual int Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter *graphics_filter) = 0;
+
+
+	virtual int Scene_tree_execute(Cmiss_scene *scene) = 0;
 
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
@@ -106,25 +101,25 @@ public:
 	virtual int Graphics_object_render_immediate(GT_object *graphics_object) = 0;
 
 	/***************************************************************************//**
-	 * Execute the Cmiss rendition.
+	 * Execute the Cmiss scene.
 	 */
-	virtual int Cmiss_rendition_execute(
-		Cmiss_rendition *cmiss_rendition) = 0;
+	virtual int Cmiss_scene_execute(
+		Cmiss_scene *cmiss_scene) = 0;
 
 	/***************************************************************************//**
-	 * Compile the Cmiss rendition.
+	 * Compile the Cmiss scene.
 	 */
-	virtual int Cmiss_rendition_compile(
-	  Cmiss_rendition *cmiss_rendition) = 0;
+	virtual int Cmiss_scene_compile(
+	  Cmiss_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_rendition_execute_members(
-		Cmiss_rendition *cmiss_rendition) = 0;
+	virtual int Cmiss_scene_execute_graphics(
+		Cmiss_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_rendition_execute_child_rendition(
-		Cmiss_rendition *cmiss_rendition) = 0;
+	virtual int Cmiss_scene_execute_child_scene(
+		Cmiss_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_rendition_compile_members(
-		Cmiss_rendition *cmiss_rendition) = 0;
+	virtual int Cmiss_scene_compile_members(
+		Cmiss_scene *cmiss_scene) = 0;
 	
 	/***************************************************************************//**
 	 * Compile the Material.
@@ -236,25 +231,22 @@ public:
 	}
 
 	FE_value time;
-	/** Passed from cmiss_renditions to graphic for compilation */
+	/** Passed from cmiss_scenes to graphic for compilation */
 	const char *name_prefix;
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
 	double world_view_matrix[16];
 	
-	/***************************************************************************//**
-	 * Compile the Scene.
-	 */
-	virtual int Scene_compile(Scene *scene, Cmiss_graphics_filter *graphics_filter);
+	virtual int Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter *graphics_filter);
 
 	/***************************************************************************//**
-	 * Compile the Cmiss rendition.
+	 * Compile the Cmiss scene.
 	 */
-	virtual int Cmiss_rendition_compile(
-	  Cmiss_rendition *cmiss_rendition);
+	virtual int Cmiss_scene_compile(
+	  Cmiss_scene *cmiss_scene);
 
-	virtual int Cmiss_rendition_compile_members(
-		Cmiss_rendition *cmiss_rendition);
+	virtual int Cmiss_scene_compile_members(
+		Cmiss_scene *cmiss_scene);
 
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
@@ -295,7 +287,7 @@ public:
 
 /***************************************************************************//**
  * This renderer ensures that all the sub-objects are up to date.  In particular
- * this triggers cmiss_renditions to generate their Graphics_object
+ * this triggers cmiss_scenes to generate their Graphics_object
  * representations.  (Previously this behaviour was build_GT_element_group.)
  * Unless overridden this renderer only builds objects so the execute methods all
  * just return 1. 
@@ -307,10 +299,7 @@ public:
 	{
 	}
 	
-	/***************************************************************************//**
-	 * By default this renderer only builds.
-	 */
-	virtual int Scene_execute(Scene * /*scene*/)
+	virtual int Scene_tree_execute(Cmiss_scene */*scene*/)
 	{
 		return 1;
 	}
@@ -336,17 +325,17 @@ public:
 		return 1;
 	}
 	
-	virtual int Cmiss_rendition_execute(Cmiss_rendition * /*cmiss_rendition*/)
+	virtual int Cmiss_scene_execute(Cmiss_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}
 
-	virtual int Cmiss_rendition_execute_members(Cmiss_rendition * /*cmiss_rendition*/)
+	virtual int Cmiss_scene_execute_graphics(Cmiss_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}
 	
-	virtual int Cmiss_rendition_execute_child_rendition(Cmiss_rendition * /*cmiss_rendition*/)
+	virtual int Cmiss_scene_execute_child_scene(Cmiss_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}

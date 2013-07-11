@@ -51,7 +51,6 @@ Renders gtObjects to Wavefront OBJ file
 #include "graphics/material.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/renderbinarywavefront.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
 #include "graphics/graphics_object_private.h"

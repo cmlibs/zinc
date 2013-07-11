@@ -45,10 +45,10 @@ struct Cmiss_selection_handler;
 
 struct Cmiss_selection_handler *Cmiss_selection_handler_create_private();
 
-int Cmiss_selection_handler_set_rendition(Cmiss_selection_handler_id selection_handler,
-	struct Cmiss_rendition *rendition_in);
+int Cmiss_selection_handler_set_scene(Cmiss_selection_handler_id selection_handler,
+	struct Cmiss_scene *scene_in);
 
-int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selection_handler);
+int Cmiss_selection_handler_scene_destroyed(Cmiss_selection_handler_id selection_handler);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
 #endif /* (SELECTION_HPP) */

@@ -60,7 +60,6 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/colour.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
-#include "graphics/scene.h"
 
 struct Graphics_buffer;
 #define Graphics_buffer_input Cmiss_scene_viewer_input
@@ -95,7 +94,6 @@ and the functions given their public names.
 #define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
 
 /* Convert the functions that have identical interfaces */
-#define Scene_viewer_set_scene Cmiss_scene_viewer_set_scene
 #define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
 #define Scene_viewer_set_interact_mode Cmiss_scene_viewer_set_interact_mode
 #define Scene_viewer_set_lookat_parameters_non_skew \
@@ -133,7 +131,6 @@ and the functions given their public names.
 #define Scene_viewer_get_viewing_volume Cmiss_scene_viewer_get_viewing_volume
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
-#define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
 #define Scene_viewer_add_transform_callback Cmiss_scene_viewer_add_transform_callback
 #define Scene_viewer_remove_transform_callback Cmiss_scene_viewer_remove_transform_callback
 #define Scene_viewer_add_input_callback Cmiss_scene_viewer_add_input_callback
@@ -269,14 +266,14 @@ The default data used to create Cmiss_scene_viewers.
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
-	struct MANAGER(Scene) *scene_manager;
-	struct Scene *scene;
+	Cmiss_graphics_filter_module_id filterModule;
 	//-- struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback))
 		*destroy_callback_list;
+	void *graphics_filter_manager_callback_id;
 };
 
 struct Scene_viewer_image_texture
@@ -316,7 +313,6 @@ DESCRIPTION :
 		 when the control key is held down */
 	int temporary_transform_mode;
 	/* scene to be viewed */
-	struct Scene *scene;
 	/* The projection mode. PARALLEL and PERSPECTIVE projections get their
 		 modelview matrix using gluLookat, and their projection matrix from the
 		 viewing volume. CUSTOM projection requires both matrices to be read-in */
@@ -385,8 +381,6 @@ DESCRIPTION :
 	void *light_manager_callback_id;
 	struct MANAGER(Light_model) *light_model_manager;
 	void *light_model_manager_callback_id;
-	struct MANAGER(Scene) *scene_manager;
-	void *scene_manager_callback_id;
 	/* For interpreting mouse events */
 	enum Scene_viewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
@@ -434,6 +428,8 @@ DESCRIPTION :
 	/* list of callbacks requested by other objects when scene viewer destroyed */
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
+	Cmiss_graphics_filter_id filter;
+	Cmiss_scene_id scene;
 }; /* struct Scene_viewer */
 
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_module_callback, \
@@ -455,7 +451,7 @@ struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene);
+	Cmiss_graphics_filter_module_id filterModule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -491,21 +487,13 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 
-struct Scene *Cmiss_scene_viewer_module_get_default_scene(
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-==============================================================================*/
-
 struct Scene_viewer *CREATE(Scene_viewer)(
 	struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene);
+	Cmiss_graphics_filter_id filter);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -524,21 +512,6 @@ LAST MODIFIED : 18 November 1998
 
 DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
-==============================================================================*/
-
-struct Scene_viewer *create_Scene_viewer_from_package(
-	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module,
-	struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 4 September 2007
-
-DESCRIPTION :
-Creates the scene viewer with respect to the cmiss_scene_viewer_module.
-The scene_viewer automatically removes itself from the package when it is
-destroyed.  If the package is destroyed at some point (usually by the
-destruction of the Command data) then all the scene viewers will be
-destroyed as well.
 ==============================================================================*/
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer);
@@ -1009,32 +982,6 @@ consecutive across rows, eg:
 [y']   |  m4  m5  m6  m7 | [y]
 [z']   |  m8  m9 m10 m11 | [z]
 [w']   | m12 m13 m14 m15 | [w]
-==============================================================================*/
-
-struct Scene *Scene_viewer_get_scene(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 14 February 1998
-
-DESCRIPTION :
-Returns the Scene_viewer scene.
-==============================================================================*/
-
-int Scene_viewer_set_scene(struct Scene_viewer *scene_viewer,
-	struct Cmiss_scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 14 February 1998
-
-DESCRIPTION :
-Sets the Scene_viewer scene.
-==============================================================================*/
-
-int Scene_viewer_set_scene_by_name(struct Scene_viewer *scene_viewer,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer scene from names in the scene manager.
 ==============================================================================*/
 
 int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
@@ -1639,5 +1586,6 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
+int Scene_viewer_scene_change(Cmiss_scene_viewer_id scene_viewer);
 
 #endif /* !defined (SCENE_VIEWER_H) */

@@ -45,14 +45,14 @@ Renders gtObjects to WAVEFRONT file
 #define render_wavefront_H
 
 struct Cmiss_scene;
-#define Scene Cmiss_scene // GRC temporary
-struct Cmiss_region;
+struct Cmiss_graphics_filter;
 
 /*
 Global functions
 ----------------
 */
-int export_to_wavefront(char *file_name, struct Scene *scene, int full_comments);
+int export_to_wavefront(char *file_name, Cmiss_scene *scene,
+	Cmiss_graphics_filter *filter, int full_comments);
 /******************************************************************************
 LAST MODIFIED : 19 October 1998
 

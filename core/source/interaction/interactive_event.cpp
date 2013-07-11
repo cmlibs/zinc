@@ -71,7 +71,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 		 logical OR with INTERACTIVE_EVENT_MODIFIER_SHIFT etc. */
 	int input_modifier;
 	struct Interaction_volume *interaction_volume;
-	struct Scene *scene;
+	Cmiss_scene_id scene;
 	int access_count;
 }; /* struct Interactive_event */
 
@@ -82,7 +82,7 @@ Global functions
 
 struct Interactive_event *CREATE(Interactive_event)(
 	enum Interactive_event_type type,int button_number,int input_modifier,
-	struct Interaction_volume *interaction_volume,struct Scene *scene)
+	struct Interaction_volume *interaction_volume,Cmiss_scene_id scene)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2005
 
@@ -106,11 +106,11 @@ necessary - they are not modifiable.
 				ACCESS(Interaction_volume)(interaction_volume);
 			if (scene)
 			{
-				interactive_event->scene=ACCESS(Scene)(scene);
+				interactive_event->scene=Cmiss_scene_access(scene);
 			}
 			else
 			{
-				interactive_event->scene=(struct Scene *)NULL;
+				interactive_event->scene=(Cmiss_scene_id)NULL;
 			}
 			interactive_event->access_count=0;
 		}
@@ -151,7 +151,7 @@ Destroys the Interactive_event.
 			DEACCESS(Interaction_volume)(&(interactive_event->interaction_volume));
 			if (interactive_event->scene)
 			{
-				DEACCESS(Scene)(&(interactive_event->scene));
+				Cmiss_scene_destroy(&(interactive_event->scene));
 			}
 			DEALLOCATE(*interactive_event_address);
 			return_code=1;
@@ -263,7 +263,7 @@ event itself since it is not modifiable.
 	return (interaction_volume);
 } /* Interactive_event_get_interaction_volume */
 
-struct Scene *Interactive_event_get_scene(
+Cmiss_scene_id Interactive_event_get_scene(
 	struct Interactive_event *interactive_event)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2000
@@ -273,22 +273,12 @@ Returns the optional scene associated with the interaction_volume for the
 <interactive_event>. Can then be used for picking.
 ==============================================================================*/
 {
-	struct Scene *scene;
-
-	ENTER(Interactive_event_get_scene);
 	if (interactive_event)
 	{
-		scene=interactive_event->scene;
+		return interactive_event->scene;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Interactive_event_get_scene.  Invalid argument(s)");
-		scene=(struct Scene *)NULL;
-	}
-	LEAVE;
 
-	return (scene);
+	return 0;
 } /* Interactive_event_get_scene */
 
 enum Interactive_event_type Interactive_event_get_type(

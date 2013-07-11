@@ -42,7 +42,6 @@
 #ifndef GRAPHICS_FILTER_HPP
 #define GRAPHICS_FILTER_HPP
 
-#include "zinc/scene.h"
 #include "zinc/graphicsmodule.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -51,7 +50,7 @@
 #include "general/debug.h"
 #include "general/cmiss_set.hpp"
 
-struct Cmiss_rendition;
+struct Cmiss_scene;
 struct Cmiss_graphic;
 
 enum Cmiss_graphics_filter_type
@@ -67,14 +66,6 @@ enum Cmiss_graphics_filter_type
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR,
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND,
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR
-};
-
-struct Define_graphics_filter_data
-{
-	Cmiss_region *root_region;
-	Cmiss_graphics_module *graphics_module;
-	int number_of_filters;
-	Cmiss_graphics_filter **source_filters;
 };
 
 DECLARE_LIST_TYPES(Cmiss_graphics_filter);

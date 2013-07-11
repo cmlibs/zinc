@@ -40,6 +40,7 @@
 #include "zinc/glyph.h"
 #include "zinc/graphicsmaterial.h"
 #include "zinc/graphicsmodule.h"
+#include "zinc/scene.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -47,7 +48,6 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
@@ -68,23 +68,20 @@ struct Cmiss_graphics_module
 	void *material_manager_callback_id;
 	struct Light *default_light;
 	struct MANAGER(Light) *light_manager;
-	struct LIST(Light) *list_of_lights;
 	Cmiss_spectrum_module_id spectrum_module;
 	void *spectrum_manager_callback_id;
 	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
 	Cmiss_scene_viewer_module_id scene_viewer_module;
-	struct MANAGER(Scene) *scene_manager;
-	struct Scene *default_scene;
 	struct Light_model *default_light_model;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Cmiss_time_keeper *default_time_keeper;
 	Cmiss_tessellation_module_id tessellation_module;
 	struct Cmiss_graphics_filter_module *graphics_filter_module;
-	void *graphics_filter_manager_callback_id;
 	void *tessellation_manager_callback_id;
 	int access_count;
+	Cmiss_region_id root_region;
 	std::list<Cmiss_region*> *member_regions_list;
 };
 
@@ -92,7 +89,7 @@ namespace {
 
 /***************************************************************************//**
  * Callback for changes in the material manager.
- * Informs all renditions about the changes.
+ * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_material_manager_callback(
 	struct MANAGER_MESSAGE(Graphical_material) *message, void *graphics_module_void)
@@ -103,25 +100,24 @@ void Cmiss_graphics_module_material_manager_callback(
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Graphical_material)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Graphical_material))
 		{
-			// minimise scene messages while updating
-			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(graphics_module, region);
-				Cmiss_rendition_material_change(rendition, message);
-				DEACCESS(Cmiss_rendition)(&rendition);
+				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+				Cmiss_scene_begin_change(scene);
+				Cmiss_scene_material_change(scene, message);
+				Cmiss_scene_end_change(scene);
+				DEACCESS(Cmiss_scene)(&scene);
 			}
-			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
 	}
 }
 
 /***************************************************************************//**
  * Callback for changes in the spectrum manager.
- * Informs all renditions about the changes.
+ * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_spectrum_manager_callback(
 	struct MANAGER_MESSAGE(Spectrum) *message, void *graphics_module_void)
@@ -132,25 +128,24 @@ void Cmiss_graphics_module_spectrum_manager_callback(
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Spectrum)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Spectrum))
 		{
-			// minimise scene messages while updating
-			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(graphics_module, region);
-				Cmiss_rendition_spectrum_change(rendition, message);
-				DEACCESS(Cmiss_rendition)(&rendition);
+				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+				Cmiss_scene_begin_change(scene);
+				Cmiss_scene_spectrum_change(scene, message);
+				Cmiss_scene_end_change(scene);
+				DEACCESS(Cmiss_scene)(&scene);
 			}
-			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
 	}
 }
 
 /***************************************************************************//**
  * Callback for changes in the tessellation manager.
- * Informs all renditions about the changes.
+ * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_tessellation_manager_callback(
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, void *graphics_module_void)
@@ -161,40 +156,17 @@ void Cmiss_graphics_module_tessellation_manager_callback(
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_tessellation)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_tessellation))
 		{
-			// minimise scene messages while updating
-			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(graphics_module, region);
-				Cmiss_rendition_tessellation_change(rendition, message);
-				DEACCESS(Cmiss_rendition)(&rendition);
+				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+				Cmiss_scene_begin_change(scene);
+				Cmiss_scene_tessellation_change(scene, message);
+				Cmiss_scene_end_change(scene);
+				DEACCESS(Cmiss_scene)(&scene);
 			}
-			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
-		}
-	}
-}
-
-/***************************************************************************//**
- * Callback for changes in the graphic filter manager.
- * Informs all renditions about the changes.
- */
-void Cmiss_graphics_module_graphics_filter_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *graphics_module_void)
-{
-	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
-	if (message && graphics_module)
-	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_graphics_filter)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
-		{
-			// minimise scene messages while updating
-			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
-			FOR_EACH_OBJECT_IN_MANAGER(Cmiss_scene)(
-				Cmiss_scene_graphics_filter_change,(void *)message, graphics_module->scene_manager);
-			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
 	}
 }
@@ -208,18 +180,17 @@ void Cmiss_graphics_module_font_manager_callback(
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_font)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_font))
 		{
-			// minimise scene messages while updating
-			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(graphics_module, region);
-				Cmiss_rendition_font_change(rendition, message);
-				DEACCESS(Cmiss_rendition)(&rendition);
+				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+				Cmiss_scene_begin_change(scene);
+				Cmiss_scene_font_change(scene, message);
+				Cmiss_scene_end_change(scene);
+				DEACCESS(Cmiss_scene)(&scene);
 			}
-			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
 	}
 }
@@ -238,10 +209,8 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 		{
 			module->light_manager = NULL;
 			module->material_module = NULL;
-			module->list_of_lights = NULL;
 			module->glyph_module = Cmiss_glyph_module_create();
 			module->default_light = NULL;
-			module->default_scene = NULL;
 			module->default_light_model = NULL;
 			module->scene_viewer_module = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
@@ -251,25 +220,19 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
 					(void *)module, Cmiss_font_module_get_manager(module->font_module));
-			Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
+			module->root_region = Cmiss_context_get_default_region(context);
 			module->material_module = Cmiss_graphics_material_module_create(
 					Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			Cmiss_region_destroy(&root_region);
 			module->material_manager_callback_id =
 				MANAGER_REGISTER(Graphical_material)(Cmiss_graphics_module_material_manager_callback,
 					(void *)module, Cmiss_graphics_material_module_get_manager(module->material_module));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
 					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			module->scene_manager = CREATE(MANAGER(Scene)());
-			Scene_manager_set_owner(module->scene_manager, module);
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
 			module->tessellation_module = Cmiss_tessellation_module_create();
-			module->graphics_filter_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_graphics_module_graphics_filter_manager_callback,
-					(void *)module, Cmiss_graphics_filter_module_get_manager(module->graphics_filter_module));
 			module->member_regions_list = new std::list<Cmiss_region*>;
 			module->tessellation_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_tessellation)(Cmiss_graphics_module_tessellation_manager_callback,
@@ -280,7 +243,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 		{
 			module = (Cmiss_graphics_module *)NULL;
 			display_message(ERROR_MESSAGE,
-			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss rendition graphics module");
+			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss scene graphics module");
 		}
 	}
 	else
@@ -314,7 +277,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_access(
 	return graphics_module;
 }
 
-int Cmiss_graphics_module_remove_member_regions_rendition(
+int Cmiss_graphics_module_remove_member_regions_scene(
 	struct Cmiss_graphics_module *graphics_module)
 {
 	int return_code = 0;
@@ -325,10 +288,10 @@ int Cmiss_graphics_module_remove_member_regions_rendition(
 		for (pos = graphics_module->member_regions_list->begin();
 				pos != graphics_module->member_regions_list->end(); ++pos)
 		{
-			// clean up rendition between begin/end change so fields and other objects
-			// destroyed when rendition destroyed do not cause messages to be sent
+			// clean up scene between begin/end change so fields and other objects
+			// destroyed when scene destroyed do not cause messages to be sent
 			Cmiss_region_begin_change(*pos);
-			Cmiss_region_deaccess_rendition(*pos);
+			Cmiss_region_deaccess_scene(*pos);
 			Cmiss_region_end_change(*pos);
 		}
 		graphics_module->member_regions_list->clear();
@@ -337,7 +300,7 @@ int Cmiss_graphics_module_remove_member_regions_rendition(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_remove_member_regions_rendition.  "
+			"Cmiss_graphics_module_remove_member_regions_scene.  "
 			"Invalid argument(s)");
 	}
 
@@ -355,14 +318,13 @@ int Cmiss_graphics_module_destroy(
 		graphics_module->access_count--;
 		if (0 == graphics_module->access_count)
 		{
+			if (graphics_module->root_region)
+				Cmiss_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
 				Cmiss_graphics_material_module_get_manager(graphics_module->material_module));
 			MANAGER_DEREGISTER(Spectrum)(
 				graphics_module->spectrum_manager_callback_id, Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module));
-			MANAGER_DEREGISTER(Cmiss_graphics_filter)(
-				graphics_module->graphics_filter_manager_callback_id,
-				Cmiss_graphics_filter_module_get_manager(graphics_module->graphics_filter_module));
 			MANAGER_DEREGISTER(Cmiss_tessellation)(
 				graphics_module->tessellation_manager_callback_id,
 				Cmiss_tessellation_module_get_manager(graphics_module->tessellation_module));
@@ -370,18 +332,12 @@ int Cmiss_graphics_module_destroy(
 				graphics_module->font_manager_callback_id,
 				Cmiss_font_module_get_manager(graphics_module->font_module));
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
-			FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-				Cmiss_scene_cleanup_top_rendition_scene_projection_callback, (void *)NULL, graphics_module->scene_manager);
+			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
 			if (graphics_module->member_regions_list)
 			{
-				Cmiss_graphics_module_remove_member_regions_rendition(graphics_module);
+				Cmiss_graphics_module_remove_member_regions_scene(graphics_module);
 				delete graphics_module->member_regions_list;
 			}
-			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
-			if (graphics_module->default_scene)
-				DEACCESS(Scene)(&graphics_module->default_scene);
-			if (graphics_module->scene_manager)
-				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
 			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
 			if (graphics_module->default_light)
 				DEACCESS(Light)(&graphics_module->default_light);
@@ -418,44 +374,44 @@ int Cmiss_graphics_module_destroy(
 	return return_code;
 }
 
-int Cmiss_graphics_module_create_rendition(
+int Cmiss_graphics_module_create_scene(
 	struct Cmiss_graphics_module *graphics_module,
 	struct Cmiss_region *cmiss_region)
 {
-	struct Cmiss_rendition *rendition;
+	struct Cmiss_scene *scene;
 	int return_code;
 
-	ENTER(Cmiss_region_add_rendition);
+	ENTER(Cmiss_region_add_scene);
 	if (cmiss_region && graphics_module)
 	{
-		rendition = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
-			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,
+		scene = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_scene))(
+			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_scene) *)NULL, (void *)NULL,
 			Cmiss_region_private_get_any_object_list(cmiss_region));
-		if (!(rendition))
+		if (!(scene))
 		{
-			if (NULL != (rendition = Cmiss_rendition_create_internal(cmiss_region, graphics_module)))
+			if (NULL != (scene = Cmiss_scene_create_internal(cmiss_region, graphics_module)))
 			{
-				Cmiss_rendition_set_position(rendition, 1);
+				Cmiss_scene_set_position(scene, 1);
 				return_code = 1;
 			}
 			else
 			{
 				return_code = 0;
 				display_message(ERROR_MESSAGE,
-					"Cmiss_region_add_rendition. Cannot create rendition for region");
+					"Cmiss_region_add_scene. Cannot create scene for region");
 			}
 		}
 		else
 		{
 			return_code = 1;
 			//ACCESS or not ?
-			//ACCESS(Cmiss_rendition)(rendition);
+			//ACCESS(Cmiss_scene)(scene);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_rendition. Invalid argument(s).");
+			"Cmiss_region_add_scene. Invalid argument(s).");
 		return_code = 0;
 	}
 	LEAVE;
@@ -669,21 +625,20 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 				Cmiss_graphics_module_get_default_light(graphics_module);
 			struct Light_model *default_light_model =
 				Cmiss_graphics_module_get_default_light_model(graphics_module);
-			struct Scene *default_scene =
-				Cmiss_graphics_module_get_default_scene(graphics_module);
 			Colour default_background_colour;
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
-			graphics_module->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)
-				(&default_background_colour,
+			Cmiss_graphics_filter_module_id filterModule = Cmiss_graphics_module_get_filter_module(graphics_module);
+			graphics_module->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)(
+				&default_background_colour,
 				/* interactive_tool_manager */0,
 				Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
 				Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
-				Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene);
+				filterModule);
+			Cmiss_graphics_filter_module_destroy(&filterModule);
 			DEACCESS(Light_model)(&default_light_model);
 			DEACCESS(Light)(&default_light);
-			Cmiss_scene_destroy(&default_scene);
 		}
 		scene_viewer_module = Cmiss_scene_viewer_module_access(graphics_module->scene_viewer_module);
 	}
@@ -694,133 +649,6 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 			"Missing context");
 	}
 	return scene_viewer_module;
-}
-
-
-struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
-		struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Scene) *scene_manager = NULL;
-
-	if (graphics_module)
-	{
-		if (!graphics_module->scene_manager)
-		{
-			graphics_module->scene_manager=CREATE(MANAGER(Scene)());
-		}
-		scene_manager = graphics_module->scene_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_scene_manager.  Invalid argument(s)");
-	}
-
-	return scene_manager;
-}
-
-Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	Cmiss_scene_id scene = NULL;
-
-	if (graphics_module && name)
-	{
-		struct MANAGER(Scene) *scene_manager =
-			Cmiss_graphics_module_get_scene_manager(graphics_module);
-		if (scene_manager)
-		{
-			if (NULL != (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(
-					name, scene_manager)))
-			{
-				ACCESS(Scene)(scene);
-			}
-		}
-	}
-	LEAVE;
-
-	return scene;
-}
-
-struct Scene *Cmiss_graphics_module_create_scene(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	Cmiss_scene_id scene = NULL;
-	struct MANAGER(Scene) *scene_manager =
-		Cmiss_graphics_module_get_scene_manager(graphics_module);
-	int i = 0;
-	char *temp_string = NULL;
-	char *num = NULL;
-
-	ENTER(Cmiss_graphics_module_create_scene);
-	do
-	{
-		if (temp_string)
-		{
-			DEALLOCATE(temp_string);
-		}
-		ALLOCATE(temp_string, char, 18);
-		strcpy(temp_string, "temp_scene");
-		num = strrchr(temp_string, 'e') + 1;
-		sprintf(num, "%i", i);
-		strcat(temp_string, "\0");
-		i++;
-	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(temp_string,
-		scene_manager));
-
-	if (temp_string)
-	{
-		if (NULL != (scene = CREATE(Scene)()))
-		{
-			Cmiss_scene_set_name(scene, temp_string);
-			if (!ADD_OBJECT_TO_MANAGER(Scene)(scene, scene_manager))
-			{
-				DEACCESS(Scene)(&scene);
-			}
-		}
-		DEALLOCATE(temp_string);
-	}
-	LEAVE;
-
-	return scene;
-}
-
-struct Scene *Cmiss_graphics_module_get_default_scene(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct Scene *scene = NULL;
-	if (graphics_module)
-	{
-		if (!graphics_module->default_scene)
-		{
-			if (NULL != (graphics_module->default_scene=(CREATE(Scene)())))
-			{
-				Cmiss_graphics_filter *filter =
-					Cmiss_graphics_module_get_default_filter(graphics_module);
-				Cmiss_scene_set_filter(graphics_module->default_scene, filter);
-				Cmiss_graphics_filter_destroy(&filter);
-				Cmiss_scene_set_name(graphics_module->default_scene, "default");
-				Cmiss_scene_set_managed(graphics_module->default_scene, true);
-				struct MANAGER(Scene) *scene_manager =
-					Cmiss_graphics_module_get_scene_manager(graphics_module);
-				if (!ADD_OBJECT_TO_MANAGER(Scene)(graphics_module->default_scene,
-						scene_manager))
-				{
-					DEACCESS(Scene)(&(graphics_module->default_scene));
-				}
-			}
-		}
-		if (graphics_module->default_scene)
-			scene = ACCESS(Scene)(graphics_module->default_scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_scene.  Invalid argument(s)");
-	}
-
-	return scene;
 }
 
 struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
@@ -927,50 +755,64 @@ struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	return time_keeper;
 }
 
-int Cmiss_graphics_module_enable_renditions(
+Cmiss_scene_id Cmiss_graphics_module_get_default_scene(struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module)
+	{
+		Cmiss_scene_id scene = Cmiss_region_get_scene_internal(graphics_module->root_region);
+		if (scene == 0)
+		{
+			Cmiss_graphics_module_enable_scenes(graphics_module, graphics_module->root_region);
+			scene = Cmiss_region_get_scene_internal(graphics_module->root_region);
+		}
+		return scene;
+	}
+
+	return 0;
+}
+
+int Cmiss_graphics_module_enable_scenes(
 	struct Cmiss_graphics_module *graphics_module,
 	struct Cmiss_region *cmiss_region)
 {
 	int return_code;
 	struct Cmiss_region *child_region;
 
-	ENTER(Cmiss_region_add_rendition);
 	if (cmiss_region && graphics_module)
 	{
-		return_code = Cmiss_graphics_module_create_rendition(
+		return_code = Cmiss_graphics_module_create_scene(
 			graphics_module, cmiss_region);
 		if (return_code)
 		{
-			struct Cmiss_rendition *rendition =
-				Cmiss_region_get_rendition_internal(cmiss_region);
-			Cmiss_rendition_add_callback(rendition, Cmiss_rendition_update_callback,
+			struct Cmiss_scene *scene =
+				Cmiss_region_get_scene_internal(cmiss_region);
+			Cmiss_scene_add_callback(scene, Cmiss_scene_update_callback,
 				(void *)NULL);
 			child_region = Cmiss_region_get_first_child(cmiss_region);
 			while (child_region)
 			{
-				return_code = Cmiss_graphics_module_enable_renditions(
+				return_code = Cmiss_graphics_module_enable_scenes(
 					graphics_module, child_region);
-				/* add callback to call from child rendition to parent rendition */
-				struct Cmiss_rendition *child;
-				if (rendition && (NULL != (child = Cmiss_region_get_rendition_internal(child_region))))
+				/* add callback to call from child scene to parent scene */
+				struct Cmiss_scene *child;
+				if (scene && (NULL != (child = Cmiss_region_get_scene_internal(child_region))))
 				{
-					Cmiss_rendition_add_callback(child,
-						Cmiss_rendition_notify_parent_rendition_callback,
+					Cmiss_scene_add_callback(child,
+						Cmiss_scene_notify_parent_scene_callback,
 						(void *)cmiss_region);
-					DEACCESS(Cmiss_rendition)(&child);
+					DEACCESS(Cmiss_scene)(&child);
 				}
 				Cmiss_region_reaccess_next_sibling(&child_region);
 			}
-			DEACCESS(Cmiss_rendition)(&rendition);
+			DEACCESS(Cmiss_scene)(&scene);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_rendition.  "
+		display_message(ERROR_MESSAGE,"Cmiss_scene.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 }
@@ -993,22 +835,22 @@ struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_r
 	return (element_point_ranges_selection);
 }
 
-Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+Cmiss_scene_id Cmiss_graphics_module_get_scene(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region)
 {
-	struct Cmiss_rendition *rendition = NULL;
+	struct Cmiss_scene *scene = NULL;
 	if (graphics_module && region)
 	{
-		rendition = Cmiss_region_get_rendition_internal(region);
-		if (!rendition)
+		scene = Cmiss_region_get_scene_internal(region);
+		if (!scene)
 		{
 			char *region_path = Cmiss_region_get_path(region);
 			display_message(ERROR_MESSAGE,
-				"Cmiss_graphics_module_get_rendition.  Rendition not found for region %s", region_path);
+				"Cmiss_graphics_module_get_scene.  Scene not found for region %s", region_path);
 			DEALLOCATE(region_path);
 		}
 	}
-	return rendition;
+	return scene;
 }
 
 Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(

@@ -59,6 +59,7 @@ November 97 Created from rendering part of Drawing.
 #include "zinc/fieldmodule.h"
 #include "zinc/graphicsfilter.h"
 #include "zinc/sceneviewerinput.h"
+#include "zinc/status.h"
 //#include "zinc/graphic.h"
 //#include "computed_field/computed_field.h"
 //#include "computed_field/computed_field_composite.h"
@@ -79,9 +80,9 @@ November 97 Created from rendering part of Drawing.
 #include "general/message.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
+#include "graphics/graphics_filter.hpp"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
-#include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
@@ -487,9 +488,6 @@ void Scene_viewer_trigger_transform_callback(struct Scene_viewer *scene_viewer)
 			scene_viewer, NULL);
 	}
 }
-
-static void Scene_viewer_scene_change(
-	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void);
 
 static int Scene_viewer_render_background_texture(
 	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height,
@@ -970,7 +968,7 @@ scene.
 	ENTER(Scene_viewer_execute_scene_non_fastchanging);
 	if (rendering_data)
 	{
-		return_code = rendering_data->renderer->Scene_execute(
+		return_code = rendering_data->renderer->Scene_tree_execute(
 			rendering_data->scene_viewer->scene);
 	}
 	else
@@ -1193,8 +1191,6 @@ DESCRIPTION :
 		glMultMatrixd(scene_viewer->modelview_matrix);
 		/* turn on lights that are part of the Scene and fixed relative
 			to it. Note the scene will have compiled them already. */
-		for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
-			(void *)NULL);
 
 		/* Clip planes */
 		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
@@ -2112,10 +2108,7 @@ access this function.
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(scene_viewer->scene);
-			rendering_data.renderer->Scene_compile(scene_viewer->scene, filter);
-			if (filter)
-				Cmiss_graphics_filter_destroy(&filter);
+			rendering_data.renderer->Scene_compile(scene_viewer->scene, scene_viewer->filter);
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
 			/* Add functionality to the render callstack */
@@ -2546,8 +2539,7 @@ static void Scene_viewer_light_change(
 			MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
 		if (changed_light_list)
 		{
-			if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list) ||
-				Scene_has_light_in_list(scene_viewer->scene, changed_light_list))
+			if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
 			{
 				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
@@ -2596,46 +2588,6 @@ in use by the scene_viewer is one of the changed light_models, then redraw.
 	}
 	LEAVE;
 } /* Scene_viewer_light_model_change */
-
-/***************************************************************************//**
- * Something has changed globally in the scene manager. If either the scene or
- * this scene_viewer have been modified, then redraw.
- */
-static void Scene_viewer_scene_change(
-	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void)
-{
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_scene_change);
-	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
-	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Scene)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Scene))
-		{
-			int change =
-				MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_viewer->scene);
-			if (change & MANAGER_CHANGE_RESULT(Scene))
-			{
-				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-				//-- if (SCENE_FAST_CHANGE == Scene_get_change_status(scene_viewer->scene))
-				//-- {
-				//-- 	Scene_viewer_redraw_in_idle_time(scene_viewer);
-				//-- }
-				//-- else
-				//-- {
-				//-- 	Scene_viewer_redraw(scene_viewer);
-				//-- }
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_scene_change.  Invalid argument(s)");
-	}
-	LEAVE;
-}
 
 /***************************************************************************//**
  * Something has changed in the regional computed field manager.
@@ -2723,13 +2675,16 @@ Global functions
 ----------------
 */
 
+void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
+	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *scene_viewer_module_void);
+
 struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene)
+	Cmiss_graphics_filter_module_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -2740,7 +2695,7 @@ Creates a Cmiss_scene_viewer_module.
 	struct Cmiss_scene_viewer_module *scene_viewer_module;
 
 	ENTER(CREATE(Scene_viewer_module));
-	if (background_colour && default_light_model && scene)//-- && user_interface && interactive_tool_manager)
+	if (background_colour && default_light_model)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(scene_viewer_module,struct Cmiss_scene_viewer_module,1))
@@ -2753,10 +2708,13 @@ Creates a Cmiss_scene_viewer_module.
 			scene_viewer_module->default_light = ACCESS(Light)(default_light);
 			scene_viewer_module->light_model_manager = light_model_manager;
 			scene_viewer_module->default_light_model = ACCESS(Light_model)(default_light_model);
-			scene_viewer_module->scene_manager = scene_manager;
-			scene_viewer_module->scene = ACCESS(Scene)(scene);
+			scene_viewer_module->filterModule = Cmiss_graphics_filter_module_access(filterModule);
 			//-- scene_viewer_module->user_interface = user_interface;
 			scene_viewer_module->scene_viewer_list = CREATE(LIST(Scene_viewer))();
+			scene_viewer_module->graphics_filter_manager_callback_id =
+				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_scene_viewer_module_graphics_filter_manager_callback,
+					(void *)scene_viewer_module,
+					Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
 			scene_viewer_module->destroy_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))();
 		}
@@ -2867,7 +2825,10 @@ Destroys the scene_viewer_module.
 		DESTROY(Graphics_buffer_package)(&scene_viewer_module->graphics_buffer_package);
 		DEACCESS(Light)(&scene_viewer_module->default_light);
 		DEACCESS(Light_model)(&scene_viewer_module->default_light_model);
-		DEACCESS(Scene)(&scene_viewer_module->scene);
+		MANAGER_DEREGISTER(Cmiss_graphics_filter)(
+			scene_viewer_module->graphics_filter_manager_callback_id,
+			Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
+		Cmiss_graphics_filter_module_destroy(&scene_viewer_module->filterModule);
 		DEALLOCATE(*scene_viewer_module_address);
 		return_code = 1;
 	}
@@ -3020,38 +2981,12 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
-struct Scene *Cmiss_scene_viewer_module_get_default_scene(
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Scene *default_scene;
-
-	ENTER(Scene_viewer_get_default_scene);
-	if (cmiss_scene_viewer_module)
-	{
-		default_scene = cmiss_scene_viewer_module->scene;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_default_scene.  Missing scene_viewer");
-		default_scene=(struct Scene *)NULL;
-	}
-	LEAVE;
-
-	return (default_scene);
-} /* Scene_viewer_get_default_scene */
-
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene)
+	Cmiss_graphics_filter_id filter)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -3071,8 +3006,7 @@ performed in idle time so that multiple redraws are avoided.
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
-	ENTER(CREATE(Scene_viewer));
-	if (graphics_buffer && background_colour && default_light_model && scene &&
+	if (graphics_buffer && background_colour && default_light_model &&
 		Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode) &&
 		Graphics_buffer_get_stereo_mode(graphics_buffer, &graphics_buffer_stereo_mode))
 	{
@@ -3121,9 +3055,9 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
 				scene_viewer->access_count = 1;
+				scene_viewer->filter = Cmiss_graphics_filter_access(filter);
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
-				scene_viewer->scene=ACCESS(Scene)(scene);
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
 				scene_viewer->temporary_transform_mode=0;
 				//-- scene_viewer->user_interface=user_interface;
@@ -3175,8 +3109,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->light_manager_callback_id=(void *)NULL;
 				scene_viewer->light_model_manager=light_model_manager;
 				scene_viewer->light_model_manager_callback_id=(void *)NULL;
-				scene_viewer->scene_manager=scene_manager;
-				scene_viewer->scene_manager_callback_id=(void *)NULL;
 				(scene_viewer->image_texture).texture=(struct Texture *)NULL;
 				(scene_viewer->image_texture).manager = NULL;
 				(scene_viewer->image_texture).field  = NULL;
@@ -3255,6 +3187,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->transform_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 
+				scene_viewer->scene = 0;
+
 				/* add callbacks to the graphics buffer */
 				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
 				//-- 	Scene_viewer_initialise_callback, scene_viewer);
@@ -3318,7 +3252,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 				&scene_viewer->destroy_callback_list);
 		}
 		/* dispose of our data structure */
-		DEACCESS(Scene)(&(scene_viewer->scene));
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
@@ -3341,6 +3274,15 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		if (scene_viewer->pixel_data)
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
+		}
+		if (scene_viewer->scene)
+		{
+			Cmiss_scene_triggers_top_region_change_callback(scene_viewer->scene);
+			Cmiss_scene_destroy(&scene_viewer->scene);
+		}
+		if (scene_viewer->filter)
+		{
+			Cmiss_graphics_filter_destroy(&scene_viewer->filter);
 		}
 		DEALLOCATE(scene_viewer);
 		*scene_viewer_address = 0;
@@ -3392,8 +3334,7 @@ DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module,
-	struct Scene *scene)
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -3403,17 +3344,18 @@ DESCRIPTION :
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(create_Scene_viewer_from_package);
-	if (graphics_buffer && cmiss_scene_viewer_module && scene)
+	if (graphics_buffer && cmiss_scene_viewer_module)
 	{
+		Cmiss_graphics_filter_id filter = Cmiss_graphics_filter_module_get_default_filter(
+			cmiss_scene_viewer_module->filterModule);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			cmiss_scene_viewer_module->background_colour,
 			cmiss_scene_viewer_module->light_manager,
 			cmiss_scene_viewer_module->default_light,
 			cmiss_scene_viewer_module->light_model_manager,
 			cmiss_scene_viewer_module->default_light_model,
-			cmiss_scene_viewer_module->scene_manager,
-			scene);
-
+			filter);
+		Cmiss_graphics_filter_destroy(&filter);
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the package list */
@@ -3486,8 +3428,7 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
 			GRAPHICS_BUFFER_ONSCREEN_TYPE,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode);
 		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
-			cmiss_scene_viewer_module,
-			Cmiss_scene_viewer_module_get_default_scene(cmiss_scene_viewer_module));
+			cmiss_scene_viewer_module);
 		DEACCESS(Graphics_buffer)(&graphics_buffer);
 	}
 	else
@@ -3919,13 +3860,10 @@ Scene_viewer_sleep to restore normal activity.
 				MANAGER_REGISTER(Light_model)(Scene_viewer_light_model_change,
 					(void *)scene_viewer,scene_viewer->light_model_manager);
 		}
-		/* register for any scene changes */
-		if (scene_viewer->scene_manager &&
-			(!scene_viewer->scene_manager_callback_id))
+		if (scene_viewer->scene)
 		{
-			scene_viewer->scene_manager_callback_id=
-				MANAGER_REGISTER(Scene)(Scene_viewer_scene_change,
-					(void *)scene_viewer,scene_viewer->scene_manager);
+			Cmiss_scene_add_callback(scene_viewer->scene,
+				Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 		}
 		/* register for any texture changes */
 		if (scene_viewer->image_texture.manager &&
@@ -4096,12 +4034,10 @@ Must call this in DESTROY function.
 				scene_viewer->light_model_manager);
 			scene_viewer->light_model_manager_callback_id=(void *)NULL;
 		}
-		if (scene_viewer->scene_manager_callback_id)
+		if (scene_viewer->scene)
 		{
-			MANAGER_DEREGISTER(Scene)(
-				scene_viewer->scene_manager_callback_id,
-				scene_viewer->scene_manager);
-			scene_viewer->scene_manager_callback_id=(void *)NULL;
+			Cmiss_scene_remove_callback(scene_viewer->scene,
+				Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 		}
 		if (scene_viewer->image_texture.callback_id)
 		{
@@ -5284,107 +5220,6 @@ consecutive across rows, eg:
 
 	return (return_code);
 } /* Scene_viewer_set_projection_matrix */
-
-struct Scene *Scene_viewer_get_scene(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Returns the Scene_viewer scene.
-==============================================================================*/
-{
-	struct Scene *scene;
-
-	ENTER(Scene_viewer_get_scene);
-	if (scene_viewer)
-	{
-		scene=scene_viewer->scene;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_scene.  Invalid argument(s)");
-		scene=(struct Scene *)NULL;
-	}
-	LEAVE;
-
-	return (scene);
-} /* Scene_viewer_get_scene */
-
-int Scene_viewer_set_scene(struct Scene_viewer *scene_viewer,
-	struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 14 February 1998
-
-DESCRIPTION :
-Sets the Scene_viewer scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_scene);
-	if (scene_viewer&&scene)
-	{
-		if (scene != scene_viewer->scene)
-		{
-			DEACCESS(Scene)(&(scene_viewer->scene));
-			scene_viewer->scene=ACCESS(Scene)(scene);
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_scene.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_scene */
-
-int Scene_viewer_set_scene_by_name(struct Scene_viewer *scene_viewer,
-	const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer scene from names in the scene manager.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_viewer_set_scene_by_name);
-	if (scene_viewer&&name)
-	{
-		scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-			(char *)name, scene_viewer->scene_manager);
-		if (scene != 0)
-		{
-			return_code = Scene_viewer_set_scene(scene_viewer, scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_viewer_set_scene_by_name.  "
-				"Unable to find a scene named %s.", name);
-			return_code = 0;
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_scene_by_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_scene_by_name */
 
 int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
 	double *translation_rate)
@@ -7072,10 +6907,10 @@ with commands for setting these.
 		size_x, size_y, size_z, width_factor;
 	int return_code;
 
-	ENTER(Scene_viewer_view_all);
 	if (scene_viewer)
 	{
-		Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+		Cmiss_scene_get_global_graphics_range(scene_viewer->scene,
+			scene_viewer->filter,
 			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z);
 		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
 		if (0 == radius)
@@ -7100,7 +6935,6 @@ with commands for setting these.
 			"Scene_viewer_view_all.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_view_all */
@@ -7983,47 +7817,6 @@ Sets the background_colour of the scene_viewer.
 	return (return_code);
 } /* Cmiss_scene_viewer_set_background_colour_rgb */
 
-int Cmiss_scene_viewer_get_scene_name(
-	Cmiss_scene_viewer_id scene_viewer, char **scene_name)
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Returns an ALLOCATED string which identifies the scene currently rendered
-by the <scene_viewer>.  You should call Cmiss_deallocate with the returned
-pointer when it is no longer required.
-==============================================================================*/
-{
-	struct Cmiss_scene *scene;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_get_scene_name);
-	if (scene_viewer && scene_name)
-	{
-		scene = Scene_viewer_get_scene(scene_viewer);
-		*scene_name = Cmiss_scene_get_name(scene);
-		if (*scene_name)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_scene_name.  "
-				"Failed to get the scene or scene name.");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_background_colour_rgb.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_get_scene_name */
-
 int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height,
 	int preferred_antialias, int preferred_transparency_layers)
@@ -8323,471 +8116,114 @@ Removes the callback calling <function> with <user_data> from
 	return (return_code);
 } /* Scene_viewer_remove_transform_callback */
 
-/***************************************************************************//**
- * Manually calls the scene viewer's list of input callbacks with the supplied
- * input data.
- *
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
- * @param input_data  Description of the input event.
- * @return  Status CMISS_OK on success, any other value if failed.
- */
-//-- int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
-//-- 	Cmiss_scene_viewer_input_id input_data)
-//-- {
-//-- 	return Scene_viewer_default_input_callback(scene_viewer, input_data,
-//-- 		/*dummy_void*/NULL);
-//-- }
+/// new APIs
+Cmiss_graphics_filter_id Cmiss_scene_viewer_get_filter(Cmiss_scene_viewer_id scene_viewer)
+{
+	Cmiss_graphics_filter_id filter = NULL;
+	if (scene_viewer && scene_viewer->filter)
+	{
+		filter = Cmiss_graphics_filter_access(scene_viewer->filter);
+	}
+	return filter;
+}
 
+int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_graphics_filter_id filter)
+{
+	if (scene_viewer)
+	{
+		REACCESS(Cmiss_graphics_filter)(&scene_viewer->filter, filter);
+		Scene_viewer_trigger_transform_callback(scene_viewer);
+		return CMISS_OK;
+	}
+	else
+	{
+		return CMISS_ERROR_ARGUMENT;
+	}
+}
 
-//int Cmiss_scene_viewer_input_get_event_type(
-//	Cmiss_scene_viewer_input_id input_data,
-//	enum Cmiss_scene_viewer_input_event_type *event_type)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
+int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,	void *message_void)
+{
+	int return_code = 1;
+	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message =
+		(struct MANAGER_MESSAGE(Cmiss_graphics_filter) *)message_void;
+	if (scene_viewer && message)
+	{
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_filter)(
+			message, scene_viewer->filter);
+		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		{
+			Scene_viewer_trigger_transform_callback(scene_viewer);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
 
-//DESCRIPTION :
-//==============================================================================*/
-//{
-//	int return_code;
+void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
+	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *scene_viewer_module_void)
+{
+	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	if (message && scene_viewer_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_graphics_filter)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		{
+			// minimise scene messages while updating
+			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
+				Cmiss_scene_viewer_graphics_filter_change,(void *)message,
+				scene_viewer_module->scene_viewer_list);
+			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+		}
+	}
+}
 
-//	ENTER(Cmiss_scene_viewer_input_get_event_type);
-//	if (input_data)
-//	{
-//		switch(input_data->type)
-//		{
-//			case GRAPHICS_BUFFER_MOTION_NOTIFY:
-//			{
-//				*event_type = CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY;
-//				return_code = 1;
-//			} break;
-//			case GRAPHICS_BUFFER_BUTTON_PRESS:
-//			{
-//				*event_type = CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS;
-//				return_code = 1;
-//			} break;
-//			case GRAPHICS_BUFFER_BUTTON_RELEASE:
-//			{
-//				*event_type = CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE;
-//				return_code = 1;
-//			} break;
-//			case GRAPHICS_BUFFER_KEY_PRESS:
-//			{
-//				*event_type = CMISS_SCENE_VIEWER_INPUT_KEY_PRESS;
-//				return_code = 1;
-//			} break;
-//			case GRAPHICS_BUFFER_KEY_RELEASE:
-//			{
-//				*event_type = CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE;
-//				return_code = 1;
-//			} break;
-//			default:
-//			{
-//				display_message(ERROR_MESSAGE,
-//					"Cmiss_scene_viewer_input_get_event_type.  "
-//					"Invalid type.");
-//				return_code = 0;
-//			} break;
-//		}
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
-//		return_code = 0;
-//	}
-//	LEAVE;
+Cmiss_scene_id Cmiss_scene_viewer_get_scene(Cmiss_scene_viewer_id scene_viewer)
+{
+	if (scene_viewer && scene_viewer->scene)
+	{
+		return Cmiss_scene_access(scene_viewer->scene);
+	}
+	return 0;
+}
 
-//	return (return_code);
-//}
+int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_id scene)
+{
+	if (scene_viewer&&scene)
+	{
+		if (scene != scene_viewer->scene)
+		{
+			if (scene_viewer->scene)
+			{
+				Cmiss_scene_triggers_top_region_change_callback(scene_viewer->scene);
+				Cmiss_scene_remove_callback(scene_viewer->scene,
+					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+			}
+			Cmiss_scene_destroy(&(scene_viewer->scene));
+			scene_viewer->scene = Cmiss_scene_access(scene);
+			Cmiss_scene_add_callback(scene_viewer->scene,
+					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+			Scene_viewer_trigger_transform_callback(scene_viewer);
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
-//int Cmiss_scene_viewer_input_set_event_type(
-//	Cmiss_scene_viewer_input_id input_data,
-//	enum Cmiss_scene_viewer_input_event_type event_type)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
+int Scene_viewer_scene_change(Cmiss_scene_viewer_id scene_viewer)
+{
+	if (scene_viewer)
+	{
+		return CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+	}
+	return CMISS_ERROR_ARGUMENT;
 
-//DESCRIPTION :
-//==============================================================================*/
-//{
-//	int return_code = 0;
-
-//	ENTER(Cmiss_scene_viewer_set_projection_mode);
-//	if (input_data)
-//	{
-//		switch(event_type)
-//		{
-//			case CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY:
-//			{
-//				input_data->type = GRAPHICS_BUFFER_MOTION_NOTIFY;
-//			} break;
-//			case CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS:
-//			{
-//				input_data->type = GRAPHICS_BUFFER_BUTTON_PRESS;
-//			} break;
-//			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
-//			{
-//				input_data->type = GRAPHICS_BUFFER_BUTTON_RELEASE;
-//			} break;
-//			case CMISS_SCENE_VIEWER_INPUT_KEY_PRESS:
-//			{
-//				input_data->type = GRAPHICS_BUFFER_KEY_PRESS;
-//			} break;
-//			case CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE:
-//			{
-//				input_data->type = GRAPHICS_BUFFER_KEY_RELEASE;
-//			} break;
-//			default:
-//			{
-//				display_message(ERROR_MESSAGE,
-//					"Cmiss_scene_viewer_set_event_type.  "
-//					"Unknown event type.");
-//				return_code = 0;
-//			} break;
-//		}
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_set_event_type.  Invalid argument(s)");
-//		return_code=0;
-//	}
-//	LEAVE;
-
-//	return (return_code);
-//} /* Cmiss_scene_viewer_set_projection_mode */
-
-//int Cmiss_scene_viewer_input_get_button_number(
-//	Cmiss_scene_viewer_input_id input_data)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Returns the button number that generated the event.
-//This will be 1 to 3 for a button event and 0 for a non button event.
-//The object is visible within cmiss but needs an interface to expose the
-//data through the API.
-//==============================================================================*/
-//{
-//	return (input_data->button_number);
-//}
-
-//int Cmiss_scene_viewer_input_set_button_number(
-//	Cmiss_scene_viewer_input_id input_data, int button_number)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Sets the button number that the event represents.
-//1 to 3 for a button event and 0 for a non button event.
-//==============================================================================*/
-//{
-//	if (input_data)
-//	{
-//		input_data->button_number = button_number;
-//	}
-//	return (1);
-//}
-
-//int Cmiss_scene_viewer_input_get_key_code(
-//	Cmiss_scene_viewer_input_id input_data)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Returns the button number that generated the event.
-//This will be 1 to 3 for a button event and 0 for a non button event.
-//The object is visible within cmiss but needs an interface to expose the
-//data through the API.
-//==============================================================================*/
-//{
-//	return (input_data->key_code);
-//}
-
-//int Cmiss_scene_viewer_input_set_key_code(
-//	Cmiss_scene_viewer_input_id input_data, int key_code)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Sets the button number that the event represents.
-//1 to 3 for a button event and 0 for a non button event.
-//==============================================================================*/
-//{
-//	if (input_data)
-//	{
-//		input_data->key_code = key_code;
-//	}
-//	return (1);
-//}
-
-//int Cmiss_scene_viewer_input_get_x_position(
-//	Cmiss_scene_viewer_input_id input_data)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Returns the x position of the mouse when the event occured in pixels from top left corner.
-//==============================================================================*/
-//{
-//	return (input_data->position_x);
-//}
-
-//int Cmiss_scene_viewer_input_set_x_position(
-//	Cmiss_scene_viewer_input_id input_data, int x_position)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Sets the button number that the event represents.
-//1 to 3 for a button event and 0 for a non button event.
-//==============================================================================*/
-//{
-//	if (input_data)
-//	{
-//		input_data->position_x = x_position;
-//	}
-//	return (1);
-//}
-
-//int Cmiss_scene_viewer_input_get_y_position(
-//	Cmiss_scene_viewer_input_id input_data)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Returns the y position of the mouse when the event occured in pixels from top left corner.
-//==============================================================================*/
-//{
-//	return (input_data->position_y);
-//}
-
-//int Cmiss_scene_viewer_input_set_y_position(
-//	Cmiss_scene_viewer_input_id input_data, int y_position)
-///*******************************************************************************
-//LAST MODIFIED : 11 September 2007
-
-//DESCRIPTION :
-//Sets the button number that the event represents.
-//1 to 3 for a button event and 0 for a non button event.
-//==============================================================================*/
-//{
-//	if (input_data)
-//	{
-//		input_data->position_y = y_position;
-//	}
-//	return (1);
-//}
-
-//int Cmiss_scene_viewer_input_get_modifier_flags(
-//	Cmiss_scene_viewer_input_id input_data,
-//	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags)
-///*******************************************************************************
-//LAST MODIFIED : 12 September 2007
-
-//DESCRIPTION :
-//Returns the set of bit flags showing the whether the modifier inputs
-//were active when the event was generated.
-//==============================================================================*/
-//{
-//	int return_code = 1;
-
-//	ENTER(Cmiss_scene_viewer_input_get_event_type);
-//	if (input_data)
-//	{
-//		int *modifier_flags_int = (int*)modifier_flags;
-//		*modifier_flags_int = 0;
-//		if (input_data->input_modifier &
-//			GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT)
-//		{
-//			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT;
-//		}
-//		if (input_data->input_modifier &
-//			GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL)
-//		{
-//			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL;
-//		}
-//		if (input_data->input_modifier &
-//			GRAPHICS_BUFFER_INPUT_MODIFIER_ALT)
-//		{
-//			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT;
-//		}
-//		if (input_data->input_modifier &
-//			GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1)
-//		{
-//			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1;
-//		}
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
-//		return_code = 0;
-//	}
-//	LEAVE;
-
-//	return (return_code);
-//}
-
-//int Cmiss_scene_viewer_input_set_modifier_flags(
-//	Cmiss_scene_viewer_input_id input_data,
-//	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags)
-///*******************************************************************************
-//LAST MODIFIED : 12 September 2007
-
-//DESCRIPTION :
-//Sets the set of bit flags showing the whether the modifier inputs
-//were active when the event was generated.
-//==============================================================================*/
-//{
-//	int return_code = 1;
-
-//	ENTER(Cmiss_scene_viewer_input_get_event_type);
-//	if (input_data)
-//	{
-//		input_data->input_modifier =
-//			static_cast<enum Graphics_buffer_input_modifier>(0);
-//		//int *input_modifier_int = reinterpret_cast<int*>(&input_data->input_modifier);
-//		int input_modifier_int = 0;
-//		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT)
-//		{
-//			input_modifier_int |=
-//				GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-//		}
-//		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL)
-//		{
-//			input_modifier_int |=
-//				GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-//		}
-//		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT)
-//		{
-//			input_modifier_int |=
-//				GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-//		}
-//		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1)
-//		{
-//			input_modifier_int |=
-//				GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-//		}
-//		input_data->input_modifier =
-//			static_cast<enum Graphics_buffer_input_modifier>(input_modifier_int);
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
-//		return_code = 0;
-//	}
-//	LEAVE;
-
-//	return (return_code);
-//}
-
-//int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
-//	enum Cmiss_scene_viewer_blending_mode *blending_mode)
-///*******************************************************************************
-//LAST MODIFIED : 7 November 2007
-
-//DESCRIPTION :
-//Returns the transparency mode of the Scene_viewer.  See the definition of the
-//Cmiss_scene_viewer_blending_mode enumerator.
-//==============================================================================*/
-//{
-//	enum Scene_viewer_blending_mode scene_viewer_blending_mode;
-//	int return_code;
-
-//	ENTER(Cmiss_scene_viewer_get_blending_mode);
-//	if (scene_viewer)
-//	{
-//		return_code = Scene_viewer_get_blending_mode(scene_viewer,
-//				&scene_viewer_blending_mode);
-//		if (return_code)
-//		{
-//			switch(scene_viewer_blending_mode)
-//			{
-//				case SCENE_VIEWER_BLEND_NORMAL:
-//				{
-//					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_NORMAL;
-//					return_code = 1;
-//				} break;
-//				case SCENE_VIEWER_BLEND_NONE:
-//				{
-//					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_NONE;
-//					return_code = 1;
-//				} break;
-//				case SCENE_VIEWER_BLEND_TRUE_ALPHA:
-//				{
-//					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA;
-//					return_code = 1;
-//				} break;
-//				default:
-//				{
-//					display_message(ERROR_MESSAGE,
-//						"Cmiss_scene_viewer_get_blending_mode.  "
-//						"Blending mode not supported in public interface.");
-//					return_code = 0;
-//				} break;
-//			}
-//		}
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_get_blending_mode.  Invalid argument(s)");
-//		return_code = 0;
-//	}
-//	LEAVE;
-
-//	return (return_code);
-//} /* Cmiss_scene_viewer_get_blending_mode */
-
-//int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
-//	enum Cmiss_scene_viewer_blending_mode blending_mode)
-///*******************************************************************************
-//LAST MODIFIED : 7 November 2007
-
-//DESCRIPTION :
-//Sets the transparency mode of the Scene_viewer.  See the definition of the
-//Cmiss_scene_viewer_blending_mode enumerator.
-//==============================================================================*/
-//{
-//	int return_code;
-
-//	ENTER(Cmiss_scene_viewer_set_blending_mode);
-//	if (scene_viewer)
-//	{
-//		switch(blending_mode)
-//		{
-//			case CMISS_SCENE_VIEWER_BLENDING_NORMAL:
-//			{
-//				return_code = Scene_viewer_set_blending_mode(scene_viewer,
-//					SCENE_VIEWER_BLEND_NORMAL);
-//			} break;
-//			case CMISS_SCENE_VIEWER_BLENDING_NONE:
-//			{
-//				return_code = Scene_viewer_set_blending_mode(scene_viewer,
-//					SCENE_VIEWER_BLEND_NONE);
-//			} break;
-//			case CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA:
-//			{
-//				return_code = Scene_viewer_set_blending_mode(scene_viewer,
-//					SCENE_VIEWER_BLEND_TRUE_ALPHA);
-//			} break;
-//			default:
-//			{
-//				display_message(ERROR_MESSAGE,
-//					"Cmiss_scene_viewer_set_blending_mode.  "
-//					"Unknown viewport mode.");
-//				return_code = 0;
-//			} break;
-//		}
-//	}
-//	else
-//	{
-//		display_message(ERROR_MESSAGE,
-//			"Cmiss_scene_viewer_set_blending_mode.  Invalid argument(s)");
-//		return_code=0;
-//	}
-//	LEAVE;
-
-//	return (return_code);
-//} /* Cmiss_scene_viewer_set_blending_mode */
+}

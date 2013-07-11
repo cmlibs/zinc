@@ -120,7 +120,7 @@ struct Spectrum_settings
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
-Stores one group of settings for a single part of a spectrum rendition.
+Stores one group of settings for a single part of a spectrum scene.
 ==============================================================================*/
 {
 	/* unique identifier for each settings */

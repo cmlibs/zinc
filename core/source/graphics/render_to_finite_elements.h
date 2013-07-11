@@ -47,6 +47,7 @@ Renders gtObjects to VRML file
 #include "zinc/node.h"
 #include "general/enumerator.h"
 
+struct Cmiss_graphics_filter;
 /*
 Global types
 ------------
@@ -80,8 +81,9 @@ Global functions
  * @param nodeset  For SURFACE_POINT_CLOUD render_mode only, the nodeset to put
  * points in.
  */
-int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_region,
-	const char *graphic_name, enum Render_to_finite_elements_mode render_mode,
+int render_to_finite_elements(Cmiss_region_id source_region,
+	const char *graphic_name, Cmiss_graphics_filter *filter,
+	enum Render_to_finite_elements_mode render_mode,
 	Cmiss_region_id region, Cmiss_field_group_id group,
 	Cmiss_field_id coordinate_field, Cmiss_nodeset_id nodeset,
 	FE_value line_density, FE_value line_density_scale_factor,

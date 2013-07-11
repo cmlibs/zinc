@@ -790,9 +790,11 @@ Actually preforms the rendering pass.
 			material_data.layer = layer + 1;
 			material_data.renderer = Scene_viewer_rendering_data_get_renderer(rendering_data);
 
-			Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
+			Cmiss_scene_id scene = Cmiss_scene_viewer_get_scene(data->scene_viewer);
+			Cmiss_scene_for_each_material(scene,
 				compile_Graphical_material_for_order_independent_transparency,
 				(void *)&material_data);
+			Cmiss_scene_destroy(&scene);
 		}
 
 		render_scene_from_camera_view(layer, rendering_data, data,
@@ -807,9 +809,11 @@ Actually preforms the rendering pass.
 
 		material_data.layer = 0;
 
-		Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
+		Cmiss_scene_id scene = Cmiss_scene_viewer_get_scene(data->scene_viewer);
+		Cmiss_scene_for_each_material(scene,
 			compile_Graphical_material_for_order_independent_transparency,
 			(void *)&material_data);
+		Cmiss_scene_destroy(&scene);
 	}
 
 #if defined (DEBUG_CODE)
