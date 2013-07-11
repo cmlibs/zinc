@@ -1198,7 +1198,6 @@ struct Export_to_wavefront_data
 	char *file_path;
 	FILE *wavefront_file;
 	int full_comments;
-	struct Scene *scene;
 }; /* struct Export_to_wavefront_data */
 
 static int graphics_object_export_to_wavefront(
@@ -1306,7 +1305,8 @@ Global functions
 ----------------
 */
 
-int export_to_wavefront(char *file_name, struct Scene *scene, int full_comments)
+int export_to_wavefront(char *file_name, Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
 
@@ -1329,7 +1329,7 @@ Renders the visible objects to Wavefront object files.
 	ENTER(export_to_wavefront);
 	if (scene)
 	{
-		build_Scene(scene);
+		build_Scene(scene, filter);
 		/* Write all the graphics objects in the scene */
 		/* Open file and add header */
 		wavefront_global_file = fopen(file_name, "w");
@@ -1346,7 +1346,6 @@ Renders the visible objects to Wavefront object files.
 			/* Draw objects */
 
 			export_to_wavefront_data.wavefront_file = wavefront_global_file;
-			export_to_wavefront_data.scene = scene;
 			extension = strrchr ( file_name, '.' );
 			if (extension != 0)
 			{
@@ -1369,7 +1368,7 @@ Renders the visible objects to Wavefront object files.
 			}
 			export_to_wavefront_data.full_comments = full_comments;
 
-			return_code=for_each_graphics_object_in_scene(scene,
+			return_code=for_each_graphics_object_in_scene_tree(scene, filter,
 				graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 
 			if (export_to_wavefront_data.file_path)

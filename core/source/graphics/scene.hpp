@@ -1,7 +1,5 @@
-/*******************************************************************************
- * scene.hpp
- * 
- * Private Cmiss_scene function and object declarations.
+/***************************************************************************//**
+ * cmiss_scene.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -38,56 +36,35 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (SCENE_HPP)
-#define SCENE_HPP
+#if !defined (CMISS_SCENE_HPP)
+#define CMISS_SCENE_HPP
 
 #include "general/callback_class.hpp"
 
-struct Cmiss_graphics_filter;
 struct Cmiss_scene;
-#define Scene Cmiss_scene // GRC temp
-struct Graphics_buffer;
-class Render_graphics;
 class Render_graphics_compile_members;
 class Render_graphics_opengl;
 
-/***************************************************************************//**
- * To speed up messaging response, graphical_elements put off building
- * graphics objects for their settings until requested. This function should be
- * called to request builds for all objects used by <scene>. It should be called
- * before the scene is output to OpenGL, VRML and wavefront objs.
- * This building is now incorporated into opengl scene compilation so does not need
- * to be called explicitly before rendering.
- */
-int build_Scene(struct Scene *scene);
+int Cmiss_scene_compile_scene(Cmiss_scene *cmiss_scene,
+	Render_graphics_compile_members *renderer);
 
-int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
+int Cmiss_scene_compile_graphics(Cmiss_scene *cmiss_scene,
+	Render_graphics_compile_members *renderer);
 
-DESCRIPTION :
-Assembles the display list containing the whole scene. Before that, however, it
-compiles the display lists of objects that will be executed in the scene.
-The <graphics_buffer> is used to provide rendering contexts.
-Note that lights are not included in the scene and must be handled separately!
-Must also call build_Scene before this functions.
-==============================================================================*/
+int execute_Cmiss_scene(Cmiss_scene *cmiss_scene,
+	Render_graphics_opengl *renderer);
 
-/***************************************************************************//**
- * Actually render a scene by executing the scene objects.
- */
-int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer);
+int Cmiss_scene_graphics_render_opengl(struct Cmiss_scene *cmiss_scene,
+	Render_graphics_opengl *renderer);
 
-/***************************************************************************//**
- * Call the renderer to compile all the member objects which this Scene depends
- * on.
- */
-int Scene_compile_members(struct Scene *scene,
-	Render_graphics *renderer);
+int Cmiss_scene_render_child_scene(struct Cmiss_scene *scene,
+	Render_graphics_opengl *renderer);
 
-/***************************************************************************//**
- * Private function only to be called by Cmiss_graphics_filter constructors.
- */
-int Scene_add_filter_private(Scene *scene, Cmiss_graphics_filter *filter);
+int Scene_render_opengl(Cmiss_scene *scene, Render_graphics_opengl *renderer);
 
-#endif /* !defined (SCENE_HPP) */
+int Cmiss_scene_compile_tree(Cmiss_scene *cmiss_scene,
+	Render_graphics_compile_members *renderer);
+
+int build_Scene(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
+
+#endif /* !defined (CMISS_SCENE_HPP) */

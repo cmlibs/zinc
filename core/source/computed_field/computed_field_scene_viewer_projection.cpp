@@ -10,7 +10,7 @@
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "general/message.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"
@@ -27,10 +27,10 @@ void Computed_field_scene_viewer_projection_scene_viewer_destroy_callback(
 	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
 
 void Computed_field_scene_viewer_projection_transformation_callback(
-	Cmiss_rendition_id rendition, gtMatrix *matrix, void *field_void);
+	Cmiss_scene_id scene, gtMatrix *matrix, void *field_void);
 
-void Computed_field_scene_viewer_scene_region_change_callback(
-	Cmiss_rendition_id rendition, struct Cmiss_scene *scene, void *field_void);
+void Computed_field_scene_viewer_top_scene_change_callback(
+	Cmiss_scene_id scene, Cmiss_scene_id top_scene, void *field_void);
 
 class Computed_field_scene_viewer_projection : public Computed_field_core
 {
@@ -446,6 +446,10 @@ Clear the type specific data used by this type.
 				Computed_field_scene_viewer_projection_scene_viewer_destroy_callback,
 				(void *)field);
 		}
+		if (current_scene)
+		{
+			Cmiss_scene_destroy(&current_scene);
+		}
 		if (graphics_window_name)
 		{
 			DEALLOCATE(graphics_window_name);
@@ -554,9 +558,11 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			return 0;
 		}
 		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-		gtMatrix *local_transformation_matrix = Cmiss_rendition_get_total_transformation_on_scene(
-			rendition, Scene_viewer_get_scene(scene_viewer));
+		Cmiss_scene_id scene = Cmiss_region_get_scene_internal(region);
+		Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
+		gtMatrix *local_transformation_matrix = Cmiss_scene_get_total_transformation(
+			scene, top_scene);
+		Cmiss_scene_destroy(&top_scene);
 		if (!current_local_transformation && local_transformation_matrix)
 		{
 			return_code = 1;
@@ -585,7 +591,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			}
 		}
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_rendition_destroy(&rendition);
+		Cmiss_scene_destroy(&scene);
 		if (current_local_transformation)
 			DEALLOCATE(current_local_transformation);
 		current_local_transformation = local_transformation_matrix;
@@ -697,18 +703,20 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 {
 	if (!transformation_callback_flag)
 	{
-		current_scene = Scene_viewer_get_scene(scene_viewer);
+		if (current_scene)
+			Cmiss_scene_destroy(&current_scene);
+		current_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
 		Cmiss_field_id field = getField();
 		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
 		if (field_module)
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-			transformation_callback_flag = Cmiss_rendition_add_total_transformation_callback(
-				rendition, Scene_viewer_get_scene(scene_viewer),
+			struct Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+			transformation_callback_flag = Cmiss_scene_add_total_transformation_callback(
+				scene, current_scene,
 				Computed_field_scene_viewer_projection_transformation_callback,
-				Computed_field_scene_viewer_scene_region_change_callback, (void *)field);
-			Cmiss_rendition_destroy(&rendition);
+				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
+			Cmiss_scene_destroy(&scene);
 			Cmiss_field_module_destroy(&field_module);
 		}
 	}
@@ -723,11 +731,11 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 		if (field_module)
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-			Cmiss_rendition_remove_total_transformation_callback(rendition,
+			struct Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+			Cmiss_scene_remove_total_transformation_callback(scene,
 				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
-				Computed_field_scene_viewer_scene_region_change_callback,	(void *)field);
-			Cmiss_rendition_destroy(&rendition);
+				Computed_field_scene_viewer_top_scene_change_callback,	(void *)field);
+			Cmiss_scene_destroy(&scene);
 			Cmiss_field_module_destroy(&field_module);
 			transformation_callback_flag = 0;
 		}
@@ -736,7 +744,8 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 
 void Computed_field_scene_viewer_projection::update_current_scene()
 {
-	if (current_scene != Scene_viewer_get_scene(scene_viewer))
+	Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
+	if (current_scene != top_scene)
 	{
 		if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
 			(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
@@ -744,8 +753,11 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 			remove_transformation_callback();
 			add_transformation_callback();
 		}
-		current_scene = Scene_viewer_get_scene(scene_viewer);
+		if (current_scene)
+			Cmiss_scene_destroy(&current_scene);
+		current_scene = Cmiss_scene_access(top_scene);
 	}
+	Cmiss_scene_destroy(&top_scene);
 }
 
 void Computed_field_scene_viewer_projection_scene_viewer_callback(
@@ -830,7 +842,7 @@ Clear the scene viewer reference when it is no longer valid.
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
 void Computed_field_scene_viewer_projection_transformation_callback(
-	Cmiss_rendition_id rendition, gtMatrix *matrix,
+	Cmiss_scene_id scene, gtMatrix *matrix,
 	void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -844,7 +856,7 @@ that the computed field has changed.
 	Computed_field_scene_viewer_projection* core;
 	USE_PARAMETER(matrix);
 
-	if (rendition && (field = (Computed_field *)field_void) &&
+	if (scene && (field = (Computed_field *)field_void) &&
 		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
 	{
 		if (!core->change_required)
@@ -864,13 +876,43 @@ that the computed field has changed.
 	}
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
-void Computed_field_scene_viewer_scene_region_change_callback(
-	Cmiss_rendition_id rendition, struct Cmiss_scene *scene, void *field_void)
+void Computed_field_scene_viewer_top_scene_change_callback(
+	Cmiss_scene_id scene, Cmiss_scene_id top_scene, void *field_void)
 {
 	Computed_field* field;
 	Computed_field_scene_viewer_projection* core;
 
-	if (rendition && (field = (Computed_field *)field_void) &&
+	if (scene && (field = (Computed_field *)field_void) &&
+		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
+	{
+		if (core->current_scene == top_scene)
+		{
+			core->remove_transformation_callback();
+			if (!core->change_required)
+			{
+				if (field->manager)
+				{
+					Computed_field_dependency_changed(field);
+				}
+				core->change_required = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_scene_viewer_projection_transformation_callback.  "
+			"Invalid arguments.");
+	}
+}
+
+void Computed_field_scene_viewer_top_region_change_callback(
+	Cmiss_scene_id scene, void *dummy, void *field_void)
+{
+	Computed_field* field;
+	Computed_field_scene_viewer_projection* core;
+
+	if (scene && (field = (Computed_field *)field_void) &&
 		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
 	{
 		if (core->current_scene == scene)

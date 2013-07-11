@@ -72,7 +72,6 @@ Used to be gtypes.h
 
 
 #include "zinc/zincconfigure.h"
-
 #include "zinc/types/glyphid.h"
 #include "zinc/graphic.h"
 #include "general/geometry.h"
@@ -332,7 +331,6 @@ range valid.
 ==============================================================================*/
 {
 	int first;
-	struct Cmiss_scene *scene;
 	Triple maximum,minimum;
 }; /* Graphics_object_range_struct */
 
@@ -798,7 +796,7 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Creates the shared rendition information for a GT_polyline_vertex_buffers.
+ * Creates the shared scene information for a GT_polyline_vertex_buffers.
  */
 struct GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
 	enum GT_polyline_type polyline_type, int line_width);

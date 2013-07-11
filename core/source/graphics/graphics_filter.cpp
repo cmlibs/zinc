@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <list>
-#include "zinc/rendition.h"
+#include "zinc/scene.h"
 #include "zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -50,7 +50,6 @@
 #include "region/cmiss_region.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
-#include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 
 struct Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
@@ -345,7 +344,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return (!isInverse() == Cmiss_graphic_and_rendition_visibility_flags_set(graphic));
+		return (!isInverse() == Cmiss_graphic_and_scene_visibility_flags_is_set(graphic));
 	}
 
 	virtual void list_type_specific() const

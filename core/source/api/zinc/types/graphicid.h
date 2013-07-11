@@ -43,7 +43,7 @@
 
 /**
  * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
- * such as lines, surfaces, node points and etc of a rendition. These graphics
+ * such as lines, surfaces, node points and etc of a scene. These graphics
  * can be customised through a number of set functions.
  */
 struct Cmiss_graphic;

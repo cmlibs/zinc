@@ -61,8 +61,8 @@ extern "C" {
  * changes to the scene_viewer and become invalid if the scene_viewer is
  * destroyed.
  * Note CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
- * of the rendition for the owning region of field, which is transformed from
- * world coordinates by the cumulative transformation matrices of all renditions
+ * of the scene for the owning region of field, which is transformed from
+ * world coordinates by the cumulative transformation matrices of all scenes
  * down from the root region of the scene viewer's scene.
  * @see Cmiss_field_module_create_projection.
  *

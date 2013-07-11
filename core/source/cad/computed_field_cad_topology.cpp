@@ -42,10 +42,10 @@
 #include <stdlib.h>
 
 extern "C" {
-#include "api/cmiss_rendition.h"
+#include "api/cmiss_scene.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field.h"
@@ -962,8 +962,8 @@ int gfx_list_cad_entity(struct Parse_state *state,
 				//DEBUG_PRINT("gfx_list_cad_entity:  id type '%d'\n", cad_identifier.type);
 				if (selected_flag)
 				{
-					Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region_path_and_name.region);
-					Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
+					Cmiss_scene *scene = Cmiss_region_get_scene_internal(region_path_and_name.region);
+					Cmiss_field_group_id selection_group = Cmiss_scene_get_selection_group(scene);
 
 					struct MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(
 						region_path_and_name.region);

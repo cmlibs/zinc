@@ -1,11 +1,7 @@
-/***************************************************************************//**
- * FILE : scene.h
- *
- * Internal interface to Cmiss_scene which describes a collection of graphics
- * able to be output to a Cmiss_scene_viewer or other outputs/devices.
- * It broadly comprises a reference to a region sub-tree and filters controlling
- * which graphics are displayed from its renditions.
- */
+/*******************************************************************************
+FILE : scene.h
+
+==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -13,7 +9,9 @@
  * 1.1 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  * http://www.mozilla.org/MPL/
- *
+ *LAST MODIFIED : 16 October 2008
+
+DESCRIPTION :
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  * for the specific language governing rights and limitations under the
@@ -23,7 +21,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,547 +39,470 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
 #if !defined (SCENE_H)
 #define SCENE_H
 
-#include <set>
-
-#include "zinc/zincconfigure.h"
-#include "zinc/zincsharedobject.h"
-
+#include <list>
 #include "zinc/scene.h"
+#include "computed_field/computed_field.h"
 #include "general/any_object.h"
-#include "general/callback.h"
-#include "general/enumerator.h"
-#include "graphics/element_point_ranges.h"
-#include "graphics/graphics_library.h"
-#include "graphics/graphics_object.h"
-#include "general/list.h"
+#include "general/any_object_prototype.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/light.h"
-#include "graphics/material.h"
-#include "graphics/spectrum.h"
-#include "interaction/interaction_volume.h"
+#include "graphics/graphic.h"
+#include "graphics/graphics_library.h"
+#include "context/context.h"
 #include "region/cmiss_region.h"
-#include "selection/element_point_ranges_selection.h"
-#include "time/time_keeper.hpp"
-/* Convert the type */
-#define Scene Cmiss_scene
 
-#include "graphics/rendition.h"
-/* #include "graphics/texture.h" */
-#if defined(USE_OPENCASCADE)
-#	include "zinc/fieldcad.h"
-#endif /* defined(USE_OPENCASCADE) */
+typedef std::list<Cmiss_selection_handler *> Selection_handler_list;
 
-/*
-Global types
-------------
-*/
-
-enum Scene_change_status
+struct Cmiss_scene
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 16 October 2008
 
 DESCRIPTION :
-Describes the nature of the change message received by scene clients.
+Structure for maintaining a graphical scene of region.
 ==============================================================================*/
 {
-	SCENE_NO_CHANGE,
-	SCENE_CHANGE,
-	SCENE_FAST_CHANGE
-};
-
-struct Scene_picked_object;
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Describes a single picked item in a format compatible with objects in our
-display hierarchy.
-The contents of this object are private.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Scene_picked_object);
-
-/*
-The Cmiss_scene which is Public is currently the same object as the
-cmgui internal Scene.  The Public interface is contained in
-zinc/scene.h however most of the functions come directly from
-this module.  So that these functions match the public declarations the
-struct Scene is declared to be the same as Cmiss_scene here
-and the functions given their public names.
-*/
-
-/***************************************************************************//**
- * Functor for comparing/sorting regions in region tree.
- */
-class Rendition_list_compare
-{
-private:
-
-public:
-	Rendition_list_compare()
-	{
-	}
-
-	bool isRegionPlacedBefore(Cmiss_region *region1, Cmiss_region *region2) const
-	{
-		bool return_code = false;
-		if (region1 == region2)
-		{
-			return false;
-		}
-		if (!region1 || !region2)
-		{
-			return false;
-		}
-		if (Cmiss_region_contains_subregion(region1, region2))
-		{
-			return true;
-		}
-		else if (Cmiss_region_contains_subregion(region2, region1))
-		{
-			return false;
-		}
-		Cmiss_region *parent_region1 = Cmiss_region_get_parent(region1);
-		Cmiss_region *parent_region2 = Cmiss_region_get_parent(region2);
-		Cmiss_region *child_region1 = NULL;
-		Cmiss_region *child_region2 = NULL;
-		if (parent_region1 == parent_region2)
-		{
-			child_region1 = Cmiss_region_access(region1);
-			child_region2 = Cmiss_region_access(region2);
-		}
-		else
-		{
-			while (parent_region2 && (parent_region1 != parent_region2))
-			{
-				child_region2 = parent_region2;
-				parent_region2 =
-					Cmiss_region_get_parent(parent_region2);
-				if (parent_region1 != parent_region2)
-					Cmiss_region_destroy(&child_region2);
-			}
-			if (parent_region1 != parent_region2)
-			{
-				parent_region2 = Cmiss_region_get_parent(region2);
-				child_region2 = Cmiss_region_access(region2);
-				while (parent_region1 &&
-					(parent_region2 != parent_region1))
-				{
-					child_region1 = parent_region1;
-					parent_region1 =
-						Cmiss_region_get_parent(parent_region1);
-					if (parent_region1 != parent_region2)
-						Cmiss_region_destroy(&child_region1);
-				}
-			}
-		}
-		if (child_region1 && child_region2 && parent_region1 == parent_region2)
-		{
-			Cmiss_region *child_region = Cmiss_region_get_first_child(
-				parent_region1);
-			while (child_region)
-			{
-				if (child_region == child_region1)
-				{
-					return_code = true;
-					break;
-				}
-				else if (child_region == child_region2)
-				{
-					return_code = false;
-					break;
-				}
-				Cmiss_region_reaccess_next_sibling(&child_region);
-			}
-			if (child_region)
-				Cmiss_region_destroy(&child_region);
-		}
-		if (parent_region1)
-			Cmiss_region_destroy(&parent_region1);
-		if (parent_region2)
-			Cmiss_region_destroy(&parent_region2);
-		if (child_region1)
-			Cmiss_region_destroy(&child_region1);
-		if (child_region2)
-			Cmiss_region_destroy(&child_region2);
-		return return_code;
-	}
-
-	bool operator() (const Cmiss_rendition *rendition1, const Cmiss_rendition *rendition2) const
-	{
-		Cmiss_region *region1 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition1));
-		Cmiss_region *region2 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition2));
-
-		return isRegionPlacedBefore(region1, region2);
-	}
-};
-
-
-typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
-
-struct Scene_get_data_range_for_spectrum_data
-{
-	struct Spectrum *spectrum;
-	struct Graphics_object_data_range_struct range;
-};
-
-struct Scene
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Stores the collections of objects that make up a 3-D graphical model.
-==============================================================================*/
-{
-	/* the name of the scene */
-	const char *name;
-	/* keep pointer to this scene's manager since can pass on manager change */
-	/* messages if member manager changes occur (eg. materials) */
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Scene) *manager;
-	int manager_change_status;
-	bool is_managed_flag;
-	/* list of objects in the scene (plus visibility flag) */
-	enum Scene_change_status change_status;
-
+	/* the [FE] region being drawn */
 	struct Cmiss_region *region;
-	struct LIST(Light) *list_of_lights;
-	Rendition_set *list_of_rendition;
+	struct FE_region *fe_region;
+	struct FE_region *data_fe_region;
+	int fe_region_callback_set, data_fe_region_callback_set;
+	/* settings shared by whole scene */
+	/* default coordinate field for graphics drawn with settings below */
+	struct Computed_field *default_coordinate_field;
+	/* list of objects interested in changes to the Cmiss_scene */
+	struct Cmiss_scene_callback_data *update_callback_list;
+	/* managers for updating graphics in response to global changes */
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct LIST(Cmiss_graphic) *list_of_graphics;
+	void *computed_field_manager_callback_id;
 	/* level of cache in effect */
-	int cache;
-	/* flag indicating that graphics objects in scene objects need building */
 	int build;
-	Cmiss_graphics_filter_id filter;
-	/* the number of objects accessing this scene. The scene cannot be removed
-		from manager unless it is 1 (ie. only the manager is accessing it) */
+	int cache;
+	int changed; /**< true if scene has changed and haven't updated clients */
+	/* for accessing objects */
 	int access_count;
-}; /* struct Scene */
+	gtMatrix *transformation;
+	bool visibility_flag;
+	/* transformaiton field for time dependent transformation */
+	struct Computed_field *transformation_field;
+	int transformation_time_callback_flag;
+	/* curve approximation with line segments over elements */
+	int *element_divisions;
+	int element_divisions_size;
+	/* number of segments used around cylinders */
+	int circle_discretization;
+	/* optional native_discretization for graphics drawn with settings below */
+	struct FE_field *native_discretization_field;
+	struct Cmiss_graphics_module *graphics_module;
+	Cmiss_time_notifier *time_notifier;
+	/* callback list for transformation changes */
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_transformation)) *transformation_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_top_region_change)) *top_region_change_callback_list;
+	unsigned int position;
+	Cmiss_field_group_id selection_group;
+	int selection_removed; // flag set when selection_group cleared
+	Selection_handler_list *selection_handler_list;
+}; /* struct Cmiss_scene */
 
-DECLARE_LIST_TYPES(Scene);
+struct MANAGER_MESSAGE(Cmiss_tessellation);
 
-DECLARE_MANAGER_TYPES(Scene);
+typedef int(*Cmiss_scene_callback)(struct Cmiss_scene *scene,
+	void *user_data);
+
+DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_transformation, struct Cmiss_scene *, \
+	gtMatrix *, void);
+
+DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_top_region_change, struct Cmiss_scene *, \
+	struct Cmiss_scene *, void);
+
+struct Cmiss_scene *Cmiss_scene_create_internal(struct Cmiss_region *cmiss_region,
+	struct Cmiss_graphics_module *graphics_module);
+
+/** @return  Handle to graphics module. Up to caller to destroy */
+Cmiss_graphics_module_id Cmiss_scene_get_graphics_module(Cmiss_scene_id scene);
 
 /***************************************************************************//**
- * Structure to pass to define_Scene.
+ * Destroy Cmiss_scene and clean up the memory it uses.
+ *
+ * @param  cmiss_scene_address the address to the pointer of
+ *   the cmiss_scene_address to be deleted
+ * @return  1 if successfully destroy cmiss_scene, otherwise 0
  */
-struct Define_scene_data
-{
-	struct MANAGER(Light) *light_manager;
-	struct MANAGER(Scene) *scene_manager;
-	struct Cmiss_region *root_region;
-	struct Cmiss_graphics_module *graphics_module;
-}; /* struct Define_scene_data */
+int DESTROY(Cmiss_scene)(
+	struct Cmiss_scene **cmiss_scene_address);
 
-struct Cmiss_graphic;
-struct Cmiss_rendition;
+int Cmiss_scene_get_position(struct Cmiss_scene *scene);
 
-/*
-Global functions
-----------------
-*/
+int Cmiss_scene_set_position(struct Cmiss_scene *scene, unsigned int position);
+/***************************************************************************//**
+ * Set the position of the scene
+ * @param scene to be edited
+ * @param position Position to be set for the cmiss_scene
+ * @return If successfully set the position, otherwise NULL
+ */
 
-struct Scene *CREATE(Scene)(void);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1998
+/***************************************************************************//**
+ * Currently, a Cmiss_region may have at most one cmiss_scene.
+ * @param cmiss_region The region of interest
+ * @return If scene found returns it, otherwise NULL
+ */
+struct Cmiss_scene *Cmiss_region_get_scene_internal(struct Cmiss_region *cmiss_region);
 
-DESCRIPTION :
-Scene now has pointer to its scene_manager, and it uses manager modify
-messages to inform its clients of changes. The pointer to the scene_manager
-is set and unset by the add/remove object from manager routines, overwritten
-from the default versions of these functions.
-==============================================================================*/
+/***************************************************************************//**
+ * Deaccess the scene of the region
+ * @param region The region to deaccess scene from
+ * @return If successfully deaccess scene from region returns 1, otherwise 0
+ */
+int Cmiss_region_deaccess_scene(struct Cmiss_region *region);
 
-int DESTROY(Scene)(struct Scene **scene);
-/*******************************************************************************
-LAST MODIFIED : 19 November 1997
+/***************************************************************************//**
+ * Wrapper for accessing the list of graphic in <Cmiss_scene>.
+ * @param cmiss_scene target for that scene
+ * @param conditional_function conditional function for the list
+ * @param data void pointer to data to pass into the conditional function
+ * @return Return the first graphic that fullfill the conditional function
+ */
+struct Cmiss_graphic *Cmiss_scene_get_first_graphic_with_condition(
+	struct Cmiss_scene *cmiss_scene,
+	LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *conditional_function,
+	void *data);
 
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * Adds a callback routine which is called whenever a Cmiss_scene is aware of
+ * changes.
+ */
+int Cmiss_scene_add_callback(struct Cmiss_scene *scene,
+	Cmiss_scene_callback callback, void *user_data);
 
-int Scene_begin_cache(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 6 June 2001
+/***************************************************************************//**
+ * Removes a callback which was added previously
+ */
+int Cmiss_scene_remove_callback(struct Cmiss_scene *scene,
+	Cmiss_scene_callback callback, void *user_data);
 
-DESCRIPTION :
-Call before making several changes to the scene so only a single change message
-is sent. Call Scene_end_cache at the end of the changes.
-==============================================================================*/
+/***************************************************************************//**
+ * Attempt to guess which field is the most appropriate to use as a coordinate
+ * field for graphics.
+ * @param scene  The scene whose graphics need a coordinate field.
+ * @param domain_type  Type of domain to get coordinate field for. Not used
+ * currently.
+ * @return non-accessed field
+ */
+Cmiss_field_id Cmiss_scene_guess_coordinate_field(
+	struct Cmiss_scene *scene, Cmiss_field_domain_type domain_type);
 
-int Scene_end_cache(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 6 June 2001
-
-DESCRIPTION :
-Call after making changes preceded by a call to Scene_begin_cache to enable a
-final message to be sent to clients.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(Scene);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene);
-
-PROTOTYPE_LIST_FUNCTIONS(Scene);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Scene,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(Scene);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Scene,name,const char *);
-
-GLfloat Scene_time(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 8 December 1997
-
-DESCRIPTION :
-Returns the current time from <scene>.
-==============================================================================*/
-
-int Scene_set_time(struct Scene *scene, GLfloat time);
-/*******************************************************************************
-LAST MODIFIED : 19 February 1998
-
-DESCRIPTION :
-Sets the current time in <scene>.
-==============================================================================*/
-
-int Scene_for_each_material(struct Scene *scene,
+/***************************************************************************//**
+ * Iterates through every material used by the scene.
+ */
+int Cmiss_scene_for_each_material(struct Cmiss_scene *scene,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
 	void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 3 May 2005
 
-DESCRIPTION :
-Iterates through every material used by the scene.
-==============================================================================*/
+/***************************************************************************//**
+ * Lists the general graphics defined for <scene> - as a
+ * set of commands that can be used to reproduce the groups appearance. The
+ * <command_prefix> should generally contain "gfx modify g_element" while the
+ * optional <command_suffix> may describe the scene (eg. "scene default").
+ * Note the command prefix is expected to contain the name of the region.
+ */
+int Cmiss_scene_list_commands(struct Cmiss_scene *scene,
+	const char *command_prefix, const char *command_suffix);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Scene_picked_object);
-PROTOTYPE_LIST_FUNCTIONS(Scene_picked_object);
+/***************************************************************************//**
+ * Private method for informing scene of material manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_scene_material_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Graphical_material) *manager_message);
 
-struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Cmiss_region *cmiss_region,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
+/***************************************************************************//**
+ * Private method for informing scene of spectrum manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Spectrum) *manager_message);
 
-DESCRIPTION :
-Returns the nearest picked element point in <scene_picked_object_list> that is
-in <cmiss_region> (or in root_region if NULL). If any of the remaining address
-arguments are not NULL, they are filled with the appropriate information
-pertaining to the nearest element point.
-The returned Element_point_ranges structure should be used or destroyed by the
-calling function.
-==============================================================================*/
+/***************************************************************************//**
+ * Private method for informing scene of tessellation manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message);
 
-struct LIST(Element_point_ranges) *Scene_picked_object_list_get_picked_element_points(
-	struct LIST(Scene_picked_object) *scene_picked_object_list);
-/*******************************************************************************
-LAST MODIFIED : 18 May 2000
+/***************************************************************************//**
+ * Private method for informing scene of font manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_scene_font_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Cmiss_font) *manager_message);
 
-DESCRIPTION :
-Returns the list of all element_points in the <scene_picked_object_list>.
-==============================================================================*/
+int for_each_child_scene_in_scene_tree(
+	struct Cmiss_scene *scene,
+	int (*cmiss_scene_tree_iterator_function)(struct Cmiss_scene *scene,
+		void *user_data),	void *user_data);
 
-#if defined (USE_OPENCASCADE)
-void *Scene_picked_object_list_get_picked_region_cad_primitives(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int select_surfaces_enabled, int select_lines_enabled);
-#endif /* defined (USE_OPENCASCADE) */
+/***************************************************************************//**
+ * Returns the position of <graphic> in <scene>.
+ */
+int Cmiss_scene_get_graphic_position(
+	struct Cmiss_scene *scene,
+	struct Cmiss_graphic *graphic);
 
-#if defined (USE_OPENCASCADE)
-Cmiss_cad_identifier_id Scene_picked_object_list_get_cad_primitive(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct Cmiss_region *cmiss_region,
-	int select_surfaces_enabled, int select_lines_enabled,
-	struct Scene_picked_object **scene_picked_object_address,
-	struct Cmiss_rendition **rendition_address,
-	struct Cmiss_graphic **graphic_address);
-#endif /* defined (USE_OPENCASCADE) */
+/***************************************************************************//**
+ * Returns true if <scene1> and <scene2> match in
+ * main attributes of scene, graphic etc. such that they would produce
+ * the same graphics.
+ */
+int Cmiss_scenes_match(struct Cmiss_scene *scene1,
+	struct Cmiss_scene *scene2);
 
-struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
-	struct Interaction_volume *interaction_volume);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
+/***************************************************************************//**
+ * Creates a Cmiss_scene that is a copy of <existing_scene> -
+ * WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
+ */
+struct Cmiss_scene *create_editor_copy_Cmiss_scene(
+	struct Cmiss_scene *existing_scene);
 
-DESCRIPTION :
-Returns a list of all the graphical entities in the <interaction_volume> of
-<scene>. The nearest member of each scene_picked_object will be adjusted as
-understood for the type of <interaction_volume> passed.
-==============================================================================*/
+int for_each_graphic_in_Cmiss_scene(
+	struct Cmiss_scene *scene,
+	int (*cmiss_scene_graphic_iterator_function)(struct Cmiss_graphic *graphic,
+		void *user_data),	void *user_data);
 
-int Scene_add_light(struct Scene *scene,struct Light *light);
-/*******************************************************************************
-LAST MODIFIED : 12 December 1997
+/***************************************************************************//**
+ * Get region of scene
+ */
+struct Cmiss_region *Cmiss_scene_get_region(
+	struct Cmiss_scene *scene);
 
-DESCRIPTION :
-Adds a light to the Scene list_of_lights.
-==============================================================================*/
+/***************************************************************************//**
+ *Copies the Cmiss_scene contents from source to destination, keeping any
+ *graphics objects from the destination that will not change with the new graphic
+ *from source. Used to apply the changed Cmiss_scene from the editor to the
+ *actual Cmiss_scene.
+ */
+int Cmiss_scene_modify(struct Cmiss_scene *destination,
+	struct Cmiss_scene *source);
 
-int Scene_has_light_in_list(struct Scene *scene,
-	struct LIST(Light) *light_list);
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
+int Cmiss_scene_get_visibility_flag(
+	struct Cmiss_scene *scene);
 
-DESCRIPTION :
-Returns true if the list_of_lights in <Scene> intersects <light_list>.
-==============================================================================*/
+int Cmiss_scene_add_transformation_callback(struct Cmiss_scene *scene,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_transformation) *function, void *user_data);
 
-int Scene_remove_light(struct Scene *scene,struct Light *light);
-/*******************************************************************************
-LAST MODIFIED : 12 December 1997
+int Cmiss_scene_remove_transformation_callback(
+	struct Cmiss_scene *scene,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_transformation) *function, void *user_data);
 
-DESCRIPTION :
-Removes a light from the Scene list_of_lights.
-==============================================================================*/
 
-int for_each_Light_in_Scene(struct Scene *scene,
-	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 18 December 1997
+int Cmiss_scene_has_transformation(struct Cmiss_scene *scene);
 
-DESCRIPTION :
-Allows clients of the <scene> to perform functions with the lights in it. The
-most common task will be to call execute_Light.
-==============================================================================*/
+void Cmiss_scene_remove_time_dependent_transformation(struct Cmiss_scene *scene);
 
-enum Scene_change_status Scene_get_change_status(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
+int Cmiss_scene_set_transformation_with_time_callback(struct Cmiss_scene *scene,
+	struct Computed_field *transformation_field);
 
-DESCRIPTION :
-Returns the change state of the scene; SCENE_NO_CHANGE, SCENE_FAST_CHANGE or
-SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
-==============================================================================*/
+int Cmiss_scene_set_transformation(struct Cmiss_scene *scene,
+	gtMatrix *transformation);
 
-int build_Scene(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
+int Cmiss_scene_get_transformation(struct Cmiss_scene *scene,
+	gtMatrix *transformation);
 
-DESCRIPTION :
-To speed up messaging response, graphical_elements put off building
-graphics objects for their settings until requested. This function should be
-called to request builds for all objects used by <scene>. It should be called
-before the scene is output to OpenGL, VRML and wavefront objs. In particular,
-this function must be called before compile_Scene.
-==============================================================================*/
+/***************************************************************************//**
+ * This function will remove field manager and its callback to the scene.
+ *
+ * @param cmiss_scene  pointer to the cmiss_scene.
+ *
+ * @return Return 1 if successfully remove field manager and its callback
+ *    from scene otherwise 0.
+ */
+int Cmiss_scene_remove_field_manager_and_callback(struct Cmiss_scene *scene);
 
-int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
+/***************************************************************************//**
+ * This function will deaccess any computed fields being used by the scene
+ * when the scene itself is not present in any scene.
+ *
+ * @param cmiss_scene  pointer to the cmiss_scene.
+ *
+ * @return Return 1 if successfully detach fields from scene otherwise 0.
+ */
+int Cmiss_scene_detach_fields(struct Cmiss_scene *scene);
 
-DESCRIPTION :
-Assembles the display list containing the whole scene. Before that, however, it
-compiles the display lists of objects that will be executed in the scene.
-The <graphics_buffer> is used to provide rendering contexts.
-Note that lights are not included in the scene and must be handled separately!
-Must also call build_Scene before this functions.
-==============================================================================*/
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_scene);
 
-int execute_Scene(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 9 March 2001
+PROTOTYPE_ANY_OBJECT(Cmiss_scene);
 
-DESCRIPTION :
-Calls the display list for <scene>. If the display list is not current, an
-an error is reported.
-Note that lights are not included in the scene and must be handled separately!
-Initialises the name stack then calls execute_child_Scene.
-==============================================================================*/
+Cmiss_field_group_id Cmiss_scene_get_or_create_selection_group(Cmiss_scene_id scene);
 
-int Scene_get_graphics_range(struct Scene *scene,
+/***************************************************************************//**
+ * Remove selection groups from scene tree if they are empty.
+ */
+void Cmiss_scene_flush_tree_selections(Cmiss_scene_id scene);
+
+int Cmiss_scene_create_node_list_selection(Cmiss_scene_id scene,
+	struct LIST(FE_node) *node_list);
+
+/***************************************************************************//**
+ * Set default graphic attributes depending on type, e.g. tessellation,
+ * materials, etc.
+ */
+int Cmiss_scene_set_minimum_graphic_defaults(struct Cmiss_scene *scene,
+	struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
+ * Set additional default attributes for backward compatibility with gfx modify
+ * g_element commands: default coordinate, discretization etc.
+ */
+int Cmiss_scene_set_graphics_defaults_gfx_modify(struct Cmiss_scene *scene,
+	struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
+ * Adds the <graphic> to <scene> at the given <position>, where 1 is
+ * the top of the list (rendered first), and values less than 1 or greater than the
+ * last position in the list cause the graphic to be added at its end, with a
+ * position one greater than the last.
+ *
+ * @param scene  The handle to the scene.
+ * @param graphic  The handle to the cmiss graphic which will be added to the
+ *   scene.
+ * @param pos  The position to put the target graphic to.
+ * @return  Returns 1 if successfully add graphic to scene at pos, otherwise
+ *   returns 0.
+ */
+int Cmiss_scene_add_graphic(Cmiss_scene_id scene, Cmiss_graphic_id graphic, int pos);
+
+int Cmiss_scene_update_callback(struct Cmiss_scene *scene, void *dummy_void);
+
+int Cmiss_scene_notify_parent_scene_callback(struct Cmiss_scene *child_scene,
+	void *region_void);
+
+int list_Cmiss_scene_transformation_commands(struct Cmiss_scene *scene,
+	void *command_prefix_void);
+
+int list_Cmiss_scene_transformation(struct Cmiss_scene *scene);
+
+int Cmiss_scene_add_selection_from_node_list(Cmiss_scene_id scene,
+	struct LIST(FE_node) *node_list, int use_data);
+
+int Cmiss_scene_remove_selection_from_node_list(Cmiss_scene_id scene,
+	struct LIST(FE_node) *node_list, int use_data);
+
+int Cmiss_scene_add_selection_from_element_list_of_dimension(Cmiss_scene_id scene,
+	struct LIST(FE_element) *element_list, int dimension);
+
+int Cmiss_scene_remove_selection_from_element_list_of_dimension(Cmiss_scene_id scene,
+	struct LIST(FE_element) *element_list, int dimension);
+
+/***************************************************************************//**
+ * Returns the status of the inherited visibility flag of the scene.
+ * This function returns 0 if the specified scene or any of its parents along
+ * the path has the visibility flag set to 0 otherwise return 1;
+ *
+ * @param scene  The handle to the scene.
+ * @return  1 if scene and all its parent are visible, otherwise 0.
+ */
+int Cmiss_scene_is_visible_hierarchical(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Get graphic at position <pos> in the internal graphics list of scene.
+ *
+ * @param scene  The handle to the scene of which the graphic is located.
+ * @param pos  The position of the graphic, starting from 0.
+ * @return  returns the found graphic if found at pos, otherwise returns NULL.
+ */
+Cmiss_graphic_id Cmiss_scene_get_graphic_at_position(
+	Cmiss_scene_id scene, int pos);
+
+/***************************************************************************//**
+ * Check either region has scene or not.
+ *
+ * @param region  The handle to cmiss_region.
+ * @return  Returns 1 if scene is found in region, otherwise 0.
+ */
+int Cmiss_region_has_scene(Cmiss_region_id cmiss_region);
+
+Cmiss_field_id Cmiss_scene_get_selection_group_private_for_highlighting(
+	Cmiss_scene_id scene);
+
+int Cmiss_scene_fill_scene_command_data(Cmiss_scene_id scene,
+	struct Scene_command_data *scene_command_data);
+
+int Cmiss_scene_cleanup_scene_command_data(
+  struct Scene_command_data *scene_command_data);
+
+int Cmiss_region_modify_scene(struct Cmiss_region *region,
+	struct Cmiss_graphic *graphic, int delete_flag, int position);
+
+
+/***************************************************************************//**
+ * Inform clients of scene about the change to its graphic.
+ * For internal use only.
+ */
+int Cmiss_scene_graphic_changed_private(struct Cmiss_scene *scene,
+	struct Cmiss_graphic *graphic);
+
+int Cmiss_scene_set_default_coordinate_field(
+	struct Cmiss_scene *scene,
+	struct Computed_field *default_coordinate_field);
+
+////  new APIs
+int Cmiss_scene_add_total_transformation_callback(struct Cmiss_scene *child_scene,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_scene_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_top_region_change) *region_change_function,
+	void *user_data);
+
+int Cmiss_scene_remove_total_transformation_callback(struct Cmiss_scene *child_scene,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_scene_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_top_region_change) *region_change_function,
+	void *user_data);
+
+int Cmiss_scene_notify_scene_viewer_callback(struct Cmiss_scene *scene,
+	void *scene_viewer_void);
+
+/**************************************************************************//**
+ * This function will return the gtMatrix containing the total transformation
+ * from the top scene to scene.
+ *
+ * @param cmiss_scene  pointer to the scene.
+ * @param top_scene  pointer to the the top scene.
+ *
+ * @return Return an allocated gtMatrix if successfully get a transformation
+ * 	matrix. NULL if failed or if no transformation is set.
+ */
+gtMatrix *Cmiss_scene_get_total_transformation(
+	struct Cmiss_scene *scene, struct Cmiss_scene *top_scene);
+
+int Cmiss_scene_get_global_graphics_range(Cmiss_scene_id top_scene,
+	Cmiss_graphics_filter_id filter,
 	double *centre_x, double *centre_y, double *centre_z,
 	double *size_x, double *size_y, double *size_z);
-/*******************************************************************************
-LAST MODIFIED : 16 October 2001
-
-DESCRIPTION :
-Finds the range of all visible graphics objects in scene.
-Returns 0 without error if scene is empty.
-==============================================================================*/
-
-int list_Scene(struct Scene *scene,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Writes the properties of the <scene> to the command window.
-==============================================================================*/
-
-#if !defined (NEW_ALIAS)
-int export_to_alias(struct Scene *scene);
-/******************************************************************************
-LAST MODIFIED : 17 July 1997
-
-DESCRIPTION :
-Exports visible volumes to alias
-==============================================================================*/
-#endif /* !defined (NEW_ALIAS) */
 
 typedef int(*graphics_object_tree_iterator_function)(
 	struct GT_object *graphics_object, double time, void *user_data);
 
-/***************************************************************************//**
- * This function iterates through every graphics object in the scene in region
- * order calling the iterator_function with the optional user_data.
- */
-int for_each_graphics_object_in_scene(struct Scene *scene,
-	graphics_object_tree_iterator_function iterator_function,
+int for_each_graphics_object_in_scene_tree(Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter, graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
 
-int Scene_get_data_range_for_spectrum(struct Scene *scene,
+int Scene_export_region_graphics_object(Cmiss_scene *scene,
+	Cmiss_region *region, const char *graphic_name, Cmiss_graphics_filter_id filter,
+	graphics_object_tree_iterator_function iterator_function, void *user_data);
+
+Cmiss_scene *Cmiss_scene_get_child_of_position(Cmiss_scene *scene, int position);
+
+int Scene_get_data_range_for_spectrum(Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter,
 	struct Spectrum *spectrum, GLfloat *minimum, GLfloat *maximum,
 	int *range_set);
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
 
-DESCRIPTION :
-Sets the range to include the data values of any of the graphics object
-in the <scene> which point to this spectrum.  The <range_set> flag is set if
-any valid graphics objects using this spectrum were found.
-==============================================================================*/
+int Cmiss_scene_triggers_top_region_change_callback(
+	struct Cmiss_scene *scene);
 
-/***************************************************************************//**
- * Get the top region of the scene.
- * Caller must clean up handle with Cmiss_scene_destroy.
- *
- * @param scene  The scene
- * @return  Handle to the top region of the scene, or NULL if none.
- */
-struct Cmiss_region *Cmiss_scene_get_region(struct Scene *scene);
-
-int Cmiss_scene_add_rendition(struct Scene *scene, struct Cmiss_rendition *rendition);
-
-int Scene_rendition_changed(
-	struct Scene *scene,struct Cmiss_rendition *rendition);
-
-int Cmiss_scene_remove_rendition(struct Scene *scene,
-	struct Cmiss_rendition *rendition);
-
-//int Cmiss_scene_rendition_list_set_show(Scene *scene,
-//	struct Cmiss_rendition *rendition, int visibility_flag);
-
-int Scene_export_region_graphics_object(struct Scene *scene,
-	struct Cmiss_region *region, const char *graphic_name,
-	graphics_object_tree_iterator_function iterator_function,
-	void *user_data);
-
-int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void);
-
-/***************************************************************************//**
- * Clean up the callback used by scene_viewer_projection callback.
- */
-int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
-	struct Scene *scene, void *dummy_void);
-
-Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int position);
-
-struct Cmiss_graphics_module *Cmiss_scene_get_graphics_module(Cmiss_scene_id scene);
-
-int Scene_manager_set_owner(struct MANAGER(Scene) *manager,
+struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 	struct Cmiss_graphics_module *graphics_module);
 
 #endif /* !defined (SCENE_H) */
+

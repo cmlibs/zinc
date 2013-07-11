@@ -42,7 +42,7 @@
 
 /***************************************************************************//**
  * A handle to cmiss scene, cmiss scene contains a top region to display
- * rendition of itself and all of its child regions, it also store a a
+ * scene of itself and all of its child regions, it also store a a
  * collections of objects that make up a 3-D graphical model - lights,
  * materials, primitives, etc. Also contains interface rouitines for having
  * these converted to display lists and assembled into a single display list.

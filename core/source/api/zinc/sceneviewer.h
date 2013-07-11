@@ -48,9 +48,11 @@ scenes.
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
 #include "types/graphicscoordinatesystem.h"
+#include "types/graphicsfilterid.h"
 #include "types/interactivetoolid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
+#include "types/sceneid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -247,9 +249,6 @@ LAST MODIFIED : 4 September 2007
 DESCRIPTION :
 Closes the scene_viewer.
 ==============================================================================*/
-
-ZINC_API int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_id scene);
 
 ZINC_API int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_interact_mode *interact_mode);
@@ -536,27 +535,6 @@ DESCRIPTION :
 Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_get_scene_name(Cmiss_scene_viewer_id scene_viewer,
-	char **scene_name);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Returns an allocated string which identifies the scene currently rendered
-by the <scene_viewer>.  You should call Cmiss_deallocate with the returned
-pointer when it is no longer required.
-==============================================================================*/
-
-ZINC_API int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	const char *scene_name);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Sets the currently rendered scene in the scene_viewer if one that
-matches the <scene_name> exists.
-==============================================================================*/
-
 ZINC_API int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
 	double bk_texture_left,double bk_texture_top,
 	double bk_texture_width,double bk_texture_height,
@@ -831,129 +809,31 @@ ZINC_API int Cmiss_scene_viewer_remove_input_callback(
 	Cmiss_scene_viewer_id scene_viewer,
 	Cmiss_scene_viewer_input_callback function,
 	void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
 
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
+ZINC_API int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_id scene);
 
-//-- ZINC_API int Cmiss_scene_viewer_input_get_event_type(
-//-- 	Cmiss_scene_viewer_input_id input_data,
-//-- 	enum Cmiss_scene_viewer_input_event_type *event_type);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
+ZINC_API Cmiss_scene_id Cmiss_scene_viewer_get_scene(Cmiss_scene_viewer_id scene_viewer);
 
-DESCRIPTION :
-Returns the type of event that <input_data> represents.
-==============================================================================*/
+/**
+ * Set the filter to be used in <scene_viewer>. All graphics will be shown
+ * until a filter showing graphic is set.
+ *
+ * @param scene viewer  Scene viewer to set filter for.
+ * @param filter  Filter to be set for scene viewer.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_graphics_filter_id filter);
 
-//-- ZINC_API int Cmiss_scene_viewer_input_set_event_type(
-//-- 	Cmiss_scene_viewer_input_id input_data,
-//-- 	enum Cmiss_scene_viewer_input_event_type event_type);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Sets the type of event that <input_data> represents.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_get_button_number(
-//-- 	Cmiss_scene_viewer_input_id input_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Returns the button number that generated the event.
-This will be 1 to 3 for a button event and 0 for a non button event.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_set_button_number(
-//-- 	Cmiss_scene_viewer_input_id input_data, int button_number);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Sets the button number that the event represents.
-1 to 3 for a button event and 0 for a non button event.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_get_key_code(
-//-- 	Cmiss_scene_viewer_input_id input_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Returns the key code that generated the event.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_set_key_code(
-//-- 	Cmiss_scene_viewer_input_id input_data, int key_code);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Sets the key code that the event represents.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_get_x_position(
-//-- 	Cmiss_scene_viewer_input_id input_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Returns the x position of the mouse when the event occured in pixels from top left corner.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_set_x_position(
-//-- 	Cmiss_scene_viewer_input_id input_data, int x_position);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Sets the x position of the mouse when the event occured in pixels from top left corner.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_get_y_position(
-//-- 	Cmiss_scene_viewer_input_id input_data);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Returns the y position of the mouse when the event occured in pixels from top left corner.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_set_y_position(
-//-- 	Cmiss_scene_viewer_input_id input_data, int y_position);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-Sets the y position of the mouse when the event occured in pixels from top left corner.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_get_modifier_flags(
-//-- 	Cmiss_scene_viewer_input_id input_data,
-//-- 	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags);
-/*******************************************************************************
-LAST MODIFIED : 12 September 2007
-
-DESCRIPTION :
-Returns the set of bit flags showing the whether the modifier inputs
-were active when the event was generated.
-==============================================================================*/
-
-//-- ZINC_API int Cmiss_scene_viewer_input_set_modifier_flags(
-//-- 	Cmiss_scene_viewer_input_id input_data,
-//-- 	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags);
-/*******************************************************************************
-LAST MODIFIED : 12 September 2007
-
-DESCRIPTION :
-Sets the set of bit flags showing the whether the modifier inputs
-were active when the event was generated.
-==============================================================================*/
+/**
+ * Get the filter currently used in <scene_viewer>.
+ *
+ * @param scene_viewer  Scene_viewer to get the filters from.
+ * @return  filter if successful, otherwise NULL.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_scene_viewer_get_filter(
+	Cmiss_scene_viewer_id scene_viewer);
 
 ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
 	Cmiss_scene_viewer_id scene_viewer,

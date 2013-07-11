@@ -61,6 +61,7 @@
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
+#include "graphics/graphics_filter.hpp"
 #include "general/statistics.h"
 #include "graphics/scene.hpp"
 #include "graphics/spectrum.h"
@@ -1300,17 +1301,19 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
-int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_region,
-	const char *graphic_name, enum Render_to_finite_elements_mode render_mode,
+int render_to_finite_elements(Cmiss_region_id source_region,
+	const char *graphic_name, Cmiss_graphics_filter_id filter,
+	enum Render_to_finite_elements_mode render_mode,
 	Cmiss_region_id region, Cmiss_field_group_id group,
 	Cmiss_field_id coordinate_field, Cmiss_nodeset_id nodeset,
 	FE_value line_density, FE_value line_density_scale_factor,
 	FE_value surface_density, FE_value surface_density_scale_factor)
 {
 	int return_code;
-	if (scene && region && coordinate_field)
+	Cmiss_scene_id scene = 0;
+	if (region && coordinate_field && ( 0 != (scene = Cmiss_region_get_scene_internal(source_region))))
 	{
-		return_code = build_Scene(scene);
+		return_code = build_Scene(scene, filter);
 		Render_to_finite_elements_data data(region, group, render_mode, coordinate_field,
 			nodeset, line_density, line_density_scale_factor,
 			surface_density, surface_density_scale_factor);
@@ -1318,13 +1321,13 @@ int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_regio
 		{
 			if (!source_region)
 			{
-				return_code=for_each_graphics_object_in_scene(scene,
+				return_code=for_each_graphics_object_in_scene_tree(scene, filter,
 					Graphics_object_render_to_finite_elements_iterator, (void *)&data);
 			}
 			else
 			{
-				return_code=Scene_export_region_graphics_object(scene, source_region,
-					graphic_name, Graphics_object_render_to_finite_elements_iterator,
+				return_code = Scene_export_region_graphics_object(scene, source_region,
+					graphic_name, filter, Graphics_object_render_to_finite_elements_iterator,
 					(void *)&data);
 			}
 		}
@@ -1341,5 +1344,7 @@ int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_regio
 			"Invalid argument(s)");
 		return_code=0;
 	}
+	if (scene)
+		Cmiss_scene_destroy(&scene);
 	return (return_code);
 }

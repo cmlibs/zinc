@@ -145,8 +145,8 @@ ZINC_API enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
 
 /***************************************************************************//**
  * Inquire either the selection handler will trigger event when selection
- * of the local regions and its childrens rendition has changed or only trigger
- * event with selection changes of the local region rendition.
+ * of the local regions and its childrens scene has changed or only trigger
+ * event with selection changes of the local region scene.
  *
  * @param selection_event  Handle to the cmiss_selection_event.
  * @return  1 if selection handler triggers hierarchical changes, 0 otherwise.
@@ -155,8 +155,8 @@ ZINC_API int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id
 
 /***************************************************************************//**
  * Set either the selection handler will trigger event when selection
- * of the local regions and its childrens rendition has changed or only trigger
- * event with selection changes of the local region rendition.
+ * of the local regions and its childrens scene has changed or only trigger
+ * event with selection changes of the local region scene.
  *
  * @param selection_event  Handle to the cmiss_selection_event.
  * @param hierarchical_flag  flag to be set.
@@ -166,14 +166,14 @@ ZINC_API int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id
 	int hierarchical_flag);
 
 /***************************************************************************//**
- * User can use this function to inquire either the rendition owning the
+ * User can use this function to inquire either the scene owning the
  * selection handler triggering this event has been destroyed. If it is destroyed,
  * no more event callback will be triggered after the current one.
  *
  * @param selection_event  Handle to the cmiss_selection_event.
- * @return  1 if rendition is destroyed, 0 if not.
+ * @return  1 if scene is destroyed, 0 if not.
  */
-ZINC_API int Cmiss_selection_event_owning_rendition_is_destroyed(
+ZINC_API int Cmiss_selection_event_owning_scene_is_destroyed(
 	Cmiss_selection_event_id selection_event);
 
 #ifdef __cplusplus

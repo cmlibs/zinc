@@ -60,7 +60,6 @@
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/graphicsmodule.h"
 #include "zinc/region.h"
-#include "zinc/rendition.h"
 #include "zinc/scene.h"
 #include "zinc/sceneviewer.h"
 #include "zinc/stream.h"
@@ -131,17 +130,15 @@
 #include "graphics/light_model.h"
 #include "graphics/material.h"
 #include "graphics/graphic.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/render_stl.h"
 #include "graphics/render_vrml.h"
 #include "graphics/render_wavefront.h"
-#include "graphics/scene.h"
 #include "graphics/graphics_module.h"
 #include "finite_element/finite_element_helper.h"
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
-#include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 #include "graphics/spectrum.h"
@@ -217,8 +214,8 @@ int process_modify_element_group(Cmiss_field_group_id group,
 	Cmiss_mesh_group_id selection_mesh_group = 0;
 	if (selected_flag)
 	{
-		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-		Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
+		Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+		Cmiss_field_group_id selection_group = Cmiss_scene_get_selection_group(scene);
 		if (selection_group)
 		{
 			Cmiss_field_element_group_id selection_element_group =
@@ -230,7 +227,7 @@ int process_modify_element_group(Cmiss_field_group_id group,
 			}
 			Cmiss_field_group_destroy(&selection_group);
 		}
-		Cmiss_rendition_destroy(&rendition);
+		Cmiss_scene_destroy(&scene);
 	}
 	Cmiss_mesh_group_id from_mesh_group = 0;
 	if (from_group)
@@ -640,47 +637,6 @@ struct Texture_file_number_series_data
 {
 	int start, stop, increment;
 };
-
-void export_object_name_parser(const char *path_name, const char **scene_name,
-	const char **rendition_name, const char **graphic_name)
-{
-	const char *slash_pointer, *dot_pointer;
-	int total_length, length;
-	char *temp_name;
-	if (path_name)
-	{
-		total_length = strlen(path_name);
-		slash_pointer = strchr(path_name, '/');
-		dot_pointer = strrchr(path_name, '.');
-		if (dot_pointer)
-		{
-			if ((dot_pointer - path_name) < total_length)
-			{
-				*graphic_name = duplicate_string(dot_pointer + 1);
-			}
-			total_length = dot_pointer - path_name;
-		}
-		if (slash_pointer)
-		{
-			length = total_length - (slash_pointer + 1 - path_name);
-			if (length > 1)
-			{
-				ALLOCATE(temp_name, char, length+1);
-				strncpy(temp_name, slash_pointer + 1, length);
-				temp_name[length] = '\0';
-				*rendition_name = temp_name;
-				total_length = slash_pointer - path_name;
-			}
-		}
-		if (total_length > 1)
-		{
-			ALLOCATE(temp_name, char, total_length+1);
-			strncpy(temp_name, path_name, total_length);
-			temp_name[total_length] = '\0';
-			*scene_name = temp_name;
-		}
-	}
-}
 
 struct Apply_transformation_data
 /*******************************************************************************

@@ -40,7 +40,7 @@
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/graphics_module.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "graphics/selection.hpp"
 #include "computed_field/computed_field_private.hpp"
@@ -53,11 +53,11 @@ static void  Cmiss_selection_handler_callback(
 struct Cmiss_selection_event
 {
 	enum Cmiss_selection_change_type change_type;
-	int owning_rendition_destroyed, access_count;
+	int owning_scene_destroyed, access_count;
 
 	Cmiss_selection_event() :
 		change_type(CMISS_SELECTION_NO_CHANGE),
-		owning_rendition_destroyed(0),
+		owning_scene_destroyed(0),
 		access_count(1)
 	{
 	}
@@ -70,19 +70,19 @@ struct Cmiss_selection_event
 struct Cmiss_selection_handler
 {
 	int hierarchical_flag;
-	Cmiss_rendition_id rendition;
+	Cmiss_scene_id scene;
 	Cmiss_selection_handler_callback_function function;
 	void *user_data;
 	void *callback_id;
-	int owning_rendition_destroyed, access_count;
+	int owning_scene_destroyed, access_count;
 
 	Cmiss_selection_handler() :
 		hierarchical_flag(0),
-		rendition(NULL),
+		scene(NULL),
 		function(NULL),
 		user_data(NULL),
 		callback_id(NULL),
-		owning_rendition_destroyed(0),
+		owning_scene_destroyed(0),
 		access_count(1)
 	{
 	}
@@ -92,9 +92,9 @@ struct Cmiss_selection_handler
 		clear();
 	}
 
-	void set_rendition(struct Cmiss_rendition *rendition_in)
+	void set_scene(struct Cmiss_scene *scene_in)
 	{
-		rendition = rendition_in;
+		scene = scene_in;
 	}
 
 	int set_callback(Cmiss_selection_handler_callback_function function_in,
@@ -104,7 +104,7 @@ struct Cmiss_selection_handler
 		function = function_in;
 		user_data = user_data_in;
 		int return_code = 0;
-		Cmiss_region_id region = Cmiss_rendition_get_region(rendition);
+		Cmiss_region_id region = Cmiss_scene_get_region(scene);
 		if (region)
 		{
 			struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
@@ -130,9 +130,9 @@ struct Cmiss_selection_handler
 
 	void remove_manager_callback()
 	{
-		if (callback_id && rendition)
+		if (callback_id && scene)
 		{
-			Cmiss_region_id region = Cmiss_rendition_get_region(rendition);
+			Cmiss_region_id region = Cmiss_scene_get_region(scene);
 			if (region)
 			{
 				struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
@@ -211,9 +211,9 @@ static void Cmiss_selection_handler_callback(
 		int selection_changed = 0;
 		struct Cmiss_selection_handler *selection_handler = (struct Cmiss_selection_handler *)selection_handler_void;
 		const Cmiss_field_change_detail *source_change_detail = NULL;
-		if (selection_handler && selection_handler->rendition)
+		if (selection_handler && selection_handler->scene)
 		{
-			Cmiss_field_group_id group_field = Cmiss_rendition_get_selection_group(selection_handler->rendition);
+			Cmiss_field_group_id group_field = Cmiss_scene_get_selection_group(selection_handler->scene);
 			if (group_field)
 			{
 				int change = Computed_field_manager_message_get_object_change_and_detail(
@@ -269,7 +269,7 @@ static void Cmiss_selection_handler_callback(
 							} break;
 						}
 					}
-					event->owning_rendition_destroyed = selection_handler->owning_rendition_destroyed;
+					event->owning_scene_destroyed = selection_handler->owning_scene_destroyed;
 					if (event->change_type != CMISS_SELECTION_NO_CHANGE)
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
@@ -280,12 +280,12 @@ static void Cmiss_selection_handler_callback(
 	}
 }
 
-int Cmiss_selection_handler_set_rendition(Cmiss_selection_handler_id selection_handler,
-	struct Cmiss_rendition *rendition_in)
+int Cmiss_selection_handler_set_scene(Cmiss_selection_handler_id selection_handler,
+	struct Cmiss_scene *scene_in)
 {
-	if (selection_handler && rendition_in)
+	if (selection_handler && scene_in)
 	{
-		selection_handler->set_rendition(rendition_in);
+		selection_handler->set_scene(scene_in);
 		return 1;
 	}
 
@@ -371,10 +371,10 @@ enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
 	return selection_event->change_type;
 }
 
-int Cmiss_selection_event_owning_rendition_is_destroyed(
+int Cmiss_selection_event_owning_scene_is_destroyed(
 		Cmiss_selection_event_id selection_event)
 	{
-		return selection_event->owning_rendition_destroyed;
+		return selection_event->owning_scene_destroyed;
 	}
 
 Cmiss_selection_handler_id Cmiss_selection_handler_create_private()
@@ -383,17 +383,17 @@ Cmiss_selection_handler_id Cmiss_selection_handler_create_private()
 	return handler;
 }
 
-int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selection_handler)
+int Cmiss_selection_handler_scene_destroyed(Cmiss_selection_handler_id selection_handler)
 {
 	if (selection_handler && selection_handler->function)
 	{
-		selection_handler->owning_rendition_destroyed = 1;
-		selection_handler->rendition = NULL;
+		selection_handler->owning_scene_destroyed = 1;
+		selection_handler->scene = NULL;
 		if (selection_handler->function)
 		{
 			Cmiss_selection_event_id event = new Cmiss_selection_event();
 			event->change_type = CMISS_SELECTION_NO_CHANGE;
-			event->owning_rendition_destroyed = 1;
+			event->owning_scene_destroyed = 1;
 			(selection_handler->function)(event, selection_handler->user_data);
 			Cmiss_selection_event_destroy(&event);
 		}

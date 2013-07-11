@@ -801,7 +801,8 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 	return (return_code);
 } /* makestl */
 
-int write_scene_stl(Stl_context& stl_context, struct Scene *scene);
+int write_scene_stl(Stl_context& stl_context, Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter);
 
 /**************************************************************************//**
  * Renders the visible parts of a scene object to STL.
@@ -855,22 +856,22 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	return (return_code);
 } /* Graphcis_object_to_stl */
 
-/**************************************************************************//**
+/**
  * Renders the visible objects in a scene to STL.
  * 
  * @param stl_context output STL file and context data
  * @param scene the scene to output
+ * @param filter the filter to filter scenes
  * @return 1 on success, 0 on failure
  */
-int write_scene_stl(Stl_context& stl_context, struct Scene *scene)
+int write_scene_stl(Stl_context& stl_context, Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter)
 {
 	int return_code;
 	
-	ENTER(write_scene_stl);
-
 	if (scene)
 	{
-		return_code=for_each_graphics_object_in_scene(scene,
+		return_code=for_each_graphics_object_in_scene_tree(scene, filter,
 			Graphcis_object_to_stl,(void *)&stl_context);
 	}
 	else
@@ -890,20 +891,18 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, struct Scene *scene)
+int export_to_stl(char *file_name, Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
 {
 	int return_code;
 
-	ENTER(export_to_stl);
 	if (file_name && scene)
 	{
-		build_Scene(scene);
-		char *solid_name = NULL;
-		GET_NAME(Scene)(scene, &solid_name);
+		build_Scene(scene, filter);
+		char *solid_name = Cmiss_region_get_name(Cmiss_scene_get_region(scene));
 		Stl_context stl_context(file_name, solid_name);
 		if (stl_context.is_valid())
 		{
-			return_code = write_scene_stl(stl_context, scene);
+			return_code = write_scene_stl(stl_context, scene, filter);
 		}
 		else
 		{
@@ -918,7 +917,6 @@ int export_to_stl(char *file_name, struct Scene *scene)
 		display_message(ERROR_MESSAGE,"export_to_stl.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return( return_code);
 } /* export_to_stl */

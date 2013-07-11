@@ -48,7 +48,7 @@
 #include "general/object.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/graphics_module.h"
-#include "graphics/rendition.h"
+#include "graphics/scene.h"
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
 #include "time/time_keeper.hpp"
@@ -92,7 +92,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;
-				 * when following removed also remove #include "region/cmiss_region_private.h". Also rendition
+				 * when following removed also remove #include "region/cmiss_region_private.h". Also scene
 				 * has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);

@@ -36,7 +36,6 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/node.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/region.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/rendition.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scene.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenepicker.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/selection.h
@@ -72,7 +71,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/nodeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/regionid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/renditionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenepickerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/selectionid.h

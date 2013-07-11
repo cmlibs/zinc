@@ -167,9 +167,9 @@ public:
 		return static_cast<ChangeType>(Cmiss_selection_event_get_change_type(id));
 	}
 
-	int owningRenditionIsDestroyed()
+	int owningSceneIsDestroyed()
 	{
-		return Cmiss_selection_event_owning_rendition_is_destroyed(id);
+		return Cmiss_selection_event_owning_scene_is_destroyed(id);
 	}
 
 };

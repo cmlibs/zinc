@@ -61,7 +61,7 @@ DESCRIPTION :
 struct Cmiss_graphics_module;
 
 /***************************************************************************//**
- * Create Cmiss_rendition_graphics_module
+ * Create Cmiss_scene_graphics_module
  *
  * @param glyph_list  List of glyphs
  * @param graphical_material_manager  Material manager
@@ -69,7 +69,7 @@ struct Cmiss_graphics_module;
  * @param light_manager  Light Manager
  * @param spectrum_manager  Spectrum manager
  * @param default_spectrum  Default spectrum
- * @return  If successfully constructed, return the Cmiss_rendition
+ * @return  If successfully constructed, return the Cmiss_scene
  */
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
 
@@ -104,6 +104,16 @@ struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
+ * Return the default scene in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  default scene in graphics module if successfully called,
+ *    otherwise NULL.
+ */
+Cmiss_scene_id Cmiss_graphics_module_get_default_scene(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
  * Return the default spectrum in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
@@ -123,26 +133,6 @@ struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
  * @return  the default font if successfully called, otherwise NULL.
  */
 struct Cmiss_font *Cmiss_graphics_module_get_default_font(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the scene manager of graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the manager of scenes in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the default scene in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  default scene in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Scene *Cmiss_graphics_module_get_default_scene(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -172,8 +162,8 @@ struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_r
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Add a region with a rendition created by this graphics module object
- * into a list, so that graphics module can deaccess the rendition of the region
+ * Add a region with a scene created by this graphics module object
+ * into a list, so that graphics module can deaccess the scene of the region
  * when the graphics module is being destroyed.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
@@ -184,7 +174,7 @@ int Cmiss_graphics_module_add_member_region(
 	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
 
 /***************************************************************************//**
- * Remove a region which rendition is created by this graphics module object
+ * Remove a region which scene is created by this graphics module object
  * from a list.
  *
  * @param graphics_module  Pointer to a Graphics_module object.

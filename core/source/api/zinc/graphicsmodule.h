@@ -43,7 +43,6 @@
 #include "types/graphicsmaterialid.h"
 #include "types/graphicsmoduleid.h"
 #include "types/regionid.h"
-#include "types/renditionid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
 #include "types/spectrumid.h"
@@ -122,27 +121,6 @@ ZINC_API int Cmiss_graphics_module_destroy(
 ZINC_API Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 	Cmiss_graphics_module_id graphics_module);
 
-/***************************************************************************//**
- * Creates a scene with an access_count of 1. Caller is responsible for calling
- * Cmiss_scene_destroy to destroy the reference to it.
- *
- * @param graphics_module  The module to own the new scene.
- * @return  Reference to the newly created scene.
- */
-ZINC_API Cmiss_scene_id Cmiss_graphics_module_create_scene(
-	Cmiss_graphics_module_id graphics_module);
-
-/***************************************************************************//**
- * Find the scene with the supplied name in graphics module, if any.
- *
- * @param graphics_module  The handle to the graphics module to find the
- * 	spectrum in.
- * @param name  The name of the scene.
- * @return  Handle to the scene with the matching name, or NULL if not found.
- */
-ZINC_API Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
-
 /**
  * Get the glyph module which stores static graphics for visualising points,
  * vectors, axes etc. Note on startup no glyphs are defined and glyph module
@@ -155,28 +133,28 @@ ZINC_API Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
- * Get a rendition of region from graphics module with an access_count incremented
- * by 1. Caller is responsible for calling Cmiss_rendition_destroy to destroy the
+ * Get a scene of region from graphics module with an access_count incremented
+ * by 1. Caller is responsible for calling Cmiss_scene_destroy to destroy the
  * reference to it.
  *
- * @param graphics_module  The module at which the rendition will get its
+ * @param graphics_module  The module at which the scene will get its
  * graphics setting for.
- * @param region  The region at which the rendition is representing for.
- * @return  Reference to the rendition.
+ * @param region  The region at which the scene is representing for.
+ * @return  Reference to the scene.
  */
-ZINC_API Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+ZINC_API Cmiss_scene_id Cmiss_graphics_module_get_scene(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 /***************************************************************************//**
- * Enable rendition of region and all of its children region from graphics
- * module. This will create rendition for the specified region and all its
+ * Enable scene of region and all of its children region from graphics
+ * module. This will create scene for the specified region and all its
  * children.
  *
- * @param graphics_module  The module requires for region to enable rendition.
- * @param region  The region at which the rendition will be enabled for.
+ * @param graphics_module  The module requires for region to enable scene.
+ * @param region  The region at which the scene will be enabled for.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_graphics_module_enable_renditions(
+ZINC_API int Cmiss_graphics_module_enable_scenes(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 /***************************************************************************//**

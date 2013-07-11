@@ -3333,7 +3333,7 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 } /* DESTROY(GT_polyline) */
 
 /***************************************************************************//**
- * Creates the shared rendition information for a GT_polyline_vertex_buffers.
+ * Creates the shared scene information for a GT_polyline_vertex_buffers.
  */
 GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
 	GT_polyline_type polyline_type, int line_width)

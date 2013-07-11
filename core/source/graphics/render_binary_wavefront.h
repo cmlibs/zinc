@@ -44,7 +44,6 @@ Renders gtObjects to BINARY WAVEFRONT file
 #if !defined (RENDERBINARYWAVEFRONT_H)
 #define RENDERBINARYWAVEFRONT_H
 
-#include "graphics/scene.h"
 
 /*
 Global functions

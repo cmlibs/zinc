@@ -71,7 +71,7 @@ LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Stores the number of segment used in drawing each side of an element.
-Controls quality of curve rendition.
+Controls quality of curve scene.
 ==============================================================================*/
 {
 	int number_in_xi1,number_in_xi2,number_in_xi3;

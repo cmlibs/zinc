@@ -63,14 +63,14 @@ LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Stores one group of settings for a single line/surface/etc. part of the
-finite element group rendition.
+finite element group scene.
 ==============================================================================*/
 {
 	/* position identifier for ordering settings in list */
 	int position;
 
-	/* rendition which owns this graphic */
-	struct Cmiss_rendition *rendition;
+	/* scene which owns this graphic */
+	struct Cmiss_scene *scene;
 
 	/* name for identifying settings */
 	const char *name;
@@ -218,7 +218,7 @@ struct Cmiss_graphic_list_data
 
 struct Cmiss_graphic_update_time_behaviour_data
 {
-	/* flag set by Cmiss_rendition if the default coordinate field depends on time */
+	/* flag set by Cmiss_scene if the default coordinate field depends on time */
 	int default_coordinate_depends_on_time;
 	/* flag set by settings if any of the settings depend on time */
 	int time_dependent;
@@ -227,6 +227,7 @@ struct Cmiss_graphic_update_time_behaviour_data
 struct Cmiss_graphic_range
 {
 	struct Graphics_object_range_struct *graphics_object_range;
+	Cmiss_graphics_filter_id filter;
 	enum Cmiss_graphics_coordinate_system coordinate_system;
 };
 
@@ -271,7 +272,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 };
 
-struct Modify_rendition_data
+struct Modify_scene_data
 /*******************************************************************************
 LAST MODIFIED : 5 June 1998
 
@@ -287,12 +288,12 @@ Structure modified by g_element modify routines.
 }; /* struct Modify_graphic_data */
 
 /***************************************************************************//**
- * Subset of command data passed to rendition modify routines.
+ * Subset of command data passed to scene modify routines.
  */
-struct Rendition_command_data
+struct Scene_command_data
 {
 	struct Cmiss_graphics_module *graphics_module;
-	struct Cmiss_rendition *rendition;
+	struct Cmiss_scene *scene;
 	struct Graphical_material *default_material;
 	struct Cmiss_font *default_font;
 	Cmiss_glyph_module_id glyph_module;
@@ -304,7 +305,7 @@ struct Rendition_command_data
 	Cmiss_tessellation_module_id tessellation_module;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
-}; /* struct Rendition_command_data */
+}; /* struct Scene_command_data */
 
 struct Cmiss_graphic_Computed_field_change_data
 {
@@ -391,10 +392,10 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail);
 
 /***************************************************************************//**
- * @return  1 if both graphic and its rendition visibility flags are set,
+ * @return  1 if both graphic and its scene visibility flags are set,
  * otherwise 0.
  */
-int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graphic);
+int Cmiss_graphic_and_scene_visibility_flags_is_set(struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
  * @return  1 if graphic is one of the graphical representations of region,
@@ -724,7 +725,7 @@ struct Cmiss_graphics_material_change_data
 
 /***************************************************************************//**
  * Inform graphic of changes in the material manager. Marks affected
- * graphics for rebuilding and sets flag for informing clients of rendition.
+ * graphics for rebuilding and sets flag for informing clients of scene.
  * Note: only graphics combining a material with data/spectrum are updated;
  * pure material changes do not require update.
  *
@@ -744,7 +745,7 @@ struct Cmiss_graphic_spectrum_change_data
 
 /***************************************************************************//**
  * Inform graphic of changes in the spectrum manager. Marks affected
- * graphics for rebuilding and sets flag for informing clients of rendition.
+ * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param spectrum_change_data_void  Cmiss_graphic_spectrum_change_data.
  */
@@ -753,7 +754,7 @@ int Cmiss_graphic_spectrum_change(struct Cmiss_graphic *graphic,
 
 /***************************************************************************//**
  * Inform graphic of changes in the tessellation manager. Marks affected
- * graphics for rebuilding and sets flag for informing clients of rendition.
+ * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param tessellation_manager_message_void  Pointer to
  * struct MANAGER_MESSAGE(Cmiss_tessellation).
@@ -763,7 +764,7 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 
 /***************************************************************************//**
  * Inform graphic of changes in the font manager. Marks affected
- * graphics for rebuilding and sets flag for informing clients of rendition.
+ * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param font_manager_message_void  Pointer to
  * struct MANAGER_MESSAGE(Cmiss_font).
@@ -783,7 +784,7 @@ int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
  * This function will deaccess any computed fields being used by graphic, this
- * should only be called from Cmiss_rendition_detach_fields.
+ * should only be called from Cmiss_scene_detach_fields.
  *
  * @param cmiss_graphic  pointer to the graphic.
  *
@@ -791,24 +792,24 @@ int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic);
  */
 int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void);
 
-struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic);
+struct Cmiss_scene *Cmiss_graphic_get_scene_private(struct Cmiss_graphic *graphic);
 
-int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
-	struct Cmiss_rendition *rendition);
+int Cmiss_graphic_set_scene_private(struct Cmiss_graphic *graphic,
+	struct Cmiss_scene *scene);
 
 int Cmiss_graphic_selected_element_points_change(
 	struct Cmiss_graphic *graphic,void *dummy_void);
 
 /***************************************************************************//**
- * A function to call set_rendition_private but with a void pointer to the
- * rendition passing into the function for list macro.
+ * A function to call set_scene_private but with a void pointer to the
+ * scene passing into the function for list macro.
  *
  * @param cmiss_graphic  pointer to the graphic.
- * @param rendition_void  void pointer to the rendition.
+ * @param scene_void  void pointer to the scene.
  * @return Return 1 if successfully set the graphic.
  */
-int Cmiss_graphic_set_rendition_for_list_private(
-		struct Cmiss_graphic *graphic, void *rendition_void);
+int Cmiss_graphic_set_scene_for_list_private(
+		struct Cmiss_graphic *graphic, void *scene_void);
 
 int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_void);
 

@@ -34,7 +34,6 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/node.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/region.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/rendition.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scene.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenepicker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewer.hpp

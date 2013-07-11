@@ -6,7 +6,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/graphic.cpp
 	source/graphics/graphics_coordinate_system.cpp
 	source/graphics/graphics_module.cpp
-	source/graphics/rendition.cpp
+	source/graphics/scene.cpp
 	source/graphics/colour.cpp
 	source/graphics/complex.cpp
 	source/graphics/decimate_voltex.cpp
@@ -42,8 +42,8 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphic.h
 	source/graphics/graphics_coordinate_system.hpp
 	source/graphics/graphics_module.h
-	source/graphics/rendition.h
-	source/graphics/rendition.hpp
+	source/graphics/scene.h
+	source/graphics/scene.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h
 	source/graphics/decimate_voltex.h
@@ -96,7 +96,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/light_model.cpp
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
-		source/graphics/scene.cpp
 		source/graphics/scene_picker.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
@@ -106,8 +105,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/light_model.h
 		source/graphics/render.hpp
 		source/graphics/render_gl.h
-		source/graphics/scene.h
-		source/graphics/scene.hpp
 		source/graphics/scene_picker.hpp
 		source/graphics/tile_graphics_objects.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
