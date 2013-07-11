@@ -40,10 +40,12 @@
 
 %module(package="zinc") scene
 
-%import "region.i"
 %import "graphicsfilter.i"
+%import "graphic.i"
+%import "selection.i"
 
 %{
+#include "zinc/fieldtypesgroup.hpp"
 #include "zinc/scenepicker.hpp"
 #include "zinc/scene.hpp"
 %}

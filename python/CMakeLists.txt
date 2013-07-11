@@ -63,7 +63,6 @@ SET(INTERFACE_SRCS
 	../interface/fieldmodule.i
 	../interface/graphicsmodule.i
 	../interface/graphicsmaterial.i
-	../interface/rendition.i
 	../interface/field.i
 	../interface/stream.i
 	../interface/element.i

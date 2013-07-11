@@ -42,7 +42,6 @@
 %module(package="zinc") graphicsmodule
 
 %import "region.i"
-%import "rendition.i"
 %import "glyph.i"
 %import "graphicsmaterial.i"
 %import "graphicsfilter.i"

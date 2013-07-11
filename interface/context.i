@@ -42,7 +42,6 @@
 %module(package="zinc") context
 
 %import "graphicsmodule.i"
-%import "rendition.i"
 %import "scene.i"
 %import "sceneviewer.i"
 %import "field.i"
