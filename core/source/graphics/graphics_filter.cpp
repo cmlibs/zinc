@@ -51,6 +51,32 @@
 #include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/graphics_filter.hpp"
+#include "general/cmiss_set.hpp"
+
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_graphics_filter, Cmiss_graphics_filter_module, struct Cmiss_graphics_filter_change_detail *);
+
+static inline void MANAGER_UPDATE_DEPENDENCIES(Cmiss_graphics_filter)(
+	struct MANAGER(Cmiss_graphics_filter) *manager)
+{
+	Cmiss_set_Cmiss_graphics_filter *all_filters = reinterpret_cast<Cmiss_set_Cmiss_graphics_filter *>(manager->object_list);
+	for (Cmiss_set_Cmiss_graphics_filter::iterator iter = all_filters->begin(); iter != all_filters->end(); iter++)
+	{
+		Cmiss_graphics_filter_id filter = *iter;
+		filter->check_dependency();
+	}
+}
+
+static inline struct Cmiss_graphics_filter_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Cmiss_graphics_filter)(
+	Cmiss_graphics_filter *filter)
+{
+	return filter->extract_change_detail();
+}
+
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Cmiss_graphics_filter)(
+	Cmiss_graphics_filter_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
 
 struct Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
 {
@@ -101,6 +127,23 @@ public:
 		}
 	}
 
+	virtual int check_dependency()
+	{
+		if (manager_change_status & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		{
+			return 1;
+		}
+		for (OperandList::const_iterator pos = operands.begin(); pos != operands.end(); ++pos)
+		{
+			if ((*pos)->filter->check_dependency())
+			{
+				changed();
+				return 1;
+			}
+		}
+		return 0;
+	}
+
 	virtual bool match(struct Cmiss_graphic *graphic) = 0;
 
 	void list_operands() const
@@ -147,6 +190,7 @@ public:
 			if (!this->depends_on_filter(operand))
 			{
 				operands.push_back(new Graphics_filter_operand(operand));
+				changed();
 			}
 			else
 			{
@@ -164,6 +208,7 @@ public:
 		{
 			delete *pos;
 			operands.erase(pos);
+			changed();
 		}
 		else
 		{
@@ -213,6 +258,7 @@ public:
 		if (pos != operands.end())
 		{
 			(*pos)->isActive = (is_active != 0);
+			changed();
 			return_code = 1;
 		}
 		return return_code;
@@ -234,6 +280,7 @@ public:
 			else
 			{
 				operands.insert(refpos, new Graphics_filter_operand(operand));
+				changed();
 			}
 			return_code = 1;
 		}
@@ -436,8 +483,6 @@ int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter **filter_address)
 	return DEACCESS(Cmiss_graphics_filter)(filter_address);
 }
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_graphics_filter, Cmiss_graphics_filter_module, void *);
-
 namespace {
 
 /***************************************************************************//**
@@ -465,7 +510,9 @@ int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filte
 	return (return_code);
 }
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Cmiss_graphics_filter)
+DECLARE_MANAGER_UPDATE_FUNCTION(Cmiss_graphics_filter)
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Cmiss_graphics_filter)
 
 } /* anonymous namespace */
 

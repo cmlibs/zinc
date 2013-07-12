@@ -340,4 +340,105 @@ Returns true if <light> is in <light_list>.
 
 const char *get_Light_name(struct Light *light);
 
+struct Light_module;
+
+/**
+ * Create and return a handle to a new light module.
+ * Private; only to be called from graphics_module.
+ *
+ * @return  Handle to the newly created light module if successful,
+ * otherwise NULL.
+ */
+Light_module *Light_module_create();
+
+/**
+* Returns a new reference to the light module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param light_module  The light module to obtain a new reference to.
+* @return  Light module with incremented reference count.
+*/
+Light_module *Light_module_access(Light_module *light_module);
+
+/**
+* Destroys this reference to the light module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param light_module_address  Address of handle to light module
+*   to destroy.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+int Light_module_destroy(
+	Light_module **light_module_address);
+
+/**
+ * Create and return a handle to a new light.
+ *
+ * @param light_module  The handle to the light module the
+ * light will belong to.
+ * @return  Handle to the newly created light if successful, otherwise NULL.
+ */
+Light *Light_module_create_light(
+	Light_module *light_module);
+
+/**
+* Begin caching or increment cache level for this light module. Call this
+* function before making multiple changes to minimise number of change messages
+* sent to clients. Must remember to end_change after completing changes.
+* @see Light_module_end_change
+*
+* @param light_module  The light_module to begin change cache on.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+int Light_module_begin_change(Light_module *light_module);
+
+/***************************************************************************//**
+* Decrement cache level or end caching of changes for the light module.
+* Call Light_module_begin_change before making multiple changes
+* and call this afterwards. When change level is restored to zero,
+* cached change messages are sent out to clients.
+*
+* @param light_module  The glyph_module to end change cache on.
+* @return  Status CMISS_OK on success, any other value on failure.
+*/
+int Light_module_end_change(Light_module *light_module);
+
+/**
+* Find the light with the specified name, if any.
+*
+* @param light_module  Light module to search.
+* @param name  The name of the light.
+* @return  Handle to the light of that name, or 0 if not found.
+* 	Up to caller to destroy returned handle.
+*/
+Light *Light_module_find_light_by_name(
+	Light_module *light_module, const char *name);
+
+/**
+ * Get the default light to be used by new lines, surfaces and
+ * isosurfaces graphics. If there is none, one is automatically created with
+ * minimum divisions 1, refinement factors 4, and circle divisions 12,
+ * and given the name "default".
+ *
+ * @param light_module  Light module to query.
+ * @return  Handle to the default light, or 0 on error.
+ * Up to caller to destroy returned handle.
+ */
+Light * Light_module_get_default_light(
+	Light_module *light_module);
+
+/**
+ * Set the default light to be used by new lines, surfaces and
+ * isosurfaces graphics.
+ *
+ * @param light_module  Light module to modify.
+ * @param light  The light to set as default.
+ * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ */
+int Light_module_set_default_light(
+	Light_module *light_module,
+	Light *light);
+
+struct MANAGER(Light) *Light_module_get_manager(Light_module *light_module);
+
 #endif

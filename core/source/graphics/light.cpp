@@ -59,6 +59,7 @@ problem.
 #include <stdlib.h>
 #include <string.h>
 
+#include "zinc/status.h"
 #include "zinc/zincconfigure.h"
 
 #include "general/debug.h"
@@ -75,6 +76,143 @@ problem.
 Module types
 ------------
 */
+
+struct Light_module
+{
+
+private:
+
+	struct MANAGER(Light) *lightManager;
+	Light *defaultLight;
+	int access_count;
+
+	Light_module() :
+		lightManager(CREATE(MANAGER(Light))()),
+		defaultLight(0),
+		access_count(1)
+	{
+	}
+
+	~Light_module()
+	{
+		DEACCESS(Light)(&this->defaultLight);
+		DESTROY(MANAGER(Light))(&(this->lightManager));
+	}
+
+public:
+
+	static Light_module *create()
+	{
+		return new Light_module();
+	}
+
+	Light_module *access()
+
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Light_module* &light_module)
+	{
+		if (light_module)
+		{
+			--(light_module->access_count);
+			if (light_module->access_count <= 0)
+			{
+				delete light_module;
+			}
+			light_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(Light) *getManager()
+	{
+		return this->lightManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Light)(this->lightManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Light)(this->lightManager);
+	}
+
+	Light *createLight()
+	{
+		Light *light = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Light)(this->lightManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(temp_name,
+			this->lightManager));
+		light = CREATE(Light)(temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Light)(light, this->lightManager))
+		{
+			DEACCESS(Light)(&light);
+		}
+		return light;
+	}
+
+	Light *findLightByName(const char *name)
+	{
+		Light *light = FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(name,
+			this->lightManager);
+		if (light)
+		{
+			return ACCESS(Light)(light);
+		}
+		return 0;
+	}
+
+	Light *getDefaultLight()
+	{
+		if (this->defaultLight)
+		{
+			ACCESS(Light)(this->defaultLight);
+		}
+		else
+		{
+			this->beginChange();
+			Light *light = CREATE(Light)("default");
+			if (light)
+			{
+				GLfloat default_light_direction[3]={0.0,-0.5,-1.0};
+				struct Colour default_colour;
+				set_Light_type(light,INFINITE_LIGHT);
+				default_colour.red=1.0;
+				default_colour.green=1.0;
+				default_colour.blue=1.0;
+				set_Light_colour(light,&default_colour);
+				set_Light_direction(light,default_light_direction);
+				/*???DB.  Include default as part of manager ? */
+				if (!ADD_OBJECT_TO_MANAGER(Light)(light, this->lightManager))
+				{
+					DEACCESS(Light)(&light);
+				}
+			}
+			this->setDefaultLight(light);
+			this->endChange();
+		}
+		return (this->defaultLight);
+	}
+
+	int setDefaultLight(Light *light)
+	{
+		REACCESS(Light)(&this->defaultLight, light);
+		return CMISS_OK;
+	}
+
+};
 
 struct Light
 /*******************************************************************************
@@ -295,7 +433,7 @@ Allocates memory and assigns fields for a light model.
 			(light->name = duplicate_string(name)))
 		{
 			strcpy((char *)light->name, name);
-			light->access_count = 0;
+			light->access_count = 1;
 			light->manager = (struct MANAGER(Light) *)NULL;
 			light->manager_change_status = MANAGER_CHANGE_NONE(Light);
 			light->type=INFINITE_LIGHT;
@@ -578,6 +716,7 @@ Infinite/directional lights are not affected by these values.
 		light->quadratic_attenuation = quadratic_attenuation;
 		/* display list needs to be compiled again */
 		light->display_list_current = 0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code = 1;
 	}
 	else
@@ -638,6 +777,7 @@ Sets the colour of the light.
 		light->colour.blue=colour->blue;
 		/* display list needs to be compiled again */
 		light->display_list_current=0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code=1;
 	}
 	else
@@ -698,6 +838,7 @@ Sets the direction of the light, relevent for infinite and spot lights.
 		light->direction[2]=direction[2];
 		/* display list needs to be compiled again */
 		light->display_list_current=0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code=1;
 	}
 	else
@@ -758,6 +899,7 @@ Sets the position of the light, relevent for point and spot lights.
 		light->position[2]=position[2];
 		/* display list needs to be compiled again */
 		light->display_list_current=0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code=1;
 	}
 	else
@@ -814,6 +956,7 @@ Sets the spotlight cutoff angle in degrees from 0 to 90.
 		light->spot_cutoff = spot_cutoff;
 		/* display list needs to be compiled again */
 		light->display_list_current = 0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code = 1;
 	}
 	else
@@ -874,6 +1017,7 @@ throughout the cutoff angle.
 		light->spot_exponent = spot_exponent;
 		/* display list needs to be compiled again */
 		light->display_list_current = 0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code = 1;
 	}
 	else
@@ -931,6 +1075,7 @@ Sets the light_type of the light (infinite/point/spot).
 		light->type=light_type;
 		/* display list needs to be compiled again */
 		light->display_list_current=0;
+		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
 		return_code=1;
 	}
 	else
@@ -1330,3 +1475,74 @@ Returns true if <light> is in <light_list>.
 
 	return (return_code);
 } /* Light_is_in_list */
+
+struct MANAGER(Light) *Light_module_get_manager(Light_module *light_module)
+{
+	if (light_module)
+		return light_module->getManager();
+	return 0;
+}
+
+Light_module *Light_module_create()
+{
+	return Light_module::create();
+}
+
+Light_module *Light_module_access(
+	Light_module *light_module)
+{
+	if (light_module)
+		return light_module->access();
+	return 0;
+}
+
+int Light_module_destroy(Light_module **light_module_address)
+{
+	if (light_module_address)
+		return Light_module::deaccess(*light_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Light *Light_module_create_light(
+	Light_module *light_module)
+{
+	if (light_module)
+		return light_module->createLight();
+	return 0;
+}
+
+int Light_module_begin_change(Light_module *light_module)
+{
+	if (light_module)
+		return light_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Light_module_end_change(Light_module *light_module)
+{
+	if (light_module)
+		return light_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Light *Light_module_find_light_by_name(
+	Light_module *light_module, const char *name)
+{
+	if (light_module)
+		return light_module->findLightByName(name);
+   return 0;
+}
+
+Light *Light_module_get_default_light(Light_module *light_module)
+{
+	if (light_module)
+		return light_module->getDefaultLight();
+	return 0;
+}
+
+int Light_module_set_default_light(Light_module *light_module, Light *light)
+{
+	if (light_module)
+		return light_module->setDefaultLight(light);
+	return 0;
+}

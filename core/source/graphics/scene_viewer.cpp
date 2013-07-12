@@ -2518,77 +2518,6 @@ world space.
 	return (return_code);
 } /* Scene_viewer_unproject */
 
-/*
-Manager Callback Module functions
----------------------------------
-*/
-
-/***************************************************************************//**
- * Something has changed globally in the light manager. If the modified light(s)
- * are in the scene or the scene_viewer, then redraw.
- */
-static void Scene_viewer_light_change(
-	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_void)
-{
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_light_change);
-	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
-	{
-		struct LIST(Light) *changed_light_list =
-			MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
-		if (changed_light_list)
-		{
-			if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
-			{
-				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-			}
-			DESTROY_LIST(Light)(&changed_light_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_light_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_viewer_light_change */
-
-static void Scene_viewer_light_model_change(
-	struct MANAGER_MESSAGE(Light_model) *message, void *scene_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Something has changed globally in the light_model manager. If the light_model
-in use by the scene_viewer is one of the changed light_models, then redraw.
-==============================================================================*/
-{
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_light_model_change);
-	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
-	{
-		if (scene_viewer->light_model)
-		{
-			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Light_model)(message,
-				scene_viewer->light_model);
-			if (change & MANAGER_CHANGE_RESULT(Light_model))
-			{
-				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_light_model_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_viewer_light_model_change */
-
 /***************************************************************************//**
  * Something has changed in the regional computed field manager.
  * Check if the field being used is changed, if so update the scene viewer.
@@ -2678,12 +2607,17 @@ Global functions
 void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
 	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *scene_viewer_module_void);
 
+void Cmiss_scene_viewer_module_light_manager_callback(
+	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_module_void);
+
+void Cmiss_scene_viewer_module_light_model_manager_callback(
+	struct MANAGER_MESSAGE(Light_model) *message, void *scene_viewer_module_void);
+
 struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(Light) *light_manager,struct Light *default_light,
-	struct MANAGER(Light_model) *light_model_manager,
-	struct Light_model *default_light_model,
+	Light_module *lightModule ,struct Light *default_light,
+	Light_model_module *lightModelModule, struct Light_model *default_light_model,
 	Cmiss_graphics_filter_module_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -2694,7 +2628,6 @@ Creates a Cmiss_scene_viewer_module.
 {
 	struct Cmiss_scene_viewer_module *scene_viewer_module;
 
-	ENTER(CREATE(Scene_viewer_module));
 	if (background_colour && default_light_model)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
@@ -2704,10 +2637,10 @@ Creates a Cmiss_scene_viewer_module.
 			scene_viewer_module->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			scene_viewer_module->background_colour = background_colour;
 			scene_viewer_module->interactive_tool_manager = interactive_tool_manager;
-			scene_viewer_module->light_manager = light_manager;
 			scene_viewer_module->default_light = ACCESS(Light)(default_light);
-			scene_viewer_module->light_model_manager = light_model_manager;
 			scene_viewer_module->default_light_model = ACCESS(Light_model)(default_light_model);
+			scene_viewer_module->lightModule = Light_module_access(lightModule);
+			scene_viewer_module->lightModelModule = Light_model_module_access(lightModelModule);
 			scene_viewer_module->filterModule = Cmiss_graphics_filter_module_access(filterModule);
 			//-- scene_viewer_module->user_interface = user_interface;
 			scene_viewer_module->scene_viewer_list = CREATE(LIST(Scene_viewer))();
@@ -2715,6 +2648,14 @@ Creates a Cmiss_scene_viewer_module.
 				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_scene_viewer_module_graphics_filter_manager_callback,
 					(void *)scene_viewer_module,
 					Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
+			scene_viewer_module->light_manager_callback_id =
+				MANAGER_REGISTER(Light)(Cmiss_scene_viewer_module_light_manager_callback,
+					(void *)scene_viewer_module,
+					Light_module_get_manager(scene_viewer_module->lightModule));
+			scene_viewer_module->light_model_manager_callback_id =
+				MANAGER_REGISTER(Light_model)(Cmiss_scene_viewer_module_light_model_manager_callback,
+					(void *)scene_viewer_module,
+					Light_model_module_get_manager(scene_viewer_module->lightModelModule));
 			scene_viewer_module->destroy_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))();
 		}
@@ -2729,7 +2670,6 @@ Creates a Cmiss_scene_viewer_module.
 		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_module).  Invalid argument(s)");
 		scene_viewer_module=(struct Cmiss_scene_viewer_module *)NULL;
 	}
-	LEAVE;
 
 	return (scene_viewer_module);
 } /* CREATE(Cmiss_scene_viewer_module) */
@@ -2823,12 +2763,21 @@ Destroys the scene_viewer_module.
 			scene_viewer_module, scene_viewer_module->scene_viewer_list);
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_module->scene_viewer_list);
 		DESTROY(Graphics_buffer_package)(&scene_viewer_module->graphics_buffer_package);
-		DEACCESS(Light)(&scene_viewer_module->default_light);
-		DEACCESS(Light_model)(&scene_viewer_module->default_light_model);
+
 		MANAGER_DEREGISTER(Cmiss_graphics_filter)(
 			scene_viewer_module->graphics_filter_manager_callback_id,
 			Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
 		Cmiss_graphics_filter_module_destroy(&scene_viewer_module->filterModule);
+		MANAGER_DEREGISTER(Light)(
+			scene_viewer_module->light_manager_callback_id,
+			Light_module_get_manager(scene_viewer_module->lightModule));
+		Light_module_destroy(&scene_viewer_module->lightModule);
+		DEACCESS(Light)(&scene_viewer_module->default_light);
+		MANAGER_DEREGISTER(Light_model)(
+			scene_viewer_module->light_model_manager_callback_id,
+			Light_model_module_get_manager(scene_viewer_module->lightModelModule));
+		Light_model_module_destroy(&scene_viewer_module->lightModelModule);
+		DEACCESS(Light_model)(&scene_viewer_module->default_light_model);
 		DEALLOCATE(*scene_viewer_module_address);
 		return_code = 1;
 	}
@@ -2981,10 +2930,28 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
+
+int Scene_viewer_remove_light_in_list_iterator(struct Light *light,void *scene_viewer_void)
+{
+	int return_code;
+	Cmiss_scene_viewer *scene_viewer = (Cmiss_scene_viewer *)scene_viewer_void;
+
+	if (light && scene_viewer)
+	{
+		Scene_viewer_remove_light(scene_viewer, light);
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+
+	return (return_code);
+} /* list_Light_name */
+
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
-	struct MANAGER(Light) *light_manager,struct Light *default_light,
-	struct MANAGER(Light_model) *light_model_manager,
+	struct Light *default_light,
 	struct Light_model *default_light_model,
 	Cmiss_graphics_filter_id filter)
 /*******************************************************************************
@@ -3101,14 +3068,11 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->swap_buffers=0;
 				if (default_light)
 				{
+					ACCESS(Light)(default_light);
 					ADD_OBJECT_TO_LIST(Light)(default_light,
 						scene_viewer->list_of_lights);
 				}
 				/* managers and callback IDs for automatic updates */
-				scene_viewer->light_manager=light_manager;
-				scene_viewer->light_manager_callback_id=(void *)NULL;
-				scene_viewer->light_model_manager=light_model_manager;
-				scene_viewer->light_model_manager_callback_id=(void *)NULL;
 				(scene_viewer->image_texture).texture=(struct Texture *)NULL;
 				(scene_viewer->image_texture).manager = NULL;
 				(scene_viewer->image_texture).field  = NULL;
@@ -3163,6 +3127,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
 				scene_viewer->pixel_data = (char *)NULL;
+				scene_viewer->awaken=0;
 				for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 				{
 					scene_viewer->clip_planes_enable[i] = 0;
@@ -3253,6 +3218,8 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		/* dispose of our data structure */
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
+		for_each_Light_in_Scene_viewer(scene_viewer,Scene_viewer_remove_light_in_list_iterator,
+			(void *)scene_viewer);
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
 		{
@@ -3350,9 +3317,7 @@ DESCRIPTION :
 			cmiss_scene_viewer_module->filterModule);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			cmiss_scene_viewer_module->background_colour,
-			cmiss_scene_viewer_module->light_manager,
 			cmiss_scene_viewer_module->default_light,
-			cmiss_scene_viewer_module->light_model_manager,
 			cmiss_scene_viewer_module->default_light_model,
 			filter);
 		Cmiss_graphics_filter_destroy(&filter);
@@ -3845,21 +3810,7 @@ Scene_viewer_sleep to restore normal activity.
 	ENTER(Scene_viewer_awaken);
 	if (scene_viewer)
 	{
-		/* register for lighting changes */
-		if (scene_viewer->light_manager &&
-			(!scene_viewer->light_manager_callback_id))
-		{
-			scene_viewer->light_manager_callback_id=
-				MANAGER_REGISTER(Light)(Scene_viewer_light_change,
-					(void *)scene_viewer,scene_viewer->light_manager);
-		}
-		if (scene_viewer->light_model_manager &&
-			(!scene_viewer->light_model_manager_callback_id))
-		{
-			scene_viewer->light_model_manager_callback_id=
-				MANAGER_REGISTER(Light_model)(Scene_viewer_light_model_change,
-					(void *)scene_viewer,scene_viewer->light_model_manager);
-		}
+		scene_viewer->awaken = 1;
 		if (scene_viewer->scene)
 		{
 			Cmiss_scene_add_callback(scene_viewer->scene,
@@ -4017,23 +3968,9 @@ Must call this in DESTROY function.
 	ENTER(Scene_viewer_sleep);
 	if (scene_viewer)
 	{
+		scene_viewer->awaken = 0;
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
-		/* turn off manager messages */
-		if (scene_viewer->light_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Light)(
-				scene_viewer->light_manager_callback_id,
-				scene_viewer->light_manager);
-			scene_viewer->light_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->light_model_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Light_model)(
-				scene_viewer->light_model_manager_callback_id,
-				scene_viewer->light_model_manager);
-			scene_viewer->light_model_manager_callback_id=(void *)NULL;
-		}
 		if (scene_viewer->scene)
 		{
 			Cmiss_scene_remove_callback(scene_viewer->scene,
@@ -4334,6 +4271,7 @@ Adds a light to the Scene_viewer list_of_lights.
 	{
 		if (!IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights))
 		{
+			ACCESS(Light)(light);
 			return_code=ADD_OBJECT_TO_LIST(Light)(light,scene_viewer->list_of_lights);
 		}
 		else
@@ -4442,6 +4380,7 @@ Removes a light from the Scene_viewer list_of_lights.
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(Light)(light,
 				scene_viewer->list_of_lights);
+			DEACCESS(Light)(&light);
 		}
 		else
 		{
@@ -8153,7 +8092,59 @@ int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,
 			message, scene_viewer->filter);
 		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
 		{
-			Scene_viewer_trigger_transform_callback(scene_viewer);
+			Scene_viewer_render_scene(scene_viewer);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
+
+int Cmiss_scene_viewer_light_change(struct Scene_viewer *scene_viewer,	void *message_void)
+{
+	int return_code = 1;
+	struct MANAGER_MESSAGE(Light) *message = (struct MANAGER_MESSAGE(Light) *)message_void;
+	if (scene_viewer && message)
+	{
+		if (scene_viewer->awaken)
+		{
+			struct LIST(Light) *changed_light_list =
+				MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
+			if (changed_light_list)
+			{
+				if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
+				{
+					CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+						scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				}
+				DESTROY_LIST(Light)(&changed_light_list);
+			}
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
+
+int Cmiss_scene_viewer_light_model_change(struct Scene_viewer *scene_viewer,	void *message_void)
+{
+	int return_code = 1;
+	struct MANAGER_MESSAGE(Light_model) *message = (struct MANAGER_MESSAGE(Light_model) *)message_void;
+	if (scene_viewer && message)
+	{
+		if (scene_viewer->awaken && scene_viewer->light_model)
+		{
+			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Light_model)(message,
+				scene_viewer->light_model);
+			if (change & MANAGER_CHANGE_RESULT(Light_model))
+			{
+				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			}
 		}
 	}
 	else
@@ -8176,6 +8167,44 @@ void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
 			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
 				Cmiss_scene_viewer_graphics_filter_change,(void *)message,
+				scene_viewer_module->scene_viewer_list);
+			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+		}
+	}
+}
+
+void Cmiss_scene_viewer_module_light_manager_callback(
+	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_module_void)
+{
+	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	if (message && scene_viewer_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Light))
+		{
+			// minimise scene messages while updating
+			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
+				Cmiss_scene_viewer_light_change,(void *)message,
+				scene_viewer_module->scene_viewer_list);
+			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+		}
+	}
+}
+
+void Cmiss_scene_viewer_module_light_model_manager_callback(
+	struct MANAGER_MESSAGE(Light_model) *message, void *scene_viewer_module_void)
+{
+	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	if (message && scene_viewer_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light_model)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Light_model))
+		{
+			// minimise scene messages while updating
+			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
+				Cmiss_scene_viewer_light_model_change,(void *)message,
 				scene_viewer_module->scene_viewer_list);
 			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
@@ -8206,11 +8235,14 @@ int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 			}
 			Cmiss_scene_destroy(&(scene_viewer->scene));
 			scene_viewer->scene = Cmiss_scene_access(scene);
-			Cmiss_scene_add_callback(scene_viewer->scene,
+			if (scene_viewer->awaken)
+			{
+				Cmiss_scene_add_callback(scene_viewer->scene,
 					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				Scene_viewer_trigger_transform_callback(scene_viewer);
+				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			}
 		}
 		return CMISS_OK;
 	}

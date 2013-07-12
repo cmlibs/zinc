@@ -66,15 +66,13 @@ struct Cmiss_graphics_module
 	struct Cmiss_glyph_module *glyph_module;
 	struct Cmiss_graphics_material_module *material_module;
 	void *material_manager_callback_id;
-	struct Light *default_light;
-	struct MANAGER(Light) *light_manager;
+	Light_module *light_module;
 	Cmiss_spectrum_module_id spectrum_module;
 	void *spectrum_manager_callback_id;
 	Cmiss_font_module_id font_module;
 	void *font_manager_callback_id;
 	Cmiss_scene_viewer_module_id scene_viewer_module;
-	struct Light_model *default_light_model;
-	struct MANAGER(Light_model) *light_model_manager;
+	Light_model_module *light_model_module;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Cmiss_time_keeper *default_time_keeper;
 	Cmiss_tessellation_module_id tessellation_module;
@@ -207,13 +205,11 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	{
 		if (ALLOCATE(module, struct Cmiss_graphics_module, 1))
 		{
-			module->light_manager = NULL;
+			module->light_module = Light_module_create();
+			module->light_model_module = Light_model_module_create();
 			module->material_module = NULL;
 			module->glyph_module = Cmiss_glyph_module_create();
-			module->default_light = NULL;
-			module->default_light_model = NULL;
 			module->scene_viewer_module = NULL;
-			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_module=Cmiss_spectrum_module_create();
 			module->graphics_filter_module=Cmiss_graphics_filter_module_create();
 			module->font_module = Cmiss_font_module_create();
@@ -229,7 +225,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
 					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
 			module->tessellation_module = Cmiss_tessellation_module_create();
@@ -339,14 +334,10 @@ int Cmiss_graphics_module_destroy(
 				delete graphics_module->member_regions_list;
 			}
 			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
-			if (graphics_module->default_light)
-				DEACCESS(Light)(&graphics_module->default_light);
-			if (graphics_module->light_manager)
-				DESTROY(MANAGER(Light))(&graphics_module->light_manager);
-			if (graphics_module->default_light_model)
-				DEACCESS(Light_model)(&graphics_module->default_light_model);
-			if (graphics_module->light_model_manager)
-				DESTROY(MANAGER(Light_model))(&graphics_module->light_model_manager);
+			if (graphics_module->light_module)
+				Light_module_destroy(&graphics_module->light_module);
+			if (graphics_module->light_model_module)
+				Light_model_module_destroy(&graphics_module->light_model_module);
 			if (graphics_module->spectrum_module)
 				Cmiss_spectrum_module_destroy(&graphics_module->spectrum_module);
 			if (graphics_module->font_module)
@@ -417,65 +408,6 @@ int Cmiss_graphics_module_create_scene(
 	LEAVE;
 
 	return (return_code);
-}
-
-struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Light) *light_manager = NULL;
-	if (graphics_module)
-	{
-		light_manager = graphics_module->light_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_light_manager.  Invalid argument(s)");
-	}
-	return light_manager;
-}
-
-struct Light *Cmiss_graphics_module_get_default_light(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct Light *light = NULL;
-	if (graphics_module && graphics_module->light_manager)
-	{
-		if (!graphics_module->default_light)
-		{
-			graphics_module->default_light=CREATE(Light)("default");
-			if (graphics_module->default_light)
-			{
-				GLfloat default_light_direction[3]={0.0,-0.5,-1.0};
-				struct Colour default_colour;
-				set_Light_type(graphics_module->default_light,INFINITE_LIGHT);
-				default_colour.red=1.0;
-				default_colour.green=1.0;
-				default_colour.blue=1.0;
-				set_Light_colour(graphics_module->default_light,&default_colour);
-
-				set_Light_direction(graphics_module->default_light,default_light_direction);
-				/*???DB.  Include default as part of manager ? */
-				ACCESS(Light)(graphics_module->default_light);
-				if (!ADD_OBJECT_TO_MANAGER(Light)(graphics_module->default_light,
-						graphics_module->light_manager))
-				{
-					DEACCESS(Light)(&(graphics_module->default_light));
-				}
-			}
-		}
-		if (graphics_module->default_light)
-		{
-			light = ACCESS(Light)(graphics_module->default_light);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_light.  Invalid argument(s)");
-	}
-
-	return light;
 }
 
 struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
@@ -621,10 +553,10 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 	{
 		if (!graphics_module->scene_viewer_module)
 		{
-			struct Light *default_light =
-				Cmiss_graphics_module_get_default_light(graphics_module);
-			struct Light_model *default_light_model =
-				Cmiss_graphics_module_get_default_light_model(graphics_module);
+			Light *default_light =
+				Light_module_get_default_light(graphics_module->light_module);
+			Light_model *default_light_model =
+				Light_model_module_get_default_light_model(graphics_module->light_model_module);
 			Colour default_background_colour;
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
@@ -633,8 +565,8 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 			graphics_module->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)(
 				&default_background_colour,
 				/* interactive_tool_manager */0,
-				Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
-				Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
+				graphics_module->light_module, default_light,
+				graphics_module->light_model_module, default_light_model,
 				filterModule);
 			Cmiss_graphics_filter_module_destroy(&filterModule);
 			DEACCESS(Light_model)(&default_light_model);
@@ -649,60 +581,6 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 			"Missing context");
 	}
 	return scene_viewer_module;
-}
-
-struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Light_model) *light_model_manager = NULL;
-	if (graphics_module)
-	{
-		light_model_manager = graphics_module->light_model_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_light_model_manager.  Invalid argument(s)");
-	}
-
-	return light_model_manager;
-}
-
-struct Light_model *Cmiss_graphics_module_get_default_light_model(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct Light_model *light_model = NULL;
-
-	if (graphics_module)
-	{
-		if (!graphics_module->default_light_model)
-		{
-			if (NULL != (graphics_module->default_light_model=CREATE(Light_model)("default")))
-			{
-				struct Colour ambient_colour;
-				ambient_colour.red=0.2f;
-				ambient_colour.green=0.2f;
-				ambient_colour.blue=0.2f;
-				Light_model_set_ambient(graphics_module->default_light_model,&ambient_colour);
-				Light_model_set_side_mode(graphics_module->default_light_model,
-					LIGHT_MODEL_TWO_SIDED);
-				ACCESS(Light_model)(graphics_module->default_light_model);
-				if (!ADD_OBJECT_TO_MANAGER(Light_model)(
-							graphics_module->default_light_model,graphics_module->light_model_manager))
-				{
-					DEACCESS(Light_model)(&(graphics_module->default_light_model));
-				}
-			}
-		}
-		if (graphics_module->default_light_model)
-			light_model = ACCESS(Light_model)(graphics_module->default_light_model);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_light_model.  Invalid argument(s)");
-	}
-	return light_model;
 }
 
 Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
@@ -1024,5 +902,27 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
 		return Cmiss_graphics_filter_module_create_filter_operator_or(
 			graphics_module->graphics_filter_module);
 	}
+	return 0;
+}
+
+Light_module *Cmiss_graphics_module_get_light_module(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->light_module)
+	{
+		return Light_module_access(graphics_module->light_module);
+	}
+
+	return 0;
+}
+
+Light_model_module *Cmiss_graphics_module_get_light_model_module(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->light_model_module)
+	{
+		return Light_model_module_access(graphics_module->light_model_module);
+	}
+
 	return 0;
 }

@@ -81,6 +81,12 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphics_filter,name,const c
 PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_filter);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_filter,name,const char *);
 
+struct Cmiss_graphics_filter_change_detail
+{
+	virtual ~Cmiss_graphics_filter_change_detail()
+	{
+	}
+};
 
 struct Cmiss_graphics_filter
 {
@@ -136,6 +142,12 @@ public:
 		return name_out;
 	}
 
+	int changed()
+	{
+		return MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(this,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_graphics_filter));
+	}
+
 	bool isInverse() const
 	{
 		return inverse;
@@ -144,6 +156,7 @@ public:
 	bool setInverse(bool newInverse)
 	{
 		inverse = newInverse;
+		changed();
 		return true;
 	}
 
@@ -166,6 +179,24 @@ public:
 	}
 
 	virtual void list_type_specific() const = 0;
+
+	virtual int check_dependency()
+	{
+		if (manager_change_status & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	/** clones and clears type-specific change detail, if any.
+	 * override for classes with type-specific change detail
+	 * @return  change detail prior to clearing, or NULL if none.
+	 */
+	virtual Cmiss_graphics_filter_change_detail *extract_change_detail()
+	{
+		return NULL;
+	}
 
 	/**
 	 * override for filter types with that are functions of other filters to
