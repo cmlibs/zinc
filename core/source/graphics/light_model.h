@@ -249,4 +249,107 @@ int Light_model_render_opengl(Light_model *light_model,
 	Render_graphics_opengl *renderer);
 #endif /* defined __cplusplus */
 
+
+struct Light_model_module;
+
+/**
+ * Create and return a handle to a new light_model module.
+ * Private; only to be called from graphics_module.
+ *
+ * @return  Handle to the newly created light_model module if successful,
+ * otherwise NULL.
+ */
+Light_model_module *Light_model_module_create();
+
+/**
+* Returns a new reference to the light_model module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param light_model_module  The light_model module to obtain a new reference to.
+* @return  Light_model module with incremented reference count.
+*/
+Light_model_module *Light_model_module_access(Light_model_module *light_model_module);
+
+/**
+* Destroys this reference to the light_model module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param light_model_module_address  Address of handle to light_model module
+*   to destroy.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+int Light_model_module_destroy(
+	Light_model_module **light_model_module_address);
+
+/**
+ * Create and return a handle to a new light_model.
+ *
+ * @param light_model_module  The handle to the light_model module the
+ * light_model will belong to.
+ * @return  Handle to the newly created light_model if successful, otherwise NULL.
+ */
+Light_model *Light_model_module_create_light_model(
+	Light_model_module *light_model_module);
+
+/**
+* Begin caching or increment cache level for this light_model module. Call this
+* function before making multiple changes to minimise number of change messages
+* sent to clients. Must remember to end_change after completing changes.
+* @see Light_model_module_end_change
+*
+* @param light_model_module  The light_model_module to begin change cache on.
+* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+*/
+int Light_model_module_begin_change(Light_model_module *light_model_module);
+
+/***************************************************************************//**
+* Decrement cache level or end caching of changes for the light_model module.
+* Call Light_model_module_begin_change before making multiple changes
+* and call this afterwards. When change level is restored to zero,
+* cached change messages are sent out to clients.
+*
+* @param light_model_module  The glyph_module to end change cache on.
+* @return  Status CMISS_OK on success, any other value on failure.
+*/
+int Light_model_module_end_change(Light_model_module *light_model_module);
+
+/**
+* Find the light_model with the specified name, if any.
+*
+* @param light_model_module  Light_model module to search.
+* @param name  The name of the light_model.
+* @return  Handle to the light_model of that name, or 0 if not found.
+* 	Up to caller to destroy returned handle.
+*/
+Light_model *Light_model_module_find_light_model_by_name(
+	Light_model_module *light_model_module, const char *name);
+
+/**
+ * Get the default light_model to be used by new lines, surfaces and
+ * isosurfaces graphics. If there is none, one is automatically created with
+ * minimum divisions 1, refinement factors 4, and circle divisions 12,
+ * and given the name "default".
+ *
+ * @param light_model_module  Light_model module to query.
+ * @return  Handle to the default light_model, or 0 on error.
+ * Up to caller to destroy returned handle.
+ */
+Light_model * Light_model_module_get_default_light_model(
+	Light_model_module *light_model_module);
+
+/**
+ * Set the default light_model to be used by new lines, surfaces and
+ * isosurfaces graphics.
+ *
+ * @param light_model_module  Light_model module to modify.
+ * @param light_model  The light_model to set as default.
+ * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ */
+int Light_model_module_set_default_light_model(
+	Light_model_module *light_model_module,
+	Light_model *light_model);
+
+struct MANAGER(Light_model) *Light_model_module_get_manager(Light_model_module *light_model_module);
+
+
 #endif

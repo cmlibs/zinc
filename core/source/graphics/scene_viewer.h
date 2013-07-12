@@ -262,9 +262,9 @@ The default data used to create Cmiss_scene_viewers.
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour *background_colour;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
-	struct MANAGER(Light) *light_manager;
+	Light_module *lightModule;
 	struct Light *default_light;
-	struct MANAGER(Light_model) *light_model_manager;
+	Light_model_module *lightModelModule;
 	struct Light_model *default_light_model;
 	Cmiss_graphics_filter_module_id filterModule;
 	//-- struct User_interface *user_interface;
@@ -274,6 +274,8 @@ The default data used to create Cmiss_scene_viewers.
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback))
 		*destroy_callback_list;
 	void *graphics_filter_manager_callback_id;
+	void *light_manager_callback_id;
+	void *light_model_manager_callback_id;
 };
 
 struct Scene_viewer_image_texture
@@ -377,10 +379,6 @@ DESCRIPTION :
 	/* lights in this list are oriented relative to the viewer */
 	struct LIST(Light) *list_of_lights;
 	/* managers and callback IDs for automatic updates */
-	struct MANAGER(Light) *light_manager;
-	void *light_manager_callback_id;
-	struct MANAGER(Light_model) *light_model_manager;
-	void *light_model_manager_callback_id;
 	/* For interpreting mouse events */
 	enum Scene_viewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
@@ -404,6 +402,7 @@ DESCRIPTION :
 	int swap_buffers;
 	/* Flag that indicates the update includes a change of the projection matrices */
 	int transform_flag;
+	int awaken;
 	/* Clip planes */
 	char clip_planes_enable[MAX_CLIP_PLANES];
 	double clip_planes[MAX_CLIP_PLANES * 4];
@@ -448,9 +447,8 @@ Global functions
 struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(Light) *light_manager,struct Light *default_light,
-	struct MANAGER(Light_model) *light_model_manager,
-	struct Light_model *default_light_model,
+	Light_module *lightModule ,struct Light *default_light,
+	Light_model_module *lightModelModule, struct Light_model *default_light_model,
 	Cmiss_graphics_filter_module_id filterModule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -487,11 +485,9 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 
-struct Scene_viewer *CREATE(Scene_viewer)(
-	struct Graphics_buffer *graphics_buffer,
+struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
-	struct MANAGER(Light) *light_manager,struct Light *default_light,
-	struct MANAGER(Light_model) *light_model_manager,
+	struct Light *default_light,
 	struct Light_model *default_light_model,
 	Cmiss_graphics_filter_id filter);
 /*******************************************************************************
@@ -1587,5 +1583,9 @@ int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
 int Scene_viewer_scene_change(Cmiss_scene_viewer_id scene_viewer);
+
+struct Scene_viewer *create_Scene_viewer_from_package(
+	struct Graphics_buffer *graphics_buffer,
+	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
 
 #endif /* !defined (SCENE_VIEWER_H) */

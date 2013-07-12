@@ -59,8 +59,8 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 
+#include "zinc/status.h"
 #include "zinc/zincconfigure.h"
-
 
 #include "general/debug.h"
 #include "general/list_private.h"
@@ -77,6 +77,142 @@ return to direct rendering, as described with these routines.
 Module types
 ------------
 */
+
+struct Light_model_module
+{
+
+private:
+
+	struct MANAGER(Light_model) *lightModelManager;
+	Light_model *defaultLightModel;
+	int access_count;
+
+	Light_model_module() :
+		lightModelManager(CREATE(MANAGER(Light_model))()),
+		defaultLightModel(0),
+		access_count(1)
+	{
+	}
+
+	~Light_model_module()
+	{
+		DEACCESS(Light_model)(&this->defaultLightModel);
+		DESTROY(MANAGER(Light_model))(&(this->lightModelManager));
+	}
+
+public:
+
+	static Light_model_module *create()
+	{
+		return new Light_model_module();
+	}
+
+	Light_model_module *access()
+
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Light_model_module* &light_module)
+	{
+		if (light_module)
+		{
+			--(light_module->access_count);
+			if (light_module->access_count <= 0)
+			{
+				delete light_module;
+			}
+			light_module = 0;
+			return CMISS_OK;
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	struct MANAGER(Light_model) *getManager()
+	{
+		return this->lightModelManager;
+	}
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(Light_model)(this->lightModelManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(Light_model)(this->lightModelManager);
+	}
+
+	Light_model *createLightModel()
+	{
+		Light_model *lightModel = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Light_model)(this->lightModelManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(temp_name,
+			this->lightModelManager));
+		lightModel = CREATE(Light_model)(temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Light_model)(lightModel, this->lightModelManager))
+		{
+			DEACCESS(Light_model)(&lightModel);
+		}
+		return lightModel;
+	}
+
+	Light_model *findLightModelByName(const char *name)
+	{
+		Light_model *lightModel = FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(name,
+			this->lightModelManager);
+		if (lightModel)
+		{
+			return ACCESS(Light_model)(lightModel);
+		}
+		return 0;
+	}
+
+	Light_model *getDefaultLightModel()
+	{
+		if (this->defaultLightModel)
+		{
+			ACCESS(Light_model)(this->defaultLightModel);
+		}
+		else
+		{
+			this->beginChange();
+			Light_model *lightModel = CREATE(Light_model)("default");
+			if (lightModel)
+			{
+				struct Colour ambient_colour;
+				ambient_colour.red=0.2f;
+				ambient_colour.green=0.2f;
+				ambient_colour.blue=0.2f;
+				Light_model_set_ambient(lightModel,&ambient_colour);
+				Light_model_set_side_mode(lightModel,
+					LIGHT_MODEL_TWO_SIDED);
+				if (!ADD_OBJECT_TO_MANAGER(Light_model)(lightModel, this->lightModelManager))
+				{
+					DEACCESS(Light_model)(&lightModel);
+				}
+			}
+			this->setDefaultLightModel(lightModel);
+			this->endChange();
+		}
+		return this->defaultLightModel;
+	}
+
+	int setDefaultLightModel(Light_model *lightModel)
+	{
+		REACCESS(Light_model)(&this->defaultLightModel, lightModel);
+		return CMISS_OK;
+	}
+
+};
+
 struct Light_model
 /*******************************************************************************
 LAST MODIFIED : 13 December 1997
@@ -206,7 +342,7 @@ the list of all light models.
 			ALLOCATE(light_model->name,char,strlen(name)+1))
 		{
 			strcpy(light_model->name,name);
-			light_model->access_count=0;
+			light_model->access_count=1;
 			light_model->manager = (struct MANAGER(Light_model) *)NULL;
 			light_model->manager_change_status = MANAGER_CHANGE_NONE(Light_model);
 			light_model->enabled=1;
@@ -838,3 +974,73 @@ direct_render_Light_model.
 	return (return_code);
 } /* execute_Light_model */
 
+struct MANAGER(Light_model) *Light_model_module_get_manager(Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->getManager();
+	return 0;
+}
+
+Light_model_module *Light_model_module_create()
+{
+	return Light_model_module::create();
+}
+
+Light_model_module *Light_model_module_access(
+	Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->access();
+	return 0;
+}
+
+int Light_model_module_destroy(Light_model_module **light_model_module_address)
+{
+	if (light_model_module_address)
+		return Light_model_module::deaccess(*light_model_module_address);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Light_model *Light_model_module_create_light_model(
+	Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->createLightModel();
+	return 0;
+}
+
+int Light_model_module_begin_change(Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->beginChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+int Light_model_module_end_change(Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->endChange();
+   return CMISS_ERROR_ARGUMENT;
+}
+
+Light_model *Light_model_module_find_light_model_by_name(
+	Light_model_module *light_model_module, const char *name)
+{
+	if (light_model_module)
+		return light_model_module->findLightModelByName(name);
+   return 0;
+}
+
+Light_model *Light_model_module_get_default_light_model(Light_model_module *light_model_module)
+{
+	if (light_model_module)
+		return light_model_module->getDefaultLightModel();
+	return 0;
+}
+
+int Light_model_module_set_default_light_model(Light_model_module *light_model_module, Light_model *light_model)
+{
+	if (light_model_module)
+		return light_model_module->setDefaultLightModel(light_model);
+	return 0;
+}

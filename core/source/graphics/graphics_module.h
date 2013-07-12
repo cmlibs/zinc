@@ -74,23 +74,13 @@ struct Cmiss_graphics_module;
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
 
 /***************************************************************************//**
- * Return the manager of light in graphics module.
+ * Return the light module in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the manager of light in graphics module if successfully called,
+ * @return  the light module in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the default light in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the default light in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Light *Cmiss_graphics_module_get_default_light(
+struct Light_module *Cmiss_graphics_module_get_light_module(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -136,23 +126,13 @@ struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the light model manager of graphics module.
+ * Return the light model module in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the manager of light_models in graphics module if successfully called,
+ * @return  the light model module in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the default light model in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the default light_models in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Light_model *Cmiss_graphics_module_get_default_light_model(
+struct Light_model_module *Cmiss_graphics_module_get_light_model_module(
 	struct Cmiss_graphics_module *graphics_module);
 
 struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
