@@ -3235,13 +3235,10 @@ int Cmiss_scene_fill_scene_command_data(Cmiss_scene_id scene,
 	{
 		scene_command_data->graphics_module = scene->graphics_module;
 		scene_command_data->scene = scene;
-		Cmiss_graphics_material_module *material_module =
-			Cmiss_graphics_module_get_material_module(scene->graphics_module);
-		scene_command_data->default_material =
-			Cmiss_graphics_material_module_get_default_material(material_module);
-		Cmiss_graphics_material_module_destroy(&material_module);
 		scene_command_data->material_module =
 			Cmiss_graphics_module_get_material_module(scene->graphics_module);
+		scene_command_data->default_material =
+			Cmiss_graphics_material_module_get_default_material(scene_command_data->material_module);
 		scene_command_data->default_font =
 			Cmiss_graphics_module_get_default_font(scene->graphics_module);
 		scene_command_data->spectrum_manager =
@@ -3272,6 +3269,7 @@ int Cmiss_scene_cleanup_scene_command_data(
 		Cmiss_font_destroy(&scene_command_data->default_font);
 		Cmiss_spectrum_destroy(&scene_command_data->default_spectrum);
 		Cmiss_glyph_module_destroy(&(scene_command_data->glyph_module));
+		Cmiss_tessellation_module_destroy(&(scene_command_data->tessellation_module));
 		Cmiss_region_destroy(&(scene_command_data->root_region));
 		return_code = 1;
 	}
