@@ -26,11 +26,10 @@ public:
 		context(Cmiss_context_create("test")),
 		root_region(Cmiss_context_get_default_region(context)),
 		fm(Cmiss_region_get_field_module(root_region)),
-		gm(Cmiss_context_get_default_graphics_module(context)),
+		gm(Cmiss_context_get_graphics_module(context)),
 		glyph_module(Cmiss_graphics_module_get_glyph_module(gm)),
 		scene(0)
 	{
-		EXPECT_EQ(CMISS_OK, Cmiss_graphics_module_enable_scenes(gm, root_region));
 		scene = Cmiss_graphics_module_get_scene(gm, root_region);
 		EXPECT_NE(static_cast<Cmiss_field_module *>(0), fm);
 		EXPECT_NE(static_cast<Cmiss_graphics_module *>(0), gm);

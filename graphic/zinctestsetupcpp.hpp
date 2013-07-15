@@ -27,11 +27,10 @@ public:
 		context("test"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldModule()),
-		gm(context.getDefaultGraphicsModule()),
+		gm(context.getGraphicsModule()),
 		glyphModule(gm.getGlyphModule()),
 		scene(0)
 	{
-		EXPECT_EQ(CMISS_OK, gm.enableScenes(root_region));
 		scene = gm.getScene(root_region);
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(gm.isValid());

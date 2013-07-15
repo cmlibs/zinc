@@ -238,8 +238,13 @@ TEST(Cmiss_graphic_api, spectrum)
 	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
-	Cmiss_spectrum_id spectrum = Cmiss_graphics_module_create_spectrum(zinc.gm);
+	Cmiss_spectrum_module_id spectrum_module = Cmiss_graphics_module_get_spectrum_module(zinc.gm);
+	EXPECT_NE(static_cast<Cmiss_spectrum_module *>(0), spectrum_module);
+
+	Cmiss_spectrum_id spectrum = Cmiss_spectrum_module_create_spectrum(spectrum_module);
 	EXPECT_NE(static_cast<Cmiss_spectrum *>(0), spectrum);
+
+	Cmiss_spectrum_module_destroy(&spectrum_module);
 
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_spectrum(gr, spectrum));
 

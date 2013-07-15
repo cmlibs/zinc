@@ -34,8 +34,8 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	Cmiss_scene_picker_id scene_picker = Cmiss_scene_create_picker(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_scene_picker *>(0), scene_picker);
 
-	Cmiss_scene_viewer_module_id sv_module = Cmiss_context_get_default_scene_viewer_module(
-		zinc.context);
+	Cmiss_scene_viewer_module_id sv_module = Cmiss_graphics_module_get_scene_viewer_module(
+		zinc.gm);
 	EXPECT_NE(static_cast<Cmiss_scene_viewer_module *>(0), sv_module);
 
 	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(sv_module,
@@ -51,9 +51,14 @@ TEST(Cmiss_scene_picker_api, valid_args)
 	result = Cmiss_scene_viewer_view_all(sv);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_filter_id gf = Cmiss_graphics_module_create_filter_graphic_type(zinc.gm,
+	Cmiss_graphics_filter_module_id filter_module = Cmiss_graphics_module_get_filter_module(zinc.gm);
+	EXPECT_NE(static_cast<Cmiss_graphics_filter_module *>(0), filter_module);
+
+	Cmiss_graphics_filter_id gf = Cmiss_graphics_filter_module_create_filter_graphic_type(filter_module,
 		CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), gf);
+
+	Cmiss_graphics_filter_module_destroy(&filter_module);
 
 	result = Cmiss_scene_picker_set_scene(scene_picker, zinc.scene);
 	EXPECT_EQ(CMISS_OK, result);
@@ -110,7 +115,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	ScenePicker scenePicker = zinc.scene.createPicker();
 	EXPECT_TRUE(scenePicker.isValid());
 
-	SceneViewerModule sv_module = zinc.context.getDefaultSceneViewerModule();
+	SceneViewerModule sv_module = zinc.gm.getSceneViewerModule();
 	EXPECT_TRUE(sv_module.isValid());
 
 	SceneViewer sv = sv_module.createSceneViewer(
@@ -126,7 +131,10 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	result = sv.viewAll();
 	EXPECT_EQ(CMISS_OK, result);
 
-	GraphicsFilter gf = zinc.gm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
+	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
+	EXPECT_TRUE(gfm.isValid());
+
+	GraphicsFilter gf = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
 	EXPECT_TRUE(gf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);
