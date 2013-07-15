@@ -103,11 +103,6 @@ public:
 		return id;
 	}
 	
-	int enableScenes(Region& region)
-	{
-		return Cmiss_graphics_module_enable_scenes(id, region.getId());
-	}
-
 	Scene getScene(Region& region)
 	{
 		return Scene(Cmiss_graphics_module_get_scene(id, region.getId()));
@@ -123,63 +118,9 @@ public:
 		return GraphicsMaterialModule(Cmiss_graphics_module_get_material_module(id));
 	}
 
-	GraphicsMaterial createMaterial()
-	{
-		return GraphicsMaterial(Cmiss_graphics_module_create_material(id));
-	}
-
-	int defineStandardMaterials()
-	{
-		return Cmiss_graphics_module_define_standard_materials(id);
-	}
-
-	GraphicsMaterial findMaterialByName(const char *material_name)
-	{
-		return GraphicsMaterial(Cmiss_graphics_module_find_material_by_name(id, material_name));
-	}
-
 	GraphicsFilterModule getFilterModule()
 	{
 		return GraphicsFilterModule(Cmiss_graphics_module_get_filter_module(id));
-	}
-
-	GraphicsFilter createFilterVisibilityFlags()
-	{
-		return GraphicsFilter(Cmiss_graphics_module_create_filter_visibility_flags(id));
-	}
-
-	GraphicsFilter createFilterGraphicName(const char *matchName)
-	{
-		return GraphicsFilter(Cmiss_graphics_module_create_filter_graphic_name(id, matchName));
-	}
-
-	GraphicsFilter createFilterGraphicType(Graphic::GraphicType graphicType)
-	{
-		return GraphicsFilter(Cmiss_graphics_module_create_filter_graphic_type(id,
-			static_cast<Cmiss_graphic_type>(graphicType)));
-	}
-
-	GraphicsFilter createFilterRegion(Region& matchRegion)
-	{
-		return GraphicsFilter(Cmiss_graphics_module_create_filter_region(
-			id, matchRegion.getId()));
-	}
-
-	GraphicsFilterOperator createFilterOperatorAnd()
-	{
-		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
-			Cmiss_graphics_module_create_filter_operator_and(id)));
-	}
-
-	GraphicsFilterOperator createFilterOperatorOr()
-	{
-		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
-			Cmiss_graphics_module_create_filter_operator_or(id)));
-	}
-
-	GraphicsFilter findFilterByName(const char *name)
-	{
-		return GraphicsFilter(Cmiss_graphics_module_find_filter_by_name(id, name));
 	}
 
 	SceneViewerModule getSceneViewerModule()
@@ -192,29 +133,9 @@ public:
 		return SpectrumModule(Cmiss_graphics_module_get_spectrum_module(id));
 	}
 
-	Spectrum createSpectrum()
-	{
-		return Spectrum(Cmiss_graphics_module_create_spectrum(id));
-	}
-
-	Spectrum findSpectrumByName(const char *name)
-	{
-		return Spectrum(Cmiss_graphics_module_find_spectrum_by_name(id, name));
-	}
-
 	FontModule getFontModule()
 	{
 		return FontModule(Cmiss_graphics_module_get_font_module(id));
-	}
-
-	Font createFont()
-	{
-		return Font(Cmiss_graphics_module_create_font(id));
-	}
-
-	Font findFontByName(const char *font_name)
-	{
-		return Font(Cmiss_graphics_module_find_font_by_name(id, font_name));
 	}
 
 	TessellationModule getTessellationModule()
@@ -222,15 +143,6 @@ public:
 		return TessellationModule(Cmiss_graphics_module_get_tessellation_module(id));
 	}
 
-	Tessellation createTessellation()
-	{
-		return Tessellation(Cmiss_graphics_module_create_tessellation(id));
-	}
-
-	Tessellation findTessellationByName(const char *name)
-	{
-		return Tessellation(Cmiss_graphics_module_find_tessellation_by_name(id, name));
-	}
 
 };
 

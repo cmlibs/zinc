@@ -172,7 +172,7 @@ struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
 	return root_region;
 }
 
-struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct Context *context)
+struct Cmiss_graphics_module *Cmiss_context_get_graphics_module(struct Context *context)
 {
 	struct Cmiss_graphics_module *graphics_module = 0;
 
@@ -293,29 +293,6 @@ struct Cmiss_time_keeper *Cmiss_context_get_default_time_keeper(struct Context *
 			"Cmiss_context_get_default_time_keeper.  Missing context");
 	}
 	return time_keeper;
-}
-
-Cmiss_scene_viewer_module_id Cmiss_context_get_default_scene_viewer_module(
-	Cmiss_context_id context)
-{
-	Cmiss_scene_viewer_module *scene_viewer_module = NULL;
-	if (context)
-	{
-		Cmiss_graphics_module_id graphics_module = Cmiss_context_get_default_graphics_module(context);
-		if (graphics_module)
-		{
-			scene_viewer_module = Cmiss_graphics_module_get_scene_viewer_module(
-				graphics_module);
-			Cmiss_graphics_module_destroy(&graphics_module);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_scene_viewer_module.  "
-			"Missing context");
-	}
-	return scene_viewer_module;
 }
 
 struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(

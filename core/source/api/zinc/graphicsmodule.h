@@ -65,31 +65,6 @@ ZINC_API Cmiss_graphics_material_module_id Cmiss_graphics_module_get_material_mo
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Find the material with the supplied name in graphics module, if any.
- *
- * @deprecated see Cmiss_graphics_material_module_find_material_by_name
- *
- * @param graphics_module  The handle to the graphics module to find the
- * material in.
- * @param name  The name of the material.
- * @return  Handle to the material with that name, or NULL if not found.
- */
-ZINC_API Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
-
-/***************************************************************************//**
- * Create and return a handle to a new graphics material.
- *
- * @deprecated see Cmiss_graphics_material_module_create_material
- *
- * @param graphics_module  The handle to the graphics module the material will
- * belong to.
- * @return  Handle to the newly created material if successful, otherwise NULL.
- */
-ZINC_API Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
-	Cmiss_graphics_module_id graphics_module);
-
-/***************************************************************************//**
  * Return an additional handle to the graphics module. Increments the
  * internal 'access count' of the module.
  *
@@ -145,43 +120,6 @@ ZINC_API Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
 ZINC_API Cmiss_scene_id Cmiss_graphics_module_get_scene(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
-/***************************************************************************//**
- * Enable scene of region and all of its children region from graphics
- * module. This will create scene for the specified region and all its
- * children.
- *
- * @param graphics_module  The module requires for region to enable scene.
- * @param region  The region at which the scene will be enabled for.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphics_module_enable_scenes(
-	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
-
-/***************************************************************************//**
- * Find the spectrum with the supplied name in graphics module, if any.
- *
- * @deprecated see Cmiss_spectrum_module_find_spectrum_by_name
- *
- * @param graphics_module  The handle to the graphics module to find the
- * spectrum in.
- * @param name  The name of the spectrum.
- * @return  Handle to the spectrum with that name, or NULL if not found.
- */
-ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
-
-/***************************************************************************//**
- * Create and return a handle to a new spectrum.
- *
- * @deprecated see Cmiss_spectrum_module_create_spectrum
- *
- * @param graphics_module  The handle to the graphics module the spectrum will
- * belong to.
- * @return  Handle to the newly created spectrum if successful, otherwise NULL.
- */
-ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
-	Cmiss_graphics_module_id graphics_module);
-
 /**
 * Get the spectrum module which stores spectrum object.
 *
@@ -189,31 +127,6 @@ ZINC_API Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
 */
 ZINC_API Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
-	Cmiss_graphics_module_id graphics_module);
-
-/**
- * Find the tessellation with the supplied name in graphics module, if any.
- *
- * @deprecated see Cmiss_tessellation_module_find_tessellation_by_name
- *
- * @param graphics_module  The handle to the graphics module to find the
- * tessellation in.
- * @param name  The name of the tessellation.
- * @return  Handle to the tessellation with that name, or NULL if not found.
- */
-ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
-
-/**
- * Create and return a handle to a new tessellation.
- *
- * @deprecated see Cmiss_tessellation_module_create_tessellation
- *
- * @param graphics_module  The handle to the graphics module the tessellation will
- * belong to.
- * @return  Handle to the newly created tessellation if successful, otherwise NULL.
- */
-ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 	Cmiss_graphics_module_id graphics_module);
 
 /**
@@ -225,19 +138,6 @@ ZINC_API Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
 	Cmiss_graphics_module_id graphics_module);
 
-/***************************************************************************//**
- * Define a list of standard cmgui materials and store them as they are managed
- * by graphics module.
- *
- * @deprecated see Cmiss_graphics_material_module_define_standard_materials
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  Status CMISS_OK if successfully create a list of standard materials
- * into graphics module, any other value on failure.
- */
-ZINC_API int Cmiss_graphics_module_define_standard_materials(
-	struct Cmiss_graphics_module *graphics_module);
-
 /**
 * Get the graphics filter module which stores graphics_filter object.
 *
@@ -246,45 +146,6 @@ ZINC_API int Cmiss_graphics_module_define_standard_materials(
 */
 ZINC_API Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module(
 	Cmiss_graphics_module_id graphics_module);
-
-/**
- * Find the graphics_filter with the supplied name in graphics module, if any.
- *
- * @deprecated see Cmiss_graphics_filter_module_find_filter_by_name
- *
- * @param graphics_module  The handle to the graphics module to find the
- * graphics_filter in.
- * @param name  The name of the graphics_filter.
- * @return  Handle to the graphics_filter with the provided name,
- * 		or NULL if not found.
- */
-ZINC_API Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
-
-/**
- * Create and return a handle to a new font.
- *
- * @deprecated see Cmiss_font_module_create_font
- *
- * @param graphics_module  The handle to the graphics module the font will
- * belong to.
- * @return  Handle to the newly created font if successful, otherwise NULL.
- */
-ZINC_API Cmiss_font_id Cmiss_graphics_module_create_font(
-	Cmiss_graphics_module_id graphics_module);
-
-/**
- * Find the font with the supplied name in graphics module, if any.
- *
- * @deprecated see Cmiss_font_module_find_font_by_name
- *
- * @param graphics_module  The handle to the graphics module to find the
- * spectrum in.
- * @param name  The name of the font.
- * @return  Handle to the font with that name, or NULL if not found.
- */
-ZINC_API Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /**
 * Get the font module which stores font object.

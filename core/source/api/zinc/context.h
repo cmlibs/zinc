@@ -85,16 +85,8 @@ ZINC_API int Cmiss_context_destroy(Cmiss_context_id *context_address);
  * @return  The handle to the default graphics module of the context if
  *    successfully called, otherwise 0.
  */
-ZINC_API Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
+ZINC_API Cmiss_graphics_module_id Cmiss_context_get_graphics_module(
 	Cmiss_context_id context);
-
-/***************************************************************************//**
- * Create a new graphics module and return the handle of it.
- *
- * @param context  Handle to a cmiss_context object.
- * @return  A newly created graphics_module if successfully called, otherwise 0.
- */
-ZINC_API Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id context);
 
 /***************************************************************************//**
  * Returns the default region in the context.
@@ -125,18 +117,6 @@ ZINC_API Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  * @return  The time keeper if successfully called otherwise NULL.
  */
 ZINC_API Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
-	Cmiss_context_id context);
-
-/***************************************************************************//**
- * Returns a handle to a scene viewer module
- * User interface must be enabled before this function can be called successfully.
- *
- * @deprecated see Cmiss_graphics_module_get_scene_viewer_module
- *
- * @param context  Handle to a cmiss_context object.
- * @return The scene viewer module if successfully called otherwise NULL.
- */
-ZINC_API Cmiss_scene_viewer_module_id Cmiss_context_get_default_scene_viewer_module(
 	Cmiss_context_id context);
 
 /***************************************************************************//**

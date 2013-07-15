@@ -45,10 +45,10 @@
  * colour, shading and other graphical properties of a material, it is highly
  * similar to material described by OpenGL.
  * User can get a handle to material either through create new material using
- * Cmiss_graphics_module_create_material or use existing materials in the
- * graphics_module provided by the ciss_command_data with
- * Cmiss_graphics_module_find_material_by_name.
- * Cmgui also provide a number of preset materials in the default
+ * Cmiss_graphics_mateial_module_create_material or use existing materials in the
+ * material_module provided by the context with
+ * Cmiss_graphics_material_module_find_material_by_name.
+ * LibZinc also provide a number of preset materials in the default
  * graphics_packge.
  * Preset graphical materials are:
  * black, blue, bone, gray50, gold, green, muscle, red, silver, tissue,
