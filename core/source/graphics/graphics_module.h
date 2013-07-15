@@ -94,29 +94,6 @@ struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the default scene in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  default scene in graphics module if successfully called,
- *    otherwise NULL.
- */
-Cmiss_scene_id Cmiss_graphics_module_get_default_scene(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the default spectrum in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the default spectrum in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
-	struct Cmiss_graphics_module *graphics_module);
-
-struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the default font in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
@@ -174,6 +151,6 @@ int Cmiss_graphics_module_remove_member_region(
 struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 		struct Cmiss_graphics_module *graphics_module);
 
-Cmiss_graphics_filter_id Cmiss_graphics_module_get_default_filter(
+struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
 	struct Cmiss_graphics_module *graphics_module);
 #endif /* !defined (GRAPHICS_MODULE_H) */

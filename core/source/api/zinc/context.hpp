@@ -112,14 +112,9 @@ public:
 		return Region(Cmiss_context_create_region(id));
 	}
 
-	GraphicsModule getDefaultGraphicsModule()
+	GraphicsModule getGraphicsModule()
 	{
-		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));
-	}
-
-	SceneViewerModule getDefaultSceneViewerModule()
-	{
-		return SceneViewerModule(Cmiss_context_get_default_scene_viewer_module(id));
+		return GraphicsModule(Cmiss_context_get_graphics_module(id));
 	}
 
 	TimeKeeper getDefaultTimeKeeper()

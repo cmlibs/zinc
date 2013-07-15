@@ -49,7 +49,6 @@
 #include "zinc/types/scenepickerid.h"
 #include "zinc/types/sceneviewerid.h"
 
-struct Cmiss_graphics_module;
 
 typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
 typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
@@ -74,7 +73,7 @@ private:
 	GLuint *select_buffer;
 	int select_buffer_size;
 	int number_of_hits;
-	Cmiss_graphics_module_id graphics_module;
+	Cmiss_graphics_filter_module_id filter_module;
 
 	void updateViewerRectangle();
 
@@ -94,7 +93,7 @@ public:
 
 	int access_count;
 
-	Cmiss_scene_picker(Cmiss_graphics_module_id graphics_module_in);
+	Cmiss_scene_picker(Cmiss_graphics_filter_module_id filter_module_in);
 
 	~Cmiss_scene_picker();
 
@@ -129,7 +128,7 @@ public:
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_scene_picker);
 
-Cmiss_scene_picker_id Cmiss_scene_picker_create(Cmiss_graphics_module *graphics_module);
+Cmiss_scene_picker_id Cmiss_scene_picker_create(Cmiss_graphics_filter_module_id filter_module);
 
 int Cmiss_scene_picker_set_interaction_volume(Cmiss_scene_picker_id scene_picker,
 	struct Interaction_volume *interaction_volume);

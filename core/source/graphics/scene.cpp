@@ -3243,8 +3243,11 @@ int Cmiss_scene_fill_scene_command_data(Cmiss_scene_id scene,
 			Cmiss_graphics_module_get_default_font(scene->graphics_module);
 		scene_command_data->spectrum_manager =
 			Cmiss_graphics_module_get_spectrum_manager(scene->graphics_module);
+		Cmiss_spectrum_module_id spectrum_module =
+			Cmiss_graphics_module_get_spectrum_module(scene->graphics_module);
 		scene_command_data->default_spectrum =
-				Cmiss_graphics_module_get_default_spectrum(scene->graphics_module);
+				Cmiss_spectrum_module_get_default_spectrum(spectrum_module);
+		Cmiss_spectrum_module_destroy(&spectrum_module);
 		scene_command_data->glyph_module =
 			Cmiss_graphics_module_get_glyph_module(scene->graphics_module);
 		scene_command_data->computed_field_manager =
@@ -4059,8 +4062,11 @@ Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene)
 {
 	if (scene)
 	{
-		Cmiss_scene_picker_id scene_picker = Cmiss_scene_picker_create(scene->graphics_module);
+		Cmiss_graphics_filter_module_id filter_module = Cmiss_graphics_module_get_filter_module(
+			scene->graphics_module);
+		Cmiss_scene_picker_id scene_picker = Cmiss_scene_picker_create(filter_module);
 		Cmiss_scene_picker_set_scene(scene_picker, scene);
+		Cmiss_graphics_filter_module_destroy(&filter_module);
 		return scene_picker;
 	}
 	return 0;

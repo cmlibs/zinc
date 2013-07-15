@@ -38,7 +38,6 @@
 
 #include "zinc/status.h"
 #include "zinc/graphicsfilter.h"
-#include "zinc/graphicsmodule.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -53,7 +52,7 @@
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 
-Cmiss_scene_picker::Cmiss_scene_picker(Cmiss_graphics_module_id graphics_module_in) :
+Cmiss_scene_picker::Cmiss_scene_picker(Cmiss_graphics_filter_module_id filter_module_in) :
 	interaction_volume(0),
 	top_scene(0),
 	scene_viewer(0),
@@ -64,7 +63,7 @@ Cmiss_scene_picker::Cmiss_scene_picker(Cmiss_graphics_module_id graphics_module_
 	select_buffer(0),
 	select_buffer_size(10000),
 	number_of_hits(0),
-	graphics_module(Cmiss_graphics_module_access(graphics_module_in)),
+	filter_module(Cmiss_graphics_filter_module_access(filter_module_in)),
 	access_count(1)
 {
 }
@@ -81,8 +80,8 @@ Cmiss_scene_picker::~Cmiss_scene_picker()
 		Cmiss_graphics_filter_destroy(&filter);
 	if (select_buffer)
 		DEALLOCATE(select_buffer);
-	if (graphics_module)
-		Cmiss_graphics_module_destroy(&graphics_module);
+	if (filter_module)
+		Cmiss_graphics_filter_module_destroy(&filter_module);
 }
 
 void Cmiss_scene_picker::updateViewerRectangle()
@@ -143,8 +142,8 @@ int Cmiss_scene_picker::pickObjects()
 			Cmiss_graphics_filter_destroy(&combined_filter);
 			if (scene_filter)
 			{
-				combined_filter = Cmiss_graphics_module_create_filter_operator_and(
-					graphics_module);
+				combined_filter = Cmiss_graphics_filter_module_create_filter_operator_and(
+					filter_module);
 				Cmiss_graphics_filter_operator_id and_filter = Cmiss_graphics_filter_cast_operator(
 					combined_filter);
 				if (and_filter)
@@ -839,9 +838,9 @@ int DESTROY(Cmiss_scene_picker)(struct Cmiss_scene_picker **scene_picker_address
 	}
 }
 
-Cmiss_scene_picker_id Cmiss_scene_picker_create(Cmiss_graphics_module *graphics_module)
+Cmiss_scene_picker_id Cmiss_scene_picker_create(Cmiss_graphics_filter_module_id filter_module)
 {
-	return new Cmiss_scene_picker(graphics_module);
+	return new Cmiss_scene_picker(filter_module);
 }
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_scene_picker);

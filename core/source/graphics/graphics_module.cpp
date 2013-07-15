@@ -431,54 +431,6 @@ Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
 	return 0;
 }
 
-Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	Cmiss_spectrum_id spectrum = NULL;
-
-	if (graphics_module && graphics_module->spectrum_module && name)
-	{
-		return Cmiss_spectrum_module_find_spectrum_by_name(
-			graphics_module->spectrum_module, name);
-	}
-	return 0;
-
-	return spectrum;
-}
-
-Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->spectrum_module)
-	{
-		return Cmiss_spectrum_module_create_spectrum(
-			graphics_module->spectrum_module);
-	}
-	return 0;
-}
-
-struct Cmiss_spectrum *Cmiss_graphics_module_get_default_spectrum(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->spectrum_module)
-	{
-		return Cmiss_spectrum_module_get_default_spectrum(
-			graphics_module->spectrum_module);
-	}
-
-	return 0;
-}
-
-int Cmiss_graphics_module_define_standard_materials(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->material_module)
-	{
-		return Cmiss_graphics_material_module_define_standard_materials(graphics_module->material_module);
-	}
-	return 0;
-}
-
 struct Cmiss_font *Cmiss_graphics_module_get_default_font(
 	struct Cmiss_graphics_module *graphics_module)
 {
@@ -495,31 +447,6 @@ Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
 	if (graphics_module && graphics_module->font_module)
 	{
 		return Cmiss_font_module_access(graphics_module->font_module);
-	}
-	return 0;
-}
-
-Cmiss_font_id Cmiss_graphics_module_find_font_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	Cmiss_font_id font = NULL;
-
-	if (graphics_module && graphics_module->font_module && name)
-	{
-		return Cmiss_font_module_find_font_by_name(graphics_module->font_module, name);
-	}
-	return 0;
-
-	return font;
-}
-
-Cmiss_font_id Cmiss_graphics_module_create_font(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->font_module)
-	{
-		return Cmiss_font_module_create_font(
-			graphics_module->font_module);
 	}
 	return 0;
 }
@@ -577,7 +504,7 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_scene_viewer_module.  "
+			"Cmiss_graphics_module_get_scene_viewer_module.  "
 			"Missing context");
 	}
 	return scene_viewer_module;
@@ -589,28 +516,6 @@ Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
 	if (graphics_module && graphics_module->tessellation_module)
 	{
 		return Cmiss_tessellation_module_access(graphics_module->tessellation_module);
-	}
-	return 0;
-}
-
-struct Cmiss_tessellation* Cmiss_graphics_module_find_tessellation_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	if (graphics_module && graphics_module->tessellation_module && name)
-	{
-		return Cmiss_tessellation_module_find_tessellation_by_name(
-			graphics_module->tessellation_module, name);
-	}
-	return 0;
-}
-
-Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->tessellation_module)
-	{
-		return Cmiss_tessellation_module_create_tessellation(
-			graphics_module->tessellation_module);
 	}
 	return 0;
 }
@@ -631,22 +536,6 @@ struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	}
 
 	return time_keeper;
-}
-
-Cmiss_scene_id Cmiss_graphics_module_get_default_scene(struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module)
-	{
-		Cmiss_scene_id scene = Cmiss_region_get_scene_internal(graphics_module->root_region);
-		if (scene == 0)
-		{
-			Cmiss_graphics_module_enable_scenes(graphics_module, graphics_module->root_region);
-			scene = Cmiss_region_get_scene_internal(graphics_module->root_region);
-		}
-		return scene;
-	}
-
-	return 0;
 }
 
 int Cmiss_graphics_module_enable_scenes(
@@ -722,35 +611,13 @@ Cmiss_scene_id Cmiss_graphics_module_get_scene(
 		scene = Cmiss_region_get_scene_internal(region);
 		if (!scene)
 		{
-			char *region_path = Cmiss_region_get_path(region);
-			display_message(ERROR_MESSAGE,
-				"Cmiss_graphics_module_get_scene.  Scene not found for region %s", region_path);
-			DEALLOCATE(region_path);
+			Cmiss_region_id top_region = Cmiss_region_get_root(region);
+			Cmiss_graphics_module_enable_scenes(graphics_module, top_region);
+			scene = Cmiss_region_get_scene_internal(region);
+			Cmiss_region_destroy(&top_region);
 		}
 	}
 	return scene;
-}
-
-Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	if (graphics_module && graphics_module->material_module && name)
-	{
-		return Cmiss_graphics_material_module_find_material_by_name(
-			graphics_module->material_module, name);
-	}
-	return 0;
-}
-
-Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->material_module)
-	{
-		return Cmiss_graphics_material_module_create_material(
-			graphics_module->material_module);
-	}
-	return 0;
 }
 
 int Cmiss_graphics_module_add_member_region(
@@ -813,94 +680,6 @@ struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 	if (graphics_module && graphics_module->graphics_filter_module)
 	{
 		return Cmiss_graphics_filter_module_get_manager(graphics_module->graphics_filter_module);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter *Cmiss_graphics_module_get_default_filter(
-		struct Cmiss_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_get_default_filter(
-			graphics_module->graphics_filter_module);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_find_filter_by_name(
-			graphics_module->graphics_filter_module, name);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_visibility_flags(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_visibility_flags(
-			graphics_module->graphics_filter_module);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
-	Cmiss_graphics_module_id graphics_module, const char *match_name)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_graphic_name(
-			graphics_module->graphics_filter_module, match_name);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_type(
-	Cmiss_graphics_module_id graphics_module, enum Cmiss_graphic_type graphic_type)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_graphic_type(
-			graphics_module->graphics_filter_module, graphic_type);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(
-	Cmiss_graphics_module_id graphics_module, Cmiss_region_id match_region)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_region(
-			graphics_module->graphics_filter_module, match_region);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_operator_and(
-			graphics_module->graphics_filter_module);
-	}
-	return 0;
-}
-
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
-	Cmiss_graphics_module_id graphics_module)
-{
-	if (graphics_module && graphics_module->graphics_filter_module)
-	{
-		return Cmiss_graphics_filter_module_create_filter_operator_or(
-			graphics_module->graphics_filter_module);
 	}
 	return 0;
 }
