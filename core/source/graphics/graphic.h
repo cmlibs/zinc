@@ -258,8 +258,6 @@ struct Cmiss_graphic_to_graphics_object_data
 		 relies on them being stored in the same order as the new additions.
 		 Set to NULL to turn off */
 	struct GT_object *existing_graphics;
-	/* for highlighting of selected objects */
-	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	/** The number of components in the data field */
 	int number_of_data_values;
 	/** A buffer allocated large enough for evaluating the data field */

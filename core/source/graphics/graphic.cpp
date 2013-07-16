@@ -587,7 +587,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		*top_level_xi_point_numbers,
 		use_element_dimension, *use_number_in_xi;
 	struct CM_element_information cm;
-	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element,*use_element;
 	struct FE_field *native_discretization_field;
@@ -974,13 +973,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									{
 										element_point_ranges_identifier.number_in_xi[i] =
 											use_number_in_xi[i];
-									}
-									if (NULL != (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
-										Element_point_ranges, identifier)(
-											&element_point_ranges_identifier,
-											graphic_to_object_data->selected_element_point_ranges_list)))
-									{
-										ranges = Element_point_ranges_get_ranges(element_point_ranges);
 									}
 									element_selected = 0;
 									if (graphic_to_object_data->selection_group_field)
