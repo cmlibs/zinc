@@ -324,12 +324,6 @@ int Cmiss_graphics_module_destroy(
 			MANAGER_DEREGISTER(Cmiss_font)(
 				graphics_module->font_manager_callback_id,
 				Cmiss_font_module_get_manager(graphics_module->font_module));
-			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
-			if (graphics_module->member_regions_list)
-			{
-				Cmiss_graphics_module_remove_member_regions_scene(graphics_module);
-				delete graphics_module->member_regions_list;
-			}
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
 			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
 			if (graphics_module->light_module)
@@ -348,6 +342,12 @@ int Cmiss_graphics_module_destroy(
 				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
 			if (graphics_module->tessellation_module)
 				Cmiss_tessellation_module_destroy(&graphics_module->tessellation_module);
+			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
+			if (graphics_module->member_regions_list)
+			{
+				Cmiss_graphics_module_remove_member_regions_scene(graphics_module);
+				delete graphics_module->member_regions_list;
+			}
 			DEALLOCATE(*graphics_module_address);
 		}
 		*graphics_module_address = NULL;
