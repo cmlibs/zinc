@@ -243,6 +243,7 @@ static int Cmiss_scene_void_detach_from_Cmiss_region(void *cmiss_scene_void)
 				scene->region);
 		}
 		scene->region = (struct Cmiss_region *)NULL;
+		Cmiss_scene_detach_from_owner(scene);
 		return_code = DEACCESS(Cmiss_scene)(&scene);
 	}
 	else
@@ -255,50 +256,6 @@ static int Cmiss_scene_void_detach_from_Cmiss_region(void *cmiss_scene_void)
 
 	return (return_code);
 }
-
-static void Cmiss_scene_element_points_ranges_selection_change(
-	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Element_point_ranges_selection_changes *changes,
-	void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Callback for change in the global element selection.
-==============================================================================*/
-{
-	struct Cmiss_scene *scene;
-
-	ENTER(Cmiss_scene_element_point_ranges_selection_change);
-	if (element_point_ranges_selection && changes &&
-		(scene = (struct Cmiss_scene *)scene_void))
-	{
-		/* find out if any of the changes affect elements in this group */
-		if (FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
-			Element_point_ranges_element_is_in_FE_region,
-			(void *)scene->fe_region,
-			changes->newly_selected_element_point_ranges_list) ||
-			FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
-				Element_point_ranges_element_is_in_FE_region,
-				(void *)scene->fe_region,
-				changes->newly_unselected_element_point_ranges_list))
-		{
-			/* update the graphics to match */
-			Cmiss_scene_begin_change(scene);
-			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-				Cmiss_graphic_selected_element_points_change, (void *)NULL,
-				scene->list_of_graphics);
-			Cmiss_scene_end_change(scene);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_element_point_ranges_selection_change.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-} /* Cmiss_scene_element_point_ranges_selection_change */
 
 /***************************************************************************//**
  * Allocates memory and assigns fields for a cmiss scene for the given
@@ -333,7 +290,6 @@ struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 				cmiss_scene->circle_discretization = 0;
 				cmiss_scene->native_discretization_field = (struct FE_field *)NULL;
 				cmiss_scene->default_coordinate_field = (struct Computed_field *)NULL;
-
 				cmiss_scene->visibility_flag = true;
 				cmiss_scene->update_callback_list=
 					(struct Cmiss_scene_callback_data *)NULL;
@@ -357,13 +313,6 @@ struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 				cmiss_scene->selection_group = NULL;
 				cmiss_scene->selection_removed = 0;
 				cmiss_scene->selection_handler_list = NULL;
-				if (graphics_module)
-				{
-					Element_point_ranges_selection_add_callback(
-						Cmiss_graphics_module_get_element_point_ranges_selection(graphics_module),
-						Cmiss_scene_element_points_ranges_selection_change,
-						(void *)cmiss_scene);
-				}
 			}
 			else
 			{
@@ -1027,10 +976,6 @@ static int Cmiss_scene_build_graphics_objects(
 			graphic_to_object_data.iteration_mesh = 0;
 			graphic_to_object_data.graphics_filter = graphics_filter;
 			graphic_to_object_data.time = time;
-			graphic_to_object_data.selected_element_point_ranges_list
-				= Element_point_ranges_selection_get_element_point_ranges_list(
-					Cmiss_graphics_module_get_element_point_ranges_selection(
-						scene->graphics_module));
 			graphic_to_object_data.selection_group_field = Cmiss_field_group_base_cast(
 				Cmiss_scene_get_selection_group(scene));
 			graphic_to_object_data.iso_surface_specification = NULL;
@@ -1309,6 +1254,7 @@ int Cmiss_region_deaccess_scene(struct Cmiss_region *region)
 			{
 				/* Clear graphics module to avoid being called back when scene is detached
 				 * from region. @see Cmiss_scene_void_detach_from_Cmiss_region */
+				Cmiss_scene_detach_from_owner(scene);
 				scene->graphics_module = NULL;
 				REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_scene))(scene, list);
 			}
@@ -2818,13 +2764,6 @@ int DESTROY(Cmiss_scene)(
 		{
 			Cmiss_field_group_destroy(&cmiss_scene->selection_group);
 		}
-		if (cmiss_scene->graphics_module)
-		{
-			Element_point_ranges_selection_remove_callback(
-				Cmiss_graphics_module_get_element_point_ranges_selection(cmiss_scene->graphics_module),
-				Cmiss_scene_element_points_ranges_selection_change,
-				(void *)cmiss_scene);
-		}
 		if (cmiss_scene->transformation_callback_list)
 		{
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_transformation)))(
@@ -4147,4 +4086,60 @@ int Scene_get_data_range_for_spectrum(Cmiss_scene_id scene,
 	}
 
 	return (return_code);
+}
+
+void Cmiss_scene_detach_from_owner(Cmiss_scene_id cmiss_scene)
+{
+	if (cmiss_scene)
+	{
+		if (cmiss_scene->computed_field_manager &&
+				cmiss_scene->computed_field_manager_callback_id)
+		{
+				MANAGER_DEREGISTER(Computed_field)(
+					cmiss_scene->computed_field_manager_callback_id,
+					cmiss_scene->computed_field_manager);
+				cmiss_scene->computed_field_manager_callback_id = NULL;
+				cmiss_scene->computed_field_manager = NULL;
+		}
+		Cmiss_scene_remove_time_dependent_transformation(cmiss_scene);
+		if (cmiss_scene->transformation_callback_list)
+		{
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_transformation)))(
+				&(cmiss_scene->transformation_callback_list));
+		}
+		if (cmiss_scene->top_region_change_callback_list)
+		{
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_top_region_change)))(
+				&(cmiss_scene->top_region_change_callback_list));
+		}
+		if (cmiss_scene->fe_region_callback_set)
+		{
+			FE_region_remove_callback(cmiss_scene->fe_region,
+				Cmiss_scene_FE_region_change, (void *)cmiss_scene);
+			cmiss_scene->fe_region_callback_set = 0;
+		}
+		if (cmiss_scene->data_fe_region && cmiss_scene->data_fe_region_callback_set)
+		{
+			FE_region_remove_callback(cmiss_scene->data_fe_region,
+				Cmiss_scene_data_FE_region_change, (void *)cmiss_scene);
+			cmiss_scene->data_fe_region_callback_set = 0;
+		}
+		if (cmiss_scene->data_fe_region)
+		{
+			DEACCESS(FE_region)(&(cmiss_scene->data_fe_region));
+		}
+		if (cmiss_scene->fe_region)
+		{
+			DEACCESS(FE_region)(&(cmiss_scene->fe_region));
+		}
+		struct Cmiss_scene_callback_data *callback_data, *next;
+		callback_data = cmiss_scene->update_callback_list;
+		while(callback_data)
+		{
+			next = callback_data->next;
+			DEALLOCATE(callback_data);
+			callback_data = next;
+		}
+		cmiss_scene->update_callback_list = 0;
+	}
 }

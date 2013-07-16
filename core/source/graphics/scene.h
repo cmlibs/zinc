@@ -504,5 +504,14 @@ int Cmiss_scene_triggers_top_region_change_callback(
 struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 	struct Cmiss_graphics_module *graphics_module);
 
+/**
+ * this function will remove callbacks relying on external objects.
+ * This function is called when:
+ * 	- owning region is being destroyed
+ * 	- scene is being removed from graphics module
+ * 	- context is being destroyed
+ */
+void Cmiss_scene_detach_from_owner(Cmiss_scene_id cmiss_scene);
+
 #endif /* !defined (SCENE_H) */
 

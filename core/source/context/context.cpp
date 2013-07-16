@@ -88,7 +88,11 @@ int Cmiss_context_destroy(struct Context **context_address)
 			if (context->id)
 				DEALLOCATE(context->id);
 			if (context->graphics_module)
+			{
+				Cmiss_graphics_module_remove_external_callback_dependency(
+					context->graphics_module);
 				Cmiss_graphics_module_destroy(&context->graphics_module);
+			}
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;

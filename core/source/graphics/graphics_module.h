@@ -115,9 +115,6 @@ struct Light_model_module *Cmiss_graphics_module_get_light_model_module(
 struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	struct Cmiss_graphics_module *module);
 
-struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(
-	struct Cmiss_graphics_module *graphics_module);
-
 /***************************************************************************//**
  * Add a region with a scene created by this graphics module object
  * into a list, so that graphics module can deaccess the scene of the region
@@ -153,4 +150,12 @@ struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 
 struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
 	struct Cmiss_graphics_module *graphics_module);
+
+/**
+ * this function will remove most of the callbacks in scenes belong to this
+ * module. This function should only be called when context is being destroyed.
+ */
+void Cmiss_graphics_module_remove_external_callback_dependency(
+	struct Cmiss_graphics_module *graphics_module);
+
 #endif /* !defined (GRAPHICS_MODULE_H) */

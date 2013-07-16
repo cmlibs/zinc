@@ -73,7 +73,6 @@ struct Cmiss_graphics_module
 	void *font_manager_callback_id;
 	Cmiss_scene_viewer_module_id scene_viewer_module;
 	Light_model_module *light_model_module;
-	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Cmiss_time_keeper *default_time_keeper;
 	Cmiss_tessellation_module_id tessellation_module;
 	struct Cmiss_graphics_filter_module *graphics_filter_module;
@@ -225,7 +224,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
 					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
 			module->tessellation_module = Cmiss_tessellation_module_create();
 			module->member_regions_list = new std::list<Cmiss_region*>;
@@ -326,13 +324,13 @@ int Cmiss_graphics_module_destroy(
 			MANAGER_DEREGISTER(Cmiss_font)(
 				graphics_module->font_manager_callback_id,
 				Cmiss_font_module_get_manager(graphics_module->font_module));
-			/* This will remove all callbacks used by the scene_viewer projection_field callback */
 			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
 			if (graphics_module->member_regions_list)
 			{
 				Cmiss_graphics_module_remove_member_regions_scene(graphics_module);
 				delete graphics_module->member_regions_list;
 			}
+			/* This will remove all callbacks used by the scene_viewer projection_field callback */
 			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
 			if (graphics_module->light_module)
 				Light_module_destroy(&graphics_module->light_module);
@@ -584,24 +582,6 @@ int Cmiss_graphics_module_enable_scenes(
 	return (return_code);
 }
 
-struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct Element_point_ranges_selection *element_point_ranges_selection = NULL;
-
-	if (graphics_module && graphics_module->element_point_ranges_selection)
-	{
-		element_point_ranges_selection = graphics_module->element_point_ranges_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_element_point_ranges_selection.  Invalid argument(s)");
-	}
-
-	return (element_point_ranges_selection);
-}
-
 Cmiss_scene_id Cmiss_graphics_module_get_scene(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region)
 {
@@ -704,4 +684,21 @@ Light_model_module *Cmiss_graphics_module_get_light_model_module(
 	}
 
 	return 0;
+}
+
+void Cmiss_graphics_module_remove_external_callback_dependency(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	if (graphics_module)
+	{
+		std::list<Cmiss_region*>::iterator region_iter;
+		for (region_iter = graphics_module->member_regions_list->begin();
+			region_iter != graphics_module->member_regions_list->end(); ++region_iter)
+		{
+			Cmiss_region *region = *region_iter;
+			Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+			Cmiss_scene_detach_from_owner(scene);
+			DEACCESS(Cmiss_scene)(&scene);
+		}
+	}
 }
