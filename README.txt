@@ -12,3 +12,4 @@ the Copyright held by Auckland UniServices Ltd.
 
 The Zinc library provides a complete API for creating software to interact with and visualise complex finite element models.  The strengths of this development are in field storage, including many finite element basis types, 3D visualisation and a mathematical field abstraction layer. 
 
+
