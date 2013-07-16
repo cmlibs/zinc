@@ -15,8 +15,7 @@ class GraphicTestCase(unittest.TestCase):
     def setUp(self):
         self.context = Context('graphictest')
         root_region = self.context.getDefaultRegion()
-        self.graphics_module = self.context.getDefaultGraphicsModule()
-        self.graphics_module.enableScenes(root_region)
+        self.graphics_module = self.context.getGraphicsModule()
         self.scene = self.graphics_module.getScene(root_region)
 
 
