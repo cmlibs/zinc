@@ -65,7 +65,7 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicsMaterialModule materialmodule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterialModule materialmodule = zinc.gm.getMaterialModule();
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
@@ -193,7 +193,7 @@ TEST(Cmiss_graphics_material_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicsMaterialModule materialmodule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterialModule materialmodule = zinc.gm.getMaterialModule();
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();

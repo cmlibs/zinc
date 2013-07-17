@@ -169,7 +169,7 @@ TEST(Cmiss_graphic_api, material_cpp)
 	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
 	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
 	GraphicsMaterial tempMaterial = gr.getMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
@@ -217,7 +217,7 @@ TEST(Cmiss_graphic_api, selected_material_cpp)
 	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.gm.getGraphicsMaterialModule();
+	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
 	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedMaterial();
 	GraphicsMaterial tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
