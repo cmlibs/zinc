@@ -72,7 +72,7 @@ length by this function.
 @return  Accessed graphics object or 0 on error.
 */
 GT_object *create_Spectrum_colour_bar(
-	char *name,struct Spectrum *spectrum,int component_number,
+	const char *name,struct Spectrum *spectrum,int component_number,
 	const double barCentre[3], const double barAxis[3], const double sideAxis[3],
 	GLfloat extend_length,
 	int tick_divisions,GLfloat tick_length,const char *number_format,
