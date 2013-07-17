@@ -56,6 +56,7 @@
 #include "zinc/fieldtypesconstant.hpp"
 #include "zinc/fieldtypescoordinatetransformation.hpp"
 #include "zinc/fieldtypesderivatives.hpp"
+#include "zinc/fieldtypesfibres.hpp"
 #include "zinc/fieldtypesfiniteelement.hpp"
 #include "zinc/fieldtypessubobjectgroup.hpp"
 #include "zinc/fieldtypesgroup.hpp"
