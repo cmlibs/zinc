@@ -1,0 +1,6 @@
+
+SET(CURRENT_TEST glyph)
+LIST(APPEND API_TESTS ${CURRENT_TEST})
+SET(${CURRENT_TEST}_SRC
+    ${CURRENT_TEST}/colour_bar.cpp
+    )
