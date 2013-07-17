@@ -69,6 +69,7 @@ class FieldConstant;
 class FieldStringConstant;
 class FieldCoordinateTransformation;
 class FieldVectorCoordinateTransformation;
+class FieldFibreAxes;
 class FieldFiniteElement;
 class FieldEmbedded;
 class FieldFindMeshLocation;
@@ -277,6 +278,8 @@ public:
 
 	FieldVectorCoordinateTransformation createVectorCoordinateTransformation(
 		Field& vectorField, Field& coordinateField);
+
+	FieldFibreAxes createFibreAxes(Field& fibreField, Field& coordinateField);
 
 	FieldFiniteElement createFiniteElement(int numberOfComponents);
 

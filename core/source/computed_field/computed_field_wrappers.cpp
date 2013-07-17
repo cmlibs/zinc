@@ -45,9 +45,9 @@ fibre_axes out of a fibre field.
  *
  * ***** END LICENSE BLOCK ***** */
 #include "zinc/fieldmodule.h"
+#include "zinc/fieldfibres.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
-#include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "general/message.h"
@@ -66,7 +66,7 @@ Notes:
 Used to ensure RC coordinate fields are passed to graphics functions.
 Must call Computed_field_end_wrap to clean up the returned field after use.
 The NORMALISED_WINDOW_COORDINATES system is a rectangular cartesian system
-but indicates that the graphics objects produced should be displayed in the 
+but indicates that the graphics objects produced should be displayed in the
 window coordinates rather than the model 3D coordinates and so are also not
 wrapped.
 ==============================================================================*/
@@ -149,7 +149,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 			/* make fibre_axes wrapper from fibre field */
 			Cmiss_field_module *field_module =
 				Cmiss_field_module_create(Computed_field_get_region(coordinate_field));
-			wrapper_field = Computed_field_create_fibre_axes(field_module,
+			wrapper_field = Cmiss_field_module_create_fibre_axes(field_module,
 					orientation_scale_field, coordinate_field);
 			Cmiss_field_module_destroy(&field_module);
 		}

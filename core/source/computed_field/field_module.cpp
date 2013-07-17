@@ -54,7 +54,6 @@
 #if defined (USE_ITK)
 #include "computed_field/computed_field_derivatives.h"
 #endif
-#include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_format_output.h"
 #include "computed_field/computed_field_function.h"

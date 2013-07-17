@@ -13,6 +13,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconstant.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcoordinatetransformation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldderivatives.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldfibres.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldfiniteelement.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldgroup.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimage.h

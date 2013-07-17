@@ -14,6 +14,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesconstant.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypescoordinatetransformation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesderivatives.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesfibres.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesfiniteelement.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesgroup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesimage.hpp
