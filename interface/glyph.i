@@ -40,6 +40,9 @@
 
 %module(package="zinc") glyph
 
+%import "graphicsmaterial.i"
+%import "spectrum.i"
+
 %{
 #include "zinc/glyph.hpp"
 %}
