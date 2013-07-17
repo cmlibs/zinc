@@ -299,7 +299,7 @@ public:
 	{
 	}
 	
-	virtual int Scene_tree_execute(Cmiss_scene */*scene*/)
+	virtual int Scene_tree_execute(Cmiss_scene *)
 	{
 		return 1;
 	}

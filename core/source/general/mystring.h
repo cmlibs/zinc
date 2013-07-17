@@ -220,6 +220,17 @@ NOTE: the string pointed to by <token_address> must be non-static and allowed
 to be reallocated.
 ==============================================================================*/
 
+/**
+ * @param formatString  C-style printf format string for floating point output.
+ * @param valuesCount  Number of floating point values to match, at least 1.
+ * @return  Conservative estimate of size of string needed to write numbers
+ * with printf using format_string. Supports format characters:
+ * f, F, e, E and g, G. Includes space for trailing zero.
+ * Return 0 if missing format string, unrecognised format characters or wrong
+ * number of values.
+ */
+int getNumericalFormatStringSize(const char *formatString, int valuesCount);
+
 #if defined (VAXC)
 char *strrpbrk(const char *s1,const char *s2);
 /*******************************************************************************

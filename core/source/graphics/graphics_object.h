@@ -1,37 +1,8 @@
-/*******************************************************************************
-FILE : graphics_object.h
-
-LAST MODIFIED : 30 April 2003
-
-DESCRIPTION :
-Graphical object data structures.
-
-HISTORY :
-Used to be gtypes.h
-7 June 1994
-	Merged GTTEXT into GTPOINT and GTPOINTSET and added a marker type and a marker
-	size.
-4 February 1996
-	Added time dependence for gtObject.
-16 February 1996
-	Added graphical finite element structure (code yet to be done).
-24 February 1996
-	Separated out user defined objects and put in userdef_object.h
-4 June 1996
-	Replaced gtObjectListItem by struct LIST(gtObject)
-5 June 1996
-	Changed gtObject to GT_object
-11 January 1997
-	Added pointers to the nodes in a GTPOINTSET.  This is a temporary measure to
-	allow the graphical_node_editor to work (will be replaced by the graphical
-	FE_node)
-30 June 1997
-	Added macros/functions for safer access to graphics objects. Should convert
-	rest of code to use them, so that members of graphics_objects are private.
-13 October 1998
-	SAB Added a callback mechanism so that through GT_object_changed interested
-	objects can automatically be notified of changes.
-==============================================================================*/
+/**
+ * FILE : graphics_object.h
+ *
+ * Private interfaces to Graphical object data structures.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -75,8 +46,6 @@ Used to be gtypes.h
 #include "zinc/types/glyphid.h"
 #include "zinc/graphic.h"
 #include "general/geometry.h"
-#include "general/list.h"
-#include "general/manager.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
@@ -304,21 +273,7 @@ struct GT_voltex;
 
 struct GT_object;
 
-typedef int(*Graphics_object_callback)(struct GT_object *graphics_object,
-	void *user_data);
-
-struct Graphics_object_callback_data
-{
-	Graphics_object_callback callback;
-	void *callback_user_data;
-	struct Graphics_object_callback_data *next;
-}; /* struct Graphics_object_callback_data */
-
 typedef struct GT_object gtObject;
-
-DECLARE_LIST_TYPES(GT_object);
-
-DECLARE_MANAGER_TYPES(GT_object);
 
 struct Graphics_object_range_struct
 /*******************************************************************************
@@ -544,13 +499,6 @@ DESCRIPTION :
 
 PROTOTYPE_OBJECT_FUNCTIONS(GT_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
-
-PROTOTYPE_LIST_FUNCTIONS(GT_object);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(GT_object,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(GT_object);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -949,14 +897,10 @@ Frees the memory for the fields of <**object>, frees the memory for <**object>
 and sets <*object> to NULL.
 ==============================================================================*/
 
-int GT_object_changed(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2002
-
-DESCRIPTION :
-External modules that change a GT_object should call this routine so that
-objects interested in this GT_object will be notified that is has changed.
-==============================================================================*/
+/**
+ * Mark graphics object as changed so it is recompiled at next redraw.
+ */
+void GT_object_changed(struct GT_object *graphics_object);
 
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
 	struct LIST(Graphical_material) *changed_material_list);
@@ -987,26 +931,6 @@ Note: Passing a NULL <changed_spectrum_list> indicates the equivalent of a
 change to any spectrum in use in the linked graphics objects.
 ==============================================================================*/
 
-int GT_object_add_callback(struct GT_object *graphics_object,
-	Graphics_object_callback callback, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Adds a callback routine which is called whenever a GT_object is aware of
-changes.  As the GT_object is not private, this relies on modules that change a
-GT_object calling GT_object_changed.
-==============================================================================*/
-
-int GT_object_remove_callback(struct GT_object *graphics_object,
-	Graphics_object_callback callback, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Removes a callback which was added previously
-==============================================================================*/
-
 int GT_object_has_time(struct GT_object *graphics_object,ZnReal time);
 /*******************************************************************************
 LAST MODIFIED : 26 June 1997
@@ -1024,25 +948,21 @@ DESCRIPTION :
 Returns true if <graphics_object> has primitives stored exactly at <time>.
 ==============================================================================*/
 
-/**
- * Set managed flag of GT_object. If this is set then the object will not be
- * destroyed while it is in the manager; if not set then the object will be
- * destroyed while it is only referenced by the manager.
- */
-int GT_object_set_managed(struct GT_object *graphics_object, int is_managed);
-
 /***************************************************************************//**
  * Returns the vertex buffer set if the graphics_object has one.
  */
 struct Graphics_vertex_array *GT_object_get_vertex_set(struct GT_object *graphics_object);
 
+/**
+ * Returns the number of times/primitive lists in the graphics_object.
+ */
 int GT_object_get_number_of_times(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 18 June 1998
 
-DESCRIPTION :
-Returns the number of times/primitive lists in the graphics_object.
-==============================================================================*/
+/**
+ * Mark for recompilation if graphics object has multiple times,
+ * or any glyph it uses have multiple times.
+ */
+void GT_object_time_change(struct GT_object *graphics_object);
 
 ZnReal GT_object_get_time(struct GT_object *graphics_object,int time_no);
 /*******************************************************************************

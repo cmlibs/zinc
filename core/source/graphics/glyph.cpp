@@ -59,11 +59,11 @@
 #include "zinc/graphicsmaterial.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
+#include "general/manager_private.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/defined_graphics_objects.h"
 #include "general/message.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_object.hpp"
@@ -73,6 +73,107 @@
 Module functions
 ----------------
 */
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(Cmiss_glyph)
+{
+	return object->access();
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_glyph)
+{
+	return Cmiss_glyph::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_glyph)
+{
+	if (object_address)
+	{
+		if (new_object)
+			new_object->access();
+		if (*object_address)
+			Cmiss_glyph::deaccess(object_address);
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_glyph)
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(Cmiss_glyph)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Cmiss_glyph,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(Cmiss_glyph,name);
+
+FULL_DECLARE_MANAGER_TYPE(Cmiss_glyph);
+
+DECLARE_LOCAL_MANAGER_FUNCTIONS(Cmiss_glyph)
+
+DECLARE_MANAGER_FUNCTIONS(Cmiss_glyph, manager)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_glyph, manager)
+
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_glyph, name, const char *, manager)
+
+Cmiss_glyph::~Cmiss_glyph()
+{
+	if (name)
+		DEALLOCATE(name);
+}
+
+int Cmiss_glyph::setName(const char *newName)
+{
+	int return_code;
+	if (newName)
+	{
+		if (this->name && (0 == strcmp(this->name, newName)))
+		{
+			return CMISS_OK;
+		}
+		return_code = CMISS_OK;
+		Cmiss_set_Cmiss_glyph *allGlyphs = 0;
+		bool restore_changed_object_to_lists = false;
+		if (this->manager)
+		{
+			allGlyphs = reinterpret_cast<Cmiss_set_Cmiss_glyph *>(this->manager->object_list);
+			Cmiss_glyph *existingGlyph = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph, name)(newName, this->manager);
+			if (existingGlyph)
+			{
+				display_message(ERROR_MESSAGE, "Cmiss_glyph::setName.  Glyph named '%s' already exists.", newName);
+				return_code = CMISS_ERROR_ARGUMENT;
+			}
+			else
+			{
+				// this temporarily removes the object from all related lists
+				restore_changed_object_to_lists = allGlyphs->begin_identifier_change(this);
+				if (!restore_changed_object_to_lists)
+				{
+					display_message(ERROR_MESSAGE, "Cmiss_glyph::setName.  "
+						"Could not safely change identifier in manager");
+					return_code = CMISS_ERROR_GENERAL;
+				}
+			}
+		}
+		if (CMISS_OK == return_code)
+		{
+			if (this->name)
+				DEALLOCATE(this->name);
+			this->name = duplicate_string(newName);
+		}
+		if (restore_changed_object_to_lists)
+		{
+			allGlyphs->end_identifier_change();
+		}
+		if (this->manager && return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_glyph)(this, MANAGER_CHANGE_IDENTIFIER(Cmiss_glyph));
+		}
+	}
+	else
+	{
+		return_code = CMISS_ERROR_ARGUMENT;
+	}
+	return (return_code);
+}
 
 static int construct_tube(int number_of_segments_around,ZnReal x1,ZnReal r1,
 	ZnReal x2,ZnReal r2,ZnReal cy,ZnReal cz,int primary_axis,Triple *vertex_list,
@@ -2226,23 +2327,18 @@ twice <number_of_segments_down> look remotely spherical.
 	return (glyph);
 } /* make_glyph_sphere */
 
-struct Cmiss_glyph : public GT_object
-{
-};
-
 Cmiss_glyph_id Cmiss_glyph_access(Cmiss_glyph_id glyph)
 {
 	if (glyph)
-		ACCESS(GT_object)(glyph);
+		glyph->access();
 	return glyph;
 }
 
 int Cmiss_glyph_destroy(Cmiss_glyph_id *glyph_address)
 {
-	if (glyph_address && (*glyph_address))
+	if (glyph_address)
 	{
-		GT_object **gt_object_address = reinterpret_cast<GT_object **>(glyph_address);
-		DEACCESS(GT_object)(gt_object_address);
+		Cmiss_glyph::deaccess(glyph_address);
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
@@ -2250,18 +2346,22 @@ int Cmiss_glyph_destroy(Cmiss_glyph_id *glyph_address)
 
 char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph)
 {
-	return duplicate_string(glyph->name);
+	if (glyph)
+		return duplicate_string(glyph->getName());
+	return 0;
 }
 
 int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name)
 {
-	return GT_object_set_name(glyph, name);
+	if (glyph && name)
+		return glyph->setName(name);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 bool Cmiss_glyph_is_managed(Cmiss_glyph_id glyph)
 {
 	if (glyph)
-		return glyph->is_managed_flag;
+		return glyph->isManaged();
 	return 0;
 }
 
@@ -2269,193 +2369,136 @@ int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, bool value)
 {
 	if (glyph)
 	{
-		bool use_is_managed_flag = (false != value);
-		if (use_is_managed_flag != glyph->is_managed_flag)
-		{
-			glyph->is_managed_flag = use_is_managed_flag;
-			MANAGED_OBJECT_CHANGE(GT_object)(glyph,
-				MANAGER_CHANGE_NOT_RESULT(GT_object));
-		}
+		glyph->setManaged(value);
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-struct Cmiss_glyph_module
+Cmiss_glyph_module::Cmiss_glyph_module() :
+	manager(CREATE(MANAGER(Cmiss_glyph))()),
+	defaultPointGlyph(0),
+	access_count(1)
 {
-private:
-	struct MANAGER(GT_object) *glyphManager;
-	struct GT_object *defaultPointGlyph;
-	int access_count;
+}
 
-	Cmiss_glyph_module() :
-		glyphManager(CREATE(MANAGER(GT_object))()),
-		defaultPointGlyph(0),
-		access_count(1)
+Cmiss_glyph_module::~Cmiss_glyph_module()
+{
+	if (defaultPointGlyph)
 	{
+		DEACCESS(Cmiss_glyph)(&(this->defaultPointGlyph));
 	}
+	DESTROY(MANAGER(Cmiss_glyph))(&(this->manager));
+}
 
-	~Cmiss_glyph_module()
+/**
+	* Create a glyph for the static graphics object and manage it.
+	* graphics object must have a name; if the name is in use by another glyph the
+	* graphics object is simply destroyed.
+	* @return  true if glyph added, false if not.
+	*/
+bool Cmiss_glyph_module::defineGlyphStatic(GT_object *graphicsObject)
+{
+	bool glyphAdded = true;
+	char *name = 0;
+	GET_NAME(GT_object)(graphicsObject, &name);
+	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->getManager()))
 	{
-		if (defaultPointGlyph)
+		Cmiss_glyph *glyph = Cmiss_glyph_static::create(graphicsObject);
+		glyph->setName(name);
+		glyph->setManaged(true);
+		this->addGlyph(glyph);
+		Cmiss_glyph::deaccess(&glyph);
+	}
+	else
+	{
+		DESTROY(GT_object)(&graphicsObject);
+		glyphAdded = false;
+	}
+	DEALLOCATE(name);
+	return glyphAdded;
+}
+
+void Cmiss_glyph_module::addGlyph(Cmiss_glyph *glyph)
+{
+	if (glyph->manager)
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_glyph_module::addGlyph.  Glyph already managed");
+		return;
+	}
+	if ((0 == glyph->getName()) || (static_cast<Cmiss_glyph*>(0) != 
+		FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(glyph->getName(), this->manager)))
+	{
+		char tempName[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_glyph)(this->manager);
+		do
 		{
-			DEACCESS(GT_object)(&(this->defaultPointGlyph));
+			i++;
+			sprintf(tempName, "temp%d",i);
 		}
-		DESTROY(MANAGER(GT_object))(&(this->glyphManager));
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(tempName, this->manager));
+		glyph->setName(tempName);
 	}
-
-	void manage_gt_object_or_destroy(GT_object *gt_object)
-	{
-		char *name = 0;
-		GET_NAME(GT_object)(gt_object, &name);
-		if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(name, this->glyphManager))
-		{
-			GT_object_set_managed(gt_object, 1);
-			ADD_OBJECT_TO_MANAGER(GT_object)(gt_object, this->glyphManager);
-		}
-		else
-		{
-			DESTROY(GT_object)(&gt_object);
-		}
-		DEALLOCATE(name);
-	}
-
-public:
-
-	static Cmiss_glyph_module *create()
-	{
-		return new Cmiss_glyph_module();
-	}
-
-	Cmiss_glyph_module *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(Cmiss_glyph_module* &glyph_module)
-	{
-		if (glyph_module)
-		{
-			--(glyph_module->access_count);
-			if (glyph_module->access_count <= 0)
-			{
-				delete glyph_module;
-			}
-			glyph_module = 0;
-			return CMISS_OK;
-		}
-		return CMISS_ERROR_ARGUMENT;
-	}
-
-	struct MANAGER(GT_object) *getGlyphManager()
-	{
-		return glyphManager;
-	}
-
-	int beginChange()
-	{
-		return MANAGER_BEGIN_CACHE(GT_object)(this->glyphManager);
-	}
-
-	int endChange()
-	{
-		return MANAGER_END_CACHE(GT_object)(this->glyphManager);
-	}
-
-	int defineStandardGlyphs();
-
-	int defineStandardCmguiGlyphs();
-
-	Cmiss_glyph *findGlyphByName(const char *name)
-	{
-		GT_object *gt_object = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(name,
-			reinterpret_cast<MANAGER(GT_object)*>(this->glyphManager));
-		if (gt_object)
-		{
-			ACCESS(GT_object)(gt_object);
-			return reinterpret_cast<Cmiss_glyph_id>(gt_object);
-		}
-		return 0;
-	}
-
-	Cmiss_glyph *getDefaultPointGlyph()
-	{
-		if (this->defaultPointGlyph)
-		{
-			ACCESS(GT_object)(this->defaultPointGlyph);
-			return reinterpret_cast<Cmiss_glyph *>(this->defaultPointGlyph);
-		}
-		return 0;
-	}
-
-	int setDefaultPointGlyph(Cmiss_glyph *glyph)
-	{
-		GT_object *gt_object = reinterpret_cast<GT_object *>(glyph);
-		REACCESS(GT_object)(&this->defaultPointGlyph, gt_object);
-		return CMISS_OK;
-	}
-
-};
+	ADD_OBJECT_TO_MANAGER(Cmiss_glyph)(glyph, this->manager);
+}
 
 int Cmiss_glyph_module::defineStandardGlyphs()
 {
 	beginChange();
-	GT_object *glyph = 0;
+	GT_object *graphicsObject = 0;
 
-	glyph = make_glyph_arrow_line("arrow", 1.f/3.f, 0.5);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_arrow_line("arrow", 1.f/3.f, 0.5);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_arrow_solid("arrow_solid", /*primary_axis*/1,
+	graphicsObject = make_glyph_arrow_solid("arrow_solid", /*primary_axis*/1,
 		12, 2.f/3.f, 1.f/6.f, /*cone_radius*/0.5f);
-	manage_gt_object_or_destroy(glyph);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_arrow_line("axis", 0.1, 0.5);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_arrow_line("axis", 0.1, 0.5);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_arrow_solid("axis_solid", /*primary_axis*/1,
+	graphicsObject = make_glyph_arrow_solid("axis_solid", /*primary_axis*/1,
 		12, 0.9f, 1.f/6.f, /*cone_radius*/0.5f);
-	manage_gt_object_or_destroy(glyph);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cone("cone", 12);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cone("cone", 12);
+	this->defineGlyphStatic(graphicsObject);
 	
-	glyph = make_glyph_cone_solid("cone_solid", 12);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cone_solid("cone_solid", 12);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cross("cross");
-	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_CROSS);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cross("cross");
+	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_CROSS);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cube_solid("cube_solid");
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cube_solid("cube_solid");
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cube_wireframe("cube_wireframe");
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cube_wireframe("cube_wireframe");
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cylinder("cylinder", 12);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cylinder("cylinder", 12);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cylinder_solid("cylinder_solid", 12);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cylinder_solid("cylinder_solid", 12);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_line("line");
-	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_LINE);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_line("line");
+	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_LINE);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_point("point", g_POINT_MARKER, 0);
-	GT_object_set_glyph_type(glyph, CMISS_GRAPHICS_GLYPH_POINT);
-	if (!this->defaultPointGlyph)
+	graphicsObject = make_glyph_point("point", g_POINT_MARKER, 0);
+	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_POINT);
+	if (this->defineGlyphStatic(graphicsObject) && (!this->defaultPointGlyph))
 	{
-		setDefaultPointGlyph(static_cast<Cmiss_glyph*>(glyph));
+		setDefaultPointGlyph(this->findGlyphByName("point"));
 	}
-	manage_gt_object_or_destroy(glyph);
 
-	glyph = make_glyph_sheet("sheet", /*define_texturepoints*/0);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_sheet("sheet", /*define_texturepoints*/0);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_sphere("sphere", 12, 6);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_sphere("sphere", 12, 6);
+	this->defineGlyphStatic(graphicsObject);
 
 	endChange();
 
@@ -2465,38 +2508,43 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 int Cmiss_glyph_module::defineStandardCmguiGlyphs()
 {
 	beginChange();
-	GT_object *glyph = 0;
+	GT_object *graphicsObject = 0;
 
-	glyph = make_glyph_cylinder("cylinder6", 6);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cylinder("cylinder6", 6);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cylinder("cylinder_hires", 48);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cylinder("cylinder_hires", 48);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_cylinder_solid("cylinder_solid_hires", 48);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_cylinder_solid("cylinder_solid_hires", 48);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_sphere("diamond", 4, 2);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_sphere("diamond", 4, 2);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_axes("grid_lines",
+	graphicsObject = make_glyph_axes("grid_lines",
 		/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
 		/*labels*/(const char **)NULL, /*label_offset*/0.1f, (Cmiss_font*)0);
-	Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
-	manage_gt_object_or_destroy(glyph);
+	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_grid_lines);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_line("line_ticks");
-	Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_line("line_ticks");
+	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_axes_ticks);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_sphere("sphere_hires", 48, 24);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_sphere("sphere_hires", 48, 24);
+	this->defineGlyphStatic(graphicsObject);
 
-	glyph = make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
-	manage_gt_object_or_destroy(glyph);
+	graphicsObject = make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
+	this->defineGlyphStatic(graphicsObject);
 
 	endChange();
 	return CMISS_OK;
+}
+
+Cmiss_set_Cmiss_glyph *Cmiss_glyph_module::getGlyphListPrivate()
+{
+	return reinterpret_cast<Cmiss_set_Cmiss_glyph *>(this->manager->object_list);
 }
 
 Cmiss_glyph_module_id Cmiss_glyph_module_create()
@@ -2504,11 +2552,11 @@ Cmiss_glyph_module_id Cmiss_glyph_module_create()
 	return Cmiss_glyph_module::create();
 }
 
-struct MANAGER(GT_object) *Cmiss_glyph_module_get_glyph_manager(
+struct MANAGER(Cmiss_glyph) *Cmiss_glyph_module_get_manager(
 	Cmiss_glyph_module_id glyph_module)
 {
 	if (glyph_module)
-		return glyph_module->getGlyphManager();
+		return glyph_module->getManager();
 	return 0;
 }
 
@@ -2523,7 +2571,10 @@ Cmiss_glyph_module_id Cmiss_glyph_module_access(
 int Cmiss_glyph_module_destroy(Cmiss_glyph_module_id *glyph_module_address)
 {
 	if (glyph_module_address)
-		return Cmiss_glyph_module::deaccess(*glyph_module_address);
+	{
+		Cmiss_glyph_module::deaccess(*glyph_module_address);
+		return CMISS_OK;
+	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
@@ -2560,9 +2611,14 @@ int Cmiss_glyph_module_define_standard_cmgui_glyphs(
 Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
 	Cmiss_glyph_module_id glyph_module, const char *name)
 {
+	Cmiss_glyph *glyph = 0;
 	if (glyph_module)
-		return glyph_module->findGlyphByName(name);
-	return 0;
+	{
+		glyph = glyph_module->findGlyphByName(name);
+		if (glyph)
+			glyph->access();
+	}
+	return glyph;
 }
 
 Cmiss_glyph_id Cmiss_glyph_module_get_default_point_glyph(
@@ -2577,6 +2633,21 @@ int Cmiss_glyph_module_set_default_point_glyph(
 	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id glyph)
 {
 	if (glyph_module)
-		return glyph_module->setDefaultPointGlyph(glyph);
+	{
+		glyph_module->setDefaultPointGlyph(glyph);
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_glyph *Cmiss_glyph_module_create_glyph_static(
+	Cmiss_glyph_module_id glyphModule, GT_object *graphicsObject)
+{
+	if (glyphModule && graphicsObject)
+	{
+		Cmiss_glyph *glyph = Cmiss_glyph_static::create(graphicsObject);
+		glyphModule->addGlyph(glyph);
+		return glyph;
+	}
 	return 0;
 }

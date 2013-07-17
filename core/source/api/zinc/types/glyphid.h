@@ -47,6 +47,9 @@ typedef struct Cmiss_glyph_module *Cmiss_glyph_module_id;
 struct Cmiss_glyph;
 typedef struct Cmiss_glyph *Cmiss_glyph_id;
 
+struct Cmiss_glyph_colour_bar;
+typedef struct Cmiss_glyph_colour_bar *Cmiss_glyph_colour_bar_id;
+
 /**
  * An enum defining how glyphs are repeatedly display at points.
  */

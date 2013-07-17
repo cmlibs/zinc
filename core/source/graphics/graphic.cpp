@@ -415,9 +415,7 @@ int DESTROY(Cmiss_graphic)(
 		}
 		if (graphic->glyph)
 		{
-			GT_object_remove_callback(reinterpret_cast<GT_object*>(graphic->glyph),
-				Cmiss_graphic_glyph_change, (void *)graphic);
-			DEACCESS(GT_object)(reinterpret_cast<GT_object**>(&(graphic->glyph)));
+			Cmiss_glyph_destroy(&(graphic->glyph));
 		}
 		Cmiss_field_destroy(&(graphic->point_orientation_scale_field));
 		Cmiss_field_destroy(&(graphic->signed_scale_field));
@@ -986,7 +984,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											use_element, top_level_element,
 											graphic_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
-											graphic->glyph, graphic->glyph_repeat_mode,
+											graphic_to_object_data->glyph_gt_object, graphic->glyph_repeat_mode,
 											graphic->point_base_size, graphic->point_offset,
 											graphic->point_scale_factors,
 											graphic_to_object_data->wrapper_orientation_scale_field,
@@ -1830,7 +1828,9 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 		set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
-			set_GT_object_glyph(graphic->graphics_object, graphic->glyph);
+			GT_object *glyph_gt_object = graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
+			set_GT_object_glyph(graphic->graphics_object, glyph_gt_object);
+			DEACCESS(GT_object)(&glyph_gt_object);
 			set_GT_object_glyph_repeat_mode(graphic->graphics_object, graphic->glyph_repeat_mode);
 			Triple base_size, scale_factors, offset, label_offset;
 			for (int i = 0; i < 3; ++i)
@@ -2246,11 +2246,10 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			if (graphic->glyph)
 			{
 				append_string(&graphic_string," glyph ",&error);
-				if (GET_NAME(GT_object)(graphic->glyph, &name))
-				{
-					append_string(&graphic_string,name,&error);
-					DEALLOCATE(name);
-				}
+				name = Cmiss_glyph_get_name(graphic->glyph);
+				append_string(&graphic_string,name,&error);
+				DEALLOCATE(name);
+
 				if (graphic->glyph_repeat_mode != CMISS_GLYPH_REPEAT_NONE)
 				{
 					append_string(&graphic_string, " ", &error);
@@ -2621,21 +2620,22 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 } /* Cmiss_graphic_string */
 
 int Cmiss_graphic_to_point_object_at_time(
-	struct Cmiss_graphic *graphic, Cmiss_field_cache_id field_cache, FE_value time,
+	struct Cmiss_graphic *graphic,
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data,
 	GLfloat graphics_object_primitive_time)
 {
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
 	ENTER(Cmiss_graphic_to_point_object_at_time);
-	if (graphic && field_cache)
+	if (graphic && graphic_to_object_data)
 	{
-		Cmiss_field_cache_set_time(field_cache, time);
+		Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 		FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
 		if (graphic->coordinate_field)
 		{
-			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->coordinate_field, field_cache, 3, coordinates))
+			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->coordinate_field, graphic_to_object_data->field_cache, 3, coordinates))
 			{
-				display_message(WARNING_MESSAGE, "Coordinate field not defined at point");
+				return 0;
 			}
 		}
 		FE_value a[3], b[3], c[3], size[3];
@@ -2645,7 +2645,7 @@ int Cmiss_graphic_to_point_object_at_time(
 		{
 			orientationScaleComponentCount = Cmiss_field_get_number_of_components(graphic->point_orientation_scale_field);
 			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->point_orientation_scale_field,
-				field_cache, orientationScaleComponentCount, orientationScale))
+				graphic_to_object_data->field_cache, orientationScaleComponentCount, orientationScale))
 			{
 				display_message(WARNING_MESSAGE, "Orientation scale field not defined at point");
 			}
@@ -2659,7 +2659,7 @@ int Cmiss_graphic_to_point_object_at_time(
 		{
 			FE_value signedScale[3];
 			if (CMISS_OK == Cmiss_field_evaluate_real(graphic->signed_scale_field,
-				field_cache, /*number_of_values*/3, signedScale))
+				graphic_to_object_data->field_cache, /*number_of_values*/3, signedScale))
 			{
 				const int componentCount = Cmiss_field_get_number_of_components(graphic->signed_scale_field);
 				for (int j = 0; j < componentCount; j++)
@@ -2679,7 +2679,7 @@ int Cmiss_graphic_to_point_object_at_time(
 			dataComponentCount = Cmiss_field_get_number_of_components(graphic->data_field);
 			data = new FE_value[dataComponentCount];
 			if (CMISS_OK != Cmiss_field_evaluate_real(graphic->data_field,
-				field_cache, dataComponentCount, data))
+				graphic_to_object_data->field_cache, dataComponentCount, data))
 			{
 				display_message(WARNING_MESSAGE, "Data field not defined at point");
 			}
@@ -2688,7 +2688,7 @@ int Cmiss_graphic_to_point_object_at_time(
 		if (graphic->label_field)
 		{
 			ALLOCATE(labels, char *, 1);
-			*labels = Cmiss_field_evaluate_string(graphic->label_field, field_cache);
+			*labels = Cmiss_field_evaluate_string(graphic->label_field, graphic_to_object_data->field_cache);
 		}
 		GT_object_remove_primitives_at_time(
 			graphic->graphics_object, graphics_object_primitive_time,
@@ -2728,7 +2728,8 @@ int Cmiss_graphic_to_point_object_at_time(
 		}
 		glyph_set = CREATE(GT_glyph_set)(1,
 			point_list, axis1_list, axis2_list, axis3_list, scale_list,
-			graphic->glyph, graphic->glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
+			graphic_to_object_data->glyph_gt_object, graphic->glyph_repeat_mode,
+			glyph_base_size, glyph_scale_factors, glyph_offset,
 			graphic->font, labels, glyph_label_offset, graphic->label_text, dataComponentCount, floatData,
 			/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
 			/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
@@ -3205,6 +3206,11 @@ int Cmiss_graphic_to_graphics_object(
 							return_code = 0;
 						}
 					}
+					if (return_code && graphic->glyph)
+					{
+						graphic_to_object_data->glyph_gt_object =
+							graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
+					}
 					if (return_code)
 					{
 #if defined (DEBUG_CODE)
@@ -3367,8 +3373,8 @@ int Cmiss_graphic_to_graphics_object(
 								case CMISS_FIELD_DOMAIN_NODES:
 								case CMISS_FIELD_DOMAIN_DATA:
 								{
-									/* currently all nodes put together in a single GT_glyph_set,
-												so rebuild all even if editing a single node or element */
+									// all nodes are in a single GT_glyph_set, so rebuild all even if
+									// editing a single node or element
 									GT_object_remove_primitives_at_time(
 										graphic->graphics_object, time,
 										(GT_object_primitive_object_name_conditional_function *)NULL,
@@ -3420,7 +3426,7 @@ int Cmiss_graphic_to_graphics_object(
 										GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
 											iteration_nodeset, graphic_to_object_data->field_cache,
 											graphic_to_object_data->rc_coordinate_field,
-											graphic->glyph, graphic->glyph_repeat_mode,
+											graphic_to_object_data->glyph_gt_object, graphic->glyph_repeat_mode,
 											graphic->point_base_size, graphic->point_offset, graphic->point_scale_factors,
 											graphic_to_object_data->time,
 											graphic_to_object_data->wrapper_orientation_scale_field,
@@ -3428,7 +3434,7 @@ int Cmiss_graphic_to_graphics_object(
 											graphic->font, graphic->label_field, graphic->label_offset,
 											graphic->label_text, graphic->label_density_field,
 											(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
-												graphic->select_mode,graphic_to_object_data->selection_group_field);
+											graphic->select_mode, graphic_to_object_data->selection_group_field);
 										/* NOT an error if no glyph_set produced == empty group */
 										if (glyph_set)
 										{
@@ -3446,8 +3452,7 @@ int Cmiss_graphic_to_graphics_object(
 								case CMISS_FIELD_DOMAIN_POINT:
 								{
 									Cmiss_graphic_to_point_object_at_time(
-										graphic, graphic_to_object_data->field_cache,
-										graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
+										graphic, graphic_to_object_data, /*graphics_object_primitive_time*/time);
 								} break;
 								default: // ELEMENTS
 								{
@@ -3469,7 +3474,7 @@ int Cmiss_graphic_to_graphics_object(
 								{
 									// so test for topology domain
 									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-													( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+										( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
 									if ( cad_topology_field )
 									{
 										// if topology domain then draw item at location
@@ -3521,7 +3526,7 @@ int Cmiss_graphic_to_graphics_object(
 										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
 										// so test for topology domain
 										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-														( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
 										if ( cad_topology_field )
 										{
 											cad_surfaces = true;
@@ -3574,9 +3579,8 @@ int Cmiss_graphic_to_graphics_object(
 												graphic->decimation_threshold);
 										}
 									}
-									/* If the isosurface is a volume we can decimate and
-											then normalise, otherwise if it is a polyline
-											representing a isolines, skip over. */
+									// If the isosurface is a volume we can decimate and then normalise,
+									// otherwise if it is a polyline representing a isolines, skip over.
 									if (g_VOLTEX == GT_object_get_type(graphic->graphics_object))
 									{
 										/* Decimate */
@@ -3593,8 +3597,7 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_STREAMLINES:
 							{
 								Cmiss_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
-								/* must always regenerate ALL streamlines since they can cross
-										into other elements */
+								// must always regenerate ALL streamlines since they can cross into other elements
 								if (graphic_to_object_data->existing_graphics)
 								{
 									DESTROY(GT_object)(
@@ -3677,6 +3680,10 @@ int Cmiss_graphic_to_graphics_object(
 							DEALLOCATE(graphic_to_object_data->data_copy_buffer);
 						}
 					}
+					if (graphic->glyph)
+					{
+						DEACCESS(GT_object)(&(graphic_to_object_data->glyph_gt_object));
+					}
 					if (graphic->stream_vector_field)
 					{
 						Computed_field_end_wrap(&(graphic_to_object_data->wrapper_stream_vector_field));
@@ -3743,30 +3750,6 @@ int Cmiss_graphic_compile_visible_graphic(
 
 	return (return_code);
 } /* Cmiss_graphic_compile_visible_graphic */
-
-int Cmiss_graphic_glyph_change(
-	struct GT_object *glyph,void *graphic_void)
-{
-	int return_code;
-	Cmiss_graphic *graphic =NULL;
-
-	ENTER(Cmiss_graphic_glyph_change);
-	graphic = (Cmiss_graphic *)graphic_void;
-	if (glyph && graphic)
-	{
-		graphic->graphics_changed = 1;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_glyph_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_glyph_change */
 
 int Cmiss_graphic_execute_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void)
@@ -4343,9 +4326,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		{
 			if (destination->glyph)
 			{
-				GT_object_remove_callback(destination->glyph,
-					Cmiss_graphic_glyph_change, (void *)destination);
-				DEACCESS(GT_object)(&(destination->glyph));
+				Cmiss_glyph_destroy(&(destination->glyph));
 			}
 		}
 		REACCESS(Computed_field)(&(destination->point_orientation_scale_field),
@@ -5487,9 +5468,9 @@ int Cmiss_graphic_time_change(
 	if (graphic)
 	{
 		return_code = 1;
-		if (graphic->glyph && (1 < GT_object_get_number_of_times(graphic->glyph)))
+		if (graphic->glyph)
 		{
-			GT_object_changed(graphic->glyph);
+			graphic->glyph->timeChange();
 		}
 		if (graphic->time_dependent)
 		{
@@ -5520,7 +5501,7 @@ int Cmiss_graphic_update_time_behaviour(
 	{
 		return_code = 1;
 		time_dependent = 0;
-		if (graphic->glyph && (1 < GT_object_get_number_of_times(graphic->glyph)))
+		if (graphic->glyph && graphic->glyph->isTimeVarying())
 		{
 			time_dependent = 1;
 		}
@@ -5611,6 +5592,28 @@ int Cmiss_graphic_update_time_behaviour(
 
 	return (return_code);
 } /* Cmiss_graphic_update_time_behaviour */
+
+int Cmiss_graphic_glyph_change(
+	struct Cmiss_graphic *graphic, void *manager_message_void)
+{
+	struct MANAGER_MESSAGE(Cmiss_glyph) *manager_message =
+		reinterpret_cast<struct MANAGER_MESSAGE(Cmiss_glyph) *>(manager_message_void);
+	if (graphic && manager_message)
+	{
+		if (graphic->glyph)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_glyph)(
+				manager_message, graphic->glyph);
+			if ((change_flags & MANAGER_CHANGE_RESULT(Cmiss_glyph)) != 0)
+			{
+				Cmiss_graphic_update_graphics_object_trivial(graphic);
+				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
 
 int Cmiss_graphics_material_change(
 	struct Cmiss_graphic *graphic, void *material_change_data_void)
@@ -6029,32 +6032,6 @@ char *Cmiss_graphics_render_type_enum_to_string(
 {
 	const char *type_string = Cmiss_graphics_render_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
-}
-
-int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
-{
-	int return_code = 0;
-	Cmiss_scene_id owning_scene = NULL;
-
-	if (graphic && command_string && (NULL != (owning_scene = graphic->scene)))
-	{
-		struct Modify_scene_data modify_scene_data;
-		modify_scene_data.delete_flag = 0;
-		modify_scene_data.position = -1;
-		modify_scene_data.graphic = Cmiss_graphic_access(graphic);
-		modify_scene_data.modify_this_graphic = 1;
-		modify_scene_data.group = 0;
-		struct Scene_command_data scene_command_data;
-		Cmiss_scene_fill_scene_command_data(owning_scene, &scene_command_data);
-		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
-		Cmiss_scene_cleanup_scene_command_data(&scene_command_data);
-		if (modify_scene_data.graphic)
-		{
-			Cmiss_graphic_destroy(&(modify_scene_data.graphic));
-		}
-	}
-
-	return return_code;
 }
 
 enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
@@ -6745,9 +6722,9 @@ Cmiss_glyph_id Cmiss_graphic_point_attributes_get_glyph(
 	Cmiss_graphic_point_attributes_id point_attributes)
 {
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic && (graphic->glyph))
+	if (graphic && graphic->glyph)
 	{
-		return reinterpret_cast<Cmiss_glyph_id>(ACCESS(GT_object)(graphic->glyph));
+		return Cmiss_glyph_access(graphic->glyph);
 	}
 	return 0;
 }
@@ -6758,20 +6735,9 @@ int Cmiss_graphic_point_attributes_set_glyph(
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
 	if (graphic)
 	{
-		GT_object *gt_object = reinterpret_cast<GT_object *>(glyph);
-		if (gt_object != graphic->glyph)
+		if (glyph != graphic->glyph)
 		{
-			if (graphic->glyph)
-			{
-				GT_object_remove_callback(graphic->glyph,
-					Cmiss_graphic_glyph_change, (void *)graphic);
-			}
-			REACCESS(GT_object)(&(graphic->glyph), gt_object);
-			if (glyph)
-			{
-				GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
-					(void *)graphic);
-			}
+			REACCESS(Cmiss_glyph)(&(graphic->glyph), glyph);
 			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}

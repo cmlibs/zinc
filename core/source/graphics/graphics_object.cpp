@@ -62,8 +62,6 @@ gtObject/gtWindow management routines.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
-#include "general/indexed_list_stl_private.hpp"
-#include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/octree.h"
@@ -98,12 +96,6 @@ Module types
 */
 
 #define GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE (50)
-
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(GT_object)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(GT_object,name,const char *)
-DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(GT_object,name);
-
-FULL_DECLARE_MANAGER_TYPE(GT_object);
 
 /*****************************************************************************//**
  * Holds the vertex buffer for a particular vertex_type.
@@ -2327,88 +2319,9 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 	return (graphics_object);
 } /* transform_GT_object */
 
-DECLARE_ACCESS_OBJECT_FUNCTION(GT_object)
-
-/**
- * Custom version handling is_managed_flag.
- */
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(GT_object)
-{
-	int return_code;
-	struct GT_object *object;
-
-	ENTER(DEACCESS(GT_object));
-	if (object_address && (object = *object_address))
-	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
-		{
-			return_code = DESTROY(GT_object)(object_address);
-		}
-		else if ((!object->is_managed_flag) && (object->manager) &&
-			((1 == object->access_count) || ((2 == object->access_count) &&
-				(MANAGER_CHANGE_NONE(GT_object) != object->manager_change_status))))
-		{
-			return_code =
-				REMOVE_OBJECT_FROM_MANAGER(GT_object)(object, object->manager);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*object_address = (struct GT_object *)NULL;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DEACCESS(GT_object) */
-
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(GT_object)
-{
-	int return_code;
-
-	ENTER(REACCESS(GT_object));
-	if (object_address)
-	{
-		return_code = 1;
-		if (new_object)
-		{
-			/* access the new object */
-			(new_object->access_count)++;
-		}
-		if (*object_address)
-		{
-			/* deaccess the current object */
-			DEACCESS(GT_object)(object_address);
-		}
-		/* point to the new object */
-		*object_address = new_object;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(GT_object).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(GT_object) */
+DECLARE_OBJECT_FUNCTIONS(GT_object)
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
-DECLARE_LOCAL_MANAGER_FUNCTIONS(GT_object)
-
-DECLARE_MANAGER_FUNCTIONS(GT_object, manager)
-
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(GT_object,manager)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(GT_object, name, const char *)
-
-DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -3835,16 +3748,11 @@ Allocates memory and assigns fields for a graphics object.
 			object->select_mode=GRAPHICS_NO_SELECT;
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
-			object->update_callback_list =
-				(struct Graphics_object_callback_data *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
 			object->glyph_type = CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
-			object->manager = NULL;
-			object->manager_change_status = 0;
-			object->is_managed_flag = false;
 			return_code = 1;
 			switch (object_type)
 			{
@@ -3948,7 +3856,6 @@ and sets <*object> to NULL.
 ==============================================================================*/
 {
 	int i,return_code;
-	struct Graphics_object_callback_data *callback_data,*next;
 	struct GT_object *object;
 
 	ENTER(DESTROY(GT_object));
@@ -3989,13 +3896,6 @@ and sets <*object> to NULL.
 			if (object->vertex_array)
 			{
 				delete object->vertex_array;
-			}
-			callback_data = object->update_callback_list;
-			while(callback_data)
-			{
-				next = callback_data->next;
-				DEALLOCATE(callback_data);
-				callback_data = next;
 			}
 			if (object->texture_tiling)
 			{
@@ -4068,77 +3968,14 @@ and sets <*object> to NULL.
 	return (return_code);
 } /* DESTROY(GT_object) */
 
-static int GT_object_inform_clients(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Sends a callback to all registered clients indicating the GT_object_has changed.
-==============================================================================*/
+void GT_object_changed(struct GT_object *graphics_object)
 {
-	int return_code;
-	struct Graphics_object_callback_data *callback_data;
-
-	ENTER(GT_object_inform_clients);
-	if (graphics_object)
+	while (graphics_object)
 	{
-		callback_data = graphics_object->update_callback_list;
-		while(callback_data)
-		{
-			(callback_data->callback)(graphics_object,
-				callback_data->callback_user_data);
-			callback_data = callback_data->next;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_inform_clients.  Invalid graphics object");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_inform_clients */
-
-int GT_object_changed(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2002
-
-DESCRIPTION :
-External modules that change a GT_object should call this routine so that
-objects interested in this GT_object will be notified that is has changed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_object_changed);
-
-	if (graphics_object)
-	{
-		if (graphics_object->nextobject)
-		{
-			GT_object_changed(graphics_object->nextobject);
-		}
 		graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
-		if (graphics_object->manager)
-		{
-			MANAGED_OBJECT_CHANGE(GT_object)(graphics_object,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GT_object));
-		}
-		return_code = GT_object_inform_clients(graphics_object);
+		graphics_object = graphics_object->nextobject;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_changed.  Invalid graphics object");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_changed */
+}
 
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
 	struct LIST(Graphical_material) *changed_material_list)
@@ -4190,7 +4027,6 @@ change to any material in use in the linked graphics objects.
 						graphics_object->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
 					}
 				}
-				GT_object_inform_clients(graphics_object);
 			}
 			graphics_object = graphics_object->nextobject;
 		}
@@ -4234,7 +4070,6 @@ change to any spectrum in use in the linked graphics objects.
 			{
 				/* need to rebuild display list when spectrum in use */
 				graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
-				GT_object_inform_clients(graphics_object);
 			}
 			graphics_object = graphics_object->nextobject;
 		}
@@ -4250,119 +4085,6 @@ change to any spectrum in use in the linked graphics objects.
 
 	return (return_code);
 } /* GT_object_Spectrum_change */
-
-int GT_object_add_callback(struct GT_object *graphics_object,
-	Graphics_object_callback callback, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Adds a callback routine which is called whenever a GT_object is aware of
-changes.  As the GT_object is not private, this relies on modules that change a
-GT_object calling GT_object_changed.
-==============================================================================*/
-{
-	int return_code = 0;
-	struct Graphics_object_callback_data *callback_data, *previous;
-
-	ENTER(GT_object_add_callback);
-
-	if (graphics_object && callback)
-	{
-		if(ALLOCATE(callback_data, struct Graphics_object_callback_data, 1))
-		{
-			callback_data->callback = callback;
-			callback_data->callback_user_data = user_data;
-			callback_data->next = (struct Graphics_object_callback_data *)NULL;
-			if(graphics_object->update_callback_list)
-			{
-				previous = graphics_object->update_callback_list;
-				while(previous->next)
-				{
-					previous = previous->next;
-				}
-				previous->next = callback_data;
-			}
-			else
-			{
-				graphics_object->update_callback_list = callback_data;
-			}
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_object_add_callback.  Unable to allocate callback data structure");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_add_callback.  Missing graphics_object object or callback");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_add_callback */
-
-int GT_object_remove_callback(struct GT_object *graphics_object,
-	Graphics_object_callback callback, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Removes a callback which was added previously
-==============================================================================*/
-{
-	int return_code;
-	struct Graphics_object_callback_data *callback_data, *previous;
-
-	ENTER(GT_object_remove_callback);
-
-	if (graphics_object && callback && graphics_object->update_callback_list)
-	{
-		callback_data = graphics_object->update_callback_list;
-		if((callback_data->callback == callback)
-			&& (callback_data->callback_user_data == user_data))
-		{
-			graphics_object->update_callback_list = callback_data->next;
-			DEALLOCATE(callback_data);
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-			while(!return_code && callback_data->next)
-			{
-				previous = callback_data;
-				callback_data = callback_data->next;
-				if((callback_data->callback == callback)
-					&& (callback_data->callback_user_data == user_data))
-				{
-					previous->next = callback_data->next;
-					DEALLOCATE(callback_data);
-					return_code = 1;
-				}
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-"GT_object_remove_callback.  Unable to find callback and user_data specified");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"GT_object_remove_callback.  Missing graphics_object, callback or callback list");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_remove_callback */
 
 int GT_object_has_time(struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
@@ -4491,42 +4213,27 @@ Returns true if <graphics_object> has primitives stored exactly at <time>.
 	return (return_code);
 } /* GT_object_has_primitives_at_time */
 
-int GT_object_set_managed(struct GT_object *graphics_object, int is_managed)
+int GT_object_get_number_of_times(struct GT_object *graphics_object)
 {
 	if (graphics_object)
-	{
-		graphics_object->is_managed_flag = (bool)is_managed;
-		return 1;
-	}
+		return graphics_object->number_of_times;
 	return 0;
 }
 
-int GT_object_get_number_of_times(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 18 June 1998
-
-DESCRIPTION :
-Returns the number of times/primitive lists in the graphics_object.
-==============================================================================*/
+void GT_object_time_change(struct GT_object *graphics_object)
 {
-	int number_of_times;
-
-	ENTER(GT_object_get_number_of_times);
-	/* check arguments */
 	if (graphics_object)
 	{
-		number_of_times=graphics_object->number_of_times;
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time and one glyph
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			GT_object_time_change(glyph_set->glyph);
+		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_get_number_of_times.  Invalid arguments");
-		number_of_times=0;
-	}
-	LEAVE;
-
-	return (number_of_times);
-} /* GT_object_get_number_of_times */
+	if (1 < graphics_object->number_of_times)
+		GT_object_changed(graphics_object);
+}
 
 Graphics_vertex_array *
 	GT_object_get_vertex_set(GT_object *graphics_object)
@@ -6988,76 +6695,14 @@ Sets the secondary_material of a GT_object.
 
 int GT_object_set_name(struct GT_object *gt_object, const char *name)
 {
-	int return_code;
-
-	if (gt_object && name)
+	if (gt_object)
 	{
-		if (0 == strcmp(gt_object->name, name))
-		{
-			return 1;
-		}
-		return_code = 1;
-		Cmiss_set_GT_object *manager_gt_object_list = 0;
-		bool restore_changed_object_to_lists = false;
-		if (gt_object->manager)
-		{
-			GT_object *existing_gt_object =
-				FIND_BY_IDENTIFIER_IN_MANAGER(GT_object, name)(name, gt_object->manager);
-			if (existing_gt_object && (existing_gt_object != gt_object))
-			{
-				display_message(ERROR_MESSAGE, "GT_object_set_name.  "
-					"gt_object named '%s' already exists.", name);
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				manager_gt_object_list = reinterpret_cast<Cmiss_set_GT_object *>(
-					gt_object->manager->object_list);
-				// this temporarily removes the object from all related lists
-				restore_changed_object_to_lists =
-					manager_gt_object_list->begin_identifier_change(gt_object);
-				if (!restore_changed_object_to_lists)
-				{
-					display_message(ERROR_MESSAGE, "GT_object_set_name.  "
-						"Could not safely change identifier in manager");
-					return_code = 0;
-				}
-			}
-		}
-		if (return_code)
-		{
-			char *new_name = duplicate_string(name);
-			if (new_name)
-			{
-				DEALLOCATE(gt_object->name);
-				gt_object->name = new_name;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (restore_changed_object_to_lists)
-		{
-			manager_gt_object_list->end_identifier_change();
-		}
-		if (gt_object->manager && return_code)
-		{
-			MANAGED_OBJECT_CHANGE(GT_object)(gt_object,
-				MANAGER_CHANGE_IDENTIFIER(GT_object));
-		}
+		if (gt_object->name)
+			DEALLOCATE(gt_object->name);
+		gt_object->name = name ? duplicate_string(name) : 0;
+		return 1;
 	}
-	else
-	{
-		if (gt_object)
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_object_set_name.  Invalid gt_object name '%s'", name);
-		}
-		return_code=0;
-	}
-
-	return (return_code);
+	return 0;
 }
 
 struct Graphical_material *get_GT_object_selected_material

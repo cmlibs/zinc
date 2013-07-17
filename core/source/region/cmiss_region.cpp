@@ -1195,12 +1195,6 @@ int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
 	return (return_code);
 }
 
-/***************************************************************************//**
- * Returns a reference to the root region of this region.
- *
- * @param region  The region.
- * @return  Accessed reference to root region, or NULL if none.
- */
 struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region)
 {
 	if (!region)
@@ -1211,6 +1205,11 @@ struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region)
 		root = root->parent;
 	}
 	return ACCESS(Cmiss_region)(root);
+}
+
+bool Cmiss_region_is_root(struct Cmiss_region *region)
+{
+	return region && (0 == region->parent);
 }
 
 int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
