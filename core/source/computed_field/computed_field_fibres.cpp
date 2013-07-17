@@ -43,9 +43,10 @@ computed fields.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
+
+#include "zinc/fieldfibres.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
-#include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -341,9 +342,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_fibre_axes(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *fibre_field, struct Computed_field *coordinate_field)
+Cmiss_field_id Cmiss_field_module_create_fibre_axes(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id fibre_field, Cmiss_field_id coordinate_field)
 {
 	Computed_field *field = NULL;
 	if (field_module && fibre_field && fibre_field->isNumerical() &&
@@ -364,7 +365,7 @@ struct Computed_field *Computed_field_create_fibre_axes(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_fibre_axes.  Invalid argument(s)");
+			"Cmiss_field_module_create_fibre_axes.  Invalid argument(s)");
 	}
 	LEAVE;
 

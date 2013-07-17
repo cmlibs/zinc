@@ -159,53 +159,50 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
-
-/***************************************************************************//**
+/**
  * Creates a field performing ITK connected threshold image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_connected_threshold_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-  double lower_threshold, double upper_threshold, double replace_value,
+	double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, const double *seed_points);
 
+/**
+ * If the field is of type FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
+ * used by it are returned - otherwise an error is reported.
+ * @deprecated.
+ */
 ZINC_API int Cmiss_field_get_type_connected_threshold_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
-  double *lower_threshold, double *upper_threshold, double *replace_value,
-  int *num_seed_points, int *dimension, double **seed_points);
-/*******************************************************************************
-LAST MODIFIED : 16 July 2007
+	double *lower_threshold, double *upper_threshold, double *replace_value,
+	int *num_seed_points, int *dimension, double **seed_points);
 
-DESCRIPTION :
-If the field is of type FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
-used by it are returned - otherwise an error is reported.
-WARNING: To be deprecated.
-==============================================================================*/
-
-
-
-/***************************************************************************//**
+/**
  * Creates a field performing ITK curvature anisotropic diffusion image filter
  * on scalar source field image.
  * Sets number of components to same number as <source_field>.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  The field to be filtered
+ * @param timeStep  The time step
+ * @param conductance  The conductance
+ * @param numIterations  The number of iterations to be performed
+ * @return  Newly created field
  */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double timeStep, double conductance, int numIterations);
 
+/**
+ * If the field is of type FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
+ * used by it are returned - otherwise an error is reported.
+ * @deprecated.
+ */
 ZINC_API int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *timeStep, double *conductance, int *numIterations);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
 
-DESCRIPTION :
-If the field is of type FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
-used by it are returned - otherwise an error is reported.
-WARNING: To be deprecated.
-==============================================================================*/
-
-/*****************************************************************************//**
+/**
  * Creates a field applying the ITK discrete gaussian image filter to the source
  * field. This means that each pixel value in the new field
  * is based on a weighted average of the pixel and the surrounding pixel values
@@ -220,7 +217,7 @@ WARNING: To be deprecated.
  * @param variance  The variance of the gaussian distribution used in the filter
  * @param max_kernel_width  The limit on the maximum kernel width that may be used
  * @return  Newly created field
-*/
+ */
 ZINC_API Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double variance, int maxKernelWidth);

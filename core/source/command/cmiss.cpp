@@ -75,7 +75,6 @@
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_format_output.h"
 #include "computed_field/computed_field_function.h"
 #include "computed_field/computed_field_group.h"

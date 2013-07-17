@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : computed_field_fibres.h
-
-LAST MODIFIED : 18 October 2000
-
-DESCRIPTION :
-Computed fields for extracting fibre axes from fibre angles in elements.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_field_scene_viewer_projection.h
+ *
+ * A field which extract a transformation matrix from a scene viewer for use in
+ * field expressions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +21,7 @@ Computed fields for extracting fibre axes from fibre angles in elements.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,10 +39,19 @@ Computed fields for extracting fibre axes from fibre angles in elements.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_FIBRES_H)
-#define COMPUTED_FIELD_FIBRES_H
+#ifndef __CMISS_FIELD_FIBRES_H__
+#define __CMISS_FIELD_FIBRES_H__
 
-/***************************************************************************//**
+#include "types/fieldid.h"
+#include "types/fieldmoduleid.h"
+
+#include "zinc/zincsharedobject.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
  * Creates a "fibre axes" field type which returns a 9-component (3 x 3 vector)
  * field representing an orthonormal coordinate system which is rotated by
  * 3 Euler angles supplied by a fibre field. Three resulting 3 axes are:
@@ -60,9 +67,18 @@ Computed fields for extracting fibre axes from fibre angles in elements.
  * sheet axis = in plane of fibre axis and d(coordinates)/dxi2 but corrected to
  * be closest vector to d(coordinates)/dxi2 which is normal to fibre axes.
  * normal axis = cross product fibre (x) sheet
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param fibre_field  The (numerical) fibre field with at most 3 components
+ * @param coordinate_field  The (numerical) coordinate system with at most 3 components
+ * @return  Fibre field with 9 components.
  */
-struct Computed_field *Computed_field_create_fibre_axes(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *fibre_field, struct Computed_field *coordinate_field);
+ZINC_API Cmiss_field_id Cmiss_field_module_create_fibre_axes(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id fibre_field, Cmiss_field_id coordinate_field);
 
-#endif /* !defined (COMPUTED_FIELD_FIBRES_H) */
+#ifdef __cplusplus
+}
+#endif
+
+#endif
