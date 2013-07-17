@@ -734,7 +734,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 			struct Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
 			Cmiss_scene_remove_total_transformation_callback(scene,
 				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
-				Computed_field_scene_viewer_top_scene_change_callback,	(void *)field);
+				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
 			Cmiss_scene_destroy(&scene);
 			Cmiss_field_module_destroy(&field_module);
 			transformation_callback_flag = 0;
@@ -886,36 +886,6 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
 	{
 		if (core->current_scene == top_scene)
-		{
-			core->remove_transformation_callback();
-			if (!core->change_required)
-			{
-				if (field->manager)
-				{
-					Computed_field_dependency_changed(field);
-				}
-				core->change_required = 1;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_transformation_callback.  "
-			"Invalid arguments.");
-	}
-}
-
-void Computed_field_scene_viewer_top_region_change_callback(
-	Cmiss_scene_id scene, void *dummy, void *field_void)
-{
-	Computed_field* field;
-	Computed_field_scene_viewer_projection* core;
-
-	if (scene && (field = (Computed_field *)field_void) &&
-		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
-	{
-		if (core->current_scene == scene)
 		{
 			core->remove_transformation_callback();
 			if (!core->change_required)

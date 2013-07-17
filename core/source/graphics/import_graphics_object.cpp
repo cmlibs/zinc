@@ -990,6 +990,8 @@ DESCRIPTION :
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									Graphical_material,name)(matname,
 										graphical_material_manager);
+								if (scanned_material)
+									ACCESS(Graphical_material)(scanned_material);
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{

@@ -884,6 +884,7 @@ int Cmiss_scene_add_graphic(struct Cmiss_scene *scene,
 			scene->list_of_graphics);
 		Cmiss_graphic_set_scene_private(graphic, scene);
 		Cmiss_scene_changed(scene);
+		scene->build = 1;
 	}
 	else
 	{
@@ -935,6 +936,7 @@ int Cmiss_scene_modify_graphic(struct Cmiss_scene *scene,
 		return_code=Cmiss_graphic_modify_in_list(graphic,new_graphic,
 			scene->list_of_graphics);
 		Cmiss_scene_changed(scene);
+		scene->build = 1;
 	}
 	else
 	{
@@ -1770,8 +1772,6 @@ int Cmiss_scene_remove_callback(struct Cmiss_scene *scene,
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-"Cmiss_scene_remove_callback.  Missing Cmiss_scene, callback or callback list");
 		return_code=0;
 	}
 	LEAVE;
