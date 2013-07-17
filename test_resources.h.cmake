@@ -15,7 +15,8 @@ public:
 		FIELDMODULE_EXNODE_RESOURCE = 4,
 		FIELDMODULE_CUBE_RESOURCE = 5,
 		FIELDMODULE_REGION_INPUT_RESOURCE = 6,
-		FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE = 7
+		FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE = 7,
+		TESTIMAGE_GRAY_JPG_RESOURCE = 8
 	};
 
 	TestResources()
@@ -25,7 +26,7 @@ public:
 	{  }
 
 	static const char *getLocation(ResourcesName resourceName)
-	{ 
+	{
 		if (resourceName == TestResources::FIELDIMAGE_PNG_RESOURCE)
 		{
 			return "@FIELDIMAGE_PNG_RESOURCE@";
@@ -53,6 +54,10 @@ public:
 		if (resourceName == TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)
 		{
 			return "@FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE@";
+		}
+		if (resourceName == TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)
+		{
+			return "@TESTIMAGE_GRAY_JPG_RESOURCE@";
 		}
 		return 0;
 	}
