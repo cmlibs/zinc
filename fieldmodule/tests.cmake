@@ -7,7 +7,6 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/create_if.cpp
 	${CURRENT_TEST}/create_nodeset_operators.cpp
 	${CURRENT_TEST}/create_vectoroperators.cpp
-	${CURRENT_TEST}/${CURRENT_TEST}testsetup.hpp
 	${CURRENT_TEST}/region_io.cpp
 	${CURRENT_TEST}/create_image_processing.cpp
 	)
