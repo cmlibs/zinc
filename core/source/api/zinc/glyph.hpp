@@ -40,6 +40,8 @@
 #define ZINC_GLYPH_HPP
 
 #include "zinc/glyph.h"
+#include "zinc/graphicsmaterial.hpp"
+#include "zinc/spectrum.hpp"
 
 namespace zinc
 {
@@ -122,6 +124,109 @@ public:
 	}
 };
 
+class GlyphColourBar : public Glyph
+{
+private:
+	explicit GlyphColourBar(Cmiss_glyph_id glyph_id) : Glyph(glyph_id) {}
+
+	inline Cmiss_glyph_colour_bar_id getDerivedId()
+	{
+		return reinterpret_cast<Cmiss_glyph_colour_bar_id>(id);
+	}
+
+public:
+	GlyphColourBar() : Glyph(0) {}
+
+	explicit GlyphColourBar(Cmiss_glyph_colour_bar_id colour_bar_id)
+		: Glyph(reinterpret_cast<Cmiss_glyph_id>(colour_bar_id))
+	{}
+
+	GlyphColourBar(Glyph& glyph)
+		: Glyph(reinterpret_cast<Cmiss_glyph_id>(Cmiss_glyph_cast_colour_bar(glyph.getId())))
+	{}
+
+	int getAxis(int valuesCount, double *valuesOut)
+	{
+		return Cmiss_glyph_colour_bar_get_axis(getDerivedId(), valuesCount, valuesOut);
+	}
+
+	int setAxis(int valuesCount, const double *valuesIn)
+	{
+		return Cmiss_glyph_colour_bar_set_axis(getDerivedId(), valuesCount, valuesIn);
+	}
+
+	int getCentre(int valuesCount, double *valuesOut)
+	{
+		return Cmiss_glyph_colour_bar_get_centre(getDerivedId(), valuesCount, valuesOut);
+	}
+
+	int setCentre(int valuesCount, const double *valuesIn)
+	{
+		return Cmiss_glyph_colour_bar_set_centre(getDerivedId(), valuesCount, valuesIn);
+	}
+
+	double getExtendLength() 
+	{
+		return Cmiss_glyph_colour_bar_get_extend_length(getDerivedId());
+	}
+
+	int setExtendLength(double extendLength)
+	{
+		return Cmiss_glyph_colour_bar_set_extend_length(getDerivedId(), extendLength);
+	}
+
+	char *getNumberFormat()
+	{
+		return Cmiss_glyph_colour_bar_get_number_format(getDerivedId());
+	}
+
+	int setNumberFormat(const char *numberFormat)
+	{
+		return Cmiss_glyph_colour_bar_set_number_format(getDerivedId(), numberFormat);
+	}
+
+	int getSideAxis(int valuesCount, double *valuesOut)
+	{
+		return Cmiss_glyph_colour_bar_get_side_axis(getDerivedId(), valuesCount, valuesOut);
+	}
+
+	int setSideAxis(int valuesCount, const double *valuesIn)
+	{
+		return Cmiss_glyph_colour_bar_set_side_axis(getDerivedId(), valuesCount, valuesIn);
+	}
+
+	int getTickDivisions() 
+	{
+		return Cmiss_glyph_colour_bar_get_tick_divisions(getDerivedId());
+	}
+
+	int setTickDivisions(int tickDivisions)
+	{
+		return Cmiss_glyph_colour_bar_set_tick_divisions(getDerivedId(), tickDivisions);
+	}
+
+	double getTickLength() 
+	{
+		return Cmiss_glyph_colour_bar_get_tick_length(getDerivedId());
+	}
+
+	int setTickLength(double tickLength)
+	{
+		return Cmiss_glyph_colour_bar_set_tick_length(getDerivedId(), tickLength);
+	}
+
+	GraphicsMaterial getTickMaterial()
+	{
+		return GraphicsMaterial(Cmiss_glyph_colour_bar_get_tick_material(getDerivedId()));
+	}
+
+	int setTickMaterial(GraphicsMaterial& material)
+	{
+		return Cmiss_glyph_colour_bar_set_tick_material(getDerivedId(), material.getId());
+	}
+
+};
+
 class GlyphModule
 {
 protected:
@@ -178,6 +283,11 @@ public:
 	int endChange()
 	{
 		return Cmiss_glyph_module_end_change(id);
+	}
+
+	GlyphColourBar createColourBar(Spectrum& spectrum)
+	{
+		return GlyphColourBar(Cmiss_glyph_module_create_colour_bar(id, spectrum.getId()));
 	}
 
 	int defineStandardGlyphs()

@@ -385,13 +385,18 @@ Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
 int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
 	const char *path, struct Cmiss_region **subregion_address);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the root region of this region.
  *
  * @param region  The region.
  * @return  Accessed reference to root region, or NULL if none.
  */
 struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region);
+
+/**
+ * Returns true if region has no parent.
+ */
+bool Cmiss_region_is_root(struct Cmiss_region *region);
 
 /***************************************************************************//**
  * Separates a region/path/name into the region plus region-path and remainder

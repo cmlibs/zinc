@@ -44,6 +44,8 @@
 #define ZINC_GLYPH_H
 
 #include "types/glyphid.h"
+#include "types/graphicsmaterialid.h"
+#include "types/spectrumid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -215,6 +217,238 @@ ZINC_API char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph);
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name);
+
+/**
+ * Create a glyph which draws a colour bar for the spectrum with ticks and
+ * value labels. The glyph dynamically updates to match the current range and
+ * definition of the spectrum. Note it only shows a single component.
+ *
+ * @param glyph_module  The glyph_module to create the glyph in.
+ * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
+ */
+ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_module_create_colour_bar(
+	Cmiss_glyph_module_id glyph_module, Cmiss_spectrum_id spectrum);
+
+/**
+ * If the glyph is type colour bar, returns the type-specific handle.
+ *
+ * @param glyph  The glyph to be cast.
+ * @return  Colour bar glyph specific representation if the input is the correct
+ * glyph type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_cast_colour_bar(Cmiss_glyph_id glyph);
+
+/**
+ * Cast colour bar glyph back to the base glyph type and return it.
+ * IMPORTANT NOTE: Returned glyph does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_glyph_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the colour_bar glyph argument.
+ *
+ * @param colour_bar_glyph  Handle to the colour_bar glyph to cast.
+ * @return  Non-accessed handle to the base glyph or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_colour_bar_base_cast(Cmiss_glyph_colour_bar_id colour_bar)
+{
+	return (Cmiss_glyph_id)(colour_bar);
+}
+
+/**
+ * Destroys this reference to the colour_bar glyph (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param colour_bar_address  Address of handle to the colour_bar glyph.
+ * @return  Status CMISS_OK if successfully destroyed the colour_bar glyph handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_destroy(Cmiss_glyph_colour_bar_id *colour_bar_address);
+
+/**
+ * Gets the vector defining the main axis of the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @param valuesCount  The size of valuesOut array. Gets maximum of 3 values.
+ * @param valuesOut  Array to receive axis vector.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_get_axis(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+
+/**
+ * Sets the vector defining the main axis of the colour bar. The magnitude of
+ * this vector gives the length of the bar without the extend length.
+ * The default axis is (0,1,0) for vertical orientation in window coordinates.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.
+ * @param valuesIn  Array containing axis vector. If fewer than 3 values then
+ * assumes zero for remaining components.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_axis(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+
+/**
+ * Gets the centre position of the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @param valuesCount  The size of valuesOut array. Gets maximum of 3 values.
+ * @param valuesOut  Array to receive centre position.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_get_centre(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+
+/**
+ * Sets the centre position of the colour bar.
+ * The default centre is (0,0,0). It is recommended that this not be changed
+ * and instead use the graphic point attributes offset.
+ * @see Cmiss_graphic_point_attributes_set_offset
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.
+ * @param valuesIn  Array containing centre position. If fewer than 3 values
+ * then assumes zero for remaining components.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_centre(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+
+/**
+ * Gets the extend length used at each end of the colour bar to show values
+ * outside the spectrum range.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  The extend length, or 0.0 if error.
+ */
+ZINC_API double Cmiss_glyph_colour_bar_get_extend_length(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the extend length used at each end of the colour bar to show values
+ * outside the spectrum range.
+ * The default extend length is 0.05.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param extendLength  The new extend length. Must be non-negative.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_extend_length(
+	Cmiss_glyph_colour_bar_id colour_bar, double extendLength);
+
+/**
+ * Get the number format used to write value labels on the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  Allocated string containing number format, or NULL on failure.
+ * Up to caller to free using Cmiss_deallocate().
+ */
+ZINC_API char *Cmiss_glyph_colour_bar_get_number_format(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Set the number format used to write value labels on the colour bar.
+ * This is a C printf format string with a single numerical format in the form:
+ * %[+/-/0][length][.precision](e/E/f/F/g/G)
+ * Other characters can be added before or after the number format.
+ * Note a literal % is entered by repeating it i.e. %%.
+ * The default format is "%+.4e".
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param numberFormat  The printf number format used for value labels.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_number_format(
+	Cmiss_glyph_colour_bar_id colour_bar, const char *numberFormat);
+
+/**
+ * Gets the vector defining the side/tick axis of the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @param valuesCount  The size of valuesOut array. Gets maximum of 3 values.
+ * @param valuesOut  Array to receive side axis vector.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_get_side_axis(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+
+/**
+ * Sets the vector defining the side/tick axis of the colour bar. The magnitude
+ * of this vector gives the diameter of the bar.
+ * The default side axis is (0.1,0,0) for vertical bar and horizontal ticks in
+ * window coordinates.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.
+ * @param valuesIn  Array containing side axis vector. If fewer than 3 values
+ * then assumes zero for remaining components.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_side_axis(
+	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+
+/**
+ * Gets the number of tick divisions drawn with labels.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  The number of tick divisions, or 0 if error.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_get_tick_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the number of tick divisions drawn with labels. This is one less than
+ * the number of ticks/labels.
+ * The default tick divisions is 10.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param tickDivisions  The new number of divisions, at least 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_tick_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar, int tickDivisions);
+
+/**
+ * Gets the tick length.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  The tick length, or 0.0 if error.
+ */
+ZINC_API double Cmiss_glyph_colour_bar_get_tick_length(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the tick length measured from outside radius of the colour bar, in the
+ * direction of the side axis.
+ * The default tick length is 0.05.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param tickLength  The new tick length. Must be non-negative.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_tick_length(
+	Cmiss_glyph_colour_bar_id colour_bar, double tickLength);
+
+/**
+ * Gets the material used for colour bar ticks and labels. Can be NULL.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  Handle to tick material, or 0 if none or error.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_tick_material(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the material used for colour bar ticks and labels. Can be NULL.
+ * Default is none i.e. use the same material as for the colour bar
+ * itself, which is supplied by the graphic.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param material  The new tick material; can be NULL to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_tick_material(
+	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material);
 
 #ifdef __cplusplus
 }

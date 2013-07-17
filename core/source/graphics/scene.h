@@ -212,6 +212,14 @@ int Cmiss_scene_for_each_material(struct Cmiss_scene *scene,
 int Cmiss_scene_list_commands(struct Cmiss_scene *scene,
 	const char *command_prefix, const char *command_suffix);
 
+/**
+ * Private method for informing scene of glyph manager changes.
+ * Propagates changes hierarchically to child scenes to minimise messages.
+ * Should only be called by Cmiss_graphics_module.
+ */
+void Cmiss_scene_glyph_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Cmiss_glyph) *manager_message);
+
 /***************************************************************************//**
  * Private method for informing scene of material manager changes.
  * Should only be called by Cmiss_graphics_module.
@@ -426,12 +434,6 @@ int Cmiss_region_has_scene(Cmiss_region_id cmiss_region);
 
 Cmiss_field_id Cmiss_scene_get_selection_group_private_for_highlighting(
 	Cmiss_scene_id scene);
-
-int Cmiss_scene_fill_scene_command_data(Cmiss_scene_id scene,
-	struct Scene_command_data *scene_command_data);
-
-int Cmiss_scene_cleanup_scene_command_data(
-  struct Scene_command_data *scene_command_data);
 
 int Cmiss_region_modify_scene(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position);

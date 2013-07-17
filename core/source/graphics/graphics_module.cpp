@@ -56,6 +56,7 @@
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
+#include "region/cmiss_region.h"
 #include "time/time_keeper.hpp"
 #include "general/message.h"
 #include <list>
@@ -64,6 +65,7 @@ struct Cmiss_graphics_module
 {
 	/* attribute managers and defaults: */
 	struct Cmiss_glyph_module *glyph_module;
+	void *glyph_manager_callback_id;
 	struct Cmiss_graphics_material_module *material_module;
 	void *material_manager_callback_id;
 	Light_module *light_module;
@@ -84,14 +86,43 @@ struct Cmiss_graphics_module
 
 namespace {
 
-/***************************************************************************//**
+/**
+ * Callback for changes in the glyph manager.
+ * Informs all renditions about the changes.
+ */
+void Cmiss_graphics_module_glyph_manager_callback(
+	struct MANAGER_MESSAGE(Cmiss_glyph) *message, void *graphics_module_void)
+{
+	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	if (message && graphics_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_glyph)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_glyph))
+		{
+			std::list<Cmiss_region*>::iterator region_iter;
+			for (region_iter = graphics_module->member_regions_list->begin();
+				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
+			{
+				Cmiss_region *region = *region_iter;
+				if (Cmiss_region_is_root(region))
+				{
+					Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+					Cmiss_scene_glyph_change(scene, message);
+					Cmiss_scene_destroy(&scene);
+				}
+			}
+		}
+	}
+}
+
+/**
  * Callback for changes in the material manager.
  * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_material_manager_callback(
 	struct MANAGER_MESSAGE(Graphical_material) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Graphical_material)(message);
@@ -112,19 +143,29 @@ void Cmiss_graphics_module_material_manager_callback(
 	}
 }
 
-/***************************************************************************//**
+/**
  * Callback for changes in the spectrum manager.
  * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_spectrum_manager_callback(
 	struct MANAGER_MESSAGE(Spectrum) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Spectrum)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Spectrum))
 		{
+			// update colour_bar glyphs, if any
+			graphics_module->glyph_module->beginChange();
+			Cmiss_set_Cmiss_glyph *glyphList = graphics_module->glyph_module->getGlyphListPrivate();
+			for (Cmiss_set_Cmiss_glyph::iterator iter = glyphList->begin(); iter != glyphList->end(); ++iter)
+			{
+				Cmiss_glyph *glyph = *iter;
+				glyph->spectrumChange(message);
+			}
+			graphics_module->glyph_module->endChange();
+
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
@@ -140,14 +181,14 @@ void Cmiss_graphics_module_spectrum_manager_callback(
 	}
 }
 
-/***************************************************************************//**
+/**
  * Callback for changes in the tessellation manager.
  * Informs all scenes about the changes.
  */
 void Cmiss_graphics_module_tessellation_manager_callback(
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_tessellation)(message);
@@ -168,10 +209,14 @@ void Cmiss_graphics_module_tessellation_manager_callback(
 	}
 }
 
+/**
+ * Callback for changes in the font manager.
+ * Informs all renditions about the changes.
+ */
 void Cmiss_graphics_module_font_manager_callback(
 	struct MANAGER_MESSAGE(Cmiss_font) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_font)(message);
@@ -218,6 +263,9 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->root_region = Cmiss_context_get_default_region(context);
 			module->material_module = Cmiss_graphics_material_module_create(
 					Cmiss_spectrum_module_get_manager(module->spectrum_module));
+			module->glyph_manager_callback_id =
+				MANAGER_REGISTER(Cmiss_glyph)(Cmiss_graphics_module_glyph_manager_callback,
+					(void *)module, Cmiss_glyph_module_get_manager(module->glyph_module));
 			module->material_manager_callback_id =
 				MANAGER_REGISTER(Graphical_material)(Cmiss_graphics_module_material_manager_callback,
 					(void *)module, Cmiss_graphics_material_module_get_manager(module->material_module));
@@ -311,6 +359,9 @@ int Cmiss_graphics_module_destroy(
 		graphics_module->access_count--;
 		if (0 == graphics_module->access_count)
 		{
+			MANAGER_DEREGISTER(Cmiss_glyph)(
+				graphics_module->glyph_manager_callback_id,
+				Cmiss_glyph_module_get_manager(graphics_module->glyph_module));
 			if (graphics_module->root_region)
 				Cmiss_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(

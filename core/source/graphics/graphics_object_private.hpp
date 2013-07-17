@@ -78,7 +78,6 @@ Used to be gtypes.h
 
 #include "general/cmiss_set.hpp"
 #include "general/geometry.h"
-#include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
@@ -400,7 +399,6 @@ Graphical object data structure.
 	int default_colourindex;
 	struct Graphical_material *default_material, *secondary_material, 
 		*selected_material;
-	struct Graphics_object_callback_data *update_callback_list;
 	/* spectrum */
 	struct Spectrum *spectrum;
 	/* the object can vary with time.  It is specified at <number_of_times>
@@ -416,9 +414,6 @@ Graphical object data structure.
 	struct Texture_tiling *texture_tiling;
 
 	union GT_primitive_list *primitive_lists;
-	struct MANAGER(GT_object) *manager;
-	int manager_change_status;
-	bool is_managed_flag;
 #if defined (OPENGL_API)
 	GLuint display_list;
 
@@ -450,52 +445,7 @@ Graphical object data structure.
 	enum Cmiss_graphics_glyph_type glyph_type;
 
 	int access_count;
-
-	inline GT_object *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static inline int deaccess(GT_object **gt_object_address)
-	{
-		return DEACCESS(GT_object)(gt_object_address);
-	}
 };
-
-/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
- * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
- */
-class GT_object_identifier : private GT_object
-{
-public:
-	GT_object_identifier(const char *name)
-	{
-		GT_object::name = name;
-	}
-
-	~GT_object_identifier()
-	{
-		GT_object::name = NULL;
-	}
-
-	GT_object *getPseudoObject()
-	{
-		return this;
-	}
-};
-
-/** functor for ordering Cmiss_set<GT_object> by name */
-struct GT_object_compare_name_functor
-{
-	bool operator() (const GT_object* gt_object1, const GT_object* gt_object2) const
-	{
-		return strcmp(gt_object1->name, gt_object2->name) < 0;
-	}
-};
-
-typedef Cmiss_set<GT_object *,GT_object_compare_name_functor> Cmiss_set_GT_object;
 
 struct GT_object_compile_context
 /*******************************************************************************

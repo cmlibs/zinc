@@ -1289,6 +1289,25 @@ int Cmiss_scene_destroy(struct Cmiss_scene **scene)
 	return return_code;
 }
 
+void Cmiss_scene_glyph_change(struct Cmiss_scene *scene,
+	struct MANAGER_MESSAGE(Cmiss_glyph) *manager_message)
+{
+	if (scene && manager_message)
+	{
+		Cmiss_scene_begin_change(scene);
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(Cmiss_graphic_glyph_change,
+			(void *)manager_message, scene->list_of_graphics);
+		// inform child scenes of changes
+		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
+		while (child)
+		{
+			Cmiss_scene_glyph_change(Cmiss_region_get_scene_internal(child), manager_message);
+			Cmiss_region_reaccess_next_sibling(&child);
+		}
+		Cmiss_scene_end_change(scene);
+	}
+}
+
 int Cmiss_scene_material_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Graphical_material) *manager_message)
 {
@@ -3164,58 +3183,6 @@ int Cmiss_scene_detach_fields(struct Cmiss_scene *scene)
 Cmiss_scene *Cmiss_scene_access(Cmiss_scene_id scene)
 {
 	return (ACCESS(Cmiss_scene)(scene));
-}
-
-int Cmiss_scene_fill_scene_command_data(Cmiss_scene_id scene,
-	struct Scene_command_data *scene_command_data)
-{
-	int return_code = 0;
-	if (scene)
-	{
-		scene_command_data->graphics_module = scene->graphics_module;
-		scene_command_data->scene = scene;
-		scene_command_data->material_module =
-			Cmiss_graphics_module_get_material_module(scene->graphics_module);
-		scene_command_data->default_material =
-			Cmiss_graphics_material_module_get_default_material(scene_command_data->material_module);
-		scene_command_data->default_font =
-			Cmiss_graphics_module_get_default_font(scene->graphics_module);
-		scene_command_data->spectrum_manager =
-			Cmiss_graphics_module_get_spectrum_manager(scene->graphics_module);
-		Cmiss_spectrum_module_id spectrum_module =
-			Cmiss_graphics_module_get_spectrum_module(scene->graphics_module);
-		scene_command_data->default_spectrum =
-				Cmiss_spectrum_module_get_default_spectrum(spectrum_module);
-		Cmiss_spectrum_module_destroy(&spectrum_module);
-		scene_command_data->glyph_module =
-			Cmiss_graphics_module_get_glyph_module(scene->graphics_module);
-		scene_command_data->computed_field_manager =
-			 Cmiss_region_get_Computed_field_manager(scene->region);
-		scene_command_data->region = scene->region;
-		scene_command_data->root_region = Cmiss_region_get_root(scene->region);
-		scene_command_data->tessellation_module =
-			Cmiss_graphics_module_get_tessellation_module(scene->graphics_module);
-		return_code = 1;
-	}
-	return return_code;
-}
-
-int Cmiss_scene_cleanup_scene_command_data(
-	struct Scene_command_data *scene_command_data)
-{
-	int return_code = 0;
-	if (scene_command_data)
-	{
-		Cmiss_graphics_material_module_destroy(&(scene_command_data->material_module));
-		Cmiss_graphics_material_destroy(&scene_command_data->default_material);
-		Cmiss_font_destroy(&scene_command_data->default_font);
-		Cmiss_spectrum_destroy(&scene_command_data->default_spectrum);
-		Cmiss_glyph_module_destroy(&(scene_command_data->glyph_module));
-		Cmiss_tessellation_module_destroy(&(scene_command_data->tessellation_module));
-		Cmiss_region_destroy(&(scene_command_data->root_region));
-		return_code = 1;
-	}
-	return return_code;
 }
 
 int list_Cmiss_scene_transformation_commands(struct Cmiss_scene *scene,

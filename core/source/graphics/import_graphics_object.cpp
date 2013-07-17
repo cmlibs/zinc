@@ -53,6 +53,8 @@ Functions for reading graphics object data from a file.
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
+#include "graphics/glyph.hpp"
+#include "graphics/material.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/import_graphics_object.h"
@@ -185,10 +187,11 @@ enumerated <surface_type>.
 Global functions
 ----------------
 */
+
 int file_read_graphics_objects(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(GT_object) *object_list)
+	struct Cmiss_graphics_material_module *material_module,
+	struct Cmiss_glyph_module *glyph_module)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -226,6 +229,7 @@ DESCRIPTION :
 	ZnReal time;
 
 	ENTER(file_read_graphics_objects);
+	Cmiss_glyph_module_begin_change(glyph_module);
 #if defined (DEBUG_CODE)
 	/*???debug*/
 	printf("ENTER(file_read_graphics_objects)\n");
@@ -296,7 +300,7 @@ DESCRIPTION :
 							IO_stream_scan(stream,"%f", &time);
 						}
 						file_read_Graphical_material_name(stream,&object_material,
-							graphical_material_manager);
+							Cmiss_graphics_material_module_get_manager(material_module));
 						if (version<2)
 						{
 							transtype=g_ID;
@@ -329,7 +333,17 @@ DESCRIPTION :
 									transform[3][3]);
 							}
 						}
-						obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(objname,object_list);
+						Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, objname);
+						obj = 0;
+						Cmiss_glyph_static *glyphStatic = dynamic_cast<Cmiss_glyph_static*>(glyph);
+						if (glyphStatic)
+						{
+							obj = glyphStatic->getGraphicsObject();
+						}
+						else
+						{
+							Cmiss_glyph_destroy(&glyph);
+						}
 						if (obj)
 						{
 							if (GT_object_has_time(obj,time))
@@ -346,6 +360,7 @@ DESCRIPTION :
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
 						}
+						ACCESS(GT_object)(obj);
 #if defined (DEBUG_CODE)
 						/*???debug */
 						printf("object type = %d (%s)\n",object_type,
@@ -750,18 +765,20 @@ DESCRIPTION :
 						{
 							if (return_code)
 							{
-								if(!FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-									objname,object_list))
+								if (glyph)
 								{
-									GT_object_set_managed(obj, 1);
-									ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
+									glyph->changed();
+								}
+								else
+								{
+									glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+									glyph->setName(objname);
+									glyph->setManaged(true);
 								}
 							}
-							else
-							{
-								DESTROY(GT_object)(&obj);
-							}
 						}
+						DEACCESS(GT_object)(&obj);
+						Cmiss_glyph_destroy(&glyph);
 					}
 					else
 					{
@@ -787,6 +804,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_graphics_objects.  Invalid argument(s)");
 	}
+	Cmiss_glyph_module_end_change(glyph_module);
 #if defined (DEBUG_CODE)
 	/*???debug */
 	printf("LEAVE(file_read_graphics_objects)\n");
@@ -801,13 +819,8 @@ DESCRIPTION :
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Cmiss_graphics_render_type render_type,
-	ZnReal time, struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(GT_object) *object_list)
-/*******************************************************************************
-LAST MODIFIED : 23 November 2005
-
-DESCRIPTION :
-==============================================================================*/
+	ZnReal time, struct Cmiss_graphics_material_module *material_module,
+	struct Cmiss_glyph_module *glyph_module)
 {
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
 	enum GT_voltex_type voltex_type;
@@ -827,8 +840,9 @@ DESCRIPTION :
 	struct VT_iso_triangle *triangle, **triangle_list;
 
 	ENTER(file_read_voltex_graphics_objects_from_obj);
+	Cmiss_glyph_module_begin_change(glyph_module);
 	return_code = 1;
-	if (file_name && graphical_material_manager)
+	if (file_name && material_module)
 	{
 		file = CREATE(IO_stream)(io_stream_package);
 		if (file && (IO_stream_open_for_read(file, file_name)))
@@ -841,7 +855,16 @@ DESCRIPTION :
 			{
 				sprintf(objname, "%s", file_name);
 			}
-			obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(objname, object_list);
+			Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, objname);
+			Cmiss_glyph_static *glyphStatic = dynamic_cast<Cmiss_glyph_static*>(glyph);
+			if (glyphStatic)
+			{
+				obj = glyphStatic->getGraphicsObject();
+			}
+			else
+			{
+				Cmiss_glyph_destroy(&glyph);
+			}
 			if(obj)
 			{
 				next_obj = obj;
@@ -872,12 +895,8 @@ DESCRIPTION :
 			else
 			{
 				obj=CREATE(GT_object)(objname, g_VOLTEX, NULL);
-				if (obj)
-				{
-					GT_object_set_managed(obj, 1);
-					ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
-				}
 			}
+			ACCESS(GT_object)(obj);
 			switch (render_type)
 			{
 				case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
@@ -989,7 +1008,7 @@ DESCRIPTION :
 								matname[strlen(word)] = 0;
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									Graphical_material,name)(matname,
-										graphical_material_manager);
+										Cmiss_graphics_material_module_get_manager(material_module));
 								if (scanned_material)
 									ACCESS(Graphical_material)(scanned_material);
 								if (!(scanned_material ||
@@ -999,7 +1018,7 @@ DESCRIPTION :
 									Cmiss_graphics_material_set_name(scanned_material, matname);
 									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
-											(scanned_material, graphical_material_manager)))
+											(scanned_material, Cmiss_graphics_material_module_get_manager(material_module))))
 									{
 										Cmiss_graphics_material_set_managed(scanned_material, true);
 									}
@@ -1013,15 +1032,14 @@ DESCRIPTION :
 								{
 									/* Could check that the materials match although I don't know
 										what to do if they don't */
-									obj = new_obj;
 								}
 								else
 								{
 									/* Make a new obj using the new material */
 									new_obj = CREATE(GT_object)(objname, g_VOLTEX, scanned_material);
 									GT_object_set_next_object(obj, new_obj);
-									obj = new_obj;
 								}
+								REACCESS(GT_object)(&obj, new_obj);
 								if (scanned_material)
 								{
 									Cmiss_graphics_material_destroy(&scanned_material);
@@ -1419,8 +1437,8 @@ DESCRIPTION :
 			if (return_code)
 			{
 				voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-										number_of_triangles, triangle_list,
-										/*n_data_components*/0, n_texture_coordinates, voltex_type);
+					number_of_triangles, triangle_list,
+					/*n_data_components*/0, n_texture_coordinates, voltex_type);
 				if (voltex)
 				{
 					return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
@@ -1432,7 +1450,22 @@ DESCRIPTION :
 						"Unable create GT_voltex");
 					return_code=0;
 				}
+				if (return_code)
+				{
+					if (glyph)
+					{
+						glyph->changed();
+					}
+					else
+					{
+						glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+						glyph->setName(objname);
+						glyph->setManaged(true);
+					}
+				}
 			}
+			DEACCESS(GT_object)(&obj);
+			Cmiss_glyph_destroy(&glyph);
 			IO_stream_close(file);
 			DESTROY(IO_stream)(&file);
 		}
@@ -1449,6 +1482,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_voltex_graphics_object_from_obj.  Invalid argument(s)");
 	}
+	Cmiss_glyph_module_end_change(glyph_module);
 	LEAVE;
 
 	return (return_code);

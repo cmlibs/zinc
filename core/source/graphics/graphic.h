@@ -107,7 +107,7 @@ finite element group scene.
 		decimation_threshold;
 
 	/* point attributes */
-	struct GT_object *glyph;
+	Cmiss_glyph *glyph;
 	enum Cmiss_glyph_repeat_mode glyph_repeat_mode;
 	FE_value point_offset[3];
 	FE_value point_base_size[3];
@@ -240,6 +240,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	struct Computed_field *rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field,
 		*selection_group_field;
+	GT_object *glyph_gt_object;
 	struct Cmiss_region *region;
 	Cmiss_field_module_id field_module;
 	struct FE_region *fe_region;
@@ -284,26 +285,6 @@ Structure modified by g_element modify routines.
 	int modify_this_graphic;
 	Cmiss_field_group_id group; // optional group field for migrating group regions
 }; /* struct Modify_graphic_data */
-
-/***************************************************************************//**
- * Subset of command data passed to scene modify routines.
- */
-struct Scene_command_data
-{
-	struct Cmiss_graphics_module *graphics_module;
-	struct Cmiss_scene *scene;
-	struct Graphical_material *default_material;
-	struct Cmiss_font *default_font;
-	Cmiss_glyph_module_id glyph_module;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Cmiss_region *region;
-	/* root_region used for seeding streamlines from the nodes in a region */
-	struct Cmiss_region *root_region;
-	Cmiss_graphics_material_module_id material_module;
-	Cmiss_tessellation_module_id tessellation_module;
-	struct Spectrum *default_spectrum;
-	struct MANAGER(Spectrum) *spectrum_manager;
-}; /* struct Scene_command_data */
 
 struct Cmiss_graphic_Computed_field_change_data
 {
@@ -448,12 +429,6 @@ int Cmiss_graphic_to_graphics_object(
  */
 int Cmiss_graphic_compile_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void);
-
-/***************************************************************************//**
- * Notifies the <graphic> that the glyph used has changed.
- */
-int Cmiss_graphic_glyph_change(
-	struct GT_object *glyph,void *graphic_void);
 
 /***************************************************************************//**
  * If the settings visibility flag is set and it has a graphics_object, the
@@ -720,6 +695,14 @@ struct Cmiss_graphics_material_change_data
 	struct MANAGER_MESSAGE(Graphical_material) *manager_message;
 	int graphics_changed;
 };
+
+/**
+ * Inform graphic of changes in the glyph manager. Marks graphic for redraw if
+ * uses a changed glyph, and propagates change to owning scene.
+ * @param manager_message_void  A struct MANAGER_MESSAGE(Cmiss_glyph) *.
+ */
+int Cmiss_graphic_glyph_change(struct Cmiss_graphic *graphic,
+	void *manager_message_void);
 
 /***************************************************************************//**
  * Inform graphic of changes in the material manager. Marks affected

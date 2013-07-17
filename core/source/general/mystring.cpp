@@ -48,7 +48,7 @@ Function definitions for some general purpose string functions.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <cctype>
 
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -1107,6 +1107,58 @@ to be reallocated.
 
 	return (return_code);
 } /* make_valid_token */
+
+int getNumericalFormatStringSize(const char *formatString, int valuesCount)
+{
+	if (!formatString)
+		return 0;
+	int len = strlen(formatString);
+	int size = len + 1;
+	int numValues = 0;
+	for (int i = 0; i < len; ++i)
+	{
+		if (formatString[i] == '%')
+		{
+			++i;
+			if (formatString[i] == '%')
+			{
+				continue;
+			}
+			const char *length = formatString + i;
+			const char *precision = 0;
+			const char *c = length;
+			while (isdigit(*c) || (*c=='+') || (*c=='-') || (*c=='.'))
+			{
+				++c;
+				if (!precision && (*c=='.'))
+				{
+					precision = c;
+				}
+			}
+			if ( (*c == 'e') || (*c == 'E')
+				|| (*c == 'f') || (*c == 'F')
+				|| (*c == 'g') || (*c == 'G'))
+			{
+				size += abs(atoi(length));
+				if (precision)
+				{
+					size += atoi(precision);
+				}
+				size += 14; // "-0.000000e+000"
+				if ((*c == 'f') || (*c == 'F'))
+				{
+					size += 309; // max double exponent!
+				}
+				++numValues;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	return (numValues == valuesCount) ? size : 0;
+}
 
 #if defined (VAXC)
 char *strrpbrk(const char *s1,const char *s2)
