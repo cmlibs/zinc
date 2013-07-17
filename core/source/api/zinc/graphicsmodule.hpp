@@ -113,7 +113,7 @@ public:
 		return GlyphModule(Cmiss_graphics_module_get_glyph_module(id));
 	}
 
-	GraphicsMaterialModule getGraphicsMaterialModule()
+	GraphicsMaterialModule getMaterialModule()
 	{
 		return GraphicsMaterialModule(Cmiss_graphics_module_get_material_module(id));
 	}
