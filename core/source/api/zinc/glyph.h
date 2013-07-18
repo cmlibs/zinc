@@ -336,6 +336,49 @@ ZINC_API int Cmiss_glyph_colour_bar_set_extend_length(
 	Cmiss_glyph_colour_bar_id colour_bar, double extendLength);
 
 /**
+ * Gets the number of divisions between labels.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  The number of label divisions, or 0 if error.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_get_label_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the number of divisions between labels. This is one less than the
+ * number of labels/ticks.
+ * The default label divisions is 10.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param labelDivisions  The new number of divisions, at least 1.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_label_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar, int labelDivisions);
+
+/**
+ * Gets the material used for colour bar labels and ticks. Can be NULL.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  Handle to label material, or 0 if none or error.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_label_material(
+	Cmiss_glyph_colour_bar_id colour_bar);
+
+/**
+ * Sets the material used for colour bar labels and ticks. Can be NULL.
+ * Default is none i.e. use the same material as for the colour bar
+ * itself, which is supplied by the graphic.
+ *
+ * @param colour_bar  The colour bar glyph to modify.
+ * @param material  The new label material; can be NULL to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_colour_bar_set_label_material(
+	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material);
+
+/**
  * Get the number format used to write value labels on the colour bar.
  *
  * @param colour_bar  The colour bar glyph to query.
@@ -387,27 +430,6 @@ ZINC_API int Cmiss_glyph_colour_bar_set_side_axis(
 	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
 
 /**
- * Gets the number of tick divisions drawn with labels.
- *
- * @param colour_bar  The colour bar glyph to query.
- * @return  The number of tick divisions, or 0 if error.
- */
-ZINC_API int Cmiss_glyph_colour_bar_get_tick_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar);
-
-/**
- * Sets the number of tick divisions drawn with labels. This is one less than
- * the number of ticks/labels.
- * The default tick divisions is 10.
- *
- * @param colour_bar  The colour bar glyph to modify.
- * @param tickDivisions  The new number of divisions, at least 1.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
- */
-ZINC_API int Cmiss_glyph_colour_bar_set_tick_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar, int tickDivisions);
-
-/**
  * Gets the tick length.
  *
  * @param colour_bar  The colour bar glyph to query.
@@ -427,28 +449,6 @@ ZINC_API double Cmiss_glyph_colour_bar_get_tick_length(
  */
 ZINC_API int Cmiss_glyph_colour_bar_set_tick_length(
 	Cmiss_glyph_colour_bar_id colour_bar, double tickLength);
-
-/**
- * Gets the material used for colour bar ticks and labels. Can be NULL.
- *
- * @param colour_bar  The colour bar glyph to query.
- * @return  Handle to tick material, or 0 if none or error.
- * Up to caller to destroy returned handle.
- */
-ZINC_API Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_tick_material(
-	Cmiss_glyph_colour_bar_id colour_bar);
-
-/**
- * Sets the material used for colour bar ticks and labels. Can be NULL.
- * Default is none i.e. use the same material as for the colour bar
- * itself, which is supplied by the graphic.
- *
- * @param colour_bar  The colour bar glyph to modify.
- * @param material  The new tick material; can be NULL to clear.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
- */
-ZINC_API int Cmiss_glyph_colour_bar_set_tick_material(
-	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material);
 
 #ifdef __cplusplus
 }

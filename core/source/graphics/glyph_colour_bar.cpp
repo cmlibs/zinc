@@ -62,7 +62,7 @@ coloured by the current range of the spectrum. An extra <extend_length> is added
 on to each end of the bar and given the colour the spectrum returns outside its
 range at that end.
 The <side_axis> must not be collinear with <bar_axis> and is used to calculate
-points around the bar and the direction of the <tick_divisions>+1 ticks at which
+points around the bar and the direction of the <label_divisions>+1 ticks at which
 spectrum values are written.
 Attached to the bar graphics_object are two graphics objects using the
 <tick_label_material>, one containing the ticks, the other the labels. The
@@ -75,7 +75,7 @@ GT_object *create_Spectrum_colour_bar(
 	const char *name,struct Spectrum *spectrum,int component_number,
 	const double barCentre[3], const double barAxis[3], const double sideAxis[3],
 	GLfloat extend_length,
-	int tick_divisions,GLfloat tick_length,const char *number_format,
+	int label_divisions,GLfloat tick_length,const char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
 	struct Cmiss_font *font)
@@ -262,7 +262,7 @@ GT_object *create_Spectrum_colour_bar(
 			}
 		}
 		/* get values for calculating tick and label positions */
-		number_of_ticks=tick_divisions+1;
+		number_of_ticks=label_divisions+1;
 		scaled_axis[0]=bar_length*bar_axis[0];
 		scaled_axis[1]=bar_length*bar_axis[1];
 		scaled_axis[2]=bar_length*bar_axis[2];
@@ -409,9 +409,9 @@ Cmiss_glyph_colour_bar::Cmiss_glyph_colour_bar(Cmiss_spectrum *spectrumIn) :
 	spectrum(Cmiss_spectrum_access(spectrumIn)),
 	graphicsObject(0),
 	extendLength(0.05),
-	tickMaterial(0),
+	labelMaterial(0),
 	numberFormat(duplicate_string("%+.4e")),
-	tickDivisions(10),
+	labelDivisions(10),
 	tickLength(0.05)
 {
 	axis[0] = 0.0;
@@ -432,24 +432,32 @@ Cmiss_glyph_colour_bar::~Cmiss_glyph_colour_bar()
 	{
 		DEACCESS(GT_object)(&graphicsObject);
 	}
-	Cmiss_graphics_material_destroy(&tickMaterial);
+	Cmiss_graphics_material_destroy(&labelMaterial);
 }
 
 GT_object *Cmiss_glyph_colour_bar::getGraphicsObject(Cmiss_tessellation *tessellation,
 	Cmiss_graphics_material *material, Cmiss_font *font)
 {
 	USE_PARAMETER(tessellation);
-	if (!graphicsObject)
+	if (this->graphicsObject)
+	{
+		if ((material != get_GT_object_default_material(this->graphicsObject)) ||
+			(font != get_GT_object_font(GT_object_get_next_object(GT_object_get_next_object(this->graphicsObject)))))
+		{
+			DEACCESS(GT_object)(&this->graphicsObject);
+		}
+	}
+	if (!this->graphicsObject)
 	{
 		const int componentNumber = 0;
-		graphicsObject = create_Spectrum_colour_bar("colour_bar", this->spectrum,
+		this->graphicsObject = create_Spectrum_colour_bar("colour_bar", this->spectrum,
 			componentNumber, this->centre, this->axis, this->sideAxis,
-			this->extendLength, this->tickDivisions, this->tickLength, this->numberFormat,
+			this->extendLength, this->labelDivisions, this->tickLength, this->numberFormat,
 			/*barMaterial*/material,
-			this->tickMaterial ? this->tickMaterial : material,
+			this->labelMaterial ? this->labelMaterial : material,
 			font);
 	}
-	return ACCESS(GT_object)(graphicsObject);
+	return ACCESS(GT_object)(this->graphicsObject);
 }
 
 int Cmiss_glyph_colour_bar::getAxis(int valuesCount, double *valuesOut) const
@@ -540,6 +548,30 @@ int Cmiss_glyph_colour_bar::setExtendLength(double extendLengthIn)
 	return CMISS_ERROR_ARGUMENT;
 }
 
+int Cmiss_glyph_colour_bar::setLabelDivisions(int labelDivisionsIn)
+{
+	if (labelDivisionsIn > 0)
+	{
+		if (labelDivisionsIn != this->labelDivisions)
+		{
+			this->labelDivisions = labelDivisionsIn;
+			this->invalidate();
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_glyph_colour_bar::setLabelMaterial(Cmiss_graphics_material_id material)
+{
+	if (material != this->labelMaterial)
+	{
+		REACCESS(Graphical_material)(&(this->labelMaterial), material);
+		this->invalidate();
+	}
+	return CMISS_OK;
+}
+
 char *Cmiss_glyph_colour_bar::getNumberFormat() const
 {
 	return duplicate_string(this->numberFormat);
@@ -598,20 +630,6 @@ int Cmiss_glyph_colour_bar::setSideAxis(int valuesCount, const double *valuesIn)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_glyph_colour_bar::setTickDivisions(int tickDivisionsIn)
-{
-	if (tickDivisionsIn > 0)
-	{
-		if (tickDivisionsIn != this->tickDivisions)
-		{
-			this->tickDivisions = tickDivisionsIn;
-			this->invalidate();
-		}
-		return CMISS_OK;
-	}
-	return CMISS_ERROR_ARGUMENT;
-}
-
 int Cmiss_glyph_colour_bar::setTickLength(double tickLengthIn)
 {
 	if (tickLengthIn >= 0.0)
@@ -624,16 +642,6 @@ int Cmiss_glyph_colour_bar::setTickLength(double tickLengthIn)
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
-}
-
-int Cmiss_glyph_colour_bar::setTickMaterial(Cmiss_graphics_material_id material)
-{
-	if (material != this->tickMaterial)
-	{
-		REACCESS(Graphical_material)(&(this->tickMaterial), material);
-		this->invalidate();
-	}
-	return CMISS_OK;
 }
 
 void Cmiss_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message)
@@ -723,6 +731,38 @@ int Cmiss_glyph_colour_bar_set_extend_length(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+int Cmiss_glyph_colour_bar_get_label_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar)
+{
+	if (colour_bar)
+		return colour_bar->getLabelDivisions();
+	return 0;
+}
+
+int Cmiss_glyph_colour_bar_set_label_divisions(
+	Cmiss_glyph_colour_bar_id colour_bar, int labelDivisions)
+{
+	if (colour_bar)
+		return colour_bar->setLabelDivisions(labelDivisions);
+	return CMISS_ERROR_ARGUMENT;
+}
+
+Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_label_material(
+	Cmiss_glyph_colour_bar_id colour_bar)
+{
+	if (colour_bar)
+		return colour_bar->getLabelMaterial();
+	return 0;
+}
+
+int Cmiss_glyph_colour_bar_set_label_material(
+	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material)
+{
+	if (colour_bar)
+		return colour_bar->setLabelMaterial(material);
+	return CMISS_ERROR_ARGUMENT;
+}
+
 char *Cmiss_glyph_colour_bar_get_number_format(
 	Cmiss_glyph_colour_bar_id colour_bar)
 {
@@ -755,22 +795,6 @@ int Cmiss_glyph_colour_bar_set_side_axis(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_glyph_colour_bar_get_tick_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar)
-{
-	if (colour_bar)
-		return colour_bar->getTickDivisions();
-	return 0;
-}
-
-int Cmiss_glyph_colour_bar_set_tick_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar, int tickDivisions)
-{
-	if (colour_bar)
-		return colour_bar->setTickDivisions(tickDivisions);
-	return CMISS_ERROR_ARGUMENT;
-}
-
 double Cmiss_glyph_colour_bar_get_tick_length(
 	Cmiss_glyph_colour_bar_id colour_bar)
 {
@@ -784,21 +808,5 @@ ZINC_API int Cmiss_glyph_colour_bar_set_tick_length(
 {
 	if (colour_bar)
 		return colour_bar->setTickLength(tickLength);
-	return CMISS_ERROR_ARGUMENT;
-}
-
-Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_tick_material(
-	Cmiss_glyph_colour_bar_id colour_bar)
-{
-	if (colour_bar)
-		return colour_bar->getTickMaterial();
-	return 0;
-}
-
-int Cmiss_glyph_colour_bar_set_tick_material(
-	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material)
-{
-	if (colour_bar)
-		return colour_bar->setTickMaterial(material);
 	return CMISS_ERROR_ARGUMENT;
 }

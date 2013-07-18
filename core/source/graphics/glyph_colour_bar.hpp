@@ -54,9 +54,9 @@ private:
 	GT_object *graphicsObject;
 	double axis[3], centre[3], sideAxis[3];
 	double extendLength;
-	Cmiss_graphics_material *tickMaterial;
+	Cmiss_graphics_material *labelMaterial;
 	char *numberFormat;
-	int tickDivisions;
+	int labelDivisions;
 	double tickLength;
 
 	Cmiss_glyph_colour_bar(Cmiss_spectrum *spectrumIn);
@@ -97,6 +97,20 @@ public:
 
 	int setExtendLength(double extendLengthIn);
 
+	int getLabelDivisions() const
+	{
+		return this->labelDivisions;
+	}
+
+	int setLabelDivisions(int labelDivisionsIn);
+
+	Cmiss_graphics_material_id getLabelMaterial() const
+	{
+		return labelMaterial ? Cmiss_graphics_material_access(labelMaterial) : 0;
+	}
+
+	int setLabelMaterial(Cmiss_graphics_material_id material);
+
 	char *getNumberFormat() const;
 
 	int setNumberFormat(const char *numberFormatIn);
@@ -105,26 +119,12 @@ public:
 
 	int setSideAxis(int valuesCount, const double *valuesIn);
 
-	int getTickDivisions() const
-	{
-		return this->tickDivisions;
-	}
-
-	int setTickDivisions(int tickDivisionsIn);
-
 	double getTickLength() const
 	{
 		return this->tickLength;
 	}
 
 	int setTickLength(double tickLengthIn);
-
-	Cmiss_graphics_material_id getTickMaterial() const
-	{
-		return tickMaterial ? Cmiss_graphics_material_access(tickMaterial) : 0;
-	}
-
-	int setTickMaterial(Cmiss_graphics_material_id material);
 
 	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message);
 
