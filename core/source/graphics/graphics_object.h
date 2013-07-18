@@ -1277,6 +1277,11 @@ struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
 struct Cmiss_font;
 
 /**
+ * Gets the font used by the first GT_glyph_set in the graphics object, if any.
+ */
+struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object);
+
+/**
  * Sets the font of all GT_glyph_set primitives in a GT_object.
  */
 int set_GT_object_font(struct GT_object *graphics_object,

@@ -6812,6 +6812,21 @@ struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
 	return (spectrum);
 }
 
+struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object)
+{
+	if (graphics_object)
+	{
+		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			// assume only one time
+			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+			if (glyph_set)
+				return glyph_set->font;
+		}
+	}
+	return 0;
+}
+
 int set_GT_object_font(struct GT_object *graphics_object,
 	struct Cmiss_font *font)
 {

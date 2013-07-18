@@ -175,6 +175,26 @@ public:
 		return Cmiss_glyph_colour_bar_set_extend_length(getDerivedId(), extendLength);
 	}
 
+	int getLabelDivisions() 
+	{
+		return Cmiss_glyph_colour_bar_get_label_divisions(getDerivedId());
+	}
+
+	int setLabelDivisions(int labelDivisions)
+	{
+		return Cmiss_glyph_colour_bar_set_label_divisions(getDerivedId(), labelDivisions);
+	}
+
+	GraphicsMaterial getLabelMaterial()
+	{
+		return GraphicsMaterial(Cmiss_glyph_colour_bar_get_label_material(getDerivedId()));
+	}
+
+	int setLabelMaterial(GraphicsMaterial& material)
+	{
+		return Cmiss_glyph_colour_bar_set_label_material(getDerivedId(), material.getId());
+	}
+
 	char *getNumberFormat()
 	{
 		return Cmiss_glyph_colour_bar_get_number_format(getDerivedId());
@@ -195,16 +215,6 @@ public:
 		return Cmiss_glyph_colour_bar_set_side_axis(getDerivedId(), valuesCount, valuesIn);
 	}
 
-	int getTickDivisions() 
-	{
-		return Cmiss_glyph_colour_bar_get_tick_divisions(getDerivedId());
-	}
-
-	int setTickDivisions(int tickDivisions)
-	{
-		return Cmiss_glyph_colour_bar_set_tick_divisions(getDerivedId(), tickDivisions);
-	}
-
 	double getTickLength() 
 	{
 		return Cmiss_glyph_colour_bar_get_tick_length(getDerivedId());
@@ -213,16 +223,6 @@ public:
 	int setTickLength(double tickLength)
 	{
 		return Cmiss_glyph_colour_bar_set_tick_length(getDerivedId(), tickLength);
-	}
-
-	GraphicsMaterial getTickMaterial()
-	{
-		return GraphicsMaterial(Cmiss_glyph_colour_bar_get_tick_material(getDerivedId()));
-	}
-
-	int setTickMaterial(GraphicsMaterial& material)
-	{
-		return Cmiss_glyph_colour_bar_set_tick_material(getDerivedId(), material.getId());
 	}
 
 };
