@@ -144,6 +144,25 @@ TEST(Cmiss_glyph_colour_bar, valid_attributes)
 	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_extend_length(colourBar, extendLengthIn));
 	EXPECT_EQ(extendLengthIn, value = Cmiss_glyph_colour_bar_get_extend_length(colourBar));
 
+	const int labelDivisionsIn = 15;
+	EXPECT_EQ(10, value = Cmiss_glyph_colour_bar_get_label_divisions(colourBar));
+	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_label_divisions(colourBar, labelDivisionsIn));
+	EXPECT_EQ(labelDivisionsIn, value = Cmiss_glyph_colour_bar_get_label_divisions(colourBar));
+
+	EXPECT_EQ(0, Cmiss_glyph_colour_bar_get_label_material(colourBar));
+	Cmiss_graphics_material_module_id materialModule = Cmiss_graphics_module_get_material_module(zinc.gm);
+	Cmiss_graphics_material_id defaultMaterial = Cmiss_graphics_material_module_get_default_material(materialModule);
+	EXPECT_NE(static_cast<Cmiss_graphics_material_id>(0), defaultMaterial);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_label_material(colourBar, defaultMaterial));
+	Cmiss_graphics_material_id tempMaterial = Cmiss_glyph_colour_bar_get_label_material(colourBar);
+	EXPECT_EQ(defaultMaterial, tempMaterial);
+	Cmiss_graphics_material_destroy(&tempMaterial);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_label_material(colourBar, 0));
+	tempMaterial = Cmiss_glyph_colour_bar_get_label_material(colourBar);
+	EXPECT_EQ(static_cast<Cmiss_graphics_material_id>(0), tempMaterial);
+	Cmiss_graphics_material_destroy(&defaultMaterial);
+	Cmiss_graphics_material_module_destroy(&materialModule);
+
 	const char *numberFormatIn = "%+5.2f %%";
 	char *numberFormat = Cmiss_glyph_colour_bar_get_number_format(colourBar);
 	EXPECT_STREQ("%+.4e", numberFormat);
@@ -163,29 +182,10 @@ TEST(Cmiss_glyph_colour_bar, valid_attributes)
 	EXPECT_EQ(valuesIn[1], valuesOut[1]);
 	EXPECT_EQ(valuesIn[2], valuesOut[2]);
 
-	const int tickDivisionsIn = 15;
-	EXPECT_EQ(10, value = Cmiss_glyph_colour_bar_get_tick_divisions(colourBar));
-	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_tick_divisions(colourBar, tickDivisionsIn));
-	EXPECT_EQ(tickDivisionsIn, value = Cmiss_glyph_colour_bar_get_tick_divisions(colourBar));
-
 	const double tickLengthIn = 0.6;
 	EXPECT_EQ(0.05, value = Cmiss_glyph_colour_bar_get_tick_length(colourBar));
 	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_tick_length(colourBar, tickLengthIn));
 	EXPECT_EQ(tickLengthIn, value = Cmiss_glyph_colour_bar_get_tick_length(colourBar));
-
-	EXPECT_EQ(0, Cmiss_glyph_colour_bar_get_tick_material(colourBar));
-	Cmiss_graphics_material_module_id materialModule = Cmiss_graphics_module_get_material_module(zinc.gm);
-	Cmiss_graphics_material_id defaultMaterial = Cmiss_graphics_material_module_get_default_material(materialModule);
-	EXPECT_NE(static_cast<Cmiss_graphics_material_id>(0), defaultMaterial);
-	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_tick_material(colourBar, defaultMaterial));
-	Cmiss_graphics_material_id tempMaterial = Cmiss_glyph_colour_bar_get_tick_material(colourBar);
-	EXPECT_EQ(defaultMaterial, tempMaterial);
-	Cmiss_graphics_material_destroy(&tempMaterial);
-	EXPECT_EQ(CMISS_OK, result = Cmiss_glyph_colour_bar_set_tick_material(colourBar, 0));
-	tempMaterial = Cmiss_glyph_colour_bar_get_tick_material(colourBar);
-	EXPECT_EQ(static_cast<Cmiss_graphics_material_id>(0), tempMaterial);
-	Cmiss_graphics_material_destroy(&defaultMaterial);
-	Cmiss_graphics_material_module_destroy(&materialModule);
 
 	Cmiss_glyph_colour_bar_destroy(&colourBar);
 }
@@ -236,6 +236,24 @@ TEST(Cmiss_glyph_colour_bar, valid_attributes_cpp)
 	EXPECT_EQ(CMISS_OK, result = colourBar.setExtendLength(extendLengthIn));
 	EXPECT_EQ(extendLengthIn, value = colourBar.getExtendLength());
 
+	const int labelDivisionsIn = 15;
+	EXPECT_EQ(10, value = colourBar.getLabelDivisions());
+	EXPECT_EQ(CMISS_OK, result = colourBar.setLabelDivisions(labelDivisionsIn));
+	EXPECT_EQ(labelDivisionsIn, value = colourBar.getLabelDivisions());
+
+	GraphicsMaterial tempMaterial = colourBar.getLabelMaterial();
+	EXPECT_FALSE(tempMaterial.isValid());
+	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
+	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
+	EXPECT_TRUE(defaultMaterial.isValid());
+	EXPECT_EQ(CMISS_OK, result = colourBar.setLabelMaterial(defaultMaterial));
+	tempMaterial = colourBar.getLabelMaterial();
+	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
+	GraphicsMaterial noMaterial;
+	EXPECT_EQ(CMISS_OK, result = colourBar.setLabelMaterial(noMaterial));
+	tempMaterial = colourBar.getLabelMaterial();
+	EXPECT_FALSE(tempMaterial.isValid());
+
 	const char *numberFormatIn = "%+5.2f %%";
 	char *numberFormat = colourBar.getNumberFormat();
 	EXPECT_STREQ("%+.4e", numberFormat);
@@ -255,28 +273,10 @@ TEST(Cmiss_glyph_colour_bar, valid_attributes_cpp)
 	EXPECT_EQ(valuesIn[1], valuesOut[1]);
 	EXPECT_EQ(valuesIn[2], valuesOut[2]);
 
-	const int tickDivisionsIn = 15;
-	EXPECT_EQ(10, value = colourBar.getTickDivisions());
-	EXPECT_EQ(CMISS_OK, result = colourBar.setTickDivisions(tickDivisionsIn));
-	EXPECT_EQ(tickDivisionsIn, value = colourBar.getTickDivisions());
-
 	const double tickLengthIn = 0.6;
 	EXPECT_EQ(0.05, value = colourBar.getTickLength());
 	EXPECT_EQ(CMISS_OK, result = colourBar.setTickLength(tickLengthIn));
 	EXPECT_EQ(tickLengthIn, value = colourBar.getTickLength());
-
-	GraphicsMaterial tempMaterial = colourBar.getTickMaterial();
-	EXPECT_FALSE(tempMaterial.isValid());
-	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
-	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
-	EXPECT_TRUE(defaultMaterial.isValid());
-	EXPECT_EQ(CMISS_OK, result = colourBar.setTickMaterial(defaultMaterial));
-	tempMaterial = colourBar.getTickMaterial();
-	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
-	GraphicsMaterial noMaterial;
-	EXPECT_EQ(CMISS_OK, result = colourBar.setTickMaterial(noMaterial));
-	tempMaterial = colourBar.getTickMaterial();
-	EXPECT_FALSE(tempMaterial.isValid());
 }
 
 TEST(Cmiss_glyph_colour_bar, invalid_attributes)
@@ -322,6 +322,14 @@ TEST(Cmiss_glyph_colour_bar, invalid_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_extend_length(0, extendLengthIn));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_extend_length(colourBar, -1.0));
 
+	const int labelDivisionsIn = 15;
+	EXPECT_EQ(0, value = Cmiss_glyph_colour_bar_get_label_divisions(0));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_label_divisions(0, labelDivisionsIn));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_label_divisions(colourBar, 0));
+
+	EXPECT_EQ(0, Cmiss_glyph_colour_bar_get_label_material(0));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_label_material(0, 0));
+
 	char *numberFormat = Cmiss_glyph_colour_bar_get_number_format(0);
 	EXPECT_EQ(static_cast<char *>(0), numberFormat);
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_number_format(0, "%+5.2f %%"));
@@ -338,18 +346,10 @@ TEST(Cmiss_glyph_colour_bar, invalid_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_side_axis(colourBar, 0, valuesIn));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_side_axis(colourBar, 3, 0));
 
-	const int tickDivisionsIn = 15;
-	EXPECT_EQ(0, value = Cmiss_glyph_colour_bar_get_tick_divisions(0));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_tick_divisions(0, tickDivisionsIn));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_tick_divisions(colourBar, 0));
-
 	const double tickLengthIn = 0.6;
 	EXPECT_EQ(0.0, value = Cmiss_glyph_colour_bar_get_tick_length(0));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_tick_length(0, tickLengthIn));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_tick_length(colourBar, -1.0));
-
-	EXPECT_EQ(0, Cmiss_glyph_colour_bar_get_tick_material(0));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_glyph_colour_bar_set_tick_material(0, 0));
 
 	Cmiss_glyph_colour_bar_destroy(&colourBar);
 }
@@ -381,6 +381,8 @@ TEST(Cmiss_glyph_colour_bar, invalid_attributes_cpp)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setCentre(0, valuesIn));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setCentre(3, 0));
 
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setLabelDivisions(0));
+
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setExtendLength(-1.0));
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setNumberFormat(0));
@@ -393,8 +395,6 @@ TEST(Cmiss_glyph_colour_bar, invalid_attributes_cpp)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.getSideAxis(3, 0));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setSideAxis(0, valuesIn));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setSideAxis(3, 0));
-
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setTickDivisions(0));
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, result = colourBar.setTickLength(-1.0));
 }
