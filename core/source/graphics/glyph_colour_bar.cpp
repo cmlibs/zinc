@@ -432,6 +432,10 @@ Cmiss_glyph_colour_bar::~Cmiss_glyph_colour_bar()
 	{
 		DEACCESS(GT_object)(&graphicsObject);
 	}
+	if (numberFormat)
+	{
+		DEALLOCATE(this->numberFormat);
+	}
 	Cmiss_graphics_material_destroy(&labelMaterial);
 }
 

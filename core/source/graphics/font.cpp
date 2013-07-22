@@ -467,7 +467,7 @@ DESCRIPTION :
 		font->bold = 0;
 		font->depth = 0.1;
 		font->font_type = CMISS_FONT_TYPE_OpenSans;
-		font->render_type = CMISS_FONT_RENDER_TYPE_PIXMAP;
+		font->render_type = CMISS_FONT_RENDER_TYPE_BITMAP;
 		font->manager = (struct MANAGER(Cmiss_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(Cmiss_font);
 		font->ftFont = 0;
@@ -675,9 +675,7 @@ DESCRIPTION :
 				case CMISS_FONT_RENDER_TYPE_PIXMAP:
 				{
 					glRasterPos3f(x, y, z);
-					glDepthMask(GL_FALSE);
 					font->ftFont->Render(text);
-					glDepthMask(GL_TRUE);
 				} break;
 				case CMISS_FONT_RENDER_TYPE_POLYGON:
 				case CMISS_FONT_RENDER_TYPE_OUTLINE:

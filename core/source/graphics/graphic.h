@@ -687,15 +687,6 @@ struct Cmiss_graphic_FE_region_change_data
 	int element_type;
 }; /* struct Cmiss_graphic_FE_region_change_data */
 
-/***************************************************************************//**
- * Data to pass to Cmiss_graphics_material_change.
- */
-struct Cmiss_graphics_material_change_data
-{
-	struct MANAGER_MESSAGE(Graphical_material) *manager_message;
-	int graphics_changed;
-};
-
 /**
  * Inform graphic of changes in the glyph manager. Marks graphic for redraw if
  * uses a changed glyph, and propagates change to owning scene.
@@ -710,28 +701,19 @@ int Cmiss_graphic_glyph_change(struct Cmiss_graphic *graphic,
  * Note: only graphics combining a material with data/spectrum are updated;
  * pure material changes do not require update.
  *
- * @param material_change_data_void  Cmiss_graphics_material_change_data.
+ * @param material_manager_message_void  MANAGER_MESSAGE(Material).
  */
 int Cmiss_graphics_material_change(struct Cmiss_graphic *graphic,
 	void *material_change_data_void);
 
 /***************************************************************************//**
- * Data to pass to Cmiss_graphic_spectrum_change.
- */
-struct Cmiss_graphic_spectrum_change_data
-{
-	struct MANAGER_MESSAGE(Spectrum) *manager_message;
-	int graphics_changed;
-};
-
-/***************************************************************************//**
  * Inform graphic of changes in the spectrum manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  *
- * @param spectrum_change_data_void  Cmiss_graphic_spectrum_change_data.
+ * @param spectrum_manager_message_void  MANAGER_MESSAGE(Spectrum).
  */
 int Cmiss_graphic_spectrum_change(struct Cmiss_graphic *graphic,
-	void *spectrum_change_data_void);
+	void *spectrum_manager_message_void);
 
 /***************************************************************************//**
  * Inform graphic of changes in the tessellation manager. Marks affected

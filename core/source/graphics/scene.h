@@ -224,28 +224,28 @@ void Cmiss_scene_glyph_change(struct Cmiss_scene *scene,
  * Private method for informing scene of material manager changes.
  * Should only be called by Cmiss_graphics_module.
  */
-int Cmiss_scene_material_change(struct Cmiss_scene *scene,
+void Cmiss_scene_material_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Graphical_material) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing scene of spectrum manager changes.
  * Should only be called by Cmiss_graphics_module.
  */
-int Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
+void Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Spectrum) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing scene of tessellation manager changes.
  * Should only be called by Cmiss_graphics_module.
  */
-int Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
+void Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing scene of font manager changes.
  * Should only be called by Cmiss_graphics_module.
  */
-int Cmiss_scene_font_change(struct Cmiss_scene *scene,
+void Cmiss_scene_font_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Cmiss_font) *manager_message);
 
 int for_each_child_scene_in_scene_tree(

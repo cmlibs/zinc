@@ -133,11 +133,12 @@ void Cmiss_graphics_module_material_manager_callback(
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
-				Cmiss_scene_begin_change(scene);
-				Cmiss_scene_material_change(scene, message);
-				Cmiss_scene_end_change(scene);
-				DEACCESS(Cmiss_scene)(&scene);
+				if (Cmiss_region_is_root(region))
+				{
+					Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+					Cmiss_scene_material_change(scene, message);
+					Cmiss_scene_destroy(&scene);
+				}
 			}
 		}
 	}
@@ -165,17 +166,17 @@ void Cmiss_graphics_module_spectrum_manager_callback(
 				glyph->spectrumChange(message);
 			}
 			graphics_module->glyph_module->endChange();
-
 			std::list<Cmiss_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
-				Cmiss_scene_begin_change(scene);
-				Cmiss_scene_spectrum_change(scene, message);
-				Cmiss_scene_end_change(scene);
-				DEACCESS(Cmiss_scene)(&scene);
+				if (Cmiss_region_is_root(region))
+				{
+					Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+					Cmiss_scene_spectrum_change(scene, message);
+					Cmiss_scene_destroy(&scene);
+				}
 			}
 		}
 	}
@@ -199,11 +200,12 @@ void Cmiss_graphics_module_tessellation_manager_callback(
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
-				Cmiss_scene_begin_change(scene);
-				Cmiss_scene_tessellation_change(scene, message);
-				Cmiss_scene_end_change(scene);
-				DEACCESS(Cmiss_scene)(&scene);
+				if (Cmiss_region_is_root(region))
+				{
+					Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+					Cmiss_scene_tessellation_change(scene, message);
+					Cmiss_scene_destroy(&scene);
+				}
 			}
 		}
 	}
@@ -227,11 +229,12 @@ void Cmiss_graphics_module_font_manager_callback(
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
 				Cmiss_region *region = *region_iter;
-				Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
-				Cmiss_scene_begin_change(scene);
-				Cmiss_scene_font_change(scene, message);
-				Cmiss_scene_end_change(scene);
-				DEACCESS(Cmiss_scene)(&scene);
+				if (Cmiss_region_is_root(region))
+				{
+					Cmiss_scene *scene = Cmiss_graphics_module_get_scene(graphics_module, region);
+					Cmiss_scene_font_change(scene, message);
+					Cmiss_scene_destroy(&scene);
+				}
 			}
 		}
 	}

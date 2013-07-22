@@ -5616,31 +5616,31 @@ int Cmiss_graphic_glyph_change(
 }
 
 int Cmiss_graphics_material_change(
-	struct Cmiss_graphic *graphic, void *material_change_data_void)
+	struct Cmiss_graphic *graphic, void *material_manager_message_void)
 {
 	int return_code;
-	Cmiss_graphics_material_change_data *material_change_data =
-		(Cmiss_graphics_material_change_data *)material_change_data_void;
-	if (graphic && material_change_data)
+	struct MANAGER_MESSAGE(Graphical_material) *manager_message =
+		(struct MANAGER_MESSAGE(Graphical_material) *)material_manager_message_void;
+	if (graphic && manager_message)
 	{
 		return_code = 1;
 		bool material_change = false;
 		if (graphic->material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
-				material_change_data->manager_message, graphic->material);
+				manager_message, graphic->material);
 			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (!material_change && graphic->secondary_material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
-				material_change_data->manager_message, graphic->secondary_material);
+				manager_message, graphic->secondary_material);
 			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (!material_change && graphic->selected_material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
-				material_change_data->manager_message, graphic->selected_material);
+				manager_message, graphic->selected_material);
 			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
 		if (material_change)
@@ -5651,7 +5651,7 @@ int Cmiss_graphics_material_change(
 					(struct LIST(Graphical_material) *)NULL);
 			}
 			/* need a way to tell either graphic is used in any scene or not */
-			material_change_data->graphics_changed = 1;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
 	}
 	else
@@ -5664,18 +5664,18 @@ int Cmiss_graphics_material_change(
 }
 
 int Cmiss_graphic_spectrum_change(
-	struct Cmiss_graphic *graphic, void *spectrum_change_data_void)
+	struct Cmiss_graphic *graphic, void *spectrum_manager_message_void)
 {
 	int return_code;
-	Cmiss_graphic_spectrum_change_data *spectrum_change_data =
-		(Cmiss_graphic_spectrum_change_data *)spectrum_change_data_void;
-	if (graphic && spectrum_change_data)
+	struct MANAGER_MESSAGE(Spectrum) *manager_message =
+		(struct MANAGER_MESSAGE(Spectrum) *)spectrum_manager_message_void;
+	if (graphic && manager_message)
 	{
 		return_code = 1;
 		if (graphic->spectrum)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
-				spectrum_change_data->manager_message, graphic->spectrum);
+				manager_message, graphic->spectrum);
 			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
 			{
 				if (graphic->graphics_object)
@@ -5684,7 +5684,7 @@ int Cmiss_graphic_spectrum_change(
 						(struct LIST(Spectrum) *)NULL);
 				}
 				/* need a way to tell either graphic is used in any scene or not */
-				spectrum_change_data->graphics_changed = 1;
+				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 			}
 		}
 		/* The material gets it's own notification of the change,
@@ -5694,7 +5694,7 @@ int Cmiss_graphic_spectrum_change(
 				Graphical_material_get_colour_lookup_spectrum(graphic->material)))
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
-				spectrum_change_data->manager_message, colour_lookup);
+				manager_message, colour_lookup);
 			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
 			{
 				if (graphic->graphics_object)
@@ -5703,7 +5703,7 @@ int Cmiss_graphic_spectrum_change(
 						(struct LIST(Graphical_material) *)NULL);
 				}
 				/* need a way to tell either graphic is used in any scene or not */
-				spectrum_change_data->graphics_changed = 1;
+				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 			}
 		}
 	}

@@ -1301,107 +1301,100 @@ void Cmiss_scene_glyph_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_glyph_change(Cmiss_region_get_scene_internal(child), manager_message);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_glyph_change(child_scene, manager_message);
+			Cmiss_scene_destroy(&child_scene);
 			Cmiss_region_reaccess_next_sibling(&child);
 		}
 		Cmiss_scene_end_change(scene);
 	}
 }
 
-int Cmiss_scene_material_change(struct Cmiss_scene *scene,
+void Cmiss_scene_material_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Graphical_material) *manager_message)
 {
-	int return_code;
 	if (scene && manager_message)
 	{
-		return_code = 1;
-		Cmiss_graphics_material_change_data material_change_data;
-		material_change_data.manager_message = manager_message;
-		material_change_data.graphics_changed = 0;
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphics_material_change, (void *)&material_change_data,
+		Cmiss_scene_begin_change(scene);
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphics_material_change, (void *)manager_message,
 			scene->list_of_graphics);
-		if (material_change_data.graphics_changed)
+		// inform child scenes of changes
+		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
+		while (child)
 		{
-			Cmiss_scene_changed(scene);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_material_change(child_scene, manager_message);
+			Cmiss_scene_destroy(&child_scene);
+			Cmiss_region_reaccess_next_sibling(&child);
 		}
+		Cmiss_scene_end_change(scene);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_material_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return return_code;
 }
 
-int Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
+void Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Spectrum) *manager_message)
 {
-	int return_code;
 	if (scene && manager_message)
 	{
-		return_code = 1;
-		Cmiss_graphic_spectrum_change_data spectrum_change_data;
-		spectrum_change_data.manager_message = manager_message;
-		spectrum_change_data.graphics_changed = 0;
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_spectrum_change, (void *)&spectrum_change_data,
+		Cmiss_scene_begin_change(scene);
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_spectrum_change, (void *)manager_message,
 			scene->list_of_graphics);
-		if (spectrum_change_data.graphics_changed)
+		// inform child scenes of changes
+		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
+		while (child)
 		{
-			Cmiss_scene_changed(scene);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_spectrum_change(child_scene, manager_message);
+			Cmiss_region_reaccess_next_sibling(&child);
+			Cmiss_scene_destroy(&child_scene);
 		}
+		Cmiss_scene_end_change(scene);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_spectrum_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return return_code;
 }
 
-int Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
+void Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message)
 {
-	int return_code = 1;
 	if (scene && manager_message)
 	{
 		Cmiss_scene_begin_change(scene);
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_tessellation_change, (void *)manager_message,
 			scene->list_of_graphics);
+		// inform child scenes of changes
+		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
+		while (child)
+		{
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_tessellation_change(child_scene, manager_message);
+			Cmiss_region_reaccess_next_sibling(&child);
+			Cmiss_scene_destroy(&child_scene);
+		}
 		Cmiss_scene_end_change(scene);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_tessellation_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return return_code;
 }
 
-int Cmiss_scene_font_change(struct Cmiss_scene *scene,
+void Cmiss_scene_font_change(struct Cmiss_scene *scene,
 	struct MANAGER_MESSAGE(Cmiss_font) *manager_message)
 {
-	int return_code = 1;
 	if (scene && manager_message)
 	{
 		Cmiss_scene_begin_change(scene);
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_font_change, (void *)manager_message,
 			scene->list_of_graphics);
+		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
+		while (child)
+		{
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_font_change(child_scene, manager_message);
+			Cmiss_region_reaccess_next_sibling(&child);
+			Cmiss_scene_destroy(&child_scene);
+		}
 		Cmiss_scene_end_change(scene);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_font_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return return_code;
 }
 
 int Cmiss_scene_compile_graphics(Cmiss_scene *scene,
