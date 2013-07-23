@@ -119,8 +119,6 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_top_region_change, \
 
 static int Cmiss_scene_update_time_behaviour(struct Cmiss_scene *scene);
 
-void Cmiss_scene_changed_no_build(struct Cmiss_scene *scene);
-
 /**
  * Informs registered clients of change in the scene.
  */
@@ -136,10 +134,7 @@ static int Cmiss_scene_inform_clients(
 		Cmiss_scene *parentScene = Cmiss_region_get_scene_private(parentRegion);
 		if (parentScene)
 		{
-			if (scene->build)
-				Cmiss_scene_changed(parentScene);
-			else
-				Cmiss_scene_changed_no_build(parentScene);
+			Cmiss_scene_changed(parentScene);
 		}
 		Cmiss_scene_callback_data *callback_data = scene->update_callback_list;
 		while (callback_data)
@@ -158,19 +153,6 @@ static int Cmiss_scene_inform_clients(
 }
 
 void Cmiss_scene_changed(struct Cmiss_scene *scene)
-{
-	if (scene)
-	{
-		scene->changed = 1;
-		scene->build = 1;
-		if (0 == scene->cache)
-		{
-			Cmiss_scene_inform_clients(scene);
-		}
-	}
-}
-
-void Cmiss_scene_changed_no_build(struct Cmiss_scene *scene)
 {
 	if (scene)
 	{
@@ -291,7 +273,6 @@ struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 				cmiss_scene->computed_field_manager=Cmiss_region_get_Computed_field_manager(
 					 cmiss_region);
 				cmiss_scene->computed_field_manager_callback_id=(void *)NULL;
-				cmiss_scene->build=1;
 				cmiss_scene->transformation = (gtMatrix *)NULL;
 				cmiss_scene->graphics_module =	graphics_module;
 				cmiss_scene->time_notifier = NULL;
@@ -718,7 +699,7 @@ static void Cmiss_scene_region_change(struct Cmiss_region *region,
 			else if (region_changes->child_removed)
 			{
 				/* flag it as changed to trigger callback on scene */
-				Cmiss_scene_changed_no_build(scene);
+				Cmiss_scene_changed(scene);
 			}
 			else
 			{
@@ -895,7 +876,7 @@ int Cmiss_scene_remove_graphic(struct Cmiss_scene *scene,
 		Cmiss_graphic_set_scene_private(graphic, NULL);
 		return_code=Cmiss_graphic_remove_from_list(graphic,
 			scene->list_of_graphics);
-		Cmiss_scene_changed_no_build(scene);
+		Cmiss_scene_changed(scene);
 	}
 	else
 	{
@@ -3483,30 +3464,13 @@ Cmiss_scene *Cmiss_scene_get_child_of_position(Cmiss_scene *scene, int position)
 
 int build_Scene(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
 {
-	int return_code;
-
 	if (scene)
 	{
-		/* check whether scene contents need building */
-		if (scene->build)
-		{
-			Render_graphics_build_objects renderer;
-			scene->build = 0;
-			return_code = renderer.Scene_compile(scene, filter);
-		}
-		else
-		{
-			return_code = 1;
-		}
+		Render_graphics_build_objects renderer;
+		return renderer.Scene_compile(scene, filter);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "build_Scene.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
+	return 0;
 } /* build_Scene */
 
 int Cmiss_scene_compile_tree(Cmiss_scene *scene,

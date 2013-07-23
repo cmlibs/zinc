@@ -80,7 +80,6 @@ Structure for maintaining a graphical scene of region.
 	struct LIST(Cmiss_graphic) *list_of_graphics;
 	void *computed_field_manager_callback_id;
 	/* level of cache in effect */
-	int build;
 	int cache;
 	int changed; /**< true if scene has changed and haven't updated clients */
 	/* for accessing objects */
