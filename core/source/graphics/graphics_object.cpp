@@ -1387,7 +1387,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 					{
 						if (source_text[i])
 						{
-							if (ALLOCATE(text[i],char,strlen(source_text[i])+1))
+							if (ALLOCATE(text[i],char,static_cast<int>(strlen(source_text[i])+1)))
 							{
 								strcpy(text[i],source_text[i]);
 							}
@@ -4907,7 +4907,7 @@ will produce the range of all the graphics objects.
 } /* get_graphics_object_range */
 
 int get_graphics_object_data_range(struct GT_object *graphics_object,
-	struct Graphics_object_data_range *range)
+	Graphics_object_data_range *range)
 {
 	if (graphics_object && range)
 	{
@@ -5004,6 +5004,8 @@ int get_graphics_object_data_range(struct GT_object *graphics_object,
 								case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
 									n_pts = (surface->n_pts1)*(surface->n_pts2);
 									break;
+								// case g_SHADED:
+								// case g_SHADED_TEXMAP:
 								default:
 									switch (surface->polygon)
 									{
@@ -5012,6 +5014,9 @@ int get_graphics_object_data_range(struct GT_object *graphics_object,
 										break;
 									case g_TRIANGLE:
 										n_pts = (((surface->n_pts1)+1)*(surface->n_pts1))/2;
+										break;
+									case g_GENERAL_POLYGON:
+										// not supported for g_SHADED, g_SHADED_TEXMAP
 										break;
 									}
 									break;
