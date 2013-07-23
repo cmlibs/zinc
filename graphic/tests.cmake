@@ -8,6 +8,7 @@ SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/graphics_filter.cpp
     ${CURRENT_TEST}/graphics_material.cpp
     ${CURRENT_TEST}/font.cpp
+    ${CURRENT_TEST}/scene.cpp
     ${CURRENT_TEST}/scene_picker.cpp
     ${CURRENT_TEST}/scene_viewer.cpp
     ${CURRENT_TEST}/spectrum.cpp
