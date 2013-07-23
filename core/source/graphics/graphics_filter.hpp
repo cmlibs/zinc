@@ -142,10 +142,10 @@ public:
 		return name_out;
 	}
 
-	int changed()
+	int changed(enum MANAGER_CHANGE(Cmiss_graphics_filter) change)
 	{
 		return MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(this,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_graphics_filter));
+			change);
 	}
 
 	bool isInverse() const
@@ -155,8 +155,11 @@ public:
 
 	bool setInverse(bool newInverse)
 	{
-		inverse = newInverse;
-		changed();
+		if (newInverse != inverse)
+		{
+			inverse = newInverse;
+			changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
 		return true;
 	}
 

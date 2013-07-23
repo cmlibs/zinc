@@ -137,7 +137,7 @@ public:
 		{
 			if ((*pos)->filter->check_dependency())
 			{
-				changed();
+				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
 				return 1;
 			}
 		}
@@ -190,7 +190,7 @@ public:
 			if (!this->depends_on_filter(operand))
 			{
 				operands.push_back(new Graphics_filter_operand(operand));
-				changed();
+				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
 			}
 			else
 			{
@@ -208,7 +208,7 @@ public:
 		{
 			delete *pos;
 			operands.erase(pos);
-			changed();
+			changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
 		}
 		else
 		{
@@ -257,8 +257,11 @@ public:
 		OperandList::iterator pos = find_operand(operand);
 		if (pos != operands.end())
 		{
-			(*pos)->isActive = (is_active != 0);
-			changed();
+			if (((*pos)->isActive != (is_active != 0)))
+			{
+				(*pos)->isActive = (is_active != 0);
+				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+			}
 			return_code = 1;
 		}
 		return return_code;
@@ -280,7 +283,7 @@ public:
 			else
 			{
 				operands.insert(refpos, new Graphics_filter_operand(operand));
-				changed();
+				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
 			}
 			return_code = 1;
 		}
@@ -1146,25 +1149,16 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphic
 	if (graphics_filter)
 	{
 		return_code = 1;
-		int old_value =
-			Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute);
-		enum MANAGER_CHANGE(Cmiss_graphics_filter) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_graphics_filter);
 		switch (attribute)
 		{
 			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
 				graphics_filter->setInverse(value != 0);
-				change = MANAGER_CHANGE_RESULT(Cmiss_graphics_filter);
 			break;
 			default:
 				display_message(ERROR_MESSAGE,
 					"Cmiss_graphics_filter_set_attribute_integer.  Invalid attribute");
 				return_code = 0;
 			break;
-		}
-		if (Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(graphics_filter, change);
 		}
 	}
 	return return_code;
@@ -1192,17 +1186,11 @@ int Cmiss_graphics_filter_operator_append_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand)
 {
-	int return_code = 0;
 	if (operator_filter && operand)
 	{
-		return_code = operator_filter->append_operand(operand);
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				operator_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
-		}
+		return operator_filter->append_operand(operand);
 	}
-	return return_code;
+	return 0;
 }
 
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
@@ -1268,17 +1256,11 @@ int Cmiss_graphics_filter_operator_remove_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand)
 {
-	int return_code = 0;
 	if (operator_filter && operand)
 	{
-		return_code = operator_filter->remove_operand(operand);
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				operator_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
-		}
+		return operator_filter->remove_operand(operand);
 	}
-	return return_code;
+	return 0;
 }
 
 class Cmiss_graphics_filter_attribute_conversion

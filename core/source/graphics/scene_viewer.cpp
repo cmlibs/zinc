@@ -8071,8 +8071,14 @@ int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
 {
 	if (scene_viewer)
 	{
-		REACCESS(Cmiss_graphics_filter)(&scene_viewer->filter, filter);
-		Scene_viewer_trigger_transform_callback(scene_viewer);
+		if (filter != scene_viewer->filter)
+		{
+			REACCESS(Cmiss_graphics_filter)(&scene_viewer->filter, filter);
+			if (scene_viewer->scene)
+			{
+				Cmiss_scene_changed(scene_viewer->scene);
+			}
+		}
 		return CMISS_OK;
 	}
 	else
@@ -8092,8 +8098,11 @@ int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,
 			message, scene_viewer->filter);
 		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
 		{
-			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			/* calling scene changed as changing filter may require new graphics to be rebuild*/
+			if (scene_viewer->scene)
+			{
+				Cmiss_scene_changed(scene_viewer->scene);
+			}
 		}
 	}
 	else
@@ -8240,7 +8249,6 @@ int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 			{
 				Cmiss_scene_add_callback(scene_viewer->scene,
 					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-				Scene_viewer_trigger_transform_callback(scene_viewer);
 				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 			}
