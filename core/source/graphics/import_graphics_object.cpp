@@ -856,16 +856,20 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 				sprintf(objname, "%s", file_name);
 			}
 			Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, objname);
+			obj = 0;
 			Cmiss_glyph_static *glyphStatic = dynamic_cast<Cmiss_glyph_static*>(glyph);
 			if (glyphStatic)
 			{
 				obj = glyphStatic->getGraphicsObject();
+				ACCESS(GT_object)(obj);
 			}
-			else
+			else if (glyph)
 			{
+				display_message(ERROR_MESSAGE, "Read wavefront obj file: Cannot modify non-static glyph '%s'", objname);
 				Cmiss_glyph_destroy(&glyph);
+				return_code = 0;
 			}
-			if(obj)
+			if (obj)
 			{
 				next_obj = obj;
 				while (next_obj)
@@ -892,11 +896,21 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 					next_obj = GT_object_get_next_object(next_obj);
 				}
 			}
-			else
+			else if (return_code)
 			{
-				obj=CREATE(GT_object)(objname, g_VOLTEX, NULL);
+				obj = CREATE(GT_object)(objname, g_VOLTEX, NULL);
+				ACCESS(GT_object)(obj);
+				glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+				if (glyph)
+				{
+					glyph->setName(objname);
+					glyph->setManaged(true);
+				}
+				else
+				{
+					return_code = 0;
+				}
 			}
-			ACCESS(GT_object)(obj);
 			switch (render_type)
 			{
 				case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
@@ -1433,7 +1447,6 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 					}
 				}
 			}
-
 			if (return_code)
 			{
 				voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
@@ -1452,16 +1465,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 				}
 				if (return_code)
 				{
-					if (glyph)
-					{
-						glyph->changed();
-					}
-					else
-					{
-						glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
-						glyph->setName(objname);
-						glyph->setManaged(true);
-					}
+					glyph->changed();
 				}
 			}
 			DEACCESS(GT_object)(&obj);
