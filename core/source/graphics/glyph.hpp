@@ -142,6 +142,12 @@ public:
 		return false;
 	}
 
+	// override if glyph uses the font supplied by graphic
+	virtual bool usesFont()
+	{
+		return false;
+	}
+
 	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *)
 	{
 	}

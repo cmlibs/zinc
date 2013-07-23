@@ -1807,6 +1807,25 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 	return 0;
 }
 
+/** update 'trivial' attribute glyph graphics object */
+void Cmiss_graphic_update_graphics_object_trivial_glyph(struct Cmiss_graphic *graphic)
+{
+	if (graphic && graphic->graphics_object &&
+		(Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH)))
+	{
+		if (graphic->glyph)
+		{
+			GT_object *glyph_gt_object = graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
+			set_GT_object_glyph(graphic->graphics_object, glyph_gt_object);
+			DEACCESS(GT_object)(&glyph_gt_object);
+		}
+		else
+		{
+			set_GT_object_glyph(graphic->graphics_object, static_cast<GT_object*>(0));
+		}
+	}
+}
+
 /** replace materials, spectrum and other 'trivial' attributes of existing
   * graphics object so it doesn't need complete rebuilding */
 int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
@@ -1823,12 +1842,7 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 		set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
-			if (graphic->glyph)
-			{
-				GT_object *glyph_gt_object = graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
-				set_GT_object_glyph(graphic->graphics_object, glyph_gt_object);
-				DEACCESS(GT_object)(&glyph_gt_object);
-			}
+			Cmiss_graphic_update_graphics_object_trivial_glyph(graphic);
 			set_GT_object_glyph_repeat_mode(graphic->graphics_object, graphic->glyph_repeat_mode);
 			Triple base_size, scale_factors, offset, label_offset;
 			for (int i = 0; i < 3; ++i)
@@ -5604,7 +5618,7 @@ int Cmiss_graphic_glyph_change(
 				manager_message, graphic->glyph);
 			if ((change_flags & MANAGER_CHANGE_RESULT(Cmiss_glyph)) != 0)
 			{
-				Cmiss_graphic_update_graphics_object_trivial(graphic);
+				Cmiss_graphic_update_graphics_object_trivial_glyph(graphic);
 				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 			}
 		}
@@ -5763,14 +5777,24 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 	if (graphic && manager_message)
 	{
 		return_code = 1;
-		if (graphic->font)
+		if ((graphic->graphic_type == CMISS_GRAPHIC_POINTS) && (graphic->font))
 		{
-			if ((graphic->graphic_type == CMISS_GRAPHIC_POINTS) && graphic->label_field)
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_font)(
+				manager_message, graphic->font);
+			if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_font))
 			{
-				int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_font)(
-					manager_message, graphic->font);
-				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_font))
+				bool glyphUsesFont = (0 != graphic->glyph) && graphic->glyph->usesFont();
+				if (glyphUsesFont || graphic->label_field || graphic->label_text[0] ||
+					graphic->label_text[1] || graphic->label_text[2])
 				{
+					if (graphic->graphics_object)
+					{
+						if (glyphUsesFont)
+						{
+							Cmiss_graphic_update_graphics_object_trivial_glyph(graphic);
+						}
+						GT_object_changed(graphic->graphics_object);
+					}
 					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 				}
 			}
