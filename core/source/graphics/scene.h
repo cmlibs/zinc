@@ -145,12 +145,23 @@ int Cmiss_scene_set_position(struct Cmiss_scene *scene, unsigned int position);
  * @return If successfully set the position, otherwise NULL
  */
 
-/***************************************************************************//**
+/**
+ * Return non-accessed handle to the scene for this region.
  * Currently, a Cmiss_region may have at most one cmiss_scene.
- * @param cmiss_region The region of interest
- * @return If scene found returns it, otherwise NULL
+ * Private; do not use out of zinc library.
+ * @param cmiss_region  The region of query.
+ * @return Non-accessed handle to scene for region, or 0 if none.
  */
-struct Cmiss_scene *Cmiss_region_get_scene_internal(struct Cmiss_region *cmiss_region);
+struct Cmiss_scene *Cmiss_region_get_scene_private(struct Cmiss_region *region);
+
+/**
+ * Return accessed handle to the scene for this region.
+ * Currently, a Cmiss_region may have at most one cmiss_scene.
+ * Currently used by cmgui, but not approved for zinc external API!
+ * @param cmiss_region  The region of query.
+ * @return Accessed handle to scene for region, or 0 if none.
+ */
+struct Cmiss_scene *Cmiss_region_get_scene_internal(struct Cmiss_region *region);
 
 /***************************************************************************//**
  * Deaccess the scene of the region
@@ -382,11 +393,6 @@ int Cmiss_scene_set_graphics_defaults_gfx_modify(struct Cmiss_scene *scene,
  */
 int Cmiss_scene_add_graphic(Cmiss_scene_id scene, Cmiss_graphic_id graphic, int pos);
 
-int Cmiss_scene_update_callback(struct Cmiss_scene *scene, void *dummy_void);
-
-int Cmiss_scene_notify_parent_scene_callback(struct Cmiss_scene *child_scene,
-	void *region_void);
-
 int list_Cmiss_scene_transformation_commands(struct Cmiss_scene *scene,
 	void *command_prefix_void);
 
@@ -439,12 +445,12 @@ int Cmiss_region_modify_scene(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position);
 
 
-/***************************************************************************//**
- * Inform clients of scene about the change to its graphic.
- * For internal use only.
+/**
+ * Inform scene that it has changed and must be rebuilt.
+ * Unless change caching is on, informs clients of scene that it has changed.
+ * For internal use only; called by changed graphic to owning scene.
  */
-int Cmiss_scene_graphic_changed_private(struct Cmiss_scene *scene,
-	struct Cmiss_graphic *graphic);
+void Cmiss_scene_changed(struct Cmiss_scene *scene);
 
 int Cmiss_scene_set_default_coordinate_field(
 	struct Cmiss_scene *scene,
@@ -494,11 +500,6 @@ int Scene_export_region_graphics_object(Cmiss_scene *scene,
 	graphics_object_tree_iterator_function iterator_function, void *user_data);
 
 Cmiss_scene *Cmiss_scene_get_child_of_position(Cmiss_scene *scene, int position);
-
-int Scene_get_data_range_for_spectrum(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter,
-	struct Spectrum *spectrum, GLfloat *minimum, GLfloat *maximum,
-	int *range_set);
 
 int Cmiss_scene_triggers_top_region_change_callback(
 	struct Cmiss_scene *scene);

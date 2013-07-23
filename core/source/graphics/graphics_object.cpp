@@ -4907,76 +4907,33 @@ will produce the range of all the graphics objects.
 } /* get_graphics_object_range */
 
 int get_graphics_object_data_range(struct GT_object *graphics_object,
-	void *graphics_object_data_range_void)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Returns the range of the data values stored in the graphics object.
-Returned range generally used to set or enlarge spectrum ranges.
-???RC likely to change when multiple data values stored in graphics_objects
-for combining several spectrums.
-This routine still assumes on a single data value per vertex but this isn't
-valid.
-==============================================================================*/
+	struct Graphics_object_data_range *range)
 {
-	ZnReal maximum,minimum;
-	int i, j, number_of_times, return_code, first;
-	struct Graphics_object_data_range_struct *graphics_object_data_range;
-	GLfloat *field_data;
-	struct GT_glyph_set *glyph_set;
-	struct GT_pointset *pointset;
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
-	struct GT_voltex *voltex;
-	struct VT_iso_vertex **vertex;
-	union GT_primitive_list *primitive_list;
-
-	ENTER(get_graphics_object_data_range);
-	if (graphics_object && (graphics_object_data_range = (
-		struct Graphics_object_data_range_struct *)graphics_object_data_range_void))
+	if (graphics_object && range)
 	{
-		return_code = 1;
-		first=graphics_object_data_range->first;
-		minimum=graphics_object_data_range->minimum;
-		maximum=graphics_object_data_range->maximum;
-		number_of_times = graphics_object->number_of_times;
+		GLfloat *field_data = 0;
+		union GT_primitive_list *primitive_list;
+		int number_of_times = graphics_object->number_of_times;
 		if ((0 == number_of_times) || graphics_object->primitive_lists)
 		{
-			for (j = 0; (j < number_of_times) && return_code; j++)
+			int i;
+			for (int j = 0; j < number_of_times; ++j)
 			{
 				primitive_list = graphics_object->primitive_lists + j;
 				switch (graphics_object->object_type)
 				{
 					case g_GLYPH_SET:
 					{
-						glyph_set = primitive_list->gt_glyph_set.first;
+						struct GT_glyph_set *glyph_set = primitive_list->gt_glyph_set.first;
 						while (glyph_set)
 						{
 							field_data = glyph_set->data;
 							if (field_data)
 							{
-								if (first)
+								for (i=glyph_set->number_of_points;i>0;--i)
 								{
-									minimum= static_cast<ZnReal>(*field_data);
-									maximum=minimum;
-									first=0;
-								}
-								for (i=glyph_set->number_of_points;i>0;i--)
-								{
-									ZnReal field_value = static_cast<ZnReal>(*field_data);
-									if (field_value<minimum)
-									{
-										minimum = field_value;
-									}
-									else
-									{
-										if (field_value>maximum)
-										{
-											maximum = field_value;
-										}
-									}
-									field_data++;
+									range->addValues(glyph_set->n_data_components, field_data);
+									field_data += glyph_set->n_data_components;
 								}
 							}
 							glyph_set=glyph_set->ptrnext;
@@ -4984,33 +4941,16 @@ valid.
 					} break;
 					case g_POINTSET:
 					{
-						pointset = primitive_list->gt_pointset.first;
+						struct GT_pointset *pointset = primitive_list->gt_pointset.first;
 						while (pointset)
 						{
 							field_data=pointset->data;
 							if (field_data)
 							{
-								if (first)
-								{
-									minimum = static_cast<ZnReal>(*field_data);
-									maximum=minimum;
-									first=0;
-								}
 								for (i=pointset->n_pts;i>0;i--)
 								{
-									ZnReal field_value = static_cast<ZnReal>(*field_data);
-									if (field_value<minimum)
-									{
-										minimum = field_value;
-									}
-									else
-									{
-										if (field_value>maximum)
-										{
-											maximum = field_value;
-										}
-									}
-									field_data++;
+									range->addValues(pointset->n_data_components, field_data);
+									field_data += pointset->n_data_components;
 								}
 							}
 							pointset=pointset->ptrnext;
@@ -5018,33 +4958,16 @@ valid.
 					} break;
 					case g_POLYLINE:
 					{
-						polyline = primitive_list->gt_polyline.first;
+						struct GT_polyline *polyline = primitive_list->gt_polyline.first;
 						while (polyline)
 						{
 							field_data=polyline->data;
 							if (field_data)
 							{
-								if (first)
+								for (i=polyline->n_pts;i>0;--i)
 								{
-									minimum = static_cast<ZnReal>(*field_data);
-									maximum=minimum;
-									first=0;
-								}
-								for (i=polyline->n_pts;i>0;i--)
-								{
-									ZnReal field_value = static_cast<ZnReal>(*field_data);
-									if (field_value<minimum)
-									{
-										minimum= field_value;
-									}
-									else
-									{
-										if (field_value>maximum)
-										{
-											maximum= field_value;
-										}
-									}
-									field_data++;
+									range->addValues(polyline->n_data_components, field_data);
+									field_data += polyline->n_data_components;
 								}
 							}
 							polyline=polyline->ptrnext;
@@ -5057,163 +4980,61 @@ valid.
 						graphics_object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 							&vertex_buffer, &values_per_vertex, &vertex_count);
-
-						if (first)
-						{
-							minimum=vertex_buffer[0];
-							maximum=minimum;
-							vertex_count--;
-							vertex_buffer += values_per_vertex;
-							first=0;
-						}
 						while (vertex_count>0)
 						{
-							if (vertex_buffer[0]<minimum)
-							{
-								minimum=vertex_buffer[0];
-							}
-							else if (vertex_buffer[0]>maximum)
-							{
-								maximum=vertex_buffer[0];
-							}
-							vertex_count--;
+							range->addValues(values_per_vertex, vertex_buffer);
+							--vertex_count;
 							vertex_buffer += values_per_vertex;
 						}
 					} break;
 					case g_SURFACE:
 					{
-						surface = primitive_list->gt_surface.first;
-						/*???RC must have a first surface to get its type */
-						if (surface)
+						struct GT_surface *surface = primitive_list->gt_surface.first;
+						while (surface)
 						{
-							switch (surface->surface_type)
+							field_data=surface->data;
+							if (field_data)
 							{
+								int n_pts = 0;
+								switch (surface->surface_type)
+								{
 								case g_SH_DISCONTINUOUS:
 								case g_SH_DISCONTINUOUS_TEXMAP:
 								case g_SH_DISCONTINUOUS_STRIP:
 								case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-								{
-									while (surface)
-									{
-										field_data=surface->data;
-										if (field_data)
-										{
-											if (first)
-											{
-												minimum= static_cast<ZnReal>(*field_data);
-												maximum=minimum;
-												first=0;
-											}
-											for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
-											{
-												ZnReal field_value = static_cast<ZnReal>(*field_data);
-												if (field_value<minimum)
-												{
-													minimum = field_value;
-												}
-												else
-												{
-													if (field_value>maximum)
-													{
-														maximum = field_value;
-													}
-												}
-												field_data++;
-											}
-										}
-										surface=surface->ptrnext;
-									}
-								} break;
+									n_pts = (surface->n_pts1)*(surface->n_pts2);
+									break;
 								default:
-								{
-									while (surface)
+									switch (surface->polygon)
 									{
-										field_data=surface->data;
-										if (field_data)
-										{
-											if (first)
-											{
-												minimum= static_cast<ZnReal>(*field_data);
-												maximum=minimum;
-												first=0;
-											}
-											switch (surface->polygon)
-											{
-												case g_QUADRILATERAL:
-												{
-													for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
-													{
-														ZnReal field_value = static_cast<ZnReal>(*field_data);
-														if (field_value<minimum)
-														{
-															minimum = field_value;
-														}
-														else
-														{
-															if (field_value>maximum)
-															{
-																maximum = field_value;
-															}
-														}
-														field_data++;
-													}
-												} break;
-												case g_TRIANGLE:
-												{
-													for (i=(((surface->n_pts1)+1)*(surface->n_pts1))/2;i>0;
-															 i--)
-													{
-														ZnReal field_value = static_cast<ZnReal>(*field_data);
-														if (field_value<minimum)
-														{
-															minimum = field_value;
-														}
-														else
-														{
-															if (field_value>maximum)
-															{
-																maximum = field_value;
-															}
-														}
-														field_data++;
-													}
-												} break;
-												default:
-												{
-												} break;
-											}
-										}
-										surface=surface->ptrnext;
+									case g_QUADRILATERAL:
+										n_pts = (surface->n_pts1)*(surface->n_pts2);
+										break;
+									case g_TRIANGLE:
+										n_pts = (((surface->n_pts1)+1)*(surface->n_pts1))/2;
+										break;
 									}
-								} break;
+									break;
+								}
+								for (i=n_pts;i>0;--i)
+								{
+									range->addValues(surface->n_data_components, field_data);
+									field_data += surface->n_data_components;
+								}
 							}
+							surface=surface->ptrnext;
 						}
 					} break;
 					case g_VOLTEX:
 					{
-						voltex = primitive_list->gt_voltex.first;
-						if (first && voltex)
-						{
-							minimum = voltex->vertex_list[0]->data[0];
-							maximum = minimum;
-							first = 0;
-						}
+						struct VT_iso_vertex **vertex;
+						struct GT_voltex *voltex = primitive_list->gt_voltex.first;
 						while (voltex)
 						{
 							vertex = voltex->vertex_list;
-							for (i=voltex->number_of_vertices;i>0;i--)
+							for (i=voltex->number_of_vertices;i>0;--i)
 							{
-								if ((*vertex)->data[0] < minimum)
-								{
-									minimum = (*vertex)->data[0];
-								}
-								else
-								{
-									if ((*vertex)->data[0] > maximum)
-									{
-										maximum = (*vertex)->data[0];
-									}
-								}
+								range->addValues(voltex->n_data_components, (*vertex)->data);
 								vertex++;
 							}
 							voltex = voltex->ptrnext;
@@ -5224,7 +5045,7 @@ valid.
 						display_message(ERROR_MESSAGE,
 							"get_graphics_object_data_range.  "
 							"Invalid graphics object type");
-						return_code = 0;
+						return 0;
 					} break;
 				}
 			}
@@ -5233,22 +5054,12 @@ valid.
 		{
 			display_message(ERROR_MESSAGE,
 				"get_graphics_object_data_range.  Invalid primitive_lists");
-			return_code=0;
+			return 0;
 		}
-		graphics_object_data_range->first = first;
-		graphics_object_data_range->minimum = minimum;
-		graphics_object_data_range->maximum = maximum;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_graphics_object_data_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_graphics_object_data_range */
+	return 0;
+}
 
 int get_graphics_object_time_range(struct GT_object *graphics_object,
 	void *graphics_object_time_range_void)

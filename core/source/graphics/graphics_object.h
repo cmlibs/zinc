@@ -289,21 +289,60 @@ range valid.
 	Triple maximum,minimum;
 }; /* Graphics_object_range_struct */
 
-struct Graphics_object_data_range_struct
-/*******************************************************************************
-LAST MODIFIED : 29 October 1997
-
-DESCRIPTION :
-Structure for storing range of data in one or several graphics objects.
-Set first=1 before calling data range routines. Only if first==0 afterwards is
-the data range valid.
-???RC likely to change when multiple data values stored in graphics_objects
-for combining several spectrums.
-==============================================================================*/
+/**
+ * Class for storing range of data in one or several graphics objects.
+ * Set valuesCount to the number of ranges requested, and supply both
+ * minimumValues and maximumValues with that size.
+ * After use, maxRanges contains the number of ranges that are obtainable
+ * which can be more or less than number requested.
+ */
+class Graphics_object_data_range
 {
-	int first;
-	ZnReal minimum,maximum;
-}; /* Graphics_object_data_range_struct */
+	int maxRanges;
+	int valuesCount;
+	double *minimumValues, *maximumValues;
+
+public:
+	Graphics_object_data_range(int valuesCount, double *minimumValues, double *maximumValues) :
+		maxRanges(0),
+		valuesCount(valuesCount),
+		minimumValues(minimumValues),
+		maximumValues(maximumValues)
+	{
+	}
+
+	/** caller must ensure valuesCount > 0 and values is non-zero */
+	template <typename RealType> void addValues(int valuesCountIn, RealType *valuesIn)
+	{
+		const int count = (valuesCountIn > this->valuesCount) ? this->valuesCount : valuesCountIn;
+		if (valuesCountIn > this->maxRanges)
+		{
+			for (int i = this->maxRanges; i < count; ++i)
+			{
+				this->minimumValues[i] = this->maximumValues[i] = static_cast<double>(valuesIn[i]);
+			}
+			this->maxRanges = valuesCountIn;
+		}
+		double value;
+		for (int i = 0; i < count; ++i)
+		{
+			value = static_cast<double>(valuesIn[i]);
+			if (value < this->minimumValues[i])
+			{
+				this->minimumValues[i] = value;
+			}
+			else if (value > this->maximumValues[i])
+			{
+				this->maximumValues[i] = value;
+			}
+		}
+	}
+
+	int getMaxRanges() const
+	{
+		return this->maxRanges;
+	}
+};
 
 struct Graphics_object_time_range_struct
 /*******************************************************************************
@@ -997,17 +1036,12 @@ will produce the range of all the graphics objects.
 ???RC only does some object types.
 ==============================================================================*/
 
+/**
+ * Expand the range to include the data range of this graphics object.
+ * @see Graphics_object_data_range
+ */
 int get_graphics_object_data_range(struct GT_object *graphics_object,
-	void *graphics_object_data_range_void);
-/*******************************************************************************
-LAST MODIFIED : 29 October 1997
-
-DESCRIPTION :
-Returns the range of the data values stored in the graphics object.
-Returned range generally used to set or enlarge spectrum ranges.
-???RC likely to change when multiple data values stored in graphics_objects
-for combining several spectrums.
-==============================================================================*/
+	Graphics_object_data_range *range);
 
 int get_graphics_object_time_range(struct GT_object *graphics_object,
 	void *graphics_object_time_range_void);

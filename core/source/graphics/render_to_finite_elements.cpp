@@ -1310,8 +1310,8 @@ int render_to_finite_elements(Cmiss_region_id source_region,
 	FE_value surface_density, FE_value surface_density_scale_factor)
 {
 	int return_code;
-	Cmiss_scene_id scene = 0;
-	if (region && coordinate_field && ( 0 != (scene = Cmiss_region_get_scene_internal(source_region))))
+	Cmiss_scene_id scene = Cmiss_region_get_scene_private(source_region);
+	if (region && coordinate_field && scene)
 	{
 		return_code = build_Scene(scene, filter);
 		Render_to_finite_elements_data data(region, group, render_mode, coordinate_field,
@@ -1344,7 +1344,5 @@ int render_to_finite_elements(Cmiss_region_id source_region,
 			"Invalid argument(s)");
 		return_code=0;
 	}
-	if (scene)
-		Cmiss_scene_destroy(&scene);
 	return (return_code);
 }

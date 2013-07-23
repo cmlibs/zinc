@@ -136,11 +136,6 @@ static int Cmiss_graphic_changed(struct Cmiss_graphic *graphic,
 			graphic->graphics_changed = 1;
 			if (graphic->graphics_object)
 			{
-				// Following cannot handle change of GT_object type for isosurface, streamline
-				//GT_object_remove_primitives_at_time(
-				//	graphic->graphics_object, /*time*/0.0,
-				//	(GT_object_primitive_object_name_conditional_function *)NULL,
-				//	(void *)NULL);
 				DEACCESS(GT_object)(&(graphic->graphics_object));
 			}
 			break;
@@ -150,7 +145,7 @@ static int Cmiss_graphic_changed(struct Cmiss_graphic *graphic,
 		}
 		if (return_code)
 		{
-			Cmiss_scene_graphic_changed_private(graphic->scene, graphic);
+			Cmiss_scene_changed(graphic->scene);
 		}
 	}
 	else
@@ -1828,9 +1823,12 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 		set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
 		{
-			GT_object *glyph_gt_object = graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
-			set_GT_object_glyph(graphic->graphics_object, glyph_gt_object);
-			DEACCESS(GT_object)(&glyph_gt_object);
+			if (graphic->glyph)
+			{
+				GT_object *glyph_gt_object = graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
+				set_GT_object_glyph(graphic->graphics_object, glyph_gt_object);
+				DEACCESS(GT_object)(&glyph_gt_object);
+			}
 			set_GT_object_glyph_repeat_mode(graphic->graphics_object, graphic->glyph_repeat_mode);
 			Triple base_size, scale_factors, offset, label_offset;
 			for (int i = 0; i < 3; ++i)
@@ -5773,7 +5771,7 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 					manager_message, graphic->font);
 				if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_font))
 				{
-					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+					Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 				}
 			}
 		}
@@ -5781,7 +5779,7 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_tessellation_change.  Invalid argument(s)");
+			"Cmiss_graphic_font_change.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;

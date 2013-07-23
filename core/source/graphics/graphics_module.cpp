@@ -603,27 +603,13 @@ int Cmiss_graphics_module_enable_scenes(
 			graphics_module, cmiss_region);
 		if (return_code)
 		{
-			struct Cmiss_scene *scene =
-				Cmiss_region_get_scene_internal(cmiss_region);
-			Cmiss_scene_add_callback(scene, Cmiss_scene_update_callback,
-				(void *)NULL);
 			child_region = Cmiss_region_get_first_child(cmiss_region);
 			while (child_region)
 			{
 				return_code = Cmiss_graphics_module_enable_scenes(
 					graphics_module, child_region);
-				/* add callback to call from child scene to parent scene */
-				struct Cmiss_scene *child;
-				if (scene && (NULL != (child = Cmiss_region_get_scene_internal(child_region))))
-				{
-					Cmiss_scene_add_callback(child,
-						Cmiss_scene_notify_parent_scene_callback,
-						(void *)cmiss_region);
-					DEACCESS(Cmiss_scene)(&child);
-				}
 				Cmiss_region_reaccess_next_sibling(&child_region);
 			}
-			DEACCESS(Cmiss_scene)(&scene);
 		}
 	}
 	else
@@ -642,16 +628,16 @@ Cmiss_scene_id Cmiss_graphics_module_get_scene(
 	struct Cmiss_scene *scene = NULL;
 	if (graphics_module && region)
 	{
-		scene = Cmiss_region_get_scene_internal(region);
+		scene = Cmiss_region_get_scene_private(region);
 		if (!scene)
 		{
 			Cmiss_region_id top_region = Cmiss_region_get_root(region);
 			Cmiss_graphics_module_enable_scenes(graphics_module, top_region);
-			scene = Cmiss_region_get_scene_internal(region);
+			scene = Cmiss_region_get_scene_private(region);
 			Cmiss_region_destroy(&top_region);
 		}
 	}
-	return scene;
+	return Cmiss_scene_access(scene);
 }
 
 int Cmiss_graphics_module_add_member_region(

@@ -558,7 +558,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			return 0;
 		}
 		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-		Cmiss_scene_id scene = Cmiss_region_get_scene_internal(region);
+		Cmiss_scene_id scene = Cmiss_region_get_scene_private(region);
 		Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
 		gtMatrix *local_transformation_matrix = Cmiss_scene_get_total_transformation(
 			scene, top_scene);
@@ -591,7 +591,6 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			}
 		}
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_scene_destroy(&scene);
 		if (current_local_transformation)
 			DEALLOCATE(current_local_transformation);
 		current_local_transformation = local_transformation_matrix;
@@ -711,12 +710,11 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 		if (field_module)
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+			struct Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
 			transformation_callback_flag = Cmiss_scene_add_total_transformation_callback(
 				scene, current_scene,
 				Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			Cmiss_scene_destroy(&scene);
 			Cmiss_field_module_destroy(&field_module);
 		}
 	}
@@ -731,11 +729,10 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 		if (field_module)
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+			struct Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
 			Cmiss_scene_remove_total_transformation_callback(scene,
 				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			Cmiss_scene_destroy(&scene);
 			Cmiss_field_module_destroy(&field_module);
 			transformation_callback_flag = 0;
 		}

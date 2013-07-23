@@ -117,7 +117,11 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_top_region_change, void)
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_top_region_change, \
 	struct Cmiss_scene *, struct Cmiss_scene *);
 
-/***************************************************************************//**
+static int Cmiss_scene_update_time_behaviour(struct Cmiss_scene *scene);
+
+void Cmiss_scene_changed_no_build(struct Cmiss_scene *scene);
+
+/**
  * Informs registered clients of change in the scene.
  */
 static int Cmiss_scene_inform_clients(
@@ -126,6 +130,17 @@ static int Cmiss_scene_inform_clients(
 	int return_code = 1;
 	if (scene)
 	{
+		// update_time_behaviour should be checked for efficiency:
+		Cmiss_scene_update_time_behaviour(scene);
+		Cmiss_region *parentRegion = Cmiss_region_get_parent_internal(scene->region);
+		Cmiss_scene *parentScene = Cmiss_region_get_scene_private(parentRegion);
+		if (parentScene)
+		{
+			if (scene->build)
+				Cmiss_scene_changed(parentScene);
+			else
+				Cmiss_scene_changed_no_build(parentScene);
+		}
 		Cmiss_scene_callback_data *callback_data = scene->update_callback_list;
 		while (callback_data)
 		{
@@ -142,13 +157,21 @@ static int Cmiss_scene_inform_clients(
 	return (return_code);
 }
 
-/***************************************************************************//**
- * Internal function marking the scene as changed and informing clients
- * if not caching changes.
- */
-static int Cmiss_scene_changed(struct Cmiss_scene *scene)
+void Cmiss_scene_changed(struct Cmiss_scene *scene)
 {
-	int return_code = 1;
+	if (scene)
+	{
+		scene->changed = 1;
+		scene->build = 1;
+		if (0 == scene->cache)
+		{
+			Cmiss_scene_inform_clients(scene);
+		}
+	}
+}
+
+void Cmiss_scene_changed_no_build(struct Cmiss_scene *scene)
+{
 	if (scene)
 	{
 		scene->changed = 1;
@@ -157,11 +180,6 @@ static int Cmiss_scene_changed(struct Cmiss_scene *scene)
 			Cmiss_scene_inform_clients(scene);
 		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
 }
 
 int Cmiss_scene_begin_change(Cmiss_scene_id scene)
@@ -189,7 +207,6 @@ int Cmiss_scene_end_change(Cmiss_scene_id scene)
 		{
 			if (scene->changed)
 			{
-				scene->build = 1;
 				Cmiss_scene_inform_clients(scene);
 			}
 		}
@@ -199,29 +216,6 @@ int Cmiss_scene_end_change(Cmiss_scene_id scene)
 	{
 		return 0;
 	}
-}
-
-int Cmiss_scene_notify_parent_scene_callback(struct Cmiss_scene *child_scene,
-	void *region_void)
-{
-	int return_code;
-	struct Cmiss_scene *parent_scene;
-
-	ENTER(Cmiss_scene_notify_parent_scene_callback);
-	if (child_scene &&
-		(parent_scene = Cmiss_region_get_scene_internal((struct Cmiss_region *)region_void)))
-	{
-		Cmiss_scene_changed(parent_scene);
-		DEACCESS(Cmiss_scene)(&parent_scene);
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 /***************************************************************************//**
@@ -528,7 +522,7 @@ static void Cmiss_scene_Computed_field_change(
 				Cmiss_region_id child_region = Cmiss_region_get_first_child(scene->region);
 				while ((NULL != child_region))
 				{
-					Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child_region);
+					Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child_region);
 					if (child_scene)
 					{
 						Cmiss_field_group_id child_group =
@@ -538,7 +532,6 @@ static void Cmiss_scene_Computed_field_change(
 						{
 							Cmiss_field_group_destroy(&child_group);
 						}
-						Cmiss_scene_destroy(&child_scene);
 					}
 					Cmiss_region_reaccess_next_sibling(&child_region);
 				}
@@ -656,11 +649,6 @@ void Cmiss_scene_add_child_region(struct Cmiss_scene *scene,
 			child_region, scene->graphics_module))))
 	{
 		Cmiss_scene_set_position(child_scene,	GET_UNIQUE_SCENE_NAME());
-		Cmiss_scene_add_callback(child_scene, Cmiss_scene_update_callback,
-			(void *)NULL);
-		Cmiss_scene_add_callback(child_scene,
-			Cmiss_scene_notify_parent_scene_callback,
-			(void *)scene->region);
 		struct Cmiss_region *temp_region = Cmiss_region_get_first_child(
 			child_region);
 		while (temp_region)
@@ -724,13 +712,13 @@ static void Cmiss_scene_region_change(struct Cmiss_region *region,
 			if (region_changes->child_added)
 			{
 				child_region = region_changes->child_added;
-				Cmiss_scene_add_child_region(scene,
-					child_region);
+				Cmiss_scene_add_child_region(scene, child_region);
+				Cmiss_scene_changed(scene);
 			}
 			else if (region_changes->child_removed)
 			{
 				/* flag it as changed to trigger callback on scene */
-				Cmiss_scene_changed(scene);
+				Cmiss_scene_changed_no_build(scene);
 			}
 			else
 			{
@@ -884,7 +872,6 @@ int Cmiss_scene_add_graphic(struct Cmiss_scene *scene,
 			scene->list_of_graphics);
 		Cmiss_graphic_set_scene_private(graphic, scene);
 		Cmiss_scene_changed(scene);
-		scene->build = 1;
 	}
 	else
 	{
@@ -908,7 +895,7 @@ int Cmiss_scene_remove_graphic(struct Cmiss_scene *scene,
 		Cmiss_graphic_set_scene_private(graphic, NULL);
 		return_code=Cmiss_graphic_remove_from_list(graphic,
 			scene->list_of_graphics);
-		Cmiss_scene_changed(scene);
+		Cmiss_scene_changed_no_build(scene);
 	}
 	else
 	{
@@ -936,7 +923,6 @@ int Cmiss_scene_modify_graphic(struct Cmiss_scene *scene,
 		return_code=Cmiss_graphic_modify_in_list(graphic,new_graphic,
 			scene->list_of_graphics);
 		Cmiss_scene_changed(scene);
-		scene->build = 1;
 	}
 	else
 	{
@@ -1183,21 +1169,21 @@ Cmiss_graphics_module_id Cmiss_scene_get_graphics_module(Cmiss_scene_id scene)
 	return Cmiss_graphics_module_access(scene->graphics_module);
 }
 
-struct Cmiss_scene *Cmiss_region_get_scene_internal(struct Cmiss_region *cmiss_region)
+struct Cmiss_scene *Cmiss_region_get_scene_private(struct Cmiss_region *region)
 {
-	struct Cmiss_scene *scene = NULL;
-
-	if (cmiss_region)
+	Cmiss_scene *scene = 0;
+	if (region)
 	{
-		if ((scene = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_scene))(
+		scene = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_scene))(
 			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_scene) *)NULL, (void *)NULL,
-			Cmiss_region_private_get_any_object_list(cmiss_region))))
-		{
-			ACCESS(Cmiss_scene)(scene);
-		}
+			Cmiss_region_private_get_any_object_list(region));
 	}
+	return scene;
+}
 
-	return (scene);
+struct Cmiss_scene *Cmiss_region_get_scene_internal(struct Cmiss_region *region)
+{
+	return Cmiss_scene_access(Cmiss_region_get_scene_private(region));
 }
 
 /** @return non-accessed parent region scene, if any */
@@ -1301,9 +1287,8 @@ void Cmiss_scene_glyph_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child);
 			Cmiss_scene_glyph_change(child_scene, manager_message);
-			Cmiss_scene_destroy(&child_scene);
 			Cmiss_region_reaccess_next_sibling(&child);
 		}
 		Cmiss_scene_end_change(scene);
@@ -1323,9 +1308,8 @@ void Cmiss_scene_material_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child);
 			Cmiss_scene_material_change(child_scene, manager_message);
-			Cmiss_scene_destroy(&child_scene);
 			Cmiss_region_reaccess_next_sibling(&child);
 		}
 		Cmiss_scene_end_change(scene);
@@ -1345,10 +1329,9 @@ void Cmiss_scene_spectrum_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child);
 			Cmiss_scene_spectrum_change(child_scene, manager_message);
 			Cmiss_region_reaccess_next_sibling(&child);
-			Cmiss_scene_destroy(&child_scene);
 		}
 		Cmiss_scene_end_change(scene);
 	}
@@ -1367,10 +1350,9 @@ void Cmiss_scene_tessellation_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child);
 			Cmiss_scene_tessellation_change(child_scene, manager_message);
 			Cmiss_region_reaccess_next_sibling(&child);
-			Cmiss_scene_destroy(&child_scene);
 		}
 		Cmiss_scene_end_change(scene);
 	}
@@ -1388,10 +1370,9 @@ void Cmiss_scene_font_change(struct Cmiss_scene *scene,
 		Cmiss_region *child = Cmiss_region_get_first_child(scene->region);
 		while (child)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child);
 			Cmiss_scene_font_change(child_scene, manager_message);
 			Cmiss_region_reaccess_next_sibling(&child);
-			Cmiss_scene_destroy(&child_scene);
 		}
 		Cmiss_scene_end_change(scene);
 	}
@@ -1495,11 +1476,10 @@ int Cmiss_scene_render_child_scene(struct Cmiss_scene *scene,
 		child_region = Cmiss_region_get_first_child(region);
 		while (child_region)
 		{
-			child_scene = Cmiss_region_get_scene_internal(child_region);
+			child_scene = Cmiss_region_get_scene_private(child_region);
 			if (child_scene)
 			{
 				renderer->Cmiss_scene_execute(child_scene);
-				DEACCESS(Cmiss_scene)(&child_scene);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
@@ -1609,12 +1589,12 @@ int Cmiss_region_modify_scene(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position)
 {
 	int return_code;
-	struct Cmiss_scene *scene;
 
 	ENTER(Cmiss_region_modify_scene);
 	if (region && graphic)
 	{
-		if (NULL != (scene = Cmiss_region_get_scene_internal(region)))
+		struct Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
+		if (scene)
 		{
 			Cmiss_graphic *same_graphic = 0;
 			// can only edit graphic with same name
@@ -1674,7 +1654,6 @@ int Cmiss_region_modify_scene(struct Cmiss_region *region,
 					}
 				}
 			}
-			DEACCESS(Cmiss_scene)(&scene);
 		}
 		else
 		{
@@ -1838,12 +1817,11 @@ int for_each_child_scene_in_scene_tree(
 			child_region = Cmiss_region_get_first_child(region);
 			while (child_region)
 			{
-				child_scene = Cmiss_region_get_scene_internal(child_region);
+				child_scene = Cmiss_region_get_scene_private(child_region);
 				if (child_scene)
 				{
 					return_code = for_each_child_scene_in_scene_tree(
 						child_scene, cmiss_scene_tree_iterator_function,user_data);
-					DEACCESS(Cmiss_scene)(&child_scene);
 				}
 				Cmiss_region_reaccess_next_sibling(&child_region);
 			}
@@ -2195,6 +2173,55 @@ int Cmiss_scene_is_visible_hierarchical(
 		}
 	}
 	return return_code;
+}
+
+struct Cmiss_scene_spectrum_data_range
+{
+	struct Spectrum *spectrum;
+	Graphics_object_data_range range;
+
+	Cmiss_scene_spectrum_data_range(Cmiss_spectrum *spectrumIn, int valuesCount,
+		double *minimumValues, double *maximumValues) :
+		spectrum(spectrumIn),
+		range(valuesCount, minimumValues, maximumValues)
+	{
+	}
+};
+
+/**
+ * Expands the data range to include the data values of the graphics object
+ * if it uses the specified spectrum.
+ */
+static int Graphics_object_get_spectrum_data_range_iterator(
+	struct GT_object *graphics_object, double time, void *rangeData_void)
+{
+	USE_PARAMETER(time);
+	struct Cmiss_scene_spectrum_data_range *rangeData =
+		reinterpret_cast<struct Cmiss_scene_spectrum_data_range *>(rangeData_void);
+	if (graphics_object && rangeData)
+	{
+		if (get_GT_object_spectrum(graphics_object) == rangeData->spectrum )
+		{
+			get_graphics_object_data_range(graphics_object, &(rangeData->range));
+		}
+		return 1;
+	}
+	return 0;
+}
+
+int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter, Cmiss_spectrum_id spectrum,
+	int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
+{
+	if (scene && spectrum && (0 < valuesCount) && minimumValuesOut && maximumValuesOut)
+	{
+		build_Scene(scene, filter);
+		Cmiss_scene_spectrum_data_range rangeData(spectrum, valuesCount, minimumValuesOut, maximumValuesOut);
+		for_each_graphics_object_in_scene_tree(scene, filter,
+			Graphics_object_get_spectrum_data_range_iterator, (void *)&rangeData);
+		return rangeData.range.getMaxRanges();
+	}
+	return 0;
 }
 
 int Cmiss_scene_get_visibility_flag(
@@ -2657,11 +2684,9 @@ int Cmiss_scene_set_time_notifier(struct Cmiss_scene *scene,
 
 static int Cmiss_scene_update_time_behaviour(struct Cmiss_scene *scene)
 {
-// 	char *time_notifier_name;
 	int return_code;
 	Cmiss_time_notifier *time;
 
-	ENTER(Cmiss_scene_update_time_behaviour);
 	if (scene)
 	{
 		return_code = 1;
@@ -2704,41 +2729,10 @@ static int Cmiss_scene_update_time_behaviour(struct Cmiss_scene *scene)
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_update_time_behaviour.  "
-			"Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
 }
-
-int Cmiss_scene_update_callback(struct Cmiss_scene *scene, void *dummy_void)
-{
-	int return_code;
-	USE_PARAMETER(dummy_void);
-
-	ENTER(Cmiss_scene_update_callback);
-	if (scene)
-	{
-		if (scene->visibility_flag)
-		{
-			//Cmiss_scene_changed(scene);
-			Cmiss_scene_update_time_behaviour(scene);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_update_callback */
 
 int DESTROY(Cmiss_scene)(
 	struct Cmiss_scene **cmiss_scene_address)
@@ -2874,7 +2868,7 @@ int Cmiss_scene_set_selection_group(Cmiss_scene_id scene,
 		Cmiss_region_id child_region = Cmiss_region_get_first_child(scene->region);
 		while ((NULL != child_region))
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child_region);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child_region);
 			if (child_scene)
 			{
 				if (selection_group)
@@ -2889,7 +2883,6 @@ int Cmiss_scene_set_selection_group(Cmiss_scene_id scene,
 				{
 					Cmiss_field_group_destroy(&child_group);
 				}
-				Cmiss_scene_destroy(&child_scene);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
@@ -3455,16 +3448,6 @@ int Cmiss_scene_remove_all_graphics(Cmiss_scene_id scene)
 	return return_code;
 }
 
-int Cmiss_scene_graphic_changed_private(struct Cmiss_scene *scene,
-	struct Cmiss_graphic *graphic)
-{
-	if (scene && graphic)
-	{
-		return Cmiss_scene_changed(scene);
-	}
-	return 0;
-}
-
 Cmiss_scene *Cmiss_scene_get_child_of_position(Cmiss_scene *scene, int position)
 {
 	Cmiss_scene *scene_of_position = NULL;
@@ -3478,11 +3461,10 @@ Cmiss_scene *Cmiss_scene_get_child_of_position(Cmiss_scene *scene, int position)
 		Cmiss_region_id child_region = Cmiss_region_get_first_child(scene->region);
 		while (child_region && (scene_of_position == 0))
 		{
-			Cmiss_scene *child_scene = Cmiss_region_get_scene_internal(child_region);
+			Cmiss_scene *child_scene = Cmiss_region_get_scene_private(child_region);
 			if (child_scene)
 			{
 				scene_of_position = Cmiss_scene_get_child_of_position(child_scene, position);
-				Cmiss_scene_destroy(&child_scene);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
@@ -3537,11 +3519,10 @@ int Cmiss_scene_compile_tree(Cmiss_scene *scene,
 		Cmiss_region_id child_region = Cmiss_region_get_first_child(scene->region);
 		while (child_region)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child_region);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child_region);
 			if (child_scene)
 			{
 				Cmiss_scene_compile_tree(child_scene, renderer);
-				DEACCESS(Cmiss_scene)(&child_scene);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
@@ -3600,12 +3581,11 @@ int Cmiss_scene_add_total_transformation_callback(struct Cmiss_scene *child_scen
 
 		if ((scene != child_scene) || parent)
 		{
-			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_internal(parent);
+			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_private(parent);
 			if (parent_scene)
 			{
 				return_code = Cmiss_scene_add_total_transformation_callback(parent_scene, scene, function,
 					region_change_function, user_data);
-				Cmiss_scene_destroy(&parent_scene);
 			}
 		}
 		if (return_code)
@@ -3635,12 +3615,11 @@ int Cmiss_scene_remove_total_transformation_callback(struct Cmiss_scene *child_s
 
 		if ((child_scene != scene) || parent)
 		{
-			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_internal(parent);
+			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_private(parent);
 			if (parent_scene)
 			{
 				return_code = Cmiss_scene_remove_total_transformation_callback(parent_scene, scene, function,
 					region_change_function, user_data);
-				Cmiss_scene_destroy(&parent_scene);
 			}
 		}
 		if (return_code)
@@ -3694,7 +3673,7 @@ gtMatrix *Cmiss_scene_get_total_transformation(
 
 		if ((top_scene != scene) || parent)
 		{
-			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_internal(parent);
+			struct Cmiss_scene *parent_scene = Cmiss_region_get_scene_private(parent);
 			if (parent_scene)
 			{
 				gtMatrix *parent_transformation =
@@ -3712,7 +3691,6 @@ gtMatrix *Cmiss_scene_get_total_transformation(
 					/* top level of transformation set by user*/
 					use_local_transformation = 1;
 				}
-				Cmiss_scene_destroy(&parent_scene);
 			}
 		}
 		else
@@ -3746,11 +3724,10 @@ int Cmiss_scene_get_global_graphics_range_internal(Cmiss_scene_id top_scene,
 		Cmiss_region_id child_region = Cmiss_region_get_first_child(scene->region);
 		while (child_region)
 		{
-			Cmiss_scene_id child_scene = Cmiss_region_get_scene_internal(child_region);
+			Cmiss_scene_id child_scene = Cmiss_region_get_scene_private(child_region);
 			if (child_scene)
 			{
 				Cmiss_scene_get_global_graphics_range_internal(top_scene, child_scene, filter, graphics_object_range);
-				DEACCESS(Cmiss_scene)(&child_scene);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
@@ -3863,7 +3840,7 @@ static int Cmiss_region_recursive_for_each_graphics_object(Cmiss_region *region,
 	{
 		// a bit naughty using this internal API, but Scene doesn't yet have
 		// pointer to graphics_module...
-		Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+		Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
 		if (scene)
 		{
 			return_code = for_each_graphic_in_Cmiss_scene(scene,
@@ -3886,7 +3863,6 @@ static int Cmiss_region_recursive_for_each_graphics_object(Cmiss_region *region,
 					Cmiss_region_destroy(&child_region);
 				}
 			}
-			Cmiss_scene_destroy(&scene);
 		}
 	}
 	return (return_code);
@@ -3937,12 +3913,11 @@ int Scene_export_region_graphics_object(Cmiss_scene *scene,
 		data.filter = filter;
 		if (1 == Cmiss_region_contains_subregion(scene->region, region))
 		{
-			struct Cmiss_scene *export_scene = Cmiss_region_get_scene_internal(region);
+			struct Cmiss_scene *export_scene = Cmiss_region_get_scene_private(region);
 			if (export_scene)
 			{
 				return_code = for_each_graphic_in_Cmiss_scene(export_scene,
 					Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
-				Cmiss_scene_destroy(&export_scene);
 			}
 		}
 
@@ -3969,83 +3944,6 @@ Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene)
 		return scene_picker;
 	}
 	return 0;
-}
-
-struct Scene_get_data_range_for_spectrum_data
-{
-	struct Spectrum *spectrum;
-	struct Graphics_object_data_range_struct range;
-};
-
-static int Scene_get_data_range_for_spectrum_iterator(
-	struct GT_object *graphics_object, double time, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
-
-DESCRIPTION :
-Expands the range to include the data values of any of the graphics object
-in the <scene> which point to this spectrum.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_get_data_range_for_spectrum_data *data;
-
-	USE_PARAMETER(time);
-	if (graphics_object &&
-		(data = (struct Scene_get_data_range_for_spectrum_data *)data_void))
-	{
-		if (get_GT_object_spectrum(graphics_object) == data->spectrum )
-		{
-			get_graphics_object_data_range(graphics_object,
-				(void *)&(data->range));
-		}
-		return_code = 1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-}
-
-int Scene_get_data_range_for_spectrum(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter,
-	struct Spectrum *spectrum, GLfloat *minimum, GLfloat *maximum,
-	int *range_set)
-{
-	int return_code;
-	struct Scene_get_data_range_for_spectrum_data data;
-
-	if ( scene && spectrum )
-	{
-		/* must ensure the scene is built first! */
-		build_Scene(scene, filter);
-
-		data.spectrum = spectrum;
-		data.range.first = 1;
-		data.range.minimum = 0;
-		data.range.maximum = 0;
-		for_each_graphics_object_in_scene_tree(scene, filter,
-			Scene_get_data_range_for_spectrum_iterator, (void *)&data);
-		if ( data.range.first )
-		{
-			*range_set = 0;
-		}
-		else
-		{
-			*range_set = 1;
-			*minimum = data.range.minimum;
-			*maximum = data.range.maximum;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
 }
 
 void Cmiss_scene_detach_from_owner(Cmiss_scene_id cmiss_scene)
