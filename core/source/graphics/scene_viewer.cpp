@@ -8092,7 +8092,8 @@ int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,
 			message, scene_viewer->filter);
 		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
 		{
-			Scene_viewer_render_scene(scene_viewer);
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		}
 	}
 	else
