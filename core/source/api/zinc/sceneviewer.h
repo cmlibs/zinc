@@ -846,9 +846,9 @@ This callback will be notified when a repaint is required by a windowless mode
 scene_viewer, so that the host application can do the redraw.
 ==============================================================================*/
 
-//-- ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
-//-- 	Cmiss_scene_viewer_id scene_viewer,
-//-- 	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
