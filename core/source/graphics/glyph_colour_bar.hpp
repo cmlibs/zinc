@@ -82,6 +82,11 @@ public:
 	virtual GT_object *getGraphicsObject(Cmiss_tessellation *tessellation,
 		Cmiss_graphics_material *material, Cmiss_font *font);
 
+	virtual bool usesFont()
+	{
+		return true;
+	}
+
 	int getAxis(int valuesCount, double *valuesOut) const;
 
 	int setAxis(int valuesCount, const double *valuesIn);
