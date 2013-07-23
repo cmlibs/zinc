@@ -68,10 +68,10 @@
            	PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
            	return 0;
         }
-    	return Cmiss_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
+    	int return_code = Cmiss_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
     		(void *)callbackObject);
-        Py_XDECREF(callbackObject);         /* Add a reference to new callback */
-
+    	Py_XDECREF(callbackObject);         /* Add a reference to new callback */
+    	return return_code;
     }
 }
 
