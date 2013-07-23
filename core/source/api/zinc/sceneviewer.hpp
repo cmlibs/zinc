@@ -217,7 +217,7 @@ public:
 		return Cmiss_scene_viewer_set_filter(id, graphicsFilter.getId());
 	}
 
-	GraphicsFilter getGraphicsFilter()
+	GraphicsFilter getFilter()
 	{
 		return GraphicsFilter(Cmiss_scene_viewer_get_filter(id));
 	}
