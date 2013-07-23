@@ -213,7 +213,7 @@ int process_modify_element_group(Cmiss_field_group_id group,
 	Cmiss_mesh_group_id selection_mesh_group = 0;
 	if (selected_flag)
 	{
-		Cmiss_scene *scene = Cmiss_region_get_scene_internal(region);
+		Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
 		Cmiss_field_group_id selection_group = Cmiss_scene_get_selection_group(scene);
 		if (selection_group)
 		{
@@ -226,7 +226,6 @@ int process_modify_element_group(Cmiss_field_group_id group,
 			}
 			Cmiss_field_group_destroy(&selection_group);
 		}
-		Cmiss_scene_destroy(&scene);
 	}
 	Cmiss_mesh_group_id from_mesh_group = 0;
 	if (from_group)

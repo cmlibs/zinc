@@ -199,6 +199,13 @@ public:
 			(Cmiss_field_group_id)(fieldGroup.getId()));
 	}
 
+	int getSpectrumDataRange(GraphicsFilter& filter, Spectrum& spectrum,
+		int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
+	{
+		return Cmiss_scene_get_spectrum_data_range(id, filter.getId(),
+			spectrum.getId(), valuesCount, minimumValuesOut, maximumValuesOut);
+	}
+
 	bool getVisibilityFlag()
 	{
 		return (0 != Cmiss_scene_get_visibility_flag(id));

@@ -53,6 +53,7 @@ The public interface to the Cmiss_scene.
 #include "types/sceneid.h"
 #include "types/scenepickerid.h"
 #include "types/selectionid.h"
+#include "types/spectrumid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -288,6 +289,31 @@ ZINC_API Cmiss_field_group_id Cmiss_scene_get_selection_group(Cmiss_scene_id sce
 ZINC_API int Cmiss_scene_set_selection_group(Cmiss_scene_id scene,
 	Cmiss_field_group_id selection_field);
 
+/**
+ * Get the range of graphic data field values rendered with the spectrum.
+ * Search is limited to the scene and its sub-scenes with an optional filter.
+ * Spectrum colour bar glyphs do not contribute to the range.
+ *
+ * @param scene  Handle to the root scene to search.
+ * @param filter  Optional filter on which graphics to get data range from. If
+ * omitted, then all graphics within the scene tree contribute.
+ * @param spectrum  The spectrum to get the range for. Only data for graphics
+ * using this spectrum contribute to the range.
+ * @param valuesCount  The number of data values to get the minimum and maximum
+ * range for, at least 1.
+ * @param minimumValuesOut  Array to receive the data value minimums. Must be at
+ * least as large as valuesCount.
+ * @param maximumValuesOut  Array to receive the data value maximums. Must be at
+ * least as large as valuesCount.
+ * @return  The number of data components for which a valid range is obtainable,
+ * which can be more or less than the valuesCount so must be tested if more than
+ * one component range requested. Returns 0 on any other error including bad
+ * arguments.
+ */
+ZINC_API int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
+	Cmiss_graphics_filter_id filter, Cmiss_spectrum_id spectrum,
+	int valuesCount, double *minimumValuesOut, double *maximumValuesOut);
+
 /***************************************************************************//**
  * Returns the state of the scene's visibility flag. Note this only affects
  * graphics filters that act on the state of this flag.
@@ -307,7 +333,6 @@ ZINC_API int Cmiss_scene_get_visibility_flag(Cmiss_scene_id scene);
  */
 ZINC_API int Cmiss_scene_set_visibility_flag(Cmiss_scene_id scene,
 	int visibility_flag);
-
 
 /**
  * Move an existing graphic in scene before ref_graphic. Both <graphic> and
