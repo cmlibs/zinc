@@ -521,16 +521,16 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(values[1], outputValues[2]);
 
 	// check default values = 0.0
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_glyph_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, 0));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_offset(pointattr, 2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_offset(pointattr, 0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, 0));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_offset(pointattr, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_offset(pointattr, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_offset(pointattr, 2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_glyph_offset(pointattr, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_get_glyph_offset(pointattr, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_get_glyph_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
@@ -619,12 +619,12 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setOffset(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setOffset(2, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.setOffset(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getOffset(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getOffset(3, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.getOffset(3, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphOffset(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphOffset(2, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.setGlyphOffset(2, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getGlyphOffset(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getGlyphOffset(3, 0));
+	EXPECT_EQ(CMISS_OK, pointattr.getGlyphOffset(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
