@@ -247,14 +247,14 @@ int Cmiss_spectrum_module_begin_change(Cmiss_spectrum_module_id spectrum_module)
 {
 	if (spectrum_module)
 		return spectrum_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_spectrum_module_end_change(Cmiss_spectrum_module_id spectrum_module)
 {
 	if (spectrum_module)
 		return spectrum_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_spectrum_id Cmiss_spectrum_module_find_spectrum_by_name(
@@ -262,7 +262,7 @@ Cmiss_spectrum_id Cmiss_spectrum_module_find_spectrum_by_name(
 {
 	if (spectrum_module)
 		return spectrum_module->findSpectrumByName(name);
-   return 0;
+	return 0;
 }
 
 Cmiss_spectrum_id Cmiss_spectrum_module_get_default_spectrum(
@@ -2613,3 +2613,4 @@ int Cmiss_spectrum_set_managed(Cmiss_spectrum_id spectrum,  bool value)
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
+

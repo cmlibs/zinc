@@ -182,7 +182,7 @@ ZINC_API char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 /**
  * Set/change name for <spectrum>.
  *
- * @param spectrum  The handle to cmiss grpahical spectrum.
+ * @param spectrum  The handle to cmiss graphical spectrum.
  * @param name  name to be set to the spectrum
  * @return  status CMISS_OK if successfully set/change name for spectrum,
  * any other value on failure.
