@@ -251,6 +251,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Spectrum_settings_colour_mapping)
 		{
 			enumerator_string = "white_to_red";
 		} break;
+		case SPECTRUM_WHITE_TO_GREEN:
+		{
+			enumerator_string = "white_to_green";
+		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -972,6 +976,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				case SPECTRUM_RED:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
+				case SPECTRUM_WHITE_TO_GREEN:
 				{
 					sprintf(temp_string," %s colour_range %g %g",
 						ENUMERATOR_STRING(Spectrum_settings_colour_mapping)(settings->colour_mapping),
@@ -2120,6 +2125,7 @@ in the value pointed to by <colour_components_void>.
 				case SPECTRUM_RAINBOW:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
+				case SPECTRUM_WHITE_TO_GREEN:
 				case SPECTRUM_BANDED:
 				case SPECTRUM_STEP:
 				{
@@ -2200,6 +2206,7 @@ DESCRIPTION :
 				case SPECTRUM_BLUE:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
+				case SPECTRUM_WHITE_TO_GREEN:
 				case SPECTRUM_ALPHA:
 				{
 					/* Do nothing but valid. */
@@ -2536,6 +2543,12 @@ passed in render data.
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
+						case SPECTRUM_WHITE_TO_GREEN:
+						{
+							render_data->rgba[1]=1.0;
+							render_data->rgba[0]=(1-value);
+							render_data->rgba[2]=(1-value);
+						} break;
 						default:
 						{
 						} break;
@@ -2754,9 +2767,15 @@ passed in render data.
 						} break;
 						case SPECTRUM_WHITE_TO_RED:
 						{
-							render_data->rgba[0]=1;
+							render_data->rgba[0]=1.0;
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
+						} break;
+						case SPECTRUM_WHITE_TO_GREEN:
+						{
+							render_data->rgba[1]=1.0;
+							render_data->rgba[0]=(1-value);
+							render_data->rgba[2]=(1-value);
 						} break;
 					}
 				}
@@ -2828,6 +2847,7 @@ DESCRIPTION :
 				case SPECTRUM_ALPHA:
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
+				case SPECTRUM_WHITE_TO_GREEN:
 				{
 					/* do nothing */
 				} break;

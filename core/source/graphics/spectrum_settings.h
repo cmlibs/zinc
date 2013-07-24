@@ -81,7 +81,8 @@ Map the value into a colour.
 	SPECTRUM_RED,
 	SPECTRUM_STEP,
 	SPECTRUM_WHITE_TO_BLUE,
-	SPECTRUM_WHITE_TO_RED
+	SPECTRUM_WHITE_TO_RED,
+	SPECTRUM_WHITE_TO_GREEN
 }; /* enum Spectrum_settings_colour_mapping */
 
 enum Spectrum_settings_string_details
