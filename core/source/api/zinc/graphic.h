@@ -1022,6 +1022,38 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph(
 	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_glyph_id glyph);
 
 /**
+ * Gets the offset from the point coordinates to where the glyph origin is
+ * drawn, in glyph units along the glyph local axes.
+ * @see Cmiss_graphic_point_attributes_set_glyph_offset.
+ *
+ * @param point_attributes  The point_attributes to query.
+ * @param number  The number of offset values to request, up to 3.
+ * @param offset  Array to receive offset values, starting with the first axis.
+ * Must be big enough to contain the specified number of values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_get_glyph_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *offset);
+
+/**
+ * Sets the offset from the point coordinates to where the glyph origin is
+ * drawn, in glyph units along the glyph local axes.
+ * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * Tip: offset values can give the effect of moving the centre point / origin
+ * of the glyph: just pass in negative coordinates for the new origin.
+ *
+ * @param point_attributes  The point_attributes to modify.
+ * @param number  The number of offset values to set, up to 3.
+ * @param offset  Array of offset values, starting with the first axis. If
+ * fewer than 3 then zero is assumed for all other offset values.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_point_attributes_set_glyph_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *offset);
+
+/**
  * Return the current glyph repeat mode.
  * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
  *
@@ -1095,8 +1127,8 @@ ZINC_API int Cmiss_graphic_point_attributes_get_label_offset(
 	double *label_offset);
 
 /**
- * Sets the label offset relative to the glyph axes from its origin. A unit
- * offset moves the label the length of the axis vector.
+ * Sets the label offset relative to the glyph axes from its origin set by the
+ * glyph offset. A unit offset moves the label the length of the axis vector.
  * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
  *
  * @param point_attributes  The point_attributes to modify.
@@ -1136,38 +1168,6 @@ ZINC_API char *Cmiss_graphic_point_attributes_get_label_text(
 ZINC_API int Cmiss_graphic_point_attributes_set_label_text(
 	Cmiss_graphic_point_attributes_id point_attributes, int label_number,
 	const char *label_text);
-
-/**
- * Gets the offset from the point coordinates to where the glyph origin is
- * drawn, in glyph units along the axes, i.e. values are subsequently scaled.
- * @see Cmiss_graphic_point_attributes_set_offset.
- *
- * @param point_attributes  The point_attributes to query.
- * @param number  The number of offset values to request, up to 3.
- * @param offset  Array to receive offset values, starting with the first axis.
- * Must be big enough to contain the specified number of values.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
- */
-ZINC_API int Cmiss_graphic_point_attributes_get_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
-	double *offset);
-
-/**
- * Sets the offset from the point coordinates to where the glyph origin is
- * drawn, in glyph units along the axes, i.e. values are subsequently scaled.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
- * Tip: offset values can give the effect of moving the centre point / origin
- * of the glyph: just pass in negative coordinates for the new origin.
- *
- * @param point_attributes  The point_attributes to modify.
- * @param number  The number of offset values to set, up to 3.
- * @param offset  Array of offset values, starting with the first axis. If
- * fewer than 3 then zero is assumed for all other offset values.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
- */
-ZINC_API int Cmiss_graphic_point_attributes_set_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
-	const double *offset);
 
 /**
  * Gets the orientation scale field from the graphic point attributes. This
