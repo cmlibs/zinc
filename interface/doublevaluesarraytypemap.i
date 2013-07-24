@@ -1,6 +1,6 @@
 /*******************************************************************************
  * doublevaluesarraytypemap.i
- * 
+ *
  * Swig interface file for double array.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,15 +38,15 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
+
 %typemap(in) (int valuesCount, const double *valuesIn)
 {
 	/* Check if is a list */
-        if (PyInt_Check($input) || PyFloat_Check($input) || PyLong_Check($input))
-        {
-                $1 = 1;
-                $2 = new double[$1];
-                PyObject *o = $input;
+		if (PyInt_Check($input) || PyFloat_Check($input) || PyLong_Check($input))
+		{
+				$1 = 1;
+				$2 = new double[$1];
+				PyObject *o = $input;
 		if (PyFloat_Check(o))
 		{
 			$2[0] = PyFloat_AsDouble(o);
@@ -59,18 +59,18 @@
 		{
 			$2[0] = static_cast<double>(PyInt_AsLong(o));
 		}
-		else 
+		else
 		{
 			PyErr_SetString(PyExc_TypeError,"value must be a float");
 			delete[] $2;
 			return NULL;
 		}
-        }
-	else if (PyList_Check($input)) 
+		}
+	else if (PyList_Check($input))
 	{
 		$1 = PyList_Size($input);
 		$2 = new double[$1];
-		for (int i = 0; i < $1; i++) 
+		for (int i = 0; i < $1; i++)
 		{
 			PyObject *o = PyList_GetItem($input,i);
 			if (PyFloat_Check(o))
@@ -85,7 +85,7 @@
 			{
 				$2[i] = static_cast<double>(PyInt_AsLong(o));
 			}
-			else 
+			else
 			{
 				PyErr_SetString(PyExc_TypeError,"list must contain float");
 				delete[] $2;
@@ -142,7 +142,7 @@
 	{
 		$result = o;
 	}
-	else 
+	else
 	{
 		// note: code considers that tuples are supposed to be immutable
 		// should only modify if you have only reference to them!
@@ -172,3 +172,73 @@
 %apply (int valuesCount, const double *valuesIn) { (int timesCount, const double *timesIn) };
 
 %apply (int valuesCount, const double *valuesIn) { (int seedPointsCount, const double *seedPoints) };
+
+%typemap(in, numinputs=1) (int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
+{
+	if (!PyInt_Check($input))
+	{
+		PyErr_SetString(PyExc_ValueError, "Expecting an integer");
+		return NULL;
+	}
+	$1 = PyInt_AsLong($input);
+	if ($1 < 0)
+	{
+		PyErr_SetString(PyExc_ValueError, "Positive integer expected");
+		return NULL;
+	}
+	$2 = new double[$1];
+	$3 = new double[$1];
+};
+
+%typemap(argout)(int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
+{
+	PyObject *o1, *o2;
+	if ($1 == 1)
+	{
+		o1 = PyFloat_FromDouble(*$2);
+		o2 = PyFloat_FromDouble(*$3);
+	}
+	else
+	{
+		o1 = PyList_New($1);
+		o2 = PyList_New($1);
+		for (int i = 0 ; i < $1; i++)
+		{
+			PyList_SET_ITEM(o1, i, PyFloat_FromDouble($2[i])); // steals reference
+			PyList_SET_ITEM(o2, i, PyFloat_FromDouble($3[i])); // steals reference
+		}
+	}
+
+	if ((!$result) || ($result == Py_None))
+	{
+		$result = PyTuple_New(2);
+		PyTuple_SET_ITEM($result, 0, o1); // steals reference
+		PyTuple_SET_ITEM($result, 1, o2); // steals reference
+	}
+	else
+	{
+		// note: code considers that tuples are supposed to be immutable
+		// should only modify if you have only reference to them!
+		if (!PyTuple_Check($result))
+		{
+			PyObject *previousResult = $result;
+			$result = PyTuple_New(3);
+			PyTuple_SET_ITEM($result, 0, previousResult); // steals reference
+			PyTuple_SET_ITEM($result, 1, o1); // steals reference
+			PyTuple_SET_ITEM($result, 2, o2); // steals reference
+		}
+		else
+		{
+			PyObject *previousResult = $result;
+			PyObject *addResult = PyTuple_New(2);
+			PyTuple_SET_ITEM(addResult, 0, o1); // steals reference
+			PyTuple_SET_ITEM(addResult, 1, o2); // steals reference
+			$result = PySequence_Concat(previousResult, addResult);
+			Py_DECREF(previousResult);
+			Py_DECREF(addResult);
+		}
+	}
+	delete[] $2;
+	delete[] $3;
+};
+
