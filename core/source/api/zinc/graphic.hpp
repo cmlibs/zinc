@@ -613,6 +613,16 @@ public:
 		return Cmiss_graphic_point_attributes_set_glyph(id, glyph.getId());
 	}
 
+	int getGlyphOffset(int valuesCount, double *valuesOut)
+	{
+		return Cmiss_graphic_point_attributes_get_glyph_offset(id, valuesCount, valuesOut);
+	}
+
+	int setGlyphOffset(int valuesCount, const double *valuesIn)
+	{
+		return Cmiss_graphic_point_attributes_set_glyph_offset(id, valuesCount, valuesIn);
+	}
+
 	Glyph::RepeatMode getGlyphRepeatMode()
 	{
 		return static_cast<Glyph::RepeatMode>(Cmiss_graphic_point_attributes_get_glyph_repeat_mode(id));
@@ -658,16 +668,6 @@ public:
 	int setLabelText(int labelNumber, const char *labelText)
 	{
 		return Cmiss_graphic_point_attributes_set_label_text(id, labelNumber, labelText);
-	}
-
-	int getOffset(int valuesCount, double *valuesOut)
-	{
-		return Cmiss_graphic_point_attributes_get_offset(id, valuesCount, valuesOut);
-	}
-
-	int setOffset(int valuesCount, const double *valuesIn)
-	{
-		return Cmiss_graphic_point_attributes_set_offset(id, valuesCount, valuesIn);
 	}
 
 	Field getOrientationScaleField()

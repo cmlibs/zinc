@@ -301,8 +301,8 @@ ZINC_API int Cmiss_glyph_colour_bar_get_centre(
 /**
  * Sets the centre position of the colour bar.
  * The default centre is (0,0,0). It is recommended that this not be changed
- * and instead use the graphic point attributes offset.
- * @see Cmiss_graphic_point_attributes_set_offset
+ * and instead use the graphic point attributes glyph offset.
+ * @see Cmiss_graphic_point_attributes_set_glyph_offset
  *
  * @param colour_bar  The colour bar glyph to modify.
  * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.

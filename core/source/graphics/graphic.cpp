@@ -6772,6 +6772,54 @@ int Cmiss_graphic_point_attributes_set_glyph(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+int Cmiss_graphic_point_attributes_get_glyph_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	double *offset)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && offset)
+	{
+		const int count = (number > 3) ? 3 : number;
+		for (int i = 0; i < count; ++i)
+		{
+			offset[i] = static_cast<double>(graphic->point_offset[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_point_attributes_set_glyph_offset(
+	Cmiss_graphic_point_attributes_id point_attributes, int number,
+	const double *offset)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic && (0 < number) && offset)
+	{
+		bool changed = false;
+		FE_value value = 0.0;
+		for (int i = 2; 0 <= i; --i)
+		{
+			if (i < number)
+			{
+				value = static_cast<FE_value>(offset[i]);
+			}
+			if (graphic->point_offset[i] != value)
+			{
+				graphic->point_offset[i] = value;
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 enum Cmiss_glyph_repeat_mode
 	Cmiss_graphic_point_attributes_get_glyph_repeat_mode(
 		Cmiss_graphic_point_attributes_id point_attributes)
@@ -6955,54 +7003,6 @@ int Cmiss_graphic_point_attributes_set_label_text(
 			}
 			graphic->label_text[label_number - 1] =
 				(label_text && (0 < strlen(label_text))) ? duplicate_string(label_text) : 0;
-			Cmiss_graphic_update_graphics_object_trivial(graphic);
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
-		}
-		return CMISS_OK;
-	}
-	return CMISS_ERROR_ARGUMENT;
-}
-
-int Cmiss_graphic_point_attributes_get_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
-	double *offset)
-{
-	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic && (0 < number) && offset)
-	{
-		const int count = (number > 3) ? 3 : number;
-		for (int i = 0; i < count; ++i)
-		{
-			offset[i] = static_cast<double>(graphic->point_offset[i]);
-		}
-		return CMISS_OK;
-	}
-	return CMISS_ERROR_ARGUMENT;
-}
-
-int Cmiss_graphic_point_attributes_set_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
-	const double *offset)
-{
-	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic && (0 < number) && offset)
-	{
-		bool changed = false;
-		FE_value value = 0.0;
-		for (int i = 2; 0 <= i; --i)
-		{
-			if (i < number)
-			{
-				value = static_cast<FE_value>(offset[i]);
-			}
-			if (graphic->point_offset[i] != value)
-			{
-				graphic->point_offset[i] = value;
-				changed = true;
-			}
-		}
-		if (changed)
-		{
 			Cmiss_graphic_update_graphics_object_trivial(graphic);
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 		}
