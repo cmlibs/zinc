@@ -3223,6 +3223,10 @@ int Cmiss_graphic_to_graphics_object(
 						graphic_to_object_data->glyph_gt_object =
 							graphic->glyph->getGraphicsObject(graphic->tessellation, graphic->material, graphic->font);
 					}
+					else
+					{
+						graphic_to_object_data->glyph_gt_object = 0;
+					}
 					if (return_code)
 					{
 #if defined (DEBUG_CODE)
@@ -3692,7 +3696,7 @@ int Cmiss_graphic_to_graphics_object(
 							DEALLOCATE(graphic_to_object_data->data_copy_buffer);
 						}
 					}
-					if (graphic->glyph)
+					if (graphic_to_object_data->glyph_gt_object)
 					{
 						DEACCESS(GT_object)(&(graphic_to_object_data->glyph_gt_object));
 					}
