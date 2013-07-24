@@ -226,7 +226,7 @@ DESCRIPTION :
 	struct GT_userdef *userdef;
 	struct IO_stream *stream;
 	int version;
-	ZnReal time;
+	double time;
 
 	ENTER(file_read_graphics_objects);
 	Cmiss_glyph_module_begin_change(glyph_module);
@@ -297,7 +297,7 @@ DESCRIPTION :
 						}
 						else
 						{
-							IO_stream_scan(stream,"%f", &time);
+							IO_stream_scan(stream,"%lf", &time);
 						}
 						file_read_Graphical_material_name(stream,&object_material,
 							Cmiss_graphics_material_module_get_manager(material_module));
@@ -339,10 +339,13 @@ DESCRIPTION :
 						if (glyphStatic)
 						{
 							obj = glyphStatic->getGraphicsObject();
+							ACCESS(GT_object)(obj);
 						}
-						else
+						else if (glyph)
 						{
+							display_message(ERROR_MESSAGE, "Read graphics object file: Cannot modify non-static glyph '%s'", objname);
 							Cmiss_glyph_destroy(&glyph);
+							return_code = 0;
 						}
 						if (obj)
 						{
@@ -356,17 +359,29 @@ DESCRIPTION :
 									(void *)NULL);
 							}
 						}
-						else
+						else if (return_code)
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
+							ACCESS(GT_object)(obj);
+							glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+							if (glyph)
+							{
+								glyph->setName(objname);
+								glyph->setManaged(true);
+							}
+							else
+							{
+								return_code = 0;
+							}
 						}
-						ACCESS(GT_object)(obj);
 #if defined (DEBUG_CODE)
 						/*???debug */
 						printf("object type = %d (%s)\n",object_type,
 							get_GT_object_type_string(object_type));
 						printf("object name = %s\n",objname);
 #endif /* defined (DEBUG_CODE) */
+						if (return_code)
+						{
 						switch (object_type)
 						{
 							case g_POINT:
@@ -761,23 +776,15 @@ DESCRIPTION :
 								return_code=0;
 							} break;
 						} /* switch (object_type) */
+						}
+						if (return_code)
+						{
+							glyph->changed();
+						}
 						if (obj)
 						{
-							if (return_code)
-							{
-								if (glyph)
-								{
-									glyph->changed();
-								}
-								else
-								{
-									glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
-									glyph->setName(objname);
-									glyph->setManaged(true);
-								}
-							}
+							DEACCESS(GT_object)(&obj);
 						}
-						DEACCESS(GT_object)(&obj);
 						Cmiss_glyph_destroy(&glyph);
 					}
 					else
