@@ -7285,8 +7285,8 @@ template <class value_type> int Graphics_vertex_array_internal::free_unused_buff
 	Graphics_vertex_array_attribute_type vertex_type, const value_type *dummy )
 {
 	int return_code = 0;
-	Graphics_vertex_buffer *buffer = 0;
-	if (buffer = get_vertex_buffer(vertex_type))
+	Graphics_vertex_buffer *buffer = get_vertex_buffer(vertex_type);
+	if (buffer)
 	{
 		if (REALLOCATE(buffer->memory, buffer->memory, value_type,
 				(buffer->vertex_count  * buffer->values_per_vertex)))
