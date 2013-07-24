@@ -6880,7 +6880,7 @@ int Texture_compile_opengl_display_list(struct Texture *texture,
 	ENTER(Texture_compile_opengl_dispay_list);
 	if (texture)
 	{
-		if ((texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED))
+		if (texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED)
 		{
 			return_code = 1;
 			if (renderer->allow_texture_tiling && texture->texture_tiling)
