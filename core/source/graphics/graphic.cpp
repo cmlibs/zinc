@@ -3240,8 +3240,7 @@ int Cmiss_graphic_to_graphics_object(
 #endif /* defined (DEBUG_CODE) */
 						Cmiss_graphic_get_top_level_number_in_xi(graphic,
 							MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
-						graphic_to_object_data->existing_graphics =
-							(struct GT_object *)NULL;
+						graphic_to_object_data->existing_graphics = 0;
 						/* work out the name the graphics object is to have */
 						char *graphics_object_name = Cmiss_graphic_get_graphics_object_name(graphic, graphic_to_object_data->name_prefix);
 						if (graphics_object_name)
@@ -3355,7 +3354,6 @@ int Cmiss_graphic_to_graphics_object(
 										set_GT_object_selected_material(graphic->graphics_object,
 											graphic->selected_material);
 									}
-									ACCESS(GT_object)(graphic->graphics_object);
 								}
 							}
 							DEALLOCATE(graphics_object_name);
@@ -3616,7 +3614,7 @@ int Cmiss_graphic_to_graphics_object(
 								// must always regenerate ALL streamlines since they can cross into other elements
 								if (graphic_to_object_data->existing_graphics)
 								{
-									DESTROY(GT_object)(
+									DEACCESS(GT_object)(
 										&(graphic_to_object_data->existing_graphics));
 								}
 								if (graphic->seed_element)
@@ -3688,7 +3686,7 @@ int Cmiss_graphic_to_graphics_object(
 						}
 						if (graphic_to_object_data->existing_graphics)
 						{
-							DESTROY(GT_object)(&(graphic_to_object_data->existing_graphics));
+							DEACCESS(GT_object)(&(graphic_to_object_data->existing_graphics));
 						}
 						if (graphic->data_field)
 						{
@@ -5758,6 +5756,11 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 					if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION == graphic->line_shape)
 					{
 						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+					}
+					else if (graphic->glyph && graphic->glyph->usesCircleDivisions())
+					{
+						Cmiss_graphic_update_graphics_object_trivial_glyph(graphic);
+						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
 					}
 				}
 			}

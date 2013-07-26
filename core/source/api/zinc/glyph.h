@@ -103,8 +103,9 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * 2. are otherwise centred at 0,0,0 for all other glyphs.
  * These consist of:
  * "arrow", "arrow_solid" = line and solid arrows from (0,0,0) to (1,0,0) with
- *     arrowhead 1/3 of length and unit width.
+ *     arrowhead 1/3 of length and unit width. Shaft diameter is 1/3 unit.
  * "axis", "axis_solid" = variants of arrows with arrowhead 1/10 of length.
+ *     Shaft diameter is 1/3 unit.
  * "cone", "cone_solid" = cone descending from unit diameter circle in 2-3 plane
  *      at (0,0,0) to a point at (1,0,0). Solid variant has base closed.
  * "cross" = lines from -0.5 to +0.5 on each axis through (0,0,0).
@@ -112,6 +113,8 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  *     aligned with primary axes and centred at (0,0,0).
  * "cylinder", "cylinder_solid" = a unit diameter cylinder, centre line from
  *     (0,0,0) to (1,0,0). Solid variant has ends closed.
+ * "diamond" = an octohedron created as a sphere with 4 divisions around, so
+ *     lit like a sphere rather than faceted.
  * "line" = a line from (0,0,0) to (1,0,0).
  * "point" = a single pixel at (0,0,0).
  * "sheet" = a unit square surface in 1-2 plane, centred at (0,0,0).
@@ -119,6 +122,8 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * Note if any glyphs of the predefined name already exist prior to calling this
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
+ * Circular glyphs including sphere, cylinders, cones and solid arrow and axis
+ * get their circle divisions from the tessellation specified in the graphic.
  * If not already set, the default glyph is set to "point" by this function.
  *
  * @param glyph_module  The glyph module to create the glyph in.

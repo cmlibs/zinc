@@ -1990,7 +1990,7 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 			}
 			if (!return_code)
 			{
-				DESTROY(GT_object)(&graphics_object);
+				DEACCESS(GT_object)(&graphics_object);
 				graphics_object = (struct GT_object *)NULL;
 			}
 		}
@@ -2299,7 +2299,7 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 			}
 			if (!return_code)
 			{
-				DESTROY(GT_object)(&graphics_object);
+				DEACCESS(GT_object)(&graphics_object);
 				graphics_object = (struct GT_object *)NULL;
 			}
 		}
@@ -2318,10 +2318,6 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 
 	return (graphics_object);
 } /* transform_GT_object */
-
-DECLARE_OBJECT_FUNCTIONS(GT_object)
-
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -3729,12 +3725,6 @@ Returns the internal pointer to the list of vertices used in the GT_voltex.
 
 struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Allocates memory and assigns fields for a graphics object.
-==============================================================================*/
 {
 	struct GT_object *object;
 	int return_code;
@@ -3752,7 +3742,7 @@ Allocates memory and assigns fields for a graphics object.
 			object->glyph_type = CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
-			object->access_count = 0;
+			object->access_count = 1;
 			return_code = 1;
 			switch (object_type)
 			{
@@ -3844,16 +3834,13 @@ Allocates memory and assigns fields for a graphics object.
 	LEAVE;
 
 	return (object);
-} /* CREATE(GT_object) */
+}
 
-int DESTROY(GT_object)(struct GT_object **object_ptr)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Frees the memory for the fields of <**object>, frees the memory for <**object>
-and sets <*object> to NULL.
-==============================================================================*/
+/**
+ * Frees the memory for the fields of <**object>, frees the memory for <**object>
+ * and sets <*object> to NULL.
+ */
+static int DESTROY(GT_object)(struct GT_object **object_ptr)
 {
 	int i,return_code;
 	struct GT_object *object;
@@ -3967,6 +3954,10 @@ and sets <*object> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_object) */
+
+DECLARE_OBJECT_FUNCTIONS(GT_object)
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
 
 void GT_object_changed(struct GT_object *graphics_object)
 {
