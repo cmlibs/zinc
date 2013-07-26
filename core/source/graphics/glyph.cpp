@@ -1,7 +1,7 @@
 /**
  * FILE : glyph.cpp
  *
- * Glyphs are GT_objects which contain simple geometric shapes such as
+ * Glyphs produce a GT_object to represent simple geometric shapes such as
  * cylinders, arrows and axes which are (or should) fit into a unit (1x1x1) cube,
  * with the major axes of the glyph aligned with the x, y and z axes. 
  * The logical centre of each glyph should be at (0,0,0). This should be
@@ -12,8 +12,6 @@
  * (ie. is single-headed), (0,0,0) should be at the base of the arrow.
  * - axes should therefore be centred at (0,0,0) and extend to 1 in each axis
  * direction. Axis titles "x", "y" and "z" may be outside the unit cube.
- * Glyphs are referenced by GT_glyph_set objects. Glyphs themselves should not
- * reference graphical materials or spectrums.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -60,11 +58,12 @@
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/manager_private.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
+#include "graphics/glyph_circular.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "general/message.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/render_gl.h"
@@ -174,93 +173,6 @@ int Cmiss_glyph::setName(const char *newName)
 	}
 	return (return_code);
 }
-
-static int construct_tube(int number_of_segments_around,ZnReal x1,ZnReal r1,
-	ZnReal x2,ZnReal r2,ZnReal cy,ZnReal cz,int primary_axis,Triple *vertex_list,
-	Triple *normal_list)
-/*******************************************************************************
-LAST MODIFIED : 17 July 1998
-
-DESCRIPTION :
-Adds vertices and normals for a tube/cone/anulus/disc stretching from position
-x1 with radius r1 to position x2 with radius r2. The axis of the cylinder is
-parallel with the x axis and its centre is at cy,cz. If <primary_axis> is 1, the
-above is the case, if its value is 2, x->y, y->z and z->x, and a further
-permutation if <primary_axis> is 3. Values other than 1, 2 or 3 are taken as 1.
-The vertices and normals are added to create a single quadrilateral strip
-suitable for using with GT_surfaces of type g_SH_DISCONTINUOUS_STRIP.
-==============================================================================*/
-{
-	ZnReal longitudinal_normal,normal_angle,radial_normal,theta,y,z;
-	int j,ix,iy,iz,return_code;
-	Triple *normal,*vertex;
-
-	ENTER(construct_tube);
-	if ((2<number_of_segments_around)&&((x1 != x2)||(r1 != r2))&&
-		vertex_list&&normal_list)
-	{
-		return_code=1;
-		switch (primary_axis)
-		{
-			case 2:
-			{
-				ix=1;
-				iy=2;
-				iz=0;
-			} break;
-			case 3:
-			{
-				ix=2;
-				iy=0;
-				iz=1;
-			} break;
-			default:
-			{
-				ix=0;
-				iy=1;
-				iz=2;
-			} break;
-		}
-		vertex=vertex_list;
-		normal=normal_list;
-		/* get radial and longitudinal components of surface normals */
-		normal_angle=atan2(r2-r1,x2-x1);
-		radial_normal=cos(normal_angle);
-		longitudinal_normal=-sin(normal_angle);
-		for (j=0;j <= number_of_segments_around;j++)
-		{
-			theta=2.0*PI*(ZnReal)j/(ZnReal)number_of_segments_around;
-			y = sin(theta);
-			z = cos(theta);
-			(*vertex)[ix] = x1;
-			(*vertex)[iy] = cy+r1*y;
-			(*vertex)[iz] = cz+r1*z;
-			vertex++;
-			(*vertex)[ix] = x2;
-			(*vertex)[iy] = cy+r2*y;
-			(*vertex)[iz] = cz+r2*z;
-			vertex++;
-			y *= radial_normal;
-			z *= radial_normal;
-			(*normal)[ix] = longitudinal_normal;
-			(*normal)[iy] = y;
-			(*normal)[iz] = z;
-			normal++;
-			(*normal)[ix] = longitudinal_normal;
-			(*normal)[iy] = y;
-			(*normal)[iz] = z;
-			normal++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"construct_tube.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* construct_tube */
 
 static int tick_mark_get_grid_spacing(FE_value *minor_grid_size,
 	int *minor_grids_per_major,FE_value scale, FE_value min_minor_grid,
@@ -569,19 +481,16 @@ Renders the label_bounds as lines and labels.
 				graphics_object=CREATE(GT_object)(name,g_POLYLINE,
 					/*use the default material, must be before graphics which specify a material*/
 					(struct Graphical_material *)NULL);
-				if (graphics_object)
+				if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 				{
-					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
-					{
-						renderer->Graphics_object_render_immediate(graphics_object);
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						DESTROY(GT_polyline)(&polyline);
-						return_code = 0;
-					}
+					renderer->Graphics_object_render_immediate(graphics_object);
 				}
+				else
+				{
+					DESTROY(GT_polyline)(&polyline);
+					return_code = 0;
+				}
+				DEACCESS(GT_object)(&graphics_object);
 			}
 			else
 			{
@@ -593,19 +502,16 @@ Renders the label_bounds as lines and labels.
 			if (label_set)
 			{
 				graphics_object=CREATE(GT_object)(name, g_POINTSET, material);
-				if (graphics_object)
+				if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
 				{
-					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
-					{
-						renderer->Graphics_object_render_immediate(graphics_object);
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						DESTROY(GT_pointset)(&label_set);
-						return_code = 0;
-					}
+					renderer->Graphics_object_render_immediate(graphics_object);
 				}
+				else
+				{
+					DESTROY(GT_pointset)(&label_set);
+					return_code = 0;
+				}
+				DEACCESS(GT_object)(&graphics_object);
 			}
 			else
 			{
@@ -621,19 +527,16 @@ Renders the label_bounds as lines and labels.
 			if (polyline)
 			{
 				graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material);
-				if (graphics_object)
+				if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 				{
-					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
-					{
-						renderer->Graphics_object_render_immediate(graphics_object);
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						DESTROY(GT_polyline)(&polyline);
-						return_code = 0;
-					}
+					renderer->Graphics_object_render_immediate(graphics_object);
 				}
+				else
+				{
+					DESTROY(GT_polyline)(&polyline);
+					return_code = 0;
+				}
+				DEACCESS(GT_object)(&graphics_object);
 			}
 			else
 			{
@@ -940,23 +843,20 @@ void resolve_glyph_axes(
 	}			
 }
 
-struct GT_object *make_glyph_arrow_line(const char *name,ZnReal head_length,
+/**
+ * Creates a graphics object named <name> consisting of a line from <0,0,0> to
+ * <1,0,0> with 4 arrow head ticks <head_length> long and <half_head_width> out
+ * from the shaft.
+ */
+struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_length,
 	ZnReal half_head_width)
-/*******************************************************************************
-LAST MODIFIED : 3 August 1999
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of a line from <0,0,0> to
-<1,0,0> with 4 arrow head ticks <head_length> long and <half_head_width> out
-from the shaft.
-==============================================================================*/
 {
 	int j;
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_polyline *polyline;
 	Triple *points,*vertex;
 
-	ENTER(make_glyph_arrow_line);
+	ENTER(create_GT_object_arrow_line);
 	if (name)
 	{
 		polyline=(struct GT_polyline *)NULL;
@@ -994,177 +894,52 @@ from the shaft.
 		if (polyline)
 		{
 			glyph=CREATE(GT_object)(name,g_POLYLINE,(struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 			{
-				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
-				{
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-			if (!glyph)
-			{
+				DEACCESS(GT_object)(&glyph);
 				DESTROY(GT_polyline)(&polyline);
 			}
 		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
 		if (!glyph)
 		{
 			display_message(ERROR_MESSAGE,
-				"make_glyph_arrow_line.  Error creating glyph");
+				"create_GT_object_arrow_line.  Error creating glyph");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"make_glyph_arrow_line.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+			"create_GT_object_arrow_line.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_arrow_line */
+}
 
-struct GT_object *make_glyph_arrow_solid(const char *name, int primary_axis,
-	int number_of_segments_around,ZnReal shaft_length,ZnReal shaft_radius,
-	ZnReal cone_radius)
-/*******************************************************************************
-LAST MODIFIED : 10 June 2004
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling an arrow made from a cone on
-a cylinder. The base of the arrow is at (0,0,0) while its head lies at (1,0,0).
-The radius of the cone is <cone_radius>. The cylinder is <shaft_length> long
-with its radius given by <shaft_radius>. The ends of the arrow and the cone
-are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
-the arrow points in.
-==============================================================================*/
-{
-	ZnReal r1 = 0.0, r2 = 0.0, x1 = 0.0, x2 = 0.0;
-	int i;
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *points = NULL, *normalpoints = NULL;
-
-	ENTER(make_glyph_arrow_solid);
-	if (name&&(2<number_of_segments_around)&&(0<shaft_radius)&&(1>shaft_radius)&&
-		(0<shaft_length)&&(1>shaft_length))
-	{
-		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-		if (glyph)
-		{
-			for (i=0;(i<4)&&glyph;i++)
-			{
-				if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-					ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-				{
-					switch (i)
-					{
-						case 0:
-						{
-							/* base of shaft */
-							x1=0.0;
-							r1=0.0;
-							x2=0.0;
-							r2=shaft_radius;
-						} break;
-						case 1:
-						{
-							/* shaft */
-							x1=0.0;
-							r1=shaft_radius;
-							x2=shaft_length;
-							r2=shaft_radius;
-						} break;
-						case 2:
-						{
-							/* base of head */
-							x1=shaft_length;
-							r1=shaft_radius;
-							x2=shaft_length;
-							r2=cone_radius;
-						} break;
-						case 3:
-						{
-							/* head */
-							x1=shaft_length;
-							r1=cone_radius;
-							x2=1.0;
-							r2=0.0;
-						} break;
-					}
-					if (!construct_tube(number_of_segments_around,x1,r1,x2,r2,0.0,0.0,
-						primary_axis,points,normalpoints))
-					{
-						DEALLOCATE(points);
-						DEALLOCATE(normalpoints);
-					}
-				}
-				if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
-					CMISS_GRAPHICS_RENDER_TYPE_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
-					points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-					/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
-				{
-					if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-					{
-						DESTROY(GT_surface)(&surface);
-						DESTROY(GT_object)(&glyph);
-					}
-				}
-				else
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,
-				"make_glyph_arrow_solid.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"make_glyph_arrow_solid.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_arrow_solid */
-
-struct GT_object *make_glyph_axes(const char *name, int make_solid, ZnReal head_length,
+/**
+ * Creates a graphics object named <name> consisting of three axis arrows heading
+ * from <0,0,0> to 1 in each of their directions. The arrows are made up of lines,
+ * with a 4-way arrow head so it looks normal from the other two axes. If <labels>
+ * is specified then it is assumed to point to an array of 3 strings which will
+ * be used to label each arrow and are attached to it so
+ * that the two objects are displayed and destroyed together. The labels are
+ * located on the respective axes <label_offset> past 1.0.
+ * The length and width of the arrow heads are specified by the final parameters.
+ */
+struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal head_length,
 	ZnReal half_head_width,const char **labels, ZnReal label_offset,
 	struct Cmiss_font *font)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of three axis arrows heading
-from <0,0,0> to 1 in each of their directions. The arrows are made up of lines,
-with a 4-way arrow head so it looks normal from the other two axes. If <labels>
-is specified then it is assumed to point to an array of 3 strings which will
-be used to label each arrow and are attached to it so
-that the two objects are displayed and destroyed together. The labels are
-located on the respective axes <label_offset> past 1.0.
-The length and width of the arrow heads are specified by the final parameters.
-==============================================================================*/
 {
 	char *glyph_name,**text;
 	int j;
 	struct Colour colour;
 	struct Graphical_material *material;
-	struct GT_object *glyph = NULL,*arrow2,*arrow3,*labels_object,*last_object;
+	struct GT_object *glyph = 0, *last_object = 0;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;
 	Triple *points,*vertex;
 
-	ENTER(make_glyph_axes);
+	ENTER(create_GT_object_axes);
 	if (name)
 	{
 		last_object = (struct GT_object *)NULL;
@@ -1172,7 +947,7 @@ The length and width of the arrow heads are specified by the final parameters.
 		{
 			if (ALLOCATE(glyph_name, char, strlen(name) + 8))
 			{
-				glyph = make_glyph_arrow_solid(name, /*primary_axis*/1,
+				glyph = create_GT_object_arrow_solid(name, /*primary_axis*/1,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = Cmiss_graphics_material_create_private();
@@ -1186,7 +961,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				last_object = glyph;
 
 				sprintf(glyph_name, "%s_arrow2", name);
-				arrow2 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/2,
+				GT_object *arrow2 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/2,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = Cmiss_graphics_material_create_private();
@@ -1199,9 +974,10 @@ The length and width of the arrow heads are specified by the final parameters.
 				Cmiss_graphics_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow2);
 				last_object = arrow2;
+				DEACCESS(GT_object)(&arrow2);
 
 				sprintf(glyph_name, "%s_arrow3", name);
-				arrow3 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/3,
+				GT_object *arrow3 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/3,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
 				material = Cmiss_graphics_material_create_private();
@@ -1214,6 +990,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				Cmiss_graphics_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow3);
 				last_object = arrow3;
+				DEACCESS(GT_object)(&arrow3);
 				
 				DEALLOCATE(glyph_name);
 			}
@@ -1279,11 +1056,8 @@ The length and width of the arrow heads are specified by the final parameters.
 				if (polyline)
 				{
 					glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-					if (glyph)
-					{
-						GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
-						last_object = glyph;
-					}
+					GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
+					last_object = glyph;
 				}
 				else
 				{
@@ -1318,14 +1092,10 @@ The length and width of the arrow heads are specified by the final parameters.
 					g_NO_DATA,(GLfloat *)NULL,(int *)NULL, font);
 				if (pointset)
 				{
-					labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
-						(struct Graphical_material *)NULL);
-					if (labels_object)
-					{
-						GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
-						GT_object_set_next_object(last_object, labels_object);
-						last_object = labels_object;
-					}
+					GT_object *labels_object = CREATE(GT_object)(glyph_name,g_POINTSET,(struct Graphical_material *)NULL);
+					GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
+					GT_object_set_next_object(last_object, labels_object);
+					DEACCESS(GT_object)(&labels_object);
 				}
 				else
 				{
@@ -1340,190 +1110,31 @@ The length and width of the arrow heads are specified by the final parameters.
 		}
 		if (!glyph)
 		{
-			display_message(ERROR_MESSAGE,"make_glyph_axes.  Error creating glyph");
+			display_message(ERROR_MESSAGE,"create_GT_object_axes.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_axes.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_axes.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_axes */
+}
 
-struct GT_object *make_glyph_cone(const char *name,int number_of_segments_around)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a cone with the given
-<number_of_segments_around>. The base of the cone is at <0,0,0> while its head
-lies at <1,0,0>. The radius of the cone is 0.5 at its base.
-==============================================================================*/
+/**
+ * Creates a graphics object named <name> consisting of a 3 lines:
+ * from <-0.5,0,0> to <+0.5,0,0>
+ * from <0,-0.5,0> to <0,+0.5,0>
+ * from <0,0,-0.5> to <0,0,+0.5>
+ */
+struct GT_object *create_GT_object_cross(const char *name)
 {
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *points,*normalpoints;
-
-	ENTER(make_glyph_cone);
-	if (name&&(2<number_of_segments_around))
-	{
-		surface=(struct GT_surface *)NULL;
-		if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-			ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-		{
-			construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
-				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GLfloat *)NULL)))
-			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
-			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (glyph)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,"make_glyph_cone.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_cone.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_cone */
-
-struct GT_object *make_glyph_cone_solid(const char *name,int number_of_segments_around)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2004
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a cone with the given
-<number_of_segments_around>. The base of the cone is at <0,0,0> while its head
-lies at <1,0,0>. The radius of the cone is 0.5 at its base.  This cone has a
-solid base.
-==============================================================================*/
-{
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *points,*normalpoints;
-
-	ENTER(make_glyph_cone_solid);
-	if (name&&(2<number_of_segments_around))
-	{
-		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-		if (glyph)
-		{
-			surface=(struct GT_surface *)NULL;
-			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-			{
-				construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
-					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			
-			}
-			else
-			{
-				glyph=(struct GT_object *)NULL;
-			}
-			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-			{
-				construct_tube(number_of_segments_around, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 1,
-					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			
-			}
-			else
-			{
-				DESTROY(GT_object)(&glyph);
-			}
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,"make_glyph_cone_solid.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_cone_solid.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_cone_solid */
-
-struct GT_object *make_glyph_cross(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 16 July 1999
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of a 3 lines:
-from <-0.5,0,0> to <+0.5,0,0>
-from <0,-0.5,0> to <0,+0.5,0>
-from <0,0,-0.5> to <0,0,+0.5>
-==============================================================================*/
-{
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_polyline *polyline;
 	Triple *points;
 
-	ENTER(make_glyph_cross);
+	ENTER(create_GT_object_cross);
 	if (name)
 	{
 		polyline=(struct GT_polyline *)NULL;
@@ -1559,53 +1170,39 @@ from <0,0,-0.5> to <0,0,+0.5>
 		if (polyline)
 		{
 			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 			{
-				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
-				{
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-			if (!glyph)
-			{
+				DEACCESS(GT_object)(&glyph);
 				DESTROY(GT_polyline)(&polyline);
 			}
 		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
 		if (!glyph)
 		{
-			display_message(ERROR_MESSAGE,"make_glyph_cross.  Error creating glyph");
+			display_message(ERROR_MESSAGE,"create_GT_object_cross.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_cross.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_cross.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_cross */
+}
 
-struct GT_object *make_glyph_cube_solid(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2000
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of a unit-sized GT_surface
-cube centred at <0,0,0>.
-==============================================================================*/
+/**
+ * Creates a graphics object named <name> consisting of a unit-sized GT_surface
+ * cube centred at <0,0,0>.
+ */
+struct GT_object *create_GT_object_cube_solid(const char *name)
 {
 	ZnReal factor;
 	int a, b, c, i;
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_surface *surface;
 	Triple *point, *points, *normalpoint, *normalpoints;
 
-	ENTER(make_glyph_cube_solid);
+	ENTER(create_GT_object_cube_solid);
 	if (name)
 	{
 		surface=(struct GT_surface *)NULL;
@@ -1674,50 +1271,39 @@ cube centred at <0,0,0>.
 		if (surface)
 		{
 			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
+				DEACCESS(GT_object)(&glyph);
+				DESTROY(GT_surface)(&surface);
 			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
 		}
 		if (!glyph)
 		{
 			display_message(ERROR_MESSAGE,
-				"make_glyph_cube_solid.  Error creating glyph");
+				"create_GT_object_cube_solid.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_cube_solid.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_cube_solid.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_cube_solid */
+}
 
-struct GT_object *make_glyph_cube_wireframe(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2000
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of lines marking a unit-sized
-wireframe cube centred at <0,0,0>.
-==============================================================================*/
+/**
+ * Creates a graphics object named <name> consisting of lines marking a
+ * unit-sized wireframe cube centred at <0,0,0>.
+ */
+struct GT_object *create_GT_object_cube_wireframe(const char *name)
 {
 	int a, b, c, i;
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_polyline *polyline;
 	Triple *points, *vertex;
 
-	ENTER(make_glyph_cube_wireframe);
+	ENTER(create_GT_object_cube_wireframe);
 	if (name)
 	{
 		polyline = (struct GT_polyline *)NULL;
@@ -1767,236 +1353,39 @@ wireframe cube centred at <0,0,0>.
 		if (polyline)
 		{
 			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 			{
-				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
-				{
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-			if (!glyph)
-			{
+				DEACCESS(GT_object)(&glyph);
 				DESTROY(GT_polyline)(&polyline);
 			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
 		}
 		if (!glyph)
 		{
 			display_message(ERROR_MESSAGE,
-				"make_glyph_cube_wireframe.  Error creating glyph");
+				"create_GT_object_cube_wireframe.  Error creating glyph");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"make_glyph_cube_wireframe.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+			"create_GT_object_cube_wireframe.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_cube_wireframe */
+}
 
-struct GT_object *make_glyph_cylinder(const char *name,int number_of_segments_around)
-/*******************************************************************************
-LAST MODIFIED : 14 July 1999
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a cylinder with the given
-<number_of_segments_around>. The cylinder is centred at (0.5,0,0) and its axis
-lies in the direction <1,0,0>. It fits into the unit cube spanning from
-(0,-0.5,-0.5) to (0,+0.5,+0.5).
-==============================================================================*/
+/**
+ * Creates a graphics object named <name> consisting of a line from <0,0,0> to
+ * <1,0,0>.
+ */
+struct GT_object *create_GT_object_line(const char *name)
 {
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *points,*normalpoints;
-
-	ENTER(make_glyph_cylinder);
-	if (name&&(2<number_of_segments_around))
-	{
-		surface=(struct GT_surface *)NULL;
-		if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-			ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-		{
-			construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
-				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GLfloat *)NULL)))
-			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
-			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (glyph)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,
-				"make_glyph_cylinder.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_cylinder.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_cylinder */
-
-struct GT_object *make_glyph_cylinder_solid(const char *name,int number_of_segments_around)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2004
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a cylinder with the given
-<number_of_segments_around>. The cylinder is centred at (0.5,0,0) and its axis
-lies in the direction <1,0,0>. It fits into the unit cube spanning from
-(0,-0.5,-0.5) to (0,+0.5,+0.5).  This cylinder has its ends covered over.
-==============================================================================*/
-{
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *points,*normalpoints;
-
-	ENTER(make_glyph_cylinder);
-	if (name&&(2<number_of_segments_around))
-	{
-		glyph=CREATE(GT_object)(name,g_SURFACE, (struct Graphical_material *)NULL);
-		if (glyph)
-		{
-			surface=(struct GT_surface *)NULL;
-			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-			{
-				construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
-					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-			else
-			{
-				DESTROY(GT_object)(&glyph);
-			}
-			/* Cover over the ends */
-			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-			{
-				construct_tube(number_of_segments_around,0.0,0.0,0.0,0.5,0.0,0.0,1,
-					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-			else
-			{
-				DESTROY(GT_object)(&glyph);
-			}
-			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
-				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
-			{
-				construct_tube(number_of_segments_around,1.0,0.0,1.0,0.5,0.0,0.0,1,
-					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
-				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-			else
-			{
-				DESTROY(GT_object)(&glyph);
-			}
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,
-				"make_glyph_cylinder.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_cylinder.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_cylinder */
-
-struct GT_object *make_glyph_line(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 14 July 1999
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of a line from <0,0,0> to
-<1,0,0>.
-==============================================================================*/
-{
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_polyline *polyline;
 	Triple *points;
 
-	ENTER(make_glyph_line);
+	ENTER(create_GT_object_line);
 	if (name)
 	{
 		polyline=(struct GT_polyline *)NULL;
@@ -2017,52 +1406,39 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 		if (polyline)
 		{
 			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 			{
-				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
-				{
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-			if (!glyph)
-			{
+				DEACCESS(GT_object)(&glyph);
 				DESTROY(GT_polyline)(&polyline);
 			}
 		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
 		if (!glyph)
 		{
-			display_message(ERROR_MESSAGE,"make_glyph_line.  Error creating glyph");
+			display_message(ERROR_MESSAGE,"create_GT_object_line.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_line.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_line.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_line */
+}
 
-struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
+/**
+ * Creates a graphics object named <name> consisting of a single point at
+ * <0,0,0>.
+ * The point will be drawn with the given <marker_type> and <marker_size>.
+ */
+struct GT_object *create_GT_object_point(const char *name,gtMarkerType marker_type,
 	ZnReal marker_size)
-/*******************************************************************************
-LAST MODIFIED : 1 December 1998
-
-DESCRIPTION :
-Creates a graphics object named <name> consisting of a single point at <0,0,0>.
-The point will be drawn with the given <marker_type> and <marker_size>.
-==============================================================================*/
 {
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_pointset *pointset;
 	Triple *points;
 
-	ENTER(make_glyph_point);
+	ENTER(create_GT_object_point);
 	if (name)
 	{
 		pointset=(struct GT_pointset *)NULL;
@@ -2080,53 +1456,39 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 		if (pointset)
 		{
 			glyph=CREATE(GT_object)(name,g_POINTSET, (struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_pointset)(glyph,/*time*/0.0,pointset))
 			{
-				if (!GT_OBJECT_ADD(GT_pointset)(glyph,/*time*/0.0,pointset))
-				{
-					DESTROY(GT_object)(&glyph);
-				}
-			}
-			if (!glyph)
-			{
+				DEACCESS(GT_object)(&glyph);
 				DESTROY(GT_pointset)(&pointset);
 			}
 		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
 		if (!glyph)
 		{
-			display_message(ERROR_MESSAGE,"make_glyph_point.  Error creating glyph");
+			display_message(ERROR_MESSAGE,"create_GT_object_point.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_point.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_point.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_point */
+}
 
-struct GT_object *make_glyph_sheet(const char *name, int define_texturepoints)
-/*******************************************************************************
-LAST MODIFIED : 5 May 1999
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a square sheet spanning from
-coordinate <-0.5,-0.5,0> to <0.5,0.5,0>.
-If define_texturepoints is true then texture coordinates will also be defined
-ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
-==============================================================================*/
+/**
+ * Creates a graphics object named <name> resembling a square sheet spanning from
+ * coordinate <-0.5,-0.5,0> to <0.5,0.5,0>.
+ * If define_texturepoints is true then texture coordinates will also be defined
+ * ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
+ */
+struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoints)
 {
-	struct GT_object *glyph;
+	struct GT_object *glyph = 0;
 	struct GT_surface *surface;
 	Triple *point,*points,*normalpoints, *texturepoints;
 
-	ENTER(make_glyph_sheet);
+	ENTER(create_GT_object_sheet);
 	if (name)
 	{
 		surface=(struct GT_surface *)NULL;
@@ -2202,130 +1564,26 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 		if (surface)
 		{
 			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (glyph)
+			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
+				DEACCESS(GT_object)(&glyph);
+				DESTROY(GT_surface)(&surface);
 			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
 		}
 		if (!glyph)
 		{
 			display_message(ERROR_MESSAGE,
-				"make_glyph_sheet.  Error creating glyph");
+				"create_GT_object_sheet.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_sheet.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
+		display_message(ERROR_MESSAGE,"create_GT_object_sheet.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph);
-} /* make_glyph_sheet */
-
-struct GT_object *make_glyph_sphere(const char *name,int number_of_segments_around,
-	int number_of_segments_down)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Creates a graphics object named <name> resembling a sphere with the given
-<number_of_segments_around> and <number_of_segments_down> from pole to pole.
-The sphere is centred at (0,0,0) and its poles are on the (1,0,0) line. It fits
-into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
-<number_of_segments_around> should normally be an even number at least 6 and
-twice <number_of_segments_down> look remotely spherical.
-==============================================================================*/
-{
-	ZnReal longitudinal_normal,phi,radial_normal,theta,x,y,z;
-	int i,j;
-	struct GT_object *glyph;
-	struct GT_surface *surface;
-	Triple *normal,*normalpoints,*points,*vertex;
-
-	ENTER(make_glyph_sphere);
-	if (name&&(2<number_of_segments_around)&&(1<number_of_segments_down))
-	{
-		surface=(struct GT_surface *)NULL;
-		if (ALLOCATE(points,Triple,
-			(number_of_segments_down+1)*(number_of_segments_around+1))&&
-			ALLOCATE(normalpoints,Triple,(number_of_segments_down+1)*
-				(number_of_segments_around+1)))
-		{
-			/*vertex=points;
-				normal=points+(number_of_segments_down+1)*(number_of_segments_around+1);*/
-			for (i=0;i <= number_of_segments_down;i++)
-			{
-				phi=PI*(ZnReal)i/(ZnReal)number_of_segments_down;
-				x=-0.5*cos(phi);
-				radial_normal=sin(phi);
-				longitudinal_normal=2*x;
-				/*printf("x=%g l=%g r=%g\n",x,longitudinal_normal,radial_normal);*/
-				vertex=points+i;
-				normal=normalpoints+i;
-				for (j=0;j <= number_of_segments_around;j++)
-				{
-					theta=2.0*PI*(ZnReal)j/(ZnReal)number_of_segments_around;
-					y = radial_normal*sin(theta);
-					z = radial_normal*cos(theta);
-					(*vertex)[0] = x;
-					(*vertex)[1] = 0.5*y;
-					(*vertex)[2] = 0.5*z;
-					vertex += (number_of_segments_down+1);
-					(*normal)[0] = longitudinal_normal;
-					(*normal)[1] = y;
-					(*normal)[2] = z;
-					normal += (number_of_segments_down+1);
-				}
-			}
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-				g_QUADRILATERAL,number_of_segments_down+1,number_of_segments_around+1,
-				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
-			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
-			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (glyph)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-		}
-		else
-		{
-			glyph=(struct GT_object *)NULL;
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,
-				"make_glyph_sphere.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_sphere.  Invalid argument(s)");
-		glyph=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (glyph);
-} /* make_glyph_sphere */
+}
 
 Cmiss_glyph_id Cmiss_glyph_access(Cmiss_glyph_id glyph)
 {
@@ -2392,12 +1650,29 @@ Cmiss_glyph_module::~Cmiss_glyph_module()
 }
 
 /**
-	* Create a glyph for the static graphics object and manage it.
-	* graphics object must have a name; if the name is in use by another glyph the
-	* graphics object is simply destroyed.
-	* @return  true if glyph added, false if not.
+  * If name is not already used by an existing glyph, set name, managed flag
+	* and add to glyph module.
+	* Always free handle to glyph.
 	*/
-bool Cmiss_glyph_module::defineGlyphStatic(GT_object *graphicsObject)
+void Cmiss_glyph_module::defineGlyph(const char *name, Cmiss_glyph *glyph)
+{
+	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->getManager()))
+	{
+		glyph->setName(name);
+		glyph->setManaged(true);
+		this->addGlyph(glyph);
+	}
+	Cmiss_glyph_destroy(&glyph);
+}
+
+/**
+ * If there is no glyph with the same name as graphicsObject, create a
+ * static glyph of that name wrapping it and manage it.
+ * Always deaccesses the supplied graphics object to clean it up whether
+ * wrapping it or not.
+ * @return  true if glyph added, false if not.
+ */
+bool Cmiss_glyph_module::defineGlyphStatic(GT_object*& graphicsObject)
 {
 	bool glyphAdded = true;
 	char *name = 0;
@@ -2412,9 +1687,9 @@ bool Cmiss_glyph_module::defineGlyphStatic(GT_object *graphicsObject)
 	}
 	else
 	{
-		DESTROY(GT_object)(&graphicsObject);
 		glyphAdded = false;
 	}
+	DEACCESS(GT_object)(&graphicsObject);
 	DEALLOCATE(name);
 	return glyphAdded;
 }
@@ -2447,58 +1722,50 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 	beginChange();
 	GT_object *graphicsObject = 0;
 
-	graphicsObject = make_glyph_arrow_line("arrow", 1.f/3.f, 0.5);
+	graphicsObject = create_GT_object_arrow_line("arrow", 1.f/3.f, 0.5);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_arrow_solid("arrow_solid", /*primary_axis*/1,
-		12, 2.f/3.f, 1.f/6.f, /*cone_radius*/0.5f);
+	this->defineGlyph("arrow_solid", Cmiss_glyph_arrow_solid::create(1.0/3.0, 1.0/3.0));
+
+	graphicsObject = create_GT_object_arrow_line("axis", 0.1, 0.5);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_arrow_line("axis", 0.1, 0.5);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyph("axis_solid", Cmiss_glyph_arrow_solid::create(0.1, 1.0/3.0));
 
-	graphicsObject = make_glyph_arrow_solid("axis_solid", /*primary_axis*/1,
-		12, 0.9f, 1.f/6.f, /*cone_radius*/0.5f);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyph("cone", Cmiss_glyph_cone::create());
+	this->defineGlyph("cone_solid", Cmiss_glyph_cone_solid::create());
 
-	graphicsObject = make_glyph_cone("cone", 12);
-	this->defineGlyphStatic(graphicsObject);
-	
-	graphicsObject = make_glyph_cone_solid("cone_solid", 12);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_cross("cross");
+	graphicsObject = create_GT_object_cross("cross");
 	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_CROSS);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_cube_solid("cube_solid");
+	graphicsObject = create_GT_object_cube_solid("cube_solid");
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_cube_wireframe("cube_wireframe");
+	graphicsObject = create_GT_object_cube_wireframe("cube_wireframe");
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_cylinder("cylinder", 12);
+	this->defineGlyph("cylinder", Cmiss_glyph_cylinder::create());
+	this->defineGlyph("cylinder_solid", Cmiss_glyph_cylinder_solid::create());
+
+	graphicsObject = create_GT_object_sphere("diamond", 4, 2);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_cylinder_solid("cylinder_solid", 12);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_line("line");
+	graphicsObject = create_GT_object_line("line");
 	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_LINE);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_point("point", g_POINT_MARKER, 0);
+	graphicsObject = create_GT_object_point("point", g_POINT_MARKER, 0);
 	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_POINT);
 	if (this->defineGlyphStatic(graphicsObject) && (!this->defaultPointGlyph))
 	{
 		setDefaultPointGlyph(this->findGlyphByName("point"));
 	}
 
-	graphicsObject = make_glyph_sheet("sheet", /*define_texturepoints*/0);
+	graphicsObject = create_GT_object_sheet("sheet", /*define_texturepoints*/0);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_sphere("sphere", 12, 6);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyph("sphere", Cmiss_glyph_sphere::create());
 
 	endChange();
 
@@ -2510,32 +1777,17 @@ int Cmiss_glyph_module::defineStandardCmguiGlyphs()
 	beginChange();
 	GT_object *graphicsObject = 0;
 
-	graphicsObject = make_glyph_cylinder("cylinder6", 6);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_cylinder("cylinder_hires", 48);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_cylinder_solid("cylinder_solid_hires", 48);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_sphere("diamond", 4, 2);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_axes("grid_lines",
+	graphicsObject = create_GT_object_axes("grid_lines",
 		/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
 		/*labels*/(const char **)NULL, /*label_offset*/0.1f, (Cmiss_font*)0);
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_grid_lines);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_line("line_ticks");
+	graphicsObject = create_GT_object_line("line_ticks");
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_axes_ticks);
 	this->defineGlyphStatic(graphicsObject);
 
-	graphicsObject = make_glyph_sphere("sphere_hires", 48, 24);
-	this->defineGlyphStatic(graphicsObject);
-
-	graphicsObject = make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
+	graphicsObject = create_GT_object_sheet("textured_sheet", /*define_texturepoints*/1);
 	this->defineGlyphStatic(graphicsObject);
 
 	endChange();

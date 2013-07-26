@@ -151,11 +151,8 @@ GT_object *create_Spectrum_colour_bar(
 		if (return_code)
 		{
 			bar_graphics_object = CREATE(GT_object)(name,g_SURFACE,bar_material);
-			ACCESS(GT_object)(bar_graphics_object);
 			tick_graphics_object = CREATE(GT_object)("ticks",g_POLYLINE,tick_label_material);
-			ACCESS(GT_object)(tick_graphics_object);
 			label_graphics_object = CREATE(GT_object)("labels",g_POINTSET,tick_label_material);
-			ACCESS(GT_object)(label_graphics_object);
 			if (bar_graphics_object && tick_graphics_object && label_graphics_object)
 			{
 				GT_object_set_next_object(bar_graphics_object, tick_graphics_object);

@@ -339,7 +339,6 @@ DESCRIPTION :
 						if (glyphStatic)
 						{
 							obj = glyphStatic->getGraphicsObject();
-							ACCESS(GT_object)(obj);
 						}
 						else if (glyph)
 						{
@@ -362,7 +361,6 @@ DESCRIPTION :
 						else if (return_code)
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
-							ACCESS(GT_object)(obj);
 							glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
 							if (glyph)
 							{
@@ -868,7 +866,6 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			if (glyphStatic)
 			{
 				obj = glyphStatic->getGraphicsObject();
-				ACCESS(GT_object)(obj);
 			}
 			else if (glyph)
 			{
@@ -906,7 +903,6 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			else if (return_code)
 			{
 				obj = CREATE(GT_object)(objname, g_VOLTEX, NULL);
-				ACCESS(GT_object)(obj);
 				glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
 				if (glyph)
 				{
@@ -1053,6 +1049,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								{
 									/* Could check that the materials match although I don't know
 										what to do if they don't */
+									ACCESS(GT_object)(new_obj);
 								}
 								else
 								{
@@ -1061,6 +1058,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 									GT_object_set_next_object(obj, new_obj);
 								}
 								REACCESS(GT_object)(&obj, new_obj);
+								DEACCESS(GT_object)(&new_obj);
 								if (scanned_material)
 								{
 									Cmiss_graphics_material_destroy(&scanned_material);

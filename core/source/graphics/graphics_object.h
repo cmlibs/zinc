@@ -918,23 +918,13 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
+/**
+ * Allocates memory and assigns fields for a graphics object.
+ * Object is returned with an access_count of 1.
+ * Use DEACCESS(GT_object) to destroy.
+ */
 struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Allocates memory and assigns fields for a graphics object.
-==============================================================================*/
-
-int DESTROY(GT_object)(struct GT_object **object_ptr);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for the fields of <**object>, frees the memory for <**object>
-and sets <*object> to NULL.
-==============================================================================*/
 
 /**
  * Mark graphics object as changed so it is recompiled at next redraw.

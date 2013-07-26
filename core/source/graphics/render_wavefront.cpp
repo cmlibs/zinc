@@ -363,14 +363,13 @@ points  given by the positions in <point_list> and oriented and scaled by
 				transformation[ 7] = 0.0;
 				transformation[11] = 0.0;
 				transformation[15] = 1.0;
-				transformed_object = transform_GT_object(glyph,
-					transformation);
-				if(transformed_object != 0)
+				transformed_object = transform_GT_object(glyph, transformation);
+				if (transformed_object != 0)
 				{
 					set_GT_object_default_material(transformed_object,
 						material);
 					makewavefront(wavefront_file, 1, transformed_object, time);
-					DESTROY(GT_object)(&transformed_object);
+					DEACCESS(GT_object)(&transformed_object);
 				}
 			}
 		}

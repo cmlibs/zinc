@@ -142,6 +142,11 @@ public:
 		return false;
 	}
 
+	virtual bool usesCircleDivisions()
+	{
+		return false;
+	}
+
 	// override if glyph uses the font supplied by graphic
 	virtual bool usesFont()
 	{
@@ -267,7 +272,9 @@ private:
 	Cmiss_glyph_module();
 	~Cmiss_glyph_module();
 
-	bool defineGlyphStatic(GT_object *graphicsObject);
+	void defineGlyph(const char *name, Cmiss_glyph *glyph);
+
+	bool defineGlyphStatic(GT_object*& graphicsObject);
 
 public:
 

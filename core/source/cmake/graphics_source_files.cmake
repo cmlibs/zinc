@@ -13,6 +13,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/element_point_ranges.cpp
 	source/graphics/environment_map.cpp
 	source/graphics/glyph.cpp
+	source/graphics/glyph_circular.cpp
 	source/graphics/glyph_colour_bar.cpp
 	source/graphics/import_graphics_object.cpp
 	source/graphics/iso_field_calculation.cpp
@@ -50,6 +51,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
 	source/graphics/glyph.hpp
+	source/graphics/glyph_circular.hpp
 	source/graphics/glyph_colour_bar.hpp
 	source/graphics/graphics_filter.hpp
 	source/graphics/graphics_object.h
