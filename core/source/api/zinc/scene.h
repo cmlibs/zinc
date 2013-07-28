@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_scene.h
-
-LAST MODIFIED : 04 Nov 2009
-
-DESCRIPTION :
-The public interface to the Cmiss_scene.
-==============================================================================*/
+/**
+ * FILE : scene.h
+ *
+ * The public interface to a zinc scene, which gives the graphical
+ * representation of a region
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -314,25 +312,24 @@ ZINC_API int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
 	Cmiss_graphics_filter_id filter, Cmiss_spectrum_id spectrum,
 	int valuesCount, double *minimumValuesOut, double *maximumValuesOut);
 
-/***************************************************************************//**
- * Returns the state of the scene's visibility flag. Note this only affects
- * graphics filters that act on the state of this flag.
+/**
+ * Returns the state of the scene's visibility flag.
  *
  * @param scene  The handle to the scene.
- * @return  1 for visible, 0 for not visible.
+ * @return  Boolean value true if visibility flag is set, false if not.
  */
-ZINC_API int Cmiss_scene_get_visibility_flag(Cmiss_scene_id scene);
+ZINC_API bool Cmiss_scene_get_visibility_flag(Cmiss_scene_id scene);
 
-/***************************************************************************//**
+/**
  * Set the state of the scene's visibility flag. Note this only affects
  * visibility of graphics when a graphics filter is using it.
  *
  * @param scene  The handle to the scene.
- * @param visibility_flag  integer value to be set for the value of visibility flag.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param visibility_flag  Boolean true to set, false to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_scene_set_visibility_flag(Cmiss_scene_id scene,
-	int visibility_flag);
+	bool visibility_flag);
 
 /**
  * Move an existing graphic in scene before ref_graphic. Both <graphic> and

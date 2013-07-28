@@ -2124,20 +2124,27 @@ int Cmiss_scene_modify(struct Cmiss_scene *destination,
 	return (return_code);
 } /* Cmiss_scene_modify */
 
+bool Cmiss_scene_get_visibility_flag(
+	struct Cmiss_scene *scene)
+{
+	if (scene)
+		return scene->visibility_flag;
+	return false;
+}
+
 int Cmiss_scene_set_visibility_flag(struct Cmiss_scene *scene,
-	int visibility_flag)
+	bool visibility_flag)
 {
 	if (scene)
 	{
-		bool bool_visibility_flag = visibility_flag == 1;
-		if (scene->visibility_flag != bool_visibility_flag)
+		if (scene->visibility_flag != visibility_flag)
 		{
-			scene->visibility_flag = bool_visibility_flag;
+			scene->visibility_flag = visibility_flag;
 			Cmiss_scene_changed(scene);
 		}
-		return 1;
+		return CMISS_OK;
 	}
-	return 0;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_scene_is_visible_hierarchical(
@@ -2203,15 +2210,6 @@ int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
 		return rangeData.range.getMaxRanges();
 	}
 	return 0;
-}
-
-int Cmiss_scene_get_visibility_flag(
-	struct Cmiss_scene *scene)
-{
-	if (scene)
-		return scene->visibility_flag;
-	else
-		return 0;
 }
 
 int Cmiss_scene_add_transformation_callback(struct Cmiss_scene *scene,

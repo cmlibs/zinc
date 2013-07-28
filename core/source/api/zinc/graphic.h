@@ -1,5 +1,5 @@
 /**
- * FILE : cmiss_graphic.h
+ * FILE : graphic.h
  *
  * The public interface to a zinc graphic which produces a 3-D graphics
  * object from an algorithm using fields in a region.
@@ -267,19 +267,20 @@ ZINC_API int Cmiss_graphic_set_render_type(
  * Return status of graphic visibility flag attribute.
  *
  * @param graphic  The graphic to query.
- * @return  1 if graphic visibility flag is set, 0 if not.
+ * @return  Boolean value true if visibility flag is set, false if not.
  */
-ZINC_API int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
+ZINC_API bool Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
 
 /**
- * Sets status of graphic visibility flag attribute.
+ * Sets status of graphic visibility flag attribute. Note this only affects
+ * visibility of graphics when a graphics filter is using it.
  *
  * @param graphic  The graphic to modify.
- * @param visibility_flag  1 to set, 0 to clear.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param visibility_flag  Boolean true to set, false to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
-	int visibility_flag);
+	bool visibility_flag);
 
 /**
  * Gets flag to generate graphics for exterior faces or lines only.

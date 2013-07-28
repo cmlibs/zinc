@@ -1577,51 +1577,28 @@ int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	return (return_code);
 }
 
-int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic)
+bool Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_visibility_flag);
 	if (graphic)
 	{
-		return_code = graphic->visibility_flag;
+		return graphic->visibility_flag;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_visibility_flag.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return false;
 }
 
 int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
-	int visibility_flag)
+	bool visibility_flag)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_visibility_flag);
 	if (graphic)
 	{
-		return_code = 1;
-		bool bool_visibility_flag = visibility_flag == 1;
-		if (graphic->visibility_flag != bool_visibility_flag)
+		if (graphic->visibility_flag != visibility_flag)
 		{
-			graphic->visibility_flag = bool_visibility_flag;
+			graphic->visibility_flag = visibility_flag;
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_REDRAW);
 		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_visibility_flag.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return CMISS_ERROR_ARGUMENT;
 }
 
 int Cmiss_graphic_and_scene_visibility_flags_is_set(struct Cmiss_graphic *graphic)
