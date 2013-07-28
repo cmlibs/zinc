@@ -89,12 +89,6 @@ public:
 		return (0 != id);
 	}
 
-	enum Attribute
-	{
-		ATTRIBUTE_INVALID = CMISS_GRAPHICS_FILTER_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_INVERSE = CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE,
-	};
-
 	Cmiss_graphics_filter_id getId()
 	{
 		return id;
@@ -115,6 +109,16 @@ public:
 		return Cmiss_graphics_filter_evaluate_graphic(id, graphic.getId());
 	}
 
+	bool isInverse()
+	{
+		return Cmiss_graphics_filter_is_inverse(id);
+	}
+
+	int setInverse(bool value)
+	{
+		return Cmiss_graphics_filter_set_inverse(id, value);
+	}
+
 	char *getName()
 	{
 		return Cmiss_graphics_filter_get_name(id);
@@ -123,18 +127,6 @@ public:
 	int setName(const char *name)
 	{
 		return Cmiss_graphics_filter_set_name(id, name);
-	}
-
-	int getAttributeInteger(Attribute attribute)
-	{
-		return Cmiss_graphics_filter_get_attribute_integer(id,
-			static_cast<Cmiss_graphics_filter_attribute>(attribute));
-	}
-
-	int setAttributeInteger(Attribute attribute, int value)
-	{
-		return Cmiss_graphics_filter_set_attribute_integer(id,
-			static_cast<Cmiss_graphics_filter_attribute>(attribute), value);
 	}
 };
 

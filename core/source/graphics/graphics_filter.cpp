@@ -1122,46 +1122,22 @@ int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
-	enum Cmiss_graphics_filter_attribute attribute)
+bool Cmiss_graphics_filter_is_inverse(Cmiss_graphics_filter_id filter)
 {
-	int value = 0;
-	if (graphics_filter)
-	{
-		switch (attribute)
-		{
-			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
-				value = (int)graphics_filter->isInverse();
-				break;
-			default:
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphics_filter_get_attribute_integer.  Invalid attribute");
-				break;
-		}
-	}
-	return value;
+	if (filter)
+		return filter->isInverse();
+	return false;
 }
 
-int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
-	enum Cmiss_graphics_filter_attribute attribute, int value)
+int Cmiss_graphics_filter_set_inverse(Cmiss_graphics_filter_id filter,
+	bool value)
 {
-	int return_code = 0;
-	if (graphics_filter)
+	if (filter)
 	{
-		return_code = 1;
-		switch (attribute)
-		{
-			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
-				graphics_filter->setInverse(value != 0);
-			break;
-			default:
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphics_filter_set_attribute_integer.  Invalid attribute");
-				return_code = 0;
-			break;
-		}
+		filter->setInverse(value);
+		return CMISS_OK;
 	}
-	return return_code;
+	return CMISS_ERROR_ARGUMENT;
 }
 
 Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(Cmiss_graphics_filter_id graphics_filter)
@@ -1261,36 +1237,4 @@ int Cmiss_graphics_filter_operator_remove_operand(
 		return operator_filter->remove_operand(operand);
 	}
 	return 0;
-}
-
-class Cmiss_graphics_filter_attribute_conversion
-{
-public:
-	static const char *to_string(enum Cmiss_graphics_filter_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-		case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
-			enum_string = "IS_INVERSE";
-			break;
-		default:
-			break;
-		}
-		return enum_string;
-	}
-};
-
-enum Cmiss_graphics_filter_attribute Cmiss_graphics_filter_attribute_enum_from_string(
-	const char *string)
-{
-	return string_to_enum<enum Cmiss_graphics_filter_attribute,
-		Cmiss_graphics_filter_attribute_conversion>(string);
-}
-
-char *Cmiss_graphics_filter_attribute_enum_to_string(
-	enum Cmiss_graphics_filter_attribute attribute)
-{
-	const char *attribute_string =Cmiss_graphics_filter_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
