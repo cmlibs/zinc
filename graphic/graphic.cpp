@@ -877,3 +877,28 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 }
 
+TEST(Cmiss_graphic_api, visibility_flag)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	EXPECT_TRUE(Cmiss_graphic_get_visibility_flag(gr));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_visibility_flag(gr, false));
+	EXPECT_FALSE(Cmiss_graphic_get_visibility_flag(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, visibility_flag_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.scene.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	EXPECT_TRUE(gr.getVisibilityFlag());
+	EXPECT_EQ(CMISS_OK, gr.setVisibilityFlag(false));
+	EXPECT_FALSE(gr.getVisibilityFlag());
+}

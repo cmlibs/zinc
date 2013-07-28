@@ -165,3 +165,19 @@ TEST(ZincScene, getSpectrumDataRange)
 	ASSERT_DOUBLE_EQ(-0.5, minimumValues[0]);
 	ASSERT_DOUBLE_EQ(0.5, maximumValues[0]);
 }
+
+TEST(Cmiss_scene, visibility_flag)
+{
+	ZincTestSetup zinc;
+	EXPECT_TRUE(Cmiss_scene_get_visibility_flag(zinc.scene));
+	EXPECT_EQ(CMISS_OK, Cmiss_scene_set_visibility_flag(zinc.scene, false));
+	EXPECT_FALSE(Cmiss_scene_get_visibility_flag(zinc.scene));
+}
+
+TEST(ZincScene, visibilityFlag)
+{
+	ZincTestSetupCpp zinc;
+	EXPECT_TRUE(zinc.scene.getVisibilityFlag());
+	EXPECT_EQ(CMISS_OK, zinc.scene.setVisibilityFlag(false));
+	EXPECT_FALSE(zinc.scene.getVisibilityFlag());
+}
