@@ -138,16 +138,12 @@ TEST(Cmiss_graphics_filter_api, valid_args)
 
 	result = Cmiss_graphics_filter_set_managed(filter, true);
 	EXPECT_EQ(CMISS_OK, result);
-
-	result = Cmiss_graphics_filter_set_attribute_integer(filter,
-		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE, 0);
-	EXPECT_EQ(CMISS_OK, result);
-
 	EXPECT_TRUE(Cmiss_graphics_filter_is_managed(filter));
 
-	result = Cmiss_graphics_filter_get_attribute_integer(filter,
-		CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE);
-	EXPECT_EQ(0, result);
+	EXPECT_FALSE(Cmiss_graphics_filter_is_inverse(filter));
+	EXPECT_EQ(CMISS_OK, result = Cmiss_graphics_filter_set_inverse(filter, true));
+	EXPECT_TRUE(Cmiss_graphics_filter_is_inverse(filter));
+	EXPECT_EQ(CMISS_OK, result = Cmiss_graphics_filter_set_inverse(filter, false));
 
 	Cmiss_graphics_filter_id graphic_type_filter1 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter1);
@@ -269,14 +265,12 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 
 	result = filter.setManaged(true);
 	EXPECT_EQ(CMISS_OK, result);
-
-	result = filter.setAttributeInteger(filter.ATTRIBUTE_IS_INVERSE, 0);
-	EXPECT_EQ(CMISS_OK, result);
-
 	EXPECT_TRUE(filter.isManaged());
 
-	result = filter.getAttributeInteger(filter.ATTRIBUTE_IS_INVERSE);
-	EXPECT_EQ(0, result);
+	EXPECT_FALSE(filter.isInverse());
+	EXPECT_EQ(CMISS_OK, result = filter.setInverse(true));
+	EXPECT_TRUE(filter.isInverse());
+	EXPECT_EQ(CMISS_OK, result = filter.setInverse(false));
 
 	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
 	EXPECT_TRUE(graphic_type_filter1.isValid());
