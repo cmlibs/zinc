@@ -208,12 +208,12 @@ public:
 
 	bool getVisibilityFlag()
 	{
-		return (0 != Cmiss_scene_get_visibility_flag(id));
+		return Cmiss_scene_get_visibility_flag(id);
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_scene_set_visibility_flag(id, (int)visibilityFlag);
+		return Cmiss_scene_set_visibility_flag(id, visibilityFlag);
 	}
 
 	int moveGraphicBefore(Graphic& graphic, Graphic& refGraphic)

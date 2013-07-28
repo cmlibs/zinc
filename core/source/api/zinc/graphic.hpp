@@ -243,12 +243,12 @@ public:
 
 	bool getVisibilityFlag()
 	{
-		return (0 != Cmiss_graphic_get_visibility_flag(id));
+		return Cmiss_graphic_get_visibility_flag(id);
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_graphic_set_visibility_flag(id, (int)visibilityFlag);
+		return Cmiss_graphic_set_visibility_flag(id, visibilityFlag);
 	}
 
 	enum CoordinateSystem getCoordinateSystem()

@@ -305,9 +305,6 @@ struct Cmiss_region *Cmiss_scene_get_region(
 int Cmiss_scene_modify(struct Cmiss_scene *destination,
 	struct Cmiss_scene *source);
 
-int Cmiss_scene_get_visibility_flag(
-	struct Cmiss_scene *scene);
-
 int Cmiss_scene_add_transformation_callback(struct Cmiss_scene *scene,
 	CMISS_CALLBACK_FUNCTION(Cmiss_scene_transformation) *function, void *user_data);
 
