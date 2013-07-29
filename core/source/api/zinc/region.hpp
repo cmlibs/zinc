@@ -284,6 +284,32 @@ public:
 			static_cast<Cmiss_stream_information_region_attribute>(attribute), value);
 	}
 
+	Field::DomainType getResourceDomain(StreamResource resource)
+	{
+		return static_cast<Field::DomainType>(
+			Cmiss_stream_information_region_get_resource_domain(
+				reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId()));
+	}
+
+	int setResourceDomain(StreamResource resource, Field::DomainType domainType)
+	{
+		return Cmiss_stream_information_region_set_resource_domain(
+			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId(),
+			static_cast<Cmiss_field_domain_type>(domainType));
+	}
+
+	bool isResourceDomainEnabled(StreamResource resource)
+	{
+		return Cmiss_stream_information_region_is_resource_domain_enabled(
+			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId());
+	}
+
+	int disableResourceDomain(StreamResource resource)
+	{
+		return Cmiss_stream_information_region_disable_resource_domain(
+			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId());
+	}
+
 };
 
 inline StreamInformationRegion Region::createStreamInformation()

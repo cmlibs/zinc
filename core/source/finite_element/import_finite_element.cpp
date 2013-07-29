@@ -3317,6 +3317,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 	return_code = 0;
 	if (root_region && input_file)
 	{
+		int use_data_meta_flag = use_data;
 		Cmiss_region_begin_hierarchical_change(root_region);
 		/* region is the same as read_region if reading into a true region,
 		 * otherwise it is the parent region of read_region group */
@@ -3345,6 +3346,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 					case 'R': /* Region : </path> */
 					case 'G': /* Group name : <name> */
 					{
+						use_data_meta_flag = use_data;
 						if (group)
 						{
 							Cmiss_field_group_destroy(&group);
@@ -3490,17 +3492,9 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						if (region)
 						{
 							fe_region = Cmiss_region_get_FE_region(region);
-							if (use_data)
+							if (use_data_meta_flag)
 							{
 								fe_region = FE_region_get_data_FE_region(fe_region);
-							}
-							if (!fe_region)
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE, "read_exregion_file.  "
-									"Could not get finite element region.  %s", location);
-								DEALLOCATE(location);
-								return_code = 0;
 							}
 							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
 							field_order_info = CREATE(FE_field_order_info)();
@@ -3576,8 +3570,46 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 					case '!': /* ! Comment ignored to end of line */
 					{
 						char *comment = NULL;
-						IO_stream_read_string(input_file, "[^\n\r]", &comment);
-						DEALLOCATE(comment);
+
+						if (1 == IO_stream_scan(input_file,"#nodese%1[t]",test_string))
+						{
+							if (1 ==  IO_stream_scan(input_file," datapoint%1[s]", test_string))
+							{
+								use_data_meta_flag = 1;
+							}
+							else if (1 ==  IO_stream_scan(input_file," node%1[s]", test_string))
+							{
+								use_data_meta_flag = 0;
+							}
+							else
+							{
+								use_data_meta_flag = use_data;
+							}
+							if (region)
+							{
+								fe_region = Cmiss_region_get_FE_region(region);
+								if (use_data_meta_flag)
+								{
+									fe_region = FE_region_get_data_FE_region(fe_region);
+								}
+								if (template_node)
+								{
+									DEACCESS(FE_node)(&template_node);
+								}
+								template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
+								if (field_order_info)
+								{
+									DESTROY(FE_field_order_info)(&field_order_info);
+								}
+								field_order_info = CREATE(FE_field_order_info)();
+								Cmiss_nodeset_group_destroy(&nodeset_group);
+							}
+						}
+						else
+						{
+							IO_stream_read_string(input_file, "[^\n\r]", &comment);
+							DEALLOCATE(comment);
+						}
 					} break;
 					case '#': /* #Scale factor sets, #Nodes, or #Fields */
 					{
@@ -3656,7 +3688,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 										{
 											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 											Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
-												use_data ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
+												use_data_meta_flag ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
 											Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
 											if (!node_group)
 											{
@@ -3873,7 +3905,7 @@ int read_exdata_file(struct Cmiss_region *region,
 
 int read_exregion_file_of_name(struct Cmiss_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct FE_import_time_index *time_index)
+	struct FE_import_time_index *time_index, int useData)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -3893,7 +3925,7 @@ Up to the calling function to check and merge the returned cmiss_region.
 		if (IO_stream_open_for_read(input_file, file_name))
 		{
 			return_code = read_exregion_file_private(region, input_file, time_index,
-				/*use_data*/0);
+				useData);
 			IO_stream_close(input_file);
 		}
 		else
