@@ -54,7 +54,7 @@ public:
 
 	Cmiss_region_resource_properties(Cmiss_stream_resource_id resource_in) :
 		Cmiss_resource_properties(resource_in), time_enabled(false),
-		domain_enabled(false), time(0.0), domain(CMISS_FIELD_DOMAIN_TYPE_INVALID)
+		domain_type_enabled(false), time(0.0), domain_type(CMISS_FIELD_DOMAIN_TYPE_INVALID)
 	{
 	}
 
@@ -79,26 +79,26 @@ public:
 		return 1;
 	}
 
-	enum Cmiss_field_domain_type getDomain()
+	enum Cmiss_field_domain_type getDomainType()
 	{
-		return domain;
+		return domain_type;
 	}
 
-	int isDomainEnabled()
+	int isDomainTypeEnabled()
 	{
-		return domain_enabled;
+		return domain_type_enabled;
 	}
 
-	int setDomain(enum Cmiss_field_domain_type domain_in)
+	int setDomainType(enum Cmiss_field_domain_type domain_type_in)
 	{
-		switch (domain_in)
+		switch (domain_type_in)
 		{
 			case CMISS_FIELD_DOMAIN_NODES:
 			case CMISS_FIELD_DOMAIN_DATA:
 			case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
 			{
-				domain = domain_in;
-				domain_enabled = true;
+				domain_type = domain_type_in;
+				domain_type_enabled = true;
 				return CMISS_OK;
 			} break;
 			default:
@@ -109,16 +109,16 @@ public:
 		return CMISS_ERROR_GENERAL;
 	}
 
-	int disableDomain()
+	int disableDomainType()
 	{
-		domain_enabled = false;
+		domain_type_enabled = false;
 		return CMISS_OK;
 	}
 
 private:
-	bool time_enabled, domain_enabled;
+	bool time_enabled, domain_type_enabled;
 	double time;
-	enum Cmiss_field_domain_type domain;
+	enum Cmiss_field_domain_type domain_type;
 };
 
 struct Cmiss_stream_information_region : Cmiss_stream_information
@@ -224,7 +224,7 @@ public:
 		return 0;
 	}
 
-	enum Cmiss_field_domain_type getResourceDomain(Cmiss_stream_resource_id resource)
+	enum Cmiss_field_domain_type getResourceDomainType(Cmiss_stream_resource_id resource)
 	{
 		if (resource)
 		{
@@ -232,13 +232,13 @@ public:
 				(Cmiss_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
-				return resource_properties->getDomain();
+				return resource_properties->getDomainType();
 			}
 		}
 		return CMISS_FIELD_DOMAIN_TYPE_INVALID;
 	}
 
-	int setResourceDomain(Cmiss_stream_resource_id resource, enum Cmiss_field_domain_type domain_in)
+	int setResourceDomainType(Cmiss_stream_resource_id resource, enum Cmiss_field_domain_type domain_type_in)
 	{
 		if (resource)
 		{
@@ -246,13 +246,13 @@ public:
 				(Cmiss_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
-				return resource_properties->setDomain(domain_in);
+				return resource_properties->setDomainType(domain_type_in);
 			}
 		}
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	bool isResourceDomainEnabled(Cmiss_stream_resource_id resource)
+	bool isResourceDomainTypeEnabled(Cmiss_stream_resource_id resource)
 	{
 		if (resource)
 		{
@@ -260,13 +260,13 @@ public:
 				(Cmiss_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
-				return resource_properties->isDomainEnabled();
+				return resource_properties->isDomainTypeEnabled();
 			}
 		}
 		return false;
 	}
 
-	int disableResourceDomain(Cmiss_stream_resource_id resource)
+	int disableResourceDomainType(Cmiss_stream_resource_id resource)
 	{
 		if (resource)
 		{
@@ -274,7 +274,7 @@ public:
 				(Cmiss_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
-				return resource_properties->disableDomain();
+				return resource_properties->disableDomainType();
 			}
 		}
 		return CMISS_ERROR_ARGUMENT;
