@@ -91,3 +91,132 @@ TEST(issue3614, read_embedded_nodes)
 	Cmiss_field_destroy(&hostLocation);
 	Cmiss_field_destroy(&coordinates);
 }
+
+TEST(exdata_and_exnodes_file, invalid_args)
+{
+	Cmiss_context_id context = Cmiss_context_create("test");
+	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
+
+	Cmiss_region_id node_region = Cmiss_region_create_child(root_region, "node");
+	Cmiss_stream_information_id node_si = Cmiss_region_create_stream_information(
+		node_region);
+	EXPECT_NE(static_cast<Cmiss_stream_information *>(0), node_si);
+
+	Cmiss_stream_resource_id node_sr = Cmiss_stream_information_create_resource_file(
+		node_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), node_sr);
+
+	int result = Cmiss_region_read(node_region, node_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_stream_resource_destroy(&node_sr);
+	Cmiss_stream_information_destroy(&node_si);
+
+	Cmiss_field_module_id node_fm = Cmiss_region_get_field_module(node_region);
+	EXPECT_NE(static_cast<Cmiss_field_module *>(0), node_fm);
+
+	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(node_fm, "cmiss_nodes");
+	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), nodeset);
+
+	int numberOfNodes = Cmiss_nodeset_get_size(nodeset);
+	EXPECT_EQ(16, numberOfNodes);
+
+	Cmiss_nodeset_destroy(&nodeset);
+	Cmiss_field_module_destroy(&node_fm);
+
+	Cmiss_region_id data_region = Cmiss_region_create_child(root_region, "data");
+	Cmiss_stream_information_id data_si = Cmiss_region_create_stream_information(
+		data_region);
+	EXPECT_NE(static_cast<Cmiss_stream_information *>(0), data_si);
+
+	Cmiss_stream_resource_id data_sr = Cmiss_stream_information_create_resource_file(
+		data_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), data_sr);
+
+	Cmiss_stream_information_region_id data_region_si = Cmiss_stream_information_cast_region(
+		data_si);
+	EXPECT_NE(static_cast<Cmiss_stream_information_region *>(0), data_region_si);
+
+	Cmiss_stream_information_region_set_resource_domain(data_region_si,
+		data_sr,	CMISS_FIELD_DOMAIN_DATA);
+
+	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), data_sr);
+
+	result = Cmiss_region_read(data_region, data_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_stream_resource_destroy(&data_sr);
+	Cmiss_stream_information_destroy(&data_si);
+
+	data_si = Cmiss_stream_information_region_base_cast(data_region_si);
+	Cmiss_stream_information_destroy(&data_si);
+
+	Cmiss_field_module_id data_fm = Cmiss_region_get_field_module(data_region);
+	EXPECT_NE(static_cast<Cmiss_field_module *>(0), data_fm);
+
+	Cmiss_nodeset_id dataset = Cmiss_field_module_find_nodeset_by_name(data_fm, "cmiss_data");
+	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), dataset);
+
+	numberOfNodes = Cmiss_nodeset_get_size(dataset);
+	EXPECT_EQ(16, numberOfNodes);
+
+	data_si = Cmiss_region_create_stream_information(data_region);
+	data_sr = Cmiss_stream_information_create_resource_memory(data_si);
+
+	result = Cmiss_region_write(data_region, data_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_stream_resource_memory_id memeory_sr = Cmiss_stream_resource_cast_memory(
+		data_sr);
+
+	char *memory_buffer;
+	unsigned int size = 0;
+
+	result = Cmiss_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	EXPECT_EQ(CMISS_OK, result);
+
+	char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	Cmiss_nodeset_destroy(&dataset);
+	Cmiss_field_module_destroy(&data_fm);
+
+	Cmiss_region_id new_data_region = Cmiss_region_create_child(root_region, "new_data");
+	Cmiss_stream_information_id new_data_si = Cmiss_region_create_stream_information(
+		new_data_region);
+	EXPECT_NE(static_cast<Cmiss_stream_information *>(0), new_data_si);
+
+	Cmiss_stream_resource_id new_data_sr = Cmiss_stream_information_create_resource_memory_buffer(
+		new_data_si, memory_buffer, size);
+	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), new_data_sr);
+
+	result = Cmiss_region_read(new_data_region, new_data_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_field_module_id new_data_fm = Cmiss_region_get_field_module(new_data_region);
+	EXPECT_NE(static_cast<Cmiss_field_module *>(0), new_data_fm);
+
+	Cmiss_nodeset_id new_dataset = Cmiss_field_module_find_nodeset_by_name(new_data_fm, "cmiss_data");
+	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), new_dataset);
+
+	numberOfNodes = Cmiss_nodeset_get_size(new_dataset);
+	EXPECT_EQ(16, numberOfNodes);
+
+	Cmiss_stream_resource_destroy(&new_data_sr);
+	Cmiss_stream_information_destroy(&new_data_si);
+
+	Cmiss_nodeset_destroy(&new_dataset);
+	Cmiss_field_module_destroy(&new_data_fm);
+
+	Cmiss_stream_resource_destroy(&data_sr);
+	Cmiss_stream_information_destroy(&data_si);
+
+	data_sr = Cmiss_stream_resource_memory_base_cast(memeory_sr);
+	Cmiss_stream_resource_destroy(&data_sr);
+
+	Cmiss_region_destroy(&new_data_region);
+	Cmiss_region_destroy(&data_region);
+	Cmiss_region_destroy(&node_region);
+	Cmiss_region_destroy(&root_region);
+	Cmiss_context_destroy(&context);
+}
