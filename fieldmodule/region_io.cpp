@@ -137,7 +137,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 		data_si);
 	EXPECT_NE(static_cast<Cmiss_stream_information_region *>(0), data_region_si);
 
-	Cmiss_stream_information_region_set_resource_domain(data_region_si,
+	Cmiss_stream_information_region_set_resource_domain_type(data_region_si,
 		data_sr,	CMISS_FIELD_DOMAIN_DATA);
 
 	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), data_sr);
