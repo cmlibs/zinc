@@ -2498,29 +2498,62 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_nodes_data.field_order_info = field_order_info;
 				write_nodes_data.last_node = (struct FE_node *)NULL;
 				write_nodes_data.time = time;
-				Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
-					write_data ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
-				if (group)
+				if (write_data)
 				{
-					Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
-					Cmiss_nodeset_destroy(&nodeset);
-					nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-					Cmiss_field_node_group_destroy(&node_group);
-				}
-				if (nodeset)
-				{
-					Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
-					Cmiss_node_id node = 0;
-					while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+					Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+						CMISS_FIELD_DOMAIN_DATA);
+					if (group)
 					{
-						if (!write_FE_region_node(node, &write_nodes_data))
-						{
-							return_code = 0;
-							break;
-						}
+						Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
+						Cmiss_nodeset_destroy(&nodeset);
+						nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+						Cmiss_field_node_group_destroy(&node_group);
 					}
-					Cmiss_node_iterator_destroy(&iter);
-					Cmiss_nodeset_destroy(&nodeset);
+					if (nodeset)
+					{
+						(*output_file) << " !#nodeset datapoints\n";
+						Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
+						Cmiss_node_id node = 0;
+						while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+						{
+							if (!write_FE_region_node(node, &write_nodes_data))
+							{
+								return_code = 0;
+								break;
+							}
+						}
+						Cmiss_node_iterator_destroy(&iter);
+						Cmiss_nodeset_destroy(&nodeset);
+					}
+				}
+				if (write_nodes)
+				{
+					write_nodes_data.last_node = (struct FE_node *)NULL;
+					Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+						CMISS_FIELD_DOMAIN_NODES);
+					if (group)
+					{
+						Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
+						Cmiss_nodeset_destroy(&nodeset);
+						nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+						Cmiss_field_node_group_destroy(&node_group);
+					}
+					if (nodeset)
+					{
+						(*output_file) << " !#nodeset nodes\n";
+						Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
+						Cmiss_node_id node = 0;
+						while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+						{
+							if (!write_FE_region_node(node, &write_nodes_data))
+							{
+								return_code = 0;
+								break;
+							}
+						}
+						Cmiss_node_iterator_destroy(&iter);
+						Cmiss_nodeset_destroy(&nodeset);
+					}
 				}
 			}
 			if (write_elements)
@@ -2824,7 +2857,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
  * @param write_recursion  Controls whether sub-regions and sub-groups are
  *   recursively written.
  */
-int write_exregion_file(ostream *output_file,
+int write_exregion_to_stream(ostream *output_file,
 	struct Cmiss_region *region, Cmiss_field_group_id group,
 	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
@@ -2835,9 +2868,9 @@ int write_exregion_file(ostream *output_file,
 {
 	int return_code;
 
-	ENTER(write_exregion_file);
+	ENTER(write_exregion_to_stream);
 	if (output_file && region && root_region &&
-		(!write_data || (!write_elements && !write_nodes)) &&
+		((write_data || write_elements || write_nodes)) &&
 		((write_fields_mode != FE_WRITE_LISTED_FIELDS) ||
 			((0 < number_of_field_names) && field_names)))
 	{
@@ -2879,26 +2912,26 @@ int write_exregion_file(ostream *output_file,
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"write_exregion_file.  Error writing region");
+					"write_exregion_to_stream.  Error writing region");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"write_exregion_file.  Region is not within root region");
+				"write_exregion_to_stream.  Region is not within root region");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_exregion_file.  Invalid argument(s)");
+			"write_exregion_to_stream.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_exregion_file */
+} /* write_exregion_to_stream */
 
 int write_exregion_file_of_name(const char *file_name,
 	struct Cmiss_region *region, Cmiss_field_group_id group,
@@ -2918,7 +2951,7 @@ int write_exregion_file_of_name(const char *file_name,
 		output_file.open(file_name, ios::out);
 		if (output_file.is_open())
 		{
-			return_code = write_exregion_file(&output_file, region, group, root_region,
+			return_code = write_exregion_to_stream(&output_file, region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);
@@ -2960,7 +2993,7 @@ int write_exregion_file_to_memory_block(
 		ostringstream stringStream;
 		if (stringStream)
 		{
-			return_code = write_exregion_file(&stringStream, region, group, root_region,
+			return_code = write_exregion_to_stream(&stringStream, region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);

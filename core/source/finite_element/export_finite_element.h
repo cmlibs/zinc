@@ -96,14 +96,14 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_criterion);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
 
 /***************************************************************************//**
- * Opens file with supplied name, calls write_exregion_file with it and closes
+ * Opens file with supplied name, calls write_exregion_to_stream with it and closes
  * file.
  * 
  * @param region  The region to output nodes/elements/data from.
  * @param group  Optional subgroup to output.
  * @param root_region  The root region output paths are relative to.
  * @param file_name  Name of file. 
- * @see write_exregion_file.
+ * @see write_exregion_to_stream.
  */
 int write_exregion_file_of_name(const char *file_name,
 	struct Cmiss_region *region, Cmiss_field_group_id group,

@@ -43,7 +43,9 @@
 #if !defined (CMISS_REGION_STREAM_HPP)
 #define CMISS_REGION_STREAM_HPP
 
+#include "zinc/types/fieldid.h"
 #include "zinc/region.h"
+#include "zinc/status.h"
 #include "stream/cmiss_stream_private.hpp"
 
 struct Cmiss_region_resource_properties : Cmiss_resource_properties
@@ -51,12 +53,9 @@ struct Cmiss_region_resource_properties : Cmiss_resource_properties
 public:
 
 	Cmiss_region_resource_properties(Cmiss_stream_resource_id resource_in) :
-		Cmiss_resource_properties(resource_in)
+		Cmiss_resource_properties(resource_in), time_enabled(false),
+		domain_enabled(false), time(0.0), domain(CMISS_FIELD_DOMAIN_TYPE_INVALID)
 	{
-		write_elements = 0;
-		write_nodes = 0;
-		time_enabled = 0;
-		time = 0.0;
 	}
 
 	~Cmiss_region_resource_properties()
@@ -68,7 +67,7 @@ public:
 		return time;
 	}
 
-	int isTimeEnabled()
+	bool isTimeEnabled()
 	{
 		return time_enabled;
 	}
@@ -76,13 +75,50 @@ public:
 	int setTime(double time_in)
 	{
 		time = time_in;
-		time_enabled = 1;
+		time_enabled = true;
 		return 1;
 	}
 
+	enum Cmiss_field_domain_type getDomain()
+	{
+		return domain;
+	}
+
+	int isDomainEnabled()
+	{
+		return domain_enabled;
+	}
+
+	int setDomain(enum Cmiss_field_domain_type domain_in)
+	{
+		switch (domain_in)
+		{
+			case CMISS_FIELD_DOMAIN_NODES:
+			case CMISS_FIELD_DOMAIN_DATA:
+			case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
+			{
+				domain = domain_in;
+				domain_enabled = true;
+				return CMISS_OK;
+			} break;
+			default:
+			{
+				return CMISS_ERROR_GENERAL;
+			} break;
+		}
+		return CMISS_ERROR_GENERAL;
+	}
+
+	int disableDomain()
+	{
+		domain_enabled = false;
+		return CMISS_OK;
+	}
+
 private:
-	int time_enabled, write_elements, write_nodes;
+	bool time_enabled, domain_enabled;
 	double time;
+	enum Cmiss_field_domain_type domain;
 };
 
 struct Cmiss_stream_information_region : Cmiss_stream_information
@@ -92,9 +128,7 @@ public:
 	Cmiss_stream_information_region(struct Cmiss_region *region_in) :
 		region(Cmiss_region_access(region_in)), root_region(Cmiss_region_access(region_in))
 	{
-		write_elements = 0;
-		write_nodes = 0;
-		time_enabled = 0;
+		time_enabled = false;
 		time = 0.0;
 	}
 
@@ -133,7 +167,7 @@ public:
 		return time;
 	}
 
-	int isTimeEnabled()
+	bool isTimeEnabled()
 	{
 		return time_enabled;
 	}
@@ -161,7 +195,7 @@ public:
 		return 0.0;
 	}
 
-	int isResourceTimeEnabled(Cmiss_stream_resource_id resource)
+	bool isResourceTimeEnabled(Cmiss_stream_resource_id resource)
 	{
 		if (resource)
 		{
@@ -172,7 +206,7 @@ public:
 				return resource_properties->isTimeEnabled();
 			}
 		}
-		return 0;
+		return false;
 	}
 
 	int setResourceTime(Cmiss_stream_resource_id resource, double time_in)
@@ -188,6 +222,62 @@ public:
 			}
 		}
 		return 0;
+	}
+
+	enum Cmiss_field_domain_type getResourceDomain(Cmiss_stream_resource_id resource)
+	{
+		if (resource)
+		{
+			Cmiss_region_resource_properties *resource_properties =
+				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->getDomain();
+			}
+		}
+		return CMISS_FIELD_DOMAIN_TYPE_INVALID;
+	}
+
+	int setResourceDomain(Cmiss_stream_resource_id resource, enum Cmiss_field_domain_type domain_in)
+	{
+		if (resource)
+		{
+			Cmiss_region_resource_properties *resource_properties =
+				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setDomain(domain_in);
+			}
+		}
+		return CMISS_ERROR_ARGUMENT;
+	}
+
+	bool isResourceDomainEnabled(Cmiss_stream_resource_id resource)
+	{
+		if (resource)
+		{
+			Cmiss_region_resource_properties *resource_properties =
+				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->isDomainEnabled();
+			}
+		}
+		return false;
+	}
+
+	int disableResourceDomain(Cmiss_stream_resource_id resource)
+	{
+		if (resource)
+		{
+			Cmiss_region_resource_properties *resource_properties =
+				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->disableDomain();
+			}
+		}
+		return CMISS_ERROR_ARGUMENT;
 	}
 
 	Cmiss_region_id getRegion()
@@ -213,19 +303,10 @@ public:
 		return 1;
 	}
 
-	int getWriteElements()
-	{
-		return write_elements;
-	}
-
-	int getWriteNodes()
-	{
-		return write_nodes;
-	}
 
 private:
 	double time;
-	int write_elements, write_nodes, time_enabled;
+	bool time_enabled;
 	struct Cmiss_region *region, *root_region;
 };
 
