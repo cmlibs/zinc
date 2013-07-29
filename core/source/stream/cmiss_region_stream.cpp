@@ -163,9 +163,9 @@ int Cmiss_region_read(Cmiss_region_id region,
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int readData = 0;
-				if (Cmiss_stream_information_region_is_resource_domain_enabled(region_stream_information, stream))
+				if (Cmiss_stream_information_region_is_resource_domain_type_enabled(region_stream_information, stream))
 				{
-					switch (Cmiss_stream_information_region_get_resource_domain(
+					switch (Cmiss_stream_information_region_get_resource_domain_type(
 						region_stream_information, stream))
 					{
 						case CMISS_FIELD_DOMAIN_DATA:
@@ -288,9 +288,9 @@ int Cmiss_region_write(Cmiss_region_id region,
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int writeElements = 1, writeData = 1, writeNodes = 1;
-				if (Cmiss_stream_information_region_is_resource_domain_enabled(region_stream_information, stream))
+				if (Cmiss_stream_information_region_is_resource_domain_type_enabled(region_stream_information, stream))
 				{
-					switch (Cmiss_stream_information_region_get_resource_domain(
+					switch (Cmiss_stream_information_region_get_resource_domain_type(
 						region_stream_information, stream))
 					{
 						case CMISS_FIELD_DOMAIN_NODES:
@@ -553,47 +553,47 @@ int Cmiss_stream_information_region_set_resource_attribute_real(
 	return return_code;
 }
 
-enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resource_domain(
+enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource)
 {
 	if (stream_information && resource)
 	{
-		return stream_information->getResourceDomain(resource);
+		return stream_information->getResourceDomainType(resource);
 	}
 	return CMISS_FIELD_DOMAIN_TYPE_INVALID;
 }
 
-int Cmiss_stream_information_region_set_resource_domain(
+int Cmiss_stream_information_region_set_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_field_domain_type domain)
+	enum Cmiss_field_domain_type domain_type)
 {
 	if (stream_information && resource)
 	{
-		return stream_information->setResourceDomain(resource, domain);
+		return stream_information->setResourceDomainType(resource, domain_type);
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_stream_information_region_is_resource_domain_enabled(
+bool Cmiss_stream_information_region_is_resource_domain_type_enabled(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource)
 {
 	if (stream_information && resource)
 	{
-		return stream_information->isResourceDomainEnabled(resource);
+		return stream_information->isResourceDomainTypeEnabled(resource);
 	}
 	return false;
 }
 
-int Cmiss_stream_information_region_disble_resource_domain(
+int Cmiss_stream_information_region_disble_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource)
 {
 	if (stream_information && resource)
 	{
-		return stream_information->disableResourceDomain(resource);
+		return stream_information->disableResourceDomainType(resource);
 	}
 	return CMISS_ERROR_ARGUMENT;
 }

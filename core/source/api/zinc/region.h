@@ -527,65 +527,65 @@ ZINC_API int Cmiss_stream_information_region_set_resource_attribute_real(
 	double value);
 
 /**
- * Get the specified domain for a stream resource in stream_information.
+ * Get the specified domain_type for a stream resource in stream_information.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
- * @return  Specified domain for stream resource, CMISS_FIELD_DOMAIN_TYPE_INVALID
+ * @return  Specified domain_type for stream resource, CMISS_FIELD_DOMAIN_TYPE_INVALID
  * if failed or unset
  */
-ZINC_API enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resource_domain(
+ZINC_API enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information, Cmiss_stream_resource_id resource);
 
 /***************************************************************************//**
- * Set the domain to be export from the region this stream information is
+ * Set the domain_type to be export from the region this stream information is
  * created in. The current default setting will output all domains in region.
- * The domain type also specifies nodesets without a specified domain in
+ * The domain type also specifies nodesets without a specified domain_type in
  * exformat file to be imported as nodes or datapoints domain.
  * If leave unset, unspecified nodesets will be import as nodes.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
- * @param domain  The domain type to be set for output. It currently supports
+ * @param domain_type  The domain type to be set for output. It currently supports
  *   the following domains:
  *   CMISS_FIELD_DOMAIN_NODES - output nodes only/input nodeset as nodes
  *   CMISS_FIELD_DOMAIN_DATA - output datapoints only/input nodeset as datapoints
  *   CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION - output element only
  *
- * @return   status CMISS_OK if domain is successfully set, any other value if
- *   failed or domain not valid or unable to be set for this
+ * @return   status CMISS_OK if domain_type is successfully set, any other value if
+ *   failed or domain_type not valid or unable to be set for this
  * Cmiss_stream_information_region.
  */
-ZINC_API int Cmiss_stream_information_region_set_resource_domain(
+ZINC_API int Cmiss_stream_information_region_set_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_field_domain_type domain);
+	enum Cmiss_field_domain_type domain_type);
 
 /**
- * Check if a resource is domain enabled.
+ * Check if a resource is domain_type enabled.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
  *
- * @return   true if domain is enabled for resource,  false if disabled or
+ * @return   true if domain_type is enabled for resource,  false if disabled or
  * failed.
  */
-ZINC_API bool Cmiss_stream_information_region_is_resource_domain_enabled(
+ZINC_API bool Cmiss_stream_information_region_is_resource_domain_type_enabled(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource);
 
 /**
- * Disable domain specified value, stream information will ignore the set
- * domain value. See Cmiss_stream_information_region_set_resource_domain for
+ * Disable domain_type specified value, stream information will ignore the set
+ * domain_type value. See Cmiss_stream_information_region_set_resource_domain for
  * more information about specifying domain type.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
  *
- * @return   status CMISS_OK if domain is unset,  any other value if
+ * @return   status CMISS_OK if domain_type is disabled,  any other value if
  *   failed.
  */
-ZINC_API int Cmiss_stream_information_region_disable_resource_domain(
+ZINC_API int Cmiss_stream_information_region_disable_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource);
 
