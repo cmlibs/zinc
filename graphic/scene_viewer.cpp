@@ -26,10 +26,14 @@ TEST(Cmiss_scene_viewer_api, set_background_invalid_args)
 	ZincTestSetup z;
 
 	Cmiss_scene_viewer_module_id svm = Cmiss_graphics_module_get_scene_viewer_module(z.gm);
+	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(svm, CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_set_background_colour_component_rgb(0, 0.0, 0.0, 0.0));
 
-	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(svm, CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_set_background_colour_rgb(0, 0));
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_set_background_colour_rgb(sv, 0));
+
 	EXPECT_EQ(CMISS_OK, Cmiss_scene_viewer_set_background_colour_component_rgb(sv, -1.0, 0.2, 0.8));
 
 	double rgb[3] = {-0.3, -1.0, 2.99};
@@ -55,16 +59,27 @@ TEST(Cmiss_scene_viewer_api, set_background_valid_args)
 	Cmiss_scene_viewer_module_destroy(&svm);
 }
 
+TEST(Cmiss_scene_viewer_api, get_background_rgb_invalid_args)
+{
+	ZincTestSetup z;
+	Cmiss_scene_viewer_module_id svm = Cmiss_graphics_module_get_scene_viewer_module(z.gm);
+	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(svm, CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
+
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_get_background_colour_rgb(0, 0));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_get_background_colour_rgb(sv, 0));
+
+	Cmiss_scene_viewer_destroy(&sv);
+	Cmiss_scene_viewer_module_destroy(&svm);
+}
+
 TEST(Cmiss_scene_viewer_api, get_background_rgb)
 {
 	ZincTestSetup z;
 	double rgb[3] = {0.0, 0.0, 0.0};
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_scene_viewer_set_background_colour_component_rgb(0, 0.5, 0.2, 0.8));
-
 	Cmiss_scene_viewer_module_id svm = Cmiss_graphics_module_get_scene_viewer_module(z.gm);
-
 	Cmiss_scene_viewer_id sv = Cmiss_scene_viewer_module_create_scene_viewer(svm, CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
+
 	EXPECT_EQ(CMISS_OK, Cmiss_scene_viewer_set_background_colour_component_rgb(sv, 0.5, 0.2, 0.8));
 	EXPECT_EQ(CMISS_OK, Cmiss_scene_viewer_get_background_colour_rgb(sv, rgb));
 
