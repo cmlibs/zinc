@@ -587,7 +587,7 @@ bool Cmiss_stream_information_region_is_resource_domain_type_enabled(
 	return false;
 }
 
-int Cmiss_stream_information_region_disble_resource_domain_type(
+int Cmiss_stream_information_region_disable_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource)
 {
