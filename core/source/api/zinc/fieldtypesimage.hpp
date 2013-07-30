@@ -110,6 +110,17 @@ public:
 		/*!< Allow the hardware to choose the compression */
 	};
 
+	enum WrapMode
+	{
+		WRAP_INVALID = CMISS_FIELD_IMAGE_WRAP_INVALID,
+		WRAP_CLAMP = CMISS_FIELD_IMAGE_WRAP_CLAMP,
+		WRAP_REPEAT = CMISS_FIELD_IMAGE_WRAP_REPEAT,
+		WRAP_EDGE_CLAMP = CMISS_FIELD_IMAGE_WRAP_EDGE_CLAMP,
+		WRAP_BORDER_CLAMP= CMISS_FIELD_IMAGE_WRAP_BORDER_CLAMP,
+		WRAP_MIRROR_REPEAT = CMISS_FIELD_IMAGE_WRAP_MIRROR_REPEAT
+		/*!< Allow the hardware to choose the wrap mode for texture */
+	};
+
 	enum ImageAttribute
 	{
 		IMAGE_ATTRIBUTE_INVALID = CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID,
@@ -192,6 +203,19 @@ public:
 		return Cmiss_field_image_set_filter_mode(
 			reinterpret_cast<Cmiss_field_image_id>(id),
 			static_cast<Cmiss_field_image_filter_mode>(filterMode));
+	}
+
+	WrapMode getWrapMode()
+	{
+		return static_cast<WrapMode>(Cmiss_field_image_get_wrap_mode(
+			reinterpret_cast<Cmiss_field_image_id>(id)));
+	}
+
+	int setWrapMode(WrapMode wrapMode)
+	{
+		return Cmiss_field_image_set_wrap_mode(
+			reinterpret_cast<Cmiss_field_image_id>(id),
+			static_cast<Cmiss_field_image_wrap_mode>(wrapMode));
 	}
 
 	char *getProperty(const char* property)

@@ -3417,7 +3417,7 @@ of all textures.
 			texture->compression_mode=TEXTURE_UNCOMPRESSED;
 			texture->filter_mode=TEXTURE_NEAREST_FILTER;
 			texture->resize_filter_mode=TEXTURE_RESIZE_NEAREST_FILTER;
-			texture->wrap_mode=TEXTURE_CLAMP_WRAP;
+			texture->wrap_mode=TEXTURE_REPEAT_WRAP;
 			(texture->combine_colour).red=0.;
 			(texture->combine_colour).green=0.;
 			(texture->combine_colour).blue=0.;

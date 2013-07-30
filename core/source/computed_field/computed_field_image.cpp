@@ -152,6 +152,7 @@ public:
 			{
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
+				Computed_field_changed(this->field);
 				return_code = 1;
 			}
 			else
@@ -166,6 +167,7 @@ public:
 		{
 			// just called from copy() - copy texture reference
 			REACCESS(Texture)(&texture, texture_in);
+			Computed_field_changed(this->field);
 			return_code = 1;
 		}
 		return (return_code);
@@ -1689,7 +1691,12 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 	{
 		mode = mode - 1;
 		enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)mode;
-		return Texture_set_combine_mode(texture, texture_combine_mode);
+		if (Texture_get_combine_mode(texture) != texture_combine_mode)
+		{
+			Texture_set_combine_mode(texture, texture_combine_mode);
+			Computed_field_changed(Cmiss_field_image_base_cast(image_field));
+		}
+		return 1;
 	}
 }
 
@@ -1781,7 +1788,12 @@ int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_f
 		mode = mode - 1;
 		enum Texture_compression_mode texture_compression_mode =
 			(Texture_compression_mode)mode;
-		return Texture_set_compression_mode(texture, texture_compression_mode);
+		if (Texture_get_compression_mode(texture) != texture_compression_mode)
+		{
+			Texture_set_compression_mode(texture, texture_compression_mode);
+			Computed_field_changed(Cmiss_field_image_base_cast(image_field));
+		}
+		return 1;
 	}
 }
 
@@ -1842,7 +1854,12 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 	{
 		mode = mode - 1;
 		enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
-		return Texture_set_filter_mode(texture, texture_filter_mode);
+		if (Texture_get_filter_mode(texture) != texture_filter_mode)
+		{
+			Texture_set_filter_mode(texture, texture_filter_mode);
+			Computed_field_changed(Cmiss_field_image_base_cast(image_field));
+		}
+		return 1;
 	}
 }
 
@@ -1894,5 +1911,79 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_strin
 char *Cmiss_field_image_filter_mode_enum_to_string(enum Cmiss_field_image_filter_mode mode)
 {
 	const char *mode_string = Cmiss_field_image_filter_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+enum Cmiss_field_image_wrap_mode Cmiss_field_image_get_wrap_mode(
+   Cmiss_field_image_id image_field)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = Texture_get_wrap_mode(texture) + 1;
+	enum Cmiss_field_image_wrap_mode wrap_mode = (Cmiss_field_image_wrap_mode)mode;
+	return wrap_mode;
+}
+
+int Cmiss_field_image_set_wrap_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_wrap_mode wrap_mode)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = wrap_mode;
+	if (mode < 1)
+	{
+		return 0;
+	}
+	else
+	{
+		mode = mode - 1;
+		enum Texture_wrap_mode texture_wrap_mode = (Texture_wrap_mode)mode;
+		if (Texture_get_wrap_mode(texture) != texture_wrap_mode)
+		{
+			Texture_set_wrap_mode(texture, texture_wrap_mode);
+			Computed_field_changed(Cmiss_field_image_base_cast(image_field));
+		}
+		return 1;
+	}
+}
+
+class Cmiss_field_image_wrap_mode_conversion
+{
+public:
+	static const char *to_string(enum Cmiss_field_image_wrap_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+		case CMISS_FIELD_IMAGE_WRAP_CLAMP:
+			enum_string = "CLAMP";
+			break;
+		case CMISS_FIELD_IMAGE_WRAP_REPEAT:
+			enum_string = "REPEAT";
+			break;
+		case CMISS_FIELD_IMAGE_WRAP_EDGE_CLAMP:
+			enum_string = "EDGE_CLAMP";
+			break;
+		case CMISS_FIELD_IMAGE_WRAP_BORDER_CLAMP:
+			enum_string = "BORDER_CLAMP";
+			break;
+		case CMISS_FIELD_IMAGE_WRAP_MIRROR_REPEAT:
+			enum_string = "MIRROR_REPEAT";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum Cmiss_field_image_wrap_mode Cmiss_field_image_wrap_mode_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum Cmiss_field_image_wrap_mode,
+	Cmiss_field_image_wrap_mode_conversion>(string);
+}
+
+char *Cmiss_field_image_wrap_mode_enum_to_string(enum Cmiss_field_image_wrap_mode mode)
+{
+	const char *mode_string = Cmiss_field_image_wrap_mode_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
