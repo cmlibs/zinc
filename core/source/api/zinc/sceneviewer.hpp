@@ -263,9 +263,19 @@ public:
 			near_plane, far_plane);
 	}
 
-	int setBackgroundColourRGB(double red, double green, double blue)
+	int setBackgroundColourComponentRGB(double red, double green, double blue)
 	{
-		return Cmiss_scene_viewer_set_background_colour_r_g_b(id, red, green, blue);
+		return Cmiss_scene_viewer_set_background_colour_component_rgb(id, red, green, blue);
+	}
+
+	int setBackgroundColourRGB(const double *valuesIn3)
+	{
+		return Cmiss_scene_viewer_set_background_colour_rgb(id, valuesIn3);
+	}
+
+	int getBackgroundColourRGB(double *valuesOut3)
+	{
+		return Cmiss_scene_viewer_get_background_colour_rgb(id, valuesOut3);
 	}
 
 	int viewAll()

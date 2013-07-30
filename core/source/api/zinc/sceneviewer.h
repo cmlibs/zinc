@@ -517,23 +517,41 @@ Server.  This means that the lines appear solid rather than interfering with a
 surface in the same space.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_get_background_colour_r_g_b(
-	Cmiss_scene_viewer_id scene_viewer, double *red, double *green, double *blue);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
+/**
+ * Returns the background_colour of the scene_viewer.
+ * The component order in the array is [red, green, blue]
+ *
+ * @param scene_viewer The handle to the scene viewer
+ * @param valuesOut3 The rgb components of the colour with values between [0, 1.0]
+ * @return CMISS_OK if successful, any other value otherwise
+ */
+ZINC_API int Cmiss_scene_viewer_get_background_colour_rgb(
+	Cmiss_scene_viewer_id scene_viewer, double *valuesOut3);
 
-DESCRIPTION :
-Returns the background_colour of the scene_viewer.
-==============================================================================*/
-
-ZINC_API int Cmiss_scene_viewer_set_background_colour_r_g_b(
+/**
+ * Sets the background_colour of the scene_viewer by individual component.
+ * Each component should be in the range [0, 1.0].
+ *
+ * @param scene_viewer The handle to the scene viewer
+ * @param red The red component value between [0, 1.0]
+ * @param green The green component value between [0, 1.0]
+ * @param blue The blue component value between [0, 1.0]
+ * @return CMISS_OK if successful, any other value otherwise
+ */
+ZINC_API int Cmiss_scene_viewer_set_background_colour_component_rgb(
 	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue);
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
 
-DESCRIPTION :
-Sets the background_colour of the scene_viewer.
-==============================================================================*/
+/**
+ * Sets the background_colour of the scene_viewer.
+ * Each component should be in the range [0, 1.0].
+ * The component order is [red, green, blue]
+ *
+ * @param scene_viewer The handle to the scene viewer
+ * @param valuesIn3 The rgb components of the colour
+ * @return CMISS_OK if successful, any other value otherwise
+ */
+ZINC_API int Cmiss_scene_viewer_set_background_colour_rgb(
+	Cmiss_scene_viewer_id scene_viewer, const double *valuesIn3);
 
 ZINC_API int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
 	double bk_texture_left,double bk_texture_top,

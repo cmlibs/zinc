@@ -4003,23 +4003,20 @@ DESCRIPTION :
 Returns the background_colour of the scene_viewer.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = CMISS_ERROR_ARGUMENT;
 
-	ENTER(Scene_viewer_get_background_colour);
 	if (scene_viewer&&background_colour)
 	{
 		background_colour->red=scene_viewer->background_colour.red;
 		background_colour->green=scene_viewer->background_colour.green;
 		background_colour->blue=scene_viewer->background_colour.blue;
-		return_code=1;
+		return_code=CMISS_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_background_colour.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_get_background_colour */
@@ -4033,9 +4030,8 @@ DESCRIPTION :
 Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = CMISS_ERROR_ARGUMENT;
 
-	ENTER(Scene_viewer_set_background_colour);
 	if (scene_viewer&&background_colour)
 	{
 		scene_viewer->background_colour.red=background_colour->red;
@@ -4043,15 +4039,13 @@ Sets the background_colour of the scene_viewer.
 		scene_viewer->background_colour.blue=background_colour->blue;
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-		return_code=1;
+		return_code = CMISS_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_set_background_colour.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_set_background_colour */
@@ -7691,8 +7685,8 @@ struct Graphics_buffer *Cmiss_scene_viewer_get_graphics_buffer(Cmiss_scene_viewe
 	return scene_viewer->graphics_buffer;
 }
 
-int Cmiss_scene_viewer_get_background_colour_r_g_b(
-	Cmiss_scene_viewer_id scene_viewer, double *red, double *green, double *blue)
+int Cmiss_scene_viewer_get_background_colour_rgb(
+	Cmiss_scene_viewer_id scene_viewer, double *valuesOut3)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
 
@@ -7700,32 +7694,24 @@ DESCRIPTION :
 Returns the background_colour of the scene_viewer.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = CMISS_ERROR_ARGUMENT;
 	struct Colour colour;
 
-	ENTER(Cmiss_scene_viewer_set_background_colour_rgb);
-	if (scene_viewer)
+	if (scene_viewer && valuesOut3)
 	{
 		return_code = Scene_viewer_get_background_colour(scene_viewer, &colour);
-		if (return_code)
+		if (return_code == CMISS_OK)
 		{
-			*red = colour.red;
-			*green = colour.green;
-			*blue = colour.blue;
+			valuesOut3[0] = colour.red;
+			valuesOut3[1] = colour.green;
+			valuesOut3[2] = colour.blue;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_background_colour_rgb.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
 
 	return (return_code);
 } /* Cmiss_scene_viewer_get_background_colour_rgb */
 
-int Cmiss_scene_viewer_set_background_colour_r_g_b(
+int Cmiss_scene_viewer_set_background_colour_component_rgb(
 	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
@@ -7734,24 +7720,36 @@ DESCRIPTION :
 Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 {
-	int return_code;
-	struct Colour colour;
+	double rgb[3] = {red, green, blue};
+	int return_code = CMISS_ERROR_ARGUMENT;
 
-	ENTER(Cmiss_scene_viewer_set_background_colour_rgb);
 	if (scene_viewer)
 	{
-		colour.red = red;
-		colour.green = green;
-		colour.blue = blue;
+		return_code = Cmiss_scene_viewer_set_background_colour_rgb(scene_viewer, rgb);
+	}
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_background_colour_component_rgb */
+
+int Cmiss_scene_viewer_set_background_colour_rgb(
+	Cmiss_scene_viewer_id scene_viewer, const double *valuesIn3)
+/*******************************************************************************
+LAST MODIFIED : 15 January 2007
+
+DESCRIPTION :
+Sets the background_colour of the scene_viewer.
+==============================================================================*/
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	struct Colour colour;
+
+	if (scene_viewer && valuesIn3)
+	{
+		colour.red = valuesIn3[0];
+		colour.green = valuesIn3[1];
+		colour.blue = valuesIn3[2];
 		return_code = Scene_viewer_set_background_colour(scene_viewer, &colour);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_background_colour_rgb.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
 
 	return (return_code);
 } /* Cmiss_scene_viewer_set_background_colour_rgb */
