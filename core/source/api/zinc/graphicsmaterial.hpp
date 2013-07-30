@@ -128,16 +128,16 @@ public:
 			static_cast<Cmiss_graphics_material_attribute>(attribute), value);
 	}
 
-	int getAttributeReal3(Attribute attribute, double *outValues)
+	int getAttributeReal3(Attribute attribute, double *valuesOut3)
 	{
 		return Cmiss_graphics_material_get_attribute_real3(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), outValues);
+			static_cast<Cmiss_graphics_material_attribute>(attribute), valuesOut3);
 	}
 
-	int setAttributeReal3(Attribute attribute, const double *values)
+	int setAttributeReal3(Attribute attribute, const double *valuesIn3)
 	{
 		return Cmiss_graphics_material_set_attribute_real3(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), values);
+			static_cast<Cmiss_graphics_material_attribute>(attribute), valuesIn3);
 	}
 
 	char *getName()
