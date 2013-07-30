@@ -166,11 +166,11 @@ DESCRIPTION :
 What happens to a texture when the texture coordinates are outside [0,1].
 ==============================================================================*/
 {
-	TEXTURE_CLAMP_WRAP,
-	TEXTURE_REPEAT_WRAP,
-	TEXTURE_CLAMP_EDGE_WRAP,
-	TEXTURE_CLAMP_BORDER_WRAP,
-	TEXTURE_MIRRORED_REPEAT_WRAP
+	TEXTURE_CLAMP_WRAP=0,
+	TEXTURE_REPEAT_WRAP=1,
+	TEXTURE_CLAMP_EDGE_WRAP=2,
+	TEXTURE_CLAMP_BORDER_WRAP=3,
+	TEXTURE_MIRRORED_REPEAT_WRAP=4
 }; /* enum Texture_wrap_mode */
 
 enum Texture_row_order 

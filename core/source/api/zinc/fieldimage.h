@@ -204,6 +204,46 @@ ZINC_API enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_f
 ZINC_API char *Cmiss_field_image_filter_mode_enum_to_string(
 	enum Cmiss_field_image_filter_mode mode);
 
+/**
+ * Describes how the image is to be wrapped when texture coordinate is assigned
+ * outside the range [0,1], you can choose to have them clamp or repeat.
+ */
+enum Cmiss_field_image_wrap_mode
+{
+	CMISS_FIELD_IMAGE_WRAP_INVALID = 0,
+	CMISS_FIELD_IMAGE_WRAP_CLAMP = 1,/*!< With repeating textures and when texture
+	 coordinates greater than [0,1], the texture will repeat*/
+	CMISS_FIELD_IMAGE_WRAP_REPEAT = 2,
+	CMISS_FIELD_IMAGE_WRAP_EDGE_CLAMP = 3, /*!< always ignore the border,
+		texels at or near the edge of the texure are used for texturing */
+	CMISS_FIELD_IMAGE_WRAP_BORDER_CLAMP = 4, /*!< With nearest filter mode,
+		closest texel in the texture is used, with linear filter mode, a weighted
+		combiination in a 2x2 awrray of colour data us used */
+	CMISS_FIELD_IMAGE_WRAP_MIRROR_REPEAT = 5/*!< Texture will be flip-flop outside
+		of the range. Texture may appear up-right in coordinate range[0,1] but
+		upside-down in coordinate range[1,2]*/
+};
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+ZINC_API enum Cmiss_field_image_wrap_mode
+	Cmiss_field_image_wrap_mode_enum_from_string(const char *string);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *Cmiss_field_image_wrap_mode_enum_to_string(
+	enum Cmiss_field_image_wrap_mode mode);
+
 enum Cmiss_field_image_attribute
 {
 	CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
@@ -477,6 +517,26 @@ ZINC_API enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
  */
 ZINC_API int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_filter_mode filter_mode);
+
+/**
+ * Returns the mode describing how the image is wrapped outside the range [0,1].
+ *
+ * @param image_field  The image field.
+ * @return  Returns enum describing how the image is wrapped.
+ */
+ZINC_API enum Cmiss_field_image_wrap_mode Cmiss_field_image_get_wrap_mode(
+   Cmiss_field_image_id image_field);
+
+/**
+ * Set the mode describing how the image is wrapped outside the range [0,1].
+ *
+ * @param image_field  The image field.
+ * @param filter_mode  Enumerator describing how image is wrapped outside
+ * 	the range [0,1].
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+ZINC_API int Cmiss_field_image_set_wrap_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_wrap_mode filter_mode);
 
 /**
  * Gets the property named in the given property string from the given field image.
