@@ -902,3 +902,103 @@ TEST(Cmiss_graphic_api, visibility_flag_cpp)
 	EXPECT_EQ(CMISS_OK, gr.setVisibilityFlag(false));
 	EXPECT_FALSE(gr.getVisibilityFlag());
 }
+
+TEST(Cmiss_graphic_api, sampling_attributes)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_graphic_streamlines_base_cast(Cmiss_scene_create_graphic_streamlines(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphic_sampling_attributes_id sampling = Cmiss_graphic_get_sampling_attributes(gr);
+	EXPECT_NE(static_cast<Cmiss_graphic_sampling_attributes *>(0), sampling);
+
+	EXPECT_EQ(CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES, Cmiss_graphic_sampling_attributes_get_mode(sampling));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_set_mode(sampling, CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON));
+	EXPECT_EQ(CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON, Cmiss_graphic_sampling_attributes_get_mode(sampling));
+
+	double value = 1.0;
+	Cmiss_field_id density_field = Cmiss_field_module_create_constant(zinc.fm, 1, &value);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), density_field);
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_sampling_attributes_get_density_field(sampling));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_set_density_field(sampling, density_field));
+
+	Cmiss_field_id temp_density_field = Cmiss_graphic_sampling_attributes_get_density_field(sampling);
+	EXPECT_EQ(density_field, temp_density_field);
+	Cmiss_field_destroy(&temp_density_field);
+	Cmiss_field_destroy(&density_field);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_set_density_field(sampling, static_cast<Cmiss_field_id>(0)));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_sampling_attributes_get_density_field(sampling));
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_set_mode(sampling, CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION));
+
+	const double values[] = { 0.5, 0.20, 0.8 };
+	double outputValues[3];
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_get_location(sampling, 3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_sampling_attributes_set_location(sampling, 0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_sampling_attributes_set_location(sampling, 2, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_set_location(sampling, 3, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_sampling_attributes_get_location(sampling, 0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_sampling_attributes_get_location(sampling, 3, 0));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_sampling_attributes_get_location(sampling, 3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[2], outputValues[2]);
+
+	Cmiss_graphic_sampling_attributes_destroy(&sampling);
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, sampling_attributes_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicStreamlines gr = zinc.scene.createGraphicStreamlines();
+	EXPECT_TRUE(gr.isValid());
+
+	GraphicSamplingAttributes sampling = gr.getSamplingAttributes();
+	EXPECT_TRUE(sampling.isValid());
+
+	EXPECT_EQ(Element::POINT_SAMPLE_CELL_CENTRES, sampling.getMode());
+	EXPECT_EQ(CMISS_OK, sampling.setMode(Element::POINT_SAMPLE_CELL_POISSON));
+	EXPECT_EQ(Element::POINT_SAMPLE_CELL_POISSON, sampling.getMode());
+
+	double value = 1.0;
+	Field densityField = zinc.fm.createConstant(1, &value);
+	EXPECT_TRUE(densityField.isValid());
+
+	Field tempField = sampling.getDensityField();
+	EXPECT_FALSE(tempField.isValid());
+	EXPECT_EQ(CMISS_OK, sampling.setDensityField(densityField));
+	tempField = sampling.getDensityField();
+	EXPECT_EQ(densityField.getId(), tempField.getId());
+
+	Field noField;
+	EXPECT_EQ(CMISS_OK, sampling.setDensityField(noField));
+	tempField = sampling.getDensityField();
+	EXPECT_FALSE(tempField.isValid());
+
+	EXPECT_EQ(CMISS_OK, sampling.setMode(Element::POINT_SAMPLE_SET_LOCATION));
+
+	const double values[] = { 0.5, 0.20, 0.8 };
+	double outputValues[3];
+	// check default values = 0.0
+	EXPECT_EQ(CMISS_OK, sampling.getLocation(3, outputValues));
+	EXPECT_EQ(0.0, outputValues[0]);
+	EXPECT_EQ(0.0, outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.setLocation(0, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.setLocation(2, 0));
+	EXPECT_EQ(CMISS_OK, sampling.setLocation(3, values));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.getLocation(0, outputValues));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.getLocation(3, 0));
+	EXPECT_EQ(CMISS_OK, sampling.getLocation(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[2], outputValues[2]);
+}
