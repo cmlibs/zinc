@@ -79,4 +79,23 @@ enum Cmiss_element_face_type
 
 	#define CMISS_ELEMENT_ID_H
 
+/**
+ * Mode controlling how points are sampled from elements.
+ */
+enum Cmiss_element_point_sample_mode
+{
+	CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID = 0,
+	CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES = 1,
+		/*!< Sample points at centres of element or tessellation cells */
+	CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS = 2,
+		/*!< Sample points at corners of element or tessellation cells */
+	CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON = 3,
+		/*!< Sample points randomly within each tessellation cell according to a 
+		     Poisson distribution with expected number given by:
+		     sample density field * cell volume, area or length, depending on dimension.
+		     The sample density field should be evaluated at the cell centre. */
+  CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION = 4
+		/*!< One point at a specified location in the element chart. */
+};
+
 #endif /* CMISS_BASIS_FUNCTION_ID_DEFINED */

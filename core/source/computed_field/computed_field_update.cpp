@@ -234,8 +234,7 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 				{
 					element_point_ranges_identifier.element = element;
 					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.xi_discretization_mode =
-						XI_DISCRETIZATION_CELL_CORNERS;
+					element_point_ranges_identifier.sample_mode = CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
 					/* already set the number_in_xi, above */
 					if (0 != (element_point_ranges = ACCESS(Element_point_ranges)(
 							 FIND_BY_IDENTIFIER_IN_LIST(
@@ -254,14 +253,13 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 				{
 					element_point_ranges_identifier.element = element;
 					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.xi_discretization_mode =
-						XI_DISCRETIZATION_CELL_CORNERS;
+					element_point_ranges_identifier.sample_mode = CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
 					/* already set the number_in_xi, above */
 					element_point_ranges = ACCESS(Element_point_ranges)(
 						CREATE(Element_point_ranges)(
 							&element_point_ranges_identifier));
 					FE_element_get_xi_points(element, 
-						element_point_ranges_identifier.xi_discretization_mode,
+						element_point_ranges_identifier.sample_mode,
 						element_point_ranges_identifier.number_in_xi,
 						element_point_ranges_identifier.exact_xi,
 						(Cmiss_field_cache_id)0,
@@ -295,7 +293,7 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 								for (grid_point_number = start ; grid_point_number <= stop ; grid_point_number++)
 								{
 									if (FE_element_get_numbered_xi_point(
-											 element, element_point_ranges_identifier.xi_discretization_mode,
+											 element, element_point_ranges_identifier.sample_mode,
 											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
 											 (Cmiss_field_cache_id)0,
 											 /*coordinate_field*/(struct Computed_field *)NULL,

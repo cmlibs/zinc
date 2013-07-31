@@ -94,7 +94,7 @@ Otherwise the routine returns 0.
 ==============================================================================*/
 
 int FE_element_get_xi_points(struct FE_element *element,
-	enum Xi_discretization_mode xi_discretization_mode,
+	Cmiss_element_point_sample_mode sample_mode,
 	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
@@ -103,12 +103,12 @@ LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Calculates the <number_of_xi_points> across the <element_shape> according to
-the <xi_discretization> and some of <number_in_xi>, <exact_xi>,
+the <sample_mode> and some of <number_in_xi>, <exact_xi>,
 <coordinate_field> and <density_field>, depending on the mode.
 If <xi_points_address> is supplied an array containing the xi locations of these
 points is allocated and put in this address. Xi positions are always returned as
 triples with remaining xi coordinates 0 for 1-D and 2-D cases.
-<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - although it
+<exact_xi> should be supplied for sample mode SET_LOCATION - although it
 is trivial, it is passed and used here to provide a consistent interface.]
 @param field_cache  Cmiss_field_cache for evaluating coordinate and density
 fields, required for DENSITY and POISSON modes. Time is expected to have been
@@ -129,14 +129,14 @@ Also allocates the *<top_level_xi_point_numbers_address> to contain the
 appropriate xi_point_numbers relative to the top-level element.
 Notes:
 1. The xi_points put into this function must have been calculated with the
-XI_DISCRETIZATION_CELL_CORNERS more and the number_in_xi determined from the
+CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
 relation from <element> to <top_level_element> and its <top_level_number_in_xi>.
 2. Sets *<top_level_xi_point_numbers_address> to NULL if not ALLOCATED; hence
 a return value here indicates that the xi_points have been converted.
 ==============================================================================*/
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
-	enum Xi_discretization_mode xi_discretization_mode,
+	Cmiss_element_point_sample_mode sample_mode,
 	int *number_in_xi, FE_value_triple exact_xi, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi);

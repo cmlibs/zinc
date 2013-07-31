@@ -10337,6 +10337,30 @@ Up to the calling function to deallocate the returned char string.
 	return (return_code);
 } /* GET_NAME(FE_field_component) */
 
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_element_point_sample_mode)
+{
+	switch (enumerator_value)
+	{
+		case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+			return "cell_centres";
+			break;
+		case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+			return "cell_corners";
+			break;
+		case CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON:
+			return "cell_poisson";
+			break;
+		case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+			return "set_location";
+			break;
+		case CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID:
+			break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_element_point_sample_mode)
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 {
 	switch (enumerator_value)

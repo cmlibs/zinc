@@ -72,11 +72,10 @@ ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
 /**
  * Destroys the graphic and sets the pointer to NULL.
  *
- * @param graphic  The pointer to the handle of the graphic
- * @return  Status CMISS_OK if successfully destroy graphic, otherwise any
- * other value.
+ * @param graphic_address  The pointer to the handle of the graphic.
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
+ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic_address);
 
 /**
  * Gets the field supplying coordinates for the graphic.
@@ -1289,41 +1288,111 @@ ZINC_API int Cmiss_graphic_point_attributes_set_signed_scale_field(
 	Cmiss_field_id signed_scale_field);
 
 /**
- * If the graphic produces points then returns a handle to point attribute
- * object for specifying glyph, scaling fields, scale factors and labels.
+ * If the graphic samples points from elements then returns a handle to sampling
+ * attribute object for specifying sample mode, density field etc.
  *
- * @param graphic  The graphic to request point attributes from.
- * @return  Handle to point attributes object, or 0 if not supported for
+ * @param graphic  The graphic to request sampling attributes from.
+ * @return  Handle to sampling attributes object, or 0 if not supported for
  * graphic type or error. Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_graphic_element_attributes_id Cmiss_graphic_get_element_attributes(
+ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_get_sampling_attributes(
 	Cmiss_graphic_id graphic);
 
 /**
- * Returns a new reference to the point attributes with reference count
+ * Returns a new reference to the sampling attributes with reference count
  * incremented. Caller is responsible for destroying the new reference.
  *
- * @param point_attributes  The point_attributes to obtain a new reference to.
- * @return  New point attributes reference with incremented reference count.
+ * @param sampling_attributes  The graphic sampling attributes to obtain a new
+ * reference to.
+ * @return  New sampling attributes reference with incremented reference count.
  */
-ZINC_API Cmiss_graphic_element_attributes_id Cmiss_graphic_element_attributes_access(
-	Cmiss_graphic_element_attributes_id element_attributes);
+ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_sampling_attributes_access(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes);
 
 /**
- * Destroys this reference to the point attributes, and sets it to 0.
+ * Destroys this reference to the sampling attributes, and sets it to 0.
  * Internally this just decrements the reference count.
  *
- * @param point_attributes_address  Address of handle to the point attributes.
- * @return  Status CMISS_OK if successfully destroyed the handle, any other
- * value on failure.
+ * @param sampling_attributes_address  Address of handle to the graphic sampling
+ * attributes.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_element_attributes_destroy(
-	Cmiss_graphic_element_attributes_id *element_attributes_address);
+ZINC_API int Cmiss_graphic_sampling_attributes_destroy(
+	Cmiss_graphic_sampling_attributes_id *sampling_attributes_address);
 
 /**
+ * Gets the scalar field specifying the density of points sampled from elements
+ * when used with CELL_POISSON sample mode.
+ *
+ * @param sampling_attributes  The graphic sampling attributes to query.
+ * @return  Handle to sample density field, or 0 if none. Up to caller to
+ * destroy handle.
  */
-ZINC_API int Cmiss_graphic_element_attributes_set_discretization_mode(
-	Cmiss_graphic_element_attributes_id element_attributes, Cmiss_graphics_xi_discretization_mode mode);
+ZINC_API Cmiss_field_id Cmiss_graphic_sampling_attributes_get_density_field(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes);
+
+/**
+ * Sets the scalar field specifying the density of points sampled from elements
+ * when used with CELL_POISSON sample mode. The density is applied per unit
+ * volume/area/length, depending on dimension, evaluated at cell centres.
+ * @see Cmiss_graphic_sampling_attributes_set_mode
+ *
+ * @param sampling_attributes  The graphic sampling attributes to modify.
+ * @param sample_density_field  Scalar density field to set.
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_sampling_attributes_set_density_field(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	Cmiss_field_id sample_density_field);
+
+/**
+ * Gets the location in the element chart where a point is sampled in mode
+ * CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION. Up to 3 values can be returned.
+ *
+ * @param sampling_attributes  The graphic sampling attributes to query.
+ * @param valuesCount  The size of the valuesOut array.
+ * @param valuesOut  Array to receive location.
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_sampling_attributes_get_location(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Sets the location in the element chart where a point is sampled in mode
+ * CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION.
+ * Up to 3 values can be set, with 0 assumed for additional chart coordinates.
+ * @see Cmiss_graphic_sampling_attributes_set_mode
+ *
+ * @param sampling_attributes  The graphic sampling attributes to modify.
+ * @param valuesCount  The size of the valuesIn array.
+ * @param valuesIn  Array containing element location to set.
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_sampling_attributes_set_location(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	int valuesCount, const double *valuesIn);
+
+/**
+ * Get the mode for sampling points in elements.
+ *
+ * @param sampling_attributes  The graphic sampling attributes to query.
+ * @return  The point sampling mode, or MODE_INVALID on error.
+ */
+ZINC_API enum Cmiss_element_point_sample_mode Cmiss_graphic_sampling_attributes_get_mode(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes);
+
+/**
+ * Set the mode for sampling points in elements.
+ * The default point sample mode is CELL_CENTRES.
+ *
+ * @param sampling_attributes  The graphic sampling attributes to modify.
+ * @param sample_mode  The element point sample mode to set.
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_sampling_attributes_set_mode(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	enum Cmiss_element_point_sample_mode sample_mode);
 
 #ifdef __cplusplus
 }
