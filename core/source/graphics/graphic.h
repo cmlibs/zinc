@@ -119,17 +119,19 @@ finite element group scene.
 	struct Computed_field *label_field;
 	struct Computed_field *label_density_field;
 
-	/* for element_points only */
-	enum Xi_discretization_mode xi_discretization_mode;
-	struct Computed_field *xi_point_density_field;
+	// for element sampling: element points, streamlines
+	Cmiss_element_point_sample_mode sample_mode;
+	struct Computed_field *sample_density_field;
+	FE_value sample_location[3];
+
+	// for tessellating and sampling elements
 	struct FE_field *native_discretization_field;
 	struct Cmiss_tessellation *tessellation;
+
 	int overlay_flag;
 	int overlay_order;
 	/* for settings starting in a particular element */
 	struct FE_element *seed_element;
-	/* for settings requiring an exact xi location */
-	Triple seed_xi;
 
 	/* streamlines */
 	struct Computed_field *stream_vector_field;
@@ -184,21 +186,6 @@ struct Cmiss_graphics_module;
 typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
-
-/***************************************************************************//**
- * Unique identifier for each graphic attribute, used to query whether it can be
- * used with each Cmiss_graphic_type.
- * Must update Cmiss_graphic_type_uses_attribute as new attribute IDs defined.
- * @see Cmiss_graphic_type_uses_attribute()
- */
-enum Cmiss_graphic_attribute
-{
-	CMISS_GRAPHIC_ATTRIBUTE_GLYPH,
-	CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE,
-	CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE,
-};
 
 enum Cmiss_graphic_string_details
 {
@@ -293,15 +280,6 @@ struct Cmiss_graphic_Computed_field_change_data
 };
 
 DECLARE_LIST_TYPES(Cmiss_graphic);
-
-/***************************************************************************//**
- * Queries whether an attribute can be used with supplied graphic_type.
- * @param graphic_type  The type of graphic to query.
- * @param attribute  Identifier of graphic attribute to query about.
- * @return  1 if the attribute can be used with graphic type, otherwise 0.
- */
-int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
-	enum Cmiss_graphic_attribute attribute);
 
 /***************************************************************************//**
  * Created with access_count = 1.
@@ -523,45 +501,11 @@ int Cmiss_graphic_set_seed_element(struct Cmiss_graphic *graphic,
 	struct FE_element *seed_element);
 
 /***************************************************************************//**
- * For graphic_types CMISS_GRAPHIC_ELEMENT_POINTS or
- * CMISS_GRAPHIC_STREAMLINES only.
- */
-int Cmiss_graphic_get_seed_xi(struct Cmiss_graphic *graphic,
-	Triple seed_xi);
-
-int Cmiss_graphic_set_seed_xi(struct Cmiss_graphic *graphic,
-	Triple seed_xi);
-
-/***************************************************************************//**
  * Get the graphic line width.  If it is 0 then the line will use the scene default.
  */
 int Cmiss_graphic_get_line_width(struct Cmiss_graphic *graphic);
 
 int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width);
-
-/***************************************************************************//**
- * Returns the <xi_discretization_mode> and <xi_point_density_field> controlling
- * where glyphs are displayed for <graphic> of type
- * CMISS_GRAPHIC_ELEMENT_POINTS. <xi_point_density_field> is used only with
- * XI_DISCRETIZATION_CELL_DENSITY and XI_DISCRETIZATION_CELL_POISSON modes.
- * Either <xi_discretization_mode> or <xi_point_density_field> addresses may be
- * omitted, if that value is not required.
- */
-int Cmiss_graphic_get_xi_discretization(
-	struct Cmiss_graphic *graphic,
-	enum Xi_discretization_mode *xi_discretization_mode,
-	struct Computed_field **xi_point_density_field);
-
-/***************************************************************************//**
- * Sets the xi_discretization_mode controlling where glyphs are displayed for
- * <graphic> of type CMISS_GRAPHIC_ELEMENT_POINTS. Must supply a scalar
- * <xi_point_density_field> if the new mode is XI_DISCRETIZATION_CELL_DENSITY or
- * XI_DISCRETIZATION_CELL_POISSON.
- */
-int Cmiss_graphic_set_xi_discretization(
-	struct Cmiss_graphic *graphic,
-	enum Xi_discretization_mode xi_discretization_mode,
-	struct Computed_field *xi_point_density_field);
 
 /***************************************************************************//**
  * Copies the cmiss_graphic contents from source to destination.

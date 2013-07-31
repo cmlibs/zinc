@@ -132,22 +132,11 @@ enum Cmiss_graphic_line_attributes_shape
 	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION = 4
 };
 
-enum Cmiss_graphics_xi_discretization_mode
-{
-	CMISS_GRAPHICS_XI_DISCRETIZATION_INVALID_MODE = 0,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CENTRES = 1,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CORNERS = 2,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_DENSITY = 3,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_POISSON = 4,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_RANDOM = 5,
-	CMISS_GRAPHICS_XI_DISCRETIZATION_EXACT_XI = 6
-};
-
 /**
- * A handle to attributes specifying how lines are visualised in a
- * Cmiss_graphic including section profile and scaling.
+ * A handle to graphic attributes specifying how points are sampled in elements,
+ * including sample mode, density, etc.
  */
-struct Cmiss_graphic_element_attributes;
-typedef struct Cmiss_graphic_element_attributes * Cmiss_graphic_element_attributes_id;
+struct Cmiss_graphic_sampling_attributes;
+typedef struct Cmiss_graphic_sampling_attributes * Cmiss_graphic_sampling_attributes_id;
 
 #endif /* CMISS_GRAPHICID_H */

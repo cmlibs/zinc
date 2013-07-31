@@ -5,7 +5,7 @@ LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
-Xi_discretization_modes.
+element point sample modes.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -52,24 +52,20 @@ Xi_discretization_modes.
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 
+/**
+ * Identifier created to allow LIST(Element_point_ranges) to be indexed for
+ * quick access to objects. Objects are indexed by element first, then the
+ * element point sample mode and any other identifying values relevant to the
+ * mode. See also compare_Element_point_ranges_identifier function.
+ */
 struct Element_point_ranges_identifier
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Identifier created to allow LIST(Element_point_ranges) to be indexed for quick
-access to objects. Objects are indexed by element first, then the
-Xi_discretization_mode and any other identifying values relevant to the
-Xi_discretization_mode.
-See also compare_Element_point_ranges_identifier function.
-==============================================================================*/
 {
 	struct FE_element *element,*top_level_element;
-	enum Xi_discretization_mode xi_discretization_mode;
+	Cmiss_element_point_sample_mode sample_mode;
 	/* following could/should be in a union */
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value exact_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-}; /* Element_point_ranges_identifier */
+};
 
 struct Element_point_ranges;
 /*******************************************************************************
@@ -161,15 +157,15 @@ Global functions
 ----------------
 */
 
-const char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+const char **Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
-Xi_discretization_modes that can be used for Element_point_ranges, obtained
-from function Xi_discretization_mode_string.
+Cmiss_element_point_sample_modes that can be used for Element_point_ranges, obtained
+from function Cmiss_element_point_sample_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
@@ -182,7 +178,7 @@ LAST MODIFIED : 7 June 2000
 DESCRIPTION :
 Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
 indexing lists of Element_point_ranges.
-First the element is compared, then the Xi_discretization_mode, then the
+First the element is compared, then the Cmiss_element_point_sample_mode, then the
 identifying values depending on this mode.
 ==============================================================================*/
 
@@ -192,7 +188,7 @@ int Element_point_ranges_identifier_is_valid(
 LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
-Returns true if <identifier> has a valid element, Xi_discretization_mode and
+Returns true if <identifier> has a valid element, Cmiss_element_point_sample_mode and
 number_in_xi for being used in an Element_point_ranges structure.
 ==============================================================================*/
 
@@ -227,7 +223,7 @@ LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
-element:Xi_discretization_mode of the <identifier>.
+element:Cmiss_element_point_sample_mode of the <identifier>.
 ==============================================================================*/
 
 int DESTROY(Element_point_ranges)(

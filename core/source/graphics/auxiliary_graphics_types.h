@@ -136,42 +136,6 @@ for automatic creation of choose_enumerator widgets.
 												  see how long each bit is */
 };
 
-enum Xi_discretization_mode
-/*******************************************************************************
-LAST MODIFIED : 1 May 2001
-
-DESCRIPTION :
-Enumerator for controlling where discrete objects are placed in the Xi space of
-each element, eg. glyphs for element_points.
-"CELL" types divide the element into cells of equal size in Xi space.
-CELL_CENTRES puts one object at the centes of each cell.
-CELL_CORNERS puts an object at the corners of each cell, but not repeating any
-on neighbouring cells.
-CELL_DENSITY puts a number of randomly-located points in each cell proportional
-to the value of a density_field calculated at the centre of the cell and the
-volume of the cell determined from the coordinate_field.
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-==============================================================================*/
-{
-	XI_DISCRETIZATION_INVALID_MODE = 0,
-	XI_DISCRETIZATION_CELL_CENTRES = 1,
-	XI_DISCRETIZATION_CELL_CORNERS = 2,
-	/* number of points in each cell is rounded from the density*volume. Best
-		 choice for showing density when cells are near-uniform sizes and there are
-		 a reasonable number of points in most cells */
-	XI_DISCRETIZATION_CELL_DENSITY = 3,
-	/* same as XI_DISCRETIZATION_CELL_DENSITY but actual number of points per
-		 cell is sampled from a Poisson distribution with mean density*volume.
-		 May be better than CELL_DENSITY when cells are quite different in size,
-		 but adds noise to the density field being viewed. */
-	XI_DISCRETIZATION_CELL_POISSON = 4,
-	/* exactly one point per cell at all times */
-	XI_DISCRETIZATION_CELL_RANDOM = 5,
-	XI_DISCRETIZATION_EXACT_XI = 6
-}; /* enum Xi_discretization_mode */
-
 /*
 Global functions
 ----------------
@@ -186,8 +150,6 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_streamlines_track_direction);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
-
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Xi_discretization_mode);
 
 int check_Circle_discretization(int *circle_discretization);
 

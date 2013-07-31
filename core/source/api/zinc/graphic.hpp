@@ -53,7 +53,7 @@ namespace zinc
 
 class GraphicLineAttributes;
 class GraphicPointAttributes;
-class GraphicElementAttributes;
+class GraphicSamplingAttributes;
 
 class Graphic
 {
@@ -198,7 +198,7 @@ public:
 
 	GraphicPointAttributes getPointAttributes();
 
-	GraphicElementAttributes getElementAttributes();
+	GraphicSamplingAttributes getSamplingAttributes();
 
 	GraphicsMaterial getSelectedMaterial()
 	{
@@ -707,36 +707,25 @@ inline GraphicPointAttributes Graphic::getPointAttributes()
 	return GraphicPointAttributes(Cmiss_graphic_get_point_attributes(id));
 }
 
-class GraphicElementAttributes
+class GraphicSamplingAttributes
 {
 protected:
-	Cmiss_graphic_element_attributes_id id;
+	Cmiss_graphic_sampling_attributes_id id;
 
 public:
 
-	enum DiscretizationMode
-	{
-		DISCRETIZATION_MODE_INVALID = CMISS_GRAPHICS_XI_DISCRETIZATION_INVALID_MODE,
-		DISCRETIZATION_CELL_CENTRES = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CENTRES,
-		DISCRETIZATION_CELL_CORNERS = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_CORNERS,
-		DISCRETIZATION_CELL_DENSITY = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_DENSITY,
-		DISCRETIZATION_CELL_POISSON = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_POISSON,
-		DISCRETIZATION_CELL_RANDOM = CMISS_GRAPHICS_XI_DISCRETIZATION_CELL_RANDOM,
-		DISCRETIZATION_EXACT_XI = CMISS_GRAPHICS_XI_DISCRETIZATION_EXACT_XI
-	};
-
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicElementAttributes(Cmiss_graphic_element_attributes_id element_attributes_id) :
-		id(element_attributes_id)
+	explicit GraphicSamplingAttributes(Cmiss_graphic_sampling_attributes_id sampling_attributes_id) :
+		id(sampling_attributes_id)
 	  {}
 
-	GraphicElementAttributes(const GraphicElementAttributes& elementAttributes) :
-		id(Cmiss_graphic_element_attributes_access(elementAttributes.id))
+	GraphicSamplingAttributes(const GraphicSamplingAttributes& samplingAttributes) :
+		id(Cmiss_graphic_sampling_attributes_access(samplingAttributes.id))
 		{}
 
-	~GraphicElementAttributes()
+	~GraphicSamplingAttributes()
 	{
-		Cmiss_graphic_element_attributes_destroy(&id);
+		Cmiss_graphic_sampling_attributes_destroy(&id);
 	}
 
 	bool isValid()
@@ -744,16 +733,42 @@ public:
 		return (0 != id);
 	}
 
-	int setDiscretizationMode(DiscretizationMode mode)
+	Field getDensityField()
 	{
-		return Cmiss_graphic_element_attributes_set_discretization_mode(id, static_cast<Cmiss_graphics_xi_discretization_mode>(mode));
+		return Field(Cmiss_graphic_sampling_attributes_get_density_field(id));
+	}
+
+	int setDensityField(Field& densityField)
+	{
+		return Cmiss_graphic_sampling_attributes_set_density_field(id, densityField.getId());
+	}
+
+	int getLocation(int valuesCount, double *valuesOut)
+	{
+		return Cmiss_graphic_sampling_attributes_get_location(id, valuesCount, valuesOut);
+	}
+
+	int setLocation(int valuesCount, const double *valuesIn)
+	{
+		return Cmiss_graphic_sampling_attributes_set_location(id, valuesCount, valuesIn);
+	}
+
+	Element::PointSampleMode getMode()
+	{
+		return static_cast<Element::PointSampleMode>(Cmiss_graphic_sampling_attributes_get_mode(id));
+	}
+
+	int setMode(Element::PointSampleMode sampleMode)
+	{
+		return Cmiss_graphic_sampling_attributes_set_mode(id,
+			static_cast<Cmiss_element_point_sample_mode>(sampleMode));
 	}
 
 };
 
-inline GraphicElementAttributes Graphic::getElementAttributes()
+inline GraphicSamplingAttributes Graphic::getSamplingAttributes()
 {
-	return GraphicElementAttributes(Cmiss_graphic_get_element_attributes(id));
+	return GraphicSamplingAttributes(Cmiss_graphic_get_sampling_attributes(id));
 }
 
 } // namespace zinc

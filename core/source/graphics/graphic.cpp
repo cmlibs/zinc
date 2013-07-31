@@ -194,44 +194,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type)
 
-int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
-	enum Cmiss_graphic_attribute attribute)
-{
-	int return_code = 0;
-
-	switch (attribute)
-	{
-		case CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE:
-		{
-			return_code = (graphic_type == CMISS_GRAPHIC_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_STREAMLINES);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_GLYPH:
-		case CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_POINTS);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE:
-		{
-			return_code = 1;
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_CONTOURS) ||
-				(graphic_type == CMISS_GRAPHIC_LINES);
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_graphic_type_uses_attribute.  Unrecognised attribute %d", attribute);
-		} break;
-	}
-	return return_code;
-}
-
 struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 	enum Cmiss_graphic_type graphic_type)
 {
@@ -310,18 +272,18 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION;
 				break;
 			}
-
-			/* for element_points only */
-			graphic->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
-			graphic->xi_point_density_field = (struct Computed_field *)NULL;
-			graphic->native_discretization_field=(struct FE_field *)NULL;
-			graphic->tessellation=NULL;
+			// for element sampling: element points, streamlines
+			graphic->sample_mode = CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES;
+			graphic->sample_density_field = 0;
+			for (int i = 0; i < 3; i++)
+			{
+				graphic->sample_location[i] = 0.0;
+			}
+			// for tessellating and sampling elements
+			graphic->native_discretization_field = 0;
+			graphic->tessellation = 0;
 			/* for settings starting in a particular element */
 			graphic->seed_element=(struct FE_element *)NULL;
-			/* for settings requiring an exact xi location */
-			graphic->seed_xi[0]=0.5;
-			graphic->seed_xi[1]=0.5;
-			graphic->seed_xi[2]=0.5;
 			/* for streamlines only */
 			graphic->stream_vector_field=(struct Computed_field *)NULL;
 			graphic->streamlines_track_direction = CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK;
@@ -433,10 +395,7 @@ int DESTROY(Cmiss_graphic)(
 		{
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
 		}
-		if (graphic->xi_point_density_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->xi_point_density_field));
-		}
+		Cmiss_field_destroy(&(graphic->sample_density_field));
 		if (graphic->native_discretization_field)
 		{
 			DEACCESS(FE_field)(&(graphic->native_discretization_field));
@@ -924,21 +883,21 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								for (i = 0; i < 3; i++)
 								{
 									element_point_ranges_identifier.exact_xi[i] =
-										graphic->seed_xi[i];
+										graphic->sample_location[i];
 								}
 								if (FE_element_get_xi_points(element,
-									graphic->xi_discretization_mode, number_in_xi,
+									graphic->sample_mode, number_in_xi,
 									element_point_ranges_identifier.exact_xi,
 									graphic_to_object_data->field_cache,
 									graphic_to_object_data->rc_coordinate_field,
-									graphic->xi_point_density_field,
+									graphic->sample_density_field,
 									&number_of_xi_points, &xi_points))
 								{
 									get_FE_element_identifier(element, &cm);
 									element_graphics_name = cm.number;
 									top_level_xi_point_numbers = (int *)NULL;
-									if (XI_DISCRETIZATION_CELL_CORNERS ==
-										graphic->xi_discretization_mode)
+									if (CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS ==
+										graphic->sample_mode)
 									{
 										FE_element_convert_xi_points_cell_corners_to_top_level(
 											element, top_level_element, top_level_number_in_xi,
@@ -959,8 +918,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									element_point_ranges_identifier.element = use_element;
 									element_point_ranges_identifier.top_level_element=
 										top_level_element;
-									element_point_ranges_identifier.xi_discretization_mode =
-										graphic->xi_discretization_mode;
+									element_point_ranges_identifier.sample_mode =
+										graphic->sample_mode;
 									use_element_dimension = get_FE_element_dimension(use_element);
 									for (i = 0; i < use_element_dimension; i++)
 									{
@@ -1025,21 +984,17 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					} break;
 					case CMISS_GRAPHIC_STREAMLINES:
 					{
-						/* use local copy of seed_xi since tracking function updates it */
-						initial_xi[0] = graphic->seed_xi[0];
-						initial_xi[1] = graphic->seed_xi[1];
-						initial_xi[2] = graphic->seed_xi[2];
+						/* use local copy of sample_location since tracking function updates it */
 						for (i = 0; i < 3; i++)
 						{
-							element_point_ranges_identifier.exact_xi[i] =
-								graphic->seed_xi[i];
+							initial_xi[i] =  element_point_ranges_identifier.exact_xi[i] = graphic->sample_location[i];
 						}
 						if (FE_element_get_xi_points(element,
-							graphic->xi_discretization_mode, number_in_xi,
+							graphic->sample_mode, number_in_xi,
 							element_point_ranges_identifier.exact_xi,
 							graphic_to_object_data->field_cache,
 							graphic_to_object_data->rc_coordinate_field,
-							graphic->xi_point_density_field,
+							graphic->sample_density_field,
 							&number_of_xi_points, &xi_points))
 						{
 							switch (graphic->line_shape)
@@ -1788,7 +1743,7 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 void Cmiss_graphic_update_graphics_object_trivial_glyph(struct Cmiss_graphic *graphic)
 {
 	if (graphic && graphic->graphics_object &&
-		(Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH)))
+		(CMISS_GRAPHIC_POINTS == graphic->graphic_type))
 	{
 		if (graphic->glyph)
 		{
@@ -1817,7 +1772,7 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 		set_GT_object_selected_material(graphic->graphics_object,
 			graphic->selected_material);
 		set_GT_object_Spectrum(graphic->graphics_object, graphic->spectrum);
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
+		if (CMISS_GRAPHIC_POINTS == graphic->graphic_type)
 		{
 			Cmiss_graphic_update_graphics_object_trivial_glyph(graphic);
 			set_GT_object_glyph_repeat_mode(graphic->graphics_object, graphic->glyph_repeat_mode);
@@ -1836,10 +1791,7 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 			set_GT_object_glyph_label_offset(graphic->graphics_object, label_offset);
 			set_GT_object_glyph_label_text(graphic->graphics_object, graphic->label_text);
 		}
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
-		{
-			set_GT_object_surface_render_type(graphic->graphics_object, graphic->render_type);
-		}
+		set_GT_object_surface_render_type(graphic->graphics_object, graphic->render_type);
 		return_code = 1;
 	}
 	return return_code;
@@ -2378,18 +2330,16 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 		{
 			append_string(&graphic_string," ",&error);
-			append_string(&graphic_string, ENUMERATOR_STRING(Xi_discretization_mode)(
-				graphic->xi_discretization_mode), &error);
-			if (XI_DISCRETIZATION_EXACT_XI != graphic->xi_discretization_mode)
+			append_string(&graphic_string, ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(
+				graphic->sample_mode), &error);
+			if (CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION != graphic->sample_mode)
 			{
-				if ((XI_DISCRETIZATION_CELL_DENSITY ==
-					graphic->xi_discretization_mode) ||
-					(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode))
+				if (CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == graphic->sample_mode)
 				{
 					append_string(&graphic_string, " density ", &error);
-					if (graphic->xi_point_density_field)
+					if (graphic->sample_density_field)
 					{
-						if (GET_NAME(Computed_field)(graphic->xi_point_density_field,&name))
+						if (GET_NAME(Computed_field)(graphic->sample_density_field,&name))
 						{
 							/* put quotes around name if it contains special characters */
 							make_valid_token(&name);
@@ -2445,10 +2395,10 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		if ((domain_dimension > 0) && (
 			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
-			(XI_DISCRETIZATION_EXACT_XI == graphic->xi_discretization_mode))
+			(CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION == graphic->sample_mode))
 		{
 			sprintf(temp_string," xi %g,%g,%g",
-				graphic->seed_xi[0],graphic->seed_xi[1],graphic->seed_xi[2]);
+				graphic->sample_location[0],graphic->sample_location[1],graphic->sample_location[2]);
 			append_string(&graphic_string,temp_string,&error);
 		}
 
@@ -2585,12 +2535,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				DEALLOCATE(name);
 			}
 			/* for surfaces rendering */
-			if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
-			{
-				append_string(&graphic_string," ",&error);
-				append_string(&graphic_string,
-					ENUMERATOR_STRING(Cmiss_graphics_render_type)(graphic->render_type),&error);
-			}
+			append_string(&graphic_string," ",&error);
+			append_string(&graphic_string,
+				ENUMERATOR_STRING(Cmiss_graphics_render_type)(graphic->render_type),&error);
 		}
 		if (error)
 		{
@@ -3851,10 +3798,9 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		/* for graphics using a sampling density field only */
 		else if (((CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
-			((XI_DISCRETIZATION_CELL_DENSITY == graphic->xi_discretization_mode) ||
-				(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode)) &&
+			(CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == graphic->sample_mode) &&
 			Computed_field_or_ancestor_satisfies_condition(
-				graphic->xi_point_density_field, conditional_function, user_data))
+				graphic->sample_density_field, conditional_function, user_data))
 		{
 			return_code = 1;
 		}
@@ -4137,71 +4083,6 @@ int Cmiss_graphic_set_render_type(
 
 } /* Cmiss_graphic_set_render_type */
 
-int Cmiss_graphic_get_xi_discretization(
-	struct Cmiss_graphic *graphic,
-	enum Xi_discretization_mode *xi_discretization_mode,
-	struct Computed_field **xi_point_density_field)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_xi_discretization);
-	if (graphic &&
-		((CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
-	{
-		if (xi_discretization_mode)
-		{
-			*xi_discretization_mode = graphic->xi_discretization_mode;
-		}
-		if (xi_point_density_field)
-		{
-			*xi_point_density_field = graphic->xi_point_density_field;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_xi_discretization.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_xi_discretization */
-
-int Cmiss_graphic_set_xi_discretization(
-	struct Cmiss_graphic *graphic,
-	enum Xi_discretization_mode xi_discretization_mode,
-	struct Computed_field *xi_point_density_field)
-{
-	int uses_density_field, return_code;
-
-	ENTER(Cmiss_graphic_set_xi_discretization);
-	uses_density_field =
-		(XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
-		(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode);
-
-	if (graphic && ((!uses_density_field && !xi_point_density_field) ||
-		(uses_density_field && (!xi_point_density_field ||
-			Computed_field_is_scalar(xi_point_density_field, (void *)NULL)))))
-	{
-		graphic->xi_discretization_mode = xi_discretization_mode;
-		REACCESS(Computed_field)(&(graphic->xi_point_density_field),
-			xi_point_density_field);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_xi_discretization.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_xi_discretization */
-
 int Cmiss_graphic_copy_without_graphics_object(
 	struct Cmiss_graphic *destination, struct Cmiss_graphic *source)
 {
@@ -4330,10 +4211,16 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->overlay_flag = source->overlay_flag;
 		destination->overlay_order = source->overlay_order;
 
-		/* for element_points only */
-		destination->xi_discretization_mode=source->xi_discretization_mode;
-		REACCESS(Computed_field)(&(destination->xi_point_density_field),
-			source->xi_point_density_field);
+		// for element sampling: element points, streamlines
+		destination->sample_mode=source->sample_mode;
+		REACCESS(Computed_field)(&(destination->sample_density_field),
+			source->sample_density_field);
+		for (int i = 0; i < 3; i++)
+		{
+			destination->sample_location[i] = source->sample_location[i];
+		}
+
+		// for tessellating and sampling elements
 		REACCESS(FE_field)(&(destination->native_discretization_field),
 			source->native_discretization_field);
 		REACCESS(Cmiss_tessellation)(&(destination->tessellation),
@@ -4342,10 +4229,6 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* for graphic starting in a particular element */
 		REACCESS(FE_element)(&(destination->seed_element),
 			source->seed_element);
-		/* for graphic requiring an exact xi location */
-		destination->seed_xi[0]=source->seed_xi[0];
-		destination->seed_xi[1]=source->seed_xi[1];
-		destination->seed_xi[2]=source->seed_xi[2];
 		/* for streamlines only */
 		REACCESS(Computed_field)(&(destination->stream_vector_field),
 			source->stream_vector_field);
@@ -4761,33 +4644,24 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 					second_graphic->native_discretization_field);
 		}
 
-		/* for element_points only */
+		// for element sampling: element points, streamlines
 		if (return_code && (0 < domain_dimension) && (
 			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
 			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 		{
-			return_code=
-				(graphic->xi_discretization_mode==
-					second_graphic->xi_discretization_mode)&&
-				(graphic->xi_point_density_field==
-					second_graphic->xi_point_density_field);
+			return_code = (graphic->sample_mode == second_graphic->sample_mode) &&
+				((graphic->sample_mode != CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON) ||
+					(graphic->sample_density_field == second_graphic->sample_density_field)) &&
+				((graphic->sample_mode != CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION) ||
+					((graphic->sample_location[0] == second_graphic->sample_location[0]) &&
+					 (graphic->sample_location[1] == second_graphic->sample_location[1]) &&
+					 (graphic->sample_location[2] == second_graphic->sample_location[2])));
 		}
 		/* for graphic starting in a particular element */
 		if (return_code&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 		{
 			return_code=
 				(graphic->seed_element==second_graphic->seed_element);
-		}
-		/* for graphic requiring an exact xi location */
-		if (return_code && (0 < domain_dimension) && (
-			(CMISS_GRAPHIC_POINTS == graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
-			(graphic->xi_discretization_mode == XI_DISCRETIZATION_EXACT_XI))
-		{
-			return_code=
-				(graphic->seed_xi[0]==second_graphic->seed_xi[0])&&
-				(graphic->seed_xi[1]==second_graphic->seed_xi[1])&&
-				(graphic->seed_xi[2]==second_graphic->seed_xi[2]);
 		}
 		/* for streamlines only */
 		if (return_code&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
@@ -5309,58 +5183,6 @@ For graphic starting in a particular element.
 	return (return_code);
 } /* Cmiss_graphic_set_seed_element */
 
-int Cmiss_graphic_get_seed_xi(struct Cmiss_graphic *graphic,
-	Triple seed_xi)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_get_seed_xi);
-	if (graphic&&seed_xi&&(
-		(CMISS_GRAPHIC_POINTS==graphic->graphic_type)||
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
-	{
-		seed_xi[0]=graphic->seed_xi[0];
-		seed_xi[1]=graphic->seed_xi[1];
-		seed_xi[2]=graphic->seed_xi[2];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_seed_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_seed_xi */
-
-int Cmiss_graphic_set_seed_xi(struct Cmiss_graphic *graphic,
-	Triple seed_xi)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_seed_xi);
-	if (graphic&&seed_xi&&(
-		(CMISS_GRAPHIC_POINTS==graphic->graphic_type)||
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
-	{
-		graphic->seed_xi[0]=seed_xi[0];
-		graphic->seed_xi[1]=seed_xi[1];
-		graphic->seed_xi[2]=seed_xi[2];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_seed_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_seed_xi */
-
 int Cmiss_graphic_get_line_width(struct Cmiss_graphic *graphic)
 {
 	int line_width;
@@ -5836,9 +5658,9 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
 		}
-		if (graphic->xi_point_density_field)
+		if (graphic->sample_density_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->xi_point_density_field));
+			DEACCESS(Computed_field)(&(graphic->sample_density_field));
 		}
 		if (graphic->native_discretization_field)
 		{
@@ -5959,9 +5781,14 @@ Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic)
 	return 0;
 }
 
-int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
+int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic_address)
 {
-	return DEACCESS(Cmiss_graphic)(graphic);
+	if (graphic_address)
+	{
+		DEACCESS(Cmiss_graphic)(graphic_address);
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }
 
 class Cmiss_graphic_type_conversion
@@ -7097,52 +6924,127 @@ int Cmiss_graphic_point_attributes_set_signed_scale_field(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphic_element_attributes_id Cmiss_graphic_get_element_attributes(
+Cmiss_graphic_sampling_attributes_id Cmiss_graphic_get_sampling_attributes(
 	Cmiss_graphic_id graphic)
 {
-	if (graphic &&
-		(graphic->graphic_type == CMISS_GRAPHIC_POINTS))
+	if (graphic && ((graphic->graphic_type == CMISS_GRAPHIC_POINTS) ||
+		(graphic->graphic_type == CMISS_GRAPHIC_STREAMLINES)))
 	{
 		Cmiss_graphic_access(graphic);
-		return reinterpret_cast<Cmiss_graphic_element_attributes_id>(graphic);
+		return reinterpret_cast<Cmiss_graphic_sampling_attributes_id>(graphic);
 	}
-
 	return 0;
 }
 
-Cmiss_graphic_element_attributes_id Cmiss_graphic_element_attributes_access(
-	Cmiss_graphic_element_attributes_id element_attributes)
+Cmiss_graphic_sampling_attributes_id Cmiss_graphic_sampling_attributes_access(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes)
 {
-	Cmiss_graphic_access(reinterpret_cast<Cmiss_graphic_id>(element_attributes));
-	return element_attributes;
+	Cmiss_graphic_access(reinterpret_cast<Cmiss_graphic_id>(sampling_attributes));
+	return sampling_attributes;
 }
 
-int Cmiss_graphic_element_attributes_destroy(
-	Cmiss_graphic_element_attributes_id *element_attributes_address)
+int Cmiss_graphic_sampling_attributes_destroy(
+	Cmiss_graphic_sampling_attributes_id *sampling_attributes_address)
 {
-	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(element_attributes_address));
+	return Cmiss_graphic_destroy(reinterpret_cast<Cmiss_graphic_id *>(sampling_attributes_address));
 }
 
-int Cmiss_graphic_element_attributes_set_discretization_mode(
-	Cmiss_graphic_element_attributes_id element_attributes, Cmiss_graphics_xi_discretization_mode mode)
+Cmiss_field_id Cmiss_graphic_sampling_attributes_get_density_field(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes)
 {
-	int return_code = CMISS_ERROR_ARGUMENT;
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic && graphic->sample_density_field)
+		return ACCESS(Computed_field)(graphic->sample_density_field);
+	return 0;
+}
 
-	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(element_attributes);
-	if (graphic)
+int Cmiss_graphic_sampling_attributes_set_density_field(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	Cmiss_field_id sample_density_field)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic && ((!sample_density_field) ||
+		Computed_field_is_scalar(sample_density_field, (void *)0)))
 	{
-		return_code = CMISS_OK;
-		bool changed = false;
-		if (graphic->xi_discretization_mode != static_cast<Xi_discretization_mode>(mode))
+		if (sample_density_field != graphic->sample_density_field)
 		{
-			changed = true;
-			graphic->xi_discretization_mode = static_cast<Xi_discretization_mode>(mode);
+			REACCESS(Computed_field)(&(graphic->sample_density_field), sample_density_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_sampling_attributes_get_location(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	int valuesCount, double *valuesOut)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic && (0 < valuesCount) && valuesOut)
+	{
+		const int count = (valuesCount > 3) ? 3 : valuesCount;
+		for (int i = 0; i < count; ++i)
+		{
+			valuesOut[i] = static_cast<double>(graphic->sample_location[i]);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_graphic_sampling_attributes_set_location(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	int valuesCount, const double *valuesIn)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic && (0 < valuesCount) && valuesIn)
+	{
+		bool changed = false;
+		FE_value value = 0.0;
+		for (int i = 2; 0 <= i; --i)
+		{
+			if (i < valuesCount)
+			{
+				value = static_cast<FE_value>(valuesIn[i]);
+			}
+			if (graphic->sample_location[i] != value)
+			{
+				graphic->sample_location[i] = value;
+				changed = true;
+			}
 		}
 		if (changed)
 		{
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
+		return CMISS_OK;
 	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
-	return return_code;
+enum Cmiss_element_point_sample_mode Cmiss_graphic_sampling_attributes_get_mode(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic)
+		return graphic->sample_mode;
+	return CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID;
+}
+
+int Cmiss_graphic_sampling_attributes_set_mode(
+	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+	enum Cmiss_element_point_sample_mode sample_mode)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(sampling_attributes);
+	if (graphic && (0 != ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(sample_mode)))
+	{
+		if (sample_mode != graphic->sample_mode)
+		{
+			graphic->sample_mode = sample_mode;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
 }

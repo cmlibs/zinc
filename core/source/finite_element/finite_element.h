@@ -336,7 +336,6 @@ coordinates from face coordinates.
 
 DECLARE_LIST_TYPES(FE_element_shape);
 
-struct Cmiss_element;
 #define FE_element Cmiss_element
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
@@ -350,6 +349,8 @@ variables.
 DECLARE_LIST_TYPES(FE_element);
 
 DECLARE_CHANGE_LOG_TYPES(FE_element);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_element_point_sample_mode);
 
 typedef int (*FE_element_field_component_modify)(
 	struct FE_element_field_component *,struct FE_element *,struct FE_field *,
