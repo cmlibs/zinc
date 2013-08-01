@@ -94,8 +94,6 @@ Structure for maintaining a graphical scene of region.
 	int element_divisions_size;
 	/* number of segments used around cylinders */
 	int circle_discretization;
-	/* optional native_discretization for graphics drawn with settings below */
-	struct FE_field *native_discretization_field;
 	struct Cmiss_graphics_module *graphics_module;
 	Cmiss_time_notifier *time_notifier;
 	/* callback list for transformation changes */

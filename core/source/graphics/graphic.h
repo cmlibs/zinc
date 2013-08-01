@@ -125,8 +125,8 @@ finite element group scene.
 	FE_value sample_location[3];
 
 	// for tessellating and sampling elements
-	struct FE_field *native_discretization_field;
 	struct Cmiss_tessellation *tessellation;
+	struct Cmiss_field *tessellation_field;
 
 	int overlay_flag;
 	int overlay_order;
@@ -466,16 +466,6 @@ int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
  */
 int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 	int max_dimensions, int *top_level_number_in_xi);
-
-/**
- * Returns the native_discretization field used by <graphic>.
- * For type CMISS_GRAPHIC_ELEMENT_POINTS only.
- */
-struct FE_field *Cmiss_graphic_get_native_discretization_field(
-	struct Cmiss_graphic *graphic);
-
-int Cmiss_graphic_set_native_discretization_field(
-	  struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field);
 
 /**
  * Get iso surface decimation threshold.

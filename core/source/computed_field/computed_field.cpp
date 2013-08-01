@@ -2857,11 +2857,6 @@ bool Computed_field_core::is_non_linear() const
 			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_core::is_non_linear.  Missing field");
-	}
 	return false;
 }
 

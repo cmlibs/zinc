@@ -219,6 +219,29 @@ ZINC_API int Cmiss_graphic_set_tessellation(
 	Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
 
 /**
+ * Gets the field controlling tessellation quality.
+ *
+ * @param graphic  The graphic to query.
+ * @return  Handle to field, or 0 if error. Up to caller to destroy handle.
+ */
+ZINC_API Cmiss_field_id Cmiss_graphic_get_tessellation_field(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Sets a field which sets tessellation quality to match its native refinement
+ * in any element (if any) and also apply refinement factors if the field
+ * function is non-linear at its native refinement.
+ * If no tessellation field is supplied, the coordinate field is checked for
+ * non-linearity of function OR coordinate system, but not native refinement.
+ *
+ * @param graphic  The graphic to modify.
+ * @param tessellation_field  The field which sets tessellation quality.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_tessellation_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id tessellation_field);
+
+/**
  * Get the texture coordinate field of the graphic.
  * Caller must destroy reference.
  *

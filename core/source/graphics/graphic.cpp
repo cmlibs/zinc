@@ -280,8 +280,8 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 				graphic->sample_location[i] = 0.0;
 			}
 			// for tessellating and sampling elements
-			graphic->native_discretization_field = 0;
 			graphic->tessellation = 0;
+			graphic->tessellation_field = 0;
 			/* for settings starting in a particular element */
 			graphic->seed_element=(struct FE_element *)NULL;
 			/* for streamlines only */
@@ -396,10 +396,7 @@ int DESTROY(Cmiss_graphic)(
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
 		}
 		Cmiss_field_destroy(&(graphic->sample_density_field));
-		if (graphic->native_discretization_field)
-		{
-			DEACCESS(FE_field)(&(graphic->native_discretization_field));
-		}
+		Cmiss_field_destroy(&(graphic->tessellation_field));
 		if (graphic->tessellation)
 		{
 			DEACCESS(Cmiss_tessellation)(&(graphic->tessellation));
@@ -541,7 +538,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	struct CM_element_information cm;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element,*use_element;
-	struct FE_field *native_discretization_field;
 	struct Cmiss_graphic *graphic;
 	struct GT_glyph_set *glyph_set;
 	struct GT_polyline *polyline;
@@ -603,8 +599,11 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				top_level_number_in_xi[dim] = graphic_to_object_data->top_level_number_in_xi[dim];
 			}
 			top_level_element = (struct FE_element *)NULL;
-			native_discretization_field = graphic->native_discretization_field;
-
+			struct FE_field *native_discretization_field = 0;
+			if (graphic->tessellation_field)
+			{
+				Computed_field_get_type_finite_element(graphic->tessellation_field, &native_discretization_field);
+			}
 			if (get_FE_element_discretization(element,
 				graphic->subgroup_field ? Cmiss_element_conditional_field_is_true : 0,
 				graphic->subgroup_field ? (void *)&conditional_field_data : 0,
@@ -2362,21 +2361,14 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 		if (domain_dimension > 0)
 		{
-			if (graphic->native_discretization_field)
+			if (graphic->tessellation_field)
 			{
 				append_string(&graphic_string," native_discretization ", &error);
-				if (GET_NAME(FE_field)(graphic->native_discretization_field,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&graphic_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(graphic_string);
-					error=1;
-				}
+				name = Cmiss_field_get_name(graphic->tessellation_field);
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&graphic_string,name,&error);
+				DEALLOCATE(name);
 			}
 		}
 
@@ -3750,7 +3742,10 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 				graphic->coordinate_field, conditional_function, user_data)) ||
 			(graphic->subgroup_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
-					graphic->subgroup_field, conditional_function, user_data))))
+					graphic->subgroup_field, conditional_function, user_data))) ||
+			(graphic->tessellation_field && 
+				(Computed_field_or_ancestor_satisfies_condition(
+					graphic->tessellation_field, conditional_function, user_data))))
 		{
 			return_code = 1;
 		}
@@ -3836,37 +3831,13 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	struct Cmiss_graphic *graphic,
 	struct CHANGE_LOG(FE_field) *fe_field_change_log)
 {
-	int fe_field_change;
-	int return_code;
-
-	ENTER(Cmiss_graphic_uses_changed_FE_field);
 	if (graphic && fe_field_change_log)
 	{
-		if (graphic->native_discretization_field &&
-			CHANGE_LOG_QUERY(FE_field)(fe_field_change_log,
-				graphic->native_discretization_field, &fe_field_change) &&
-			(CHANGE_LOG_OBJECT_UNCHANGED(FE_field) != fe_field_change))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code =
-				Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
-					graphic, Computed_field_contains_changed_FE_field,
-					(void *)fe_field_change_log);
-		}
+		return Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
+			graphic, Computed_field_contains_changed_FE_field, (void *)fe_field_change_log);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_uses_changed_FE_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_uses_changed_FE_field */
+	return 0;
+}
 
 int Cmiss_graphic_Computed_field_change(
 	struct Cmiss_graphic *graphic, void *change_data_void)
@@ -4221,10 +4192,10 @@ int Cmiss_graphic_copy_without_graphics_object(
 		}
 
 		// for tessellating and sampling elements
-		REACCESS(FE_field)(&(destination->native_discretization_field),
-			source->native_discretization_field);
 		REACCESS(Cmiss_tessellation)(&(destination->tessellation),
 			source->tessellation);
+		REACCESS(Computed_field)(&(destination->tessellation_field),
+			source->tessellation_field);
 		REACCESS(Computed_field)(&(destination->label_density_field),source->label_density_field);
 		/* for graphic starting in a particular element */
 		REACCESS(FE_element)(&(destination->seed_element),
@@ -4640,8 +4611,7 @@ int Cmiss_graphic_same_non_trivial(Cmiss_graphic *graphic,
 		{
 			return_code =
 				(graphic->tessellation == second_graphic->tessellation) &&
-				(graphic->native_discretization_field ==
-					second_graphic->native_discretization_field);
+				(graphic->tessellation_field == second_graphic->tessellation_field);
 		}
 
 		// for element sampling: element points, streamlines
@@ -5009,7 +4979,7 @@ int Cmiss_graphic_set_subgroup_field(
 	struct Cmiss_graphic *graphic, struct Computed_field *subgroup_field)
 {
 	if (graphic && ((0 == subgroup_field) ||
-		(1 == Computed_field_get_number_of_components(subgroup_field))))
+		Computed_field_is_scalar(subgroup_field, (void*)0)))
 	{
 		if (subgroup_field != graphic->subgroup_field)
 		{
@@ -5046,6 +5016,29 @@ int Cmiss_graphic_set_tessellation(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+Cmiss_field_id Cmiss_graphic_get_tessellation_field(
+	Cmiss_graphic_id graphic)
+{
+	if (graphic && graphic->tessellation_field)
+		return ACCESS(Computed_field)(graphic->tessellation_field);
+	return 0;
+}
+
+int Cmiss_graphic_set_tessellation_field(Cmiss_graphic_id graphic,
+	Cmiss_field_id tessellation_field)
+{
+	if (graphic)
+	{
+		if (tessellation_field != graphic->tessellation_field)
+		{
+			REACCESS(Computed_field)(&(graphic->tessellation_field), tessellation_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 	int max_dimensions, int *top_level_number_in_xi)
 {
@@ -5061,14 +5054,16 @@ int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 		{
 			Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
 				max_dimensions, top_level_number_in_xi);
-			if (graphic->coordinate_field)
+			Cmiss_field *tessellation_field = graphic->tessellation_field ?
+				graphic->tessellation_field : graphic->coordinate_field;
+			if (tessellation_field)
 			{
-				// refine if coordinate field is non-linear
+				// refine if tessellation field is non-linear
 				// first check if its coordinate system is non-linear (cheaper)
-				Coordinate_system_type type = get_coordinate_system_type(
-					Computed_field_get_coordinate_system(graphic->coordinate_field));
-				if (Coordinate_system_type_is_non_linear(type) ||
-					Computed_field_is_non_linear(graphic->coordinate_field))
+				if (((tessellation_field == graphic->coordinate_field) &&
+					Coordinate_system_type_is_non_linear(get_coordinate_system_type(
+						Computed_field_get_coordinate_system(tessellation_field)))) ||
+					Computed_field_is_non_linear(tessellation_field))
 				{
 					int *refinement_factors = new int[max_dimensions];
 					if (Cmiss_tessellation_get_refinement_factors(graphic->tessellation,
@@ -5091,47 +5086,6 @@ int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 		return_code = 0;
 	}
 	return return_code;
-}
-
-struct FE_field *Cmiss_graphic_get_native_discretization_field(
-	struct Cmiss_graphic *graphic)
-{
-	struct FE_field *native_discretization_field;
-
-	ENTER(Cmiss_graphic_get_native_discretization_field);
-	if (graphic)
-	{
-		native_discretization_field=graphic->native_discretization_field;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_native_discretization_field.  "
-			"Invalid argument(s)");
-		native_discretization_field=(struct FE_field *)NULL;
-	}
-	LEAVE;
-
-	return (native_discretization_field);
-} /* Cmiss_graphic_get_native_discretization_field */
-
-int Cmiss_graphic_set_native_discretization_field(
-	struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field)
-{
-	int return_code;
-	if (graphic)
-	{
-		return_code=1;
-		REACCESS(FE_field)(&(graphic->native_discretization_field),
-			native_discretization_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_native_discretization_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	return (return_code);
 }
 
 struct FE_element *Cmiss_graphic_get_seed_element(
@@ -5658,14 +5612,8 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->subgroup_field));
 		}
-		if (graphic->sample_density_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->sample_density_field));
-		}
-		if (graphic->native_discretization_field)
-		{
-			DEACCESS(FE_field)(&(graphic->native_discretization_field));
-		}
+		Cmiss_field_destroy(&(graphic->sample_density_field));
+		Cmiss_field_destroy(&(graphic->tessellation_field));
 		if (graphic->stream_vector_field)
 		{
 			DEACCESS(Computed_field)(&(graphic->stream_vector_field));

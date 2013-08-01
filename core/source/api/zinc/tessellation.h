@@ -306,7 +306,10 @@ ZINC_API int Cmiss_tessellation_get_refinement_factors(
 /**
  * Sets the refinements to be used in product with the minimum divisions
  * to approximate curves in each element dimension for fine tessellation.
- * To be used e.g. where fields vary non-linearly over elements.
+ * The refinement factors are applied whenever the basis functions of the
+ * graphic's coordinate field (replaced by tessellation field if specified) are
+ * non-linear anywhere. If there is no tessellation field or if it matches the
+ * coordinate field, a non-linear coordinate system also triggers refinement.
  * The default refinement_factors value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
