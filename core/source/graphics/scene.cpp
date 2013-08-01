@@ -264,7 +264,6 @@ struct Cmiss_scene *CREATE(Cmiss_scene)(struct Cmiss_region *cmiss_region,
 				cmiss_scene->element_divisions = NULL;
 				cmiss_scene->element_divisions_size = 0;
 				cmiss_scene->circle_discretization = 0;
-				cmiss_scene->native_discretization_field = (struct FE_field *)NULL;
 				cmiss_scene->default_coordinate_field = (struct Computed_field *)NULL;
 				cmiss_scene->visibility_flag = true;
 				cmiss_scene->update_callback_list=
@@ -823,13 +822,6 @@ int Cmiss_scene_set_graphics_defaults_gfx_modify(struct Cmiss_scene *scene,
 			Cmiss_tessellation_destroy(&tessellation);
 			Cmiss_tessellation_destroy(&currentTessellation);
 			Cmiss_tessellation_module_destroy(&tessellationModule);
-		}
-
-		if ((0 != scene->native_discretization_field) &&
-			(0 < Cmiss_graphic_get_domain_dimension(graphic)) &&
-			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
-		{
-			Cmiss_graphic_set_native_discretization_field(graphic, scene->native_discretization_field);
 		}
 	}
 	else
@@ -1909,7 +1901,6 @@ static void Cmiss_scene_copy_general_settings(struct Cmiss_scene *destination,
 	}
 	destination->circle_discretization = source->circle_discretization;
 	REACCESS(Computed_field)(&(destination->default_coordinate_field), source->default_coordinate_field);
-	REACCESS(FE_field)(&(destination->native_discretization_field), source->native_discretization_field);
 }
 
 int Cmiss_scene_copy(struct Cmiss_scene *destination,
@@ -2785,10 +2776,6 @@ int DESTROY(Cmiss_scene)(
 		{
 			DEALLOCATE(cmiss_scene->element_divisions);
 		}
-		if (cmiss_scene->native_discretization_field)
-		{
-			DEACCESS(FE_field)(&(cmiss_scene->native_discretization_field));
-		}
 		if (cmiss_scene->list_of_graphics)
 		{
 			DESTROY(LIST(Cmiss_graphic))(
@@ -3117,10 +3104,6 @@ int Cmiss_scene_detach_fields(struct Cmiss_scene *scene)
 			if (scene->default_coordinate_field)
 			{
 				DEACCESS(Computed_field)(&(scene->default_coordinate_field));
-			}
-			if (scene->native_discretization_field)
-			{
-				DEACCESS(FE_field)(&(scene->native_discretization_field));
 			}
 			if (scene->list_of_graphics)
 			{

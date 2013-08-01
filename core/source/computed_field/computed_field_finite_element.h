@@ -67,15 +67,13 @@ Iterator/conditional function returning true if <field> is read only and a
 wrapper for an FE_field.
 ==============================================================================*/
 
+/**
+ * If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
+ * wrapped by it is returned, or 0 with no errors if not of correct type.
+ * The returned fe_field is NOT accessed.
+ */
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field);
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
 
 /*******************************************************************************
  * Iterator/conditional function returning true if <field> is the finite_element

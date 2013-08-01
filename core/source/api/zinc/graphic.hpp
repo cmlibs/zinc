@@ -230,6 +230,16 @@ public:
 		return Cmiss_graphic_set_tessellation(id, tessellation.getId());
 	}
 
+	Field getTessellationField()
+	{
+		return Field(Cmiss_graphic_get_tessellation_field(id));
+	}
+
+	int setTessellationField(Field& tessellationField)
+	{
+		return Cmiss_graphic_set_tessellation_field(id, tessellationField.getId());
+	}
+
 	enum RenderType getRenderType()
 	{
 		return static_cast<RenderType>(Cmiss_graphic_get_render_type(id));

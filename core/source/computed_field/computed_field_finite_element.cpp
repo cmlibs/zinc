@@ -1450,33 +1450,15 @@ Returns true if <field> has the appropriate static type string.
 
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
 {
 	Computed_field_finite_element* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_finite_element);
-	if (field&&(core=dynamic_cast<Computed_field_finite_element*>(field->core)))
+	if (field && (0 != (core = dynamic_cast<Computed_field_finite_element*>(field->core))))
 	{
-		*fe_field=core->fe_field;
-		return_code=1;
+		*fe_field = core->fe_field;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_finite_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_finite_element */
+	return 0;
+}
 
 namespace {
 
@@ -2379,7 +2361,6 @@ private:
 	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
 
 	int has_numerical_components();
-
 };
 
 Computed_field_core* Computed_field_embedded::copy()
@@ -3113,6 +3094,11 @@ private:
 	int has_multiple_times();
 
 	int has_numerical_components();
+
+	virtual bool is_non_linear() const
+	{
+		return FE_field_uses_non_linear_basis(fe_field) == 1; // could check max order
+	}
 };
 
 Computed_field_basis_derivative::~Computed_field_basis_derivative()
