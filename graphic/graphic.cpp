@@ -379,6 +379,55 @@ TEST(Cmiss_graphic_api, tessellation_cpp)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setTessellation(noTessellation));
 }
 
+TEST(Cmiss_graphic_api, tessellation_field)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_graphic_contours_base_cast(Cmiss_scene_create_graphic_contours(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_tessellation_field(gr));
+
+	const double value = 1.0;
+	Cmiss_field_id tessellation_field = Cmiss_field_module_create_constant(zinc.fm, 1, &value);
+	EXPECT_NE(static_cast<Cmiss_field *>(0), tessellation_field);
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation_field(gr, tessellation_field));
+
+	Cmiss_field_id temp_tessellation_field = Cmiss_graphic_get_tessellation_field(gr);
+	EXPECT_EQ(tessellation_field, temp_tessellation_field);
+	Cmiss_field_destroy(&temp_tessellation_field);
+	Cmiss_field_destroy(&tessellation_field);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_tessellation_field(gr, 0));
+	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_get_tessellation_field(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(Cmiss_graphic_api, tessellation_field_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicContours gr = zinc.scene.createGraphicContours();
+	EXPECT_TRUE(gr.isValid());
+
+	Field tempTessellationField = gr.getTessellationField();
+	EXPECT_FALSE(tempTessellationField.isValid());
+
+	const double value = 1.0;
+	Field tessellationField = zinc.fm.createConstant(1, &value);
+	EXPECT_TRUE(tessellationField.isValid());
+	EXPECT_EQ(CMISS_OK, gr.setTessellationField(tessellationField));
+
+	tempTessellationField = gr.getTessellationField();
+	EXPECT_EQ(tessellationField.getId(), tempTessellationField.getId());
+
+	Field noField;
+	EXPECT_EQ(CMISS_OK, gr.setTessellationField(noField)); // clear tessellation field
+	tempTessellationField = gr.getTessellationField();
+	EXPECT_FALSE(tempTessellationField.isValid());
+}
+
 TEST(Cmiss_graphic_api, texture_coordinate_field)
 {
 	ZincTestSetup zinc;
