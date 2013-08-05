@@ -8,6 +8,7 @@
 #include <zinc/fieldcomposite.h>
 #include <zinc/fieldconstant.h>
 #include <zinc/fieldvectoroperators.h>
+#include <zinc/graphic.h>
 #include <zinc/region.h>
 #include <zinc/spectrum.h>
 
@@ -15,6 +16,7 @@
 #include <zinc/fieldtypescomposite.hpp>
 #include <zinc/fieldtypesconstant.hpp>
 #include <zinc/fieldtypesvectoroperators.hpp>
+#include <zinc/graphic.hpp>
 #include "zinc/spectrum.hpp"
 
 #include "test_resources.h"
@@ -180,4 +182,151 @@ TEST(ZincScene, visibilityFlag)
 	EXPECT_TRUE(zinc.scene.getVisibilityFlag());
 	EXPECT_EQ(CMISS_OK, zinc.scene.setVisibilityFlag(false));
 	EXPECT_FALSE(zinc.scene.getVisibilityFlag());
+}
+
+TEST(Cmiss_scene, graphic_list)
+{
+	ZincTestSetup zinc;
+	Cmiss_graphic_id lines = Cmiss_graphic_lines_base_cast(Cmiss_scene_create_graphic_lines(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic_id>(0), lines);
+	Cmiss_graphic_id points = Cmiss_graphic_points_base_cast(Cmiss_scene_create_graphic_points(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic_id>(0), points);
+	Cmiss_graphic_id surfaces = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic_id>(0), surfaces);
+
+	Cmiss_graphic_id gr = 0;
+	gr = Cmiss_scene_get_first_graphic(zinc.scene);
+	ASSERT_EQ(lines, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, lines);
+	ASSERT_EQ(points, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, points);
+	ASSERT_EQ(surfaces, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<Cmiss_graphic_id>(0), gr);
+
+	// reverse iteration
+	gr = Cmiss_scene_get_previous_graphic(zinc.scene, points);
+	ASSERT_EQ(lines, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_previous_graphic(zinc.scene, lines);
+	ASSERT_EQ(static_cast<Cmiss_graphic_id>(0), gr);
+
+	int result;
+	ASSERT_EQ(CMISS_OK, result = Cmiss_scene_move_graphic_before(zinc.scene, surfaces, lines));
+
+	gr = Cmiss_scene_get_first_graphic(zinc.scene);
+	ASSERT_EQ(surfaces, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, surfaces);
+	ASSERT_EQ(lines, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, lines);
+	ASSERT_EQ(points, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, points);
+	ASSERT_EQ(static_cast<Cmiss_graphic_id>(0), gr);
+
+	// move to end of list
+	ASSERT_EQ(CMISS_OK, result = Cmiss_scene_move_graphic_before(zinc.scene, surfaces, static_cast<Cmiss_graphic_id>(0)));
+
+	gr = Cmiss_scene_get_first_graphic(zinc.scene);
+	ASSERT_EQ(lines, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, lines);
+	ASSERT_EQ(points, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, points);
+	ASSERT_EQ(surfaces, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<Cmiss_graphic_id>(0), gr);
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_scene_remove_graphic(zinc.scene, points));
+
+	gr = Cmiss_scene_get_first_graphic(zinc.scene);
+	ASSERT_EQ(lines, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, lines);
+	ASSERT_EQ(surfaces, gr);
+	Cmiss_graphic_destroy(&gr);
+	gr = Cmiss_scene_get_next_graphic(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<Cmiss_graphic_id>(0), gr);
+
+	// can't re-add points graphic that has been removed
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_scene_move_graphic_before(zinc.scene, points, static_cast<Cmiss_graphic_id>(0)));
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_scene_remove_all_graphics(zinc.scene));
+
+	Cmiss_graphic_destroy(&lines);
+	Cmiss_graphic_destroy(&points);
+	Cmiss_graphic_destroy(&surfaces);
+}
+
+TEST(ZincScene, graphic_list)
+{
+	ZincTestSetupCpp zinc;
+	GraphicLines lines = zinc.scene.createGraphicLines();
+	EXPECT_TRUE(lines.isValid());
+	GraphicPoints points = zinc.scene.createGraphicPoints();
+	EXPECT_TRUE(points.isValid());
+	GraphicSurfaces surfaces = zinc.scene.createGraphicSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+
+	Graphic gr;
+	gr = zinc.scene.getFirstGraphic();
+	ASSERT_EQ(lines.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(points.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(surfaces.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_FALSE(gr.isValid());
+
+	// reverse iteration
+	gr = zinc.scene.getPreviousGraphic(points);
+	ASSERT_EQ(lines.getId(), gr.getId());
+	gr = zinc.scene.getPreviousGraphic(gr);
+	ASSERT_FALSE(gr.isValid());
+
+	int result;
+	ASSERT_EQ(CMISS_OK, result = zinc.scene.moveGraphicBefore(surfaces, lines));
+
+	gr = zinc.scene.getFirstGraphic();
+	ASSERT_EQ(surfaces.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(lines.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(points.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_FALSE(gr.isValid());
+
+	// move to end of list
+	Graphic noGraphic;
+	ASSERT_EQ(CMISS_OK, result = zinc.scene.moveGraphicBefore(surfaces, noGraphic));
+
+	gr = zinc.scene.getFirstGraphic();
+	ASSERT_EQ(lines.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(points.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(surfaces.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_FALSE(gr.isValid());
+
+	ASSERT_EQ(CMISS_OK, result = zinc.scene.removeGraphic(points));
+
+	gr = zinc.scene.getFirstGraphic();
+	ASSERT_EQ(lines.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_EQ(surfaces.getId(), gr.getId());
+	gr = zinc.scene.getNextGraphic(gr);
+	ASSERT_FALSE(gr.isValid());
+
+	// can't re-add points graphic that has been removed
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = result = zinc.scene.moveGraphicBefore(points, noGraphic));
+
+	ASSERT_EQ(CMISS_OK, result = zinc.scene.removeAllGraphics());
 }
