@@ -1881,28 +1881,24 @@ char *Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic)
 
 int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_name);
-	if (graphic&&name)
+	if (graphic)
 	{
 		if (graphic->name)
 		{
 			DEALLOCATE(graphic->name);
 		}
-		graphic->name = duplicate_string(name);
-		return_code=1;
+		if (name)
+		{
+			graphic->name = duplicate_string(name);
+		}
+		else
+		{
+			graphic->name = 0;
+		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_name */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 char *Cmiss_graphic_get_summary_string(struct Cmiss_graphic *graphic)
 {

@@ -384,19 +384,21 @@ ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
  * Return the name of the graphic. Graphic does not have a name until user has
  * set it.
  *
- * @param graphic  The graphic whose name is requested.
- * @return  On success: allocated string containing graphic name. Up to caller to
- * free using Cmiss_deallocate().
+ * @param graphic  The graphic to query.
+ * @return  On success: allocated string containing name, or NULL if none.
+ * Up to caller to free using Cmiss_deallocate().
  */
 ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
 
 /**
- * Set the name of the graphic. Unlike other containers, scene can contains
- * multiple graphics with the same name.
+ * Sets the name of the graphic. Unlike other containers, scene can contain
+ * multiple graphics with the same name. New graphics default to having no name.
+ * A common use of the name is to mark the graphic for filtering, like metadata.
+ * @see Cmiss_graphics_filter_module_create_filter_graphic_name
  *
- * @param graphic  The graphic to be named.
- * @param name  The new name for the graphic.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @param graphic  The graphic to modify.
+ * @param name  The new name for the graphic, OR NULL to clear.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 
