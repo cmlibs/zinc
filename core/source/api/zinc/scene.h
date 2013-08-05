@@ -332,38 +332,34 @@ ZINC_API int Cmiss_scene_set_visibility_flag(Cmiss_scene_id scene,
 	bool visibility_flag);
 
 /**
- * Move an existing graphic in scene before ref_graphic. Both <graphic> and
- * <ref_graphic> must be from the same region.
+ * Move a graphic to the position before ref_graphic in the scene's
+ * graphic list, or last in the list if no reference graphic supplied.
+ * Earlier graphics are drawn first and in hardware rendering their pixel
+ * fragments are displayed in priority over later graphics at the same depth.
  *
- * @param scene  The handle to the scene.
- * @param graphic  Cmiss_graphic to be moved.
- * @param ref_graphic  <graphic> will be moved into the current position of this
- * 		Cmiss_graphic
+ * @param scene  The scene to modify.
+ * @param graphic  The graphic to be moved. Must be from scene.
+ * @param ref_graphic  Another graphic from this scene to insert before, or
+ * NULL to move graphic to last position in list.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_scene_move_graphic_before(Cmiss_scene_id scene,
 	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic);
 
-/***************************************************************************//**
+/**
  * Removes all graphics from the scene.
  *
- * @param scene  The handle to the scene of which the graphic is removed
- *   from.
- * @return  Status CMISS_OK if successfully remove all graphics from scene,
- * any other value on failure.
+ * @param scene  The scene to modify.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_scene_remove_all_graphics(Cmiss_scene_id scene);
 
-/***************************************************************************//**
- * Removes <graphic> from <scene> and decrements the position
- * of all subsequent graphics.
+/**
+ * Removes a graphic from scene and decrements the position of all subsequent graphics.
  *
- * @param scene  The handle to the scene of which the graphic is removed
- *   from.
- * @param graphic  The handle to a cmiss graphic object which will be removed
- *   from the scene.
- * @return  Status CMISS_OK if successfully remove graphic from scene,
- * any other value on failure.
+ * @param scene  The scene to modify.
+ * @param graphic  The graphic to be removed.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_scene_remove_graphic(Cmiss_scene_id scene,
 	Cmiss_graphic_id graphic);

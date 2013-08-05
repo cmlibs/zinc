@@ -860,26 +860,15 @@ int Cmiss_scene_add_graphic(struct Cmiss_scene *scene,
 int Cmiss_scene_remove_graphic(struct Cmiss_scene *scene,
 	struct Cmiss_graphic *graphic)
 {
-	int return_code;
-
-	ENTER(Cmiss_scene_remove_graphic);
 	if (scene && graphic && (scene == Cmiss_graphic_get_scene_private(graphic)))
 	{
 		Cmiss_graphic_set_scene_private(graphic, NULL);
-		return_code=Cmiss_graphic_remove_from_list(graphic,
-			scene->list_of_graphics);
+		Cmiss_graphic_remove_from_list(graphic, scene->list_of_graphics);
 		Cmiss_scene_changed(scene);
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_remove_graphic.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_remove_graphic */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 /***************************************************************************//**
  * Changes the contents of <graphic> to match <new_graphic>, with no change in
@@ -1583,8 +1572,7 @@ int Cmiss_region_modify_scene(struct Cmiss_region *region,
 				/* delete */
 				if (same_graphic)
 				{
-					return_code =
-						Cmiss_scene_remove_graphic(scene, same_graphic);
+					return_code = (CMISS_OK == Cmiss_scene_remove_graphic(scene, same_graphic));
 				}
 				else
 				{
@@ -1601,8 +1589,7 @@ int Cmiss_region_modify_scene(struct Cmiss_region *region,
 					{
 						/* move same_graphic to new position */
 						Cmiss_scene_remove_graphic(scene, same_graphic);
-						Cmiss_scene_add_graphic(scene, same_graphic,
-							position);
+						Cmiss_scene_add_graphic(scene, same_graphic, position);
 					}
 					/* modify same_graphic to match new ones */
 					return_code = Cmiss_scene_modify_graphic(scene,
@@ -1816,23 +1803,17 @@ int Cmiss_scene_get_graphic_position(
 	struct Cmiss_scene *scene, struct Cmiss_graphic *graphic)
 {
 	int position;
-
-	ENTER(Cmiss_scene_get_graphic_position);
 	if (scene&&graphic)
 	{
-		position=Cmiss_graphic_get_position_in_list(graphic,
+		position = Cmiss_graphic_get_position_in_list(graphic,
 			scene->list_of_graphics);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_get_graphic_position. Invalid argument(s)");
-		position=0;
+		position = 0;
 	}
-	LEAVE;
-
 	return (position);
-} /* Cmiss_scene_get_graphic_position */
+}
 
 int Cmiss_scenes_match(struct Cmiss_scene *scene1,
 	struct Cmiss_scene *scene2)
@@ -3374,39 +3355,53 @@ Cmiss_graphic_id Cmiss_scene_get_previous_graphic(Cmiss_scene_id scene,
 int Cmiss_scene_move_graphic_before(Cmiss_scene_id scene,
 	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic)
 {
-	int return_code = 0;
-	if (scene && graphic && ref_graphic &&
-		(Cmiss_graphic_get_scene_private(graphic) ==
-			Cmiss_graphic_get_scene_private(ref_graphic)) &&
-			(Cmiss_graphic_get_scene_private(graphic) == scene))
+	int return_code = CMISS_ERROR_GENERAL;
+	if (scene && graphic &&
+		(Cmiss_graphic_get_scene_private(graphic) == scene) && ((0 == ref_graphic) ||
+			(Cmiss_graphic_get_scene_private(graphic) ==
+				Cmiss_graphic_get_scene_private(ref_graphic))))
 	{
 		Cmiss_graphic_id current_graphic = ACCESS(Cmiss_graphic)(graphic);
-		int position = Cmiss_scene_get_graphic_position(scene, ref_graphic);
-		if (Cmiss_scene_remove_graphic(scene, current_graphic))
-			return_code = Cmiss_scene_add_graphic(scene, current_graphic, position);
+		const int position = Cmiss_scene_get_graphic_position(scene, ref_graphic);
+		if (CMISS_OK == Cmiss_scene_remove_graphic(scene, current_graphic))
+		{
+			if (Cmiss_scene_add_graphic(scene, current_graphic, position))
+			{
+				return_code = CMISS_OK;
+			}
+		}
 		DEACCESS(Cmiss_graphic)(&current_graphic);
+	}
+	else
+	{
+		return_code = CMISS_ERROR_ARGUMENT;
 	}
 	return return_code;
 }
 
 int Cmiss_scene_remove_all_graphics(Cmiss_scene_id scene)
 {
-	int return_code = 0;
+	int return_code = CMISS_OK;
 	if (scene)
 	{
-		return_code = 1;
 		Cmiss_scene_begin_change(scene);
-		Cmiss_graphic_id graphic = NULL;
-		while (return_code && (NULL != (graphic=
+		Cmiss_graphic_id graphic = 0;
+		while ((0 != (graphic =
 			Cmiss_scene_get_first_graphic_with_condition(scene,
-				(LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *)NULL,
-				(void *)NULL))))
+				(LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *)NULL, (void *)NULL))))
 		{
-			return_code = Cmiss_scene_remove_graphic(scene, graphic);
+			if (CMISS_OK != Cmiss_scene_remove_graphic(scene, graphic))
+			{
+				return_code = CMISS_ERROR_GENERAL;
+				break;
+			}
 		}
 		Cmiss_scene_end_change(scene);
 	}
-
+	else
+	{
+		return_code = CMISS_ERROR_ARGUMENT;
+	}
 	return return_code;
 }
 
