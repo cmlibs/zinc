@@ -231,6 +231,52 @@ TEST(Cmiss_graphic_api, selected_material_cpp)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
 }
 
+TEST(Cmiss_graphic, name)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	char *name = Cmiss_graphic_get_name(gr);
+	EXPECT_STREQ(static_cast<char *>(0), name);
+
+	const char *nameBob = "Bob";
+	int result;
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_name(gr, nameBob));
+	name = Cmiss_graphic_get_name(gr);
+	EXPECT_STREQ(nameBob, name);
+	Cmiss_deallocate(name);
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_name(gr, static_cast<char *>(0)));
+	name = Cmiss_graphic_get_name(gr);
+	EXPECT_STREQ(static_cast<char *>(0), name);
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, name)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.scene.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	char *name = gr.getName();
+	EXPECT_STREQ(static_cast<char *>(0), name);
+
+	const char *nameBob = "Bob";
+	int result;
+	ASSERT_EQ(CMISS_OK, result = gr.setName(nameBob));
+	name = gr.getName();
+	EXPECT_STREQ(nameBob, name);
+	Cmiss_deallocate(name);
+
+	ASSERT_EQ(CMISS_OK, result = result = gr.setName(static_cast<char *>(0)));
+	name = gr.getName();
+	EXPECT_STREQ(static_cast<char *>(0), name);
+}
+
 TEST(Cmiss_graphic_api, spectrum)
 {
 	ZincTestSetup zinc;
