@@ -268,7 +268,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
+	struct FE_element *top_level_element, enum Cmiss_graphic_polygon_render_mode polygon_render_mode,
 	FE_value time);
 
 /****************************************************************************//**
@@ -306,6 +306,6 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum Cmiss_graphics_render_type render_type, FE_value time);
+	enum Cmiss_graphic_polygon_render_mode polygon_render_mode, FE_value time);
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

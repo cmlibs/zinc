@@ -230,7 +230,7 @@ GT_object *create_Spectrum_colour_bar(
 					}
 				}
 				return_code=(
-					(surface=CREATE(GT_surface)(g_SHADED,CMISS_GRAPHICS_RENDER_TYPE_SHADED,g_QUADRILATERAL,
+					(surface=CREATE(GT_surface)(g_SHADED,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,g_QUADRILATERAL,
 						points_around_bar,points_along_bar,points,normalpoints,
 						/*tangentpoints*/(Triple *)NULL,
 						/*texturepoints*/(Triple *)NULL,

@@ -305,7 +305,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			/* for glyphsets */
 			graphic->font = NULL;
 			/* for surface rendering */
-			graphic->render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
+			graphic->polygon_render_mode = CMISS_GRAPHIC_POLYGON_RENDER_SHADED;
 			/* for streamlines only */
 			graphic->streamline_data_type=STREAM_NO_DATA;
 			/* for lines */
@@ -660,7 +660,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										number_in_xi[0],
 										Cmiss_tessellation_get_circle_divisions(graphic->tessellation),
 										graphic->texture_coordinate_field,
-										top_level_element, graphic->render_type,
+										top_level_element, graphic->polygon_render_mode,
 										graphic_to_object_data->time)))
 								{
 									if (!GT_OBJECT_ADD(GT_surface)(
@@ -705,7 +705,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->texture_coordinate_field, graphic->data_field,
 									number_in_xi[0], number_in_xi[1],
-									/*reverse_normals*/0, top_level_element,graphic->render_type,
+									/*reverse_normals*/0, top_level_element,graphic->polygon_render_mode,
 									graphic_to_object_data->time)))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
@@ -765,7 +765,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphic_to_object_data->time, number_in_xi,
 												graphic_to_object_data->iso_surface_specification,
 												graphic->graphics_object,
-												graphic->render_type);
+												graphic->polygon_render_mode);
 										}
 									}
 									else
@@ -1041,7 +1041,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphic->line_base_size, graphic->line_scale_factors,
 												graphic->line_orientation_scale_field,
 												graphic->streamline_data_type, graphic->data_field,
-												graphic_to_object_data->fe_region, graphic->render_type)))
+												graphic_to_object_data->fe_region, graphic->polygon_render_mode)))
 										{
 											if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
 												time, surface))
@@ -1159,7 +1159,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 						graphic->line_base_size, graphic->line_scale_factors,
 						graphic->line_orientation_scale_field,
 						graphic->streamline_data_type, graphic->data_field,
-						graphic_to_object_data->fe_region, graphic->render_type)))
+						graphic_to_object_data->fe_region, graphic->polygon_render_mode)))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 							graphic->graphics_object, /*graphics_object_time*/0, surface)))
@@ -1790,7 +1790,7 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 			set_GT_object_glyph_label_offset(graphic->graphics_object, label_offset);
 			set_GT_object_glyph_label_text(graphic->graphics_object, graphic->label_text);
 		}
-		set_GT_object_surface_render_type(graphic->graphics_object, graphic->render_type);
+		set_GT_object_polygon_render_mode(graphic->graphics_object, graphic->polygon_render_mode);
 		return_code = 1;
 	}
 	return return_code;
@@ -2525,7 +2525,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			/* for surfaces rendering */
 			append_string(&graphic_string," ",&error);
 			append_string(&graphic_string,
-				ENUMERATOR_STRING(Cmiss_graphics_render_type)(graphic->render_type),&error);
+				ENUMERATOR_STRING(Cmiss_graphic_polygon_render_mode)(graphic->polygon_render_mode),&error);
 		}
 		if (error)
 		{
@@ -2703,7 +2703,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 				for (int i = 0; i < surface_count && return_code; i++)
 				{
 					Cmiss_cad_surface_identifier identifier = i;
-					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->field_cache, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type, identifier);
+					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->field_cache, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->polygon_render_mode, identifier);
 					if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
 					{
 						//printf( "Surface added to graphics object\n" );
@@ -3943,7 +3943,6 @@ enum Graphics_select_mode Cmiss_graphic_get_select_mode(
 	return (select_mode);
 } /* Cmiss_graphic_get_select_mode */
 
-
 int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
 	enum Graphics_select_mode select_mode)
 {
@@ -4021,34 +4020,6 @@ int Cmiss_graphic_set_streamline_data_type(Cmiss_graphic_id graphic,
 	}
 	return return_code;
 }
-
-int Cmiss_graphic_set_render_type(
-	struct Cmiss_graphic *graphic, enum Cmiss_graphics_render_type render_type)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_render_type);
-	if (graphic)
-	{
-		return_code = 1;
-		if (graphic->render_type != render_type)
-		{
-			graphic->render_type = render_type;
-			Cmiss_graphic_update_graphics_object_trivial(graphic);
-			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_render_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-
-} /* Cmiss_graphic_set_render_type */
 
 int Cmiss_graphic_copy_without_graphics_object(
 	struct Cmiss_graphic *destination, struct Cmiss_graphic *source)
@@ -4219,7 +4190,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		REACCESS(Graphical_material)(&(destination->material),source->material);
 		REACCESS(Graphical_material)(&(destination->secondary_material),
 			source->secondary_material);
-		Cmiss_graphic_set_render_type(destination,source->render_type);
+		Cmiss_graphic_set_polygon_render_mode(destination,source->polygon_render_mode);
 		REACCESS(Computed_field)(&(destination->data_field), source->data_field);
 		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
 		destination->streamline_data_type = source->streamline_data_type;
@@ -4721,7 +4692,7 @@ int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
 			(graphic1->selected_material == graphic2->selected_material) &&
 			(graphic1->spectrum == graphic2->spectrum) &&
 			(graphic1->font == graphic2->font) &&
-			(graphic1->render_type == graphic2->render_type) &&
+			(graphic1->polygon_render_mode == graphic2->polygon_render_mode) &&
 			((CMISS_GRAPHIC_POINTS != graphic1->graphic_type) || (
 				(graphic1->glyph == graphic2->glyph) &&
 				(graphic1->glyph_repeat_mode == graphic2->glyph_repeat_mode) &&
@@ -4962,6 +4933,30 @@ int Cmiss_graphic_extract_graphics_object_from_list(
 	return (return_code);
 } /* Cmiss_graphic_extract_graphics_object_from_list */
 
+enum Cmiss_graphic_polygon_render_mode Cmiss_graphic_get_polygon_render_mode(
+	struct Cmiss_graphic *graphic)
+{
+	if (graphic)
+		return graphic->polygon_render_mode;
+	return CMISS_GRAPHIC_POLYGON_RENDER_MODE_INVALID;
+}
+
+int Cmiss_graphic_set_polygon_render_mode(Cmiss_graphic_id graphic,
+	enum Cmiss_graphic_polygon_render_mode polygon_render_mode)
+{
+	if (graphic && (0 != ENUMERATOR_STRING(Cmiss_graphic_polygon_render_mode)(polygon_render_mode)))
+	{
+		if (graphic->polygon_render_mode != polygon_render_mode)
+		{
+			graphic->polygon_render_mode = polygon_render_mode;
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
 Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic)
 {
 	if (graphic && graphic->subgroup_field)
@@ -5199,27 +5194,6 @@ int Cmiss_graphic_set_texture_coordinate_field(
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
-
-enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
-	struct Cmiss_graphic *graphic)
-{
-	enum Cmiss_graphics_render_type render_type;
-
-	ENTER(Cmiss_graphic_get_render_type);
-	if (graphic)
-	{
-		render_type=graphic->render_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_render_type.  Invalid argument(s)");
-		render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
-	}
-	LEAVE;
-
-	return (render_type);
-} /* Cmiss_graphic_get_render_type */
 
 int Cmiss_graphic_time_change(
 	struct Cmiss_graphic *graphic,void *dummy_void)
@@ -5776,19 +5750,19 @@ char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type)
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
-class Cmiss_graphics_render_type_conversion
+class Cmiss_graphic_polygon_render_mode_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_graphics_render_type type)
+	static const char *to_string(enum Cmiss_graphic_polygon_render_mode type)
 	{
 		const char *enum_string = 0;
 		switch (type)
 		{
-		case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
-			enum_string = "SHADED";
+		case CMISS_GRAPHIC_POLYGON_RENDER_SHADED:
+			enum_string = "POLYGON_RENDER_SHADED";
 			break;
-		case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
-			enum_string = "WIREFRAME";
+		case CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME:
+			enum_string = "POLYGON_RENDER_WIREFRAME";
 			break;
 		default:
 			break;
@@ -5797,17 +5771,17 @@ public:
 	}
 };
 
-enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
+enum Cmiss_graphic_polygon_render_mode Cmiss_graphic_polygon_render_mode_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_graphics_render_type,
-		Cmiss_graphics_render_type_conversion>(string);
+	return string_to_enum<enum Cmiss_graphic_polygon_render_mode,
+		Cmiss_graphic_polygon_render_mode_conversion>(string);
 }
 
-char *Cmiss_graphics_render_type_enum_to_string(
-	enum Cmiss_graphics_render_type type)
+char *Cmiss_graphic_polygon_render_mode_enum_to_string(
+	enum Cmiss_graphic_polygon_render_mode type)
 {
-	const char *type_string = Cmiss_graphics_render_type_conversion::to_string(type);
+	const char *type_string = Cmiss_graphic_polygon_render_mode_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 

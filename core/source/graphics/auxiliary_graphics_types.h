@@ -50,7 +50,6 @@ represent curves in three xi-directions;
 
 #include "zinc/zincconfigure.h"
 #include "zinc/types/graphicid.h"
-#include "zinc/types/graphicsrendertype.h"
 
 #include "general/enumerator.h"
 //#if defined (WIN32_SYSTEM)
@@ -143,7 +142,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphics_select_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_render_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_polygon_render_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape);
 

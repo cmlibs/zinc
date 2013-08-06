@@ -67,7 +67,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		current_surface->object_name = original_surface->object_name;
 		current_surface->n_data_components = original_surface->n_data_components;
 		current_surface->surface_type = g_SH_DISCONTINUOUS_TEXMAP;
-		current_surface->render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
+		current_surface->polygon_render_mode = CMISS_GRAPHIC_POLYGON_RENDER_SHADED;
 		current_surface->ptrnext = (struct GT_surface *)NULL;
 		switch (polygon_size)
 		{
@@ -1525,7 +1525,7 @@ static int write_GT_surface(struct GT_surface *surface)
 	{
 		int i, j, k;
 		printf("GT_surface_type %d\n", current_surface->surface_type);
-		printf("Render_type %d\n", current_surface->render_type);
+		printf("Render_type %d\n", current_surface->polygon_render_mode);
 		printf("gtPolygonType %d\n", current_surface->polygon);
 		printf("n_data_components %d\n", current_surface->n_data_components);
 		printf("n_pts1 %d\n", current_surface->n_pts1);

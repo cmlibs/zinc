@@ -1715,7 +1715,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,enum Cmiss_graphics_render_type render_type,
+	int npts2,enum GT_surface_type surface_type,enum Cmiss_graphic_polygon_render_mode polygon_render_mode,
 	gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -1790,7 +1790,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
+			if (CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME == polygon_render_mode)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1810,7 +1810,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (CMISS_GRAPHICS_RENDER_TYPE_SHADED == render_type)
+			if (CMISS_GRAPHIC_POLYGON_RENDER_SHADED == polygon_render_mode)
 			{
 				triple=normalpts;
 				if (triple)
@@ -1838,7 +1838,7 @@ DESCRIPTION :
 				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (CMISS_GRAPHICS_RENDER_TYPE_SHADED == render_type)
+			if (CMISS_GRAPHIC_POLYGON_RENDER_SHADED == polygon_render_mode)
 			{
 				triple=texturepts;
 				if (triple)
@@ -1866,7 +1866,7 @@ DESCRIPTION :
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
+							if (CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME == polygon_render_mode)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1900,7 +1900,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
+							if (CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME == polygon_render_mode)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1951,7 +1951,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
+					if (CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME == polygon_render_mode)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1990,7 +1990,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
+			if (CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME == polygon_render_mode)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}
@@ -2492,7 +2492,7 @@ Only writes the geometry field.
 										interpolate_surface->data,object->default_material,
 										object->spectrum,interpolate_surface->n_pts1,
 										interpolate_surface->n_pts2,surface->surface_type,
-										surface->render_type,surface->polygon,vrml_prototype_list);
+										surface->polygon_render_mode,surface->polygon,vrml_prototype_list);
 									DESTROY(GT_surface)(&interpolate_surface);
 								}
 								surface=surface->ptrnext;
@@ -2507,7 +2507,7 @@ Only writes the geometry field.
 									surface->normallist,surface->texturelist,
 									surface->n_data_components,surface->data,
 									object->default_material,object->spectrum,surface->n_pts1,
-									surface->n_pts2,surface->surface_type,surface->render_type,
+									surface->n_pts2,surface->surface_type,surface->polygon_render_mode,
 									surface->polygon,vrml_prototype_list);
 								surface=surface->ptrnext;
 							}

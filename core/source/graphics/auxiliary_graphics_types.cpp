@@ -245,18 +245,18 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphics_render_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_polygon_render_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Cmiss_graphics_render_type));
+	ENTER(ENUMERATOR_STRING(Cmiss_graphic_polygon_render_mode));
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
+		case CMISS_GRAPHIC_POLYGON_RENDER_SHADED:
 		{
 			enumerator_string = "render_shaded";
 		} break;
-		case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
+		case CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME:
 		{
 			enumerator_string = "render_wireframe";
 		} break;
@@ -268,6 +268,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphics_render_type)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Cmiss_graphic_render_type) */
+}
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphics_render_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_polygon_render_mode)

@@ -1797,7 +1797,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			}
 			if (point)
 			{
-				surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
+				surface=CREATE(GT_surface)(initial->surface_type,initial->polygon_render_mode,initial->polygon,
 					initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 					initial->n_data_components,data);
 				if (surface)
@@ -2195,7 +2195,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 		}
 		if (point)
 		{
-			surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
+			surface=CREATE(GT_surface)(initial->surface_type,initial->polygon_render_mode,initial->polygon,
 				initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 				initial->n_data_components,data);
 			if (surface)
@@ -3316,7 +3316,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Cmiss_graphics_render_type render_type, gtPolygonType polytype,
+	enum Cmiss_graphic_polygon_render_mode polygon_render_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data)
@@ -3333,7 +3333,7 @@ Allocates memory and assigns fields for a graphics surface.
 	if (ALLOCATE(surface,struct GT_surface,1))
 	{
 		surface->surface_type=surface_type;
-		surface->render_type=render_type;
+		surface->polygon_render_mode=polygon_render_mode;
 		surface->polygon=polytype;
 		surface->n_pts1=n_pts1;
 		surface->n_pts2=n_pts2;
@@ -6030,7 +6030,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		{
 			n_texture_coordinates = 3;
 		}
-		GT_voltex_type voltex_type = (surface_list->render_type == CMISS_GRAPHICS_RENDER_TYPE_SHADED) ?
+		GT_voltex_type voltex_type = (surface_list->polygon_render_mode == CMISS_GRAPHIC_POLYGON_RENDER_SHADED) ?
 			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
 			triangle_count, triangle_list, n_data_components,
@@ -6165,9 +6165,9 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 					index++;
 				}
 			}
-			Cmiss_graphics_render_type render_type = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
-					CMISS_GRAPHICS_RENDER_TYPE_SHADED : CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME;
-			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
+			Cmiss_graphic_polygon_render_mode polygon_render_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
+					CMISS_GRAPHIC_POLYGON_RENDER_SHADED : CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME;
+			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, polygon_render_mode, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);
 		}
@@ -6876,8 +6876,8 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
 	return (return_code);
 }
 
-int set_GT_object_surface_render_type(struct GT_object *graphics_object,
-	enum Cmiss_graphics_render_type render_type)
+int set_GT_object_polygon_render_mode(struct GT_object *graphics_object,
+	enum Cmiss_graphic_polygon_render_mode polygon_render_mode)
 {
 	int return_code = 0;
 	if (graphics_object)
@@ -6886,11 +6886,11 @@ int set_GT_object_surface_render_type(struct GT_object *graphics_object,
 		{
 			// assume only one time
 			GT_surface *surface = graphics_object->primitive_lists[0].gt_surface.first;
-			if (surface && (surface->render_type != render_type))
+			if (surface && (surface->polygon_render_mode != polygon_render_mode))
 			{
 				while (surface)
 				{
-					surface->render_type = render_type;
+					surface->polygon_render_mode = polygon_render_mode;
 					surface = surface->ptrnext;
 				}
 				GT_object_changed(graphics_object);
