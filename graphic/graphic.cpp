@@ -862,6 +862,43 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	}
 }
 
+TEST(Cmiss_graphic, polygon_render_mode)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphic_polygon_render_mode polygonRenderMode;
+	ASSERT_EQ(CMISS_GRAPHIC_POLYGON_RENDER_SHADED, polygonRenderMode = Cmiss_graphic_get_polygon_render_mode(gr));
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_polygon_render_mode(static_cast<Cmiss_graphic_id>(0), CMISS_GRAPHIC_POLYGON_RENDER_SHADED));
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_polygon_render_mode(gr, CMISS_GRAPHIC_POLYGON_RENDER_MODE_INVALID));
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_polygon_render_mode(gr, CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME));
+	ASSERT_EQ(CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME, polygonRenderMode = Cmiss_graphic_get_polygon_render_mode(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, PolygonRenderMode)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
+	EXPECT_TRUE(gr.isValid());
+
+	Graphic::PolygonRenderMode polygonRenderMode;
+	ASSERT_EQ(Graphic::POLYGON_RENDER_SHADED, polygonRenderMode = gr.getPolygonRenderMode());
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setPolygonRenderMode(Graphic::POLYGON_RENDER_MODE_INVALID));
+
+	ASSERT_EQ(CMISS_OK, result = gr.setPolygonRenderMode(Graphic::POLYGON_RENDER_WIREFRAME));
+	ASSERT_EQ(Graphic::POLYGON_RENDER_WIREFRAME, polygonRenderMode = gr.getPolygonRenderMode());
+}
+
 TEST(Cmiss_graphic_api, line_attributes)
 {
 	ZincTestSetup zinc;
