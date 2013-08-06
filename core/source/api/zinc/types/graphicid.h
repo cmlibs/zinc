@@ -139,4 +139,14 @@ enum Cmiss_graphic_line_attributes_shape
 struct Cmiss_graphic_sampling_attributes;
 typedef struct Cmiss_graphic_sampling_attributes * Cmiss_graphic_sampling_attributes_id;
 
+/**
+ * Enumeration controlling how polygons are rendered in GL.
+ */
+enum Cmiss_graphic_polygon_render_mode
+{
+	CMISS_GRAPHIC_POLYGON_RENDER_MODE_INVALID = 0,
+	CMISS_GRAPHIC_POLYGON_RENDER_SHADED = 1,   /*!< Draw filled polygons */
+	CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
+};
+
 #endif /* CMISS_GRAPHICID_H */

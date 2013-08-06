@@ -3807,7 +3807,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							{
 								glPushName(0);
 							}
-							bool wireframe_flag = (surface->render_type == CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME);
+							bool wireframe_flag = (surface->polygon_render_mode == CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME);
 							if (wireframe_flag)
 							{
 								glPushAttrib(GL_POLYGON_BIT);

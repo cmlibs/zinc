@@ -97,11 +97,11 @@ public:
 		return (0 != id);
 	}
 
-	enum RenderType
+	enum PolygonRenderMode
 	{
-		RENDER_TYPE_INVALID = CMISS_GRAPHICS_RENDER_TYPE_INVALID,
-		RENDER_TYPE_SHADED = CMISS_GRAPHICS_RENDER_TYPE_SHADED,
-		RENDER_TYPE_WIREFRAME = CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME
+		POLYGON_RENDER_MODE_INVALID = CMISS_GRAPHIC_POLYGON_RENDER_MODE_INVALID,
+		POLYGON_RENDER_SHADED = CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+		POLYGON_RENDER_WIREFRAME = CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME
 	};
 
 	enum CoordinateSystem
@@ -200,6 +200,17 @@ public:
 
 	GraphicSamplingAttributes getSamplingAttributes();
 
+	enum PolygonRenderMode getPolygonRenderMode()
+	{
+		return static_cast<PolygonRenderMode>(Cmiss_graphic_get_polygon_render_mode(id));
+	}
+
+	int setPolygonRenderMode(PolygonRenderMode renderType)
+	{
+		return Cmiss_graphic_set_polygon_render_mode(id,
+			static_cast<Cmiss_graphic_polygon_render_mode>(renderType));
+	}
+
 	GraphicsMaterial getSelectedMaterial()
 	{
 		return GraphicsMaterial(Cmiss_graphic_get_selected_material(id));
@@ -238,17 +249,6 @@ public:
 	int setTessellationField(Field& tessellationField)
 	{
 		return Cmiss_graphic_set_tessellation_field(id, tessellationField.getId());
-	}
-
-	enum RenderType getRenderType()
-	{
-		return static_cast<RenderType>(Cmiss_graphic_get_render_type(id));
-	}
-
-	int setRenderType(RenderType renderType)
-	{
-		return Cmiss_graphic_set_render_type(id,
-			static_cast<Cmiss_graphics_render_type>(renderType));
 	}
 
 	bool getVisibilityFlag()

@@ -48,7 +48,6 @@
 #include "types/glyphid.h"
 #include "types/graphicid.h"
 #include "types/fontid.h"
-#include "types/graphicsrendertype.h"
 #include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
 #include "types/spectrumid.h"
@@ -136,6 +135,47 @@ ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_material(
  */
 ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
 	Cmiss_graphics_material_id material);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name.
+ * @return  The enumeration matching the string, or MODE_INVALID if not found.
+ */
+ZINC_API enum Cmiss_graphic_polygon_render_mode
+	Cmiss_graphic_polygon_render_mode_enum_from_string(const char *string);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *Cmiss_graphic_polygon_render_mode_enum_to_string(
+	enum Cmiss_graphic_polygon_render_mode mode);
+
+/**
+ * Get mode controlling how polygons in the graphic are rendered in GL.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The render mode, or MODE_INVALID if bad arguments.
+ */
+ZINC_API enum Cmiss_graphic_polygon_render_mode Cmiss_graphic_get_polygon_render_mode(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Set mode controlling how polygons in the graphic are rendered in GL:
+ * shaded/filled, wireframe etc.
+ * @see Cmiss_graphic_polygon_render_mode
+ *
+ * @param graphic  The graphic to modify.
+ * @param polygon_render_mode  Mode of polygon rendering: shaded, wireframe.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_polygon_render_mode(Cmiss_graphic_id graphic,
+	enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
 
 /**
  * Gets the material giving the colour/shading of the graphic when selected.
@@ -263,27 +303,6 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
  */
 ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordinate_field);
-
-/**
- * Get the render type of the graphic.
- *
- * @param graphic  The handle to the graphic to be edit
- * @return  The render type If successfully get render_type for graphic, otherwise
- * 		it returns INVALID_TYPE;
- */
-ZINC_API enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
-	Cmiss_graphic_id graphic);
-
-/**
- * Set the type for how the graphics will be rendered in GL.
- *
- * @param graphic  The handle to the graphic to be edit
- * @param render_type  type of rendering for this graphic, please see the
- *   render_type definition for more information.
- * @return  Status CMISS_OK on success, any other value on failure.
- */
-ZINC_API int Cmiss_graphic_set_render_type(
-	Cmiss_graphic_id graphic, enum Cmiss_graphics_render_type render_type);
 
 /**
  * Return status of graphic visibility flag attribute.
