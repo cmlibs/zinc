@@ -886,7 +886,7 @@ TEST(ZincGraphic, PolygonRenderMode)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
+	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	Graphic::PolygonRenderMode polygonRenderMode;
