@@ -67,7 +67,6 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmaterialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmoduleid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsrendertype.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/interactivetoolid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/nodeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h
