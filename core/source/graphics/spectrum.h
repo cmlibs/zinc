@@ -55,9 +55,10 @@ Spectrum structures and support code.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
+#include "general/manager_private.h"
 
 struct Cmiss_graphics_material;
-struct Spectrum_settings;
+struct Cmiss_spectrum_component;
 /*
 Global types
 ------------
@@ -74,11 +75,11 @@ Spectrum type is private.
 {
 	ZnReal maximum,minimum;
 	char *name;
-	int clear_colour_before_settings;
-	struct LIST(Spectrum_settings) *list_of_settings;
+	bool overwrite_colour;
+	struct LIST(Cmiss_spectrum_component) *list_of_components;
 
 	struct Texture *colour_lookup_texture;
-
+	int cache, changed;
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Spectrum) *manager;
 	int manager_change_status;
@@ -91,8 +92,7 @@ Spectrum type is private.
 DECLARE_LIST_TYPES(Spectrum);
 
 DECLARE_MANAGER_TYPES(Spectrum);
-struct Cmiss_graphics_module;
-#include "general/manager_private.h"
+
 PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct Cmiss_spectrum_module);
 
 enum Spectrum_colour_components
@@ -139,13 +139,13 @@ PROTOTYPE_MANAGER_FUNCTIONS(Spectrum);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *);
 
-struct Spectrum_settings *get_settings_at_position_in_Spectrum(
+struct Cmiss_spectrum_component *Cmiss_spectrum_get_component_at_position(
 	 struct Spectrum *spectrum,int position);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2007
 
 DESCRIPTION :
-Wrapper for accessing the settings in <spectrum>.
+Wrapper for accessing the component in <spectrum>.
 ==============================================================================*/
 
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
@@ -168,69 +168,25 @@ simple types.  If it does not comform exactly to one of the simple types then
 it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 
-enum Spectrum_simple_type Spectrum_get_contoured_simple_type(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-A convienience routine that interrogates a spectrum to see if it is one of the
-simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED)
-added as an extra, last, setting If it does not comform exactly to one of the
-simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM.
-See also Spectrum_get_simple_type.
-==============================================================================*/
-
-int Spectrum_overlay_contours(struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum,int number_of_bands,int band_proportions);
-/*******************************************************************************
-LAST MODIFIED : 22 May 2000
-
-DESCRIPTION :
-Checks if the last spectrum setting is SPECTRUM_BANDED, removes it if it is,
-then adds a SPECTRUM_BANDED setting to the <spectrum> with <number_of_bands>,
-<band_proportions>. Setting is added at the end of the list.
-This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED
-settings holding for the contours.
-If <number_of_bands>==0, simply removes any existing contour band settings.
-==============================================================================*/
-
-int Spectrum_add_settings(struct Spectrum *spectrum,
-	struct Spectrum_settings *settings,int position);
+int Spectrum_add_component(struct Spectrum *spectrum,
+	struct Cmiss_spectrum_component *component,int position);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
 DESCRIPTION :
-Adds the <settings> to <spectrum> at the given <position>, where 1 is
+Adds the <component> to <spectrum> at the given <position>, where 1 is
 the top of the list (rendered first), and values less than 1 or greater than the
-last position in the list cause the settings to be added at its end, with a
+last position in the list cause the component to be added at its end, with a
 position one greater than the last.
 ==============================================================================*/
 
-int Spectrum_remove_settings(struct Spectrum *spectrum,
-	struct Spectrum_settings *settings);
+int Cmiss_spectrum_get_component_position(struct Spectrum *spectrum,
+	struct Cmiss_spectrum_component *component);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
 DESCRIPTION :
-Removes the <settings> from <spectrum> and decrements the position
-of all subsequent settings.
-==============================================================================*/
-
-int Spectrum_remove_all_settings(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 4 August 1998
-
-DESCRIPTION :
-Removes the all the settings from <spectrum>.
-==============================================================================*/
-
-int Spectrum_get_settings_position(struct Spectrum *spectrum,
-	struct Spectrum_settings *settings);
-/*******************************************************************************
-LAST MODIFIED : 24 July 1998
-
-DESCRIPTION :
-Returns the position of <settings> in <spectrum>.
+Returns the position of <component> in <spectrum>.
 ==============================================================================*/
 
 int set_Spectrum_minimum(struct Spectrum *spectrum,ZnReal minimum);
@@ -249,23 +205,7 @@ DESCRIPTION :
 A function to set the spectrum maximum.
 ==============================================================================*/
 
-ZnReal get_Spectrum_minimum(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 13 August 1997
-
-DESCRIPTION :
-Returns the value of the spectrum minimum.
-==============================================================================*/
-
-ZnReal get_Spectrum_maximum(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 13 August 1997
-
-DESCRIPTION :
-Returns the value of the spectrum maximum.
-==============================================================================*/
-
-int Spectrum_get_number_of_components(struct Spectrum *spectrum);
+int Spectrum_get_number_of_data_components(struct Spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -287,16 +227,8 @@ int Spectrum_calculate_range(struct Spectrum *spectrum);
 LAST MODIFIED : 22 July 1998
 
 DESCRIPTION :
-Calculates the range of the spectrum from the settings it contains and updates
+Calculates the range of the spectrum from the component it contains and updates
 the minimum and maximum contained inside it.
-==============================================================================*/
-
-int Spectrum_clear_all_fixed_flags(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2001
-
-DESCRIPTION :
-clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
 ==============================================================================*/
 
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
@@ -305,8 +237,8 @@ int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
 LAST MODIFIED : 29 July 1998
 
 DESCRIPTION :
-Expands the range of this spectrum by adjusting the range of each settings
-it contains.  The ratios of the different settings are preserved.
+Expands the range of this spectrum by adjusting the range of each component
+it contains.  The ratios of the different component are preserved.
 ==============================================================================*/
 
 char *Spectrum_get_name(struct Spectrum *spectrum);
@@ -316,56 +248,6 @@ LAST MODIFIED : 28 August 2007
 DESCRIPTION :
 Returns the string of the spectrum.
 ==============================================================================*/
-
-int Spectrum_get_opaque_colour_flag(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 30 July 1998
-
-DESCRIPTION :
-Returns the value of the spectrum opaque flag which indicates whether the
-spectrum clears the material colour before applying the settings or not.
-==============================================================================*/
-
-int Spectrum_set_opaque_colour_flag(struct Spectrum *spectrum, int opaque);
-/*******************************************************************************
-LAST MODIFIED : 30 July 1998
-
-DESCRIPTION :
-Sets the value of the spectrum opaque flag which indicates whether the
-spectrum clears the material colour before applying the settings or not.
-==============================================================================*/
-
-#if defined (OPENGL_API)
-struct Spectrum_render_data *spectrum_start_renderGL(
-	struct Spectrum *spectrum,struct Cmiss_graphics_material *material,
-	int number_of_data_components);
-/*******************************************************************************
-LAST MODIFIED : 3 June 1999
-
-DESCRIPTION :
-Initialises the graphics state for rendering values on the current material.
-==============================================================================*/
-
-int spectrum_renderGL_value(struct Spectrum *spectrum,
-	struct Cmiss_graphics_material *material,struct Spectrum_render_data *render_data,
-	GLfloat *data);
-/*******************************************************************************
-LAST MODIFIED : 1 June 1999
-
-DESCRIPTION :
-Sets the graphics rendering state to represent the value 'data' in
-accordance with the spectrum.
-==============================================================================*/
-
-int spectrum_end_renderGL(struct Spectrum *spectrum,
-	struct Spectrum_render_data *render_data);
-/*******************************************************************************
-LAST MODIFIED : 13 March 1998
-
-DESCRIPTION :
-Resets the graphics state after rendering values on current material.
-==============================================================================*/
-#endif /* defined (OPENGL_API) */
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
 	struct Cmiss_graphics_material *material, int number_of_data_components,
@@ -397,41 +279,15 @@ DESCRIPTION :
 Resets the caches and graphics state after rendering values.
 ==============================================================================*/
 
-struct LIST(Spectrum_settings) *get_Spectrum_settings_list(
+struct LIST(Cmiss_spectrum_component) *get_Cmiss_spectrum_component_list(
 	struct Spectrum *spectrum );
 /*******************************************************************************
 LAST MODIFIED : 12 March 1998
 
 DESCRIPTION :
-Returns the settings list that describes the spectrum.  This
+Returns the component list that describes the spectrum.  This
 is the pointer to the object inside the spectrum so do not
 destroy it, any changes to it change that spectrum
-==============================================================================*/
-
-int for_each_spectrum_list_or_write_commands(struct Spectrum *spectrum,void *write_enabled_void);
-/*******************************************************************************
-LAST MODIFIED : 18 August 2007
-
-DESCRIPTION :
-For each spectrum in manager, list the spectrum commands to the command windows or write them out.
-==============================================================================*/
-
-int Spectrum_list_commands(struct Spectrum *spectrum,
-	const char *command_prefix,char *command_suffix);
-/*******************************************************************************
-LAST MODIFIED : 5 August 1998
-
-DESCRIPTION :
-Writes the properties of the <spectrum> to the command window in a
-form that can be directly pasted into a com file.
-==============================================================================*/
-
-int Spectrum_list_contents(struct Spectrum *spectrum,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 5 August 1998
-
-DESCRIPTION :
-Writes the properties of the <spectrum> to the command window.
 ==============================================================================*/
 
 Cmiss_spectrum *Cmiss_spectrum_create_private();
@@ -447,15 +303,6 @@ struct MANAGER(Cmiss_spectrum) *Cmiss_spectrum_module_get_manager(
 
 struct Cmiss_spectrum_module *Cmiss_spectrum_module_create();
 
-int DESTROY(Spectrum)(struct Spectrum **spectrum_ptr);
-/*******************************************************************************
-LAST MODIFIED : 11 August 1997
-
-DESCRIPTION :
-Frees the memory for the fields of <**spectrum>, frees the memory for
-<**spectrum> and sets <*spectrum> to NULL.
-==============================================================================*/
-
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
 
 int Spectrum_get_colour_lookup_sizes(struct Spectrum *spectrum,
@@ -469,5 +316,7 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 
 int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
 	struct Cmiss_graphics_module *graphics_module);
+
+int Cmiss_spectrum_changed(Cmiss_spectrum_id spectrum);
 
 #endif /* !defined(SPECTRUM_H) */

@@ -31,7 +31,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/selected_graphic.cpp
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
-	source/graphics/spectrum_settings.cpp
+	source/graphics/spectrum_component.cpp
 	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
 	source/graphics/texture_line.cpp
@@ -79,7 +79,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/selection.hpp
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
-	source/graphics/spectrum_settings.h
+	source/graphics/spectrum_component.h
 	source/graphics/tessellation.hpp
 	source/graphics/texture.h
 	source/graphics/texture.hpp

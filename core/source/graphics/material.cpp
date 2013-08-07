@@ -5148,7 +5148,7 @@ functions are orginally from the modify_graphical_materil.
 			}
 
 			number_of_spectrum_components =
-				 Spectrum_get_number_of_components(material_to_be_modified->spectrum);
+				 Spectrum_get_number_of_data_components(material_to_be_modified->spectrum);
 			if ((alpha_flag + blue_flag +
 						green_flag + red_flag) ==
 				 number_of_spectrum_components)

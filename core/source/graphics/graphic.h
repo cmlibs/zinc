@@ -290,9 +290,9 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 int DESTROY(Cmiss_graphic)(struct Cmiss_graphic **cmiss_graphic_address);
 
 /***************************************************************************//**
- * Adds the <settings> to <list_of_settings> at the given <position>, where 1 is
+ * Adds the <graphics> to <list_of_graphicss> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
- * last position in the list cause the settings to be added at its end, with a
+ * last position in the list cause the graphics to be added at its end, with a
  * position one greater than the last.
  * @param graphic The graphic to be added
  * @param position Given position of the item
