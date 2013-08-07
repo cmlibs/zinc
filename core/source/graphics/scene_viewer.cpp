@@ -3216,6 +3216,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 			DESTROY( LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
 				&scene_viewer->destroy_callback_list);
 		}
+
 		/* dispose of our data structure */
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
 		for_each_Light_in_Scene_viewer(scene_viewer,Scene_viewer_remove_light_in_list_iterator,
@@ -3694,14 +3695,6 @@ Converts mouse button-press and motion events into viewing transformations in
 				if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
 				{
 					scene_viewer->tumble_active = 1;
-					//-- if (!scene_viewer->idle_update_callback_id)
-					//-- {
-					//-- 	scene_viewer->idle_update_callback_id = 0;
-					//-- 	Event_dispatcher_add_idle_callback(
-					//-- 			User_interface_get_event_dispatcher(scene_viewer->user_interface),
-					//-- 			Scene_viewer_idle_update_callback, (void *)scene_viewer,
-					//-- 			EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
-					//-- }
 				}
 #if defined (DEBUG_CODE)
 				printf("button %d release at %d %d\n",input->button_number,
@@ -3807,31 +3800,31 @@ Scene_viewer_sleep to restore normal activity.
 {
 	int return_code;
 
-	ENTER(Scene_viewer_awaken);
 	if (scene_viewer)
 	{
-		scene_viewer->awaken = 1;
-		if (scene_viewer->scene)
+		if (scene_viewer->awaken != 1)
 		{
-			Cmiss_scene_add_callback(scene_viewer->scene,
-				Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-		}
-		/* register for any texture changes */
-		if (scene_viewer->image_texture.manager &&
-			(!scene_viewer->image_texture.callback_id))
-		{
-			scene_viewer->image_texture.callback_id=
-				MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
+			scene_viewer->awaken = 1;
+			if (scene_viewer->scene)
+			{
+				Cmiss_scene_add_callback(scene_viewer->scene,
+					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+			}
+			/* register for any texture changes */
+			if (scene_viewer->image_texture.manager &&
+				(!scene_viewer->image_texture.callback_id))
+			{
+				scene_viewer->image_texture.callback_id=
+					MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
 					(void *)&(scene_viewer->image_texture), scene_viewer->image_texture.manager);
+			}
 		}
 		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_awaken.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_awaken */
