@@ -1901,7 +1901,7 @@ int Cmiss_scene_copy(struct Cmiss_scene *destination,
 	if (destination&&source)
 	{
 		Cmiss_scene_copy_general_settings(destination, source);
-		/* empty original list_of_settings */
+		/* empty original list_of_graphics */
 		REMOVE_ALL_OBJECTS_FROM_LIST(Cmiss_graphic)(
 			destination->list_of_graphics);
 		/* put copy of each settings in source list in destination list */
@@ -2759,8 +2759,7 @@ int DESTROY(Cmiss_scene)(
 		}
 		if (cmiss_scene->list_of_graphics)
 		{
-			DESTROY(LIST(Cmiss_graphic))(
-				&(cmiss_scene->list_of_graphics));
+			DESTROY(LIST(Cmiss_graphic))(&(cmiss_scene->list_of_graphics));
 		}
 		if (cmiss_scene->data_fe_region)
 		{

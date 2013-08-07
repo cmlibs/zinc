@@ -61,6 +61,7 @@ GL rendering calls - API specific.
 #include "graphics/material.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/scene.hpp"
+#include "graphics/spectrum.hpp"
 #include "graphics/texture.hpp"
 
 /**
@@ -2252,7 +2253,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			GLfloat *colour_vertex;
 			unsigned int i;
 
-			if (!Spectrum_get_opaque_colour_flag(spectrum))
+			if (!Cmiss_spectrum_get_overwrite_material(spectrum))
 			{
 				Colour diffuse_colour;
 				Graphical_material_get_diffuse(material, &diffuse_colour);

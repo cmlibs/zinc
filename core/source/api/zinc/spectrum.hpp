@@ -44,6 +44,195 @@
 namespace zinc
 {
 
+class SpectrumComponent
+{
+protected:
+	Cmiss_spectrum_component_id id;
+
+public:
+
+	SpectrumComponent() :
+		id(0)
+	{
+	}
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit SpectrumComponent(
+		Cmiss_spectrum_component_id in_spectrum_component_id) :
+		id(in_spectrum_component_id)
+	{
+	}
+
+	SpectrumComponent(const SpectrumComponent& spectrumComponent) :
+		id(Cmiss_spectrum_component_access(spectrumComponent.id))
+	{
+	}
+
+	SpectrumComponent& operator=(const SpectrumComponent& spectrumComponent)
+	{
+		Cmiss_spectrum_component_id temp_id = Cmiss_spectrum_component_access(
+			spectrumComponent.id);
+		if (0 != id)
+		{
+			Cmiss_spectrum_component_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~SpectrumComponent()
+	{
+		if (0 != id)
+		{
+			Cmiss_spectrum_component_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	enum Attribute
+	{
+		ATTRIBUTE_INVALID = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_INVALID,
+		ATTRIBUTE_RANGE_MINIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM,
+		ATTRIBUTE_RANGE_MAXIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM,
+		ATTRIBUTE_COLOUR_MINIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM,
+		ATTRIBUTE_COLOUR_MAXIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM,
+		ATTRIBUTE_STEP_VALUE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE,
+		ATTRIBUTE_EXAGGERATION = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION,
+		ATTRIBUTE_BANDED_RATIO = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO
+	};
+
+	enum InterpolationMode
+	{
+		INTERPOLATION_INVALID = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_INVALID,
+		INTERPOLATION_LINEAR = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR,
+		INTERPOLATION_LOG = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG,
+		INTERPOLATION_FIELD = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD
+	};
+
+	enum ComponentColourMapping
+	{
+		COLOUR_MAPPING_INVALID = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID,
+		COLOUR_MAPPING_ALPHA = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA,
+		COLOUR_MAPPING_BANDED = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED,
+		COLOUR_MAPPING_BLUE = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE,
+		COLOUR_MAPPING_GREEN = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN,
+		COLOUR_MAPPING_MONOCHROME = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME,
+		COLOUR_MAPPING_RAINBOW = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW,
+		COLOUR_MAPPING_RED = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED,
+		COLOUR_MAPPING_STEP = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP,
+		COLOUR_MAPPING_WHITE_TO_BLUE = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE,
+		COLOUR_MAPPING_WHITE_TO_RED = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED,
+		COLOUR_MAPPING_WHITE_TO_GREEN = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN
+	};
+
+	Cmiss_spectrum_component_id getId()
+	{
+		return id;
+	}
+
+	double getAttributeReal(Attribute attribute)
+	{
+		return Cmiss_spectrum_component_get_attribute_real(id,
+			static_cast<Cmiss_spectrum_component_attribute>(attribute));
+	}
+
+	int setAttributeReal(Attribute attribute, double value)
+	{
+		return Cmiss_spectrum_component_set_attribute_real(id,
+			static_cast<Cmiss_spectrum_component_attribute>(attribute), value);
+	}
+
+	bool getActive()
+	{
+		return Cmiss_spectrum_component_get_active(id);
+	}
+
+	int setActive(bool active)
+	{
+		return Cmiss_spectrum_component_set_active(id, active);
+	}
+
+	bool getReverseFlag()
+	{
+		return Cmiss_spectrum_component_get_reverse_flag(id);
+	}
+
+	int setReverseFlag(bool reverse)
+	{
+		return Cmiss_spectrum_component_set_reverse_flag(id, reverse);
+	}
+
+	bool getExtendAboveFlag()
+	{
+		return Cmiss_spectrum_component_get_extend_above_flag(id);
+	}
+
+	int setExtendAboveFlag(bool extendAbove)
+	{
+		return Cmiss_spectrum_component_set_extend_above_flag(id, extendAbove);
+	}
+
+	bool getExtendBelowFlag()
+	{
+		return Cmiss_spectrum_component_get_extend_below_flag(id);
+	}
+
+	int setExtendBelowFlag(bool extendBelow)
+	{
+		return Cmiss_spectrum_component_set_extend_below_flag(id, extendBelow);
+	}
+
+	int getFieldComponentLookupNumber()
+	{
+		return Cmiss_spectrum_component_get_field_component_lookup_number(id);
+	}
+
+	int setFieldComponentLookupNumber(int componentNumber)
+	{
+		return Cmiss_spectrum_component_set_field_component_lookup_number(id,
+			componentNumber);
+	}
+
+	int getNumberOfBands()
+	{
+		return Cmiss_spectrum_component_get_number_of_bands(id);
+	}
+
+	int setNumberOfBands(int numberOfBands)
+	{
+		return Cmiss_spectrum_component_set_number_of_bands(id, numberOfBands);
+	}
+
+	InterpolationMode getInterpolationMode()
+	{
+		return static_cast<InterpolationMode>(Cmiss_spectrum_component_get_interpolation_mode(
+			id));
+	}
+
+	int setInterpolationMode(InterpolationMode interpolationMode)
+	{
+		return Cmiss_spectrum_component_set_interpolation_mode(id,
+			static_cast<Cmiss_spectrum_component_interpolation_mode>(interpolationMode));
+	}
+
+	ComponentColourMapping getColourMapping()
+	{
+		return static_cast<ComponentColourMapping>(Cmiss_spectrum_component_get_colour_mapping(
+			id));
+	}
+
+	int setColourMapping(ComponentColourMapping colourMapping)
+	{
+		return Cmiss_spectrum_component_set_colour_mapping(id,
+			static_cast<Cmiss_spectrum_component_colour_mapping>(colourMapping));
+	}
+
+};
+
 class Spectrum
 {
 protected:
@@ -51,17 +240,21 @@ protected:
 
 public:
 
-	Spectrum() : id(0)
-	{  }
+	Spectrum() :
+		id(0)
+	{
+	}
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit Spectrum(Cmiss_spectrum_id in_spectrum_id) :
 		id(in_spectrum_id)
-	{  }
+	{
+	}
 
 	Spectrum(const Spectrum& spectrum) :
 		id(Cmiss_spectrum_access(spectrum.id))
-	{  }
+	{
+	}
 
 	Spectrum& operator=(const Spectrum& spectrum)
 	{
@@ -102,6 +295,16 @@ public:
 		return Cmiss_spectrum_set_managed(id, value);
 	}
 
+	int beginChange()
+	{
+		return Cmiss_spectrum_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_spectrum_end_change(id);
+	}
+
 	char *getName()
 	{
 		return Cmiss_spectrum_get_name(id);
@@ -117,11 +320,6 @@ public:
 		return Cmiss_spectrum_set_minimum_and_maximum(id, minimum, maximum);
 	}
 
-	int setRainbow()
-	{
-		return Cmiss_spectrum_set_rainbow(id);
-	}
-
 	double getMaximum()
 	{
 		return Cmiss_spectrum_get_maximum(id);
@@ -132,8 +330,61 @@ public:
 		return Cmiss_spectrum_get_minimum(id);
 	}
 
-};
+	int getNumberOfComponents()
+	{
+		return Cmiss_spectrum_get_number_of_components(id);
+	}
 
+	SpectrumComponent createComponent()
+	{
+		return SpectrumComponent(Cmiss_spectrum_create_component(id));
+	}
+
+	SpectrumComponent getFirstComponent()
+	{
+		return SpectrumComponent(Cmiss_spectrum_get_first_component(id));
+	}
+
+	SpectrumComponent getNextComponent(SpectrumComponent& refComponent)
+	{
+		return SpectrumComponent(
+			Cmiss_spectrum_get_next_component(id, refComponent.getId()));
+	}
+
+	SpectrumComponent getPreviousComponent(SpectrumComponent& refComponent)
+	{
+		return SpectrumComponent(
+			Cmiss_spectrum_get_previous_component(id, refComponent.getId()));
+	}
+
+	int moveComponentBefore(SpectrumComponent& component,
+		SpectrumComponent& refComponent)
+	{
+		return Cmiss_spectrum_move_component_before(id, component.getId(),
+			refComponent.getId());
+	}
+
+	int removeComponent(SpectrumComponent component)
+	{
+		return Cmiss_spectrum_remove_component(id, component.getId());
+	}
+
+	int removeAllComponents()
+	{
+		return Cmiss_spectrum_remove_all_components(id);
+	}
+
+	bool getOverwriteMaterial()
+	{
+		return Cmiss_spectrum_get_overwrite_material(id);
+	}
+
+	int setOverwriteMaterial(bool overwrite)
+	{
+		return Cmiss_spectrum_set_overwrite_material(id, overwrite);
+	}
+
+};
 
 class SpectrumModule
 {
@@ -142,17 +393,21 @@ protected:
 
 public:
 
-	SpectrumModule() : id(0)
-	{  }
+	SpectrumModule() :
+		id(0)
+	{
+	}
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit SpectrumModule(Cmiss_spectrum_module_id in_spectrum_module_id) :
 		id(in_spectrum_module_id)
-	{  }
+	{
+	}
 
 	SpectrumModule(const SpectrumModule& spectrumModule) :
 		id(Cmiss_spectrum_module_access(spectrumModule.id))
-	{  }
+	{
+	}
 
 	SpectrumModule& operator=(const SpectrumModule& spectrumModule)
 	{
@@ -215,6 +470,6 @@ public:
 	}
 };
 
-}  // namespace zinc
+} // namespace zinc
 
 #endif /* __ZN_SPECTRUM_HPP__ */

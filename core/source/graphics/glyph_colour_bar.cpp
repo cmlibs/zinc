@@ -106,8 +106,8 @@ GT_object *create_Spectrum_colour_bar(
 		time = 0.0;
 		/* calculate and get range of spectrum */
 		Spectrum_calculate_range(spectrum);
-		spectrum_minimum=get_Spectrum_minimum(spectrum);
-		spectrum_maximum=get_Spectrum_maximum(spectrum);
+		spectrum_minimum=Cmiss_spectrum_get_minimum(spectrum);
+		spectrum_maximum=Cmiss_spectrum_get_maximum(spectrum);
 		/* get orthogonal unit vectors along bar_axis, side and front */
 		double bar_centre[3] = { barCentre[0], barCentre[1], barCentre[2] };
 		double bar_axis[3] = { barAxis[0], barAxis[1], barAxis[2] };

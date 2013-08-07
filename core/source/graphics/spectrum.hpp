@@ -47,4 +47,37 @@ int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
 int Spectrum_execute_colour_lookup(struct Spectrum *spectrum,
 	Render_graphics_opengl *renderer);
 
+#if defined (OPENGL_API)
+struct Spectrum_render_data *spectrum_start_renderGL(
+	struct Spectrum *spectrum,struct Cmiss_graphics_material *material,
+	int number_of_data_components);
+/*******************************************************************************
+LAST MODIFIED : 3 June 1999
+
+DESCRIPTION :
+Initialises the graphics state for rendering values on the current material.
+==============================================================================*/
+
+int spectrum_renderGL_value(struct Spectrum *spectrum,
+	struct Cmiss_graphics_material *material,struct Spectrum_render_data *render_data,
+	GLfloat *data);
+/*******************************************************************************
+LAST MODIFIED : 1 June 1999
+
+DESCRIPTION :
+Sets the graphics rendering state to represent the value 'data' in
+accordance with the spectrum.
+==============================================================================*/
+
+int spectrum_end_renderGL(struct Spectrum *spectrum,
+	struct Spectrum_render_data *render_data);
+/*******************************************************************************
+LAST MODIFIED : 13 March 1998
+
+DESCRIPTION :
+Resets the graphics state after rendering values on current material.
+==============================================================================*/
+
+#endif /* defined (OPENGL_API) */
+
 #endif /* !defined(SPECTRUM_HPP) */

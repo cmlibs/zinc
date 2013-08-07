@@ -41,6 +41,9 @@
 #if !defined (CMISS_SPECTRUM_ID_H)
 #define CMISS_SPECTRUM_ID_H
 
+struct Cmiss_spectrum_component;
+typedef struct Cmiss_spectrum_component *Cmiss_spectrum_component_id;
+
 struct Cmiss_spectrum;
 typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
 

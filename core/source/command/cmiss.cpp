@@ -141,7 +141,7 @@
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 #include "graphics/spectrum.h"
-#include "graphics/spectrum_settings.h"
+#include "graphics/spectrum_component.h"
 #include "graphics/texture.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
@@ -718,24 +718,24 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 } /* apply_transformation_to_node */
 
 #if defined (USE_OPENCASCADE)
-static struct Spectrum_settings *create_spectrum_component( Spectrum_settings_colour_mapping colour )
+static struct Cmiss_spectrum_component *create_spectrum_component( Cmiss_spectrum_component_colour_mapping colour )
 {
 	int component = 1;
-	struct Spectrum_settings *settings = CREATE(Spectrum_settings)();
-	Spectrum_settings_set_type(settings, SPECTRUM_LINEAR);
-	Spectrum_settings_set_colour_mapping(settings, colour);
-	Spectrum_settings_set_extend_above_flag(settings, 1);
-	Spectrum_settings_set_extend_below_flag(settings, 1);
-	Spectrum_settings_set_reverse_flag(settings, 0);
+	struct Cmiss_spectrum_component *settings = CREATE(Cmiss_spectrum_component)();
+	Cmiss_spectrum_component_set_interpolation_mode(settings, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR);
+	Cmiss_spectrum_component_set_colour_mapping(settings, colour);
+	Cmiss_spectrum_component_set_extend_above_flag(settings, true);
+	Cmiss_spectrum_component_set_extend_below_flag(settings, true);
+	Cmiss_spectrum_component_set_reverse_flag(settings, 0);
 
-	if ( colour == SPECTRUM_RED )
+	if ( colour == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED )
 		component = 1;
-	else if ( colour == SPECTRUM_GREEN )
+	else if ( colour == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN )
 		component = 2;
 	else
 		component = 3;
 
-	Spectrum_settings_set_component_number( settings, component );
+	Cmiss_spectrum_component_set_field_component_lookup_number( settings, component );
 
 	return settings;
 }
@@ -743,36 +743,36 @@ static struct Spectrum_settings *create_spectrum_component( Spectrum_settings_co
 static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_void )
 {
 	int return_code = 0, number_in_list = 0;
-	struct LIST(Spectrum_settings) *spectrum_settings_list;
-	struct Spectrum_settings *red_settings;
-	struct Spectrum_settings *green_settings;
-	struct Spectrum_settings *blue_settings;
+	struct LIST(Cmiss_spectrum_component) *spectrum_settings_list;
+	struct Cmiss_spectrum_component *red_settings;
+	struct Cmiss_spectrum_component *green_settings;
+	struct Cmiss_spectrum_component *blue_settings;
 	struct Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
 
 	if ( command_data && (NULL != ((*spectrum) = Cmiss_spectrum_create_private())) &&
 		Cmiss_spectrum_set_name(spectrum, "RGB"))
-		spectrum_settings_list = get_Spectrum_settings_list( (*spectrum) );
-		number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
+		spectrum_settings_list = get_Cmiss_spectrum_component_list( (*spectrum) );
+		number_in_list = NUMBER_IN_LIST(Cmiss_spectrum_component)(spectrum_settings_list);
 		if ( number_in_list > 0 )
 		{
-			REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(spectrum_settings_list);
+			REMOVE_ALL_OBJECTS_FROM_LIST(Cmiss_spectrum_component)(spectrum_settings_list);
 		}
-		red_settings = create_spectrum_component( SPECTRUM_RED );
-		Spectrum_settings_add( red_settings, /* end of list = 0 */0,
+		red_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED );
+		Cmiss_spectrum_component_add( red_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
-		green_settings = create_spectrum_component( SPECTRUM_GREEN );
-		Spectrum_settings_add( green_settings, /* end of list = 0 */0,
+		green_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN );
+		Cmiss_spectrum_component_add( green_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
-		blue_settings = create_spectrum_component( SPECTRUM_BLUE );
-		Spectrum_settings_add( blue_settings, /* end of list = 0 */0,
+		blue_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE );
+		Cmiss_spectrum_component_add( blue_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_set_minimum_and_maximum( (*spectrum), 0, 1);
-		Spectrum_set_opaque_colour_flag( (*spectrum), 0 );
+		Cmiss_spectrum_set_overwrite_material( (*spectrum), 0 );
 		if (!ADD_OBJECT_TO_MANAGER(Spectrum)( (*spectrum),
 				command_data->spectrum_manager))
 		{
