@@ -153,7 +153,7 @@ finite element group scene.
 	/* for glyphsets */
 	struct Cmiss_font *font;
 	/* for surfaces */
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode;
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode;
 	/* for rendering lines in GL, positive value; default 1.0 */
 	double render_line_width;
 	/* for rendering points in GL, positive value; default 1.0 */

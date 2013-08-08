@@ -791,7 +791,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode, gtPolygonType polytype,
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data);
@@ -1390,8 +1390,8 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
  * Sets the polygon render mode for any primitives which support it in the
  * GT_object.
  */
-int set_GT_object_polygon_render_mode(struct GT_object *graphics_object,
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
+int set_GT_object_render_polygon_mode(struct GT_object *graphics_object,
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************

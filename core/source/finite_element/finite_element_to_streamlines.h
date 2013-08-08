@@ -129,7 +129,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region, enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
+	struct FE_region *fe_region, enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,

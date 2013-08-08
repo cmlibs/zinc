@@ -197,7 +197,7 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 				}
 			}
 			if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
-				CMISS_GRAPHIC_POLYGON_RENDER_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
+				CMISS_GRAPHIC_RENDER_POLYGON_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
 				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
@@ -247,7 +247,7 @@ struct GT_object *create_GT_object_cone(const char *name,int number_of_segments_
 		{
 			construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 				g_NO_DATA,(GLfloat *)NULL)))
@@ -300,7 +300,7 @@ struct GT_object *create_GT_object_cone_solid(const char *name,int number_of_seg
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GLfloat *)NULL)))
@@ -322,7 +322,7 @@ struct GT_object *create_GT_object_cone_solid(const char *name,int number_of_seg
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GLfloat *)NULL)))
@@ -376,7 +376,7 @@ struct GT_object *create_GT_object_cylinder(const char *name,int number_of_segme
 		{
 			construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 				g_NO_DATA,(GLfloat *)NULL)))
@@ -430,7 +430,7 @@ struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of
 			{
 				construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GLfloat *)NULL)))
@@ -457,7 +457,7 @@ struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of
 			{
 				construct_tube(number_of_segments_around,0.0,0.0,0.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GLfloat *)NULL)))
@@ -483,7 +483,7 @@ struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of
 			{
 				construct_tube(number_of_segments_around,1.0,0.0,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GLfloat *)NULL)))
@@ -561,7 +561,7 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 					normal += (number_of_segments_down+1);
 				}
 			}
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
 				g_QUADRILATERAL,number_of_segments_down+1,number_of_segments_around+1,
 				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))

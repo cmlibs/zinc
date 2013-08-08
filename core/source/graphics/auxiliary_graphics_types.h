@@ -142,7 +142,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphics_select_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_polygon_render_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_render_polygon_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape);
 

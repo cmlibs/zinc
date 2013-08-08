@@ -191,8 +191,8 @@ ZINC_API int Cmiss_graphic_set_render_point_size(Cmiss_graphic_id graphic,
  * @param string  string of the short enumerator name.
  * @return  The enumeration matching the string, or MODE_INVALID if not found.
  */
-ZINC_API enum Cmiss_graphic_polygon_render_mode
-	Cmiss_graphic_polygon_render_mode_enum_from_string(const char *string);
+ZINC_API enum Cmiss_graphic_render_polygon_mode
+	Cmiss_graphic_render_polygon_mode_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
@@ -201,8 +201,8 @@ ZINC_API enum Cmiss_graphic_polygon_render_mode
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphic_polygon_render_mode_enum_to_string(
-	enum Cmiss_graphic_polygon_render_mode mode);
+ZINC_API char *Cmiss_graphic_render_polygon_mode_enum_to_string(
+	enum Cmiss_graphic_render_polygon_mode mode);
 
 /**
  * Get mode controlling how polygons in the graphic are rendered in GL.
@@ -210,20 +210,20 @@ ZINC_API char *Cmiss_graphic_polygon_render_mode_enum_to_string(
  * @param graphic  The graphic to query.
  * @return  The render mode, or MODE_INVALID if bad arguments.
  */
-ZINC_API enum Cmiss_graphic_polygon_render_mode Cmiss_graphic_get_polygon_render_mode(
+ZINC_API enum Cmiss_graphic_render_polygon_mode Cmiss_graphic_get_render_polygon_mode(
 	Cmiss_graphic_id graphic);
 
 /**
  * Set mode controlling how polygons in the graphic are rendered in GL:
  * shaded/filled, wireframe etc.
- * @see Cmiss_graphic_polygon_render_mode
+ * @see Cmiss_graphic_render_polygon_mode
  *
  * @param graphic  The graphic to modify.
- * @param polygon_render_mode  Mode of polygon rendering: shaded, wireframe.
+ * @param render_polygon_mode  Mode of polygon rendering: shaded, wireframe.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_polygon_render_mode(Cmiss_graphic_id graphic,
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
+ZINC_API int Cmiss_graphic_set_render_polygon_mode(Cmiss_graphic_id graphic,
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 /**
  * Gets the material giving the colour/shading of the graphic when selected.

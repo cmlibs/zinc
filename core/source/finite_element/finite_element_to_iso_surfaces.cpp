@@ -629,7 +629,7 @@ public:
 	int sweep();
 
 	int fill_graphics(struct GT_object *graphics_object,
-		enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
+		enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 private:
 
@@ -1839,7 +1839,7 @@ bool Isosurface_builder::reverse_winding()
 }
 
 int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode)
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode)
 {
 	int return_code = 1;
 	bool reverse = reverse_winding();
@@ -1940,7 +1940,7 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			}
 			if (return_code)
 			{
-				GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, polygon_render_mode, g_TRIANGLE,
+				GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
 					/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 					normalpoints, tangentpoints, texturepoints, number_of_data_components, datavalues);
 				if (NULL != surface)
@@ -2068,7 +2068,7 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 	Cmiss_field_cache_id field_cache, Cmiss_mesh_id mesh,
 	FE_value time, int *number_in_xi,
 	struct Iso_surface_specification *specification,
-	struct GT_object *graphics_object, enum Cmiss_graphic_polygon_render_mode polygon_render_mode)
+	struct GT_object *graphics_object, enum Cmiss_graphic_render_polygon_mode render_polygon_mode)
 {
 	ENTER(create_iso_surfaces_from_FE_element_new);
 	int return_code = 0;
@@ -2082,7 +2082,7 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 		return_code = iso_builder.sweep();
 		if (return_code)
 		{
-			return_code = iso_builder.fill_graphics(graphics_object, polygon_render_mode);
+			return_code = iso_builder.fill_graphics(graphics_object, render_polygon_mode);
 		}
 	}
 	else
