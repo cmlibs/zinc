@@ -152,25 +152,25 @@ TEST(Cmiss_spectrum_api, valid_args)
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool bool_result = Cmiss_spectrum_component_get_active(component1);
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = Cmiss_spectrum_component_set_reverse_flag(component1, true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = Cmiss_spectrum_component_get_reverse_flag(component1);
-	EXPECT_EQ(true, bool_result);
+	EXPECT_TRUE(bool_result);
 
 	result = Cmiss_spectrum_component_set_extend_above_flag(component1, false);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = Cmiss_spectrum_component_get_extend_above_flag(component1);
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = Cmiss_spectrum_component_set_extend_below_flag(component1, false);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = Cmiss_spectrum_component_get_extend_below_flag(component1);
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = Cmiss_spectrum_component_set_field_component_lookup_number(component1,	2);
 	EXPECT_EQ(CMISS_OK, result);
@@ -271,25 +271,25 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool bool_result = component1.getActive();
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = component1.setReverseFlag(true);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = component1.getReverseFlag();
-	EXPECT_EQ(true, bool_result);
+	EXPECT_TRUE(bool_result);
 
 	result = component1.setExtendAboveFlag(false);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = component1.getExtendAboveFlag();
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = component1.setExtendBelowFlag(false);
 	EXPECT_EQ(CMISS_OK, result);
 
 	bool_result = component1.getExtendBelowFlag();
-	EXPECT_EQ(false, bool_result);
+	EXPECT_FALSE(bool_result);
 
 	result = component1.setFieldComponentLookupNumber(2);
 	EXPECT_EQ(CMISS_OK, result);
