@@ -183,6 +183,84 @@ TEST(Cmiss_graphic_api, material_cpp)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setMaterial(noMaterial));
 }
 
+TEST(Cmiss_graphic, render_line_width)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	const double inWidth = 2.0;
+	double outWidth;
+	ASSERT_DOUBLE_EQ(1.0, outWidth = Cmiss_graphic_get_render_line_width(gr));
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_render_line_width(static_cast<Cmiss_graphic_id>(0), 2.0));
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_render_line_width(gr, 0.0));
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_render_line_width(gr, inWidth));
+	ASSERT_DOUBLE_EQ(inWidth, outWidth = Cmiss_graphic_get_render_line_width(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, RenderLineWidth)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicLines gr = zinc.scene.createGraphicLines();
+	EXPECT_TRUE(gr.isValid());
+
+	const double inWidth = 2.0;
+	double outWidth;
+	ASSERT_DOUBLE_EQ(1.0, outWidth = gr.getRenderLineWidth());
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setRenderLineWidth(0.0));
+
+	ASSERT_EQ(CMISS_OK, result = gr.setRenderLineWidth(inWidth));
+	ASSERT_EQ(inWidth, outWidth = gr.getRenderLineWidth());
+}
+
+TEST(Cmiss_graphic, render_point_size)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_POINTS);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	const double inSize = 2.0;
+	double outSize;
+	ASSERT_DOUBLE_EQ(1.0, outSize = Cmiss_graphic_get_render_point_size(gr));
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_render_point_size(static_cast<Cmiss_graphic_id>(0), 2.0));
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_render_point_size(gr, 0.0));
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_render_point_size(gr, inSize));
+	ASSERT_DOUBLE_EQ(inSize, outSize = Cmiss_graphic_get_render_point_size(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, RenderPointSize)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicPoints gr = zinc.scene.createGraphicPoints();
+	EXPECT_TRUE(gr.isValid());
+
+	const double inSize = 2.0;
+	double outSize;
+	ASSERT_DOUBLE_EQ(1.0, outSize = gr.getRenderPointSize());
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setRenderPointSize(0.0));
+
+	ASSERT_EQ(CMISS_OK, result = gr.setRenderPointSize(inSize));
+	ASSERT_EQ(inSize, outSize = gr.getRenderPointSize());
+}
+
 TEST(Cmiss_graphic_api, selected_material)
 {
 	ZincTestSetup zinc;
