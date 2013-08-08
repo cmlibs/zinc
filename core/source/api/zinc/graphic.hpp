@@ -97,11 +97,11 @@ public:
 		return (0 != id);
 	}
 
-	enum PolygonRenderMode
+	enum RenderPolygonMode
 	{
-		POLYGON_RENDER_MODE_INVALID = CMISS_GRAPHIC_POLYGON_RENDER_MODE_INVALID,
-		POLYGON_RENDER_SHADED = CMISS_GRAPHIC_POLYGON_RENDER_SHADED,
-		POLYGON_RENDER_WIREFRAME = CMISS_GRAPHIC_POLYGON_RENDER_WIREFRAME
+		RENDER_POLYGON_MODE_INVALID = CMISS_GRAPHIC_RENDER_POLYGON_MODE_INVALID,
+		RENDER_POLYGON_SHADED = CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
+		RENDER_POLYGON_WIREFRAME = CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME
 	};
 
 	enum CoordinateSystem
@@ -184,6 +184,17 @@ public:
 		return Cmiss_graphic_set_render_point_size(id, size);
 	}
 
+	enum RenderPolygonMode getRenderPolygonMode()
+	{
+		return static_cast<RenderPolygonMode>(Cmiss_graphic_get_render_polygon_mode(id));
+	}
+
+	int setRenderPolygonMode(RenderPolygonMode renderPolygonMode)
+	{
+		return Cmiss_graphic_set_render_polygon_mode(id,
+			static_cast<Cmiss_graphic_render_polygon_mode>(renderPolygonMode));
+	}
+
 	Field getSubgroupField()
 	{
 		return Field(Cmiss_graphic_get_subgroup_field(id));
@@ -219,17 +230,6 @@ public:
 	GraphicPointAttributes getPointAttributes();
 
 	GraphicSamplingAttributes getSamplingAttributes();
-
-	enum PolygonRenderMode getPolygonRenderMode()
-	{
-		return static_cast<PolygonRenderMode>(Cmiss_graphic_get_polygon_render_mode(id));
-	}
-
-	int setPolygonRenderMode(PolygonRenderMode renderType)
-	{
-		return Cmiss_graphic_set_polygon_render_mode(id,
-			static_cast<Cmiss_graphic_polygon_render_mode>(renderType));
-	}
 
 	GraphicsMaterial getSelectedMaterial()
 	{

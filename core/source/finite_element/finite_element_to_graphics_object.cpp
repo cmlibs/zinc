@@ -1107,7 +1107,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Cmiss_graphic_polygon_render_mode polygon_render_mode,
+	struct FE_element *top_level_element, enum Cmiss_graphic_render_polygon_mode render_polygon_mode,
 	FE_value time)
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
@@ -1162,7 +1162,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)&&
 			ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))&&
-			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,polygon_render_mode,g_QUADRILATERAL,
+			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_polygon_mode,g_QUADRILATERAL,
 				number_of_segments_around+1,number_of_segments_along+1,
 				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
 		{
@@ -1746,7 +1746,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum Cmiss_graphic_polygon_render_mode polygon_render_mode, FE_value time)
+	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, FE_value time)
 {
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
@@ -1827,7 +1827,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)))&&
-			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,polygon_render_mode,polygon_type,
+			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_polygon_mode,polygon_type,
 			number_of_points_in_xi1,number_of_points_in_xi2, points,
 			normalpoints, tangentpoints, texturepoints, n_data_components,data)))
 		{

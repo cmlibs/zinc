@@ -77,6 +77,6 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 	Cmiss_field_cache_id field_cache, Cmiss_mesh_id mesh,
 	FE_value time,	int *number_in_xi,
 	struct Iso_surface_specification *specification,
-	struct GT_object *graphics_object, enum Cmiss_graphic_polygon_render_mode polygon_render_mode);
+	struct GT_object *graphics_object, enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 #endif /* !defined (FINITE_ELEMENT_TO_ISO_SURFACES_H) */
