@@ -67,6 +67,12 @@ public:
 
 	SubObjectGroupHighlightFunctor *highlight_functor;
 
+private:
+	// scale factor multiplying graphic render_line_width and render_point_size
+	// to get size in pixels. Set it so high resolution output has thick enough
+	// lines and visible points compared with on-screen resolution.
+	double point_unit_size_pixels;
+	
 public:
 	Render_graphics_opengl() :
 		picking(0),
@@ -78,7 +84,8 @@ public:
 		number_of_layers(1),
 		buffer_width(0),
 		buffer_height(0),
-		highlight_functor(NULL)
+		highlight_functor(NULL),
+		point_unit_size_pixels(1.0)
 	{
 	}
 
@@ -130,8 +137,24 @@ public:
 		highlight_functor = functor;
 		return 1;
 	}
-}; /* class Render_graphics_opengl */
 
+	double get_point_unit_size_pixels() const
+	{
+		return this->point_unit_size_pixels;
+	}
+
+	void set_point_unit_size_pixels(double in_point_unit_size_pixels)
+	{
+		if (in_point_unit_size_pixels > 0.0)
+		{
+			this->point_unit_size_pixels = in_point_unit_size_pixels;
+		}
+	}
+
+	// override to avoid including fixed point size and line width in display lists
+	virtual void Graphics_object_execute_point_size(GT_object *graphics_object);
+
+}; /* class Render_graphics_opengl */
 
 /***************************************************************************//**
  * Factory function to create a renderer that uses immediate mode

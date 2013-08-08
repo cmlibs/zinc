@@ -154,8 +154,10 @@ finite element group scene.
 	struct Cmiss_font *font;
 	/* for surfaces */
 	enum Cmiss_graphic_polygon_render_mode polygon_render_mode;
-	/* for lines, a non zero line width overrides the default */
-	int line_width;
+	/* for rendering lines in GL, positive value; default 1.0 */
+	double render_line_width;
+	/* for rendering points in GL, positive value; default 1.0 */
+	double render_point_size;
 
 	/* rendering information */
 	/* the graphics_object generated for this settings */
@@ -489,13 +491,6 @@ struct FE_element *Cmiss_graphic_get_seed_element(
 
 int Cmiss_graphic_set_seed_element(struct Cmiss_graphic *graphic,
 	struct FE_element *seed_element);
-
-/***************************************************************************//**
- * Get the graphic line width.  If it is 0 then the line will use the scene default.
- */
-int Cmiss_graphic_get_line_width(struct Cmiss_graphic *graphic);
-
-int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width);
 
 /***************************************************************************//**
  * Copies the cmiss_graphic contents from source to destination.

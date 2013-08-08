@@ -137,6 +137,54 @@ ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
 	Cmiss_graphics_material_id material);
 
 /**
+ * Get the width used for rendering line primitives in GL in renderer 'point
+ * units', typically pixels for on-screen display.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The line render width in pixels, or 0.0 if bad argument.
+ */
+ZINC_API double Cmiss_graphic_get_render_line_width(Cmiss_graphic_id graphic);
+
+/**
+ * Set the width used for rendering line primitives in GL in renderer 'point
+ * units', typically pixels for on-screen display but scalable to ensure lines
+ * are of appropriate thickness on high resolution output.
+ * Note there may be arbitrary limits on values depending on the GL
+ * implementation, and for non-antialised rendering the nearest integer is used.
+ * The default value is 1.0.
+ *
+ * @param graphic  The graphic to modify.
+ * @param width  The line render width in pixels. Value > 0.0.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_render_line_width(Cmiss_graphic_id graphic,
+	double width);
+
+/**
+ * Get the size used for rendering point primitives in GL in renderer 'point
+ * units', typically pixels for on-screen display.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The point render size in pixels, or 0.0 if bad argument.
+ */
+ZINC_API double Cmiss_graphic_get_render_point_size(Cmiss_graphic_id graphic);
+
+/**
+ * Set the size used for rendering point primitives in GL in renderer 'point
+ * units', typically pixels for on-screen display but scalable to ensure points
+ * are of appropriate size on high resolution output.
+ * Note there may be arbitrary limits on values depending on the GL
+ * implementation, and may be rounded to the nearest integer in use.
+ * The default value is 1.0.
+ *
+ * @param graphic  The graphic to modify.
+ * @param size  The point render size in pixels. Value > 0.0.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_render_point_size(Cmiss_graphic_id graphic,
+	double size);
+
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *

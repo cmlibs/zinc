@@ -96,7 +96,7 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 		{
 			/* make a polyline big enough for the 12 line segment edges of the box */
 			if (ALLOCATE(points,Triple,24)&&
-				(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 					12,points,/*normalpoints*/NULL,0,(GLfloat *)NULL)))
 			{
 				point=points;

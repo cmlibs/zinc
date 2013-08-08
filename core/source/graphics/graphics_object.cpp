@@ -57,6 +57,7 @@ gtObject/gtWindow management routines.
 #include "zinc/field.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/graphicsmaterial.h"
+#include "zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 #include "general/compare.h"
@@ -82,13 +83,6 @@ gtObject/gtWindow management routines.
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
-/*
-Global variables
-----------------
-*/
-/*???DB.  I'm not sure that this should be here */
-ZnReal global_line_width=1.,global_point_size=1.;
-
 
 /*
 Module types
@@ -1484,7 +1478,6 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 	if ((initial->n_pts==final->n_pts)&&
 		(initial->n_data_components==final->n_data_components)&&
 		(initial->polyline_type==final->polyline_type)&&
-		(initial->line_width==final->line_width)&&
 		((initial->normallist&&final->normallist)||
 		((!initial->normallist)&&(!final->normallist))))
 	{
@@ -1567,7 +1560,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 			if (point)
 			{
 				polyline=CREATE(GT_polyline)(initial->polyline_type,
-					initial->line_width,initial->n_pts,point,normallist,
+					initial->n_pts,point,normallist,
 					initial->n_data_components,data);
 				if (polyline)
 				{
@@ -3170,7 +3163,7 @@ current storage and the internal data, text and names arrays are messed up.
 } /* GT_pointset_set_integer_identifier */
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
-	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
+	int n_pts,Triple *pointlist,Triple *normallist,
 	int n_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 22 April 2004
@@ -3185,7 +3178,6 @@ Allocates memory and assigns fields for a graphics polyline.
 	if (ALLOCATE(polyline,struct GT_polyline,1))
 	{
 		polyline->polyline_type=polyline_type;
-		polyline->line_width=line_width;
 		polyline->n_pts=n_pts;
 		polyline->pointlist=pointlist;
 		polyline->normallist=normallist;
@@ -3245,7 +3237,7 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
  * Creates the shared scene information for a GT_polyline_vertex_buffers.
  */
 GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
-	GT_polyline_type polyline_type, int line_width)
+	GT_polyline_type polyline_type)
 {
 	struct GT_polyline_vertex_buffers *polyline;
 
@@ -3253,7 +3245,6 @@ GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
 	if (ALLOCATE(polyline,struct GT_polyline_vertex_buffers,1))
 	{
 		polyline->polyline_type=polyline_type;
-		polyline->line_width=line_width;
 	}
 	else
 	{
@@ -3801,6 +3792,8 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct Spectrum *)NULL;
 				object->number_of_times=0;
+				object->render_line_width = 0.0; // not set: inherit from current state
+				object->render_point_size = 0.0; // not set: inherit from current state
 			}
 			else
 			{
@@ -6375,6 +6368,50 @@ This function enables a custom, per compile, labelling for a graphics object
 
 	return (return_code);
 } /* GT_object_set_glyph_labels_function */
+
+double get_GT_object_render_line_width(struct GT_object *graphics_object)
+{
+	if (graphics_object)
+		return graphics_object->render_line_width;
+	return 0.0;
+}
+
+int set_GT_object_render_line_width(struct GT_object *graphics_object,
+	double width)
+{
+	if (graphics_object && (width >= 0.0))
+	{
+		if (graphics_object->render_line_width != width)
+		{
+			graphics_object->render_line_width = width;
+			GT_object_changed(graphics_object);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+double get_GT_object_render_point_size(struct GT_object *graphics_object)
+{
+	if (graphics_object)
+		return graphics_object->render_point_size;
+	return 0.0;
+}
+
+int set_GT_object_render_point_size(struct GT_object *graphics_object,
+	double size)
+{
+	if (graphics_object && (size >= 0.0))
+	{
+		if (graphics_object->render_point_size != size)
+		{
+			graphics_object->render_point_size = size;
+			GT_object_changed(graphics_object);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
 struct Graphical_material *get_GT_object_default_material
 	(struct GT_object *graphics_object)

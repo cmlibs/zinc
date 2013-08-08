@@ -164,6 +164,26 @@ public:
 		return Cmiss_graphic_set_data_field(id, dataField.getId());
 	}
 
+	double getRenderLineWidth()
+	{
+		return Cmiss_graphic_get_render_line_width(id);
+	}
+
+	int setRenderLineWidth(double width)
+	{
+		return Cmiss_graphic_set_render_line_width(id, width);
+	}
+
+	double getRenderPointSize()
+	{
+		return Cmiss_graphic_get_render_point_size(id);
+	}
+
+	int setRenderPointSize(double size)
+	{
+		return Cmiss_graphic_set_render_point_size(id, size);
+	}
+
 	Field getSubgroupField()
 	{
 		return Field(Cmiss_graphic_get_subgroup_field(id));

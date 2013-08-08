@@ -1435,7 +1435,7 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 					{
 						gt_data_type=g_NO_DATA;
 					}
-					if (!(polyline=CREATE(GT_polyline)(g_PLAIN,/*line_width=default*/0,
+					if (!(polyline=CREATE(GT_polyline)(g_PLAIN,
 						number_of_stream_points,stream_points,/* normals */(Triple *)NULL,
 						gt_data_type,stream_data)))
 					{
