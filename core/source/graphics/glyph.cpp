@@ -474,7 +474,7 @@ Renders the label_bounds as lines and labels.
 					number_of_minor_lines++;
 				}
 			}
-			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 			if (polyline)
 			{
@@ -522,7 +522,7 @@ Renders the label_bounds as lines and labels.
 				}
 				DEALLOCATE(label_strings);
 			}
-			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 			if (polyline)
 			{
@@ -885,7 +885,7 @@ struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_lengt
 			points[ 8][0]=1.0;
 			points[ 9][0]=1.0-head_length;
 			points[ 9][2]=-half_head_width;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				5,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
@@ -1051,7 +1051,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				points[28][2]=1.0;
 				points[29][2]=1.0-head_length;
 				points[29][1]=-half_head_width;
-				polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 					15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
 				if (polyline)
 				{
@@ -1161,7 +1161,7 @@ struct GT_object *create_GT_object_cross(const char *name)
 			points[5][0]=0.0;
 			points[5][1]=0.0;
 			points[5][2]=+0.5;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				3,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
@@ -1344,7 +1344,7 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 					vertex++;
 				}
 			}
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				12,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);
@@ -1397,7 +1397,7 @@ struct GT_object *create_GT_object_line(const char *name)
 			points[1][0]=1.0;
 			points[1][1]=0.0;
 			points[1][2]=0.0;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 				1,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
 				DEALLOCATE(points);

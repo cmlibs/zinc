@@ -2236,14 +2236,8 @@ access this function.
 				printf("Scene_viewer: build scene and redraw\n");
 #endif /* defined (DEBUG_CODE) */
 
-				/*???RC. Is this the best place to set line width and point size? */
-				glLineWidth((GLfloat)global_line_width);
-				glPointSize((GLfloat)global_point_size);
-				/*???RC temporary: turn on point and line antialiasing */
-				/*glEnable(GL_POINT_SMOOTH);
-				  glEnable(GL_LINE_SMOOTH);*/
-				/*???RC test */
 				glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+
 				/* depth tests are against a normalised z coordinate (i.e. [0..1])
 					so the following sets this up and turns on the test */
 

@@ -290,7 +290,7 @@ GT_object *create_Spectrum_colour_bar(
 					point += 2;
 				}
 				return_code=(
-					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
 						number_of_ticks,points,/*normalpoints*/(Triple *)NULL,
 						/*n_data_components*/0,(GLfloat *)NULL))&&
 					set_GT_object_default_material(tick_graphics_object,

@@ -392,7 +392,7 @@ DESCRIPTION :
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
-									g_PLUS_MARKER,global_point_size,g_NO_DATA,
+									g_PLUS_MARKER, 1.0, g_NO_DATA,
 									/*object_name*/0,(GLfloat *)NULL, (struct Cmiss_font *)NULL);
 								GT_OBJECT_ADD(GT_point)(obj,time,point);
 							} break;
@@ -414,7 +414,7 @@ DESCRIPTION :
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								pointset = CREATE(GT_pointset)(npts1,pointlist,
-									(char **)NULL,g_PLUS_MARKER,global_point_size,g_NO_DATA,
+									(char **)NULL,g_PLUS_MARKER,/*marker_size*/1.0,g_NO_DATA,
 									(GLfloat *)NULL,(int *)NULL, (struct Cmiss_font *)NULL);
 								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
 #if defined (DEBUG_CODE)
@@ -502,8 +502,7 @@ DESCRIPTION :
 										{
 										} break;
 									}
-									polyline = CREATE(GT_polyline)(polyline_type,
-										/*line_width=default*/0,npts1,
+									polyline = CREATE(GT_polyline)(polyline_type, npts1,
 										pointlist, normallist, g_NO_DATA, (GLfloat *)NULL);
 									GT_OBJECT_ADD(GT_polyline)(obj,time,polyline);
 								}

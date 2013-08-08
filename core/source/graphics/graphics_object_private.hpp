@@ -234,8 +234,6 @@ DESCRIPTION :
 {
 	enum GT_polyline_type polyline_type;
 	int n_pts;
-	/* If non zero then this specifies to use a non default pixel line width */
-	int line_width;
 	int n_data_components;
 	Triple *pointlist;
 	Triple *normallist;
@@ -252,8 +250,6 @@ DESCRIPTION :
 struct GT_polyline_vertex_buffers
 {
 	enum GT_polyline_type polyline_type;
-	/** If non zero then this specifies to use a non default pixel line width */
-	int line_width;
 }; /* struct GT_polyline_vertex_buffers */
 
 struct GT_surface
@@ -406,6 +402,8 @@ Graphical object data structure.
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
 	ZnReal *times;
+	double render_line_width;
+	double render_point_size;
 
 	Graphics_vertex_array *vertex_array;
 

@@ -359,13 +359,6 @@ the time range valid.
 }; /* Graphics_object_time_range_struct */
 
 /*
-Global variables
-----------------
-*/
-/*???DB.  I'm not sure that this should be here */
-extern ZnReal global_line_width,global_point_size;
-
-/*
 Global functions
 ----------------
 */
@@ -765,7 +758,7 @@ current storage and the internal data, text and names arrays are messed up.
 ==============================================================================*/
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
-	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
+	int n_pts,Triple *pointlist,Triple *normallist,
 	int n_data_components,GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 22 April 2004
@@ -786,7 +779,7 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
  * Creates the shared scene information for a GT_polyline_vertex_buffers.
  */
 struct GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
-	enum GT_polyline_type polyline_type, int line_width);
+	enum GT_polyline_type polyline_type);
 
 int GT_polyline_set_integer_identifier(struct GT_polyline *polyline,
 	int identifier);
@@ -1224,6 +1217,46 @@ LAST MODIFIED : 7 July 2000
 DESCRIPTION :
 Sets the select_mode of the <graphics_object>.
 ==============================================================================*/
+
+/**
+ * Gets the width of lines rendered with GL, in pixels.
+ *
+ * @param graphics_object  The graphics object to query.
+ * @return  Line width in pixels, or 0.0 if unset or error.
+ */
+double get_GT_object_render_line_width(struct GT_object *graphics_object);
+
+/**
+ * Sets the width of lines rendered with GL, in pixels.
+ * Default value is 0.0 meaning inherit width from current state
+ * i.e. do not override.
+ *
+ * @param graphics_object  The graphics object to modify.
+ * @param width  Line width in pixels, or 0.0 to use width from current state.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+int set_GT_object_render_line_width(struct GT_object *graphics_object,
+	double width);
+
+/**
+ * Gets the size of points rendered with GL, in pixels.
+ *
+ * @param graphics_object  The graphics object to query.
+ * @return  Point size in pixels, or 0.0 if unset or error.
+ */
+double get_GT_object_render_point_size(struct GT_object *graphics_object);
+
+/**
+ * Sets the size of points rendered with GL, in pixels.
+ * Default value is 0.0 meaning inherit size from current state
+ * i.e. do not override.
+ *
+ * @param graphics_object  The graphics object to modify.
+ * @param size  Point size in pixels, or 0.0 to use size from current state.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+int set_GT_object_render_point_size(struct GT_object *graphics_object,
+	double size);
 
 struct Graphical_material *get_GT_object_default_material(
 	struct GT_object *graphics_object);

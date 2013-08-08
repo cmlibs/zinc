@@ -233,7 +233,7 @@ of components are expected to be supplied in <data1> and <data2>.
 } /* Contour_lines_add_segment */
 
 int Contour_lines_add_to_graphics_object(struct Contour_lines *contour_lines,
-	struct GT_object *graphics_object,ZnReal time,int line_width,int object_name)
+	struct GT_object *graphics_object,ZnReal time,int object_name)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
 
@@ -268,7 +268,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 				{
 					CAST_TO_OTHER(data, polyline->data, GLfloat, polyline->number_of_points*contour_lines->number_of_data_components);
 				}
-				if (NULL != (gt_polyline=CREATE(GT_polyline)(g_PLAIN,line_width,
+				if (NULL != (gt_polyline=CREATE(GT_polyline)(g_PLAIN,
 					polyline->number_of_points,point_list,(Triple *)NULL,
 					contour_lines->number_of_data_components,data)))
 				{
@@ -901,7 +901,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Computed_field *isoscalar_field,FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object, int line_width)
+	struct GT_object *graphics_object)
 {
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type1;
@@ -915,7 +915,6 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
-	ENTER(create_iso_lines_from_FE_element);
 	if (element && field_cache && (2==get_FE_element_dimension(element))&&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
@@ -1047,7 +1046,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 				Contour_lines_link_ends(contour_lines);
 				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
-						graphics_object, /*graphics_object_time*/0.0, line_width,
+						graphics_object, /*graphics_object_time*/0.0,
 						cm_identifier.number))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
@@ -1088,4 +1087,4 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	LEAVE;
 
 	return (return_code);
-} /* create_iso_lines_from_FE_element */
+}

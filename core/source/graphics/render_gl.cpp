@@ -125,6 +125,18 @@ int Render_graphics_opengl::Material_compile(Graphical_material *material)
 	return Material_compile_members_opengl(material, this);
 }
 
+void Render_graphics_opengl::Graphics_object_execute_point_size(GT_object *graphics_object)
+{
+	if (graphics_object->render_line_width != 0.0)
+	{
+		glLineWidth(static_cast<GLfloat>(graphics_object->render_line_width*this->get_point_unit_size_pixels()));
+	}
+	if (graphics_object->render_point_size != 0.0)
+	{
+		glPointSize(static_cast<GLfloat>(graphics_object->render_point_size*this->get_point_unit_size_pixels()));
+	}
+}
+
 /**
  * An implementation of a render class that uses immediate mode glBegin/glEnd.
  */
@@ -453,6 +465,11 @@ public:
 	  {
 		  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
 	  }
+
+		virtual void Graphics_object_execute_point_size(GT_object *)
+		{
+			// do nothing so point size and line width not in display_list
+		}
 
 	  int Material_execute_parent(Graphical_material *material)
 	  {
@@ -3031,7 +3048,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	int itime, name_selected, number_of_times, picking_names, return_code, strip;
 #if defined (OPENGL_API)
 	bool lighting_on = true;
-	int line_width;
 #endif /* defined (OPENGL_API) */
 	struct Graphical_material *material, *secondary_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -3415,7 +3431,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									}
 									else
 									{
-										line_width = 0;
 										while (line)
 										{
 											/* work out if subobjects selected */
@@ -3435,27 +3450,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													/* put out name for picking - cast to GLuint */
 													glLoadName((GLuint)line->object_name);
 												}
-												if (line->line_width != line_width)
-												{
-													if (line->line_width)
-													{
-														glLineWidth(line->line_width);
-													}
-													else
-													{
-														glLineWidth(global_line_width);
-													}
-													line_width = line->line_width;
-												}
 												draw_polylineGL(line->pointlist,line->normallist,
 													line->n_pts, line->n_data_components, line->data,
 													material,spectrum);
 											}
 											line=line->ptrnext;
-										}
-										if (line_width)
-										{
-											glLineWidth(global_line_width);
 										}
 									}
 									return_code=1;
@@ -3598,15 +3597,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							}
 							if (return_code)
 							{
-								if (line->line_width != 0)
-								{
-									glLineWidth(line->line_width);
-								}
-								else
-								{
-									glLineWidth(global_line_width);
-								}
-
 								unsigned int line_index;
 								unsigned int line_count =
 									object->vertex_array->get_number_of_vertices(
@@ -4337,17 +4327,15 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 	return (return_code);
 } /* Graphics_object_compile_members */
 
-/***************************************************************************//**
-																			 * Compile the display list for this object.
-																			 */
+/**
+ * Compile the display list for this object.
+ */
 static int Graphics_object_compile_opengl_display_list(GT_object *graphics_object_list,
 	Callback_base< GT_object * > *execute_function,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
 	struct GT_object *graphics_object;
-
-	ENTER(compile_GT_object);
 	USE_PARAMETER(renderer);
 	if (graphics_object_list)
 	{
@@ -4385,28 +4373,24 @@ static int Graphics_object_compile_opengl_display_list(GT_object *graphics_objec
 		display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_display_list.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Graphics_object_compile_opengl_display_list */
+}
 
 /**
- * Compile the display list for this object.
+ * Execute the display list for this object.
  */
 static int Graphics_object_execute_opengl_display_list(GT_object *graphics_object_list,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
-	struct GT_object *graphics_object;
-
-	ENTER(compile_GT_object);
-	USE_PARAMETER(renderer);
-	if (graphics_object_list)
+	if (graphics_object_list && renderer)
 	{
 		return_code = 1;
-		for (graphics_object=graphics_object_list;graphics_object != NULL;
+		for (struct GT_object *graphics_object=graphics_object_list;graphics_object != NULL;
 			graphics_object=graphics_object->nextobject)
 		{
+			// execute point size and line width now since not in display list
+			renderer->Render_graphics_opengl::Graphics_object_execute_point_size(graphics_object);
 			if (GRAPHICS_COMPILED == graphics_object->compile_status)
 			{
 				glCallList(graphics_object->display_list);
@@ -4423,10 +4407,8 @@ static int Graphics_object_execute_opengl_display_list(GT_object *graphics_objec
 		display_message(ERROR_MESSAGE,"Graphics_object_execute_opengl_display_list.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Graphics_object_execute_opengl_display_list */
+}
 
 static int Graphics_object_render_opengl(
 struct GT_object *graphics_object,
@@ -4447,6 +4429,7 @@ struct GT_object *graphics_object,
 		for (graphics_object_item=graphics_object;graphics_object_item != NULL;
 			graphics_object_item=graphics_object_item->nextobject)
 		{
+			renderer->Graphics_object_execute_point_size(graphics_object_item);
 			if (renderer->picking && (0<graphics_object_no))
 			{
 				glLoadName((GLuint)graphics_object_no);

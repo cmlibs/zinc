@@ -308,8 +308,8 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->polygon_render_mode = CMISS_GRAPHIC_POLYGON_RENDER_SHADED;
 			/* for streamlines only */
 			graphic->streamline_data_type=STREAM_NO_DATA;
-			/* for lines */
-			graphic->line_width = 0;
+			graphic->render_line_width = 1.0;
+			graphic->render_point_size = 1.0;
 
 			/* rendering information defaults */
 			graphic->graphics_object = (struct GT_object *)NULL;
@@ -814,8 +814,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 														graphic_to_object_data->rc_coordinate_field,
 														graphic->isoscalar_field, graphic->isovalues[i],
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
-														top_level_element, graphic->graphics_object,
-														graphic->line_width);
+														top_level_element, graphic->graphics_object);
 												}
 											}
 											else
@@ -841,8 +840,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 														graphic_to_object_data->rc_coordinate_field,
 														graphic->isoscalar_field, isovalue,
 														graphic->data_field, number_in_xi[0], number_in_xi[1],
-														top_level_element, graphic->graphics_object,
-														graphic->line_width);
+														top_level_element, graphic->graphics_object);
 												}
 											}
 										}
@@ -1791,6 +1789,8 @@ int Cmiss_graphic_update_graphics_object_trivial(struct Cmiss_graphic *graphic)
 			set_GT_object_glyph_label_text(graphic->graphics_object, graphic->label_text);
 		}
 		set_GT_object_polygon_render_mode(graphic->graphics_object, graphic->polygon_render_mode);
+		set_GT_object_render_line_width(graphic->graphics_object, graphic->render_line_width);
+		set_GT_object_render_point_size(graphic->graphics_object, graphic->render_point_size);
 		return_code = 1;
 	}
 	return return_code;
@@ -2065,9 +2065,14 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		append_string(&graphic_string,
 			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(graphic->coordinate_system),&error);
 
-		if (0 != graphic->line_width)
+		if ((graphic->render_line_width < 0.99999) || (1.00001 < graphic->render_line_width))
 		{
-			sprintf(temp_string, " line_width %d", graphic->line_width);
+			sprintf(temp_string, " line_width %g", graphic->render_line_width);
+			append_string(&graphic_string,temp_string,&error);
+		}
+		if ((graphic->render_point_size < 0.99999) || (1.00001 < graphic->render_point_size))
+		{
+			sprintf(temp_string, " point_size %g", graphic->render_point_size);
 			append_string(&graphic_string,temp_string,&error);
 		}
 
@@ -2722,7 +2727,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 				/*
 				GT_polyline_vertex_buffers *lines =
 					CREATE(GT_polyline_vertex_buffers)(
-					g_PLAIN, settings->line_width);
+					g_PLAIN);
 				*/
 				GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(cad_topology, graphic_to_object_data->field_cache, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
 				if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
@@ -3254,6 +3259,8 @@ int Cmiss_graphic_to_graphics_object(
 									graphic->graphics_object = CREATE(GT_object)(
 										graphics_object_name, graphics_object_type,
 										graphic->material);
+									set_GT_object_render_line_width(graphic->graphics_object, graphic->render_line_width);
+									set_GT_object_render_point_size(graphic->graphics_object, graphic->render_point_size);
 									GT_object_set_select_mode(graphic->graphics_object,
 										graphic->select_mode);
 									if (graphic->secondary_material)
@@ -3415,8 +3422,7 @@ int Cmiss_graphic_to_graphics_object(
 								if (CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE == graphic->line_shape)
 								{
 									GT_polyline_vertex_buffers *lines =
-										CREATE(GT_polyline_vertex_buffers)(
-											g_PLAIN, graphic->line_width);
+										CREATE(GT_polyline_vertex_buffers)(g_PLAIN);
 									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 										graphic->graphics_object, lines))
 									{
@@ -4186,7 +4192,8 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* copy appearance graphic */
 		/* for all graphic types */
 		destination->visibility_flag = source->visibility_flag;
-		destination->line_width = source->line_width;
+		destination->render_line_width = source->render_line_width;
+		destination->render_point_size = source->render_point_size;
 		REACCESS(Graphical_material)(&(destination->material),source->material);
 		REACCESS(Graphical_material)(&(destination->secondary_material),
 			source->secondary_material);
@@ -4688,7 +4695,8 @@ int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
 			(graphic1->visibility_flag == graphic2->visibility_flag) &&
 			(graphic1->material == graphic2->material) &&
 			(graphic1->secondary_material == graphic2->secondary_material) &&
-			(graphic1->line_width == graphic2->line_width) &&
+			(graphic1->render_line_width == graphic2->render_line_width) &&
+			(graphic1->render_point_size == graphic2->render_point_size) &&
 			(graphic1->selected_material == graphic2->selected_material) &&
 			(graphic1->spectrum == graphic2->spectrum) &&
 			(graphic1->font == graphic2->font) &&
@@ -5128,46 +5136,49 @@ For graphic starting in a particular element.
 	return (return_code);
 } /* Cmiss_graphic_set_seed_element */
 
-int Cmiss_graphic_get_line_width(struct Cmiss_graphic *graphic)
+double Cmiss_graphic_get_render_line_width(Cmiss_graphic_id graphic)
 {
-	int line_width;
-
-	ENTER(Cmiss_graphic_get_line_width);
 	if (graphic)
-	{
-		line_width=graphic->line_width;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_line_width.  Invalid argument(s)");
-		line_width = 0;
-	}
-	LEAVE;
+		return graphic->render_line_width;
+	return 0.0;
+}
 
-	return (line_width);
-} /* Cmiss_graphic_get_line_width */
-
-int Cmiss_graphic_set_line_width(struct Cmiss_graphic *graphic, int line_width)
+int Cmiss_graphic_set_render_line_width(Cmiss_graphic_id graphic, double width)
 {
-	int return_code;
+	if (graphic && (width > 0.0))
+	{
+		if (graphic->render_line_width != width)
+		{
+			graphic->render_line_width = width;
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
-	ENTER(Cmiss_graphic_set_line_width);
+double Cmiss_graphic_get_render_point_size(Cmiss_graphic_id graphic)
+{
 	if (graphic)
-	{
-	  return_code = 1;
-	  graphic->line_width = line_width;
-	}
-	else
-	{
-	  display_message(ERROR_MESSAGE,
-		"Cmiss_graphic_set_line_width.  Invalid argument(s)");
-	  return_code = 0;
-	}
-	LEAVE;
+		return graphic->render_point_size;
+	return 0.0;
+}
 
-	return (return_code);
-} /* Cmiss_graphic_set_line_width */
+int Cmiss_graphic_set_render_point_size(Cmiss_graphic_id graphic, double size)
+{
+	if (graphic && (size > 0.0))
+	{
+		if (graphic->render_point_size != size)
+		{
+			graphic->render_point_size = size;
+			Cmiss_graphic_update_graphics_object_trivial(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
+		return CMISS_OK;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
 
 Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
 	Cmiss_graphic_id graphic)
