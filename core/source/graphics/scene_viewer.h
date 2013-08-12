@@ -86,12 +86,6 @@ and the functions given their public names.
 #define Scene_viewer_interact_mode Cmiss_scene_viewer_interact_mode
 #define SCENE_VIEWER_INTERACT_STANDARD CMISS_SCENE_VIEWER_INTERACT_STANDARD
 #define SCENE_VIEWER_INTERACT_2D CMISS_SCENE_VIEWER_INTERACT_2D
-#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
-/* Be sure to implement any new modes in Scene_viewer_transparency_mode_string. */
-#define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_FAST
-#define SCENE_VIEWER_SLOW_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW
-#define SCENE_VIEWER_LAYERED_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED
-#define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
 
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
@@ -100,13 +94,6 @@ and the functions given their public names.
    Cmiss_scene_viewer_set_lookat_parameters_non_skew
 #define Scene_viewer_get_lookat_parameters \
    Cmiss_scene_viewer_get_lookat_parameters
-#define Scene_viewer_get_transparency_mode Cmiss_scene_viewer_get_transparency_mode
-#define Scene_viewer_set_transparency_mode Cmiss_scene_viewer_set_transparency_mode
-#define Scene_viewer_get_transparency_layers \
-   Cmiss_scene_viewer_get_transparency_layers
-#define Scene_viewer_set_transparency_layers \
-   Cmiss_scene_viewer_set_transparency_layers
-#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
 #define Scene_viewer_get_view_angle Cmiss_scene_viewer_get_view_angle
 #define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
 #define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
@@ -362,7 +349,7 @@ DESCRIPTION :
 	double user_viewport_left,user_viewport_top,user_viewport_pixels_per_unit_x,
 		user_viewport_pixels_per_unit_y;
 	/* specifies the quality of transparency rendering */
-	enum Scene_viewer_transparency_mode transparency_mode;
+	enum Cmiss_scene_viewer_transparency_mode transparency_mode;
 	/* number of layers used in layered transparency mode */
 	int transparency_layers;
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
@@ -409,7 +396,7 @@ DESCRIPTION :
 	/* The distance between the two stereo views in world space */
 	double stereo_eye_spacing;
 	/* Special persistent data for order independent transparency */
-	struct Scene_viewer_order_independent_transparency_data
+	struct Cmiss_scene_viewer_transparency_order_independent_data
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	//-- struct User_interface *user_interface;
@@ -1054,51 +1041,6 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-int Scene_viewer_get_transparency_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_transparency_mode *transparency_mode);
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-See Scene_viewer_set_transparency_mode for explanation.
-==============================================================================*/
-
-int Scene_viewer_set_transparency_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_transparency_mode transparency_mode);
-/*******************************************************************************
-LAST MODIFIED : 23 November 1998
-
-DESCRIPTION :
-Sets the transparency_mode of the Scene_viewer. In fast transparency mode,
-the scene is drawn as is, with depth buffer writing even for semi-transparent
-objects. In slow transparency mode, opaque objects are rendered first, then
-semi-transparent objects are rendered without writing the depth buffer. Hence,
-you can even see through the first semi-transparent surface drawn.
-==============================================================================*/
-
-int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
-	unsigned int *transparency_layers);
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-See Scene_viewer_set_transparency_layers for explanation.
-==============================================================================*/
-
-int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	unsigned int transparency_layers);
-/*******************************************************************************
-LAST MODIFIED : 9 October 1999
-
-DESCRIPTION :
-When the transparency_mode of the Scene_viewer is layered_transparency then
-the z depth is divided into <layers> slices.  From back to front for each layer
-the clip planes are set to clip all other layers and then the entire scene is
-drawn.  This is very expensive but can get great results for transparent
-surfaces.  Best use of the slices is made if the near and far clip planes are
-tight around the objects in the scene.
-==============================================================================*/
-
 int Scene_viewer_get_view_angle(struct Scene_viewer *scene_viewer,
 	double *view_angle);
 /*******************************************************************************
@@ -1504,8 +1446,8 @@ Returns a string label for the <projection_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-const char *Scene_viewer_transparency_mode_string(
-	enum Scene_viewer_transparency_mode transparency_mode);
+const char *Cmiss_scene_viewer_transparency_mode_string(
+	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 23 November 1998
 
