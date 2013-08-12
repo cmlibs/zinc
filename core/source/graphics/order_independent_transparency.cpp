@@ -91,7 +91,7 @@ static const char *required_extensions_mesa_ati[] = {"GL_ARB_texture_rectangle",
 #endif
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-struct Scene_viewer_order_independent_transparency_data
+struct Cmiss_scene_viewer_transparency_order_independent_data
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
 
@@ -180,7 +180,7 @@ the planes in the <matrix>.
 } /* obj_linear_texgen */
 
 static int order_independent_init_opengl(
-	struct Scene_viewer_order_independent_transparency_data *data)
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
 
@@ -245,7 +245,7 @@ Initialises the order independent transparency extension.
 
 static void render_scene_from_camera_view(int layer,
 	struct Scene_viewer_rendering_data *rendering_data,
-	struct Scene_viewer_order_independent_transparency_data *data,
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data,
 	double *projection_matrix, double *modelview_matrix)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
@@ -347,7 +347,7 @@ Draws one peeled layer of the scene.
 } /* render_scene_from_camera_view */
 
 static void draw_sorted_transparency(
-	struct Scene_viewer_order_independent_transparency_data *data,
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data,
 	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
@@ -548,7 +548,7 @@ Returns true if the current display is capable of order independent transparency
 	return (return_code);
 } /* order_independent_capable */
 
-struct Scene_viewer_order_independent_transparency_data *
+struct Cmiss_scene_viewer_transparency_order_independent_data *
    order_independent_initialise(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
@@ -561,12 +561,12 @@ Initialises the order independent transparency extension.
 	GLint alpha_bits, depth_bits;
 	int return_code;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
-	struct Scene_viewer_order_independent_transparency_data *data;
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data;
 
 	ENTER(order_independent_initialise);
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-	if (ALLOCATE(data, struct Scene_viewer_order_independent_transparency_data,
+	if (ALLOCATE(data, struct Cmiss_scene_viewer_transparency_order_independent_data,
 		1))
 	{
 		return_code = 1;
@@ -618,7 +618,7 @@ Initialises the order independent transparency extension.
 		if (!return_code)
 		{
 			DEALLOCATE(data);
-			data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
+			data = (struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
 		}
 		else
 		{
@@ -629,11 +629,11 @@ Initialises the order independent transparency extension.
 	{
 		display_message(ERROR_MESSAGE, "order_independent_initialise.  "
 				"Unable to allocate data structure\n");
-		data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
+		data = (struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	USE_PARAMETER(scene_viewer);
-	data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
+	data = (struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 
 	LEAVE;
@@ -642,7 +642,7 @@ Initialises the order independent transparency extension.
 } /* order_independent_initialise */
 
 int order_independent_reshape(
-	struct Scene_viewer_order_independent_transparency_data *data,
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data,
 	int width, int height, int layers, int using_stencil_overlay)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
@@ -744,7 +744,7 @@ Initialises per rendering parts of this extension.
 } /* order_independent_reshape */
 
 void order_independent_display(struct Scene_viewer_rendering_data *rendering_data,
-	struct Scene_viewer_order_independent_transparency_data *data,
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data,
 	double *projection_matrix, double *modelview_matrix,
 	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
@@ -841,7 +841,7 @@ Actually preforms the rendering pass.
 } /* order_independent_display */
 
 int order_independent_finalise(
-	struct Scene_viewer_order_independent_transparency_data **data_address)
+	struct Cmiss_scene_viewer_transparency_order_independent_data **data_address)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
 
@@ -852,7 +852,7 @@ Frees the memory associated with the <data_address> and sets <data_address> to N
 	int return_code;
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	int i;
-	struct Scene_viewer_order_independent_transparency_data *data;
+	struct Cmiss_scene_viewer_transparency_order_independent_data *data;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 
 	ENTER(order_independent_finalise);
@@ -873,7 +873,7 @@ Frees the memory associated with the <data_address> and sets <data_address> to N
 		}
 
 		DEALLOCATE(*data_address);
-		*data_address = (struct Scene_viewer_order_independent_transparency_data *)NULL;
+		*data_address = (struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
 
 		return_code = 1;
 	}

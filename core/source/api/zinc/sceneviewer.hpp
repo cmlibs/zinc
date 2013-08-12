@@ -156,6 +156,14 @@ public:
 		STEREO_MODE_STEREO = CMISS_SCENE_VIEWER_STEREO_STEREO
 	};
 
+	enum TransparencyMode
+	{
+		TRANSPARENCY_INVALID = CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID,
+		TRANSPARENCY_FAST = CMISS_SCENE_VIEWER_TRANSPARENCY_FAST,
+		TRANSPARENCY_SLOW = CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW,
+		TRANSPARENCY_ORDER_INDEPENDENT = CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+	};
+
 	SceneViewer() : id(0)
 	{  }
 
@@ -281,6 +289,27 @@ public:
 	int viewAll()
 	{
 		return Cmiss_scene_viewer_view_all(id);
+	}
+
+	enum TransparencyMode getTransparencyMode()
+	{
+		return static_cast<TransparencyMode>(Cmiss_scene_viewer_get_transparency_mode(id));
+	}
+
+	int setTransparencyMode(TransparencyMode transparencyMode)
+	{
+		return Cmiss_scene_viewer_set_transparency_mode(id,
+			static_cast<Cmiss_scene_viewer_transparency_mode>(transparencyMode));
+	}
+
+	int getTransparencyLayers()
+	{
+		return Cmiss_scene_viewer_get_transparency_layers(id);
+	}
+
+	int setTransparencyLayers(int layers)
+	{
+		return Cmiss_scene_viewer_set_transparency_layers(id, layers);
 	}
 
 };

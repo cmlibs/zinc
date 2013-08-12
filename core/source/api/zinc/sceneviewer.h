@@ -157,38 +157,6 @@ Specifies the sort of projection matrix used to render the 3D scene.
 	CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE
 };
 
-enum Cmiss_scene_viewer_transparency_mode
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Controls the way partially transparent objects are rendered in scene viewer.
-CMISS_SCENE_VIEWER_FAST_TRANSPARENCY just includes transparent objects in the
-normal render, this causes them to obscure other objects behind if they are
-drawn first.
-CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY puts out all the opaque geometry first
-and then ignores the depth test while drawing all partially transparent objects,
-this ensures everything is drawn but multiple layers of transparency will
-always draw on top of each other which means a surface that is behind another
-may be drawn over the top of one that is supposed to be in front.
-CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY divides the viewing volume between the
-near and far clip planes into "transparency_layers" slices and renders each
-slice from back to front.  This is very slow and can still have artefacts at
-the edges of the layers.  Best use of the slices is made if the near and far
-clip planes are tight around the objects in the scene.
-CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY uses some Nvidia extensions
-to implement a full back to front perl pixel fragment sort correctly rendering
-transparency with a small number of passes, specified by "transparency layers".
-This uses all the texturing resources of the current Nvidia hardware and so
-no materials used in the scene can contain textures.
-==============================================================================*/
-{
-	CMISS_SCENE_VIEWER_TRANSPARENCY_FAST,
-	CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW,
-	CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED,
-	CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
-};
-
 enum Cmiss_scene_viewer_blending_mode
 /*******************************************************************************
 LAST MODIFIED :
@@ -362,26 +330,6 @@ DESCRIPTION :
 Sets the projection mode - parallel/perspective - of the Scene_viewer.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_get_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
- enum Cmiss_scene_viewer_transparency_mode *transparency_mode);
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-Returns the transparency mode of the Scene_viewer.  See the definition of the
-Cmiss_scene_viewer_transparency_mode enumerator.
-==============================================================================*/
-
-ZINC_API int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Sets the transparency mode of the Scene_viewer.  See the definition of the
-Cmiss_scene_viewer_transparency_mode enumerator.
-==============================================================================*/
-
 ZINC_API int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_blending_mode *blending_mode);
 /*******************************************************************************
@@ -402,27 +350,6 @@ Sets the blending mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_blending_mode enumerator.
 ==============================================================================*/
 
-ZINC_API int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
-	unsigned int *transparency_layers);
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-Gets the number of layers used in the CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
-transparency_mode.  See the definition of the
-Cmiss_scene_viewer_transparency_mode enumerator.
-==============================================================================*/
-
-ZINC_API int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
-	unsigned int layers);
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Sets the number of layers used in the CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
-transparency_mode.  See the definition of the
-Cmiss_scene_viewer_transparency_mode enumerator.
-==============================================================================*/
 
 ZINC_API int Cmiss_scene_viewer_get_view_angle(Cmiss_scene_viewer_id scene_viewer,
 	double *view_angle);
@@ -913,6 +840,102 @@ ZINC_API Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_sce
  * @return  Status CMISS_OK if handle successfully destroyed, otherwise any other value.
  */
 ZINC_API int Cmiss_scene_viewer_module_destroy(Cmiss_scene_viewer_module_id *scene_viewer_module_address);
+
+/**
+ * Controls the way partially transparent objects are rendered in scene viewer.
+ *
+ */
+enum Cmiss_scene_viewer_transparency_mode
+{
+	CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID = 0,
+	CMISS_SCENE_VIEWER_TRANSPARENCY_FAST = 1,
+	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_FAST just includes
+	 * transparent objects in the normal render, this causes them
+	 * to obscure other objects behind if they are drawn first.
+	 */
+	CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW = 2,
+	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW puts out all the
+	 * opaque geometry first and then ignores the depth test while
+	 * drawing all partially transparent objects, this ensures everything
+	 * is drawn but multiple layers of transparency will always draw
+	 * on top of each other which means a surface that is behind another
+	 * may be drawn over the top of one that is supposed to be in front.
+	 */
+	CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT = 3
+	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT uses
+	 * some Nvidia extensions to implement a full back to front perl pixel
+	 * fragment sort correctly rendering transparency with a small number
+	 * of passes, specified by "transparency layers". This uses all the
+	 * texturing resources of the current Nvidia hardware and so
+	 * no materials used in the scene can contain textures.
+	 */
+};
+
+
+/**
+ * Get the transparency_mode of the Scene_viewer. In fast transparency mode,
+ * the scene is drawn as it is, with depth buffer writing even for semi-transparent
+ * objects. In slow transparency mode, opaque objects are rendered first, then
+ * semi-transparent objects are rendered without writing the depth buffer. Hence,
+ * you can even see through the first semi-transparent surface drawn.
+ *
+ * @See Cmiss_scene_viewer_transparency_mode
+ * @See Cmiss_scene_viewer_set_transparency_mode
+ *
+ * @param scene_viewer  Handle to the scene_viewer.
+ *
+ * @return  transparency_mode set for this scene_viewer.
+ *   CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT if failed or
+ *   mode is not set correctly
+ */
+ZINC_API enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transparency_mode(
+	Cmiss_scene_viewer_id scene_viewer);
+
+/**
+ * Set the transparency_mode of the Scene_viewer.
+ *
+ * @See Cmiss_scene_viewer_transparency_mode
+ * @See Cmiss_scene_viewer_get_transparency_mode
+ *
+ * @param scene_viewer  Handle to the scene_viewer.
+ * @param transparency_mode  Transparency mode to be set for scene_viewer
+ *
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * 	failed.
+ */
+ZINC_API int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
+
+
+/**
+ * Get the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * transparency_mode.
+ *
+ * @See Cmiss_scene_viewer_transparency_mode
+ *
+ * @param scene_viewer  Handle to the cmiss scene_viewer component.
+ *
+ * @return  number of layers for this scene viewer. Any otehr value if failed or
+ *   it is not set correctly.
+ */
+ZINC_API int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer);
+
+/**
+ * Set the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * transparency_mode.
+ *
+ * @See Cmiss_scene_viewer_transparency_mode
+ *
+ * @param scene_viewer  Handle to the cmiss scene_viewer component.
+ * @param layers  number of layers to be set for this scene viewer.
+ *
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * 	failed.
+ */
+ZINC_API int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+	int layers);
+
+
 
 #ifdef __cplusplus
 }

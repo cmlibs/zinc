@@ -1400,58 +1400,6 @@ and then again with only semi transparent objects not changing the depth buffer.
 	return (return_code);
 } /* Scene_viewer_slow_transparency */
 
-static int Scene_viewer_layered_transparency(
-	struct Scene_viewer_rendering_data *rendering_data)
-/*******************************************************************************
-LAST MODIFIED : 4 April 2003
-
-DESCRIPTION :
-Render the scene twice.  Once with opaque objects filling the depth buffer
-and then again with only semi transparent objects not changing the depth buffer.
-==============================================================================*/
-{
-	GLdouble temp_matrix[16];
-	int layer,layers,return_code;
-
-	ENTER(Scene_viewer_layered_transparency);
-	if (rendering_data)
-	{
-		return_code = 1;
-
-		glMatrixMode(GL_PROJECTION);
-		glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
-
-		/* Draw each layer separately to help transparency */
-		layers = rendering_data->override_transparency_layers;
-		for (layer = 0 ; layer < layers ; layer++)
-		{
-			glMatrixMode(GL_PROJECTION);
-
-			glLoadIdentity();
-
-			glTranslated(0.0, 0.0, (double)layer * 2.0
-				- (double)(layers - 1));
-			glScaled(1.0, 1.0, (double)layers);
-
-			glMultMatrixd(temp_matrix);
-
-			glDepthRange((double)(layers - layer - 1) / (double)layers,
-				(double)(layers - layer) / (double)layers);
-
-			Scene_viewer_call_next_renderer(rendering_data);
-
-			glDepthRange((GLclampd)0.0,(GLclampd)1.0);
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_layered_transparency */
-
 static int Scene_viewer_antialias(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -2179,21 +2127,14 @@ access this function.
 
 				switch (scene_viewer->transparency_mode)
 				{
-					case SCENE_VIEWER_SLOW_TRANSPARENCY:
+					case CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW:
 					{
 						render_object = CREATE(Scene_viewer_render_object)(
 							Scene_viewer_slow_transparency);
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 							rendering_data.render_callstack);
 					} break;
-					case SCENE_VIEWER_LAYERED_TRANSPARENCY:
-					{
-						render_object = CREATE(Scene_viewer_render_object)(
-							Scene_viewer_layered_transparency);
-						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);
-					} break;
-					case SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY:
+					case CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT:
 					{
 						Scene_viewer_initialise_order_independent_transparency(&rendering_data);
 
@@ -2202,7 +2143,7 @@ access this function.
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 							rendering_data.render_callstack);
 					}
-					case CMISS_SCENE_VIEWER_TRANSPARENCY_FAST:
+					default:
 					{
 						/* Do nothing */
 					} break;
@@ -3073,7 +3014,7 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->image_texture).callback_id = NULL;
 				(scene_viewer->image_texture).scene_viewer = scene_viewer;
 				scene_viewer->order_independent_transparency_data =
-					(struct Scene_viewer_order_independent_transparency_data *)NULL;
+					(struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
 
 				/* set projection matrices to identity */
 				for (i=0;i<16;i++)
@@ -3115,7 +3056,7 @@ performed in idle time so that multiple redraws are avoided.
 				/* by default, use undistort stuff on textures */
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
-				scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
+				scene_viewer->transparency_mode=CMISS_SCENE_VIEWER_TRANSPARENCY_FAST;
 				scene_viewer->transparency_layers=1;
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
@@ -5309,57 +5250,29 @@ Sets the scene viewer zoom rate.
 	return (return_code);
 } /* Scene_viewer_set_tumble_rate */
 
-int Scene_viewer_get_transparency_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_transparency_mode *transparency_mode)
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-See Scene_viewer_set_transparency_mode for explanation.
-==============================================================================*/
+enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transparency_mode(
+	Cmiss_scene_viewer_id scene_viewer)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_get_transparency_mode);
 	if (scene_viewer)
 	{
-		*transparency_mode = scene_viewer->transparency_mode;
-		return_code = 1;
+		return scene_viewer->transparency_mode;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_transparency_mode.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_get_transparency_mode */
+	return CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID;
+}
 
-int Scene_viewer_set_transparency_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_transparency_mode transparency_mode)
-/*******************************************************************************
-LAST MODIFIED : 23 November 1998
+int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_transparency_mode transparency_mode)
 
-DESCRIPTION :
-Sets the transparency_mode of the Scene_viewer. In fast transparency mode,
-the scene is drawn as is, with depth buffer writing even for semi-transparent
-objects. In slow transparency mode, opaque objects are rendered first, then
-semi-transparent objects are rendered without writing the depth buffer. Hence,
-you can even see through the first semi-transparent surface drawn.
-==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
-	ENTER(Scene_viewer_set_transparency_mode);
-	if (scene_viewer&&((SCENE_VIEWER_FAST_TRANSPARENCY==transparency_mode)||
-		(SCENE_VIEWER_SLOW_TRANSPARENCY==transparency_mode)||
-		(SCENE_VIEWER_LAYERED_TRANSPARENCY==transparency_mode)||
-		(SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)))
+	if (scene_viewer&&((CMISS_SCENE_VIEWER_TRANSPARENCY_FAST==transparency_mode)||
+		(CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW==transparency_mode)||
+		(CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT==transparency_mode)))
 	{
 		return_code=1;
-		if (SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)
+		if (CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT==transparency_mode)
 		{
 			if (!order_independent_capable())
 			{
@@ -5369,82 +5282,47 @@ you can even see through the first semi-transparent surface drawn.
 		}
 		if (return_code)
 		{
-			scene_viewer->transparency_mode=transparency_mode;
-			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			if (scene_viewer->transparency_mode!=transparency_mode)
+			{
+				scene_viewer->transparency_mode=transparency_mode;
+				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_transparency_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_transparency_mode */
+}
 
-int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
-	unsigned int *transparency_layers)
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-See Scene_viewer_set_transparency_layers for explanation.
-==============================================================================*/
+int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_get_transparency_layers);
 	if (scene_viewer)
 	{
-		*transparency_layers = scene_viewer->transparency_layers;
-		return_code = 1;
+		return scene_viewer->transparency_layers;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_transparency_layers.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_get_transparency_layers */
+	return CMISS_ERROR_ARGUMENT;
+}
 
-int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	unsigned int transparency_layers)
-/*******************************************************************************
-LAST MODIFIED : 17 September 2002
-
-DESCRIPTION :
-When the transparency_mode of the Scene_viewer is layered_transparency then
-the z depth is divided into <layers> slices.  From back to front for each layer
-the clip planes are set to clip all other layers and then the entire scene is
-drawn.  This is very expensive but can get great results for transparent
-surfaces.  Best use of the slices is made if the near and far clip planes are
-tight around the objects in the scene.
-==============================================================================*/
+int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+	int transparency_layers)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_transparency_mode);
 	if (scene_viewer)
 	{
-		scene_viewer->transparency_layers = transparency_layers;
-		return_code=1;
+		if (scene_viewer->transparency_layers != transparency_layers)
+		{
+			scene_viewer->transparency_layers = transparency_layers;
+			if (scene_viewer->transparency_mode==CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT)
+			{
+				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			}
+		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_transparency_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_set_transparency_mode */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 int Scene_viewer_get_view_angle(struct Scene_viewer *scene_viewer,
 	double *view_angle)
@@ -7190,8 +7068,8 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_projection_mode_string */
 
-const char *Scene_viewer_transparency_mode_string(
-	enum Scene_viewer_transparency_mode transparency_mode)
+const char *Cmiss_scene_viewer_transparency_mode_string(
+	enum Cmiss_scene_viewer_transparency_mode transparency_mode)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2003
 
@@ -7202,36 +7080,28 @@ NOTE: Calling function must not deallocate returned string.
 {
 	const char *return_string;
 
-	ENTER(Scene_viewer_transparency_mode_string);
 	switch (transparency_mode)
 	{
-		case SCENE_VIEWER_FAST_TRANSPARENCY:
+		case CMISS_SCENE_VIEWER_TRANSPARENCY_FAST:
 		{
 			return_string="fast_transparency";
 		} break;
-		case SCENE_VIEWER_SLOW_TRANSPARENCY:
+		case CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW:
 		{
 			return_string="slow_transparency";
 		} break;
-		case SCENE_VIEWER_LAYERED_TRANSPARENCY:
-		{
-			return_string="layered_transparency";
-		} break;
-		case SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY:
+		case CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT:
 		{
 			return_string="order_independent_transparency";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_transparency_mode_string.  Unknown transparency mode");
 			return_string=(const char *)NULL;
 		}
 	}
-	LEAVE;
 
 	return (return_string);
-} /* Scene_viewer_transparency_mode_string */
+}
 
 const char *Scene_viewer_viewport_mode_string(
 	enum Scene_viewer_viewport_mode viewport_mode)
