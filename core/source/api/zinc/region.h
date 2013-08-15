@@ -531,10 +531,10 @@ ZINC_API int Cmiss_stream_information_region_set_resource_attribute_real(
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
- * @return  Specified domain_type for stream resource, CMISS_FIELD_DOMAIN_TYPE_INVALID
- * if failed or unset
+ * @return  Bitmasks for specified domain types for stream resource,
+ * 	CMISS_FIELD_DOMAIN_TYPE_INVALID if failed or unset
  */
-ZINC_API enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resource_domain_type(
+ZINC_API int Cmiss_stream_information_region_get_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information, Cmiss_stream_resource_id resource);
 
 /***************************************************************************//**
@@ -546,11 +546,16 @@ ZINC_API enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resour
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param resource  Handle to the Cmiss_stream_resource.
- * @param domain_type  The domain type to be set for output. It currently supports
+ * @param domain_type  Bitmasks for the domain type to be set for output. It currently supports
  *   the following domains:
- *   CMISS_FIELD_DOMAIN_NODES - output nodes only/input nodeset as nodes
- *   CMISS_FIELD_DOMAIN_DATA - output datapoints only/input nodeset as datapoints
- *   CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION - output element only
+ *   CMISS_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
+ *   CMISS_FIELD_DOMAIN_NODES - Enable output of nodes
+ *   CMISS_FIELD_DOMAIN_DATA - Enable output of datapoints
+ *   CMISS_FIELD_DOMAIN_ELEMENTS_1D - Enable output of 1D mesh
+ *   CMISS_FIELD_DOMAIN_ELEMENTS_2D - Enable output of 2D mesh
+ *   CMISS_FIELD_DOMAIN_ELEMENTS_3D - Enable output of 3D mesh
+ *   CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION - Enable output of mesh with highest
+ *   dimension possible
  *
  * @return   status CMISS_OK if domain_type is successfully set, any other value if
  *   failed or domain_type not valid or unable to be set for this
@@ -559,35 +564,7 @@ ZINC_API enum Cmiss_field_domain_type Cmiss_stream_information_region_get_resour
 ZINC_API int Cmiss_stream_information_region_set_resource_domain_type(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_field_domain_type domain_type);
-
-/**
- * Check if a resource is domain_type enabled.
- *
- * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param resource  Handle to the Cmiss_stream_resource.
- *
- * @return   true if domain_type is enabled for resource,  false if disabled or
- * failed.
- */
-ZINC_API bool Cmiss_stream_information_region_is_resource_domain_type_enabled(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource);
-
-/**
- * Disable domain_type specified value, stream information will ignore the set
- * domain_type value. See Cmiss_stream_information_region_set_resource_domain for
- * more information about specifying domain type.
- *
- * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param resource  Handle to the Cmiss_stream_resource.
- *
- * @return   status CMISS_OK if domain_type is disabled,  any other value if
- *   failed.
- */
-ZINC_API int Cmiss_stream_information_region_disable_resource_domain_type(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource);
+	int domain_type);
 
 #ifdef __cplusplus
 }

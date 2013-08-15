@@ -284,30 +284,18 @@ public:
 			static_cast<Cmiss_stream_information_region_attribute>(attribute), value);
 	}
 
-	Field::DomainType getResourceDomainType(StreamResource resource)
+	int getResourceDomainType(StreamResource resource)
 	{
-		return static_cast<Field::DomainType>(
+		return static_cast<int>(
 			Cmiss_stream_information_region_get_resource_domain_type(
 				reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId()));
 	}
 
-	int setResourceDomainType(StreamResource resource, Field::DomainType domainType)
+	int setResourceDomainType(StreamResource resource, int domainType)
 	{
 		return Cmiss_stream_information_region_set_resource_domain_type(
 			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId(),
-			static_cast<Cmiss_field_domain_type>(domainType));
-	}
-
-	bool isResourceDomainTypeEnabled(StreamResource resource)
-	{
-		return Cmiss_stream_information_region_is_resource_domain_type_enabled(
-			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId());
-	}
-
-	int disableResourceDomainType(StreamResource resource)
-	{
-		return Cmiss_stream_information_region_disable_resource_domain_type(
-			reinterpret_cast<Cmiss_stream_information_region_id>(id), resource.getId());
+			domainType);
 	}
 
 };
