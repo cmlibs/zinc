@@ -226,6 +226,30 @@ ZINC_API int Cmiss_graphic_set_render_polygon_mode(Cmiss_graphic_id graphic,
 	enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
 
 /**
+ * Gets the mode controlling how graphics are drawn depending on whether the
+ * underlying object is selected, and also whether picking is enabled.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The select mode, or MODE_INVALID if bad argument.
+ */
+ZINC_API enum Cmiss_graphic_select_mode Cmiss_graphic_get_select_mode(
+	Cmiss_graphic_id graphic);
+
+/**
+ * Sets the mode controlling how graphics are drawn depending on whether the
+ * underlying object is selected, and also whether picking is enabled.
+ * An object is selected if it is in the current selection_group for the scene
+ * which owns the graphic.
+ * The default select mode for new graphics is CMISS_GRAPHIC_SELECT_ON.
+ *
+ * @param graphic  The graphic to modify.
+ * @param select_mode  A valid select mode for the graphic.
+ * @return  On success CMISS_OK, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_graphic_set_select_mode(Cmiss_graphic_id graphic,
+	enum Cmiss_graphic_select_mode select_mode);
+
+/**
  * Gets the material giving the colour/shading of the graphic when selected.
  *
  * @param graphic  The graphic to query.

@@ -146,7 +146,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field, 
 	struct Cmiss_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
-	enum Graphics_select_mode select_mode, int element_selected,
+	enum Cmiss_graphic_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -169,7 +169,7 @@ The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 <select_mode> is used in combination with the <element_selected> and
 <selected_ranges> to draw only those points with numbers in or out of the given
-ranges when given value GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED.
+ranges when given value CMISS_GRAPHIC_DRAW_SELECTED or CMISS_GRAPHIC_DRAW_UNSELECTED.
 If <element_selected> is true, all points are selected, otherwise selection is
 determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
 numbers are selected.
@@ -193,7 +193,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Cmiss_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
+	struct Computed_field *subgroup_field, enum Cmiss_graphic_select_mode select_mode,
 	struct Computed_field *group_field);
 /*******************************************************************************
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the

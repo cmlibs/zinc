@@ -386,7 +386,7 @@ Graphical object data structure.
 	/* for inheritance */
 	struct GT_object *parentobject;
 	/* for selected primitives and subobjects */
-	enum Graphics_select_mode select_mode;
+	enum Cmiss_graphic_select_mode select_mode;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */

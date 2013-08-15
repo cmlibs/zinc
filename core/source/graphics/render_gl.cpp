@@ -3069,7 +3069,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 			spectrum=get_GT_object_spectrum(object);
 			/* determine if picking names are to be output */
 			picking_names = renderer->picking &&
-				(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
+				(CMISS_GRAPHIC_NO_SELECT != GT_object_get_select_mode(object));
 			/* determine which material to use */
 			if (draw_selected)
 			{
@@ -4436,8 +4436,8 @@ struct GT_object *graphics_object,
 			}
 			graphics_object_no++;
 
-			if ((GRAPHICS_SELECT_ON == graphics_object_item->select_mode) ||
-				(GRAPHICS_DRAW_SELECTED == graphics_object_item->select_mode))
+			if ((CMISS_GRAPHIC_SELECT_ON == graphics_object_item->select_mode) ||
+				(CMISS_GRAPHIC_DRAW_SELECTED == graphics_object_item->select_mode))
 			{
 				if (graphics_object_item->selected_material)
 				{
@@ -4458,7 +4458,7 @@ struct GT_object *graphics_object,
 				}
 			}
 			// there is no highlight_functor when picking, but draw_selected graphics need to be pickable
-			if ((GRAPHICS_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
+			if ((CMISS_GRAPHIC_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
 			{
 				if (graphics_object_item->default_material)
 				{

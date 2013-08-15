@@ -95,25 +95,6 @@ intermediate storage systems.
 	GRAPHICS_NOT_COMPILED
 }; /* enum Graphics_compile_status */
 
-enum Graphics_select_mode
-/*******************************************************************************
-LAST MODIFIED : 19 March 2001
-
-DESCRIPTION :
-Enumerator for specifying which parts of a graphic are named for selecting, if
-any, and how they should be rendered depending on their selection status.
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-==============================================================================*/
-{
-	GRAPHICS_SELECT_MODE_INVALID = 0,
-	GRAPHICS_SELECT_ON = 1,
-	GRAPHICS_NO_SELECT = 2,
-	GRAPHICS_DRAW_SELECTED = 3,
-	GRAPHICS_DRAW_UNSELECTED = 4
-}; /* enum Graphics_select_mode */
-
 enum Streamline_data_type
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
@@ -140,7 +121,7 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphics_select_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_select_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_render_polygon_mode);
 

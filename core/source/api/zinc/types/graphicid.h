@@ -107,6 +107,28 @@ enum Cmiss_graphic_type
 };
 
 /**
+ * Enumeration controlling how graphics interact with selection: whether the
+ * objects can be picked, the selection highlighted or only the selected
+ * or unselected primitives are drawn.
+ */
+enum Cmiss_graphic_select_mode
+{
+	CMISS_GRAPHIC_SELECT_MODE_INVALID = 0,
+	CMISS_GRAPHIC_SELECT_ON = 1,
+		/*!< draw all objects with unselected objects drawn in standard material,
+		  selected objects in selected_material, and with picking enabled.
+		  Default mode for any new graphic. */
+	CMISS_GRAPHIC_NO_SELECT = 2,
+		/*!< object IDs are not generated so individual nodes/elements cannot be
+		  picked nor highlighted. More efficient if picking and highlighting are not
+		  required. */
+	CMISS_GRAPHIC_DRAW_SELECTED = 3,
+		/*!< draw only selected objects in selected_material, with picking enabled */
+	CMISS_GRAPHIC_DRAW_UNSELECTED = 4
+		/*!< draw only unselected objects in standard material, with picking enabled. */
+};
+
+/**
  * A handle to attributes specifying how points are visualised in a
  * Cmiss_graphic including glyph, scaling, labels and font.
  */
