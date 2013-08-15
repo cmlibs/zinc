@@ -261,6 +261,43 @@ TEST(ZincGraphic, RenderPointSize)
 	ASSERT_EQ(inSize, outSize = gr.getRenderPointSize());
 }
 
+TEST(Cmiss_graphic, select_mode)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_SURFACES);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	Cmiss_graphic_select_mode selectMode;
+	ASSERT_EQ(CMISS_GRAPHIC_SELECT_ON, selectMode = Cmiss_graphic_get_select_mode(gr));
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_select_mode(static_cast<Cmiss_graphic_id>(0), CMISS_GRAPHIC_DRAW_SELECTED));
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = Cmiss_graphic_set_select_mode(gr, CMISS_GRAPHIC_SELECT_MODE_INVALID));
+
+	ASSERT_EQ(CMISS_OK, result = Cmiss_graphic_set_select_mode(gr, CMISS_GRAPHIC_DRAW_SELECTED));
+	ASSERT_EQ(CMISS_GRAPHIC_DRAW_SELECTED, selectMode = Cmiss_graphic_get_select_mode(gr));
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, selectMode)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	Graphic::SelectMode selectMode;
+	ASSERT_EQ(Graphic::SELECT_ON, selectMode = gr.getSelectMode());
+
+	int result;
+	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setSelectMode(Graphic::SELECT_MODE_INVALID));
+
+	ASSERT_EQ(CMISS_OK, result = gr.setSelectMode(Graphic::DRAW_SELECTED));
+	ASSERT_EQ(Graphic::DRAW_SELECTED, selectMode = gr.getSelectMode());
+}
+
 TEST(Cmiss_graphic_api, selected_material)
 {
 	ZincTestSetup zinc;
