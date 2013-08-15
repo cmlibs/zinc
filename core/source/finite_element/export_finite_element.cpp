@@ -2569,31 +2569,41 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_elements_data.fe_region = fe_region;
 				write_elements_data.last_element = (struct FE_element *)NULL;
 				write_elements_data.time = time;
+				int highest_dimension = FE_region_get_highest_dimension(fe_region);
+				if (0 >= highest_dimension)
+					highest_dimension = 3;
 				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-				for (int dimension = 1; dimension <= 3; dimension++)
+				for (int dimension = 1; dimension <= highest_dimension; dimension++)
 				{
-					Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
-					if (group)
+					if ((dimension == 1 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_1D)) ||
+						(dimension == 2 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_2D)) ||
+						(dimension == 3 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_3D)) ||
+						(dimension == highest_dimension &&
+							(write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION)))
 					{
-						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
-						Cmiss_mesh_destroy(&mesh);
-						mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
-						Cmiss_field_element_group_destroy(&element_group);
-					}
-					if (mesh)
-					{
-						Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
-						Cmiss_element_id element = 0;
-						while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+						Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+						if (group)
 						{
-							if (!write_FE_region_element(element, &write_elements_data))
-							{
-								return_code = 0;
-								break;
-							}
+							Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
+							Cmiss_mesh_destroy(&mesh);
+							mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
+							Cmiss_field_element_group_destroy(&element_group);
 						}
-						Cmiss_element_iterator_destroy(&iter);
-						Cmiss_mesh_destroy(&mesh);
+						if (mesh)
+						{
+							Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
+							Cmiss_element_id element = 0;
+							while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+							{
+								if (!write_FE_region_element(element, &write_elements_data))
+								{
+									return_code = 0;
+									break;
+								}
+							}
+							Cmiss_element_iterator_destroy(&iter);
+							Cmiss_mesh_destroy(&mesh);
+						}
 					}
 				}
 				DEALLOCATE(write_elements_data.output_node_indices);
@@ -2944,7 +2954,6 @@ int write_exregion_file_of_name(const char *file_name,
 {
 	int return_code;
 
-	ENTER(write_exregion_file_of_name);
 	if (file_name)
 	{
 		ofstream output_file;
@@ -2970,7 +2979,6 @@ int write_exregion_file_of_name(const char *file_name,
 			"write_exregion_file_of_name.  Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* write_exregion_file_of_name */

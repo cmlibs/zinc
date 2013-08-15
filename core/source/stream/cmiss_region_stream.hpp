@@ -54,7 +54,7 @@ public:
 
 	Cmiss_region_resource_properties(Cmiss_stream_resource_id resource_in) :
 		Cmiss_resource_properties(resource_in), time_enabled(false),
-		domain_type_enabled(false), time(0.0), domain_type(CMISS_FIELD_DOMAIN_TYPE_INVALID)
+		time(0.0), domain_type((int)CMISS_FIELD_DOMAIN_TYPE_INVALID)
 	{
 	}
 
@@ -79,46 +79,21 @@ public:
 		return 1;
 	}
 
-	enum Cmiss_field_domain_type getDomainType()
+	int getDomainType()
 	{
 		return domain_type;
 	}
 
-	int isDomainTypeEnabled()
+	int setDomainType(int domain_type_in)
 	{
-		return domain_type_enabled;
-	}
-
-	int setDomainType(enum Cmiss_field_domain_type domain_type_in)
-	{
-		switch (domain_type_in)
-		{
-			case CMISS_FIELD_DOMAIN_NODES:
-			case CMISS_FIELD_DOMAIN_DATA:
-			case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
-			{
-				domain_type = domain_type_in;
-				domain_type_enabled = true;
-				return CMISS_OK;
-			} break;
-			default:
-			{
-				return CMISS_ERROR_GENERAL;
-			} break;
-		}
-		return CMISS_ERROR_GENERAL;
-	}
-
-	int disableDomainType()
-	{
-		domain_type_enabled = false;
+		domain_type = domain_type_in;
 		return CMISS_OK;
 	}
 
 private:
-	bool time_enabled, domain_type_enabled;
+	bool time_enabled;
 	double time;
-	enum Cmiss_field_domain_type domain_type;
+	int domain_type;
 };
 
 struct Cmiss_stream_information_region : Cmiss_stream_information
@@ -224,7 +199,7 @@ public:
 		return 0;
 	}
 
-	enum Cmiss_field_domain_type getResourceDomainType(Cmiss_stream_resource_id resource)
+	int getResourceDomainType(Cmiss_stream_resource_id resource)
 	{
 		if (resource)
 		{
@@ -238,7 +213,7 @@ public:
 		return CMISS_FIELD_DOMAIN_TYPE_INVALID;
 	}
 
-	int setResourceDomainType(Cmiss_stream_resource_id resource, enum Cmiss_field_domain_type domain_type_in)
+	int setResourceDomainType(Cmiss_stream_resource_id resource, int domain_type_in)
 	{
 		if (resource)
 		{
@@ -247,34 +222,6 @@ public:
 			if (resource_properties)
 			{
 				return resource_properties->setDomainType(domain_type_in);
-			}
-		}
-		return CMISS_ERROR_ARGUMENT;
-	}
-
-	bool isResourceDomainTypeEnabled(Cmiss_stream_resource_id resource)
-	{
-		if (resource)
-		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
-			if (resource_properties)
-			{
-				return resource_properties->isDomainTypeEnabled();
-			}
-		}
-		return false;
-	}
-
-	int disableResourceDomainType(Cmiss_stream_resource_id resource)
-	{
-		if (resource)
-		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
-			if (resource_properties)
-			{
-				return resource_properties->disableDomainType();
 			}
 		}
 		return CMISS_ERROR_ARGUMENT;

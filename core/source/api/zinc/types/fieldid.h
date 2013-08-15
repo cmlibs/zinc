@@ -54,20 +54,20 @@
  */
 enum Cmiss_field_domain_type
 {
-	CMISS_FIELD_DOMAIN_TYPE_INVALID = -1,
-	CMISS_FIELD_DOMAIN_POINT,
+	CMISS_FIELD_DOMAIN_TYPE_INVALID = 0,
+	CMISS_FIELD_DOMAIN_POINT = 1,
 		/*!< A single point for the region */
-	CMISS_FIELD_DOMAIN_NODES,
+	CMISS_FIELD_DOMAIN_NODES = 2,
 		/*!< The set of node points */
-	CMISS_FIELD_DOMAIN_DATA,
+	CMISS_FIELD_DOMAIN_DATA = 4,
 		/*!< The set of data points */
-	CMISS_FIELD_DOMAIN_ELEMENTS_1D,
+	CMISS_FIELD_DOMAIN_ELEMENTS_1D = 8,
 		/*!< The set of 1-D elements and edge lines of 2-D or 3-D elements */
-	CMISS_FIELD_DOMAIN_ELEMENTS_2D,
+	CMISS_FIELD_DOMAIN_ELEMENTS_2D = 16,
 		/*!< The set of 2-D elements and faces of 3-D elements */
-	CMISS_FIELD_DOMAIN_ELEMENTS_3D,
+	CMISS_FIELD_DOMAIN_ELEMENTS_3D = 32,
 		/*!< The set of 3-D elements */
-	CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION
+	CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION = 64
 		/*!< The set of elements of highest dimension in region */
 };
 
