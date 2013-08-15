@@ -61,26 +61,26 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_select_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Graphics_select_mode));
+	ENTER(ENUMERATOR_STRING(Cmiss_graphic_select_mode));
 	switch (enumerator_value)
 	{
-		case GRAPHICS_SELECT_ON:
+		case CMISS_GRAPHIC_SELECT_ON:
 		{
 			enumerator_string = "select_on";
 		} break;
-		case GRAPHICS_NO_SELECT:
+		case CMISS_GRAPHIC_NO_SELECT:
 		{
 			enumerator_string = "no_select";
 		} break;
-		case GRAPHICS_DRAW_SELECTED:
+		case CMISS_GRAPHIC_DRAW_SELECTED:
 		{
 			enumerator_string = "draw_selected";
 		} break;
-		case GRAPHICS_DRAW_UNSELECTED:
+		case CMISS_GRAPHIC_DRAW_UNSELECTED:
 		{
 			enumerator_string = "draw_unselected";
 		} break;
@@ -92,9 +92,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Graphics_select_mode) */
+} /* ENUMERATOR_STRING(Cmiss_graphic_select_mode) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphics_select_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_select_mode)
 
 int check_Element_discretization(struct Element_discretization
 	*element_discretization)

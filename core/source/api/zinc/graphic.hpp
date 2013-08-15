@@ -104,6 +104,15 @@ public:
 		RENDER_POLYGON_WIREFRAME = CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME
 	};
 
+	enum SelectMode
+	{
+		SELECT_MODE_INVALID = CMISS_GRAPHIC_SELECT_MODE_INVALID,
+		SELECT_ON = CMISS_GRAPHIC_SELECT_ON,
+		NO_SELECT = CMISS_GRAPHIC_NO_SELECT,
+		DRAW_SELECTED = CMISS_GRAPHIC_DRAW_SELECTED,
+		DRAW_UNSELECTED = CMISS_GRAPHIC_DRAW_UNSELECTED
+	};
+
 	enum CoordinateSystem
 	{
 		COORDINATE_SYSTEM_INVALID = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID,
@@ -193,6 +202,16 @@ public:
 	{
 		return Cmiss_graphic_set_render_polygon_mode(id,
 			static_cast<Cmiss_graphic_render_polygon_mode>(renderPolygonMode));
+	}
+
+	enum SelectMode getSelectMode()
+	{
+		return static_cast<SelectMode>(Cmiss_graphic_get_select_mode(id));
+	}
+
+	int setSelectMode(SelectMode selectMode)
+	{
+		return Cmiss_graphic_set_select_mode(id, static_cast<Cmiss_graphic_select_mode>(selectMode));
 	}
 
 	Field getSubgroupField()

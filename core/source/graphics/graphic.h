@@ -80,7 +80,7 @@ finite element group scene.
 	enum Cmiss_graphic_type graphic_type;
 	struct Computed_field *subgroup_field;
 	struct Computed_field *coordinate_field;
-	enum Graphics_select_mode select_mode;
+	enum Cmiss_graphic_select_mode select_mode;
 	enum Cmiss_field_domain_type domain_type;
 
 	/* for 1-D and 2-D elements only */
@@ -362,11 +362,10 @@ int Cmiss_graphic_and_scene_visibility_flags_is_set(struct Cmiss_graphic *graphi
  */
 int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, struct Cmiss_region *region);
 
-/***************************************************************************//**
- * Returns true if the graphics are output with names that identify
- * the elements they are calculated from.
+/**
+ * Returns true if graphic is generated from elements and they are pickable via it.
  */
-int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
+bool Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
 
 /**
  * Returns the dimension of the domain used in the graphic. Note for domain
@@ -426,22 +425,6 @@ int Cmiss_graphic_get_visible_graphics_object_range(
 
 struct GT_object *Cmiss_graphic_get_graphics_object(
 	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Returns the enumerator determining whether names are output with the graphics
- * for the settings, and if so which graphics are output depending on their
- * selection status.
- */
-enum Graphics_select_mode Cmiss_graphic_get_select_mode(
-	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Sets the enumerator determining whether names are output with the graphics
- * for the settings, and if so which graphics are output depending on their
- * selection status.
- */
-int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
-	enum Graphics_select_mode select_mode);
 
 /**
  * Gets the streamline data type which allows extended options for colouring

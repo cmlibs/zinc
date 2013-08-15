@@ -3726,7 +3726,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 		if (ALLOCATE(object, gtObject, 1) &&
 			(object->name = duplicate_string(name)))
 		{
-			object->select_mode=GRAPHICS_NO_SELECT;
+			object->select_mode=CMISS_GRAPHIC_NO_SELECT;
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
@@ -6253,64 +6253,28 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 	return (return_code);
 } /* GT_object_decimate_GT_surface */
 
-enum Graphics_select_mode GT_object_get_select_mode(
+enum Cmiss_graphic_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2001
-
-DESCRIPTION :
-Gets the default_select_mode of a GT_object.
-==============================================================================*/
 {
-	enum Graphics_select_mode select_mode;
-
-	ENTER(GT_object_get_select_mode);
 	if (graphics_object)
-	{
-		select_mode = graphics_object->select_mode;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_get_select_mode.  Invalid argument(s)");
-		select_mode = GRAPHICS_NO_SELECT;
-	}
-	LEAVE;
-
-	return (select_mode);
-} /* GT_object_get_select_mode */
+		return graphics_object->select_mode;
+	return CMISS_GRAPHIC_SELECT_MODE_INVALID;
+}
 
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum Graphics_select_mode select_mode)
-/*******************************************************************************
-LAST MODIFIED : 7 July 2000
-
-DESCRIPTION :
-Sets the select_mode of the <graphics_object>.
-==============================================================================*/
+	enum Cmiss_graphic_select_mode select_mode)
 {
-	int return_code;
-
-	ENTER(GT_object_set_select_mode);
-	if (graphics_object && (
-		(GRAPHICS_SELECT_ON == select_mode) ||
-		(GRAPHICS_NO_SELECT == select_mode) ||
-		(GRAPHICS_DRAW_SELECTED == select_mode) ||
-		(GRAPHICS_DRAW_UNSELECTED == select_mode)))
+	if (graphics_object && (0 != ENUMERATOR_STRING(Cmiss_graphic_select_mode)(select_mode)))
 	{
-		graphics_object->select_mode=select_mode;
-		return_code=1;
+		if (select_mode != graphics_object->select_mode)
+		{
+			graphics_object->select_mode=select_mode;
+			GT_object_changed(graphics_object);
+		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_set_select_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_set_select_mode */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
 	struct GT_object *graphics_object)

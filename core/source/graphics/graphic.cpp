@@ -256,7 +256,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->label_density_field = 0;
 
 			graphic->subgroup_field=(struct Computed_field *)NULL;
-			graphic->select_mode=GRAPHICS_SELECT_ON;
+			graphic->select_mode=CMISS_GRAPHIC_SELECT_ON;
 			switch (graphic_type)
 			{
 			case CMISS_GRAPHIC_POINTS:
@@ -577,15 +577,15 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		int name_selected = 0;
 		if (draw_element)
 		{
-			if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
-				(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
+			if ((CMISS_GRAPHIC_DRAW_SELECTED == graphic->select_mode) ||
+				(CMISS_GRAPHIC_DRAW_UNSELECTED == graphic->select_mode))
 			{
 				if (graphic_to_object_data->selection_group_field)
 				{
 					name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->selection_group_field, graphic_to_object_data->field_cache);
 				}
-				draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
-					((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
+				draw_element = ((name_selected && (CMISS_GRAPHIC_DRAW_SELECTED == graphic->select_mode)) ||
+					((!name_selected) && (CMISS_GRAPHIC_DRAW_SELECTED != graphic->select_mode)));
 			}
 		}
 		if (draw_element)
@@ -1385,44 +1385,26 @@ int Cmiss_graphic_selects_cad_primitives(struct Cmiss_graphic *graphic)
 
 	if (graphic)
 	{
-		return_code=(GRAPHICS_NO_SELECT != graphic->select_mode)&&(
+		return_code=(CMISS_GRAPHIC_NO_SELECT != graphic->select_mode)&&(
 			(CMISS_GRAPHIC_LINES==graphic->graphic_type)||
 			(CMISS_GRAPHIC_SURFACES==graphic->graphic_type));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_selects_elements.  Invalid argument(s)");
+			"Cmiss_graphic_selects_cad_primitives.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Cmiss_graphic_selects_cad_primitives */
+}
 
 #endif /*defined (USE_OPENCASCADE) */
 
-int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
+bool Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_selects_elements);
-	if (graphic)
-	{
-		return_code = (GRAPHICS_NO_SELECT != graphic->select_mode) && (
-			(CMISS_FIELD_DOMAIN_ELEMENTS_1D == graphic->domain_type) ||
-			(CMISS_FIELD_DOMAIN_ELEMENTS_2D == graphic->domain_type) ||
-			(CMISS_FIELD_DOMAIN_ELEMENTS_3D == graphic->domain_type) ||
-			(CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION == graphic->domain_type));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_selects_elements.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return (CMISS_GRAPHIC_NO_SELECT != graphic->select_mode) &&
+		(0 < Cmiss_graphic_get_domain_dimension(graphic));
 }
 
 enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
@@ -1716,14 +1698,14 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 	{
 		switch (graphic->select_mode)
 		{
-		case GRAPHICS_SELECT_ON:
+		case CMISS_GRAPHIC_SELECT_ON:
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_SELECTION);
 			break;
-		case GRAPHICS_NO_SELECT:
-			/* nothing to do as no names put out with graphic */
+		case CMISS_GRAPHIC_NO_SELECT:
+			/* nothing to do as selection doesn't affect appearance in this mode */
 			break;
-		case GRAPHICS_DRAW_SELECTED:
-		case GRAPHICS_DRAW_UNSELECTED:
+		case CMISS_GRAPHIC_DRAW_SELECTED:
+		case CMISS_GRAPHIC_DRAW_UNSELECTED:
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 			break;
 		default:
@@ -2448,7 +2430,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
-			ENUMERATOR_STRING(Graphics_select_mode)(graphic->select_mode),&error);
+			ENUMERATOR_STRING(Cmiss_graphic_select_mode)(graphic->select_mode),&error);
 
 		if ((GRAPHIC_STRING_COMPLETE==graphic_detail)||
 			(GRAPHIC_STRING_COMPLETE_PLUS==graphic_detail))
@@ -2887,8 +2869,8 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 			if (group_field &&
 				(NULL != (field_module = Cmiss_field_get_field_module(group_field))))
 			{
-				if ((GRAPHICS_SELECT_ON == graphic->select_mode) ||
-					(GRAPHICS_DRAW_SELECTED == graphic->select_mode))
+				if ((CMISS_GRAPHIC_SELECT_ON == graphic->select_mode) ||
+					(CMISS_GRAPHIC_DRAW_SELECTED == graphic->select_mode))
 				{
 					SubObjectGroupHighlightFunctor *functor = 0;
 					switch (graphic->domain_type)
@@ -3928,48 +3910,28 @@ struct GT_object *Cmiss_graphic_get_graphics_object(
 	return (graphics_object);
 } /* Cmiss_graphic_get_graphics_object */
 
-enum Graphics_select_mode Cmiss_graphic_get_select_mode(
-	struct Cmiss_graphic *graphic)
+enum Cmiss_graphic_select_mode Cmiss_graphic_get_select_mode(
+	Cmiss_graphic_id graphic)
 {
-	enum Graphics_select_mode select_mode;
-
-	ENTER(Cmiss_graphic_get_select_mode);
 	if (graphic)
-	{
-		select_mode = graphic->select_mode;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_select_mode.  Invalid argument(s)");
-		select_mode = GRAPHICS_NO_SELECT;
-	}
-	LEAVE;
+		return graphic->select_mode;
+	return CMISS_GRAPHIC_SELECT_MODE_INVALID;
+}
 
-	return (select_mode);
-} /* Cmiss_graphic_get_select_mode */
-
-int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
-	enum Graphics_select_mode select_mode)
+int Cmiss_graphic_set_select_mode(Cmiss_graphic_id graphic,
+	enum Cmiss_graphic_select_mode select_mode)
 {
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_select_mode);
-	if (graphic)
+	if (graphic && (0 != ENUMERATOR_STRING(Cmiss_graphic_select_mode)(select_mode)))
 	{
-		graphic->select_mode = select_mode;
-		return_code=1;
+		if (select_mode != graphic->select_mode)
+		{
+			graphic->select_mode = select_mode;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+		return CMISS_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_select_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_select_mode */
+	return CMISS_ERROR_ARGUMENT;
+}
 
 Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic)
 {

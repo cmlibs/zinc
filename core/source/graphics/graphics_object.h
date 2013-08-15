@@ -1200,23 +1200,23 @@ normalised for each of the VT_iso_vertices using the surrounding triangles.
 int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 	double threshold_distance);
 
-enum Graphics_select_mode GT_object_get_select_mode(
+/**
+ * Gets the mode controlling how graphics are drawn depending on whether the
+ * primitive is selected.
+ */
+enum Cmiss_graphic_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2000
 
-DESCRIPTION :
-Gets the default_select_mode of a GT_object.
-==============================================================================*/
-
+/**
+ * Sets the mode controlling how graphics are drawn depending on whether the
+ * primitive is selected, which is when the highlight_function is true.
+ * For DRAW_SELECTED and DRAW_UNSELECTED only primitives meeting the
+ * criteria are in the graphics object, so it only affects which material is
+ * used in rendering.
+ * @return  On success CMISS_OK, otherwise CMISS_ERROR_ARGUMENT.
+ */
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum Graphics_select_mode select_mode);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2000
-
-DESCRIPTION :
-Sets the select_mode of the <graphics_object>.
-==============================================================================*/
+	enum Cmiss_graphic_select_mode select_mode);
 
 /**
  * Gets the width of lines rendered with GL, in pixels.
