@@ -220,3 +220,69 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	Cmiss_region_destroy(&root_region);
 	Cmiss_context_destroy(&context);
 }
+
+
+TEST(element_dimension_file, invalid_args)
+{
+	Cmiss_context_id context = Cmiss_context_create("test");
+	Cmiss_region_id root_region = Cmiss_context_get_default_region(context);
+
+	Cmiss_region_id cube_region = Cmiss_region_create_child(root_region, "cube");
+	Cmiss_stream_information_id cube_si = Cmiss_region_create_stream_information(
+		cube_region);
+	EXPECT_NE(static_cast<Cmiss_stream_information *>(0), cube_si);
+
+	Cmiss_stream_resource_id cube_sr = Cmiss_stream_information_create_resource_file(
+		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	EXPECT_NE(static_cast<Cmiss_stream_resource *>(0), cube_sr);
+
+	int result = Cmiss_region_read(cube_region, cube_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_stream_resource_destroy(&cube_sr);
+	Cmiss_stream_information_destroy(&cube_si);
+
+	Cmiss_stream_information_id output_si = Cmiss_region_create_stream_information(cube_region);
+	Cmiss_stream_resource_id output_sr = Cmiss_stream_information_create_resource_memory(output_si);
+
+	Cmiss_stream_information_region_id output_region_si = Cmiss_stream_information_cast_region(
+		output_si);
+	EXPECT_NE(static_cast<Cmiss_stream_information_region *>(0), output_region_si);
+
+	Cmiss_stream_information_region_set_resource_domain_type(output_region_si,
+		output_sr,	CMISS_FIELD_DOMAIN_ELEMENTS_1D|CMISS_FIELD_DOMAIN_ELEMENTS_2D);
+
+	result = Cmiss_region_write(cube_region, output_si);
+	EXPECT_EQ(CMISS_OK, result);
+
+	Cmiss_stream_resource_memory_id memeory_sr = Cmiss_stream_resource_cast_memory(
+		output_sr);
+
+	char *memory_buffer;
+	unsigned int size = 0;
+
+	result = Cmiss_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	EXPECT_EQ(CMISS_OK, result);
+
+	char *temp_char = strstr ( memory_buffer, "Dimension=1");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "Dimension=2");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "Dimension=3");
+	EXPECT_EQ(static_cast<char *>(0), temp_char);
+
+	Cmiss_stream_resource_destroy(&output_sr);
+	Cmiss_stream_information_destroy(&output_si);
+
+	output_sr = Cmiss_stream_resource_memory_base_cast(memeory_sr);
+	Cmiss_stream_resource_destroy(&output_sr);
+
+	output_si = Cmiss_stream_information_region_base_cast(output_region_si);
+	Cmiss_stream_information_destroy(&output_si);
+
+	Cmiss_region_destroy(&cube_region);
+	Cmiss_region_destroy(&root_region);
+	Cmiss_context_destroy(&context);
+}
