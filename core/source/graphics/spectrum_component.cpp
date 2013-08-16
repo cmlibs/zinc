@@ -265,7 +265,7 @@ Allocates memory and assigns fields for a struct Cmiss_spectrum_component.
 	{
 		component->spectrum = 0;
 		component->component_number = 0;
-		component->component_interpolation=CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR;
+		component->component_scale=CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR;
 		component->changed=1;
 		component->minimum = 0;
 		component->maximum = 1;
@@ -285,6 +285,7 @@ Allocates memory and assigns fields for a struct Cmiss_spectrum_component.
 		component->position = 0;
 		component->input_field = (struct Computed_field *)NULL;
 		component->output_field = (struct Computed_field *)NULL;
+		component->is_field_lookup = false;
 #if defined (OPENGL_API)
 		component->texture_id=0;
 #endif /* defined (OPENGL_API) */
@@ -324,11 +325,10 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 				glDeleteTextures(1, &(component->texture_id));
 			}
 #endif /* defined (OPENGL_API) */
-			switch (component->component_interpolation)
+			switch (component->component_scale)
 			{
-				case CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR:
-				case CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG:
-				case CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD:
+				case CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR:
+				case CMISS_SPECTRUM_COMPONENT_SCALE_LOG:
 				{
 					/* Don't need to do anything */
 				} break;
@@ -388,9 +388,9 @@ Note: destination->access_count is not changed by COPY.
 	if (source&&destination)
 	{
 		destination->changed = 1;
-		/* copy component used by all component_interpolations */
+		/* copy component used by all component_scales */
 		destination->component_number = source->component_number;
-		destination->component_interpolation = source->component_interpolation;
+		destination->component_scale = source->component_scale;
 		destination->reverse = source->reverse;
 		destination->position = source->position;
 		destination->active = source->active;
@@ -406,6 +406,7 @@ Note: destination->access_count is not changed by COPY.
 		destination->exaggeration = source->exaggeration;
 		destination->number_of_bands = source->number_of_bands;
 		destination->black_band_proportion = source->black_band_proportion;
+		destination->is_field_lookup = source->is_field_lookup;
 		destination->step_value = source->step_value;
 		REACCESS(Computed_field)(&destination->input_field,
 			source->input_field);
@@ -475,26 +476,26 @@ Makes a copy of the component and puts it in the list_of_components.
 	return (return_code);
 } /* Cmiss_spectrum_component_copy_and_put_in_list */
 
-enum Cmiss_spectrum_component_interpolation_mode Cmiss_spectrum_component_get_interpolation_mode(
+enum Cmiss_spectrum_component_scale_type Cmiss_spectrum_component_get_scale_type(
 	Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
-		return component->component_interpolation;
+		return component->component_scale;
 	}
 
-	return CMISS_SPECTRUM_COMPONENT_INTERPOLATION_INVALID;
+	return CMISS_SPECTRUM_COMPONENT_SCALE_INVALID;
 }
 
-int Cmiss_spectrum_component_set_interpolation_mode(
+int Cmiss_spectrum_component_set_scale_type(
 	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_interpolation_mode interpolation_mode)
+	enum Cmiss_spectrum_component_scale_type scale_type)
 {
 	if (component)
 	{
-		if (interpolation_mode != component->component_interpolation)
+		if (scale_type != component->component_scale)
 		{
-			component->component_interpolation = interpolation_mode;
+			component->component_scale = scale_type;
 			Cmiss_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
@@ -502,7 +503,7 @@ int Cmiss_spectrum_component_set_interpolation_mode(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_get_field_component_lookup_number(
+int Cmiss_spectrum_component_get_field_component(
 	Cmiss_spectrum_component_id component)
 {
 	if (component)
@@ -513,7 +514,7 @@ int Cmiss_spectrum_component_get_field_component_lookup_number(
 	return 0;
 }
 
-int Cmiss_spectrum_component_set_field_component_lookup_number(
+int Cmiss_spectrum_component_set_field_component(
 	Cmiss_spectrum_component_id component, int component_number)
 {
 	if (component)
@@ -1136,7 +1137,8 @@ component number used.  The first component_index is 0, so this means 1 componen
 	ENTER(Cmiss_spectrum_component_expand_maximum_component_index);
 	if (component && (component_index = (int *)component_index_void))
 	{
-		if (component->component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD)
+		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+			component->is_field_lookup)
 		{
 			int number_of_input_components =
 				Computed_field_get_number_of_components(component->input_field);
@@ -1183,7 +1185,8 @@ in the value pointed to by <colour_components_void>.
 			(enum Spectrum_colour_components *)colour_components_void))
 	{
 		done = 0;
-		if (component->component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD)
+		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+			component->is_field_lookup)
 		{
 			int number_of_components = Computed_field_get_number_of_components
 					(component->output_field);
@@ -1513,7 +1516,8 @@ passed in render data.
 	{
 		data_component = 0.0;
 		return_code=1;
-		if (component->component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD)
+		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+			component->is_field_lookup)
 		{
 			if (component->active)
 			{
@@ -1691,14 +1695,14 @@ passed in render data.
 					/* first get value (normalised 0 to 1) from type */
 					if (component->maximum != component->minimum)
 					{
-						switch (component->component_interpolation)
+						switch (component->component_scale)
 						{
-							case CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR:
+							case CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR:
 							{
 										value=(data_component-component->minimum)/
 											 (component->maximum-component->minimum);
 							} break;
-							case CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG:
+							case CMISS_SPECTRUM_COMPONENT_SCALE_LOG:
 							{
 								if (component->exaggeration<0)
 								{
@@ -2079,6 +2083,70 @@ int Cmiss_spectrum_component_set_attribute_real(
 					return Cmiss_spectrum_component_set_black_band_proportion(component,
 						(int)(value * 1021.0));
 				}
+			}	break;
+			default:
+			{
+			} break;
+		}
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+bool Cmiss_spectrum_component_get_attribute_boolean(
+	Cmiss_spectrum_component_id component,
+	enum Cmiss_spectrum_component_attribute attribute)
+{
+	if (component)
+	{
+		switch (attribute)
+		{
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE:
+			{
+				return Cmiss_spectrum_component_get_active(component);
+			} break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE:
+			{
+				return Cmiss_spectrum_component_get_reverse_flag(component);
+			}	break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE:
+			{
+				return Cmiss_spectrum_component_get_extend_above_flag(component);
+			}	break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW:
+			{
+				return Cmiss_spectrum_component_get_extend_below_flag(component);
+			}	break;
+			default:
+			{
+			} break;
+		}
+	}
+	return 0.0;
+}
+
+int Cmiss_spectrum_component_set_attribute_boolean(
+	Cmiss_spectrum_component_id component,
+	enum Cmiss_spectrum_component_attribute attribute, bool value)
+{
+	if (component)
+	{
+		switch (attribute)
+		{
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE:
+			{
+				return Cmiss_spectrum_component_set_active(component, value);
+			} break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE:
+			{
+				return Cmiss_spectrum_component_set_reverse_flag(component, value);
+			}	break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE:
+			{
+				return Cmiss_spectrum_component_set_extend_above_flag(component, value);
+			}	break;
+			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW:
+			{
+				return Cmiss_spectrum_component_set_extend_below_flag(component, value);
 			}	break;
 			default:
 			{

@@ -2270,7 +2270,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			GLfloat *colour_vertex;
 			unsigned int i;
 
-			if (!Cmiss_spectrum_get_overwrite_material(spectrum))
+			if (!Cmiss_spectrum_is_material_overwrite(spectrum))
 			{
 				Colour diffuse_colour;
 				Graphical_material_get_diffuse(material, &diffuse_colour);

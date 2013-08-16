@@ -83,7 +83,7 @@ Stores one group of component for a single part of a spectrum scene.
 	int position;
 	int component_number; /* Which data component this component uses (0 is first component)*/
 	bool active, reverse; /* This corresponds to visiblity for graphical finite elements */
-	enum Cmiss_spectrum_component_interpolation_mode component_interpolation;
+	enum Cmiss_spectrum_component_scale_type component_scale;
 	int changed;
 	/* These specify the range of values over which the component operates */
 	ZnReal maximum, minimum;
@@ -101,7 +101,7 @@ Stores one group of component for a single part of a spectrum scene.
 	/* The number of bands in a banded contour and the proportion (out of 1000)
 		of the black bands */
 	int number_of_bands, black_band_proportion;
-
+	bool is_field_lookup;
 	/* CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD type */
 	struct Computed_field *input_field;
 	struct Computed_field *output_field;

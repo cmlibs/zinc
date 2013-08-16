@@ -319,4 +319,31 @@ int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
 
 int Cmiss_spectrum_changed(Cmiss_spectrum_id spectrum);
 
+/**
+ * Set spectrum maximum and minimum.
+ *
+ * @deprecated
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @param minimum  Minimum value of the spectrum.
+ * @param maximum  Maximum value of the spectrum.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum);
+
+/**
+ * Get the minimum value from the given spectrum.
+ *
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @return  the minimum value, 0.0 on failure.
+ */
+double Cmiss_spectrum_get_minimum(Cmiss_spectrum_id spectrum);
+
+/**
+ * Get the maximum value from the given spectrum.
+ *
+ * @param spectrum  Handle to a cmiss_spectrum object.
+ * @return  the maximum value, 0.0 on failure.
+ */
+double Cmiss_spectrum_get_maximum(Cmiss_spectrum_id spectrum);
+
 #endif /* !defined(SPECTRUM_H) */
