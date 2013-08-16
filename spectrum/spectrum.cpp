@@ -110,15 +110,6 @@ TEST(Cmiss_spectrum_api, valid_args)
 	Cmiss_spectrum_component_id component1= Cmiss_spectrum_create_component(spectrum);
 	EXPECT_NE(static_cast<Cmiss_spectrum_component *>(0), component1);
 
-	result = Cmiss_spectrum_set_minimum_and_maximum(spectrum, 10.0, 100.0);
-	EXPECT_EQ(CMISS_OK, result);
-
-	double double_result = Cmiss_spectrum_get_minimum(spectrum);
-	EXPECT_EQ(10.0, double_result);
-
-	double_result = Cmiss_spectrum_get_maximum(spectrum);
-	EXPECT_EQ(100.0, double_result);
-
 	Cmiss_spectrum_component_id component2= Cmiss_spectrum_create_component(spectrum);
 	EXPECT_NE(static_cast<Cmiss_spectrum_component *>(0), component2);
 
@@ -144,38 +135,46 @@ TEST(Cmiss_spectrum_api, valid_args)
 		component1, CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 20.0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	double_result = Cmiss_spectrum_component_get_attribute_real(
+	int double_result = Cmiss_spectrum_component_get_attribute_real(
 		component1, CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM);
 	EXPECT_EQ(20.0, double_result);
 
-	result = Cmiss_spectrum_component_set_active(component1, false);
+	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool bool_result = Cmiss_spectrum_component_get_active(component1);
+	bool bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE);
 	EXPECT_FALSE(bool_result);
 
-	result = Cmiss_spectrum_component_set_reverse_flag(component1, true);
+	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = Cmiss_spectrum_component_get_reverse_flag(component1);
+	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
 	EXPECT_TRUE(bool_result);
 
-	result = Cmiss_spectrum_component_set_extend_above_flag(component1, false);
+	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = Cmiss_spectrum_component_get_extend_above_flag(component1);
+	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE);
 	EXPECT_FALSE(bool_result);
 
-	result = Cmiss_spectrum_component_set_extend_below_flag(component1, false);
+	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = Cmiss_spectrum_component_get_extend_below_flag(component1);
+	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
+		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW);
 	EXPECT_FALSE(bool_result);
 
-	result = Cmiss_spectrum_component_set_field_component_lookup_number(component1,	2);
+	result = Cmiss_spectrum_component_set_field_component(component1,	2);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_spectrum_component_get_field_component_lookup_number(component1);
+	result = Cmiss_spectrum_component_get_field_component(component1);
 	EXPECT_EQ(2, result);
 
 	result = Cmiss_spectrum_component_set_number_of_bands(component1,	6);
@@ -184,13 +183,13 @@ TEST(Cmiss_spectrum_api, valid_args)
 	result = Cmiss_spectrum_component_get_number_of_bands(component1);
 	EXPECT_EQ(6, result);
 
-	result = Cmiss_spectrum_component_set_interpolation_mode(component1,
-		CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG);
+	result = Cmiss_spectrum_component_set_scale_type(component1,
+		CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
 	EXPECT_EQ(CMISS_OK, result);
 
-	enum Cmiss_spectrum_component_interpolation_mode interpolation_mode =
-		Cmiss_spectrum_component_get_interpolation_mode(component1);
-	EXPECT_EQ(CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG, interpolation_mode);
+	enum Cmiss_spectrum_component_scale_type scale_type =
+		Cmiss_spectrum_component_get_scale_type(component1);
+	EXPECT_EQ(CMISS_SPECTRUM_COMPONENT_SCALE_LOG, scale_type);
 
 	result = Cmiss_spectrum_component_set_colour_mapping(component1,
 		CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME);
@@ -236,14 +235,6 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	SpectrumComponent component1 = spectrum.createComponent();
 	EXPECT_TRUE(component1.isValid());
 
-	result = spectrum.setMinimumAndMaximum(10.0, 100.0);
-	EXPECT_EQ(CMISS_OK, result);
-
-	double double_result = spectrum.getMinimum();
-	EXPECT_EQ(10.0, double_result);
-
-	double_result = spectrum.getMaximum();
-	EXPECT_EQ(100.0, double_result);
 
 	SpectrumComponent component2 = spectrum.createComponent();
 	EXPECT_TRUE(component2.isValid());
@@ -263,38 +254,37 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	result = component1.setAttributeReal(component1.ATTRIBUTE_RANGE_MAXIMUM, 20.0);
 	EXPECT_EQ(CMISS_OK, result);
 
-	double_result = component1.getAttributeReal(
-		component1.ATTRIBUTE_RANGE_MAXIMUM);
+	double double_result = component1.getAttributeReal(component1.ATTRIBUTE_RANGE_MAXIMUM);
 	EXPECT_EQ(20.0, double_result);
 
-	result = component1.setActive(false);
+	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_ACTIVE, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool bool_result = component1.getActive();
+	bool bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_ACTIVE);
 	EXPECT_FALSE(bool_result);
 
-	result = component1.setReverseFlag(true);
+	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_COLOUR_REVERSE, true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getReverseFlag();
+	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_COLOUR_REVERSE);
 	EXPECT_TRUE(bool_result);
 
-	result = component1.setExtendAboveFlag(false);
+	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_ABOVE, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getExtendAboveFlag();
+	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_ABOVE);
 	EXPECT_FALSE(bool_result);
 
-	result = component1.setExtendBelowFlag(false);
+	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_BELOW, false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getExtendBelowFlag();
+	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_BELOW);
 	EXPECT_FALSE(bool_result);
 
-	result = component1.setFieldComponentLookupNumber(2);
+	result = component1.setFieldComponent(2);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = component1.getFieldComponentLookupNumber();
+	result = component1.getFieldComponent();
 	EXPECT_EQ(2, result);
 
 	result = component1.setNumberOfBands(6);
@@ -303,16 +293,16 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	result = component1.getNumberOfBands();
 	EXPECT_EQ(6, result);
 
-	result = component1.setInterpolationMode(component1.INTERPOLATION_LOG);
+	result = component1.setScaleType(component1.SCALE_LOG);
 	EXPECT_EQ(CMISS_OK, result);
 
-	enum SpectrumComponent::InterpolationMode interpolation_mode = component1.getInterpolationMode();
-	EXPECT_EQ(SpectrumComponent::INTERPOLATION_LOG, interpolation_mode);
+	enum SpectrumComponent::ScaleType scale_type = component1.getScaleType();
+	EXPECT_EQ(SpectrumComponent::SCALE_LOG, scale_type);
 
 	result = component1.setColourMapping(component1.COLOUR_MAPPING_MONOCHROME);
 	EXPECT_EQ(CMISS_OK, result);
 
-	enum SpectrumComponent::ComponentColourMapping colour_mapping = component1.getColourMapping();
+	enum SpectrumComponent::ColourMapping colour_mapping = component1.getColourMapping();
 	EXPECT_EQ(SpectrumComponent::COLOUR_MAPPING_MONOCHROME, colour_mapping);
 
 }
