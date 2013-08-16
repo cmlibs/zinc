@@ -604,19 +604,24 @@ some predetermined simple types.
 				component = CREATE(Cmiss_spectrum_component)();
 
 				Spectrum_add_component(spectrum, component, /* end of list = 0 */0);
-				Cmiss_spectrum_component_set_interpolation_mode(component, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR);
+				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR);
+				component->is_field_lookup = false;
 				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
-				Cmiss_spectrum_component_set_extend_above_flag(component, true);
-				Cmiss_spectrum_component_set_extend_below_flag(component, true);
+				Cmiss_spectrum_component_set_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
+				Cmiss_spectrum_component_set_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
 				switch (type)
 				{
 					case RED_TO_BLUE_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_reverse_flag(component, false);
+						Cmiss_spectrum_component_set_attribute_boolean(component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE,false);
 					} break;
 					case BLUE_TO_RED_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_reverse_flag(component, true);
+						Cmiss_spectrum_component_set_attribute_boolean(component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
 					} break;
 					default:
 					{
@@ -639,7 +644,8 @@ some predetermined simple types.
 				Spectrum_add_component(spectrum, second_component, /* end of list = 0 */0);
 
 
-				Cmiss_spectrum_component_set_interpolation_mode(component, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG);
+				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
+				component->is_field_lookup = false;
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, 1.0);
 				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
@@ -648,7 +654,8 @@ some predetermined simple types.
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 0.0);
 
-				Cmiss_spectrum_component_set_interpolation_mode(second_component, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG);
+				Cmiss_spectrum_component_set_scale_type(second_component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
+				second_component->is_field_lookup = false;
 				Cmiss_spectrum_component_set_attribute_real(second_component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, -1.0);
 				Cmiss_spectrum_component_set_colour_mapping(second_component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
@@ -657,19 +664,23 @@ some predetermined simple types.
 				Cmiss_spectrum_component_set_attribute_real(second_component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 1.0);
 
-				Cmiss_spectrum_component_set_extend_below_flag(component, true);
-				Cmiss_spectrum_component_set_extend_above_flag(second_component, true);
+				Cmiss_spectrum_component_set_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
+				Cmiss_spectrum_component_set_attribute_boolean(second_component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
 
 				switch(type)
 				{
 					case LOG_RED_TO_BLUE_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_reverse_flag(component, false);
+						Cmiss_spectrum_component_set_attribute_boolean(component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, false);
 						Cmiss_spectrum_component_set_attribute_real(component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
 						Cmiss_spectrum_component_set_attribute_real(component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 0.5);
-						Cmiss_spectrum_component_set_reverse_flag(second_component, false);
+						Cmiss_spectrum_component_set_attribute_boolean(second_component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, false);
 						Cmiss_spectrum_component_set_attribute_real(second_component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.5);
 						Cmiss_spectrum_component_set_attribute_real(second_component,
@@ -677,12 +688,14 @@ some predetermined simple types.
 					} break;
 					case LOG_BLUE_TO_RED_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_reverse_flag(component, true);
+						Cmiss_spectrum_component_set_attribute_boolean(component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
 						Cmiss_spectrum_component_set_attribute_real(component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.5);
 						Cmiss_spectrum_component_set_attribute_real(component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1.0);
-						Cmiss_spectrum_component_set_reverse_flag(second_component, true);
+						Cmiss_spectrum_component_set_attribute_boolean(second_component,
+							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
 						Cmiss_spectrum_component_set_attribute_real(second_component,
 							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.0);
 						Cmiss_spectrum_component_set_attribute_real(second_component,
@@ -708,24 +721,28 @@ some predetermined simple types.
 				Spectrum_add_component(spectrum, component, /* end of list = 0 */0);
 				Spectrum_add_component(spectrum, second_component, /* end of list = 0 */0);
 
-				Cmiss_spectrum_component_set_interpolation_mode(component, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG);
+				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
+				component->is_field_lookup = false;
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, -10.0);
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, -1.0);
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 0.0);
-				Cmiss_spectrum_component_set_reverse_flag(component,true);
+				Cmiss_spectrum_component_set_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
 				/* fix the maximum (white ) at zero */
 				Cmiss_spectrum_component_set_fix_maximum_flag(component,1);
-				Cmiss_spectrum_component_set_extend_below_flag(component, true);
+				Cmiss_spectrum_component_set_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
 				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE);
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
 				Cmiss_spectrum_component_set_attribute_real(component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1);
 
-				Cmiss_spectrum_component_set_interpolation_mode(second_component, CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG);
+				Cmiss_spectrum_component_set_scale_type(second_component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
+				second_component->is_field_lookup = false;
 				Cmiss_spectrum_component_set_attribute_real(second_component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, 10.0);
 				Cmiss_spectrum_component_set_attribute_real(second_component,
@@ -734,7 +751,8 @@ some predetermined simple types.
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 1.0);
 				/* fix the minimum (white ) at zero */
 				Cmiss_spectrum_component_set_fix_minimum_flag(second_component,1);
-				Cmiss_spectrum_component_set_extend_above_flag(second_component, true);
+				Cmiss_spectrum_component_set_attribute_boolean(second_component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
 				Cmiss_spectrum_component_set_colour_mapping(second_component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED);
 				Cmiss_spectrum_component_set_attribute_real(second_component,
 					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
@@ -778,7 +796,7 @@ it returns UNKNOWN_SPECTRUM
 {
 	struct LIST(Cmiss_spectrum_component) *spectrum_component_list;
 	struct Cmiss_spectrum_component *component, *second_component;
-	enum Cmiss_spectrum_component_interpolation_mode component_interpolation, second_component_interpolation;
+	enum Cmiss_spectrum_component_scale_type component_scale, second_component_scale;
 	int number_in_list;
 	bool reverse, second_reverse;
 	enum Cmiss_spectrum_component_colour_mapping colour_mapping, second_colour_mapping;
@@ -799,11 +817,12 @@ it returns UNKNOWN_SPECTRUM
 				component = FIRST_OBJECT_IN_LIST_THAT(Cmiss_spectrum_component)
 					((LIST_CONDITIONAL_FUNCTION(Cmiss_spectrum_component) *)NULL, NULL,
 					spectrum_component_list);
-				component_interpolation = Cmiss_spectrum_component_get_interpolation_mode(component);
-				reverse = Cmiss_spectrum_component_get_reverse_flag(component);
+				component_scale = Cmiss_spectrum_component_get_scale_type(component);
+				reverse = Cmiss_spectrum_component_get_attribute_boolean(component,
+					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
 				colour_mapping = Cmiss_spectrum_component_get_colour_mapping(component);
 
-				if ( component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR )
+				if ( component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR )
 				{
 					if ( colour_mapping == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW )
 					{
@@ -826,16 +845,18 @@ it returns UNKNOWN_SPECTRUM
 					(2, spectrum_component_list);
 				if ( component && second_component )
 				{
-					component_interpolation = Cmiss_spectrum_component_get_interpolation_mode(component);
-					reverse = Cmiss_spectrum_component_get_reverse_flag(component);
+					component_scale = Cmiss_spectrum_component_get_scale_type(component);
+					reverse = Cmiss_spectrum_component_get_attribute_boolean(component,
+						CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
 					colour_mapping = Cmiss_spectrum_component_get_colour_mapping(component);
-					second_component_interpolation = Cmiss_spectrum_component_get_interpolation_mode(second_component);
-					second_reverse = Cmiss_spectrum_component_get_reverse_flag(second_component);
+					second_component_scale = Cmiss_spectrum_component_get_scale_type(second_component);
+					second_reverse = Cmiss_spectrum_component_get_attribute_boolean(second_component,
+						CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
 					second_colour_mapping = Cmiss_spectrum_component_get_colour_mapping
 						(second_component);
 
-					if((component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG)
-						&& (second_component_interpolation == CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG))
+					if((component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_LOG)
+						&& (second_component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_LOG))
 					{
 						if ((colour_mapping == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW)
 							&& (second_colour_mapping == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW))
@@ -1189,7 +1210,7 @@ Returns the string of the spectrum.
 	return (name);
 } /* Spectrum_get_name */
 
-bool Cmiss_spectrum_get_overwrite_material(Cmiss_spectrum_id spectrum)
+bool Cmiss_spectrum_is_material_overwrite(Cmiss_spectrum_id spectrum)
 {
 	int overwrite_material = 0;
 
@@ -1201,7 +1222,7 @@ bool Cmiss_spectrum_get_overwrite_material(Cmiss_spectrum_id spectrum)
 	return (overwrite_material);
 }
 
-int Cmiss_spectrum_set_overwrite_material(Cmiss_spectrum_id spectrum,
+int Cmiss_spectrum_set_material_overwrite(Cmiss_spectrum_id spectrum,
 	bool overwrite)
 {
 	if (spectrum)
@@ -2368,9 +2389,8 @@ int Cmiss_spectrum_move_component_before(Cmiss_spectrum_id spectrum,
 	Cmiss_spectrum_component_id component, Cmiss_spectrum_component_id ref_component)
 {
 	int return_code = 0;
-	if (spectrum && component && ref_component &&
-		(component->spectrum == ref_component->spectrum) &&
-			(component->spectrum == spectrum))
+	if (spectrum && component && (component->spectrum == spectrum) &&
+		((0 == ref_component) || (component->spectrum == ref_component->spectrum)))
 	{
 		Cmiss_spectrum_component_id current_component = ACCESS(Cmiss_spectrum_component)(component);
 		int position = Cmiss_spectrum_get_component_position(spectrum, ref_component);

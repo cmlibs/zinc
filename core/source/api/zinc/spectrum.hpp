@@ -102,18 +102,21 @@ public:
 		ATTRIBUTE_COLOUR_MAXIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM,
 		ATTRIBUTE_STEP_VALUE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE,
 		ATTRIBUTE_EXAGGERATION = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION,
-		ATTRIBUTE_BANDED_RATIO = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO
+		ATTRIBUTE_BANDED_RATIO = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO,
+		ATTRIBUTE_IS_ACTIVE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE,
+		ATTRIBUTE_IS_COLOUR_REVERSE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE,
+		ATTRIBUTE_IS_EXTEND_ABOVE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE,
+		ATTRIBUTE_IS_EXTEND_BELOW = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW
 	};
 
-	enum InterpolationMode
+	enum ScaleType
 	{
-		INTERPOLATION_INVALID = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_INVALID,
-		INTERPOLATION_LINEAR = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LINEAR,
-		INTERPOLATION_LOG = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_LOG,
-		INTERPOLATION_FIELD = CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD
+		SCALE_INVALID = CMISS_SPECTRUM_COMPONENT_SCALE_INVALID,
+		SCALE_LINEAR = CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR,
+		SCALE_LOG = CMISS_SPECTRUM_COMPONENT_SCALE_LOG
 	};
 
-	enum ComponentColourMapping
+	enum ColourMapping
 	{
 		COLOUR_MAPPING_INVALID = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID,
 		COLOUR_MAPPING_ALPHA = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA,
@@ -146,54 +149,26 @@ public:
 			static_cast<Cmiss_spectrum_component_attribute>(attribute), value);
 	}
 
-	bool getActive()
+	bool getAttributeBoolean(Attribute attribute)
 	{
-		return Cmiss_spectrum_component_get_active(id);
+		return Cmiss_spectrum_component_get_attribute_boolean(id,
+			static_cast<Cmiss_spectrum_component_attribute>(attribute));
 	}
 
-	int setActive(bool active)
+	int setAttributeBoolean(Attribute attribute, bool value)
 	{
-		return Cmiss_spectrum_component_set_active(id, active);
+		return Cmiss_spectrum_component_set_attribute_boolean(id,
+			static_cast<Cmiss_spectrum_component_attribute>(attribute), value);
 	}
 
-	bool getReverseFlag()
+	int getFieldComponent()
 	{
-		return Cmiss_spectrum_component_get_reverse_flag(id);
+		return Cmiss_spectrum_component_get_field_component(id);
 	}
 
-	int setReverseFlag(bool reverse)
+	int setFieldComponent(int componentNumber)
 	{
-		return Cmiss_spectrum_component_set_reverse_flag(id, reverse);
-	}
-
-	bool getExtendAboveFlag()
-	{
-		return Cmiss_spectrum_component_get_extend_above_flag(id);
-	}
-
-	int setExtendAboveFlag(bool extendAbove)
-	{
-		return Cmiss_spectrum_component_set_extend_above_flag(id, extendAbove);
-	}
-
-	bool getExtendBelowFlag()
-	{
-		return Cmiss_spectrum_component_get_extend_below_flag(id);
-	}
-
-	int setExtendBelowFlag(bool extendBelow)
-	{
-		return Cmiss_spectrum_component_set_extend_below_flag(id, extendBelow);
-	}
-
-	int getFieldComponentLookupNumber()
-	{
-		return Cmiss_spectrum_component_get_field_component_lookup_number(id);
-	}
-
-	int setFieldComponentLookupNumber(int componentNumber)
-	{
-		return Cmiss_spectrum_component_set_field_component_lookup_number(id,
+		return Cmiss_spectrum_component_set_field_component(id,
 			componentNumber);
 	}
 
@@ -207,25 +182,25 @@ public:
 		return Cmiss_spectrum_component_set_number_of_bands(id, numberOfBands);
 	}
 
-	InterpolationMode getInterpolationMode()
+	ScaleType getScaleType()
 	{
-		return static_cast<InterpolationMode>(Cmiss_spectrum_component_get_interpolation_mode(
+		return static_cast<ScaleType>(Cmiss_spectrum_component_get_scale_type(
 			id));
 	}
 
-	int setInterpolationMode(InterpolationMode interpolationMode)
+	int setScaleType(ScaleType scaleType)
 	{
-		return Cmiss_spectrum_component_set_interpolation_mode(id,
-			static_cast<Cmiss_spectrum_component_interpolation_mode>(interpolationMode));
+		return Cmiss_spectrum_component_set_scale_type(id,
+			static_cast<Cmiss_spectrum_component_scale_type>(scaleType));
 	}
 
-	ComponentColourMapping getColourMapping()
+	ColourMapping getColourMapping()
 	{
-		return static_cast<ComponentColourMapping>(Cmiss_spectrum_component_get_colour_mapping(
+		return static_cast<ColourMapping>(Cmiss_spectrum_component_get_colour_mapping(
 			id));
 	}
 
-	int setColourMapping(ComponentColourMapping colourMapping)
+	int setColourMapping(ColourMapping colourMapping)
 	{
 		return Cmiss_spectrum_component_set_colour_mapping(id,
 			static_cast<Cmiss_spectrum_component_colour_mapping>(colourMapping));
@@ -315,21 +290,6 @@ public:
 		return Cmiss_spectrum_set_name(id, name);
 	}
 
-	int setMinimumAndMaximum(double minimum, double maximum)
-	{
-		return Cmiss_spectrum_set_minimum_and_maximum(id, minimum, maximum);
-	}
-
-	double getMaximum()
-	{
-		return Cmiss_spectrum_get_maximum(id);
-	}
-
-	double getMinimum()
-	{
-		return Cmiss_spectrum_get_minimum(id);
-	}
-
 	int getNumberOfComponents()
 	{
 		return Cmiss_spectrum_get_number_of_components(id);
@@ -374,14 +334,14 @@ public:
 		return Cmiss_spectrum_remove_all_components(id);
 	}
 
-	bool getOverwriteMaterial()
+	bool isMaterialOverwrite()
 	{
-		return Cmiss_spectrum_get_overwrite_material(id);
+		return Cmiss_spectrum_is_material_overwrite(id);
 	}
 
-	int setOverwriteMaterial(bool overwrite)
+	int setMaterialOverwrite(bool overwrite)
 	{
-		return Cmiss_spectrum_set_overwrite_material(id, overwrite);
+		return Cmiss_spectrum_set_material_overwrite(id, overwrite);
 	}
 
 };
