@@ -95,16 +95,16 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		if (NULL == ENUMERATOR_STRING(enumerator_type)( \
 			static_cast<enum enumerator_type >(first_enumerator_value))) \
 		{ \
-			first_enumerator_value++; \
+			first_enumerator_value = static_cast<enum enumerator_type>(1); \
 		} \
 		for (enumerator_value = first_enumerator_value; \
 			ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value)); \
-				enumerator_value++)		\
+				++enumerator_value)		\
 		{ \
 			if ((NULL == conditional_function) || \
 			    conditional_function(static_cast<enum enumerator_type >(enumerator_value), user_data)) \
 			{ \
-				(*number_of_valid_strings)++; \
+				++(*number_of_valid_strings); \
 			} \
 		} \
 		if ((0 == *number_of_valid_strings) || \
@@ -113,7 +113,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			i = 0; \
 			for (enumerator_value = first_enumerator_value; ((NULL != (enumerator_string = \
 				ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value))))); \
-					enumerator_value++)		\
+					++enumerator_value)		\
 			{ \
 				if ((NULL == conditional_function) || \
 				    conditional_function(static_cast<enum enumerator_type >(enumerator_value), user_data)) \
@@ -165,14 +165,14 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		if (NULL == ENUMERATOR_STRING(enumerator_type)( \
 			static_cast<enum enumerator_type >(enumerator_value))) \
 		{ \
-			enumerator_value++; \
+			enumerator_value = static_cast<enum enumerator_type>(1); \
 		} \
 		while ((other_enumerator_string = \
 			ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type>(enumerator_value))) && \
 			(!fuzzy_string_compare_same_length(enumerator_string, \
 				other_enumerator_string))) \
 		{ \
-			enumerator_value++; \
+			++enumerator_value; \
 		} \
 		if (other_enumerator_string) \
 		{ \
@@ -214,9 +214,9 @@ enumerator_type operator++(enumerator_type& orig, int) \
 #define set_enumerator_macro(enumerator_type) set_enumerator ## enumerator_type
 
 #define DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( enumerator_type ) \
-DEFINE_DEFAULT_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type) \
-DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type) \
 DEFINE_DEFAULT_ENUMERATOR_PREFIX_INCREMENT_OPERATOR( enumerator_type ) \
-DEFINE_DEFAULT_ENUMERATOR_POSTFIX_INCREMENT_OPERATOR( enumerator_type )
+DEFINE_DEFAULT_ENUMERATOR_POSTFIX_INCREMENT_OPERATOR( enumerator_type ) \
+DEFINE_DEFAULT_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type) \
+DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type)
 
 #endif /* !defined (ENUMERATOR_PRIVATE_H) */
