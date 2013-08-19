@@ -95,16 +95,16 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		first_enumerator_value = (enum enumerator_type)0; \
 		if (NULL == ENUMERATOR_STRING(enumerator_type)(first_enumerator_value)) \
 		{ \
-			first_enumerator_value++; \
+			first_enumerator_value = static_cast<enum enumerator_type>(1); \
 		} \
 		for (enumerator_value = first_enumerator_value; \
 			ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
-			enumerator_value++) \
+			++enumerator_value) \
 		{ \
 			if ((NULL == conditional_function) || \
 				conditional_function(enumerator_value, user_data)) \
 			{ \
-				(*number_of_valid_strings)++; \
+				++(*number_of_valid_strings); \
 			} \
 		} \
 		if ((0 == *number_of_valid_strings) || \
@@ -113,7 +113,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			i = 0; \
 			for (enumerator_value = first_enumerator_value; (NULL != (enumerator_string = \
 				ENUMERATOR_STRING(enumerator_type)(enumerator_value))); \
-				enumerator_value++) \
+				++enumerator_value) \
 			{ \
 				if ((NULL == conditional_function) || \
 					conditional_function(enumerator_value, user_data)) \
@@ -164,16 +164,16 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		enumerator_value = (enum enumerator_type)0; \
 		/* valid modes are from 0 or 1 to the last one with a string */ \
 		if (NULL == ENUMERATOR_STRING(enumerator_type)( \
-			(enumerator_value))) \
+			static_cast<enum enumerator_type >(enumerator_value))) \
 		{ \
-			enumerator_value++; \
+			enumerator_value = static_cast<enum enumerator_type>(1); \
 		} \
 		while ((other_enumerator_string = \
 			ENUMERATOR_STRING(enumerator_type)(enumerator_value)) && \
 			(!fuzzy_string_compare_same_length(enumerator_string, \
 				other_enumerator_string))) \
 		{ \
-			enumerator_value++; \
+			++enumerator_value; \
 		} \
 		if (other_enumerator_string) \
 		{ \

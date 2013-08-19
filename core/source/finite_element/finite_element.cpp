@@ -10361,6 +10361,8 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_element_point_sample_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_element_point_sample_mode)
 
+/** Important: check other enumerator functions work when adding new values.
+ * They assume enums are powers of 2 */
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 {
 	switch (enumerator_value)
@@ -10392,7 +10394,31 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_field_domain_type)
+
+DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(Cmiss_field_domain_type)
+
+/** Note: assumes valid enums are powers of 2, starting at 1 */
+const char **ENUMERATOR_GET_VALID_STRINGS(Cmiss_field_domain_type)(
+	int *number_of_valid_strings,
+	ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_field_domain_type) conditional_function,
+	void *user_data)
+{
+	*number_of_valid_strings = 0;
+	const char **valid_strings;
+	ALLOCATE(valid_strings, const char *, 64); // bits in a 64-bit integer, to be safe
+	enum Cmiss_field_domain_type value = static_cast<Cmiss_field_domain_type>(1);
+	const char *valid_string;
+	while (0 != (valid_string = ENUMERATOR_STRING(Cmiss_field_domain_type)(value)))
+	{
+		if ((0 == conditional_function) || (conditional_function(value, user_data)))
+		{
+			valid_strings[*number_of_valid_strings] = valid_string;
+			++(*number_of_valid_strings);
+		}
+		value = static_cast<Cmiss_field_domain_type>(2*value);
+	}
+	return valid_strings;
+}
 
 struct FE_node_field_creator *CREATE(FE_node_field_creator)(
 	int number_of_components)
