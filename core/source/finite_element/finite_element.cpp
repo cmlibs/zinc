@@ -10395,7 +10395,27 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 }
 
 
-DEFINE_DEFAULT_STRING_TO_ENUMERATOR_FUNCTION(Cmiss_field_domain_type)
+/** Note: assumes valid enums are powers of 2, starting at 1 */
+int STRING_TO_ENUMERATOR(Cmiss_field_domain_type)(const char *enumerator_string,
+	enum Cmiss_field_domain_type *enumerator_value_address)
+{
+	if (enumerator_string && enumerator_value_address)
+	{
+		enum Cmiss_field_domain_type value = static_cast<Cmiss_field_domain_type>(1);
+		const char *valid_string;
+		while (0 != (valid_string = ENUMERATOR_STRING(Cmiss_field_domain_type)(value)))
+		{
+			if (fuzzy_string_compare_same_length(enumerator_string, valid_string))
+			{
+				*enumerator_value_address = value;
+				return 1;
+			}
+			value = static_cast<Cmiss_field_domain_type>(2*value);
+		}
+	}
+	return 0;
+}
+
 
 /** Note: assumes valid enums are powers of 2, starting at 1 */
 const char **ENUMERATOR_GET_VALID_STRINGS(Cmiss_field_domain_type)(
@@ -10405,6 +10425,7 @@ const char **ENUMERATOR_GET_VALID_STRINGS(Cmiss_field_domain_type)(
 {
 	*number_of_valid_strings = 0;
 	const char **valid_strings;
+
 	ALLOCATE(valid_strings, const char *, 64); // bits in a 64-bit integer, to be safe
 	enum Cmiss_field_domain_type value = static_cast<Cmiss_field_domain_type>(1);
 	const char *valid_string;
