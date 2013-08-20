@@ -93,22 +93,6 @@ public:
 		return (0 != id);
 	}
 
-	enum Attribute
-	{
-		ATTRIBUTE_INVALID = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_INVALID,
-		ATTRIBUTE_RANGE_MINIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM,
-		ATTRIBUTE_RANGE_MAXIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM,
-		ATTRIBUTE_COLOUR_MINIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM,
-		ATTRIBUTE_COLOUR_MAXIMUM = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM,
-		ATTRIBUTE_STEP_VALUE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE,
-		ATTRIBUTE_EXAGGERATION = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION,
-		ATTRIBUTE_BANDED_RATIO = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO,
-		ATTRIBUTE_IS_ACTIVE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE,
-		ATTRIBUTE_IS_COLOUR_REVERSE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE,
-		ATTRIBUTE_IS_EXTEND_ABOVE = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE,
-		ATTRIBUTE_IS_EXTEND_BELOW = CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW
-	};
-
 	enum ScaleType
 	{
 		SCALE_INVALID = CMISS_SPECTRUM_COMPONENT_SCALE_INVALID,
@@ -137,28 +121,114 @@ public:
 		return id;
 	}
 
-	double getAttributeReal(Attribute attribute)
+	double getRangeMinumum()
 	{
-		return Cmiss_spectrum_component_get_attribute_real(id,
-			static_cast<Cmiss_spectrum_component_attribute>(attribute));
+		return Cmiss_spectrum_component_get_range_minimum(id);
 	}
 
-	int setAttributeReal(Attribute attribute, double value)
+	int setRangeMinimum(double value)
 	{
-		return Cmiss_spectrum_component_set_attribute_real(id,
-			static_cast<Cmiss_spectrum_component_attribute>(attribute), value);
+		return Cmiss_spectrum_component_set_range_minimum(id, value);
 	}
 
-	bool getAttributeBoolean(Attribute attribute)
+	double getRangeMaxumum()
 	{
-		return Cmiss_spectrum_component_get_attribute_boolean(id,
-			static_cast<Cmiss_spectrum_component_attribute>(attribute));
+		return Cmiss_spectrum_component_get_range_maximum(id);
 	}
 
-	int setAttributeBoolean(Attribute attribute, bool value)
+	int setRangeMaximum(double value)
 	{
-		return Cmiss_spectrum_component_set_attribute_boolean(id,
-			static_cast<Cmiss_spectrum_component_attribute>(attribute), value);
+		return Cmiss_spectrum_component_set_range_maximum(id, value);
+	}
+
+	double getColourMinumum()
+	{
+		return Cmiss_spectrum_component_get_colour_minimum(id);
+	}
+
+	int setColourMinimum(double value)
+	{
+		return Cmiss_spectrum_component_set_colour_minimum(id,value);
+	}
+
+	double getColourMaxumum()
+	{
+		return Cmiss_spectrum_component_get_colour_maximum(id);
+	}
+
+	int setColourMaximum(double value)
+	{
+		return Cmiss_spectrum_component_set_colour_maximum(id, value);
+	}
+
+	int getStepValue()
+	{
+		return Cmiss_spectrum_component_get_step_value(id);
+	}
+
+	int setStepValue(double value)
+	{
+		return Cmiss_spectrum_component_set_step_value(id, value);
+	}
+
+	int getExaggeration()
+	{
+		return Cmiss_spectrum_component_get_exaggeration(id);
+	}
+
+	int setExaggeration(double value)
+	{
+		return Cmiss_spectrum_component_set_exaggeration(id, value);
+	}
+
+	int getBandedRatio()
+	{
+		return Cmiss_spectrum_component_get_banded_ratio(id);
+	}
+
+	int setBandedRatio(double value)
+	{
+		return Cmiss_spectrum_component_set_banded_ratio(id, value);
+	}
+
+	bool isActive()
+	{
+		return Cmiss_spectrum_component_is_active(id);
+	}
+
+	int setActive(bool active)
+	{
+		return Cmiss_spectrum_component_set_active(id, active);
+	}
+
+	bool isColourReverse()
+	{
+		return Cmiss_spectrum_component_is_colour_reverse(id);
+	}
+
+	int setColourReverse(bool reverse)
+	{
+		return Cmiss_spectrum_component_set_colour_reverse(id, reverse);
+	}
+
+	int isExtendAbove()
+	{
+		return Cmiss_spectrum_component_is_extend_above(id);
+	}
+
+	int setExtendAbove(bool extend_above)
+	{
+		return Cmiss_spectrum_component_set_extend_above(id, extend_above);
+	}
+
+	int isExtendBelow()
+	{
+		return Cmiss_spectrum_component_is_extend_below(id);
+	}
+
+	int setExtendBelow(bool extend_below)
+	{
+		return Cmiss_spectrum_component_set_extend_below(id, extend_below);
 	}
 
 	int getFieldComponent()

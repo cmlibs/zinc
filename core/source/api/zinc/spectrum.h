@@ -110,7 +110,10 @@ ZINC_API Cmiss_spectrum_id Cmiss_spectrum_module_find_spectrum_by_name(
 	Cmiss_spectrum_module_id spectrum_module, const char *name);
 
 /**
-* Get the default spectrum, if any.
+* Get the default spectrum, if any. By default, a single component spectrum
+* with CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW is returned.
+* Call Cmiss_spectrum_module_set_default_spectrum to change the default
+* spectrum.
 *
 * @param spectrum_module  spectrum module to query.
 * @return  Handle to the default spectrum, or 0 if none.
@@ -336,114 +339,276 @@ ZINC_API Cmiss_spectrum_component_id Cmiss_spectrum_component_access(
 /**
  * Destroys the spectrum_component and sets the pointer to NULL.
  *
- * @param graphic_address  The pointer to the handle of the spectrum_component.
+ * @param component_address  The pointer to the handle of the spectrum_component.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_spectrum_component_destroy(
 	Cmiss_spectrum_component_id *component_address);
 
-enum Cmiss_spectrum_component_attribute
-{
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_INVALID = 0,
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM = 1,
-	/*!< The minimum value of the range this spectrum component will
-	 * lookup to on targeted field. Primitives with this field value will
-	 * display the minimum colour value of the component colour type
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM = 2,
-	/*!< The maximum value of the range this spectrum component will
-	 * lookup to on targeted field. Primitives with this field value will
-	 * display the maximum colour value of the component colour type
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM = 3,
-	/*!< The normalised minimum value for the colour type of this spectrum
-	 * component. The range of colour displayed by this spectrum ranges from value
-	 * of CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM to the value of
-	 * CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM = 4,
-	/*!< The normalised maximum value for the colour type of this spectrum
-	 * component. The range of colour displayed by this spectrum ranges from value
-	 * of CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM to the value of
-	 * CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE = 5,
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION = 6,
-	/*!< This value alter the colour progression when interpolation mode
-	 * is set to CMISS_SPECTRUM_COMPONENT_SCALE_LOG
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO = 7,
-	/*!< This value determines the proportion of band present on each section, number of
-	 * sections in a spectrum is determined by number of bands, value must be larger
-	 * than 0.0 and must not exceed 1.0
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE = 9,
-	/*!< The active state of a spectrum component, only active spectrum component
-	 * will be rendered
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE = 10,
-	/*!< The colour reverse flag of a spectrum component, reverse spectrum component will
-	 * have the colour rendered reversely
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE = 11,
-	/*!< The extend_above flag of a spectrum component, an extend above spectrum component
-	 * will have the spectrum component colour rendered even when field value exceeds
-	 * spectrum maximum range.
-	 */
-	CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW = 12
-	/*!< The extend_below flag of a spectrum component, an extend below spectrum component
-	 * will have the spectrum component colour rendered even when field value is below
-	 * spectrum minimum range.
-	 */
-};
+/**
+ * Get the minimum value of the range this spectrum component will
+ * lookup to on targeted field. Primitives with this field value will
+ * display the minimum colour value of the component colour type
+ *
+ * @param component  The handle of the spectrum_component.
+ * @return  value of range minimum on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_range_minimum(
+	Cmiss_spectrum_component_id component);
 
 /**
- * Get a real value of an attribute of the spectrum component
+ * Set the minimum value of the range this spectrum component will
+ * lookup to on targeted field. Primitives with this field value will
+ * display the minimum colour value of the component colour type
  *
- * @param component  Handle to the cmiss spectrum component.
- * @param attribute  The identifier of the real attribute to get.
- * @return  Value of the attribute.
+ * @param component  The handle of the spectrum_component.
+ * @value  the value to be set for range minimum
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API double Cmiss_spectrum_component_get_attribute_real(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute);
+ZINC_API int Cmiss_spectrum_component_set_range_minimum(
+	Cmiss_spectrum_component_id component,	double value);
 
 /**
- * Set a real value for an attribute of the spectrum_components.
+ * Get the maximum value of the range this spectrum component will
+ * lookup to on targeted field. Primitives with this field value will
+ * display the maximum colour value of the component colour type
+ *
+ * @param component  The handle of the spectrum_component.
+ * @return  value of range maximum on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_range_maximum(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the maximum value of the range this spectrum component will
+ * lookup to on targeted field. Primitives with this field value will
+ * display the maximum colour value of the component colour type
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the value to be set for range maximum
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_range_maximum(
+	Cmiss_spectrum_component_id component,	double value);
+
+/**
+ * Get the normalised minimum value for the colour type of this spectrum
+ * component. The range of colour displayed by this spectrum ranges from
+ * minimum value of colour to the maximum value of colour
+ *
+ * @param component  The handle of the spectrum_component.
+ * @return  minimum value of colour on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_colour_minimum(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the normalised minimum value for the colour type of this spectrum
+ * component. The range of colour displayed by this spectrum ranges from
+ * minimum value of colour to the miximum value of colour
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the minimum colour value to be set
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_colour_minimum(
+	Cmiss_spectrum_component_id component, double value);
+
+/**
+ * Get the normalised maximum value for the colour type of this spectrum
+ * component. The range of colour displayed by this spectrum ranges from
+ * minimum value of colour to the maximum value of colour
+ *
+ * @param component  The handle of the spectrum_component.
+ * @return  maximum value of colour on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_colour_maximum(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the normalised maximum value for the colour type of this spectrum
+ * component. The range of colour displayed by this spectrum ranges from
+ * minimum value of colour to the miximum value of colour
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the maximum colour value to be set
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_colour_maximum(
+	Cmiss_spectrum_component_id component, double value);
+
+/**
+ * Get the step value of a spectrum component. The step spectrum
+ * defines the boundary between the red and blue colour of the
+ * COLOUR_MAPPING_STEP spectrum compomemt.
+ *
+ * @param component  The handle of the spectrum_component.
+ *
+ * @return  step value of the spectrum component on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_step_value(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the step value of a spectrum component. The step spectrum
+ * defines the boundary between the red and blue colour of the
+ * COLOUR_MAPPING_STEP spectrum component.
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the step value to be set
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_step_value(
+	Cmiss_spectrum_component_id component,	double value);
+
+/**
+ * Get the value which alters the colour progression when scale type
+ * is set to CMISS_SPECTRUM_COMPONENT_SCALE_LOG
+ *
+ * @param component  The handle of the spectrum_component.
+ *
+ * @return  exaggeration value of the spectrum component on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_exaggeration(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the value which alters the colour progression when scale type
+ * is set to CMISS_SPECTRUM_COMPONENT_SCALE_LOG
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the exaggeration value to be set
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_exaggeration(
+	Cmiss_spectrum_component_id component,	double value);
+
+/**
+ * Get the value determining the proportion of band present on each section, number of
+ * sections in a spectrum is determined by number of bands, value must be larger
+ * than 0.0 and must not exceed 1.0.
+ *
+ * @param component  The handle of the spectrum_component.
+ *
+ * @return  banded ratio of the spectrum component on success.
+ */
+ZINC_API double Cmiss_spectrum_component_get_banded_ratio(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the value determining the proportion of band present on each section, number of
+ * sections in a spectrum is determined by number of bands, value must be larger
+ * than 0.0 and must not exceed 1.0.
+ *
+ * @param component  The handle of the spectrum_component.
+ * @value  the banded ratio to be set
+ *
+ * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_spectrum_component_set_banded_ratio(
+	Cmiss_spectrum_component_id component,	double value);
+
+/**
+ * Get the active state of a spectrum component, only active spectrum component
+ * will be rendered
  *
  * @param component  Handle to the cmiss spectrum component.
- * @param attribute  The identifier of the real attribute to set.
- * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
- * failed or attribute not valid or unable to be set for this spectrum component.
+ * @return  true if spectrum component is active, false if
+ * failed or spectrum component is not active
  */
-ZINC_API int Cmiss_spectrum_component_set_attribute_real(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute, double value);
+ZINC_API bool Cmiss_spectrum_component_is_active(
+	Cmiss_spectrum_component_id component);
 
-/***************************************************************************//**
- * Get a Boolean attribute of the spectrum component.
+/**
+ * Set the active state of a spectrum component, only active spectrum component
+ * will be rendered
  *
- * @param component  The component to query.
- * @param attribute  The identifier of the boolean attribute to get.
- * @return Boolean value of the attribute.
+ * @param component  Handle to the cmiss spectrum component.
+ * @param active  Value to be set to the cmiss spectrum component.
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * failed.
  */
-ZINC_API bool Cmiss_spectrum_component_get_attribute_boolean(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute);
+ZINC_API int Cmiss_spectrum_component_set_active(
+	Cmiss_spectrum_component_id component, bool active);
 
-/***************************************************************************//**
- * Get a boolean attribute of the spectrum component..
+/**
+ * Get the reverse flag of a spectrum component, reverse spectrum component will
+ * have the colour rendered reversely
  *
- * @param component  The component to query.
- * @param attribute  The identifier of the boolean attribute to set.
- * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
- * failed or attribute not valid or unable to be set for this spectrum component.
+ * @param component  Handle to the cmiss spectrum component.
+ * @return  true if spectrum component is reverse, false if
+ * 	failed or spectrum component is not reverse
  */
-ZINC_API int Cmiss_spectrum_component_set_attribute_boolean(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute,	bool value);
+ZINC_API bool Cmiss_spectrum_component_is_colour_reverse(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the reverse flag of a spectrum component, reverse spectrum component will
+ * have the colour rendered reversely
+ *
+ * @param component  Handle to the cmiss spectrum component.
+ * @param reverse  Value to be set to the cmiss spectrum component.
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * failed.
+ */
+ZINC_API int Cmiss_spectrum_component_set_colour_reverse(
+	Cmiss_spectrum_component_id component, bool reverse);
+
+/**
+ * Get the extend_above flag of a spectrum component, an extend above spectrum component
+ * will have the spectrum component colour rendered even when field value exceeds
+ * spectrum maximum range.
+ *
+ * @param component  Handle to the cmiss spectrum component.
+ * @return  true if spectrum component extends above, false if
+ * 	failed or spectrum component does not extend above
+ */
+ZINC_API bool Cmiss_spectrum_component_is_extend_above(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the extend_above flag of a spectrum component, an extend_above
+ * spectrum component will have the colour rendered even when field value exceeds
+ * spectrum maximum range.
+ *
+ * @param component  Handle to the cmiss spectrum component.
+ * @param extend_above  Value to be set to the cmiss spectrum component.
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * failed.
+ */
+ZINC_API int Cmiss_spectrum_component_set_extend_above(
+	Cmiss_spectrum_component_id component,	bool extend_above);
+
+/**
+ * Get the extend_below flag of a spectrum component, an extend below spectrum component
+ * will have the spectrum component colour rendered even when field value is below
+ * spectrum minimum range.
+ *
+ * @param component  Handle to the cmiss spectrum component.
+ * @return  true if spectrum component extends below, false if
+ * 	failed or spectrum component does not extend below
+ */
+ZINC_API bool Cmiss_spectrum_component_is_extend_below(
+	Cmiss_spectrum_component_id component);
+
+/**
+ * Set the extend_below flag of a spectrum component, an extend below spectrum component
+ * will have the spectrum component colour rendered even when field value is below
+ * spectrum minimum range.
+ *
+ * @param component  Handle to the cmiss spectrum component.
+ * @param extend_below  Value to be set to the cmiss spectrum component.
+ * @return  CMISS_OK if value is set successfully, any other value if
+ * failed.
+ */
+ZINC_API int Cmiss_spectrum_component_set_extend_below(
+	Cmiss_spectrum_component_id component,	bool extend_below);
 
 /**
  * Get the field component lookup number of a spectrum component, this value

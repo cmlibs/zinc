@@ -724,9 +724,9 @@ static struct Cmiss_spectrum_component *create_spectrum_component( Cmiss_spectru
 	struct Cmiss_spectrum_component *settings = CREATE(Cmiss_spectrum_component)();
 	Cmiss_spectrum_component_set_scale_type(settings, CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR);
 	Cmiss_spectrum_component_set_colour_mapping(settings, colour);
-	Cmiss_spectrum_component_set_extend_above_flag(settings, true);
+	Cmiss_spectrum_component_set_extend_above(settings, true);
 	Cmiss_spectrum_component_set_extend_below_flag(settings, true);
-	Cmiss_spectrum_component_set_reverse_flag(settings, 0);
+	Cmiss_spectrum_component_set_colour_reverse(settings, 0);
 
 	if ( colour == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED )
 		component = 1;
