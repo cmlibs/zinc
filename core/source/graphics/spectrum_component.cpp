@@ -110,7 +110,7 @@ int Cmiss_spectrum_component_set_active(Cmiss_spectrum_component_id component,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_get_active(Cmiss_spectrum_component_id component)
+bool Cmiss_spectrum_component_is_active(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -529,7 +529,7 @@ int Cmiss_spectrum_component_set_field_component(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_get_reverse_flag(Cmiss_spectrum_component_id component)
+bool Cmiss_spectrum_component_is_colour_reverse(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -538,7 +538,7 @@ bool Cmiss_spectrum_component_get_reverse_flag(Cmiss_spectrum_component_id compo
 	return false;
 }
 
-int Cmiss_spectrum_component_set_reverse_flag(Cmiss_spectrum_component_id component,
+int Cmiss_spectrum_component_set_colour_reverse(Cmiss_spectrum_component_id component,
 	bool reverse)
 {
 	if (component)
@@ -612,7 +612,7 @@ Sets the colour mapping of the Cmiss_spectrum_component <component>.
 	return (return_code);
 } /* Cmiss_spectrum_component_set_colour_mapping */
 
-ZnReal Cmiss_spectrum_component_get_exaggeration(Cmiss_spectrum_component_id component)
+double Cmiss_spectrum_component_get_exaggeration(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -623,13 +623,13 @@ ZnReal Cmiss_spectrum_component_get_exaggeration(Cmiss_spectrum_component_id com
 }
 
 int Cmiss_spectrum_component_set_exaggeration(struct Cmiss_spectrum_component *component,
-	ZnReal param1)
+	double value)
 {
 	if (component)
 	{
-		if (component->exaggeration != param1)
+		if (component->exaggeration != value)
 		{
-			component->exaggeration = param1;
+			component->exaggeration = value;
 			Cmiss_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
@@ -717,30 +717,17 @@ DESCRIPTION :
 	return (return_code);
 } /* Cmiss_spectrum_component_set_black_band_proportion */
 
-ZnReal Cmiss_spectrum_component_get_step_value(struct Cmiss_spectrum_component *component)
-/*******************************************************************************
-LAST MODIFIED : 31 July 1998
-
-DESCRIPTION :
-Returns the step value parameter of the Cmiss_spectrum_component <spectrum>.
-==============================================================================*/
+double Cmiss_spectrum_component_get_step_value(Cmiss_spectrum_component_id component)
 {
-	ZnReal param1;
-
 	if (component)
 	{
-		param1 = component->step_value;
+		return component->step_value;
 	}
-	else
-	{
-		param1 = 0;
-	}
-
-	return (param1);
+	return 0.0;
 }
 
 int Cmiss_spectrum_component_set_step_value(struct Cmiss_spectrum_component *component,
-	ZnReal param1)
+	double param1)
 {
 	if (component)
 	{
@@ -760,34 +747,19 @@ int Cmiss_spectrum_component_set_step_value(struct Cmiss_spectrum_component *com
 	return CMISS_ERROR_ARGUMENT;
 }
 
-ZnReal Cmiss_spectrum_component_get_range_minimum(struct Cmiss_spectrum_component *component)
-/*******************************************************************************
-LAST MODIFIED : 14 July 1998
-
-DESCRIPTION :
-==============================================================================*/
+double Cmiss_spectrum_component_get_range_minimum(
+	Cmiss_spectrum_component_id component)
 {
-	ZnReal value;
-
-	ENTER(Cmiss_spectrum_component_get_range_minimum);
-
 	if (component)
 	{
-		value = component->minimum;
+		return component->minimum;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_get_range_minimum.  "
-			"Invalid argument(s)");
-		value = 0;
-	}
-	LEAVE;
 
-	return (value);
-} /* Cmiss_spectrum_component_get_range_minimum */
+	return 0.0;
+}
 
-int Cmiss_spectrum_component_set_range_minimum(struct Cmiss_spectrum_component *component,
-	ZnReal value)
+int Cmiss_spectrum_component_set_range_minimum(Cmiss_spectrum_component_id component,
+	double value)
 {
 	if (component)
 	{
@@ -807,24 +779,19 @@ int Cmiss_spectrum_component_set_range_minimum(struct Cmiss_spectrum_component *
 	return CMISS_ERROR_ARGUMENT;
 } /* Cmiss_spectrum_component_set_range_minimum */
 
-ZnReal Cmiss_spectrum_component_get_range_maximum(struct Cmiss_spectrum_component *component)
+double Cmiss_spectrum_component_get_range_maximum(
+	Cmiss_spectrum_component_id component)
 {
-	ZnReal value;
-
 	if (component)
 	{
-		value = component->maximum;
-	}
-	else
-	{
-		value = 0;
+		return component->maximum;
 	}
 
-	return (value);
+	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_range_maximum(struct Cmiss_spectrum_component *component,
-	ZnReal value)
+int Cmiss_spectrum_component_set_range_maximum(Cmiss_spectrum_component_id component,
+	double value)
 {
 	if (component)
 	{
@@ -844,7 +811,7 @@ int Cmiss_spectrum_component_set_range_maximum(struct Cmiss_spectrum_component *
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_get_extend_above_flag(Cmiss_spectrum_component_id component)
+bool Cmiss_spectrum_component_is_extend_above(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -854,7 +821,7 @@ bool Cmiss_spectrum_component_get_extend_above_flag(Cmiss_spectrum_component_id 
 	return false;
 }
 
-int Cmiss_spectrum_component_set_extend_above_flag(Cmiss_spectrum_component_id component,
+int Cmiss_spectrum_component_set_extend_above(Cmiss_spectrum_component_id component,
 	bool extend_above)
 /*******************************************************************************
 LAST MODIFIED : 5 August 1998
@@ -876,7 +843,7 @@ Sets the extend_above flag of the Cmiss_spectrum_component <component>.
 }
 
 
-bool Cmiss_spectrum_component_get_extend_below_flag(Cmiss_spectrum_component_id component)
+bool Cmiss_spectrum_component_is_extend_below(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -886,7 +853,7 @@ bool Cmiss_spectrum_component_get_extend_below_flag(Cmiss_spectrum_component_id 
 	return false;
 }
 
-int Cmiss_spectrum_component_set_extend_below_flag(Cmiss_spectrum_component_id component,
+int Cmiss_spectrum_component_set_extend_below(Cmiss_spectrum_component_id component,
 	bool extend_below)
 {
 	if (component)
@@ -1015,29 +982,18 @@ Sets the fix_maximum flag of the Cmiss_spectrum_component <component>.
 	return (return_code);
 } /* Cmiss_spectrum_component_set_fix_maximum_flag */
 
-ZnReal Cmiss_spectrum_component_get_colour_value_minimum(struct Cmiss_spectrum_component *component)
-/*******************************************************************************
-LAST MODIFIED : 30 July 1998
-
-DESCRIPTION :
-==============================================================================*/
+double Cmiss_spectrum_component_get_colour_minimum(Cmiss_spectrum_component_id component)
 {
-	ZnReal value;
-
 	if (component)
 	{
-		value = component->min_value;
-	}
-	else
-	{
-		value = 0;
+		return component->min_value;
 	}
 
-	return (value);
+	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_colour_value_minimum(
-	struct Cmiss_spectrum_component *component, ZnReal value)
+int Cmiss_spectrum_component_set_colour_minimum(
+	Cmiss_spectrum_component_id component, double value)
 {
 	if (component && value <= 1.0 && value >= 0.0)
 	{
@@ -1056,25 +1012,19 @@ int Cmiss_spectrum_component_set_colour_value_minimum(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-ZnReal Cmiss_spectrum_component_get_colour_value_maximum(
-	struct Cmiss_spectrum_component *component)
+double Cmiss_spectrum_component_get_colour_maximum(
+	Cmiss_spectrum_component_id component)
 {
-	ZnReal value;
-
 	if (component)
 	{
-		value = component->max_value;
-	}
-	else
-	{
-		value = 0;
+		return component->max_value;
 	}
 
-	return (value);
+	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_colour_value_maximum(struct Cmiss_spectrum_component *component,
-	ZnReal value)
+int Cmiss_spectrum_component_set_colour_maximum(
+	Cmiss_spectrum_component_id component,	double value)
 {
 	if (component && value <= 1.0 && value >= 0.0)
 	{
@@ -1999,158 +1949,25 @@ int Cmiss_spectrum_component_destroy(Cmiss_spectrum_component_id *component_addr
 	return CMISS_ERROR_ARGUMENT;
 }
 
-double Cmiss_spectrum_component_get_attribute_real(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute)
+double Cmiss_spectrum_component_get_banded_ratio(Cmiss_spectrum_component_id component)
 {
 	if (component)
 	{
-		switch (attribute)
-		{
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM:
-			{
-				return Cmiss_spectrum_component_get_range_minimum(component);
-			} break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM:
-			{
-				return Cmiss_spectrum_component_get_range_maximum(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM:
-			{
-				return Cmiss_spectrum_component_get_colour_value_minimum(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM:
-			{
-				return Cmiss_spectrum_component_get_colour_value_maximum(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE:
-			{
-				return Cmiss_spectrum_component_get_step_value(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION:
-			{
-				return Cmiss_spectrum_component_get_exaggeration(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO:
-			{
-				int proportion = Cmiss_spectrum_component_get_black_band_proportion(component);
-				return ((double) proportion / (double)1021.0);
-			}	break;
-			default:
-			{
-			} break;
-		}
+		int proportion = Cmiss_spectrum_component_get_black_band_proportion(component);
+		return ((double) proportion / (double)1021.0);
 	}
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_attribute_real(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute, double value)
+int Cmiss_spectrum_component_set_banded_ratio(Cmiss_spectrum_component_id component,
+	double value)
 {
 	if (component)
 	{
-		switch (attribute)
+		if (((value > 0.0) || (value <= 1.0)))
 		{
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM:
-			{
-				return Cmiss_spectrum_component_set_range_minimum(component, value);
-			} break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM:
-			{
-				return Cmiss_spectrum_component_set_range_maximum(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM:
-			{
-				return Cmiss_spectrum_component_set_colour_value_minimum(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM:
-			{
-				return Cmiss_spectrum_component_set_colour_value_maximum(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE:
-			{
-				return Cmiss_spectrum_component_set_step_value(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION:
-			{
-				return Cmiss_spectrum_component_set_exaggeration(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO:
-			{
-				if (((value > 0.0) || (value <= 1.0)))
-				{
-					return Cmiss_spectrum_component_set_black_band_proportion(component,
-						(int)(value * 1021.0));
-				}
-			}	break;
-			default:
-			{
-			} break;
-		}
-	}
-	return CMISS_ERROR_ARGUMENT;
-}
-
-bool Cmiss_spectrum_component_get_attribute_boolean(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute)
-{
-	if (component)
-	{
-		switch (attribute)
-		{
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE:
-			{
-				return Cmiss_spectrum_component_get_active(component);
-			} break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE:
-			{
-				return Cmiss_spectrum_component_get_reverse_flag(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE:
-			{
-				return Cmiss_spectrum_component_get_extend_above_flag(component);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW:
-			{
-				return Cmiss_spectrum_component_get_extend_below_flag(component);
-			}	break;
-			default:
-			{
-			} break;
-		}
-	}
-	return 0.0;
-}
-
-int Cmiss_spectrum_component_set_attribute_boolean(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_attribute attribute, bool value)
-{
-	if (component)
-	{
-		switch (attribute)
-		{
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE:
-			{
-				return Cmiss_spectrum_component_set_active(component, value);
-			} break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE:
-			{
-				return Cmiss_spectrum_component_set_reverse_flag(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE:
-			{
-				return Cmiss_spectrum_component_set_extend_above_flag(component, value);
-			}	break;
-			case CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW:
-			{
-				return Cmiss_spectrum_component_set_extend_below_flag(component, value);
-			}	break;
-			default:
-			{
-			} break;
+			return Cmiss_spectrum_component_set_black_band_proportion(component,
+				(int)(value * 1021.0));
 		}
 	}
 	return CMISS_ERROR_ARGUMENT;

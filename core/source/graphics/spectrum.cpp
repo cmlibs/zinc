@@ -606,22 +606,19 @@ some predetermined simple types.
 				Spectrum_add_component(spectrum, component, /* end of list = 0 */0);
 				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR);
 				component->is_field_lookup = false;
-				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
-				Cmiss_spectrum_component_set_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
-				Cmiss_spectrum_component_set_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
+				Cmiss_spectrum_component_set_colour_mapping(component,
+					CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
+				Cmiss_spectrum_component_set_extend_above(component,true);
+				Cmiss_spectrum_component_set_extend_below(component, true);
 				switch (type)
 				{
 					case RED_TO_BLUE_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_attribute_boolean(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE,false);
+						Cmiss_spectrum_component_set_colour_reverse(component,false);
 					} break;
 					case BLUE_TO_RED_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_attribute_boolean(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
+						Cmiss_spectrum_component_set_colour_reverse(component, true);
 					} break;
 					default:
 					{
@@ -646,60 +643,40 @@ some predetermined simple types.
 
 				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
 				component->is_field_lookup = false;
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, 1.0);
+				Cmiss_spectrum_component_set_exaggeration(component, 1.0);
 				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, -1.0);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 0.0);
+				Cmiss_spectrum_component_set_range_minimum(component, -1.0);
+				Cmiss_spectrum_component_set_range_maximum(component, 0.0);
 
 				Cmiss_spectrum_component_set_scale_type(second_component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
 				second_component->is_field_lookup = false;
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, -1.0);
+				Cmiss_spectrum_component_set_exaggeration(second_component, -1.0);
 				Cmiss_spectrum_component_set_colour_mapping(second_component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, 0.0);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 1.0);
+				Cmiss_spectrum_component_set_range_minimum(second_component, 0.0);
+				Cmiss_spectrum_component_set_range_maximum(second_component, 1.0);
 
-				Cmiss_spectrum_component_set_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
-				Cmiss_spectrum_component_set_attribute_boolean(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
+				Cmiss_spectrum_component_set_extend_below(component, true);
+				Cmiss_spectrum_component_set_extend_above(second_component, true);
 
 				switch(type)
 				{
 					case LOG_RED_TO_BLUE_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_attribute_boolean(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, false);
-						Cmiss_spectrum_component_set_attribute_real(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
-						Cmiss_spectrum_component_set_attribute_real(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 0.5);
-						Cmiss_spectrum_component_set_attribute_boolean(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, false);
-						Cmiss_spectrum_component_set_attribute_real(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.5);
-						Cmiss_spectrum_component_set_attribute_real(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1.0);
+						Cmiss_spectrum_component_set_colour_reverse(component, false);
+						Cmiss_spectrum_component_set_colour_minimum(component, 0);
+						Cmiss_spectrum_component_set_colour_maximum(component, 0.5);
+						Cmiss_spectrum_component_set_colour_reverse(second_component, false);
+						Cmiss_spectrum_component_set_colour_minimum(second_component, 0.5);
+						Cmiss_spectrum_component_set_colour_maximum(second_component, 1.0);
 					} break;
 					case LOG_BLUE_TO_RED_SPECTRUM:
 					{
-						Cmiss_spectrum_component_set_attribute_boolean(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
-						Cmiss_spectrum_component_set_attribute_real(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.5);
-						Cmiss_spectrum_component_set_attribute_real(component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1.0);
-						Cmiss_spectrum_component_set_attribute_boolean(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
-						Cmiss_spectrum_component_set_attribute_real(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0.0);
-						Cmiss_spectrum_component_set_attribute_real(second_component,
-							CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 0.5);
+						Cmiss_spectrum_component_set_colour_reverse(component, true);
+						Cmiss_spectrum_component_set_colour_minimum(component, 0.5);
+						Cmiss_spectrum_component_set_colour_maximum(component, 1.0);
+						Cmiss_spectrum_component_set_colour_reverse(second_component, true);
+						Cmiss_spectrum_component_set_colour_minimum(second_component, 0.0);
+						Cmiss_spectrum_component_set_colour_maximum(second_component, 0.5);
 					} break;
 					default:
 					{
@@ -723,41 +700,28 @@ some predetermined simple types.
 
 				Cmiss_spectrum_component_set_scale_type(component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
 				component->is_field_lookup = false;
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, -10.0);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, -1.0);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 0.0);
-				Cmiss_spectrum_component_set_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
+				Cmiss_spectrum_component_set_exaggeration(component, -10.0);
+				Cmiss_spectrum_component_set_range_minimum(component, -1.0);
+				Cmiss_spectrum_component_set_range_maximum(component, 0.0);
+				Cmiss_spectrum_component_set_colour_reverse(component, true);
 				/* fix the maximum (white ) at zero */
 				Cmiss_spectrum_component_set_fix_maximum_flag(component,1);
-				Cmiss_spectrum_component_set_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, true);
+				Cmiss_spectrum_component_set_extend_below(component, true);
 				Cmiss_spectrum_component_set_colour_mapping(component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
-				Cmiss_spectrum_component_set_attribute_real(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1);
+				Cmiss_spectrum_component_set_colour_minimum(component, 0);
+				Cmiss_spectrum_component_set_colour_maximum(component, 1);
 
 				Cmiss_spectrum_component_set_scale_type(second_component, CMISS_SPECTRUM_COMPONENT_SCALE_LOG);
 				second_component->is_field_lookup = false;
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_EXAGGERATION, 10.0);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, 0.0);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 1.0);
+				Cmiss_spectrum_component_set_exaggeration(second_component, 10.0);
+				Cmiss_spectrum_component_set_range_minimum(second_component, 0.0);
+				Cmiss_spectrum_component_set_range_maximum(second_component, 1.0);
 				/* fix the minimum (white ) at zero */
 				Cmiss_spectrum_component_set_fix_minimum_flag(second_component,1);
-				Cmiss_spectrum_component_set_attribute_boolean(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, true);
+				Cmiss_spectrum_component_set_extend_above(second_component, true);
 				Cmiss_spectrum_component_set_colour_mapping(second_component, CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MINIMUM, 0);
-				Cmiss_spectrum_component_set_attribute_real(second_component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_COLOUR_MAXIMUM, 1);
+				Cmiss_spectrum_component_set_colour_minimum(second_component, 0);
+				Cmiss_spectrum_component_set_colour_maximum(second_component, 1);
 			} break;
 			Cmiss_spectrum_component_destroy(&component);
 			Cmiss_spectrum_component_destroy(&second_component);
@@ -818,8 +782,7 @@ it returns UNKNOWN_SPECTRUM
 					((LIST_CONDITIONAL_FUNCTION(Cmiss_spectrum_component) *)NULL, NULL,
 					spectrum_component_list);
 				component_scale = Cmiss_spectrum_component_get_scale_type(component);
-				reverse = Cmiss_spectrum_component_get_attribute_boolean(component,
-					CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
+				reverse = Cmiss_spectrum_component_is_colour_reverse(component);
 				colour_mapping = Cmiss_spectrum_component_get_colour_mapping(component);
 
 				if ( component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR )
@@ -846,12 +809,10 @@ it returns UNKNOWN_SPECTRUM
 				if ( component && second_component )
 				{
 					component_scale = Cmiss_spectrum_component_get_scale_type(component);
-					reverse = Cmiss_spectrum_component_get_attribute_boolean(component,
-						CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
+					reverse = Cmiss_spectrum_component_is_colour_reverse(component);
 					colour_mapping = Cmiss_spectrum_component_get_colour_mapping(component);
 					second_component_scale = Cmiss_spectrum_component_get_scale_type(second_component);
-					second_reverse = Cmiss_spectrum_component_get_attribute_boolean(second_component,
-						CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
+					second_reverse = Cmiss_spectrum_component_is_colour_reverse(second_component);
 					second_colour_mapping = Cmiss_spectrum_component_get_colour_mapping
 						(second_component);
 
@@ -1413,10 +1374,8 @@ functions are in one place and the iterator can have local scope.
 	ENTER(spectrum_calculate_range_iterator);
 	if (component && (data = (struct Spectrum_calculate_range_iterator_data *)data_void))
 	{
-		min = Cmiss_spectrum_component_get_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM);
-		max = Cmiss_spectrum_component_get_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM);
+		min = Cmiss_spectrum_component_get_range_minimum(component);
+		max = Cmiss_spectrum_component_get_range_maximum(component);
 		fixed_minimum = Cmiss_spectrum_component_get_fix_minimum_flag(component);
 		fixed_maximum = Cmiss_spectrum_component_get_fix_maximum_flag(component);
 
@@ -1527,10 +1486,8 @@ functions are in one place and the iterator can have local scope.
 	ENTER(spectrum_rerange_iterator);
 	if (component && (data = (struct Spectrum_rerange_data *)data_void))
 	{
-		min = Cmiss_spectrum_component_get_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM);
-		max = Cmiss_spectrum_component_get_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM);
+		min = Cmiss_spectrum_component_get_range_minimum(component);
+		max = Cmiss_spectrum_component_get_range_maximum(component);
 
 		if ( data->old_range > 0.0 )
 		{
@@ -1545,10 +1502,8 @@ functions are in one place and the iterator can have local scope.
 			max = data->max;
 		}
 
-		Cmiss_spectrum_component_set_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MINIMUM, min);
-		Cmiss_spectrum_component_set_attribute_real(component,
-			CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, max);
+		Cmiss_spectrum_component_set_range_minimum(component, min);
+		Cmiss_spectrum_component_set_range_maximum(component, max);
 
 		return_code = 1;
 	}
