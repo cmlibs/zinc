@@ -334,8 +334,6 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 				} break;
 				default:
 				{
-					display_message(ERROR_MESSAGE,
-						"DESTROY(Cmiss_spectrum_component).  Unknown element component type");
 				} break;
 			}
 			if (component->input_field)

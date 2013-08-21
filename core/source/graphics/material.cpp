@@ -6358,9 +6358,8 @@ deaccess the material program from the material.
 ==============================================================================*/
 {
 	 int return_code;
-	 ENTER(material_deaccess_material_program);
 
-	 if (material_to_be_modified->program)
+	 if (material_to_be_modified && material_to_be_modified->program)
 	 {
 			DEACCESS(Material_program)(&material_to_be_modified->program);
 			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
@@ -6370,11 +6369,8 @@ deaccess the material program from the material.
 	 }
 	 else
 	 {
-			display_message(ERROR_MESSAGE,
-				 "material_deaccess_material_program.  Missing material_program");
 			return_code = 0;
 	 }
-	 LEAVE;
 
 	 return return_code;
 }
