@@ -131,7 +131,7 @@ public:
 		return Cmiss_spectrum_component_set_range_minimum(id, value);
 	}
 
-	double getRangeMaxumum()
+	double getRangeMaximum()
 	{
 		return Cmiss_spectrum_component_get_range_maximum(id);
 	}
