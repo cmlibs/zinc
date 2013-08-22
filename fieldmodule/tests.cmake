@@ -10,7 +10,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/region_io.cpp
 	${CURRENT_TEST}/create_image_processing.cpp
 	${CURRENT_TEST}/create_fibre_axes.cpp
-	${CURRENT_TEST}/nodes.cpp
+	${CURRENT_TEST}/nodesandelements.cpp
 	)
 
 SET(FIELDMODULE_EXNODE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/nodes.exnode")
