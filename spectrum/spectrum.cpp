@@ -131,44 +131,30 @@ TEST(Cmiss_spectrum_api, valid_args)
 
 	Cmiss_spectrum_component_destroy(&component1_clone);
 
-	result = Cmiss_spectrum_component_set_attribute_real(
-		component1, CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM, 20.0);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_spectrum_component_set_range_maximum(component1, 20.0));
 
-	int double_result = Cmiss_spectrum_component_get_attribute_real(
-		component1, CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_RANGE_MAXIMUM);
+	double double_result = Cmiss_spectrum_component_get_range_maximum(component1);
 	EXPECT_EQ(20.0, double_result);
 
-	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE, false);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_spectrum_component_set_active(component1, false));
 
-	bool bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_ACTIVE);
+	bool bool_result = Cmiss_spectrum_component_is_active(component1);
 	EXPECT_FALSE(bool_result);
 
-	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE, true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_spectrum_component_set_colour_reverse(component1, true));
 
-	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_COLOUR_REVERSE);
+	bool_result = Cmiss_spectrum_component_is_colour_reverse(component1);
 	EXPECT_TRUE(bool_result);
 
-	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE, false);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_spectrum_component_set_extend_above(
+		component1, false));
 
-	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_ABOVE);
+	bool_result = Cmiss_spectrum_component_is_extend_above(component1);
 	EXPECT_FALSE(bool_result);
 
-	result = Cmiss_spectrum_component_set_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW, false);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = Cmiss_spectrum_component_set_extend_below(component1, false));
 
-	bool_result = Cmiss_spectrum_component_get_attribute_boolean(component1,
-		CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_IS_EXTEND_BELOW);
+	bool_result = Cmiss_spectrum_component_is_extend_below(component1);
 	EXPECT_FALSE(bool_result);
 
 	result = Cmiss_spectrum_component_set_field_component(component1,	2);
@@ -251,34 +237,32 @@ TEST(Cmiss_spectrum_api, valid_args_cpp)
 	component1_clone = spectrum.getPreviousComponent(component2);
 	EXPECT_EQ(component1_clone.getId(), component1.getId());
 
-	result = component1.setAttributeReal(component1.ATTRIBUTE_RANGE_MAXIMUM, 20.0);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = component1.setRangeMaximum(20.0));
 
-	double double_result = component1.getAttributeReal(component1.ATTRIBUTE_RANGE_MAXIMUM);
+	double double_result = component1.getRangeMaximum();
 	EXPECT_EQ(20.0, double_result);
 
-	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_ACTIVE, false);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMISS_OK, result = component1.setActive(false));
 
-	bool bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_ACTIVE);
+	bool bool_result = component1.isActive();
 	EXPECT_FALSE(bool_result);
 
-	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_COLOUR_REVERSE, true);
+	result = component1.setColourReverse(true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_COLOUR_REVERSE);
+	bool_result = component1.isColourReverse();
 	EXPECT_TRUE(bool_result);
 
-	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_ABOVE, false);
+	result = component1.setExtendAbove(false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_ABOVE);
+	bool_result = component1.isExtendAbove();
 	EXPECT_FALSE(bool_result);
 
-	result = component1.setAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_BELOW, false);
+	result = component1.setExtendBelow(false);
 	EXPECT_EQ(CMISS_OK, result);
 
-	bool_result = component1.getAttributeBoolean(component1.ATTRIBUTE_IS_EXTEND_BELOW);
+	bool_result = component1.isExtendBelow();
 	EXPECT_FALSE(bool_result);
 
 	result = component1.setFieldComponent(2);
