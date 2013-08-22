@@ -143,6 +143,11 @@ public:
 		return Cmiss_element_get_identifier(id);
 	}
 
+	int setIdentifier(int identifier)
+	{
+		return Cmiss_element_set_identifier(id, identifier);
+	}
+
 	enum ShapeType getShapeType()
 	{
 		return static_cast<ShapeType>(Cmiss_element_get_shape_type(id));
