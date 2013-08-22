@@ -548,6 +548,17 @@ ZINC_API int Cmiss_node_destroy(Cmiss_node_id *node_address);
 ZINC_API int Cmiss_node_get_identifier(Cmiss_node_id node);
 
 /**
+ * Set an integer uniquely identifying the node in its nodeset.
+ *
+ * @param node  The node to query.
+ * @param identifier  unique identifier to be set for the node
+ *
+ * @return  CMISS_OK if set the identifier successfully,
+ * 	any other value on fail.
+ */
+ZINC_API int Cmiss_node_set_identifier(Cmiss_node_id node, int identifier);
+
+/**
  * Modifies the node to define fields as described in the node_template.
  *
  * @param node  The node to modify.

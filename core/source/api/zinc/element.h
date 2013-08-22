@@ -690,6 +690,17 @@ ZINC_API int Cmiss_element_get_dimension(Cmiss_element_id element);
  */
 ZINC_API int Cmiss_element_get_identifier(Cmiss_element_id element);
 
+/**
+ * Set an integer uniquely identifying the element in its mesh.
+ *
+ * @param element  The element to query.
+ * @param identifier  unique identifier to be set for the element
+ *
+ * @return  CMISS_OK if set the identifier successfully,
+ * 	any other value on fail.
+ */
+ZINC_API int Cmiss_element_set_identifier(Cmiss_element_id element, int identifier);
+
 /***************************************************************************//**
  * Gets the shape type of the element. Note that legacy meshes may return an
  * unknown shape type for certain custom element shapes e.g. polygon shapes.

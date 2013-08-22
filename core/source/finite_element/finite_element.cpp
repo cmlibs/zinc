@@ -57,6 +57,7 @@ Functions for manipulating finite element structures.
 #include <cstdlib>
 #include <cstdio>
 
+#include "zinc/status.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"
@@ -34897,3 +34898,31 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 
 	return (return_code);
 } /* FE_element_define_tensor_product_basis */
+
+int Cmiss_node_set_identifier(Cmiss_node_id node, int identifier)
+{
+	if (node && node->fields &&(identifier > 0))
+	{
+		FE_region *fe_region = node->fields->fe_region;
+		FE_region_begin_change(fe_region);
+		int return_code = FE_region_change_FE_node_identifier(fe_region,
+			node, identifier);
+		FE_region_end_change(fe_region);
+		return return_code;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}
+
+int Cmiss_element_set_identifier(Cmiss_element_id element, int identifier)
+{
+	if (element && element->fields &&(identifier > 0))
+	{
+		FE_region *fe_region = element->fields->fe_region;
+		FE_region_begin_change(fe_region);
+		int return_code = FE_region_change_FE_element_identifier(fe_region,
+			element, identifier);
+		FE_region_end_change(fe_region);
+		return return_code;
+	}
+	return CMISS_ERROR_ARGUMENT;
+}

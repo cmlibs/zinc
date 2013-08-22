@@ -113,6 +113,11 @@ public:
 		return Cmiss_node_get_identifier(id);
 	}
 
+	int setIdentifier(int identifier)
+	{
+		return Cmiss_node_set_identifier(id, identifier);
+	}
+
 	int merge(NodeTemplate nodeTemplate);
 
 };
