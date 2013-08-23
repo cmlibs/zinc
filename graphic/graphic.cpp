@@ -672,6 +672,7 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(glyph, temp_glyph);
 	Cmiss_glyph_destroy(&temp_glyph);
 	Cmiss_glyph_destroy(&glyph);
+	EXPECT_EQ(CMISS_GLYPH_POINT, Cmiss_graphic_point_attributes_get_glyph_type(pointattr));
 
 	glyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "sphere");
 	EXPECT_NE((Cmiss_glyph_id)0, glyph);
@@ -680,9 +681,11 @@ TEST(Cmiss_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(glyph, temp_glyph);
 	Cmiss_glyph_destroy(&temp_glyph);
 	Cmiss_glyph_destroy(&glyph);
+	EXPECT_EQ(CMISS_GLYPH_SPHERE, Cmiss_graphic_point_attributes_get_glyph_type(pointattr));
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_TYPE_INVALID));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GRAPHICS_GLYPH_SPHERE));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GLYPH_TYPE_INVALID));
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_point_attributes_set_glyph_type(pointattr, CMISS_GLYPH_CUBE_SOLID));
+	EXPECT_EQ(CMISS_GLYPH_CUBE_SOLID, Cmiss_graphic_point_attributes_get_glyph_type(pointattr));
 
 	EXPECT_EQ(CMISS_GLYPH_REPEAT_NONE, Cmiss_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_point_attributes_set_glyph_repeat_mode(0, CMISS_GLYPH_REPEAT_MIRROR));
@@ -781,15 +784,18 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_TRUE(glyph.isValid());
 	Glyph tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
+	EXPECT_EQ(Glyph::POINT, pointattr.getGlyphType());
 
 	glyph = zinc.glyphModule.findGlyphByName("sphere");
 	EXPECT_TRUE(glyph.isValid());
 	EXPECT_EQ(CMISS_OK, pointattr.setGlyph(glyph));
 	tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
+	EXPECT_EQ(Glyph::SPHERE, pointattr.getGlyphType());
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphType(Graphic::GLYPH_TYPE_INVALID));
-	EXPECT_EQ(CMISS_OK, pointattr.setGlyphType(Graphic::GLYPH_TYPE_SPHERE));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphType(Glyph::TYPE_INVALID));
+	EXPECT_EQ(CMISS_OK, pointattr.setGlyphType(Glyph::CUBE_SOLID));
+	EXPECT_EQ(Glyph::CUBE_SOLID, pointattr.getGlyphType());
 
 	EXPECT_EQ(Glyph::REPEAT_NONE, pointattr.getGlyphRepeatMode());
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_INVALID));

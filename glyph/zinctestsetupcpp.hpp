@@ -21,6 +21,7 @@ public:
 	FieldModule fm;
 	GraphicsModule gm;
 	GlyphModule glyphModule;
+	GraphicsMaterialModule materialModule;
 	Scene scene;
 
 	ZincTestSetupCpp() :
@@ -29,6 +30,7 @@ public:
 		fm(root_region.getFieldModule()),
 		gm(context.getGraphicsModule()),
 		glyphModule(gm.getGlyphModule()),
+		materialModule(gm.getMaterialModule()),
 		scene(0)
 	{
 		scene = gm.getScene(root_region);
@@ -36,6 +38,7 @@ public:
 		EXPECT_TRUE(gm.isValid());
 		EXPECT_TRUE(glyphModule.isValid());
 		EXPECT_EQ(CMISS_OK, glyphModule.defineStandardGlyphs());
+		EXPECT_EQ(CMISS_OK, materialModule.defineStandardMaterials());
 		EXPECT_TRUE(scene.isValid());
 	}
 
