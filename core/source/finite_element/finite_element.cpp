@@ -10375,19 +10375,19 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 		return "domain_nodes";
 		break;
 	case CMISS_FIELD_DOMAIN_DATA:
-		return "domain_data";
+		return "domain_datapoints";
 		break;
-	case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
-		return "domain_elements_1d";
+	case CMISS_FIELD_DOMAIN_MESH_1D:
+		return "domain_mesh_1d";
 		break;
-	case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
-		return "domain_elements_2d";
+	case CMISS_FIELD_DOMAIN_MESH_2D:
+		return "domain_mesh_2d";
 		break;
-	case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
-		return "domain_elements_3d";
+	case CMISS_FIELD_DOMAIN_MESH_3D:
+		return "domain_mesh_3d";
 		break;
-	case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
-		return "domain_elements_highest_dimension";
+	case CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
+		return "domain_mesh_highest_dimension";
 		break;
 	case CMISS_FIELD_DOMAIN_TYPE_INVALID:
 		break;

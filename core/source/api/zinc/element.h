@@ -162,9 +162,9 @@ ZINC_API Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
  * Get a handle to a finite element mesh from its name. A mesh is the container
  * of elements of a fixed dimension. Valid names may be any element_group field,
  * or any of the following special names:
- * "cmiss_mesh_3d" = 3-D elements.
- * "cmiss_mesh_2d" = 2-D elements including faces of 3-D elements.
- * "cmiss_mesh_1d" = 1-D elements including faces (lines) of 2-D elements.
+ * "mesh3d" = 3-D elements.
+ * "mesh2d" = 2-D elements including faces of 3-D elements.
+ * "mesh1d" = 1-D elements including faces (lines) of 2-D elements.
  * Note that the default names for element group fields created from a group
  * is GROUP_NAME.MESH_NAME, with mesh names as above.
  *

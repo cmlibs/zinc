@@ -263,13 +263,13 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 				graphic->domain_type = CMISS_FIELD_DOMAIN_POINT;
 				break;
 			case CMISS_GRAPHIC_LINES:
-				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_1D;
+				graphic->domain_type = CMISS_FIELD_DOMAIN_MESH_1D;
 				break;
 			case CMISS_GRAPHIC_SURFACES:
-				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_2D;
+				graphic->domain_type = CMISS_FIELD_DOMAIN_MESH_2D;
 				break;
 			default:
-				graphic->domain_type = CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION;
+				graphic->domain_type = CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
 				break;
 			}
 			// for element sampling: element points, streamlines
@@ -468,16 +468,16 @@ int Cmiss_graphic_get_domain_dimension(struct Cmiss_graphic *graphic)
 		case CMISS_FIELD_DOMAIN_DATA:
 			dimension = 0;
 			break;
-		case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
+		case CMISS_FIELD_DOMAIN_MESH_1D:
 			dimension = 1;
 			break;
-		case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
+		case CMISS_FIELD_DOMAIN_MESH_2D:
 			dimension = 2;
 			break;
-		case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
+		case CMISS_FIELD_DOMAIN_MESH_3D:
 			dimension = 3;
 			break;
-		case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
+		case CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
 			dimension = 3;
 			if (graphic->scene)
 			{
@@ -2887,10 +2887,10 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 							functor = create_highlight_functor_nodeset(group_field, nodeset);
 							Cmiss_nodeset_destroy(&nodeset);
 						} break;
-						case CMISS_FIELD_DOMAIN_ELEMENTS_1D:
-						case CMISS_FIELD_DOMAIN_ELEMENTS_2D:
-						case CMISS_FIELD_DOMAIN_ELEMENTS_3D:
-						case CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION:
+						case CMISS_FIELD_DOMAIN_MESH_1D:
+						case CMISS_FIELD_DOMAIN_MESH_2D:
+						case CMISS_FIELD_DOMAIN_MESH_3D:
+						case CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
 						{
 #if defined(USE_OPENCASCADE)
 							if (graphic->graphic_type == CMISS_GRAPHIC_SURFACES)

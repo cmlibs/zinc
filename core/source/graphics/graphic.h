@@ -369,7 +369,7 @@ bool Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
 
 /**
  * Returns the dimension of the domain used in the graphic. Note for domain
- * type CMISS_DOMAIN_ELEMENTS_HIGHEST_DIMENSION the region is checked for the
+ * type CMISS_DOMAIN_MESH_HIGHEST_DIMENSION the region is checked for the
  * highest dimension.
  * @param graphic  The graphic to query.
  * @return  The dimension of the graphic domain, or -1 on error.

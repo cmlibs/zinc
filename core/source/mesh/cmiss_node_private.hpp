@@ -79,7 +79,7 @@ int Cmiss_nodeset_group_remove_element_nodes(
 struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id nodeset);
 
 /** Internal use only
- * @return non-accessed fe_region for this nodeset. Different for cmiss_data.
+ * @return non-accessed fe_region for this nodeset. Different for datapoints.
  */
 FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset);
 
@@ -103,7 +103,7 @@ int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset);
  * For internal use in command migration only.
  *
  * @param field_module  The field module the nodeset belongs to.
- * @param name  The name of the nodeset: GROUP_NAME.{cmiss_nodes|cmiss_data}.
+ * @param name  The name of the nodeset: GROUP_NAME.{nodes|datapoints}.
  * @return  Handle to the nodeset, or NULL if error, name already in use or no
  * such nodeset name.
  */

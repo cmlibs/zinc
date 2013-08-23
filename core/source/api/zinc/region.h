@@ -551,10 +551,10 @@ ZINC_API int Cmiss_stream_information_region_get_resource_domain_type(
  *   CMISS_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
  *   CMISS_FIELD_DOMAIN_NODES - Enable output of nodes
  *   CMISS_FIELD_DOMAIN_DATA - Enable output of datapoints
- *   CMISS_FIELD_DOMAIN_ELEMENTS_1D - Enable output of 1D mesh
- *   CMISS_FIELD_DOMAIN_ELEMENTS_2D - Enable output of 2D mesh
- *   CMISS_FIELD_DOMAIN_ELEMENTS_3D - Enable output of 3D mesh
- *   CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION - Enable output of mesh with highest
+ *   CMISS_FIELD_DOMAIN_MESH_1D - Enable output of 1D mesh
+ *   CMISS_FIELD_DOMAIN_MESH_2D - Enable output of 2D mesh
+ *   CMISS_FIELD_DOMAIN_MESH_3D - Enable output of 3D mesh
+ *   CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION - Enable output of mesh with highest
  *   dimension possible
  *
  * @return   status CMISS_OK if domain_type is successfully set, any other value if

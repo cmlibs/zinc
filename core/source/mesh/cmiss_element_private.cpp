@@ -905,13 +905,13 @@ public:
 			switch (dimension)
 			{
 			case 1:
-				name = duplicate_string("cmiss_mesh_1d");
+				name = duplicate_string("mesh1d");
 				break;
 			case 2:
-				name = duplicate_string("cmiss_mesh_2d");
+				name = duplicate_string("mesh2d");
 				break;
 			case 3:
-				name = duplicate_string("cmiss_mesh_3d");
+				name = duplicate_string("mesh3d");
 				break;
 			default:
 				break;
@@ -1074,11 +1074,11 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
 			int mesh_dimension = 0;
-			if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
+			if      (0 == strcmp(mesh_name, "mesh3d"))
 				mesh_dimension = 3;
-			else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
+			else if (0 == strcmp(mesh_name, "mesh2d"))
 				mesh_dimension = 2;
-			else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
+			else if (0 == strcmp(mesh_name, "mesh1d"))
 				mesh_dimension = 1;
 			if (0 < mesh_dimension)
 			{

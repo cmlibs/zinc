@@ -92,9 +92,9 @@ ZINC_API Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_domain_type(
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
  * container of nodes - i.e. Cmiss_node objects. Valid names may be any
  * node_group field, or the following special names:
- * "cmiss_nodes" = the primary set of nodes for a region, able to be indexed by
+ * "nodes" = the primary set of nodes for a region, able to be indexed by
  * Cmiss_elements for storing or mapping to finite element field parameters.
- * "cmiss_data" = an additional set of nodes generally used to represent data
+ * "datapoints" = an additional set of nodes generally used to represent data
  * points, not for finite element field parameters.
  * Note that the default names for node group fields created from a group
  * is GROUP_NAME.NODESET_NAME, with nodeset names as above.
