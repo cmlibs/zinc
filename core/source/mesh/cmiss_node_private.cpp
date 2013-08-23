@@ -787,11 +787,11 @@ public:
 		}
 		else if (FE_region_is_data_FE_region(fe_region))
 		{
-			name = duplicate_string("cmiss_data");
+			name = duplicate_string("datapoints");
 		}
 		else
 		{
-			name = duplicate_string("cmiss_nodes");
+			name = duplicate_string("nodes");
 		}
 		return name;
 	}
@@ -943,11 +943,11 @@ Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 		}
 		else
 		{
-			if (0 == strcmp(nodeset_name, "cmiss_nodes"))
+			if (0 == strcmp(nodeset_name, "nodes"))
 			{
 				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 			}
-			else if (0 == strcmp(nodeset_name, "cmiss_data"))
+			else if (0 == strcmp(nodeset_name, "datapoints"))
 			{
 				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_DATA);
 			}

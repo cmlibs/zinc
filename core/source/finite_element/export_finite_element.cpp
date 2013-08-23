@@ -2575,11 +2575,11 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
 				for (int dimension = 1; dimension <= highest_dimension; dimension++)
 				{
-					if ((dimension == 1 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_1D)) ||
-						(dimension == 2 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_2D)) ||
-						(dimension == 3 && (write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_3D)) ||
+					if ((dimension == 1 && (write_elements & CMISS_FIELD_DOMAIN_MESH_1D)) ||
+						(dimension == 2 && (write_elements & CMISS_FIELD_DOMAIN_MESH_2D)) ||
+						(dimension == 3 && (write_elements & CMISS_FIELD_DOMAIN_MESH_3D)) ||
 						(dimension == highest_dimension &&
-							(write_elements & CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION)))
+							(write_elements & CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)))
 					{
 						Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 						if (group)

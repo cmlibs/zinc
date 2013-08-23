@@ -284,8 +284,8 @@ int Cmiss_region_write(Cmiss_region_id region,
 					region_stream_information, stream);
 				if (domain_type == CMISS_FIELD_DOMAIN_TYPE_INVALID)
 				{
-					writeElements = CMISS_FIELD_DOMAIN_ELEMENTS_1D|CMISS_FIELD_DOMAIN_ELEMENTS_2D|
-						CMISS_FIELD_DOMAIN_ELEMENTS_3D|CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION;
+					writeElements = CMISS_FIELD_DOMAIN_MESH_1D|CMISS_FIELD_DOMAIN_MESH_2D|
+						CMISS_FIELD_DOMAIN_MESH_3D|CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
 					writeData = 1;
 					writeNodes = 1;
 				}
@@ -299,21 +299,21 @@ int Cmiss_region_write(Cmiss_region_id region,
 					{
 						writeData = 1;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_ELEMENTS_1D)
+					if (domain_type & CMISS_FIELD_DOMAIN_MESH_1D)
 					{
-						writeElements = CMISS_FIELD_DOMAIN_ELEMENTS_1D;
+						writeElements = CMISS_FIELD_DOMAIN_MESH_1D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_ELEMENTS_2D)
+					if (domain_type & CMISS_FIELD_DOMAIN_MESH_2D)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_ELEMENTS_2D;
+						writeElements |= CMISS_FIELD_DOMAIN_MESH_2D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_ELEMENTS_3D)
+					if (domain_type & CMISS_FIELD_DOMAIN_MESH_3D)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_ELEMENTS_3D;
+						writeElements |= CMISS_FIELD_DOMAIN_MESH_3D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION)
+					if (domain_type & CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_ELEMENTS_HIGHEST_DIMENSION;
+						writeElements |= CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
 					}
 				}
 				if (file_resource)

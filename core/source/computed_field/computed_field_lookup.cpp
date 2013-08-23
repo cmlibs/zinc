@@ -249,11 +249,11 @@ int Computed_field_nodal_lookup::list()
 		FE_region *fe_region = FE_node_get_FE_region(lookup_node);
 		if (FE_region_contains_FE_node(fe_region, lookup_node))
 		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: cmiss_nodes\n");
+			display_message(INFORMATION_MESSAGE, "    nodeset: nodes\n");
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: cmiss_data\n");
+			display_message(INFORMATION_MESSAGE, "    nodeset: datapoints\n");
 		}
 		return_code = 1;
 	}
@@ -296,11 +296,11 @@ Returns allocated command string for reproducing field.
 		FE_region *fe_region = FE_node_get_FE_region(lookup_node);
 		if (FE_region_contains_FE_node(fe_region, lookup_node))
 		{
-			append_string(&command_string, " nodeset cmiss_nodes ", &error);
+			append_string(&command_string, " nodeset nodes ", &error);
 		}
 		else
 		{
-			append_string(&command_string, " nodeset cmiss_data ", &error);
+			append_string(&command_string, " nodeset datapoints ", &error);
 		}
 		append_string(&command_string, " node ", &error);
 		node_number = get_FE_node_identifier(lookup_node);
@@ -671,11 +671,11 @@ DESCRIPTION :
 		FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
 		if (FE_region_contains_FE_node(fe_region, nodal_lookup_node))
 		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: cmiss_nodes\n");
+			display_message(INFORMATION_MESSAGE, "    nodeset: nodes	\n");
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: cmiss_data\n");
+			display_message(INFORMATION_MESSAGE, "    nodeset: datapoints \n");
 		}
 		return_code = 1;
 	}
@@ -718,11 +718,11 @@ Returns allocated command string for reproducing field. Includes type.
 		FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
 		if (FE_region_contains_FE_node(fe_region, nodal_lookup_node))
 		{
-			append_string(&command_string, " nodeset cmiss_nodes ", &error);
+			append_string(&command_string, " nodeset nodes ", &error);
 		}
 		else
 		{
-			append_string(&command_string, " nodeset cmiss_data ", &error);
+			append_string(&command_string, " nodeset datapoints ", &error);
 		}
 		append_string(&command_string, " node ", &error);
 		node_number = get_FE_node_identifier(nodal_lookup_node);
