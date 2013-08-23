@@ -128,16 +128,6 @@ public:
 		COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT
 	};
 
-	enum GlyphType
-	{
-		GLYPH_TYPE_INVALID = CMISS_GRAPHICS_GLYPH_TYPE_INVALID,
-		GLYPH_TYPE_NONE = CMISS_GRAPHICS_GLYPH_NONE,
-		GLYPH_TYPE_POINT = CMISS_GRAPHICS_GLYPH_POINT,
-		GLYPH_TYPE_LINE = CMISS_GRAPHICS_GLYPH_LINE,
-		GLYPH_TYPE_SPHERE = CMISS_GRAPHICS_GLYPH_SPHERE,
-		GLYPH_TYPE_AXES = CMISS_GRAPHICS_GLYPH_AXES_SOLID
-	};
-
 	enum GraphicType
 	{
 		GRAPHIC_TYPE_INVALID = CMISS_GRAPHIC_TYPE_INVALID,
@@ -683,10 +673,15 @@ public:
 			static_cast<enum Cmiss_glyph_repeat_mode>(glyphRepeatMode));
 	}
 
-	int setGlyphType(Graphic::GlyphType type)
+	Glyph::Type getGlyphType()
+	{
+		return static_cast<Glyph::Type>(Cmiss_graphic_point_attributes_get_glyph_type(id));
+	}
+
+	int setGlyphType(Glyph::Type type)
 	{
 		return Cmiss_graphic_point_attributes_set_glyph_type(id,
-			static_cast<Cmiss_graphics_glyph_type>(type));
+			static_cast<Cmiss_glyph_type>(type));
 	}
 
 	Field getLabelField()

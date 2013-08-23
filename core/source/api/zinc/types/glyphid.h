@@ -47,6 +47,9 @@ typedef struct Cmiss_glyph_module *Cmiss_glyph_module_id;
 struct Cmiss_glyph;
 typedef struct Cmiss_glyph *Cmiss_glyph_id;
 
+struct Cmiss_glyph_axes;
+typedef struct Cmiss_glyph_axes *Cmiss_glyph_axes_id;
+
 struct Cmiss_glyph_colour_bar;
 typedef struct Cmiss_glyph_colour_bar *Cmiss_glyph_colour_bar_id;
 
@@ -80,17 +83,35 @@ enum Cmiss_glyph_repeat_mode
 
 /**
  * An enum defining the type of graphic glyph.
- * @deprecated
  */
-enum Cmiss_graphics_glyph_type
+enum Cmiss_glyph_type
 {
-	CMISS_GRAPHICS_GLYPH_TYPE_INVALID = -1,
-	CMISS_GRAPHICS_GLYPH_NONE,
-	CMISS_GRAPHICS_GLYPH_POINT,
-	CMISS_GRAPHICS_GLYPH_LINE,
-	CMISS_GRAPHICS_GLYPH_CROSS,
-	CMISS_GRAPHICS_GLYPH_SPHERE,
-	CMISS_GRAPHICS_GLYPH_AXES_SOLID
+	CMISS_GLYPH_TYPE_INVALID = 0,
+	CMISS_GLYPH_NONE,             /*!< no glyph */
+	CMISS_GLYPH_ARROW,            /*!< line arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
+	CMISS_GLYPH_ARROW_SOLID,      /*!< solid arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
+	CMISS_GLYPH_AXIS,             /*!< line arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
+	CMISS_GLYPH_AXIS_SOLID,       /*!< solid arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
+	CMISS_GLYPH_CONE,             /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, open base */
+	CMISS_GLYPH_CONE_SOLID,       /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, closed base */
+	CMISS_GLYPH_CROSS,            /*!< 3 crossed lines on each axis, centre 0,0,0 */
+	CMISS_GLYPH_CUBE_SOLID,       /*!< solid unit cube centred at 0,0,0 and aligned with axes */
+	CMISS_GLYPH_CUBE_WIREFRAME,   /*!< wireframe unit cube centred at 0,0,0 and aligned with axes */
+	CMISS_GLYPH_CYLINDER,         /*!< unit diameter cylinder from 0,0,0 to 1,0,0, open ends */
+	CMISS_GLYPH_CYLINDER_SOLID,   /*!< unit diameter cylinder from 0,0,0 to 1,0,0, closed ends */
+	CMISS_GLYPH_DIAMOND,          /*!< unit regular octahedron centred at 0,0,0; a degenerate sphere */
+	CMISS_GLYPH_LINE,             /*!< line from 0,0,0 to 1,0,0 */
+	CMISS_GLYPH_POINT,            /*!< a single point at 0,0,0 */
+	CMISS_GLYPH_SHEET,            /*!< unit square in 1-2 plane centred at 0,0,0 */
+	CMISS_GLYPH_SPHERE,           /*!< unit sphere centred at 0,0,0 */
+	CMISS_GLYPH_AXES,             /*!< unit line axes without labels */
+	CMISS_GLYPH_AXES_123,         /*!< unit line axes with labels 1,2,3 */
+	CMISS_GLYPH_AXES_XYZ,         /*!< unit line axes with labels x,y,z */
+	CMISS_GLYPH_AXES_COLOUR,      /*!< unit line axes with materials red, green, blue */
+	CMISS_GLYPH_AXES_SOLID,       /*!< unit solid arrow axes without labels */
+	CMISS_GLYPH_AXES_SOLID_123,   /*!< unit solid arrow axes with labels 1,2,3 */
+	CMISS_GLYPH_AXES_SOLID_XYZ,   /*!< unit solid arrow axes with labels x,y,z */
+	CMISS_GLYPH_AXES_SOLID_COLOUR /*!< unit solid arrow axes with materials red, green, blue */
 };
 
 #endif /* ZINC_GLYPHID_H */

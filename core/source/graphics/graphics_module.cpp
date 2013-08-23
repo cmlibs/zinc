@@ -250,7 +250,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->light_module = Light_module_create();
 			module->light_model_module = Light_model_module_create();
 			module->material_module = NULL;
-			module->glyph_module = Cmiss_glyph_module_create();
 			module->scene_viewer_module = NULL;
 			module->spectrum_module=Cmiss_spectrum_module_create();
 			module->graphics_filter_module=Cmiss_graphics_filter_module_create();
@@ -261,6 +260,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->root_region = Cmiss_context_get_default_region(context);
 			module->material_module = Cmiss_graphics_material_module_create(
 					Cmiss_spectrum_module_get_manager(module->spectrum_module));
+			module->glyph_module = Cmiss_glyph_module_create(module->material_module);
 			module->glyph_manager_callback_id =
 				MANAGER_REGISTER(Cmiss_glyph)(Cmiss_graphics_module_glyph_manager_callback,
 					(void *)module, Cmiss_glyph_module_get_manager(module->glyph_module));

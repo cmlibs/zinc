@@ -103,6 +103,37 @@ public:
 		REPEAT_MIRROR = CMISS_GLYPH_REPEAT_MIRROR
 	};
 
+
+	enum Type
+	{
+		TYPE_INVALID = CMISS_GLYPH_TYPE_INVALID,
+		NONE = CMISS_GLYPH_NONE,
+		ARROW = CMISS_GLYPH_ARROW,
+		ARROW_SOLID = CMISS_GLYPH_ARROW_SOLID,
+		AXIS = CMISS_GLYPH_AXIS,
+		AXIS_SOLID = CMISS_GLYPH_AXIS_SOLID,
+		CONE = CMISS_GLYPH_CONE,
+		CONE_SOLID = CMISS_GLYPH_CONE_SOLID,
+		CROSS = CMISS_GLYPH_CROSS,
+		CUBE_SOLID = CMISS_GLYPH_CUBE_SOLID,
+		CUBE_WIREFRAME = CMISS_GLYPH_CUBE_WIREFRAME,
+		CYLINDER = CMISS_GLYPH_CYLINDER,
+		CYLINDER_SOLID = CMISS_GLYPH_CYLINDER_SOLID,
+		DIAMOND = CMISS_GLYPH_DIAMOND,
+		LINE = CMISS_GLYPH_LINE,
+		POINT = CMISS_GLYPH_POINT,
+		SHEET = CMISS_GLYPH_SHEET,
+		SPHERE = CMISS_GLYPH_SPHERE,
+		AXES = CMISS_GLYPH_AXES,
+		AXES_123 = CMISS_GLYPH_AXES_123,
+		AXES_XYZ = CMISS_GLYPH_AXES_XYZ,
+		AXES_COLOUR = CMISS_GLYPH_AXES_COLOUR,
+		AXES_SOLID = CMISS_GLYPH_AXES_SOLID,
+		AXES_SOLID_123 = CMISS_GLYPH_AXES_SOLID_123,
+		AXES_SOLID_XYZ = CMISS_GLYPH_AXES_SOLID_XYZ,
+		AXES_SOLID_COLOUR = CMISS_GLYPH_AXES_SOLID_COLOUR
+	};
+
 	char *getName()
 	{
 		return Cmiss_glyph_get_name(id);
@@ -122,6 +153,59 @@ public:
 	{
 		return Cmiss_glyph_set_managed(id, static_cast<int>(value));
 	}
+};
+
+class GlyphAxes : public Glyph
+{
+private:
+	explicit GlyphAxes(Cmiss_glyph_id glyph_id) : Glyph(glyph_id) {}
+
+	inline Cmiss_glyph_axes_id getDerivedId()
+	{
+		return reinterpret_cast<Cmiss_glyph_axes_id>(id);
+	}
+
+public:
+	GlyphAxes() : Glyph(0) {}
+
+	explicit GlyphAxes(Cmiss_glyph_axes_id axes_id)
+		: Glyph(reinterpret_cast<Cmiss_glyph_id>(axes_id))
+	{}
+
+	GlyphAxes(Glyph& glyph)
+		: Glyph(reinterpret_cast<Cmiss_glyph_id>(Cmiss_glyph_cast_axes(glyph.getId())))
+	{}
+
+	double getAxisWidth() 
+	{
+		return Cmiss_glyph_axes_get_axis_width(getDerivedId());
+	}
+
+	int setAxisWidth(double axisWidth)
+	{
+		return Cmiss_glyph_axes_set_axis_width(getDerivedId(), axisWidth);
+	}
+
+	char *getAxisLabel(int axisNumber)
+	{
+		return Cmiss_glyph_axes_get_axis_label(getDerivedId(), axisNumber);
+	}
+
+	int setAxisLabel(int axisNumber, const char *label)
+	{
+		return Cmiss_glyph_axes_set_axis_label(getDerivedId(), axisNumber, label);
+	}
+
+	GraphicsMaterial getAxisMaterial(int axisNumber)
+	{
+		return GraphicsMaterial(Cmiss_glyph_axes_get_axis_material(getDerivedId(), axisNumber));
+	}
+
+	int setAxisMaterial(int axisNumber, GraphicsMaterial material)
+	{
+		return Cmiss_glyph_axes_set_axis_material(getDerivedId(), axisNumber, material.getId());
+	}
+
 };
 
 class GlyphColourBar : public Glyph
@@ -283,6 +367,11 @@ public:
 	int endChange()
 	{
 		return Cmiss_glyph_module_end_change(id);
+	}
+
+	GlyphAxes createAxes(Glyph& axisGlyph, double axisWidth)
+	{
+		return GlyphAxes(Cmiss_glyph_module_create_axes(id, axisGlyph.getId(), axisWidth));
 	}
 
 	GlyphColourBar createColourBar(Spectrum& spectrum)

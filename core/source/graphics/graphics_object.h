@@ -1345,6 +1345,12 @@ int set_GT_object_font(struct GT_object *graphics_object,
 	struct Cmiss_font *font);
 
 /**
+ * Gets the glyph used by the first GT_glyph_set in the graphics object, if any.
+ * @return  Glyph GT_object, non-accessed, or NULL on failure.
+ */
+struct GT_object *get_GT_object_glyph(struct GT_object *graphics_object);
+
+/**
  * Sets the glyph of all GT_glyph_set primitives in a GT_object.
  */
 int set_GT_object_glyph(struct GT_object *graphics_object,
@@ -1437,7 +1443,7 @@ Frees the memory for <**context> and sets <*context> to NULL.
  * Internal function for getting type enum for quickly matching standard glyphs for
  * point, line, cross, for fast alternative rendering
  */
-enum Cmiss_graphics_glyph_type GT_object_get_glyph_type(
+enum Cmiss_glyph_type GT_object_get_glyph_type(
 	struct GT_object *gt_object);
 
 /**
@@ -1445,6 +1451,6 @@ enum Cmiss_graphics_glyph_type GT_object_get_glyph_type(
  * point, line, cross, for fast alternative rendering
  */
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum Cmiss_graphics_glyph_type glyph_type);
+	enum Cmiss_glyph_type glyph_type);
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */

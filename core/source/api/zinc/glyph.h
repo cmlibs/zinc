@@ -79,7 +79,7 @@ ZINC_API int Cmiss_glyph_module_destroy(
  * sent to clients. Must remember to end_change after completing changes.
  * @see Cmiss_glyph_module_end_change
  *
- * @param glyph_module  The glyph_module to begin change cache on.
+ * @param glyph_module  The glyph module to begin change cache on.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
 ZINC_API int Cmiss_glyph_module_begin_change(Cmiss_glyph_module_id glyph_module);
@@ -90,7 +90,7 @@ ZINC_API int Cmiss_glyph_module_begin_change(Cmiss_glyph_module_id glyph_module)
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
- * @param glyph_module  The glyph_module to end change cache on.
+ * @param glyph_module  The glyph module to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
@@ -119,6 +119,16 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * "point" = a single pixel at (0,0,0).
  * "sheet" = a unit square surface in 1-2 plane, centred at (0,0,0).
  * "sphere" = a unit diameter sphere centred at (0,0,0).
+ * In addition there are 8 glyphs showing unit 3-D axes with various labels:
+ * "axes", "axes_123", "axes_xyz", "axes_colour" - using glyph "axis" and
+ * axis width 0.1.
+ * "axes_solid", "axes_solid_123", "axes_solid_xyz", "axes_solid_colour"
+ * - using glyph "arrow_solid" and axis width 0.25. 
+ * Note that the colour axes find standard materials "red", "green" and "blue"
+ * for the 3 axes but are not created if those materials are not defined.
+ * @see Cmiss_graphics_material_module_define_standard_materials
+ * All the above standard glyphs also have unique types enumeration.
+ * @see Cmiss_glyph_type
  * Note if any glyphs of the predefined name already exist prior to calling this
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
@@ -142,6 +152,17 @@ ZINC_API int Cmiss_glyph_module_define_standard_glyphs(
  */
 ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
 	Cmiss_glyph_module_id glyph_module, const char *name);
+
+/**
+ * Find the glyph with the specified type, if any.
+ *
+ * @param glyph_module  Glyph module to search.
+ * @param glyph_type  A glyph type identifier.
+ * @return  Handle to a glyph with that type, or 0 if not found.
+ * Up to caller to destroy returned handle.
+ */
+ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_type(
+	Cmiss_glyph_module_id glyph_module, enum Cmiss_glyph_type glyph_type);
 
 /**
  * Get the default glyph used for new point graphics, if any.
@@ -224,11 +245,125 @@ ZINC_API char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph);
 ZINC_API int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name);
 
 /**
+ * Create a glyph which drawing 3-D axes repeating the supplied axis glyph
+ * on three axes with the given axis width.
+ *
+ * @param glyph_module  The glyph module to create the glyph in.
+ * @param axis_glyph  A glyph to repeat on each of 3 axes.
+ * @param axis_width  The width of each axis glyph when drawn at unit length;
+ * a fraction of 1 to give an appropriate arrow head size. Typically 0.1 for
+ * glyph 'axis', 0.25 for glyph 'arrow_solid'. Must be non-negative.
+ * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
+ */
+ZINC_API Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(
+	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id axis_glyph,
+	double axis_width);
+
+/**
+ * If the glyph is type axes, returns the type-specific handle.
+ *
+ * @param glyph  The glyph to be cast.
+ * @return  Axes glyph specific representation if the input is the correct
+ * glyph type, otherwise returns NULL.
+ */
+ZINC_API Cmiss_glyph_axes_id Cmiss_glyph_cast_axes(Cmiss_glyph_id glyph);
+
+/**
+ * Cast axes glyph back to the base glyph type and return it.
+ * IMPORTANT NOTE: Returned glyph does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_glyph_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the axes glyph argument.
+ *
+ * @param axes  Handle to the axes glyph to cast.
+ * @return  Non-accessed handle to the base glyph or NULL if failed.
+ */
+ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_axes_base_cast(Cmiss_glyph_axes_id axes)
+{
+	return (Cmiss_glyph_id)(axes);
+}
+
+/**
+ * Destroys this reference to the axes glyph (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param axes_address  Address of handle to the axes glyph.
+ * @return  Status CMISS_OK if successfully destroyed the axes glyph handle,
+ * any other value on failure.
+ */
+ZINC_API int Cmiss_glyph_axes_destroy(Cmiss_glyph_axes_id *axes_address);
+
+/**
+ * Gets the width of each axis relative to unit length.
+ *
+ * @param axes  The axes glyph to query.
+ * @return  The axis width, or 0.0 if error.
+ */
+ZINC_API double Cmiss_glyph_axes_get_axis_width(Cmiss_glyph_axes_id axes);
+
+/**
+ * Sets the width of each axis relative to unit length.
+ * The default axis width is 0.1 i.e. 10% of the length and suitable for
+ * glyph 'axis' and 'axis_solid'.
+ *
+ * @param axes  The axes glyph to modify.
+ * @param axis_width  The new axis width. Must be non-negative.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_axes_set_axis_width(Cmiss_glyph_axes_id axes,
+	double axis_width);
+
+/**
+ * Get the label to be drawn at the end of the given axis.
+ *
+ * @param axes  The axes glyph to query.
+ * @param axis_number  The axis number from 1 to 3.
+ * @return  Allocated string containing label, or NULL if none or error.
+ * Up to caller to free using Cmiss_deallocate().
+ */
+ZINC_API char *Cmiss_glyph_axes_get_axis_label(Cmiss_glyph_axes_id axes,
+	int axis_number);
+
+/**
+ * Set the label to be drawn at the end of the given axis.
+ *
+ * @param axes  The axes glyph to modify.
+ * @param axis_number  The axis number from 1 to 3.
+ * @param label  The label, or NULL for none.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_axes_set_axis_label(Cmiss_glyph_axes_id axes,
+	int axis_number, const char *label);
+
+/**
+ * Get the material an axis is drawn with.
+ *
+ * @param axes  The axes glyph to query.
+ * @param axis_number  The axis number from 1 to 3.
+ * @return  Handle to material or NULL if none or error. Up to caller to destroy.
+ */
+ZINC_API Cmiss_graphics_material_id Cmiss_glyph_axes_get_axis_material(
+	Cmiss_glyph_axes_id axes, int axis_number);
+
+/**
+ * Set the material an axis is drawn with. Note if the material is NULL for
+ * any axis the default material for the graphic is used for that axis.
+ *
+ * @param axes  The axes glyph to modify.
+ * @param axis_number  The axis number from 1 to 3.
+ * @param material  The material, or NULL to use the default material from the
+ * graphic.
+ * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ */
+ZINC_API int Cmiss_glyph_axes_set_axis_material(Cmiss_glyph_axes_id axes,
+	int axis_number, Cmiss_graphics_material_id material);
+
+/**
  * Create a glyph which draws a colour bar for the spectrum with ticks and
  * value labels. The glyph dynamically updates to match the current range and
  * definition of the spectrum. Note it only shows a single component.
  *
- * @param glyph_module  The glyph_module to create the glyph in.
+ * @param glyph_module  The glyph module to create the glyph in.
+ * @param spectrum  The spectrum to be displayed on the colour bar.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
 ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_module_create_colour_bar(
@@ -249,7 +384,7 @@ ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_cast_colour_bar(Cmiss_glyph_id gl
  * must not be destroyed. Use Cmiss_glyph_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the colour_bar glyph argument.
  *
- * @param colour_bar_glyph  Handle to the colour_bar glyph to cast.
+ * @param colour_bar  Handle to the colour_bar glyph to cast.
  * @return  Non-accessed handle to the base glyph or NULL if failed.
  */
 ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_colour_bar_base_cast(Cmiss_glyph_colour_bar_id colour_bar)

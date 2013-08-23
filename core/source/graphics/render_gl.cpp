@@ -656,8 +656,8 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 				GT_object *glyph = glyph_set->glyph;
 				Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 				int object_name = glyph_set->object_name;
-				Cmiss_graphics_glyph_type glyph_type = glyph ?
-					GT_object_get_glyph_type(glyph) : CMISS_GRAPHICS_GLYPH_NONE;
+				Cmiss_glyph_type glyph_type = glyph ?
+					GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
 				// output static labels at each point, if supplied
 				const int number_of_glyphs =
 					Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
@@ -672,7 +672,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					}
 				}
 
-				if ((glyph_type == CMISS_GRAPHICS_GLYPH_POINT) &&
+				if ((glyph_type == CMISS_GLYPH_POINT) &&
 					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)
@@ -765,7 +765,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glEnd();
 					}
 				}
-				else if ((glyph_type == CMISS_GRAPHICS_GLYPH_LINE) &&
+				else if ((glyph_type == CMISS_GLYPH_LINE) &&
 					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)
@@ -864,7 +864,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glEnd();
 					}
 				}
-				else if ((glyph_type == CMISS_GRAPHICS_GLYPH_CROSS) &&
+				else if ((glyph_type == CMISS_GLYPH_CROSS) &&
 					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)

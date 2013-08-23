@@ -3730,7 +3730,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
-			object->glyph_type = CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
+			object->glyph_type = CMISS_GLYPH_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 1;
@@ -6660,6 +6660,20 @@ int set_GT_object_font(struct GT_object *graphics_object,
 	return (return_code);
 }
 
+struct GT_object *get_GT_object_glyph(struct GT_object *graphics_object)
+{
+	if (graphics_object && (g_GLYPH_SET == graphics_object->object_type) &&
+		graphics_object->primitive_lists)
+	{
+		GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
+		if (glyph_set)
+		{
+			return glyph_set->glyph;
+		}
+	}
+	return 0;
+}
+
 int set_GT_object_glyph(struct GT_object *graphics_object,
 	struct GT_object *glyph)
 {
@@ -7415,16 +7429,16 @@ Graphics_vertex_array::~Graphics_vertex_array()
 	delete internal;
 }
 
-enum Cmiss_graphics_glyph_type GT_object_get_glyph_type(
+enum Cmiss_glyph_type GT_object_get_glyph_type(
 	struct GT_object *gt_object)
 {
 	if (gt_object)
 		return gt_object->glyph_type;
-	return CMISS_GRAPHICS_GLYPH_TYPE_INVALID;
+	return CMISS_GLYPH_TYPE_INVALID;
 }
 
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum Cmiss_graphics_glyph_type glyph_type)
+	enum Cmiss_glyph_type glyph_type)
 {
 	if (gt_object)
 	{
