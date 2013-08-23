@@ -115,7 +115,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	Cmiss_field_module_id node_fm = Cmiss_region_get_field_module(node_region);
 	EXPECT_NE(static_cast<Cmiss_field_module *>(0), node_fm);
 
-	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(node_fm, "cmiss_nodes");
+	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(node_fm, "nodes");
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), nodeset);
 
 	int numberOfNodes = Cmiss_nodeset_get_size(nodeset);
@@ -154,7 +154,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	Cmiss_field_module_id data_fm = Cmiss_region_get_field_module(data_region);
 	EXPECT_NE(static_cast<Cmiss_field_module *>(0), data_fm);
 
-	Cmiss_nodeset_id dataset = Cmiss_field_module_find_nodeset_by_name(data_fm, "cmiss_data");
+	Cmiss_nodeset_id dataset = Cmiss_field_module_find_nodeset_by_name(data_fm, "datapoints");
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), dataset);
 
 	numberOfNodes = Cmiss_nodeset_get_size(dataset);
@@ -196,7 +196,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	Cmiss_field_module_id new_data_fm = Cmiss_region_get_field_module(new_data_region);
 	EXPECT_NE(static_cast<Cmiss_field_module *>(0), new_data_fm);
 
-	Cmiss_nodeset_id new_dataset = Cmiss_field_module_find_nodeset_by_name(new_data_fm, "cmiss_data");
+	Cmiss_nodeset_id new_dataset = Cmiss_field_module_find_nodeset_by_name(new_data_fm, "datapoints");
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), new_dataset);
 
 	numberOfNodes = Cmiss_nodeset_get_size(new_dataset);
@@ -250,7 +250,7 @@ TEST(element_dimension_file, invalid_args)
 	EXPECT_NE(static_cast<Cmiss_stream_information_region *>(0), output_region_si);
 
 	Cmiss_stream_information_region_set_resource_domain_type(output_region_si,
-		output_sr,	CMISS_FIELD_DOMAIN_ELEMENTS_1D|CMISS_FIELD_DOMAIN_ELEMENTS_2D);
+		output_sr,	CMISS_FIELD_DOMAIN_MESH_1D|CMISS_FIELD_DOMAIN_MESH_2D);
 
 	result = Cmiss_region_write(cube_region, output_si);
 	EXPECT_EQ(CMISS_OK, result);

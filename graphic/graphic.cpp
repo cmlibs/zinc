@@ -26,7 +26,7 @@ TEST(Cmiss_graphic_api, set_use_element_type)
 	Cmiss_graphic_contours_id is = Cmiss_scene_create_graphic_contours(zinc.scene);
 	EXPECT_NE(static_cast<Cmiss_graphic_contours *>(0), is);
 
-	int result = Cmiss_graphic_set_domain_type(Cmiss_graphic_contours_base_cast(is), CMISS_FIELD_DOMAIN_ELEMENTS_2D);
+	int result = Cmiss_graphic_set_domain_type(Cmiss_graphic_contours_base_cast(is), CMISS_FIELD_DOMAIN_MESH_2D);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Cmiss_graphic_contours_destroy(&is);

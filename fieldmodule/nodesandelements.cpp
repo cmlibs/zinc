@@ -41,7 +41,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	Cmiss_field_module_id cubeFM = Cmiss_region_get_field_module(cube_region);
 	EXPECT_NE(static_cast<Cmiss_field_module *>(0), cubeFM);
 
-	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(cubeFM, "cmiss_nodes");
+	Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(cubeFM, "nodes");
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), nodeset);
 
 	Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodeset, 1);

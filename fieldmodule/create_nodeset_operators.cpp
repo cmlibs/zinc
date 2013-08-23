@@ -186,7 +186,7 @@ TEST(Cmiss_field_module_create_nodeset_maximum, multiplecomponents)
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f3);
 	EXPECT_NE(static_cast<Cmiss_field *>(0), f4);
 
-	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(zinc.fm, "cmiss_nodes");
+	Cmiss_nodeset_id ns = Cmiss_field_module_find_nodeset_by_name(zinc.fm, "nodes");
 	EXPECT_NE(static_cast<Cmiss_nodeset *>(0), ns);
 	Cmiss_field_id f5 = Cmiss_field_module_create_nodeset_maximum(zinc.fm, f2, ns);
 	Cmiss_field_id f6 = Cmiss_field_module_create_nodeset_maximum(zinc.fm, f3, ns);
