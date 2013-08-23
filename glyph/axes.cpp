@@ -14,7 +14,7 @@ TEST(Cmiss_glyph_axes, create)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_glyph_id axisGlyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "axis");
+	Cmiss_glyph_id axisGlyph = Cmiss_glyph_module_find_glyph_by_type(zinc.glyph_module, CMISS_GLYPH_AXIS);
 	EXPECT_NE(static_cast<Cmiss_glyph *>(0), axisGlyph);
 	Cmiss_glyph_axes_id axes = Cmiss_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
 	EXPECT_NE(static_cast<Cmiss_glyph_axes *>(0), axes);
@@ -27,7 +27,7 @@ TEST(ZincGlyphAxes, create)
 {
 	ZincTestSetupCpp zinc;
 
-	Glyph axisGlyph = zinc.glyphModule.findGlyphByName("axis");
+	Glyph axisGlyph = zinc.glyphModule.findGlyphByType(Glyph::AXIS);
 	EXPECT_TRUE(axisGlyph.isValid());
 	GlyphAxes axes = zinc.glyphModule.createAxes(axisGlyph, 0.1);
 	EXPECT_TRUE(axes.isValid());
