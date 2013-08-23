@@ -645,9 +645,9 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		GT_object *glyph = glyph_set->glyph;
 		Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 		/* try to draw points and lines faster */
-		Cmiss_graphics_glyph_type glyph_type = glyph ?
-			GT_object_get_glyph_type(glyph) : CMISS_GRAPHICS_GLYPH_NONE;
-		if ((glyph_type == CMISS_GRAPHICS_GLYPH_POINT) && (
+		Cmiss_glyph_type glyph_type = glyph ?
+			GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
+		if ((glyph_type == CMISS_GLYPH_POINT) && (
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
 		{
@@ -690,7 +690,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #Pointset\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMISS_GRAPHICS_GLYPH_LINE) && (
+		else if ((glyph_type == CMISS_GLYPH_LINE) && (
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
 		{
@@ -751,7 +751,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #IndexedLineSet\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMISS_GRAPHICS_GLYPH_CROSS) &&
+		else if ((glyph_type == CMISS_GLYPH_CROSS) &&
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
 		{
 			fprintf(vrml_file,"Shape {\n");

@@ -4631,19 +4631,6 @@ int Cmiss_graphic_same_non_trivial_with_graphics_object(
 	return (return_code);
 }
 
-namespace {
-
-/* string equality that handles null strings and empty strings */
-inline bool labels_match(const char *label1, const char *label2)
-{
-	return ((label1 == label2)
-		|| ((0 == label1) && (label2[0] == '\0'))
-		|| ((0 == label2) && (label1[0] == '\0'))
-		|| (label1 && label2 && (0 == strcmp(label1, label2))));
-}
-
-};
-
 int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
 	struct Cmiss_graphic *graphic2)
 {
@@ -6549,52 +6536,41 @@ int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
 	return CMISS_ERROR_ARGUMENT;
 }
 
+enum Cmiss_glyph_type Cmiss_graphic_point_attributes_get_glyph_type(
+	Cmiss_graphic_point_attributes_id point_attributes)
+{
+	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
+	if (graphic)
+	{
+		if (graphic->glyph)
+		{
+			return graphic->glyph->getType();
+		}
+		else
+		{
+			return CMISS_GLYPH_NONE;
+		}
+	}
+	return CMISS_GLYPH_TYPE_INVALID;
+}
+
 int Cmiss_graphic_point_attributes_set_glyph_type(
 	Cmiss_graphic_point_attributes_id point_attributes,
-	enum Cmiss_graphics_glyph_type glyph_type)
+	enum Cmiss_glyph_type glyph_type)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
 	Cmiss_graphic *graphic = reinterpret_cast<Cmiss_graphic *>(point_attributes);
-	if (graphic && glyph_type != CMISS_GRAPHICS_GLYPH_TYPE_INVALID)
+	if (graphic && (CMISS_GLYPH_TYPE_INVALID != glyph_type))
 	{
-		const char *glyph_name = 0;
-		switch (glyph_type)
+		Cmiss_graphics_module_id graphics_module = Cmiss_scene_get_graphics_module(graphic->scene);
+		Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(graphics_module);
+		Cmiss_glyph_id glyph = glyph_module->findGlyphByType(glyph_type);
+		if (glyph || (glyph_type == CMISS_GLYPH_NONE))
 		{
-		case CMISS_GRAPHICS_GLYPH_TYPE_INVALID:
-			return CMISS_ERROR_ARGUMENT;
-			break;
-		case CMISS_GRAPHICS_GLYPH_NONE:
-			break;
-		case CMISS_GRAPHICS_GLYPH_POINT:
-			glyph_name = "point";
-			break;
-		case CMISS_GRAPHICS_GLYPH_LINE:
-			glyph_name = "line";
-			break;
-		case CMISS_GRAPHICS_GLYPH_CROSS:
-			glyph_name = "cross";
-			break;
-		case CMISS_GRAPHICS_GLYPH_SPHERE:
-			glyph_name = "sphere";
-			break;
-		case CMISS_GRAPHICS_GLYPH_AXES_SOLID:
-			glyph_name = "arrow_solid";
-			Cmiss_graphic_point_attributes_set_glyph_repeat_mode(point_attributes, CMISS_GLYPH_REPEAT_AXES_3D);
-			break;
-		};
-		if (glyph_name)
-		{
-			Cmiss_graphics_module_id graphics_module = Cmiss_scene_get_graphics_module(graphic->scene);
-			Cmiss_glyph_module_id glyph_module = Cmiss_graphics_module_get_glyph_module(graphics_module);
-			Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, glyph_name);
-			if (glyph)
-			{
-				return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
-				Cmiss_glyph_destroy(&glyph);
-			}
-			Cmiss_glyph_module_destroy(&glyph_module);
-			Cmiss_graphics_module_destroy(&graphics_module);
+			return_code = Cmiss_graphic_point_attributes_set_glyph(point_attributes, glyph);
 		}
+		Cmiss_glyph_module_destroy(&glyph_module);
+		Cmiss_graphics_module_destroy(&graphics_module);
 	}
 	return return_code;
 }

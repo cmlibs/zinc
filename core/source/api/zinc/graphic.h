@@ -1194,9 +1194,21 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
 	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
 
 /**
+ * Gets the enumerated value identifying the current glyph used in the point
+ * attributes.
+ *
+ * @param point_attributes  The point attributes to query.
+ * @return  The glyph type identifier, or CMISS_GLYPH_TYPE_INVALID if
+ * invalid arguments or glyph does not have a valid type.
+ */
+ZINC_API enum Cmiss_glyph_type Cmiss_graphic_point_attributes_get_glyph_type(
+	Cmiss_graphic_point_attributes_id point_attributes);
+
+/**
  * Sets the glyph used for visualising a graphics point from a set of
  * enumerations. Requires standard glyphs to first be created.
  * @see Cmiss_glyph_module_define_standard_glyphs
+ * If no glyph exists with the type identifier, the glyph is unchanged.
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_type  The glyph type identifier.
@@ -1204,7 +1216,7 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
  */
 ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
 	Cmiss_graphic_point_attributes_id point_attributes,
-	enum Cmiss_graphics_glyph_type glyph_type);
+	enum Cmiss_glyph_type glyph_type);
 
 /**
  * Gets the label field from the graphic point attributes.

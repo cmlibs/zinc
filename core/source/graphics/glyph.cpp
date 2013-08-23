@@ -61,6 +61,7 @@
 #include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
+#include "graphics/glyph_axes.hpp"
 #include "graphics/glyph_circular.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
@@ -1633,7 +1634,8 @@ int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, bool value)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_glyph_module::Cmiss_glyph_module() :
+Cmiss_glyph_module::Cmiss_glyph_module(Cmiss_graphics_material_module *materialModuleIn) :
+	materialModule(Cmiss_graphics_material_module_access(materialModuleIn)),
 	manager(CREATE(MANAGER(Cmiss_glyph))()),
 	defaultPointGlyph(0),
 	access_count(1)
@@ -1642,6 +1644,7 @@ Cmiss_glyph_module::Cmiss_glyph_module() :
 
 Cmiss_glyph_module::~Cmiss_glyph_module()
 {
+	Cmiss_graphics_material_module_destroy(&materialModule);
 	if (defaultPointGlyph)
 	{
 		DEACCESS(Cmiss_glyph)(&(this->defaultPointGlyph));
@@ -1654,12 +1657,13 @@ Cmiss_glyph_module::~Cmiss_glyph_module()
 	* and add to glyph module.
 	* Always free handle to glyph.
 	*/
-void Cmiss_glyph_module::defineGlyph(const char *name, Cmiss_glyph *glyph)
+void Cmiss_glyph_module::defineGlyph(const char *name, Cmiss_glyph *glyph, Cmiss_glyph_type type)
 {
 	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->getManager()))
 	{
 		glyph->setName(name);
 		glyph->setManaged(true);
+		glyph->setType(type);
 		this->addGlyph(glyph);
 	}
 	Cmiss_glyph_destroy(&glyph);
@@ -1672,14 +1676,16 @@ void Cmiss_glyph_module::defineGlyph(const char *name, Cmiss_glyph *glyph)
  * wrapping it or not.
  * @return  true if glyph added, false if not.
  */
-bool Cmiss_glyph_module::defineGlyphStatic(GT_object*& graphicsObject)
+bool Cmiss_glyph_module::defineGlyphStatic(GT_object*& graphicsObject, Cmiss_glyph_type type)
 {
 	bool glyphAdded = true;
 	char *name = 0;
 	GET_NAME(GT_object)(graphicsObject, &name);
 	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->getManager()))
 	{
+		GT_object_set_glyph_type(graphicsObject, type);
 		Cmiss_glyph *glyph = Cmiss_glyph_static::create(graphicsObject);
+		glyph->setType(type);
 		glyph->setName(name);
 		glyph->setManaged(true);
 		this->addGlyph(glyph);
@@ -1692,6 +1698,19 @@ bool Cmiss_glyph_module::defineGlyphStatic(GT_object*& graphicsObject)
 	DEACCESS(GT_object)(&graphicsObject);
 	DEALLOCATE(name);
 	return glyphAdded;
+}
+
+Cmiss_glyph *Cmiss_glyph_module::findGlyphByType(enum Cmiss_glyph_type glyph_type)
+{
+	Cmiss_set_Cmiss_glyph *glyphs = this->getGlyphListPrivate();
+	for (Cmiss_set_Cmiss_glyph::iterator iter = glyphs->begin(); iter != glyphs->end(); ++iter)
+	{
+		if ((*iter)->getType() == glyph_type)
+		{
+			return *iter;
+		}
+	}
+	return 0;
 }
 
 void Cmiss_glyph_module::addGlyph(Cmiss_glyph *glyph)
@@ -1721,51 +1740,99 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 {
 	beginChange();
 	GT_object *graphicsObject = 0;
+	Cmiss_glyph_id glyph = 0;
+	Cmiss_glyph_axes_id axes = 0;
 
 	graphicsObject = create_GT_object_arrow_line("arrow", 1.f/3.f, 0.5);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_ARROW);
 
-	this->defineGlyph("arrow_solid", Cmiss_glyph_arrow_solid::create(1.0/3.0, 1.0/3.0));
+	this->defineGlyph("arrow_solid", Cmiss_glyph_arrow_solid::create(1.0/3.0, 1.0/3.0), CMISS_GLYPH_ARROW_SOLID);
 
 	graphicsObject = create_GT_object_arrow_line("axis", 0.1, 0.5);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_AXIS);
 
-	this->defineGlyph("axis_solid", Cmiss_glyph_arrow_solid::create(0.1, 1.0/3.0));
+	this->defineGlyph("axis_solid", Cmiss_glyph_arrow_solid::create(0.1, 1.0/3.0), CMISS_GLYPH_AXIS_SOLID);
 
-	this->defineGlyph("cone", Cmiss_glyph_cone::create());
-	this->defineGlyph("cone_solid", Cmiss_glyph_cone_solid::create());
+	this->defineGlyph("cone", Cmiss_glyph_cone::create(), CMISS_GLYPH_CONE);
+	this->defineGlyph("cone_solid", Cmiss_glyph_cone_solid::create(), CMISS_GLYPH_CONE_SOLID);
 
 	graphicsObject = create_GT_object_cross("cross");
-	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_CROSS);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_CROSS);
 
 	graphicsObject = create_GT_object_cube_solid("cube_solid");
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_CUBE_SOLID);
 
 	graphicsObject = create_GT_object_cube_wireframe("cube_wireframe");
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_CUBE_WIREFRAME);
 
-	this->defineGlyph("cylinder", Cmiss_glyph_cylinder::create());
-	this->defineGlyph("cylinder_solid", Cmiss_glyph_cylinder_solid::create());
+	this->defineGlyph("cylinder", Cmiss_glyph_cylinder::create(), CMISS_GLYPH_CYLINDER);
+	this->defineGlyph("cylinder_solid", Cmiss_glyph_cylinder_solid::create(), CMISS_GLYPH_CYLINDER_SOLID);
 
 	graphicsObject = create_GT_object_sphere("diamond", 4, 2);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_DIAMOND);
 
 	graphicsObject = create_GT_object_line("line");
-	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_LINE);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_LINE);
 
 	graphicsObject = create_GT_object_point("point", g_POINT_MARKER, 0);
-	GT_object_set_glyph_type(graphicsObject, CMISS_GRAPHICS_GLYPH_POINT);
-	if (this->defineGlyphStatic(graphicsObject) && (!this->defaultPointGlyph))
+	if (this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_POINT) && (!this->defaultPointGlyph))
 	{
 		setDefaultPointGlyph(this->findGlyphByName("point"));
 	}
 
 	graphicsObject = create_GT_object_sheet("sheet", /*define_texturepoints*/0);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_SHEET);
 
-	this->defineGlyph("sphere", Cmiss_glyph_sphere::create());
+	this->defineGlyph("sphere", Cmiss_glyph_sphere::create(), CMISS_GLYPH_SPHERE);
+
+	Cmiss_glyph_id axis = this->findGlyphByName("axis");
+	axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
+	this->defineGlyph("axes", axes, CMISS_GLYPH_AXES);
+	axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
+	axes->setAxisLabel(1, "1");
+	axes->setAxisLabel(2, "2");
+	axes->setAxisLabel(3, "3");
+	this->defineGlyph("axes_123", axes, CMISS_GLYPH_AXES_123);
+	axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
+	axes->setAxisLabel(1, "x");
+	axes->setAxisLabel(2, "y");
+	axes->setAxisLabel(3, "z");
+	this->defineGlyph("axes_xyz", axes, CMISS_GLYPH_AXES_XYZ);
+
+	Cmiss_glyph_id arrow_solid = this->findGlyphByName("arrow_solid");
+	axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
+	this->defineGlyph("axes_solid", axes, CMISS_GLYPH_AXES_SOLID);
+	axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
+	axes->setAxisLabel(1, "1");
+	axes->setAxisLabel(2, "2");
+	axes->setAxisLabel(3, "3");
+	this->defineGlyph("axes_solid_123", axes, CMISS_GLYPH_AXES_SOLID_123);
+	axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
+	axes->setAxisLabel(1, "x");
+	axes->setAxisLabel(2, "y");
+	axes->setAxisLabel(3, "z");
+	this->defineGlyph("axes_solid_xyz", axes, CMISS_GLYPH_AXES_SOLID_XYZ);
+
+	Cmiss_graphics_material_id red = Cmiss_graphics_material_module_find_material_by_name(this->materialModule, "red");
+	Cmiss_graphics_material_id green = Cmiss_graphics_material_module_find_material_by_name(this->materialModule, "green");
+	Cmiss_graphics_material_id blue = Cmiss_graphics_material_module_find_material_by_name(this->materialModule, "blue");
+	if (red && green && blue)
+	{
+		axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
+		axes->setAxisMaterial(1, red);
+		axes->setAxisMaterial(2, green);
+		axes->setAxisMaterial(3, blue);
+		this->defineGlyph("axes_colour", axes, CMISS_GLYPH_AXES_COLOUR);
+
+		axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
+		axes->setAxisMaterial(1, red);
+		axes->setAxisMaterial(2, green);
+		axes->setAxisMaterial(3, blue);
+		this->defineGlyph("axes_solid_colour", axes, CMISS_GLYPH_AXES_SOLID_COLOUR);
+	}
+	Cmiss_graphics_material_destroy(&red);
+	Cmiss_graphics_material_destroy(&green);
+	Cmiss_graphics_material_destroy(&blue);
 
 	endChange();
 
@@ -1777,18 +1844,28 @@ int Cmiss_glyph_module::defineStandardCmguiGlyphs()
 	beginChange();
 	GT_object *graphicsObject = 0;
 
+	Cmiss_glyph_id axis = this->findGlyphByName("axis");
+	Cmiss_glyph_axes_id axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
+	if (axes)
+	{
+		axes->setAxisLabel(1, "f");
+		axes->setAxisLabel(2, "s");
+		axes->setAxisLabel(3, "n");
+		this->defineGlyph("axes_fsn", axes, CMISS_GLYPH_TYPE_INVALID);
+	}
+
 	graphicsObject = create_GT_object_axes("grid_lines",
 		/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
 		/*labels*/(const char **)NULL, /*label_offset*/0.1f, (Cmiss_font*)0);
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_grid_lines);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_TYPE_INVALID);
 
 	graphicsObject = create_GT_object_line("line_ticks");
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_axes_ticks);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_TYPE_INVALID);
 
 	graphicsObject = create_GT_object_sheet("textured_sheet", /*define_texturepoints*/1);
-	this->defineGlyphStatic(graphicsObject);
+	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_TYPE_INVALID);
 
 	endChange();
 	return CMISS_OK;
@@ -1799,9 +1876,9 @@ Cmiss_set_Cmiss_glyph *Cmiss_glyph_module::getGlyphListPrivate()
 	return reinterpret_cast<Cmiss_set_Cmiss_glyph *>(this->manager->object_list);
 }
 
-Cmiss_glyph_module_id Cmiss_glyph_module_create()
+Cmiss_glyph_module_id Cmiss_glyph_module_create(Cmiss_graphics_material_module *materialModule)
 {
-	return Cmiss_glyph_module::create();
+	return Cmiss_glyph_module::create(materialModule);
 }
 
 struct MANAGER(Cmiss_glyph) *Cmiss_glyph_module_get_manager(
@@ -1867,6 +1944,19 @@ Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
 	if (glyph_module)
 	{
 		glyph = glyph_module->findGlyphByName(name);
+		if (glyph)
+			glyph->access();
+	}
+	return glyph;
+}
+
+Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_type(
+	Cmiss_glyph_module_id glyph_module, enum Cmiss_glyph_type glyph_type)
+{
+	Cmiss_glyph *glyph = 0;
+	if (glyph_module)
+	{
+		glyph = glyph_module->findGlyphByType(glyph_type);
 		if (glyph)
 			glyph->access();
 	}

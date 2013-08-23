@@ -231,12 +231,7 @@ to be reallocated.
  */
 int getNumericalFormatStringSize(const char *formatString, int valuesCount);
 
-#if defined (VAXC)
-char *strrpbrk(const char *s1,const char *s2);
-/*******************************************************************************
-LAST MODIFIED : 17 November 1990
+/** String equality that handles null strings and empty strings */
+bool labels_match(const char *label1, const char *label2);
 
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (VAXC) */
 #endif /* !defined (MYSTRING_H) */

@@ -70,6 +70,8 @@ struct Cmiss_glyph
 	int manager_change_status;
 	bool isManagedFlag;
 	int access_count;
+private:
+	Cmiss_glyph_type type;
 
 protected:
 
@@ -78,7 +80,8 @@ protected:
 		manager(0),
 		manager_change_status(0),
 		isManagedFlag(false),
-		access_count(1)
+		access_count(1),
+		type(CMISS_GLYPH_TYPE_INVALID)
 	{
 	}
 
@@ -175,6 +178,18 @@ public:
 	}
 
 	int setName(const char *newName);
+
+	Cmiss_glyph_type getType() const
+	{
+		return this->type;
+	}
+
+	/** Set type metadata as alternative means to identify glyph.
+	 * Should ensure no two glyphs have the same type. */
+	void setType(Cmiss_glyph_type typeIn)
+	{
+		this->type = typeIn;
+	}
 };
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
@@ -265,22 +280,23 @@ public:
 struct Cmiss_glyph_module
 {
 private:
+	Cmiss_graphics_material_module *materialModule;
 	struct MANAGER(Cmiss_glyph) *manager;
 	Cmiss_glyph *defaultPointGlyph;
 	int access_count;
 
-	Cmiss_glyph_module();
+	Cmiss_glyph_module(Cmiss_graphics_material_module *materialModuleIn);
 	~Cmiss_glyph_module();
 
-	void defineGlyph(const char *name, Cmiss_glyph *glyph);
+	void defineGlyph(const char *name, Cmiss_glyph *glyph, Cmiss_glyph_type type);
 
-	bool defineGlyphStatic(GT_object*& graphicsObject);
+	bool defineGlyphStatic(GT_object*& graphicsObject, Cmiss_glyph_type type);
 
 public:
 
-	static Cmiss_glyph_module *create()
+	static Cmiss_glyph_module *create(Cmiss_graphics_material_module *materialModuleIn)
 	{
-		return new Cmiss_glyph_module();
+		return new Cmiss_glyph_module(materialModuleIn);
 	}
 
 	Cmiss_glyph_module *access()
@@ -323,11 +339,14 @@ public:
 
 	Cmiss_set_Cmiss_glyph *getGlyphListPrivate();
 
-	/** @return non-ACCESSed pointer to glyph */
+	/** @return non-ACCESSed pointer to glyph, or 0 if no match */
 	Cmiss_glyph *findGlyphByName(const char *name)
 	{
 		return FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->manager);
 	}
+
+	/** @return non-ACCESSed pointer to glyph, or 0 if no match */
+	Cmiss_glyph *findGlyphByType(enum Cmiss_glyph_type glyph_type);
 
 	/** adds glyph to manager, ensuring it has a unique name */
 	void addGlyph(Cmiss_glyph *glyph);
@@ -370,7 +389,7 @@ void resolve_glyph_axes(
 	Triple final_point, Triple final_axis1, Triple final_axis2, Triple final_axis3);
 
 /** internal only */
-Cmiss_glyph_module_id Cmiss_glyph_module_create();
+Cmiss_glyph_module_id Cmiss_glyph_module_create(Cmiss_graphics_material_module *materialModule);
 
 /* internal only */
 struct MANAGER(Cmiss_glyph) *Cmiss_glyph_module_get_manager(

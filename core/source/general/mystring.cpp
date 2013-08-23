@@ -1160,31 +1160,10 @@ int getNumericalFormatStringSize(const char *formatString, int valuesCount)
 	return (numValues == valuesCount) ? size : 0;
 }
 
-#if defined (VAXC)
-char *strrpbrk(const char *s1,const char *s2)
-/******************************************************************************
-LAST MODIFIED : 5 October 1991
-
-DESCRIPTION :
-=============================================================================*/
+bool labels_match(const char *label1, const char *label2)
 {
-	int i;
-	char *return_value=NULL;
-
-	i=strlen(s1)-1;
-	while ((i>=0)&&(!strchr(s2,s1[i])))
-	{
-		i--;
-	}
-	if (i>=0)
-	{
-		return_value=s1+i;
-	}
-	else
-	{
-		return_value=(char *)NULL;
-	}
-
-	return (return_value);
-} /* strrpbrk */
-#endif
+	return ((label1 == label2)
+		|| ((0 == label1) && (label2[0] == '\0'))
+		|| ((0 == label2) && (label1[0] == '\0'))
+		|| (label1 && label2 && (0 == strcmp(label1, label2))));
+}
