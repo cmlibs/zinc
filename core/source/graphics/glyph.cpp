@@ -1740,8 +1740,6 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 {
 	beginChange();
 	GT_object *graphicsObject = 0;
-	Cmiss_glyph_id glyph = 0;
-	Cmiss_glyph_axes_id axes = 0;
 
 	graphicsObject = create_GT_object_arrow_line("arrow", 1.f/3.f, 0.5);
 	this->defineGlyphStatic(graphicsObject, CMISS_GLYPH_ARROW);
@@ -1785,7 +1783,8 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 
 	this->defineGlyph("sphere", Cmiss_glyph_sphere::create(), CMISS_GLYPH_SPHERE);
 
-	Cmiss_glyph_id axis = this->findGlyphByName("axis");
+	Cmiss_glyph_axes_id axes = 0;
+	Cmiss_glyph_id axis = this->findGlyphByType(CMISS_GLYPH_AXIS);
 	axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
 	this->defineGlyph("axes", axes, CMISS_GLYPH_AXES);
 	axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
@@ -1799,7 +1798,7 @@ int Cmiss_glyph_module::defineStandardGlyphs()
 	axes->setAxisLabel(3, "z");
 	this->defineGlyph("axes_xyz", axes, CMISS_GLYPH_AXES_XYZ);
 
-	Cmiss_glyph_id arrow_solid = this->findGlyphByName("arrow_solid");
+	Cmiss_glyph_id arrow_solid = this->findGlyphByType(CMISS_GLYPH_ARROW_SOLID);
 	axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
 	this->defineGlyph("axes_solid", axes, CMISS_GLYPH_AXES_SOLID);
 	axes = Cmiss_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
@@ -1844,7 +1843,7 @@ int Cmiss_glyph_module::defineStandardCmguiGlyphs()
 	beginChange();
 	GT_object *graphicsObject = 0;
 
-	Cmiss_glyph_id axis = this->findGlyphByName("axis");
+	Cmiss_glyph_id axis = this->findGlyphByType(CMISS_GLYPH_AXIS);
 	Cmiss_glyph_axes_id axes = Cmiss_glyph_axes::create(axis, /*axis_width*/0.1);
 	if (axes)
 	{
