@@ -389,6 +389,11 @@ public:
 		return Glyph(Cmiss_glyph_module_find_glyph_by_name(id, name));
 	}
 
+	Glyph findGlyphByType(Glyph::Type glyphType)
+	{
+		return Glyph(Cmiss_glyph_module_find_glyph_by_type(id, static_cast<Cmiss_glyph_type>(glyphType)));
+	}
+
 	Glyph getDefaultPointGlyph()
 	{
 		return Glyph(Cmiss_glyph_module_get_default_point_glyph(id));
