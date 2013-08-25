@@ -161,7 +161,7 @@ public:
 		return Cmiss_spectrum_component_set_colour_maximum(id, value);
 	}
 
-	int getStepValue()
+	double getStepValue()
 	{
 		return Cmiss_spectrum_component_get_step_value(id);
 	}
@@ -171,7 +171,7 @@ public:
 		return Cmiss_spectrum_component_set_step_value(id, value);
 	}
 
-	int getExaggeration()
+	double getExaggeration()
 	{
 		return Cmiss_spectrum_component_get_exaggeration(id);
 	}
@@ -181,7 +181,7 @@ public:
 		return Cmiss_spectrum_component_set_exaggeration(id, value);
 	}
 
-	int getBandedRatio()
+	double getBandedRatio()
 	{
 		return Cmiss_spectrum_component_get_banded_ratio(id);
 	}
