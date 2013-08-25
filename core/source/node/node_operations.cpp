@@ -415,6 +415,7 @@ allowed during identifier changes.
 							}
 						}
 					}
+					Cmiss_nodeset_group_destroy(&nodeset);
 				}
 				for (i = 0; i < number_of_nodes; i++)
 				{
