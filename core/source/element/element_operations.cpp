@@ -211,7 +211,8 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int dimension, int element_offset,
-	struct Computed_field *sort_by_field, FE_value time)
+	struct Computed_field *sort_by_field, FE_value time,
+	Cmiss_field_element_group_id element_group)
 /*******************************************************************************
  LAST MODIFIED : 18 February 2003
 
@@ -360,6 +361,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 						}
 					}
 				}
+
 				if (return_code)
 				{
 					/* change identifiers */
@@ -367,6 +369,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					 group which already have the same number as the new_number */
 					int next_spare_element_number =
 						element_values[number_of_elements - 1].new_number + 1;
+					Cmiss_mesh_group_id mesh = Cmiss_field_element_group_get_mesh(element_group);
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						element_with_identifier = FE_region_get_FE_element_from_identifier(
@@ -375,33 +378,41 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 						if (element_with_identifier
 							!= element_values[i].element)
 						{
-							if (element_with_identifier)
+							if ((mesh == NULL) || (((element_with_identifier == NULL) ||
+								Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(mesh),
+									element_with_identifier)) &&
+								(Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(mesh),
+									element_values[i].element))))
 							{
-								while ((struct FE_element *)NULL !=
-									FE_region_get_FE_element_from_identifier(
-										fe_region, dimension, next_spare_element_number))
+								if (element_with_identifier)
 								{
-									++next_spare_element_number;
+									while ((struct FE_element *)NULL !=
+										FE_region_get_FE_element_from_identifier(
+											fe_region, dimension, next_spare_element_number))
+									{
+										++next_spare_element_number;
+									}
+									if (!FE_region_change_FE_element_identifier(
+										master_fe_region,
+										element_with_identifier,
+										next_spare_element_number))
+									{
+										return_code = 0;
+									}
 								}
 								if (!FE_region_change_FE_element_identifier(
 									master_fe_region,
-									element_with_identifier,
-									next_spare_element_number))
+									element_values[i].element, element_values[i].new_number))
 								{
+									display_message(ERROR_MESSAGE,
+										"FE_region_change_element_identifiers.  "
+										"Could not change element identifier");
 									return_code = 0;
 								}
 							}
-							if (!FE_region_change_FE_element_identifier(
-								master_fe_region,
-								element_values[i].element, element_values[i].new_number))
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_region_change_element_identifiers.  "
-									"Could not change element identifier");
-								return_code = 0;
-							}
 						}
 					}
+					Cmiss_mesh_group_destroy(&mesh);
 				}
 				for (i = 0; i < number_of_elements; i++)
 				{

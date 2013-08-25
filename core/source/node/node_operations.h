@@ -55,7 +55,8 @@ Global functions
 ----------------
 */
 int FE_region_change_node_identifiers(struct FE_region *fe_region,
-	int node_offset, struct Computed_field *sort_by_field, FE_value time);
+	int node_offset, struct Computed_field *sort_by_field, FE_value time,
+	Cmiss_field_node_group_id node_group);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2003
 

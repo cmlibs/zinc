@@ -46,6 +46,7 @@ cannot reside in finite element modules.
 #include <math.h>
 
 #include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "general/debug.h"
 #include "node/node_operations.h"
 #include "general/message.h"
@@ -224,7 +225,8 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 } /* FE_node_and_values_to_array */
 
 int FE_region_change_node_identifiers(struct FE_region *fe_region,
-	int node_offset, struct Computed_field *sort_by_field, FE_value time)
+	int node_offset, struct Computed_field *sort_by_field, FE_value time,
+	Cmiss_field_node_group_id node_group)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2003
 
@@ -374,6 +376,7 @@ allowed during identifier changes.
 						 which already have the same number as the new_number */
 					next_spare_node_number =
 						node_values[number_of_nodes - 1].new_number + 1;
+					Cmiss_nodeset_group_id nodeset = Cmiss_field_node_group_get_nodeset(node_group);
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
 						node_with_identifier = FE_region_get_FE_node_from_identifier(
@@ -381,27 +384,34 @@ allowed during identifier changes.
 						/* only modify if node doesn't already have correct identifier */
 						if (node_with_identifier != node_values[i].node)
 						{
-							if (node_with_identifier)
+							if ((nodeset == NULL) || (((node_with_identifier == NULL) ||
+								Cmiss_nodeset_contains_node(Cmiss_nodeset_group_base_cast(nodeset),
+									node_with_identifier)) &&
+								(Cmiss_nodeset_contains_node(Cmiss_nodeset_group_base_cast(nodeset),
+									node_values[i].node))))
 							{
-								while ((struct FE_node *)NULL !=
-									FE_region_get_FE_node_from_identifier(fe_region,
-										next_spare_node_number))
+								if (node_with_identifier)
 								{
-									next_spare_node_number++;
+									while ((struct FE_node *)NULL !=
+										FE_region_get_FE_node_from_identifier(fe_region,
+											next_spare_node_number))
+									{
+										next_spare_node_number++;
+									}
+									if (!FE_region_change_FE_node_identifier(master_fe_region,
+										node_with_identifier, next_spare_node_number))
+									{
+										return_code = 0;
+									}
 								}
 								if (!FE_region_change_FE_node_identifier(master_fe_region,
-									node_with_identifier, next_spare_node_number))
+									node_values[i].node, node_values[i].new_number))
 								{
+									display_message(ERROR_MESSAGE,
+										"FE_region_change_node_identifiers.  "
+										"Could not change node identifier");
 									return_code = 0;
 								}
-							}
-							if (!FE_region_change_FE_node_identifier(master_fe_region,
-								node_values[i].node, node_values[i].new_number))
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_region_change_node_identifiers.  "
-									"Could not change node identifier");
-								return_code = 0;
 							}
 						}
 					}
