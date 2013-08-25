@@ -59,7 +59,8 @@ Global functions
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int dimension,	int element_offset,
-	struct Computed_field *sort_by_field, FE_value time);
+	struct Computed_field *sort_by_field, FE_value time,
+	Cmiss_field_element_group_id element_group);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2003
 
