@@ -156,6 +156,17 @@ public:
 		return false;
 	}
 
+	// override for glyphs that use the font from the graphic
+	virtual void fontChange()
+	{
+	}
+
+	// override for glyphs that use their own materials
+	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *)
+	{
+	}
+
+	// override for glyph using spectrum, e.g. colour_bar
 	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *)
 	{
 	}
@@ -275,6 +286,7 @@ public:
 		return ACCESS(GT_object)(graphicsObject);
 	}
 
+	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
 };
 
 struct Cmiss_glyph_module

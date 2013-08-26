@@ -175,6 +175,30 @@ int Cmiss_glyph::setName(const char *newName)
 	return (return_code);
 }
 
+void Cmiss_glyph_static::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+{
+	GT_object *object = this->graphicsObject;
+	bool changed = false;
+	while (object)
+	{
+		Cmiss_graphics_material *material = get_GT_object_default_material(object);
+		if (material)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, material);
+			if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+			{
+				GT_object_changed(object);
+				changed = true;
+			}
+		}
+		object = GT_object_get_next_object(object);
+	}
+	if (changed)
+	{
+		this->changed();
+	}
+}
+
 static int tick_mark_get_grid_spacing(FE_value *minor_grid_size,
 	int *minor_grids_per_major,FE_value scale, FE_value min_minor_grid,
 	FE_value min_major_grid)

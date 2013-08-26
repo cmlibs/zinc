@@ -2643,7 +2643,7 @@ int Cmiss_graphic_to_point_object_at_time(
 			glyph_base_size, glyph_scale_factors, glyph_offset,
 			graphic->font, labels, glyph_label_offset, graphic->label_text, dataComponentCount, floatData,
 			/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-			/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
+			/*label_density_list*/(Triple *)NULL, /*object_name*/-1, /*names*/(int *)NULL);
 		if (glyph_set)
 		{
 			if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
@@ -5340,6 +5340,10 @@ int Cmiss_graphics_material_change(
 				manager_message, graphic->selected_material);
 			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
 		}
+		if (graphic->glyph)
+		{
+			graphic->glyph->materialChange(manager_message);
+		}
 		if (material_change)
 		{
 			if (graphic->graphics_object)
@@ -5477,6 +5481,10 @@ int Cmiss_graphic_font_change(struct Cmiss_graphic *graphic,
 				if (glyphUsesFont || graphic->label_field || graphic->label_text[0] ||
 					graphic->label_text[1] || graphic->label_text[2])
 				{
+					if (glyphUsesFont)
+					{
+						graphic->glyph->fontChange();
+					}
 					if (graphic->graphics_object)
 					{
 						if (glyphUsesFont)

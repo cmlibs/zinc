@@ -6624,12 +6624,18 @@ struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object)
 {
 	if (graphics_object)
 	{
+		// assume only one time
 		if ((g_GLYPH_SET == graphics_object->object_type) && graphics_object->primitive_lists)
 		{
-			// assume only one time
 			GT_glyph_set *glyph_set = graphics_object->primitive_lists[0].gt_glyph_set.first;
 			if (glyph_set)
 				return glyph_set->font;
+		}
+		else if ((g_POINTSET == graphics_object->object_type) && graphics_object->primitive_lists)
+		{
+			GT_pointset *point_set = graphics_object->primitive_lists[0].gt_pointset.first;
+			if (point_set)
+				return point_set->font;
 		}
 	}
 	return 0;

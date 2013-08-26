@@ -128,7 +128,7 @@ GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
 		glyph_base_size, glyph_scale_factors, glyph_offset,
 		font, (char **)0, glyph_label_offset, staticLabels, g_NO_DATA, 0,
 		/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-		/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
+		/*label_density_list*/(Triple *)NULL, /*object_name*/-1, /*names*/(int *)NULL);
 
 	GT_object *graphicsObject = CREATE(GT_object)(name, g_GLYPH_SET, material);
 	GT_OBJECT_ADD(GT_glyph_set)(graphicsObject, /*time*/0.0, glyph_set);
@@ -142,12 +142,13 @@ GT_object *Cmiss_glyph_axes::getGraphicsObject(Cmiss_tessellation *tessellation,
 {
 	USE_PARAMETER(tessellation);
 	GT_object *axis_gt_object = this->axisGlyph->getGraphicsObject(tessellation, material, font);
+	const bool usingFont = this->usesFont();
 	const bool usingMaterials = (0 != this->axisMaterials[0]) || (0 != this->axisMaterials[1]) || (0 != this->axisMaterials[2]);
 	if (this->graphicsObject)
 	{
 		GT_object *current_axis_gt_object = get_GT_object_glyph(this->graphicsObject);
 		if ((axis_gt_object != current_axis_gt_object) ||
-			(font != get_GT_object_font(this->graphicsObject)))
+			(usingFont && (font != get_GT_object_font(this->graphicsObject))))
 		{
 			DEACCESS(GT_object)(&this->graphicsObject);
 		}
@@ -263,6 +264,30 @@ int Cmiss_glyph_axes::setAxisMaterial(int axisNumber, Cmiss_graphics_material *m
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
+}
+
+void Cmiss_glyph_axes::fontChange()
+{
+	if (this->usesFont())
+	{
+		this->invalidate();
+	}
+}
+
+void Cmiss_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+{
+	for (int i = 0; i < 3; ++i)
+	{
+		if (this->axisMaterials[i])
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, this->axisMaterials[i]);
+			if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+			{
+				this->invalidate();
+				return;
+			}
+		}
+	}
 }
 
 Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(

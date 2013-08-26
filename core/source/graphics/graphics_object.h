@@ -554,8 +554,9 @@ glyph, while the optional <data> of number <n_data_components> per glyph allows
 colouring of the glyphs by a spectrum.
 The optional <label_density_list> controls the number of labels in each direction
 for glyphs that output more than one label per glyph such as axes or graph grids.
-The glyph_set will be marked as coming from the <object_name>, and integer
-identifier, while the optional <names> contains an integer identifier per point.
+The glyph_set will be marked as coming from the <object_name>, a non-negative 
+integer identifier (or negative for no name), while the optional <names> contains
+san integer identifier per point.
 Note: All arrays passed to this routine are owned by the new GT_glyph_set
 and are deallocated by its DESTROY function.
 ==============================================================================*/

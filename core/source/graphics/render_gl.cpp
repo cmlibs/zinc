@@ -598,7 +598,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 	ZnReal *label_bound;
 	GLfloat transformation[16], x, y, z;
 	GLfloat *datum = 0;
-	int draw_all, i, *name = NULL, name_selected = 0, label_bounds_per_glyph = 0,
+	int draw_all, i, name_selected = 0, label_bounds_per_glyph = 0,
 		return_code;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
@@ -623,6 +623,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 				(spectrum,material,number_of_data_components)))
 			{
 				int *names = glyph_set->names;
+				bool picking_names = (names) && (renderer->picking);
 				draw_all = (!names) ||
 					((!draw_selected)&&(!highlight_functor));
 				point = glyph_set->point_list;
@@ -639,8 +640,8 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 				{
 					label_density = (Triple *)NULL;
 				}
-				name = names;
-				if (name)
+				int *name = names;
+				if (picking_names)
 				{
 					/* make space for picking name on name stack */
 					glPushName(0);
@@ -681,20 +682,20 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glDisable(GL_LIGHTING);
 						lighting_on = !lighting_on;
 					}
-					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
 					if (!multiBeginEnd)
 					{
 						// more efficient to render points with one glBegin/glEnd
 						glBegin(GL_POINTS);
 					}
 					/* cannot put glLoadName between glBegin and glEnd */
-					if ((object_name > 0) && highlight_functor)
+					if ((object_name >= 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
 					}
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((object_name < 1) && highlight_functor)
+						if ((names) && highlight_functor)
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -705,7 +706,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
-							if (names)
+							if (picking_names)
 							{
 								glLoadName((GLuint)(*name));
 							}
@@ -774,20 +775,20 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glDisable(GL_LIGHTING);
 						lighting_on = !lighting_on;
 					}
-					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
 					if (!multiBeginEnd)
 					{
 						// more efficient to render lines with one glBegin/glEnd
 						glBegin(GL_LINES);
 					}
-					if ((object_name > 0) && highlight_functor)
+					if ((object_name >= 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
 					}
 					/* cannot put glLoadName between glBegin and glEnd */
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((object_name < 1) && highlight_functor)
+						if ((names) && highlight_functor)
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -798,7 +799,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
-							if (names)
+							if (picking_names)
 							{
 								glLoadName((GLuint)(*name));
 							}
@@ -873,20 +874,20 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glDisable(GL_LIGHTING);
 						lighting_on = !lighting_on;
 					}
-					const bool multiBeginEnd = (names || labels || static_labels || highlight_functor);
+					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
 					if (!multiBeginEnd)
 					{
 						// more efficient to render lines with one glBegin/glEnd
 						glBegin(GL_LINES);
 					}
-					if ((object_name > 0) && highlight_functor)
+					if ((object_name >= 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
 					}
 					/* cannot put glLoadName between glBegin and glEnd */
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((object_name < 1) && highlight_functor)
+						if ((names) && highlight_functor)
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -897,7 +898,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 							}
-							if (names)
+							if (picking_names)
 							{
 								glLoadName((GLuint)(*name));
 							}
@@ -993,7 +994,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					}
 					/* must push and pop the modelview matrix */
 					glMatrixMode(GL_MODELVIEW);
-					if ((object_name > 0) && highlight_functor)
+					if ((object_name >= 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
 					}
@@ -1003,13 +1004,13 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 							Graphics_object_get_glyph_labels_function(glyph);
 						for (i = 0; i < number_of_points; i++)
 						{
-							if ((object_name < 1) && highlight_functor)
+							if ((names) && highlight_functor)
 							{
 								name_selected = highlight_functor->call(*name);
 							}
 							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
-								if (names)
+								if (picking_names)
 								{
 									glLoadName((GLuint)(*name));
 								}
@@ -1102,20 +1103,20 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						axis3 = glyph_set->axis3_list;
 						scale = glyph_set->scale_list;
 						datum = glyph_set->data;
-						if ((object_name > 0) && highlight_functor)
+						if ((object_name >= 0) && highlight_functor)
 						{
 							name_selected=highlight_functor->call(object_name);
 						}
 						for (i=0;i<number_of_points;i++)
 						{
-							if ((object_name < 1) && highlight_functor)
+							if ((names) && highlight_functor)
 							{
 								name_selected = highlight_functor->call(*name);
 							}
 							if ((static_labels || (label && *label)) && (draw_all	|| ((name_selected) && draw_selected)
 								|| ((!name_selected)&&(!draw_selected))))
 							{
-								if (names)
+								if (picking_names)
 								{
 									glLoadName((GLuint)(*name));
 								}
@@ -1186,7 +1187,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						}
 					}
 				}
-				if (names)
+				if (picking_names)
 				{
 					/* free space for point number on picking name stack */
 					glPopName();

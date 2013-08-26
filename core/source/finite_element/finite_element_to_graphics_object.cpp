@@ -951,7 +951,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						n_data_components, data,
 						label_bounds_dimension, label_bounds_components, label_bounds,
 						label_density_list,
-						/*object_name*/0, names);
+						/*object_name*/-1, names);
 				}
 				else
 				{
