@@ -211,7 +211,7 @@ public:
 		return Cmiss_spectrum_component_set_colour_reverse(id, reverse);
 	}
 
-	int isExtendAbove()
+	bool isExtendAbove()
 	{
 		return Cmiss_spectrum_component_is_extend_above(id);
 	}
@@ -221,7 +221,7 @@ public:
 		return Cmiss_spectrum_component_set_extend_above(id, extend_above);
 	}
 
-	int isExtendBelow()
+	bool isExtendBelow()
 	{
 		return Cmiss_spectrum_component_is_extend_below(id);
 	}
