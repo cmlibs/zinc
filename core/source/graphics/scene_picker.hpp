@@ -97,7 +97,11 @@ public:
 
 	~Cmiss_scene_picker();
 
+	Cmiss_graphics_filter_id getGraphicsFilter();
+
 	int setGraphicsFilter(Cmiss_graphics_filter_id filter_in);
+
+	Cmiss_scene_id getScene();
 
 	int setScene(Cmiss_scene_id scene_in);
 
