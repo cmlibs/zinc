@@ -399,18 +399,18 @@ ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
  * Gets flag to generate graphics for exterior faces or lines only.
  *
  * @param graphic  The graphic to query.
- * @return  1 if exterior flag is set, otherwise 0.
+ * @return  Boolean true if the exterior flag is set, otherwise false.
  */
-ZINC_API int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic);
+ZINC_API bool Cmiss_graphic_is_exterior(Cmiss_graphic_id graphic);
 
 /**
  * Sets flag to generate graphics for exterior faces or lines only.
  *
  * @param graphic  The graphic to modify.
- * @param exterior  1 to set, 0 to clear.
+ * @param exterior  New boolean value: true to set, false to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, int exterior);
+ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, bool exterior);
 
 /**
  * Gets the face the graphic is limited to generate graphics for.

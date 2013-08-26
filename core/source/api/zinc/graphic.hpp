@@ -331,14 +331,14 @@ public:
 		return static_cast<Element::FaceType>(Cmiss_graphic_get_face(id));
 	}
 
-	int setExterior(int exterior)
+	bool isExterior()
 	{
-		return Cmiss_graphic_set_exterior(id, exterior);
+		return Cmiss_graphic_is_exterior(id);
 	}
 
-	int getExterior()
+	int setExterior(bool exterior)
 	{
-		return Cmiss_graphic_get_exterior(id);
+		return Cmiss_graphic_set_exterior(id, exterior);
 	}
 };
 
