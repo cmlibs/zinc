@@ -131,6 +131,10 @@ public:
 
 	int setTickLength(double tickLengthIn);
 
+	virtual void fontChange();
+
+	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
+
 	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message);
 
 };

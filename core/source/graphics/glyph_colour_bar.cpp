@@ -645,6 +645,23 @@ int Cmiss_glyph_colour_bar::setTickLength(double tickLengthIn)
 	return CMISS_ERROR_ARGUMENT;
 }
 
+void Cmiss_glyph_colour_bar::fontChange()
+{
+	this->invalidate();
+}
+
+void Cmiss_glyph_colour_bar::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+{
+	if (this->labelMaterial)
+	{
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, this->labelMaterial);
+		if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+		{
+			this->invalidate();
+		}
+	}
+}
+
 void Cmiss_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message)
 {
 	int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(message, this->spectrum);

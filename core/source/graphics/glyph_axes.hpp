@@ -71,7 +71,12 @@ public:
 
 	virtual bool usesFont()
 	{
-		return true;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (axisLabels[i])
+				return true;
+		}
+		return false;
 	}
 
 	double getAxisWidth() const
@@ -90,6 +95,16 @@ public:
 	Cmiss_graphics_material *getAxisMaterial(int axisNumber);
 
 	int setAxisMaterial(int axisNumber, Cmiss_graphics_material *material);
+
+	virtual void fontChange();
+
+	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
+
+	virtual bool usesCircleDivisions()
+	{
+		return this->axisGlyph->usesCircleDivisions();
+	}
+
 };
 
 #endif // GLYPH_AXES_HPP
