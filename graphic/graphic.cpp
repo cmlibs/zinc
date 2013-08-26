@@ -39,12 +39,25 @@ TEST(Cmiss_graphic_api, exterior)
 	Cmiss_graphic_id gr = Cmiss_graphic_surfaces_base_cast(Cmiss_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
 
-	EXPECT_EQ(0, Cmiss_graphic_get_exterior(gr));
-	int result = Cmiss_graphic_set_exterior(gr, 1);
+	EXPECT_FALSE(Cmiss_graphic_is_exterior(gr));
+	int result = Cmiss_graphic_set_exterior(gr, true);
 	EXPECT_EQ(CMISS_OK, result);
-	EXPECT_EQ(1, Cmiss_graphic_get_exterior(gr));
+	EXPECT_TRUE(Cmiss_graphic_is_exterior(gr));
 
 	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, exterior)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphic gr = zinc.scene.createGraphicSurfaces();
+	EXPECT_TRUE(gr.isValid());
+
+	EXPECT_FALSE(gr.isExterior());
+	int result = gr.setExterior(true);
+	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_TRUE(gr.isExterior());
 }
 
 TEST(Cmiss_graphic_api, face)
