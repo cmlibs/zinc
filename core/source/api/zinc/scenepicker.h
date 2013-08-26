@@ -80,6 +80,14 @@ ZINC_API Cmiss_scene_picker_id Cmiss_scene_picker_access(
 ZINC_API int Cmiss_scene_picker_destroy(Cmiss_scene_picker_id *scene_picker_address);
 
 /**
+ * Get the scene set for the scene picker to pick from.
+ *
+ * @param scene_picker  The scene picker to get the scene from.
+ * @return  Valid handle to scene object on success, 0 on failure.
+ */
+ZINC_API Cmiss_scene_id Cmiss_scene_picker_get_scene(Cmiss_scene_picker_id scene_picker);
+
+/**
  * Set the scene for the scene picker to pick from.
  *
  * @param scene_picker  The scene picker to be modified.
@@ -90,8 +98,17 @@ ZINC_API int Cmiss_scene_picker_set_scene(Cmiss_scene_picker_id scene_picker,
 	Cmiss_scene_id scene);
 
 /**
- * Set the graphics filter for the scene picker. This filter will work in
- * additional to the one in scene.
+ * Get the graphics filter for the scene picker.
+ *
+ * @param scene_picker  The scene picker to get the graphics filter from.
+ * @return  Valid handle to scene picker object on success, 0 on failure.
+ */
+ZINC_API Cmiss_graphics_filter_id Cmiss_scene_picker_get_graphics_filter(
+	Cmiss_scene_picker_id scene_picker);
+
+/**
+ * Set the graphics filter for the scene picker. This will affect
+ * graphics to be picked,
  *
  * @param scene_picker  The scene picker to be modified.
  * @param scene  The scene to pick from.

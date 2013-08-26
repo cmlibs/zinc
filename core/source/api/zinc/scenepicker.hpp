@@ -145,9 +145,19 @@ public:
 			(reinterpret_cast<Cmiss_field_group_id>(fieldGroup.getId())));
 	}
 
+	Scene getScene()
+	{
+		return Scene(Cmiss_scene_picker_get_scene(id));
+	}
+
 	int setScene(Scene& scene)
 	{
 		return Cmiss_scene_picker_set_scene(id, scene.getId());
+	}
+
+	GraphicsFilter getGraphicsFilter()
+	{
+		return GraphicFilter(Cmiss_scene_picker_get_graphics_filter(id));
 	}
 
 	int setGraphicsFilter(GraphicsFilter& filter)

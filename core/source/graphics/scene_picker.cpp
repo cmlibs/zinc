@@ -135,30 +135,7 @@ int Cmiss_scene_picker::pickObjects()
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_glbeginend_renderer();
 		renderer->picking = 1;
-		Cmiss_graphics_filter_id scene_filter = Cmiss_scene_viewer_get_filter(scene_viewer);
-		Cmiss_graphics_filter_id combined_filter = Cmiss_graphics_filter_access(scene_filter);
-		if (filter)
-		{
-			Cmiss_graphics_filter_destroy(&combined_filter);
-			if (scene_filter)
-			{
-				combined_filter = Cmiss_graphics_filter_module_create_filter_operator_and(
-					filter_module);
-				Cmiss_graphics_filter_operator_id and_filter = Cmiss_graphics_filter_cast_operator(
-					combined_filter);
-				if (and_filter)
-				{
-					Cmiss_graphics_filter_operator_append_operand(and_filter, scene_filter);
-					Cmiss_graphics_filter_operator_append_operand(and_filter, filter);
-					Cmiss_graphics_filter_operator_destroy(&and_filter);
-				}
-			}
-			else
-			{
-				combined_filter = Cmiss_graphics_filter_access(filter);
-			}
-		}
-		if (renderer->Scene_compile(top_scene, combined_filter))
+		if (renderer->Scene_compile(top_scene, filter))
 		{
 			number_of_hits=-1;
 			while (0>number_of_hits)
@@ -215,14 +192,6 @@ int Cmiss_scene_picker::pickObjects()
 					}
 				}
 			}
-		}
-		if (combined_filter)
-		{
-			Cmiss_graphics_filter_destroy(&combined_filter);
-		}
-		if (scene_filter)
-		{
-			Cmiss_graphics_filter_destroy(&scene_filter);
 		}
 
 		delete renderer;
@@ -392,6 +361,11 @@ int Cmiss_scene_picker::getSceneAndGraphic(GLuint *select_buffer_ptr,
 	}
 }
 
+Cmiss_graphics_filter_id Cmiss_scene_picker::getGraphicsFilter()
+{
+	return Cmiss_graphics_filter_access(filter);
+}
+
 int Cmiss_scene_picker::setGraphicsFilter(Cmiss_graphics_filter_id filter_in)
 {
 	if (filter_in != filter)
@@ -405,6 +379,10 @@ int Cmiss_scene_picker::setGraphicsFilter(Cmiss_graphics_filter_id filter_in)
 	return CMISS_OK;
 }
 
+Cmiss_scene_id Cmiss_scene_picker::getScene()
+{
+	return Cmiss_scene_access(top_scene);
+}
 
 int Cmiss_scene_picker::setScene(Cmiss_scene_id scene_in)
 {
@@ -858,10 +836,21 @@ int Cmiss_scene_picker_destroy(Cmiss_scene_picker_id *scene_picker_address)
 	return DEACCESS(Cmiss_scene_picker)(scene_picker_address);
 }
 
+Cmiss_scene_id Cmiss_scene_picker_get_scene(Cmiss_scene_picker_id scene_picker)
+{
+	return scene_picker->getScene();
+}
+
 int Cmiss_scene_picker_set_scene(Cmiss_scene_picker_id scene_picker,
 	Cmiss_scene_id scene)
 {
 	return scene_picker->setScene(scene);
+}
+
+Cmiss_graphics_filter_id Cmiss_scene_picker_get_graphics_filter(
+	Cmiss_scene_picker_id scene_picker)
+{
+	return scene_picker->getGraphicsFilter();
 }
 
 int Cmiss_scene_picker_set_graphics_filter(Cmiss_scene_picker_id scene_picker,
