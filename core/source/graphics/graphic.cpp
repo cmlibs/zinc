@@ -1643,24 +1643,20 @@ int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
 	return (return_code);
 }
 
-int Cmiss_graphic_get_exterior(Cmiss_graphic_id graphic)
+bool Cmiss_graphic_is_exterior(Cmiss_graphic_id graphic)
 {
-	if (graphic && graphic->exterior)
-	{
-		return 1;
-	}
-	return 0;
+	if (graphic)
+		return graphic->exterior;
+	return false;
 }
 
-int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic,
-	int exterior)
+int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, bool exterior)
 {
 	if (graphic)
 	{
-		bool use_exterior = (0 != exterior);
-		if (use_exterior != graphic->exterior)
+		if (exterior != graphic->exterior)
 		{
-			graphic->exterior = use_exterior;
+			graphic->exterior = exterior;
 			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 		return CMISS_OK;
