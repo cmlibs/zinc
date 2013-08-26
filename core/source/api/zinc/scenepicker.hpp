@@ -157,7 +157,7 @@ public:
 
 	GraphicsFilter getGraphicsFilter()
 	{
-		return GraphicFilter(Cmiss_scene_picker_get_graphics_filter(id));
+		return GraphicsFilter(Cmiss_scene_picker_get_graphics_filter(id));
 	}
 
 	int setGraphicsFilter(GraphicsFilter& filter)
