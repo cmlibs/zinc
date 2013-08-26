@@ -58,18 +58,18 @@ typedef struct Cmiss_glyph_colour_bar *Cmiss_glyph_colour_bar_id;
  */
 enum Cmiss_glyph_repeat_mode
 {
-	CMISS_GLYPH_REPEAT_MODE_INVALID = -1,
-	CMISS_GLYPH_REPEAT_NONE = 0,
+	CMISS_GLYPH_REPEAT_MODE_INVALID = 0,
+	CMISS_GLYPH_REPEAT_NONE = 1,
 		/*!< normal single glyph display, no repeat */
-	CMISS_GLYPH_REPEAT_AXES_2D = 1,
+	CMISS_GLYPH_REPEAT_AXES_2D = 2,
 		/*!< draw glyph 2 times treating each axis as a separate vector. Base size
 		 * and scale factors are applied separately to each axis.
 		 */
-	CMISS_GLYPH_REPEAT_AXES_3D = 2,
+	CMISS_GLYPH_REPEAT_AXES_3D = 3,
 		/*!< draw glyph 3 times treating each axis as a separate vector. Base size
 		 * and scale factors are applied separately to each axis.
 		 */
-	CMISS_GLYPH_REPEAT_MIRROR = 3
+	CMISS_GLYPH_REPEAT_MIRROR = 4
 		/*!< draw glyph twice, second mirrored about axis1 == 0.0. Commonly used
 		 * with a signed_scale_field to visualise stress and strains using pairs of
 		 * arrow glyphs pointing inward for compression, outward for tension.
