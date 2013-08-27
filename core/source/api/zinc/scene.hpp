@@ -118,7 +118,7 @@ public:
 			surfaceDensity, surfaceDensityScaleFactor);
 	}
 
-	Graphic createGraphic(Graphic::GraphicType graphicType)
+	Graphic createGraphic(Graphic::Type graphicType)
 	{
 		return Graphic(Cmiss_scene_create_graphic(id,
 			static_cast<Cmiss_graphic_type>(graphicType)));

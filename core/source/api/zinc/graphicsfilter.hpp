@@ -252,7 +252,7 @@ public:
 		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_name(id, matchName));
 	}
 
-	GraphicsFilter createFilterGraphicType(Graphic::GraphicType graphicType)
+	GraphicsFilter createFilterGraphicType(Graphic::Type graphicType)
 	{
 		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_type(id,
 			static_cast<Cmiss_graphic_type>(graphicType)));
