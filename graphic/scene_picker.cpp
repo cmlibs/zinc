@@ -134,7 +134,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
 	EXPECT_TRUE(gfm.isValid());
 
-	GraphicsFilter gf = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
+	GraphicsFilter gf = gfm.createFilterGraphicType(Graphic::POINTS);
 	EXPECT_TRUE(gf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);

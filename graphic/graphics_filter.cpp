@@ -110,7 +110,7 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	filter =  gfm.createFilterGraphicName("lines");
 	EXPECT_TRUE(filter.isValid());
 
-	filter = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
+	filter = gfm.createFilterGraphicType(Graphic::POINTS);
 	EXPECT_TRUE(filter.isValid());
 
 	filter = gfm.createFilterRegion(zinc.root_region);
@@ -272,16 +272,16 @@ TEST(Cmiss_graphics_filter_api, valid_args_cpp)
 	EXPECT_TRUE(filter.isInverse());
 	EXPECT_EQ(CMISS_OK, result = filter.setInverse(false));
 
-	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::GRAPHIC_POINTS);
+	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::POINTS);
 	EXPECT_TRUE(graphic_type_filter1.isValid());
-	GraphicsFilter graphic_type_filter2 = gfm.createFilterGraphicType(Graphic::GRAPHIC_LINES);
+	GraphicsFilter graphic_type_filter2 = gfm.createFilterGraphicType(Graphic::LINES);
 	EXPECT_TRUE(graphic_type_filter2.isValid());
 	GraphicsFilter domain_type_filter1 = gfm.createFilterDomainType(Field::DOMAIN_NODES);
 	EXPECT_TRUE(domain_type_filter1.isValid());
 	GraphicsFilter domain_type_filter2 = gfm.createFilterDomainType(Field::DOMAIN_MESH_1D);
 	EXPECT_TRUE(domain_type_filter2.isValid());
 
-	Graphic graphic = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
+	Graphic graphic = zinc.scene.createGraphic(Graphic::LINES);
 	EXPECT_TRUE(graphic.isValid());
 
 	result = graphic_type_filter1.evaluateGraphic(graphic);

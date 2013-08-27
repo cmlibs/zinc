@@ -56,7 +56,7 @@ TEST(Cmiss_graphic_streamlines, cast_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_STREAMLINES);
+	Graphic gr = zinc.scene.createGraphic(Graphic::STREAMLINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicStreamlines st(gr);

@@ -1075,7 +1075,7 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currenetly constrained to equal values
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	// check default values = 1.0
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
@@ -1088,7 +1088,7 @@ TEST(Cmiss_graphic_api, line_attributes)
 	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, 0));
 	EXPECT_EQ(CMISS_OK, Cmiss_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currenetly constrained to equal values
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	Cmiss_graphic_line_attributes_destroy(&lineattr);
 	Cmiss_graphic_destroy(&gr);
@@ -1098,7 +1098,7 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::GRAPHIC_LINES);
+	Graphic gr = zinc.scene.createGraphic(Graphic::LINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicLineAttributes lineattr = gr.getLineAttributes();
