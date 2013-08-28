@@ -99,7 +99,7 @@ public:
 		return id;
 	}
 
-	int setSceneViewerRectangle(SceneViewer& sceneViewer, Scene::CoordinateSystem coordinateSystem, double x1,
+	int setSceneViewerRectangle(SceneViewer& sceneViewer, SceneCoordinateSystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
 		return Cmiss_scene_picker_set_scene_viewer_rectangle(

@@ -39,6 +39,7 @@
 #ifndef __ZN_CMISS_GRAPHIC_HPP__
 #define __ZN_CMISS_GRAPHIC_HPP__
 
+#include "zinc/types/scenecoordinatesystem.hpp"
 #include "zinc/graphic.h"
 #include "zinc/element.hpp"
 #include "zinc/field.hpp"
@@ -275,12 +276,12 @@ public:
 		return Cmiss_graphic_set_visibility_flag(id, visibilityFlag);
 	}
 
-	enum CoordinateSystem getCoordinateSystem()
+	enum SceneCoordinateSystem getCoordinateSystem()
 	{
-		return static_cast<CoordinateSystem>(Cmiss_graphic_get_coordinate_system(id));
+		return static_cast<SceneCoordinateSystem>(Cmiss_graphic_get_coordinate_system(id));
 	}
 
-	int setCoordinateSystem(CoordinateSystem coordinateSystem)
+	int setCoordinateSystem(SceneCoordinateSystem coordinateSystem)
 	{
 		return Cmiss_graphic_set_coordinate_system(id,
 			static_cast<Cmiss_scene_coordinate_system>(coordinateSystem));
