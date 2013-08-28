@@ -117,6 +117,38 @@ TEST(Cmiss_graphic_api, coordinate_field)
 	Cmiss_graphic_destroy(&gr);
 }
 
+TEST(Cmiss_graphic, coordinate_system)
+{
+	ZincTestSetup zinc;
+
+	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_POINTS);
+	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+
+	enum Cmiss_scene_coordinate_system coordinate_system = Cmiss_graphic_get_coordinate_system(gr);
+	EXPECT_EQ(CMISS_SCENE_COORDINATE_SYSTEM_LOCAL, coordinate_system);
+
+	EXPECT_EQ(CMISS_OK, Cmiss_graphic_set_coordinate_system(gr, CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	coordinate_system = Cmiss_graphic_get_coordinate_system(gr);
+	EXPECT_EQ(CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinate_system);
+
+	Cmiss_graphic_destroy(&gr);
+}
+
+TEST(ZincGraphic, CoordinateSystem)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicPoints gr = zinc.scene.createGraphic(Graphic::POINTS);
+	EXPECT_TRUE(gr.isValid());
+
+	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
+	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_LOCAL, coordinateSystem);
+
+	EXPECT_EQ(CMISS_OK, gr.setCoordinateSystem(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	coordinateSystem = gr.getCoordinateSystem();
+	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinateSystem);
+}
+
 TEST(Cmiss_graphic_api, data_field)
 {
 	ZincTestSetup zinc;

@@ -144,7 +144,7 @@ TEST(Cmiss_scene_picker_api, valid_args_cpp)
 	EXPECT_EQ(CMISS_OK, result);
 
 	result = scenePicker.setSceneViewerRectangle(sv,
-		Scene::COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
+		SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
 	EXPECT_EQ(CMISS_OK, result);
 
 	Element element = scenePicker.getNearestElement();
