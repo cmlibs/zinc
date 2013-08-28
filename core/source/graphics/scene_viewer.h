@@ -52,6 +52,7 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
+#include "zinc/types/scenecoordinatesystem.h"
 #include "zinc/sceneviewer.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
