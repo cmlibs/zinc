@@ -76,6 +76,7 @@ SET(INTERFACE_SRCS
 	../interface/font.i
 	../interface/graphicsfilter.i
 	../interface/scene.i
+	../interface/scenecoordinatesystem.i
 	../interface/scenepicker.i
 	../interface/sceneviewer.i
 	../interface/spectrum.i

@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Graphic.i
+/**
+ * graphic.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -46,6 +46,7 @@
 %import "tessellation.i"
 %import "glyph.i"
 %import "graphicsmaterial.i"
+%import "scenecoordinatesystem.i"
 %import "spectrum.i"
 %import "font.i"
 

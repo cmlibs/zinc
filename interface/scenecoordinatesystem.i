@@ -1,5 +1,5 @@
 /**
- * scenepicker.i
+ * scenecoordinatesystem.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -19,7 +19,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,19 +38,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") scenepicker
-
-%import "element.i"
-%import "graphic.i"
-%import "node.i"
-%import "scenecoordinatesystem.i"
-%import "sceneviewer.i"
+%module(package="zinc") scenecoordinatesystem
 
 %{
-#include "zinc/fieldtypesgroup.hpp"
-#include "zinc/graphicsfilter.hpp"
-#include "zinc/scene.hpp"
-#include "zinc/scenepicker.hpp"
+#include "zinc/types/scenecoordinatesystem.hpp"
 %}
 
-%include "zinc/scenepicker.hpp"
+%include "zinc/types/scenecoordinatesystem.hpp"
+
