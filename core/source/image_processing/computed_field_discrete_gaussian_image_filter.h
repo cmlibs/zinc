@@ -47,10 +47,6 @@ DESCRIPTION :
 #include "zinc/field.h"
 #include "zinc/fieldimageprocessing.h"
 
-struct Computed_field *Cmiss_field_module_create_discrete_gaussian_image_filter(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, double variance, int maxKernelWidth);
-
 Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_cast_discrete_gaussian_image_filter(Cmiss_field_id field);
 
 

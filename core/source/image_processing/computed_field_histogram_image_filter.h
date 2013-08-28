@@ -46,20 +46,6 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-/***************************************************************************//**
- * Creates a field performing ITK histogram image filter on source field image.
- * If neither histogramMinimum or histogramMaximum are specified then the minimums and
- * maximums are calculated based on the minimum and maximum values in the input image.
- * @param numberOfBins  Number of bins per source field component.
- * @param marginalScale  A measure of precision with which the histogram is calculated
- * @param histogramMinimum  Optional array of minimum value of histogram for each source field component
- * @param histogramMaximum  Optional array of maximum value of histogram for each source field component
- */
-struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, const int *numberOfBins, double marginalScale,
-	const double *histogramMinimum, const double *histogramMaximum);
-
 int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,
 	double **histogramMinimum, double **histogramMaximum);

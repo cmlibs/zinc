@@ -51,6 +51,7 @@ can be used in three different ways.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include "zinc/fieldimageprocessing.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"
