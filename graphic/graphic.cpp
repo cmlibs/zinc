@@ -138,7 +138,7 @@ TEST(ZincGraphic, CoordinateSystem)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.scene.createGraphic(Graphic::POINTS);
+	Graphic gr = zinc.scene.createGraphic(Graphic::POINTS);
 	EXPECT_TRUE(gr.isValid());
 
 	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
