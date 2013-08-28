@@ -89,8 +89,8 @@ November 97 Created from rendering part of Drawing.
 #include "three_d_drawing/graphics_buffer.h"
 //#include "user_interface/event_dispatcher.h"
 #include "interaction/interactive_event.h"
-#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
+#include "graphics/scene_coordinate_system.hpp"
 
 #define USE_LAYERZ
 #if defined (USE_LAYERZ)
@@ -7749,7 +7749,7 @@ scene viewer on screen.
 }
 
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum Cmiss_graphics_coordinate_system coordinate_system,
+	enum Cmiss_scene_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection)
 {
 	int return_code = 1;
@@ -7759,8 +7759,8 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 		double viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		switch (coordinate_system)
 		{
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+			case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
+			case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
 			{
 				double sum;
 				int i, j, k;
@@ -7781,7 +7781,7 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 				{
 					projection[i] = -projection[i];
 				}
-				if (coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL)
+				if (coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL)
 				{
 					double sum;
 					// apply local transformation if there is one
@@ -7809,10 +7809,10 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 			{
 				static double identity[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 				memcpy(projection, identity, 16*sizeof(double));
-				if (coordinate_system != CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
+				if (coordinate_system != CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
 				{
 					double left, right, bottom, top;
-					if (Cmiss_graphics_coordinate_system_get_viewport(
+					if (Cmiss_scene_coordinate_system_get_viewport(
 						coordinate_system, viewport_width, viewport_height,
 						&left, &right, &bottom, &top))
 					{

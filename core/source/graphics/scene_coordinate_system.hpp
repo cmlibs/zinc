@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE: graphics_coordinate_system.hpp
+/**
+ * FILE: scene_coordinate_system.hpp
  */ 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -37,19 +37,19 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GRAPHICS_COORDINATE_SYSTEM_HPP
-#define GRAPHICS_COORDINATE_SYSTEM_HPP
+#ifndef SCENE_COORDINATE_SYSTEM_HPP
+#define SCENE_COORDINATE_SYSTEM_HPP
 
-#include "zinc/types/graphicscoordinatesystem.h"
+#include "zinc/types/scenecoordinatesystem.h"
 #include "general/enumerator.h"
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_coordinate_system);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_scene_coordinate_system);
 
 /*******************************************************************************
- * Returns the orthographic viewport bounds for 'device' graphics coordinate
+ * Returns the orthographic viewport bounds for 'device' scene coordinate
  * systems.
  *
- * @param coordinate_system  The graphics coordinate system. World, local and
+ * @param coordinate_system  The scene coordinate system. World, local and
  * other 'non-device' coordinate systems return error.
  * @param viewport_width  Viewport width in pixels.
  * @param viewport_height  Viewport height in pixels.
@@ -59,8 +59,8 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_coordinate_system);
  * @param top  Address to return coordinate of top of top-most pixel.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_graphics_coordinate_system_get_viewport(
-	enum Cmiss_graphics_coordinate_system coordinate_system,
+int Cmiss_scene_coordinate_system_get_viewport(
+	enum Cmiss_scene_coordinate_system coordinate_system,
 	double viewport_width, double viewport_height,
 	double *left, double *right, double *bottom, double *top);
 
@@ -68,10 +68,10 @@ int Cmiss_graphics_coordinate_system_get_viewport(
  * Returns true if the coordinate_system is window-relative, which currently
  * determines whether it is drawn as an overlay.
  *
- * @param coordinate_system  The graphics coordinate system.
+ * @param coordinate_system  The scene coordinate system.
  * @return  1 if window-relative, 0 if not.
  */
-int Cmiss_graphics_coordinate_system_is_window_relative(
-	enum Cmiss_graphics_coordinate_system coordinate_system);
+int Cmiss_scene_coordinate_system_is_window_relative(
+	enum Cmiss_scene_coordinate_system coordinate_system);
 
-#endif /* GRAPHICS_COORDINATE_SYSTEM_HPP */
+#endif /* SCENE_COORDINATE_SYSTEM_HPP */

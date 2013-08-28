@@ -44,12 +44,12 @@
 #define __CMISS_SCENE_PICKER_H__
 
 #include "types/graphicid.h"
-#include "types/graphicscoordinatesystem.h"
 #include "types/graphicsfilterid.h"
 #include "types/fieldgroupid.h"
 #include "types/elementid.h"
 #include "types/nodeid.h"
 #include "types/sceneid.h"
+#include "types/scenecoordinatesystem.h"
 #include "types/scenepickerid.h"
 #include "types/sceneviewerid.h"
 
@@ -133,7 +133,7 @@ ZINC_API int Cmiss_scene_picker_set_graphics_filter(Cmiss_scene_picker_id scene_
  */
 ZINC_API int  Cmiss_scene_picker_set_scene_viewer_rectangle(
 	Cmiss_scene_picker_id scene_picker, Cmiss_scene_viewer_id scene_viewer_in,
-	enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
+	enum Cmiss_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 
 /**

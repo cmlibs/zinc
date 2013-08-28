@@ -46,7 +46,7 @@ DESCRIPTION :
 #include "zinc/types/fieldid.h"
 #include "zinc/types/fieldmoduleid.h"
 #include "zinc/types/sceneviewerid.h"
-#include "zinc/types/graphicscoordinatesystem.h"
+#include "zinc/types/scenecoordinatesystem.h"
 
 int Computed_field_register_types_scene_viewer_projection(
 	struct Computed_field_package *computed_field_package,

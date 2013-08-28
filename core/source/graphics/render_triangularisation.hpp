@@ -42,8 +42,8 @@
 #define RENDER_TRIANGULARISATION_HPP
 
 #include "graphics/graphics_object.h"
-#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render.hpp"
+#include "graphics/scene_coordinate_system.hpp"
 #include "graphics/triangle_mesh.hpp"
 
 /***************************************************************************//**
@@ -158,13 +158,13 @@ public:
 	virtual int Scene_tree_execute(Cmiss_scene *scene);
 
 	/** Only draw graphics in world and local coordinates. Not fully implemented */
-	virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
+	virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
 	{
-		return !Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system);
+		return !Cmiss_scene_coordinate_system_is_window_relative(coordinate_system);
 	}
 
 	/** Not fully implemented */
-	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/)
+	virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/)
 	{
 	}
 

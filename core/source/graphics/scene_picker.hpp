@@ -40,12 +40,12 @@
 #include <map>
 #include "zinc/scenepicker.h"
 #include "zinc/types/graphicid.h"
-#include "zinc/types/graphicscoordinatesystem.h"
 #include "zinc/types/graphicsfilterid.h"
 #include "zinc/types/fieldgroupid.h"
 #include "zinc/types/elementid.h"
 #include "zinc/types/nodeid.h"
 #include "zinc/types/sceneid.h"
+#include "zinc/types/scenecoordinatesystem.h"
 #include "zinc/types/scenepickerid.h"
 #include "zinc/types/sceneviewerid.h"
 
@@ -68,7 +68,7 @@ private:
 	Cmiss_scene_id top_scene;
 	Cmiss_scene_viewer_id scene_viewer;
 	int centre_x, centre_y, size_x, size_y;
-	Cmiss_graphics_coordinate_system coordinate_system;
+	enum Cmiss_scene_coordinate_system coordinate_system;
 	Cmiss_graphics_filter_id filter;
 	GLuint *select_buffer;
 	int select_buffer_size;
@@ -106,7 +106,7 @@ public:
 	int setScene(Cmiss_scene_id scene_in);
 
 	int setSceneViewerRectangle(Cmiss_scene_viewer_id scene_viewer_in,
-		enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
+		enum Cmiss_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 
 	int setInteractionVolume(struct Interaction_volume *interaction_volume_in);

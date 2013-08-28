@@ -83,8 +83,8 @@
 #include "graphics/graphic.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
-#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render_gl.h"
+#include "graphics/scene_coordinate_system.hpp"
 #include "graphics/tessellation.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #if defined(USE_OPENCASCADE)
@@ -292,7 +292,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 			graphic->seed_node_mesh_location_field = (struct Computed_field *)NULL;
 			graphic->overlay_flag = 0;
 			graphic->overlay_order = 1;
-			graphic->coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+			graphic->coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_LOCAL;
 			/* appearance settings defaults */
 			/* for all graphic types */
 			graphic->visibility_flag = true;
@@ -1407,10 +1407,10 @@ bool Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 		(0 < Cmiss_graphic_get_domain_dimension(graphic));
 }
 
-enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
+enum Cmiss_scene_coordinate_system Cmiss_graphic_get_coordinate_system(
 	struct Cmiss_graphic *graphic)
 {
-	enum Cmiss_graphics_coordinate_system coordinate_system;
+	enum Cmiss_scene_coordinate_system coordinate_system;
 
 	ENTER(Cmiss_graphic_get_coordinate_system);
 	if (graphic)
@@ -1421,7 +1421,7 @@ enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_coordinate_system.  Invalid argument(s)");
-		coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID;
+		coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_INVALID;
 	}
 	LEAVE;
 
@@ -1429,7 +1429,7 @@ enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 }
 
 int Cmiss_graphic_set_coordinate_system(
-	struct Cmiss_graphic *graphic, enum Cmiss_graphics_coordinate_system coordinate_system)
+	struct Cmiss_graphic *graphic, enum Cmiss_scene_coordinate_system coordinate_system)
 {
 	int return_code = 1;
 	ENTER(Cmiss_graphic_set_coordinate_system);
@@ -1438,7 +1438,7 @@ int Cmiss_graphic_set_coordinate_system(
 		if (coordinate_system != graphic->coordinate_system)
 		{
 			graphic->coordinate_system=coordinate_system;
-			if (Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system))
+			if (Cmiss_scene_coordinate_system_is_window_relative(coordinate_system))
 			{
 				graphic->overlay_flag = 1;
 				graphic->overlay_order = 1;
@@ -2041,7 +2041,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(graphic->coordinate_system),&error);
+			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(graphic->coordinate_system),&error);
 
 		if ((graphic->render_line_width < 0.99999) || (1.00001 < graphic->render_line_width))
 		{

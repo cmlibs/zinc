@@ -99,12 +99,12 @@ public:
 		return id;
 	}
 
-	int setSceneViewerRectangle(SceneViewer& sceneViewer, Graphic::CoordinateSystem coordinateSystem, double x1,
+	int setSceneViewerRectangle(SceneViewer& sceneViewer, Scene::CoordinateSystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
 		return Cmiss_scene_picker_set_scene_viewer_rectangle(
 			id , sceneViewer.getId(),
-			static_cast<Cmiss_graphics_coordinate_system>(coordinateSystem),
+			static_cast<Cmiss_scene_coordinate_system>(coordinateSystem),
 			x1, y1, x2, y2);
 	}
 

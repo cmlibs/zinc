@@ -44,7 +44,7 @@
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
-#include "types/graphicscoordinatesystem.h"
+#include "types/scenecoordinatesystem.h"
 #include "types/sceneviewerid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -55,12 +55,12 @@ extern "C" {
 
 /***************************************************************************//**
  * Creates a field whose values are the 4x4 transformation matrix mapping
- * coordinates between two graphics coordinate systems for a scene viewer.
+ * coordinates between two scene coordinate systems for a scene viewer.
  * The matrix maps homogeneous coordinates (x,y,z,1) to (x',y',z',h') suitable
  * for passing to a projection field. The values are continuously updated with
  * changes to the scene_viewer and become invalid if the scene_viewer is
  * destroyed.
- * Note CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
+ * Note CMISS_SCENE_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
  * of the scene for the owning region of field, which is transformed from
  * world coordinates by the cumulative transformation matrices of all scenes
  * down from the root region of the scene viewer's scene.
@@ -77,8 +77,8 @@ extern "C" {
 ZINC_API Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	Cmiss_field_module_id field_module,
 	Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_graphics_coordinate_system from_coordinate_system,
-	enum Cmiss_graphics_coordinate_system to_coordinate_system);
+	enum Cmiss_scene_coordinate_system from_coordinate_system,
+	enum Cmiss_scene_coordinate_system to_coordinate_system);
 
 #ifdef __cplusplus
 }

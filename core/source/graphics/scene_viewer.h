@@ -915,13 +915,13 @@ are used to position the intended viewing volume in user coordinates.
 
 /***************************************************************************//**
  * Gets matrix transforming coordinate system to
- * CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
+ * CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
  * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
  * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
  * coordinates which reverse z so are left-handed.
  */
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum Cmiss_graphics_coordinate_system coordinate_system,
+	enum Cmiss_scene_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection);
 
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,

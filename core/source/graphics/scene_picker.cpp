@@ -58,7 +58,7 @@ Cmiss_scene_picker::Cmiss_scene_picker(Cmiss_graphics_filter_module_id filter_mo
 	scene_viewer(0),
 	centre_x(0), centre_y(0),
 	size_x(0), size_y(0),
-	coordinate_system(CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT),
+	coordinate_system(CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT),
 	filter(0),
 	select_buffer(0),
 	select_buffer_size(10000),
@@ -401,7 +401,7 @@ int Cmiss_scene_picker::setScene(Cmiss_scene_id scene_in)
 }
 
 int Cmiss_scene_picker::setSceneViewerRectangle(Cmiss_scene_viewer_id scene_viewer_in,
-	enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
+	enum Cmiss_scene_coordinate_system coordinate_system_in, double x1,
 	double y1, double x2, double y2)
 {
 	reset();
@@ -861,7 +861,7 @@ int Cmiss_scene_picker_set_graphics_filter(Cmiss_scene_picker_id scene_picker,
 
 int Cmiss_scene_picker_set_scene_viewer_rectangle(
 	Cmiss_scene_picker_id scene_picker, Cmiss_scene_viewer_id scene_viewer_in,
-	enum Cmiss_graphics_coordinate_system coordinate_system_in, double x1,
+	enum Cmiss_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2)
 {
 	return scene_picker->setSceneViewerRectangle(scene_viewer_in,

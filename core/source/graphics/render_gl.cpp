@@ -56,11 +56,11 @@ GL rendering calls - API specific.
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
-#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/scene.hpp"
+#include "graphics/scene_coordinate_system.hpp"
 #include "graphics/spectrum.hpp"
 #include "graphics/texture.hpp"
 
@@ -205,29 +205,29 @@ public:
 		  return Light_model_render_opengl(light_model, this);
 	  }
 
-	  virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
+	  virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
 	  {
 		  int return_code = 1;
 		  switch (coordinate_system)
 		  {
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPushMatrix();
 				  glLoadMatrixd(world_view_matrix);
 			  } break;
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  if (picking)
 				  {
@@ -242,7 +242,7 @@ public:
 					  glPushMatrix();
 					  glLoadIdentity();
 					  double left, right, bottom, top;
-					  if (Cmiss_graphics_coordinate_system_get_viewport(coordinate_system,
+					  if (Cmiss_scene_coordinate_system_get_viewport(coordinate_system,
 						  viewport_width, viewport_height, &left, &right, &bottom, &top))
 					  {
 						  /* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
@@ -262,34 +262,34 @@ public:
 			  } break;
 		  default:
 			  {
-				  display_message(ERROR_MESSAGE,"begin_coordinate_system.  Invalid graphics coordinate system.");
+				  display_message(ERROR_MESSAGE,"begin_coordinate_system.  Invalid scene coordinate system.");
 				  return_code = 0;
 			  } break;
 		  }
 		  return return_code;
 	  }
 
-	  virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
+	  virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
 	  {
 		  switch (coordinate_system)
 		  {
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPopMatrix();
 			  } break;
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  /* Pop the model matrix stack */
 				  glMatrixMode(GL_PROJECTION);
