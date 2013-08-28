@@ -118,8 +118,16 @@ class FieldCrossProduct3D;
 class FieldDotProduct;
 class FieldMagnitude;
 class FieldNormalise;
-class FieldCurvatureAnisotropicDiffusionImageFilter;
+class FieldBinaryDilateImageFilter;
+class FieldBinaryErodeImageFilter;
+class FieldBinaryThresholdImageFilter;
+class FieldCannyEdgeDetectionImageFilter;
 class FieldConnectedThresholdImageFilter;
+class FieldCurvatureAnisotropicDiffusionImageFilter;
+class FieldDiscreteGaussianImageFilter;
+class FieldGradientMagnitudeRecursiveGaussianImageFilter;
+class FieldRescaleIntensityImageFilter;
+class FieldSigmoidImageFilter;
 class TimeKeeper;
 class Optimisation;
 
@@ -384,13 +392,37 @@ public:
 
 	FieldNormalise createNormalise(Field& sourceField);
 
-	FieldCurvatureAnisotropicDiffusionImageFilter createCurvatureAnisotropicDiffusionImageFilter(
-		Field& sourceField, double timeStep, double conductance, int numIterations);
+	FieldBinaryDilateImageFilter createBinaryDilateImageFilter(Field& sourceField,
+		int radius, double erode_value);
+
+	FieldBinaryErodeImageFilter createBinaryErodeImageFilter(Field& sourceField,
+		int radius, double dilate_value);
+
+	FieldBinaryThresholdImageFilter createBinaryThresholdImageFilter(Field& sourceField,
+			double lower_threshold, double upper_threshold);
+
+	FieldCannyEdgeDetectionImageFilter createCannyEdgeDetectionImageFilter(Field& sourceField,
+			double variance, double maximumError, double upperThreshold, double lowerThreshold);
 
 	FieldConnectedThresholdImageFilter createConnectedThresholdImageFilter(Field& sourceField,
 		double lowerThreshold, double upperThreshold, double replaceValue,
 		int dimension, int seedPointsCount, const double *seedPoints);
 
+	FieldCurvatureAnisotropicDiffusionImageFilter createCurvatureAnisotropicDiffusionImageFilter(
+		Field& sourceField, double timeStep, double conductance, int numIterations);
+
+	FieldDiscreteGaussianImageFilter createDiscreteGaussianImageFilter(Field& sourceField,
+		double variance, int maxKernelWidth);
+
+	FieldGradientMagnitudeRecursiveGaussianImageFilter
+		createGradientMagnitudeRecursiveGaussianImageFilter(Field& sourceField,
+			double sigma);
+
+	FieldRescaleIntensityImageFilter createRescaleIntensityImageFilter(Field& sourceField,
+		double outputMin, double outputMax);
+
+	FieldSigmoidImageFilter createSigmoidImageFilter(Field& sourceField,
+		double min, double max,	double alpha, double beta);
 };
 
 inline FieldModule Field::getFieldModule()
