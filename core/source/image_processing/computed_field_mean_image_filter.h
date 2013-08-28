@@ -45,16 +45,6 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-/***************************************************************************//**
- * Create field performing ITK mean image filter on source_field image.
- * The <radius_sizes> is a vector of integers of dimension specified by the
- * <source_field> dimension.
- * Sets number of components to same number as <source_field>.
- */
-struct Computed_field *Cmiss_field_module_create_mean_image_filter(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int *radius_sizes);
-
 int Cmiss_field_get_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **radius_sizes);
 /*******************************************************************************

@@ -45,15 +45,6 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-/***************************************************************************//**
- * Creates a field returning result of ITK canny edge detection filter on the
- * source field image. Sets number of components to same number as source field.
- */
-struct Computed_field *Cmiss_field_module_create_canny_edge_detection_image_filter(
-	struct Cmiss_field_module *field_module,
-  struct Computed_field *source_field, double variance, double maximumError, 
-  double upperThreshold, double lowerThreshold);
-
 int Cmiss_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
       struct Computed_field **source_field, double *variance, double *maximumError,
       double *upperThreshold, double *lowerThreshold);

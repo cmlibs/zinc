@@ -46,11 +46,6 @@ DESCRIPTION :
 #include "zinc/field.h"
 #include "zinc/fieldimageprocessing.h"
 
-struct Computed_field *Cmiss_field_module_create_binary_threshold_image_filter(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, double lower_threshold,
-	double upper_threshold);
-
 /*****************************************************************************//**
  * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER,
  * the source_field and thresholds used by it are returned -

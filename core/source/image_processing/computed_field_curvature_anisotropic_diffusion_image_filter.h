@@ -46,15 +46,6 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-/***************************************************************************//**
- * Creates a field performing ITK curvature anisotropic diffusion image filter
- * on scalar source field image.
- * Sets number of components to same number as <source_field>.
- */
-//struct Computed_field *Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
-//	struct Cmiss_field_module *field_module,
-//	struct Computed_field *source_field, double timeStep, double conductance, int numIterations);
-
 int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations);
 /*******************************************************************************

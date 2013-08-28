@@ -46,16 +46,6 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-/***************************************************************************//**
- * Creates a field performing ITK fast marching image filter on scalar source field
- * image. Sets number of components to same number as <source_field>.
- */
-struct Computed_field *Cmiss_field_module_create_fast_marching_image_filter(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, double stopping_value,
-  int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
-  const int *output_size);
-
 int Cmiss_field_get_type_fast_marching_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,double *stopping_value,
   int *num_seed_points, int *dimension, double **seed_points, double **seed_values, 
