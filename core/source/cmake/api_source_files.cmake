@@ -62,7 +62,6 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/glyphid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicscoordinatesystem.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsfilterid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmaterialid.h
@@ -72,7 +71,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/regionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenecoordinatesystem.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenepickerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/selectionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/spectrumid.h

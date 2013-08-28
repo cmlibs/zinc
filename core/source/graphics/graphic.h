@@ -169,7 +169,7 @@ finite element group scene.
 	/* flag indicating that this settings needs to be regenerated when time
 		changes */
 	int time_dependent;
-	enum Cmiss_graphics_coordinate_system coordinate_system;
+	enum Cmiss_scene_coordinate_system coordinate_system;
 // 	/* for accessing objects */
 	int access_count;
 
@@ -217,7 +217,7 @@ struct Cmiss_graphic_range
 {
 	struct Graphics_object_range_struct *graphics_object_range;
 	Cmiss_graphics_filter_id filter;
-	enum Cmiss_graphics_coordinate_system coordinate_system;
+	enum Cmiss_scene_coordinate_system coordinate_system;
 };
 
 struct Cmiss_graphic_to_graphics_object_data

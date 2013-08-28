@@ -48,8 +48,8 @@
 #include "types/glyphid.h"
 #include "types/graphicid.h"
 #include "types/fontid.h"
-#include "types/graphicscoordinatesystem.h"
 #include "types/graphicsmaterialid.h"
+#include "types/scenecoordinatesystem.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
 
@@ -442,7 +442,7 @@ ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic,
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
-	enum Cmiss_graphics_coordinate_system coordinate_system);
+	enum Cmiss_scene_coordinate_system coordinate_system);
 
 /**
  * Get the coordinate system in which to render the coordinates of graphics.
@@ -450,7 +450,7 @@ ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to modify.
  * @return  coordinate system used in graphic.
  */
-ZINC_API enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
+ZINC_API enum Cmiss_scene_coordinate_system Cmiss_graphic_get_coordinate_system(
 	Cmiss_graphic_id graphic);
 
 /**

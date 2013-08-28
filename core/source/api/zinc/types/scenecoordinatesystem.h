@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_graphics_coordinate_system.h
+ * FILE : scenecoordinatesystem.h
  *
- * Enumerated type for identifying graphics coordinate spaces.
+ * Enumerated type for identifying scene and window coordinate systems.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,59 +39,59 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_GRAPHICS_COORDINATE_SYSTEM_H
-#define CMISS_GRAPHICS_COORDINATE_SYSTEM_H
+#ifndef SCENECOORDINATESYSTEM_H
+#define SCENECOORDINATESYSTEM_H
 
 #include "zinc/zincsharedobject.h"
 
 /***************************************************************************//**
- * Enumerated type for identifying graphics coordinate spaces.
+ * Enumerated type for identifying scene and window coordinate systems.
  * Cmiss_graphic objects are given in one of these coordinate systems.
  */
-enum Cmiss_graphics_coordinate_system
+enum Cmiss_scene_coordinate_system
 {
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID = 0,
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL = 1,
-	/*!< The local coordinate system of a Cmiss_scene, subject to its own
+	CMISS_SCENE_COORDINATE_SYSTEM_INVALID = 0,
+	CMISS_SCENE_COORDINATE_SYSTEM_LOCAL = 1,
+	/*!< The local coordinate system of a scene, subject to its own
 	 * transformation matrix and those of all parent scenes up to the root
 	 * region of the Cmiss_scene in use, which are world coordinates.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD = 2,
-	/*!< The world coordinate system which Cmiss_scene_viewer viewing parameters
-	 * are specified in, and which Cmiss_scene transformations (giving local
+	CMISS_SCENE_COORDINATE_SYSTEM_WORLD = 2,
+	/*!< The world coordinate system which scene_viewer viewing parameters
+	 * are specified in, and which scene transformations (giving local
 	 * coordinates) are ultimately relative to.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL = 3,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL = 3,
 	/*!< Distorted normalised window coordinate system which varies from
 	 * -1 to +1 from left to right, bottom to top, and far to near of window.
 	 * If window is non-square, graphics in this space appear stretched. */
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE = 4,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE = 4,
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in centre of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT = 5,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT = 5,
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in left of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT = 6,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT = 6,
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in right of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM = 7,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM = 7,
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in bottom of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP = 8,
+	CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP = 8,
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in top of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9,
+	CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9,
 	/*!< Window coordinate system in pixel units with 0,0 at bottom, left of
 	 * bottom-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = 10
+	CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = 10
 	/*!< Window coordinate system in pixel units with 0,0 at top, left of
 	 * top-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1. Y coordinates are negative going down the window. */
-}; /* enum Cmiss_graphics_coordinate_system */
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,8 +103,8 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_graphics_coordinate_system
-	Cmiss_graphics_coordinate_system_enum_from_string(const char *string);
+ZINC_API enum Cmiss_scene_coordinate_system
+	Cmiss_scene_coordinate_system_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
@@ -113,11 +113,11 @@ ZINC_API enum Cmiss_graphics_coordinate_system
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphics_coordinate_system_enum_to_string(
-	enum Cmiss_graphics_coordinate_system system);
+ZINC_API char *Cmiss_scene_coordinate_system_enum_to_string(
+	enum Cmiss_scene_coordinate_system system);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CMISS_GRAPHICS_COORDINATE_SYSTEM_H */
+#endif /* SCENECOORDINATESYSTEM_H */

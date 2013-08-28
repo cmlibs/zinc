@@ -1035,7 +1035,7 @@ int Cmiss_scene_get_range(Cmiss_scene_id scene,
 			graphic_range.graphics_object_range = graphics_object_range;
 		}
 		graphic_range.filter = filter;
-		graphic_range.coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+		graphic_range.coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_LOCAL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			scene->list_of_graphics);
@@ -1109,7 +1109,7 @@ int Cmiss_scene_get_range(Cmiss_scene_id scene,
 			}
 		}
 		graphic_range.graphics_object_range = graphics_object_range;
-		graphic_range.coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD;
+		graphic_range.coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_WORLD;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			scene->list_of_graphics);

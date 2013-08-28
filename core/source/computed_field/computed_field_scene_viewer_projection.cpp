@@ -14,7 +14,7 @@
 #include "graphics/scene_viewer.h"
 #include "general/message.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"
-#include "graphics/graphics_coordinate_system.hpp"
+#include "graphics/scene_coordinate_system.hpp"
 
 namespace {
 
@@ -44,8 +44,8 @@ public:
 		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
 	gtMatrix *current_local_transformation;
-	enum Cmiss_graphics_coordinate_system from_coordinate_system;
-	enum Cmiss_graphics_coordinate_system to_coordinate_system;
+	enum Cmiss_scene_coordinate_system from_coordinate_system;
+	enum Cmiss_scene_coordinate_system to_coordinate_system;
 	int change_required;
 	Cmiss_scene_id current_scene;
 
@@ -56,8 +56,8 @@ public:
 
 	Computed_field_scene_viewer_projection(
 		Scene_viewer *scene_viewer,
-		enum Cmiss_graphics_coordinate_system from_coordinate_system,
-		enum Cmiss_graphics_coordinate_system to_coordinate_system) :
+		enum Cmiss_scene_coordinate_system from_coordinate_system,
+		enum Cmiss_scene_coordinate_system to_coordinate_system) :
 		Computed_field_core(),
 		graphics_window_name(NULL),
 		pane_number(-1), scene_viewer(scene_viewer),
@@ -153,8 +153,8 @@ DESCRIPTION :
 					Computed_field_scene_viewer_projection_scene_viewer_callback,
 				 		(void *)field);
 			}
-			if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
-				(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
+			if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+				(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
 			{
 				add_transformation_callback();
 			}
@@ -548,8 +548,8 @@ int Computed_field_scene_viewer_projection::evaluate(Cmiss_field_cache& cache, F
 int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 {
 	int return_code = 0;
-	if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
-		(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
+	if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+		(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
 	{
 		Cmiss_field_id field = getField();
 		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
@@ -624,9 +624,9 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
 				pane_number + 1);
 		display_message(INFORMATION_MESSAGE,"    from_coordinate_system : %s\n",
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(from_coordinate_system));
+			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(from_coordinate_system));
 		display_message(INFORMATION_MESSAGE,"    to_coordinate_system : %s\n",
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(to_coordinate_system));
+			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(to_coordinate_system));
 	}
 	else
 	{
@@ -671,10 +671,10 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " from_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(from_coordinate_system), &error);
+			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(from_coordinate_system), &error);
 		append_string(&command_string, " to_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(to_coordinate_system), &error);
+			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(to_coordinate_system), &error);
 	}
 	else
 	{
@@ -744,8 +744,8 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 	Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
 	if (current_scene != top_scene)
 	{
-		if ((from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
-			(to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
+		if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+			(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
 		{
 			remove_transformation_callback();
 			add_transformation_callback();
@@ -908,8 +908,8 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	Cmiss_field_module_id field_module,
 	struct Scene_viewer *scene_viewer,
-	enum Cmiss_graphics_coordinate_system from_coordinate_system,
-	enum Cmiss_graphics_coordinate_system to_coordinate_system)
+	enum Cmiss_scene_coordinate_system from_coordinate_system,
+	enum Cmiss_scene_coordinate_system to_coordinate_system)
 {
 	Computed_field *field = NULL;
 	if (scene_viewer)
@@ -961,8 +961,8 @@ int Cmiss_field_projection_set_pane_number(struct Computed_field *field, int pan
 
 int Computed_field_get_type_scene_viewer_projection(struct Computed_field *field,
 	struct Scene_viewer **scene_viewer, char **graphics_window_name, int *pane_number,
-	enum Cmiss_graphics_coordinate_system *from_coordinate_system,
-	enum Cmiss_graphics_coordinate_system *to_coordinate_system)
+	enum Cmiss_scene_coordinate_system *from_coordinate_system,
+	enum Cmiss_scene_coordinate_system *to_coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 

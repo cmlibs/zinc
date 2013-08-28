@@ -47,7 +47,6 @@ scenes.
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
-#include "types/graphicscoordinatesystem.h"
 #include "types/graphicsfilterid.h"
 #include "types/interactivetoolid.h"
 #include "types/sceneid.h"

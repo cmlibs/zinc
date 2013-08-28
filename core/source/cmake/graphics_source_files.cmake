@@ -4,7 +4,6 @@
 SET( GRAPHICS_SRCS
 	source/graphics/auxiliary_graphics_types.cpp
 	source/graphics/graphic.cpp
-	source/graphics/graphics_coordinate_system.cpp
 	source/graphics/graphics_module.cpp
 	source/graphics/scene.cpp
 	source/graphics/colour.cpp
@@ -28,6 +27,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/render_wavefront.cpp
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
+	source/graphics/scene_coordinate_system.cpp
 	source/graphics/scene_viewer.cpp
 	source/graphics/selected_graphic.cpp
 	source/graphics/selection.cpp
@@ -42,7 +42,6 @@ SET( GRAPHICS_SRCS
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphic.h
-	source/graphics/graphics_coordinate_system.hpp
 	source/graphics/graphics_module.h
 	source/graphics/scene.h
 	source/graphics/scene.hpp
@@ -76,6 +75,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_wavefront.h
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
+	source/graphics/scene_coordinate_system.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selected_graphic.h
 	source/graphics/selection.hpp
