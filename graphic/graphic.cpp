@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 
 #include <zinc/zincconfigure.h>
-#include <zinc/status.h>
 #include <zinc/core.h>
 #include <zinc/context.h>
 #include <zinc/region.h>
@@ -56,7 +55,7 @@ TEST(ZincGraphic, exterior)
 
 	EXPECT_FALSE(gr.isExterior());
 	int result = gr.setExterior(true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(OK, result);
 	EXPECT_TRUE(gr.isExterior());
 }
 
@@ -144,7 +143,7 @@ TEST(ZincGraphic, CoordinateSystem)
 	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
 	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_LOCAL, coordinateSystem);
 
-	EXPECT_EQ(CMISS_OK, gr.setCoordinateSystem(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	EXPECT_EQ(OK, gr.setCoordinateSystem(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
 	coordinateSystem = gr.getCoordinateSystem();
 	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinateSystem);
 }
@@ -220,12 +219,12 @@ TEST(Cmiss_graphic_api, material_cpp)
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
 
 	GraphicsMaterial material = materialModule.createMaterial();
-	EXPECT_EQ(CMISS_OK, gr.setMaterial(material));
+	EXPECT_EQ(OK, gr.setMaterial(material));
 	tempMaterial = gr.getMaterial();
 	EXPECT_EQ(material.getId(), tempMaterial.getId());
 
 	GraphicsMaterial noMaterial;
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setMaterial(noMaterial));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setMaterial(noMaterial));
 }
 
 TEST(Cmiss_graphic, render_line_width)
@@ -261,9 +260,9 @@ TEST(ZincGraphic, RenderLineWidth)
 	ASSERT_DOUBLE_EQ(1.0, outWidth = gr.getRenderLineWidth());
 
 	int result;
-	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setRenderLineWidth(0.0));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderLineWidth(0.0));
 
-	ASSERT_EQ(CMISS_OK, result = gr.setRenderLineWidth(inWidth));
+	ASSERT_EQ(OK, result = gr.setRenderLineWidth(inWidth));
 	ASSERT_EQ(inWidth, outWidth = gr.getRenderLineWidth());
 }
 
@@ -300,9 +299,9 @@ TEST(ZincGraphic, RenderPointSize)
 	ASSERT_DOUBLE_EQ(1.0, outSize = gr.getRenderPointSize());
 
 	int result;
-	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setRenderPointSize(0.0));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderPointSize(0.0));
 
-	ASSERT_EQ(CMISS_OK, result = gr.setRenderPointSize(inSize));
+	ASSERT_EQ(OK, result = gr.setRenderPointSize(inSize));
 	ASSERT_EQ(inSize, outSize = gr.getRenderPointSize());
 }
 
@@ -337,9 +336,9 @@ TEST(ZincGraphic, selectMode)
 	ASSERT_EQ(Graphic::SELECT_ON, selectMode = gr.getSelectMode());
 
 	int result;
-	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setSelectMode(Graphic::SELECT_MODE_INVALID));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setSelectMode(Graphic::SELECT_MODE_INVALID));
 
-	ASSERT_EQ(CMISS_OK, result = gr.setSelectMode(Graphic::DRAW_SELECTED));
+	ASSERT_EQ(OK, result = gr.setSelectMode(Graphic::DRAW_SELECTED));
 	ASSERT_EQ(Graphic::DRAW_SELECTED, selectMode = gr.getSelectMode());
 }
 
@@ -383,12 +382,12 @@ TEST(Cmiss_graphic_api, selected_material_cpp)
 	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
 
 	GraphicsMaterial selectedMaterial = materialModule.createMaterial();
-	EXPECT_EQ(CMISS_OK, gr.setSelectedMaterial(selectedMaterial));
+	EXPECT_EQ(OK, gr.setSelectedMaterial(selectedMaterial));
 	tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(selectedMaterial.getId(), tempSelectedMaterial.getId());
 
 	GraphicsMaterial noMaterial;
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
 }
 
 TEST(Cmiss_graphic, name)
@@ -427,12 +426,12 @@ TEST(ZincGraphic, name)
 
 	const char *nameBob = "Bob";
 	int result;
-	ASSERT_EQ(CMISS_OK, result = gr.setName(nameBob));
+	ASSERT_EQ(OK, result = gr.setName(nameBob));
 	name = gr.getName();
 	EXPECT_STREQ(nameBob, name);
 	Cmiss_deallocate(name);
 
-	ASSERT_EQ(CMISS_OK, result = result = gr.setName(static_cast<char *>(0)));
+	ASSERT_EQ(OK, result = result = gr.setName(static_cast<char *>(0)));
 	name = gr.getName();
 	EXPECT_STREQ(static_cast<char *>(0), name);
 }
@@ -506,7 +505,7 @@ TEST(Cmiss_graphic_api, subgroup_field_cpp)
 
 	GraphicPoints gr = zinc.scene.createGraphicPoints();
 	EXPECT_TRUE(gr.isValid());
-	EXPECT_EQ(CMISS_OK, gr.setDomainType(Field::DOMAIN_NODES));
+	EXPECT_EQ(OK, gr.setDomainType(Field::DOMAIN_NODES));
 
 	Field tempSubgroupField = gr.getSubgroupField();
 	EXPECT_FALSE(tempSubgroupField.isValid());
@@ -514,20 +513,20 @@ TEST(Cmiss_graphic_api, subgroup_field_cpp)
 	const double value = 1.0;
 	Field subgroupField = zinc.fm.createConstant(1, &value);
 	EXPECT_TRUE(subgroupField.isValid());
-	EXPECT_EQ(CMISS_OK, gr.setSubgroupField(subgroupField));
+	EXPECT_EQ(OK, gr.setSubgroupField(subgroupField));
 
 	// subgroup field must be scalar
 	double values2[] = { 1.0, 2.0 };
 	Field badSubgroupField = zinc.fm.createConstant(2, values2);
 	EXPECT_TRUE(badSubgroupField.isValid());
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setSubgroupField(badSubgroupField));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setSubgroupField(badSubgroupField));
 
 	// previous subgroup field should be left unchanged
 	tempSubgroupField = gr.getSubgroupField();
 	EXPECT_EQ(subgroupField.getId(), tempSubgroupField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, gr.setSubgroupField(noField)); // clear subgroup field
+	EXPECT_EQ(OK, gr.setSubgroupField(noField)); // clear subgroup field
 	tempSubgroupField = gr.getSubgroupField();
 	EXPECT_FALSE(tempSubgroupField.isValid());
 }
@@ -576,13 +575,13 @@ TEST(Cmiss_graphic_api, tessellation_cpp)
 
 	Tessellation tessellation = tessellationModule.createTessellation();
 	EXPECT_TRUE(tessellation.isValid());
-	EXPECT_EQ(CMISS_OK, gr.setTessellation(tessellation));
+	EXPECT_EQ(OK, gr.setTessellation(tessellation));
 	tempTessellation = gr.getTessellation();
 	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
 
 	// can't remove tessellation
 	Tessellation noTessellation;
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setTessellation(noTessellation));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setTessellation(noTessellation));
 }
 
 TEST(Cmiss_graphic_api, tessellation_field)
@@ -623,13 +622,13 @@ TEST(Cmiss_graphic_api, tessellation_field_cpp)
 	const double value = 1.0;
 	Field tessellationField = zinc.fm.createConstant(1, &value);
 	EXPECT_TRUE(tessellationField.isValid());
-	EXPECT_EQ(CMISS_OK, gr.setTessellationField(tessellationField));
+	EXPECT_EQ(OK, gr.setTessellationField(tessellationField));
 
 	tempTessellationField = gr.getTessellationField();
 	EXPECT_EQ(tessellationField.getId(), tempTessellationField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, gr.setTessellationField(noField)); // clear tessellation field
+	EXPECT_EQ(OK, gr.setTessellationField(noField)); // clear tessellation field
 	tempTessellationField = gr.getTessellationField();
 	EXPECT_FALSE(tempTessellationField.isValid());
 }
@@ -682,20 +681,20 @@ TEST(Cmiss_graphic_api, texture_coordinate_field_cpp)
 	const double values[] = { 1.0, 2.0, 3.0 };
 	Field textureCoordinateField = zinc.fm.createConstant(3, values);
 	EXPECT_TRUE(textureCoordinateField.isValid());
-	EXPECT_EQ(CMISS_OK, gr.setTextureCoordinateField(textureCoordinateField));
+	EXPECT_EQ(OK, gr.setTextureCoordinateField(textureCoordinateField));
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
 	Field badTextureCoordinateField = zinc.fm.createConstant(4, values4);
 	EXPECT_TRUE(badTextureCoordinateField.isValid());
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, gr.setTextureCoordinateField(badTextureCoordinateField));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setTextureCoordinateField(badTextureCoordinateField));
 
 	// previous texture coordinate field should be left unchanged
 	tempTextureCoordinateField = gr.getTextureCoordinateField();
 	EXPECT_EQ(textureCoordinateField.getId(), tempTextureCoordinateField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, gr.setTextureCoordinateField(noField)); // clear texture coordinate field
+	EXPECT_EQ(OK, gr.setTextureCoordinateField(noField)); // clear texture coordinate field
 	tempTextureCoordinateField = gr.getTextureCoordinateField();
 	EXPECT_FALSE(tempTextureCoordinateField.isValid());
 }
@@ -833,18 +832,18 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 
 	glyph = zinc.glyphModule.findGlyphByName("sphere");
 	EXPECT_TRUE(glyph.isValid());
-	EXPECT_EQ(CMISS_OK, pointattr.setGlyph(glyph));
+	EXPECT_EQ(OK, pointattr.setGlyph(glyph));
 	tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
 	EXPECT_EQ(Glyph::SPHERE, pointattr.getGlyphType());
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphType(Glyph::TYPE_INVALID));
-	EXPECT_EQ(CMISS_OK, pointattr.setGlyphType(Glyph::CUBE_SOLID));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphType(Glyph::TYPE_INVALID));
+	EXPECT_EQ(OK, pointattr.setGlyphType(Glyph::CUBE_SOLID));
 	EXPECT_EQ(Glyph::CUBE_SOLID, pointattr.getGlyphType());
 
 	EXPECT_EQ(Glyph::REPEAT_NONE, pointattr.getGlyphRepeatMode());
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_INVALID));
-	EXPECT_EQ(CMISS_OK, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MIRROR));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_INVALID));
+	EXPECT_EQ(OK, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MIRROR));
 	EXPECT_EQ(Glyph::REPEAT_MIRROR, pointattr.getGlyphRepeatMode());
 
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
@@ -853,49 +852,49 @@ TEST(Cmiss_graphic_api, point_attributes_glyph_cpp)
 	Field tempField;
 
 	EXPECT_FALSE(pointattr.getOrientationScaleField().isValid());
-	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(field));
+	EXPECT_EQ(OK, pointattr.setOrientationScaleField(field));
 	tempField = pointattr.getOrientationScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
 	Field noField;
-	EXPECT_EQ(CMISS_OK, pointattr.setOrientationScaleField(noField)); // clear field
+	EXPECT_EQ(OK, pointattr.setOrientationScaleField(noField)); // clear field
 	EXPECT_FALSE(pointattr.getOrientationScaleField().isValid());
 
 	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
-	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(field));
+	EXPECT_EQ(OK, pointattr.setSignedScaleField(field));
 	tempField = pointattr.getSignedScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
-	EXPECT_EQ(CMISS_OK, pointattr.setSignedScaleField(noField)); // clear field
+	EXPECT_EQ(OK, pointattr.setSignedScaleField(noField)); // clear field
 	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[3];
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setBaseSize(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setBaseSize(2, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.setBaseSize(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getBaseSize(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getBaseSize(3, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.getBaseSize(3, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setBaseSize(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setBaseSize(2, 0));
+	EXPECT_EQ(OK, pointattr.setBaseSize(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getBaseSize(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getBaseSize(3, 0));
+	EXPECT_EQ(OK, pointattr.getBaseSize(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphOffset(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setGlyphOffset(2, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.setGlyphOffset(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getGlyphOffset(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getGlyphOffset(3, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.getGlyphOffset(3, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphOffset(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphOffset(2, 0));
+	EXPECT_EQ(OK, pointattr.setGlyphOffset(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getGlyphOffset(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getGlyphOffset(3, 0));
+	EXPECT_EQ(OK, pointattr.getGlyphOffset(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setScaleFactors(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setScaleFactors(2, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.setScaleFactors(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getScaleFactors(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getScaleFactors(3, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.getScaleFactors(3, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setScaleFactors(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setScaleFactors(2, 0));
+	EXPECT_EQ(OK, pointattr.setScaleFactors(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getScaleFactors(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getScaleFactors(3, 0));
+	EXPECT_EQ(OK, pointattr.getScaleFactors(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
@@ -984,22 +983,22 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	Field labelField = zinc.fm.createConstant(sizeof(values)/sizeof(double), values);
 	EXPECT_TRUE(labelField.isValid());
 
-	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(labelField));
+	EXPECT_EQ(OK, pointattr.setLabelField(labelField));
 
 	Field tempLabelField = pointattr.getLabelField();
 	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, pointattr.setLabelField(noField)); // clear label field
+	EXPECT_EQ(OK, pointattr.setLabelField(noField)); // clear label field
 	EXPECT_FALSE(pointattr.getLabelField().isValid());
 
 	double outputValues[3];
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelOffset(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelOffset(2, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.setLabelOffset(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getLabelOffset(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.getLabelOffset(3, 0));
-	EXPECT_EQ(CMISS_OK, pointattr.getLabelOffset(3, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setLabelOffset(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setLabelOffset(2, 0));
+	EXPECT_EQ(OK, pointattr.setLabelOffset(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getLabelOffset(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.getLabelOffset(3, 0));
+	EXPECT_EQ(OK, pointattr.getLabelOffset(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
@@ -1009,19 +1008,19 @@ TEST(Cmiss_graphic_api, point_attributes_label_cpp)
 	EXPECT_TRUE(font.isValid());
 
 	Font noFont;
-	EXPECT_EQ(CMISS_OK, pointattr.setFont(noFont)); // clear font
+	EXPECT_EQ(OK, pointattr.setFont(noFont)); // clear font
 	EXPECT_FALSE(pointattr.getFont().isValid());
 
-	EXPECT_EQ(CMISS_OK, pointattr.setFont(font));
+	EXPECT_EQ(OK, pointattr.setFont(font));
 
 	const char *text = "ABC";
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, pointattr.setLabelText(0, text));
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setLabelText(0, text));
 	EXPECT_EQ((char *)0, pointattr.getLabelText(0));
 	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
 	{
 		char *outText;
 		EXPECT_EQ((char *)0, pointattr.getLabelText(labelNumber));
-		EXPECT_EQ(CMISS_OK, pointattr.setLabelText(labelNumber, text));
+		EXPECT_EQ(OK, pointattr.setLabelText(labelNumber, text));
 		outText = pointattr.getLabelText(labelNumber);
 		EXPECT_STREQ(text, outText);
 		Cmiss_deallocate(outText);
@@ -1059,9 +1058,9 @@ TEST(ZincGraphic, RenderPolygonMode)
 	ASSERT_EQ(Graphic::RENDER_POLYGON_SHADED, renderPolygonMode = gr.getRenderPolygonMode());
 
 	int result;
-	ASSERT_EQ(CMISS_ERROR_ARGUMENT, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_MODE_INVALID));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_MODE_INVALID));
 
-	ASSERT_EQ(CMISS_OK, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_WIREFRAME));
+	ASSERT_EQ(OK, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_WIREFRAME));
 	ASSERT_EQ(Graphic::RENDER_POLYGON_WIREFRAME, renderPolygonMode = gr.getRenderPolygonMode());
 }
 
@@ -1136,7 +1135,7 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	GraphicLineAttributes lineattr = gr.getLineAttributes();
 	EXPECT_TRUE(lineattr.isValid());
 	EXPECT_EQ(GraphicLineAttributes::SHAPE_LINE, lineattr.getShape());
-	EXPECT_EQ(CMISS_OK, lineattr.setShape(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(OK, lineattr.setShape(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION));
 	EXPECT_EQ(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
 
 	double value = 1.0;
@@ -1144,33 +1143,33 @@ TEST(Cmiss_graphic_api, line_attributes_cpp)
 	EXPECT_TRUE(orientationScaleField.isValid());
 
 	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
-	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(orientationScaleField));
+	EXPECT_EQ(OK, lineattr.setOrientationScaleField(orientationScaleField));
 
 	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
 	EXPECT_EQ(tempOrientationScaleField.getId(), orientationScaleField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, lineattr.setOrientationScaleField(noField)); // clear field
+	EXPECT_EQ(OK, lineattr.setOrientationScaleField(noField)); // clear field
 	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[2];
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setBaseSize(2, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.setBaseSize(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getBaseSize(2, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.getBaseSize(2, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.setBaseSize(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.setBaseSize(2, 0));
+	EXPECT_EQ(OK, lineattr.setBaseSize(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.getBaseSize(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.getBaseSize(2, 0));
+	EXPECT_EQ(OK, lineattr.getBaseSize(2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.setScaleFactors(2, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.setScaleFactors(2, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, lineattr.getScaleFactors(2, 0));
-	EXPECT_EQ(CMISS_OK, lineattr.getScaleFactors(2, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.setScaleFactors(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.setScaleFactors(2, 0));
+	EXPECT_EQ(OK, lineattr.setScaleFactors(2, values));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.getScaleFactors(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, lineattr.getScaleFactors(2, 0));
+	EXPECT_EQ(OK, lineattr.getScaleFactors(2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 }
@@ -1197,7 +1196,7 @@ TEST(Cmiss_graphic_api, visibility_flag_cpp)
 	EXPECT_TRUE(gr.isValid());
 
 	EXPECT_TRUE(gr.getVisibilityFlag());
-	EXPECT_EQ(CMISS_OK, gr.setVisibilityFlag(false));
+	EXPECT_EQ(OK, gr.setVisibilityFlag(false));
 	EXPECT_FALSE(gr.getVisibilityFlag());
 }
 
@@ -1263,7 +1262,7 @@ TEST(Cmiss_graphic_api, sampling_attributes_cpp)
 	EXPECT_TRUE(sampling.isValid());
 
 	EXPECT_EQ(Element::POINT_SAMPLE_CELL_CENTRES, sampling.getMode());
-	EXPECT_EQ(CMISS_OK, sampling.setMode(Element::POINT_SAMPLE_CELL_POISSON));
+	EXPECT_EQ(OK, sampling.setMode(Element::POINT_SAMPLE_CELL_POISSON));
 	EXPECT_EQ(Element::POINT_SAMPLE_CELL_POISSON, sampling.getMode());
 
 	double value = 1.0;
@@ -1272,30 +1271,30 @@ TEST(Cmiss_graphic_api, sampling_attributes_cpp)
 
 	Field tempField = sampling.getDensityField();
 	EXPECT_FALSE(tempField.isValid());
-	EXPECT_EQ(CMISS_OK, sampling.setDensityField(densityField));
+	EXPECT_EQ(OK, sampling.setDensityField(densityField));
 	tempField = sampling.getDensityField();
 	EXPECT_EQ(densityField.getId(), tempField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, sampling.setDensityField(noField));
+	EXPECT_EQ(OK, sampling.setDensityField(noField));
 	tempField = sampling.getDensityField();
 	EXPECT_FALSE(tempField.isValid());
 
-	EXPECT_EQ(CMISS_OK, sampling.setMode(Element::POINT_SAMPLE_SET_LOCATION));
+	EXPECT_EQ(OK, sampling.setMode(Element::POINT_SAMPLE_SET_LOCATION));
 
 	const double values[] = { 0.5, 0.20, 0.8 };
 	double outputValues[3];
 	// check default values = 0.0
-	EXPECT_EQ(CMISS_OK, sampling.getLocation(3, outputValues));
+	EXPECT_EQ(OK, sampling.getLocation(3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.setLocation(0, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.setLocation(2, 0));
-	EXPECT_EQ(CMISS_OK, sampling.setLocation(3, values));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.getLocation(0, outputValues));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, sampling.getLocation(3, 0));
-	EXPECT_EQ(CMISS_OK, sampling.getLocation(3, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, sampling.setLocation(0, values));
+	EXPECT_EQ(ERROR_ARGUMENT, sampling.setLocation(2, 0));
+	EXPECT_EQ(OK, sampling.setLocation(3, values));
+	EXPECT_EQ(ERROR_ARGUMENT, sampling.getLocation(0, outputValues));
+	EXPECT_EQ(ERROR_ARGUMENT, sampling.getLocation(3, 0));
+	EXPECT_EQ(OK, sampling.getLocation(3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[2], outputValues[2]);
