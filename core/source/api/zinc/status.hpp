@@ -1,7 +1,7 @@
 /**
- * FILE : cmiss_status.h
+ * FILE : status.hpp
  *
- * The public interface to Cmiss_status.
+ * C++ function status/error codes.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -21,7 +21,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2011
+ * Portions created by the Initial Developer are Copyright (C) 2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -40,40 +40,24 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_STATUS_H__
-#define __CMISS_STATUS_H__
+#ifndef CMZN_STATUS_HPP
+#define CMZN_STATUS_HPP
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Generic status codes returned by API functions to indicate success or error.
- *
- * WARNING: Planned future binary compatibility break.
- * At a future date we will change value of CMISS_OK to 0, and
- * introduce negative-valued error codes e.g. 'CMISS_ERROR_ARGUMENT',
- * to bring the CMGUI Zinc API in to line with common C API conventions.
- * To maintain your source compatibility through this break please ensure
- * all code checking integer status codes returned by functions compare
- * against enum CMISS_OK, NOT its current literal value
- *
- */
-enum Cmiss_status
+namespace zinc
 {
-	CMISS_ERROR_MEMORY = -2,
+
+enum Status
+{
+	ERROR_MEMORY = CMISS_ERROR_MEMORY,
 		/*!< failed to allocate memory. */
-	CMISS_ERROR_ARGUMENT = -1,
+	ERROR_ARGUMENT = CMISS_ERROR_ARGUMENT,
 		/*!< invalid argument(s) passed to API function. Only reported for new APIs. */
-	CMISS_ERROR_GENERAL = 0,
+	ERROR_GENERAL = CMISS_ERROR_GENERAL,
 		/*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
-	CMISS_OK = 1
+	OK = CMISS_OK
 		/*!< value to be returned on success */
 };
 
-#ifdef __cplusplus
-}
-#endif
+} // namespace zinc
 
-#endif
+#endif // CMZN_STATUS_HPP
