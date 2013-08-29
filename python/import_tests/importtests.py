@@ -40,7 +40,7 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportRegion(self):
         from zinc import region
-   
+    
     def testImportScene(self):
         from zinc import scene
     
@@ -55,6 +55,9 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportSpectrum(self):
         from zinc import spectrum
+    
+    def testImportStatus(self):
+        from zinc import status
     
     def testImportStream(self):
         from zinc import stream
