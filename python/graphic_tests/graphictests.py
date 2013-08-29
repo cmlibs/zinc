@@ -6,6 +6,7 @@ Created on May 22, 2013
 import unittest
 
 from zinc.context import Context
+from zinc.glyph import Glyph
 from zinc.graphic import Graphic
 from zinc.field import Field
 
@@ -33,7 +34,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertTrue(attributes.isValid())
         glyph_module = self.graphics_module.getGlyphModule()
         glyph_module.defineStandardGlyphs()
-        result = attributes.setGlyphType(Graphic.GLYPH_TYPE_SPHERE)
+        result = attributes.setGlyphType(Glyph.SPHERE)
         self.assertEqual(1, result)
 
     def testGraphicSetBaseSize(self):
