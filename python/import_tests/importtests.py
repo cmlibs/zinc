@@ -44,6 +44,9 @@ class ImportTestCase(unittest.TestCase):
     def testImportScene(self):
         from zinc import scene
     
+    def testImportSceneCoordinateSystem(self):
+        from zinc import scenecoordinatesystem
+    
     def testImportSceneViewer(self):
         from zinc import sceneviewer
     
@@ -52,9 +55,6 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportSpectrum(self):
         from zinc import spectrum
-    
-    def testImportSceneCoordinateSystem(self):
-        from zinc import scenecoordinatesystem
     
     def testImportStream(self):
         from zinc import stream
