@@ -41,8 +41,8 @@
 %module(package="zinc") status
 
 %{
-#include "zinc/types/status.hpp"
+#include "zinc/status.hpp"
 %}
 
-%include "zinc/types/status.hpp"
+%include "zinc/status.hpp"
 
