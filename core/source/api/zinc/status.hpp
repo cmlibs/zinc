@@ -43,6 +43,8 @@
 #ifndef CMZN_STATUS_HPP
 #define CMZN_STATUS_HPP
 
+#include "zinc/status.h"
+
 namespace zinc
 {
 
