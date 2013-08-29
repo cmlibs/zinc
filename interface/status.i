@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Optimisation.i
+/**
+ * status.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -19,7 +19,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2013
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,14 +38,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") optimisation
-
-%import "field.i"
+%module(package="zinc") status
 
 %{
-#include "zinc/optimisation.hpp"
-#include "zinc/fieldtypesarithmeticoperators.hpp"
+#include "zinc/types/status.hpp"
 %}
 
-%include "zinc/optimisation.hpp"
+%include "zinc/types/status.hpp"
 

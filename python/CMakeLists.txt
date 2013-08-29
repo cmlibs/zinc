@@ -80,6 +80,7 @@ SET(INTERFACE_SRCS
 	../interface/scenepicker.i
 	../interface/sceneviewer.i
 	../interface/spectrum.i
+	../interface/status.i
 	../interface/optimisation.i
 	../interface/timenotifier.i
 	../interface/timekeeper.i
