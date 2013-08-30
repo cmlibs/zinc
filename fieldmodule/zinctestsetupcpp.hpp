@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
+#include <zinc/status.hpp>
 #include <zinc/context.hpp>
 #include <zinc/region.hpp>
 #include <zinc/fieldmodule.hpp>
