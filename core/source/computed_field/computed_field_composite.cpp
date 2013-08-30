@@ -308,6 +308,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(Cmiss_field_cache& c
 		}
 		if (changed)
 		{
+			field->clearCaches();
 			Computed_field_changed(field);
 		}
 	}
