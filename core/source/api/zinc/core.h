@@ -44,8 +44,8 @@ The public interface to the some of the internal functions of cmiss.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_CORE_H__
-#define __CMISS_CORE_H__
+#ifndef CMZN_CORE_H__
+#define CMZN_CORE_H__
 
 #include "zinc/zincsharedobject.h"
 
@@ -75,4 +75,4 @@ return buffers allocated internally to cmiss.
 }
 #endif
 
-#endif /* __CMISS_CORE_H__ */
+#endif /* CMZN_CORE_H__ */

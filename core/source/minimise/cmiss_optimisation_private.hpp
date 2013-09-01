@@ -43,8 +43,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_OPTIMISATION_PRIVATE_HPP__
-#define __CMISS_OPTIMISATION_PRIVATE_HPP__
+#ifndef __CMZN_OPTIMISATION_PRIVATE_HPP__
+#define __CMZN_OPTIMISATION_PRIVATE_HPP__
 
 #include <list>
 #include <sstream>
@@ -257,4 +257,4 @@ public:
 	int runOptimisation();
 };
 
-#endif // __CMISS_OPTIMISATION_PRIVATE_HPP__
+#endif // __CMZN_OPTIMISATION_PRIVATE_HPP__

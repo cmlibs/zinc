@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_REGION_ID_H
+#ifndef CMZN_REGIONID_H__
+#define CMZN_REGIONID_H__
 
 	struct Cmiss_region;
   typedef struct Cmiss_region * Cmiss_region_id;
@@ -58,7 +59,5 @@
   */
 	struct Cmiss_stream_information_region;
   typedef struct Cmiss_stream_information_region * Cmiss_stream_information_region_id;
-
-  #define CMISS_REGION_ID_H
 
 #endif /* CMISS_REGION_ID_H */

@@ -38,8 +38,8 @@ to Cmgui.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_TIME_H__
-#define __CMISS_TIME_H__
+#ifndef CMZN_TIMENOTIFIER_H__
+#define CMZN_TIMENOTIFIER_H__
 
 #include "types/timeid.h"
 
@@ -152,4 +152,4 @@ ZINC_API int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_
 }
 #endif
 
-#endif /* __CMISS_TIME_H__ */
+#endif

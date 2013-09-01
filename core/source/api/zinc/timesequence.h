@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_TIME_SEQUENCE_H__
-#define __CMISS_TIME_SEQUENCE_H__
+#ifndef CMZN_TIMESEQUENCE_H__
+#define CMZN_TIMESEQUENCE_H__
 
 #include "types/fieldmoduleid.h"
 #include "types/timesequenceid.h"
@@ -98,4 +98,4 @@ ZINC_API int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
 }
 #endif
 
-#endif /* __CMISS_TIME_SEQUENCE_H__ */
+#endif

@@ -40,8 +40,8 @@ The public interface to the Cmiss_fields that perform trigonometry.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_TRIGONOMETRY_H__
-#define __CMISS_FIELD_TRIGONOMETRY_H__
+#ifndef CMZN_FIELDTRIGONOMETRY_H__
+#define CMZN_FIELDTRIGONOMETRY_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -144,4 +144,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_atan2(
 }
 #endif
 
-#endif /* __CMISS_FIELD_TRIGONOMETRY_H__ */
+#endif

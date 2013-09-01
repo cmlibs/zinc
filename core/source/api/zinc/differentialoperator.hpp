@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_DIFFFERENTIAL_OPERATOR_HPP__
-#define __ZN_DIFFFERENTIAL_OPERATOR_HPP__
+#ifndef CMZN_DIFFFERENTIALOPERATOR_HPP__
+#define CMZN_DIFFFERENTIALOPERATOR_HPP__
 
 #include "zinc/differentialoperator.h"
 
@@ -90,4 +90,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_DIFFFERENTIAL_OPERATOR_HPP__ */
+#endif /* CMZN_DIFFFERENTIAL_OPERATOR_HPP__ */

@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHICID_H)
-#define CMISS_GRAPHICID_H
+#ifndef CMZN_GRAPHICID_H__
+#define CMZN_GRAPHICID_H__
 
 /**
  * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
@@ -171,4 +171,4 @@ enum Cmiss_graphic_render_polygon_mode
 	CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
 };
 
-#endif /* CMISS_GRAPHICID_H */
+#endif

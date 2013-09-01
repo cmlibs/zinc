@@ -38,8 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_OPTIMISATION_ID_H
+#ifndef CMZN_OPTIMISATIONID_H__
+#define CMZN_OPTIMISATIONID_H__
+
 	struct Cmiss_optimisation;
 	typedef struct Cmiss_optimisation* Cmiss_optimisation_id;
-	#define CMISS_OPTIMISATION_ID_H
+
 #endif /* CMISS_OPTIMISATION_ID_DEFINED */

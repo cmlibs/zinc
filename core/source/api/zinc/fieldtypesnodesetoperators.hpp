@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__
-#define __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__
+#ifndef CMZN_FIELDNODESETOPERATORS_HPP__
+#define CMZN_FIELDNODESETOPERATORS_HPP__
 
 #include "zinc/fieldnodesetoperators.h"
 #include "zinc/field.hpp"
@@ -189,4 +189,4 @@ inline FieldNodesetMaximum FieldModule::createNodesetMaximum(
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_NODESET_OPERATORS_HPP__ */
+#endif

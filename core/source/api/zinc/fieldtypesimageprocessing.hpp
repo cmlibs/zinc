@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_IMAGE_PROCESSING_HPP__
-#define __ZN_FIELD_TYPES_IMAGE_PROCESSING_HPP__
+#ifndef CMZN_FIELDIMAGEPROCESSING_HPP__
+#define CMZN_FIELDIMAGEPROCESSING_HPP__
 
 #include "zinc/field.hpp"
 #include "zinc/fieldimageprocessing.h"
@@ -327,4 +327,4 @@ inline FieldSigmoidImageFilter
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_COMPOSITE_HPP__ */
+#endif

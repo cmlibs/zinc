@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_FONT_H__
-#define __CMISS_FONT_H__
+#ifndef CMZN_FONT_H__
+#define CMZN_FONT_H__
 
 #include "types/fontid.h"
 
@@ -291,4 +291,4 @@ ZINC_API int Cmiss_font_set_size(Cmiss_font_id font, int size);
 }
 #endif
 
-#endif /*__CMISS_FONT_H__*/
+#endif

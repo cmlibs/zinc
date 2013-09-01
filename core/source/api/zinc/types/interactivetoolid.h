@@ -38,10 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_INTERACTIVE_TOOL_ID_H)
+#ifndef CMZN_INTERACTIVETOOLID_H__
+#define CMZN_INTERACTIVETOOLID_H__
 
 	struct Interactive_tool;
 	typedef struct Interactive_tool * Cmiss_interactive_tool_id;
-	#define CMISS_INTERACTIVE_TOOL_ID_H
 
-#endif /* CMISS_INTERACTIVE_TOOL_ID_H */
+#endif

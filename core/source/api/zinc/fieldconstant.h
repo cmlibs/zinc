@@ -34,8 +34,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMISS_FIELD_CONSTANT_H
-#define CMISS_FIELD_CONSTANT_H
+#ifndef CMZN_FIELDCONSTANT_H__
+#define CMZN_FIELDCONSTANT_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -73,4 +73,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_string_constant(Cmiss_field_mo
 }
 #endif
 
-#endif // CMISS_FIELD_CONSTANT_H
+#endif // CMZN_FIELDCONSTANT_H

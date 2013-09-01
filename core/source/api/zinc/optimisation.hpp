@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_OPTIMISATION_HPP__
-#define __ZN_OPTIMISATION_HPP__
+#ifndef CMZN_OPTIMISATION_HPP__
+#define CMZN_OPTIMISATION_HPP__
 
 #include "zinc/optimisation.h"
 #include "zinc/field.hpp"
@@ -208,4 +208,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_OPTIMISATION_HPP__ */
+#endif

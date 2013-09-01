@@ -40,8 +40,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_FINITE_ELEMENT_H)
-#define CMISS_FIELD_FINITE_ELEMENT_H
+#ifndef CMZN_FIELDFINITEELEMENT_H__
+#define CMZN_FIELDFINITEELEMENT_H__
 
 #include "types/elementid.h"
 #include "types/fieldid.h"
@@ -360,4 +360,4 @@ ZINC_API int Cmiss_field_stored_string_destroy(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_FINITE_ELEMENT_H) */
+#endif

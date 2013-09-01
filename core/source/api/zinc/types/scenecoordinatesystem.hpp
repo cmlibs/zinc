@@ -39,8 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef SCENECOORDINATESYSTEM_HPP
-#define SCENECOORDINATESYSTEM_HPP
+#ifndef CMZN_SCENECOORDINATESYSTEM_HPP__
+#define CMZN_SCENECOORDINATESYSTEM_HPP__
 
 #include "scenecoordinatesystem.h"
 
@@ -67,4 +67,4 @@ enum SceneCoordinateSystem
 
 } // namespace zinc
 
-#endif /* SCENECOORDINATESYSTEM_HPP */
+#endif

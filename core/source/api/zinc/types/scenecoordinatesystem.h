@@ -39,8 +39,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef SCENECOORDINATESYSTEM_H
-#define SCENECOORDINATESYSTEM_H
+#ifndef CMZN_SCENECOORDINATESYSTEM_H__
+#define CMZN_SCENECOORDINATESYSTEM_H__
+
 
 #include "zinc/zincsharedobject.h"
 
@@ -120,4 +121,4 @@ ZINC_API char *Cmiss_scene_coordinate_system_enum_to_string(
 }
 #endif
 
-#endif /* SCENECOORDINATESYSTEM_H */
+#endif

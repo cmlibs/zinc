@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_SPECTRUM_HPP__
-#define __ZN_SPECTRUM_HPP__
+#ifndef CMZN_SPECTRUM_HPP__
+#define CMZN_SPECTRUM_HPP__
 
 #include "zinc/spectrum.h"
 
@@ -502,4 +502,4 @@ public:
 
 } // namespace zinc
 
-#endif /* __ZN_SPECTRUM_HPP__ */
+#endif

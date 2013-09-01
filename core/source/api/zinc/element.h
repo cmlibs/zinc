@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_ELEMENT_H__
-#define __CMISS_ELEMENT_H__
+#ifndef CMZN_ELEMENT_H__
+#define CMZN_ELEMENT_H__
 
 #include "types/differentialoperatorid.h"
 #include "types/elementid.h"
@@ -729,4 +729,4 @@ ZINC_API int Cmiss_element_merge(Cmiss_element_id element,
 }
 #endif
 
-#endif /* __CMISS_ELEMENT_H__ */
+#endif /* CMZN_ELEMENT_H__ */

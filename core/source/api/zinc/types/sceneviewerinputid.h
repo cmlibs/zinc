@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_SCENE_VIEWER_INPUT_ID_H)
-#define CMISS_SCENE_VIEWER_INPUT_ID_H
+#ifndef CMZN_SCENEVIEWERINPUTID_H__
+#define CMZN_SCENEVIEWERINPUTID_H__
 
 /**
  * The type of scene viewer input button.
@@ -55,5 +55,4 @@ typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
 
 typedef int Cmiss_scene_viewer_input_modifier;
 
-
-#endif /* CMISS_SCENE_VIEWER_INPUT_ID_H */
+#endif

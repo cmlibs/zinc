@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_SPECTRUM_H__
-#define __CMISS_SPECTRUM_H__
+#ifndef CMZN_SPECTRUM_H__
+#define CMZN_SPECTRUM_H__
 
 #include "types/spectrumid.h"
 
@@ -801,4 +801,4 @@ ZINC_API int Cmiss_spectrum_component_set_colour_mapping(
 }
 #endif
 
-#endif /* __CMISS_SPECTRUM_H__ */
+#endif

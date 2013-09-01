@@ -33,8 +33,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_ALIAS_HPP__
-#define __ZN_FIELD_TYPES_ALIAS_HPP__
+#ifndef CMZN_FIELDALIAS_HPP__
+#define CMZN_FIELDALIAS_HPP__
 
 #include "zinc/fieldalias.h"
 #include "zinc/field.hpp"
@@ -66,4 +66,4 @@ inline FieldAlias FieldModule::createAlias(Field &sourceField)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_ALIAS_HPP__ */
+#endif

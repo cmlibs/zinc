@@ -42,8 +42,8 @@ scenes.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_SCENE_VIEWER_H__
-#define __CMISS_SCENE_VIEWER_H__
+#ifndef CMZN_SCENEVIEWER_H__
+#define CMZN_SCENEVIEWER_H__
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
@@ -858,4 +858,4 @@ ZINC_API int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id sc
 }
 #endif
 
-#endif /* __CMISS_SCENE_VIEWER_H__ */
+#endif

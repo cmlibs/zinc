@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_STREAM_ID_H
+#ifndef CMZN_STREAMID_H__
+#define CMZN_STREAMID_H__
 
 /***************************************************************************//**
  * A handle to cmiss stream information. Stream information maintain, create
@@ -111,5 +112,4 @@
 	struct Cmiss_stream_resource_memory;
 	typedef struct Cmiss_stream_resource_memory *Cmiss_stream_resource_memory_id;
 
-  #define CMISS_STREAM_ID_H
-#endif /* CMISS_STREAM_ID_H */
+#endif

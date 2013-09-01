@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_SCENE_ID_H)
+#ifndef CMZN_SCENEID_H__
+#define CMZN_SCENEID_H__
 
 /***************************************************************************//**
  * A handle to cmiss scene, cmiss scene contains a top region to display
@@ -51,6 +52,5 @@
  */
 	struct Cmiss_scene;
 	typedef struct Cmiss_scene * Cmiss_scene_id;
-	#define CMISS_SCENE_ID_H
 
-#endif /* CMISS_SCENE_ID_H */
+#endif

@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_ID_H)
+#ifndef CMZN_FIELDID_H__
+#define CMZN_FIELDID_H__
 
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;
@@ -71,6 +72,4 @@ enum Cmiss_field_domain_type
 		/*!< The set of elements of highest dimension in region */
 };
 
-	#define CMISS_FIELD_ID_H
-
-#endif /* CMISS_FIELD_ID_H */
+#endif

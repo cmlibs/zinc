@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __ZN_ELEMENT_HPP__
-#define __ZN_ELEMENT_HPP__
+#ifndef CMZN_ELEMENT_HPP__
+#define CMZN_ELEMENT_HPP__
 
 #include "zinc/element.h"
 #include "zinc/field.hpp"
@@ -553,4 +553,4 @@ inline int Element::merge(ElementTemplate& elementTemplate)
 }  // namespace zinc
 
 
-#endif /* __ZN_ELEMENT_HPP__ */
+#endif /* CMZN_ELEMENT_HPP__ */

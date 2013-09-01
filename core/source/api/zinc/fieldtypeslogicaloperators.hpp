@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__
-#define __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__
+#ifndef CMZN_FIELDLOGICALOPERATORS_HPP__
+#define CMZN_FIELDLOGICALOPERATORS_HPP__
 
 #include "zinc/fieldlogicaloperators.h"
 #include "zinc/field.hpp"
@@ -236,4 +236,4 @@ inline FieldXor FieldModule::createXor(Field& sourceField1, Field& sourceField2)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_LOGICAL_OPERATORS_HPP__ */
+#endif

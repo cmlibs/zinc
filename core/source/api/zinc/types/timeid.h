@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_TIME_ID_H)
+#ifndef CMZN_TIMEID_H__
+#define CMZN_TIMEID_H__
 
 /***************************************************************************//**
  * A handle to cmiss time notifier. This notifier provides a concept of time to
@@ -48,6 +49,5 @@
  */
 	struct Cmiss_time_notifier;
 	typedef struct Cmiss_time_notifier *Cmiss_time_notifier_id;
-	#define CMISS_TIME_ID_H
 
 #endif /* CMISS_TIME_ID_H */

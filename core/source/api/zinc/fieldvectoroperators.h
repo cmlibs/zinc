@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_VECTOR_OPERATORS_H__
-#define __CMISS_FIELD_VECTOR_OPERATORS_H__
+#ifndef CMZN_FIELDVECTOROPERATORS_H__
+#define CMZN_FIELDVECTOROPERATORS_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -137,4 +137,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(
 }
 #endif
 
-#endif /* __CMISS_FIELD_VECTOR_OPERATORS_H__ */
+#endif

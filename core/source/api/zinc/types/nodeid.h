@@ -39,7 +39,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 /** Handle to a nodeset, the container for nodes in a region. */
-#ifndef CMISS_NODESET_ID_H
+#ifndef CMZN_NODESETID_H__
+#define CMZN_NODESETID_H__
 
 	struct Cmiss_nodeset;
 	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
@@ -74,6 +75,4 @@
 		CMISS_NODAL_D3_DS1DS2DS3 = 8   /* triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 	};
 
-
-	#define CMISS_NODESET_ID_H
-#endif /* CMISS_NODESET_ID_H */
+#endif

@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__
-#define __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__
+#ifndef CMZN_FIELDVECTOROPERATORS_HPP__
+#define CMZN_FIELDVECTOROPERATORS_HPP__
 
 #include "zinc/fieldvectoroperators.h"
 #include "zinc/field.hpp"
@@ -177,4 +177,4 @@ inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_VECTOR_OPERATORS_HPP__ */
+#endif

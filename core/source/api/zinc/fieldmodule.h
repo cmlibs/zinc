@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_MODULE_H__
-#define __CMISS_FIELD_MODULE_H__
+#ifndef CMZN_FIELDMODULE_H__
+#define CMZN_FIELDMODULE_H__
 
 #include "types/regionid.h"
 #include "types/fieldid.h"
@@ -160,4 +160,4 @@ ZINC_API Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id fie
 }
 #endif
 
-#endif /* __CMISS_FIELD_MODULE_H__ */
+#endif

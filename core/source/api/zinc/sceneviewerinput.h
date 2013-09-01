@@ -33,8 +33,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_SCENE_VIEWER_INPUT_H__
-#define __CMISS_SCENE_VIEWER_INPUT_H__
+#ifndef CMZN_SCENEVIEWERINPUT_H__
+#define CMZN_SCENEVIEWERINPUT_H__
 
 #include "sceneviewer.h"
 #include "types/sceneviewerinputid.h"
@@ -135,4 +135,4 @@ ZINC_API int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input
 }
 #endif
 
-#endif /* __CMISS_SCENE_VIEWER_INPUT_H__ */
+#endif

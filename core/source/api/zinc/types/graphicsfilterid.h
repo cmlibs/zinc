@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHICS_FILTER_ID_H)
+#ifndef CMZN_GRAPHICSFILTERID_H__
+	#define CMZN_GRAPHICSFILTERID_H__
 
 	struct Cmiss_graphics_filter_module;
 	typedef struct Cmiss_graphics_filter_module *Cmiss_graphics_filter_module_id;
@@ -49,5 +50,4 @@
 	struct Cmiss_graphics_filter_operator;
 	typedef struct Cmiss_graphics_filter_operator *Cmiss_graphics_filter_operator_id;
 
-	#define CMISS_GRAPHICS_FILTER_ID_H
-#endif /* CMISS_GRAPHICS_FILTER_ID_H */
+#endif

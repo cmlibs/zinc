@@ -41,8 +41,8 @@ Implements cmiss fields which conditionally calculate their inputs.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_CONDITIONAL_H)
-#define CMISS_FIELD_CONDITIONAL_H
+#ifndef CMZN_FIELDCONDITIONAL_H__
+#define CMZN_FIELDCONDITIONAL_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -74,4 +74,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_CONDITIONAL_H) */
+#endif /* #ifndef CMZN_FIELDCONDITIONAL_H */

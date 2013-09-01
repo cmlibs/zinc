@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_SELECTION_HPP__
-#define __ZN_SELECTION_HPP__
+#ifndef CMZN_SELECTION_HPP__
+#define CMZN_SELECTION_HPP__
 
 #include "zinc/selection.h"
 
@@ -176,4 +176,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_SELECTION_HPP__ */
+#endif

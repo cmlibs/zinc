@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef ZINC_GLYPH_H
-#define ZINC_GLYPH_H
+#ifndef CMZN_GLYPH_H__
+#define CMZN_GLYPH_H__
 
 #include "types/glyphid.h"
 #include "types/graphicsmaterialid.h"

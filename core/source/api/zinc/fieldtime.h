@@ -41,8 +41,8 @@ Implements cmiss fields that is controlled by time.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_TIME_H)
-#define CMISS_FIELD_TIME_H
+#ifndef CMZN_FIELDTIME_H__
+#define CMZN_FIELDTIME_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -80,4 +80,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_time_value(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_TIME_H) */
+#endif

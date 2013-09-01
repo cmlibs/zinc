@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHICS_MATERIAL_H__
-#define __CMISS_GRAPHICS_MATERIAL_H__
+#ifndef CMZN_GRAPHICSMATERIAL_H__
+#define CMZN_GRAPHICSMATERIAL_H__
 
 #include "types/fieldimageid.h"
 #include "types/graphicsmaterialid.h"

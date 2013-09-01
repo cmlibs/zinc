@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_FINITE_ELEMENT_ID_H)
-#define CMISS_FIELD_FINITE_ELEMENT_ID_H
+#ifndef CMZN_FIELDFINITEELEMENTID_H__
+#define CMZN_FIELDFINITEELEMENTID_H__
 
 /** Handle to a finite_element type Cmiss_field */
 struct Cmiss_field_finite_element;

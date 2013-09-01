@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __ZN_CONTEXT_HPP__
-#define __ZN_CONTEXT_HPP__
+#ifndef CMZN_CONTEXT_HPP__
+#define CMZN_CONTEXT_HPP__
 
 #include "zinc/context.h"
 #include "zinc/region.hpp"
@@ -127,4 +127,4 @@ public:
 }  // namespace zinc
 
 
-#endif /* __ZN_CONTEXT_HPP__ */
+#endif /* CMZN_CONTEXT_HPP__ */

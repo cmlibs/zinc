@@ -41,8 +41,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_SUBOBJECT_GROUP_H)
-#define CMISS_FIELD_SUBOBJECT_GROUP_H
+#ifndef CMZN_FIELDSUBOBJECTGROUP_H__
+#define CMZN_FIELDSUBOBJECTGROUP_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -174,4 +174,4 @@ ZINC_API Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */
+#endif

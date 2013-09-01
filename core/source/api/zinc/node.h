@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_NODE_H__
-#define __CMISS_NODE_H__
+#ifndef CMZN_NODE_H__
+#define CMZN_NODE_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -571,4 +571,4 @@ ZINC_API int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_te
 }
 #endif
 
-#endif /* __CMISS_NODE_H__ */
+#endif

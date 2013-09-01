@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_CMISS_GRAPHICS_MATERIAL_HPP__
-#define __ZN_CMISS_GRAPHICS_MATERIAL_HPP__
+#ifndef CMZN_GRAPHICSMATERIAL_HPP__
+#define CMZN_GRAPHICSMATERIAL_HPP__
 
 #include "zinc/graphicsmaterial.h"
 #include "zinc/fieldimage.h"
@@ -258,4 +258,4 @@ public:
 
 } // namespace Cmiss
 
-#endif /* __ZN_CMISS_GRAPHICS_MATERIAL_HPP__ */
+#endif

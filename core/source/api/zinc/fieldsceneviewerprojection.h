@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
-#define __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
+#ifndef CMZN_FIELD_SCENE_VIEWER_PROJECTION_H__
+#define CMZN_FIELD_SCENE_VIEWER_PROJECTION_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"

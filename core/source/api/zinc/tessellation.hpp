@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_TESSELLATION_HPP__
-#define __ZN_TESSELLATION_HPP__
+#ifndef CMZN_TESSELLATION_HPP__
+#define CMZN_TESSELLATION_HPP__
 
 #include "zinc/tessellation.h"
 
@@ -236,4 +236,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_TESSELLATION_HPP__ */
+#endif

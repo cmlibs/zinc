@@ -41,8 +41,8 @@ The public interface to the Cmiss_regions.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_REGION_H__
-#define __CMISS_REGION_H__
+#ifndef CMZN_REGION_H__
+#define CMZN_REGION_H__
 
 #include "types/elementid.h"
 #include "types/fieldid.h"
@@ -570,4 +570,4 @@ ZINC_API int Cmiss_stream_information_region_set_resource_domain_type(
 }
 #endif
 
-#endif /* __CMISS_REGION_H__ */
+#endif

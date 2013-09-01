@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__
-#define __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__
+#ifndef CMZN_FIELDTRIGONOMETRY_HPP__
+#define CMZN_FIELDTRIGONOMETRY_HPP__
 
 #include "zinc/fieldtrigonometry.h"
 #include "zinc/field.hpp"
@@ -197,4 +197,4 @@ inline FieldAtan2 FieldModule::createAtan2(Field& sourceField1, Field& sourceFie
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_TRIGONOMETRY_HPP__ */
+#endif

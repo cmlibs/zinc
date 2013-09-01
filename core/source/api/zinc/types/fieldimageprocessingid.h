@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_FIELD_IMAGE_PROCESSING_ID_H
+#ifndef CMZN_FIELDIMAGEPROCESSINGID_H__
+#define CMZN_FIELDIMAGEPROCESSINGID_H__
 
 /*****************************************************************************//**
  * The image field specific handle to a Cmiss binary threshold field.
@@ -58,6 +59,4 @@ typedef struct Cmiss_field_discrete_gaussian_image_filter * Cmiss_field_discrete
 struct Cmiss_field_threshold_image_filter;
 typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_filter_id;
 
-#define CMISS_FIELD_IMAGE_PROCESSING_ID_H
-
-#endif /* CMISS_FIELD_IMAGE_PROCESSING_ID_H */
+#endif

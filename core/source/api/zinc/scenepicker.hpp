@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_SCENE_PICKER_HPP__
-#define __ZN_SCENE_PICKER_HPP__
+#ifndef CMZN_SCENEPICKER_HPP__
+#define CMZN_SCENEPICKER_HPP__
 
 #include "zinc/element.hpp"
 #include "zinc/graphic.hpp"
@@ -174,4 +174,4 @@ inline ScenePicker Scene::createPicker()
 
 }  // namespace zinc
 
-#endif /* __ZN_SCENE_HPP__ */
+#endif

@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_FIELD_SUBOBJECT_GROUP_ID_H
+#ifndef CMZN_FIELDSUBOBJECTGROUPID_H__
 
 	struct Cmiss_field_node_group;
 	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
@@ -46,5 +46,5 @@
 	struct Cmiss_field_element_group;
 	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
 
-	#define CMISS_FIELD_SUBOBJECT_GROUP_ID_H
-#endif /* CMISS_FIELD_SUBOBJECT_GROUP_ID_H */
+	#define CMZN_FIELDSUBOBJECTGROUPID_H__
+#endif

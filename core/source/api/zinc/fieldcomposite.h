@@ -42,8 +42,8 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_COMPOSITE_H__
-#define __CMISS_FIELD_COMPOSITE_H__
+#ifndef CMZN_FIELDCOMPOSITE_H__
+#define CMZN_FIELDCOMPOSITE_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -95,4 +95,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module
 }
 #endif
 
-#endif /* __CMISS_FIELD_COMPOSITE_H__ */
+#endif /* CMZN_FIELDCOMPOSITE_H__ */

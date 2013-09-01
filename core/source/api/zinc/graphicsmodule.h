@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHICS_MODULE_H__
-#define __CMISS_GRAPHICS_MODULE_H__
+#ifndef CMZN_GRAPHICSMODULE_H__
+#define CMZN_GRAPHICSMODULE_H__
 
 #include "types/glyphid.h"
 #include "types/fontid.h"
@@ -160,4 +160,4 @@ ZINC_API Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
 }
 #endif
 
-#endif /*__CMISS_GRAPHICS_MODULE_H__*/
+#endif

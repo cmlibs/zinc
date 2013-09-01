@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_CMISS_GRAPHIC_HPP__
-#define __ZN_CMISS_GRAPHIC_HPP__
+#ifndef CMZN_GRAPHIC_HPP__
+#define CMZN_GRAPHIC_HPP__
 
 #include "zinc/types/scenecoordinatesystem.hpp"
 #include "zinc/graphic.h"
@@ -803,4 +803,4 @@ inline GraphicSamplingAttributes Graphic::getSamplingAttributes()
 
 } // namespace zinc
 
-#endif /* __ZN_CMISS_GRAPHIC_HPP__ */
+#endif

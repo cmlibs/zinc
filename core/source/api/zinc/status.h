@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_STATUS_H__
-#define __CMISS_STATUS_H__
+#ifndef CMZN_STATUS_H__
+#define CMZN_STATUS_H__
 
 
 #ifdef __cplusplus

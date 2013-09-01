@@ -40,8 +40,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_ALIAS_H)
-#define CMISS_FIELD_ALIAS_H
+#ifndef CMZN_FIELDALIAS_H__
+#define CMZN_FIELDALIAS_H__
 
 #include "types/fieldid.h"
 #include "types/fieldaliasid.h"
@@ -70,4 +70,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_alias(Cmiss_field_module_id fi
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_ALIAS_H) */
+#endif /* #ifndef CMZN_FIELDALIAS_H */

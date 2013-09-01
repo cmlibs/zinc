@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined __CMISS_INTERACTIVE_TOOL_H__
-#define __CMISS_INTERACTIVE_TOOL_H__
+#ifndef CMZN_INTERACTIVETOOL_H__
+#define CMZN_INTERACTIVETOOL_H__
 
 #include "types/interactivetoolid.h"
 
@@ -81,4 +81,4 @@ int Cmiss_interactive_tool_destroy(Cmiss_interactive_tool_id *interactive_tool);
 }
 #endif
 
-#endif /* __CMISS_INTERACTIVE_TOOL_H__ */
+#endif /* CMZN_INTERACTIVETOOL_H__ */
