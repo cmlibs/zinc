@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef ZINC_GLYPH_HPP
-#define ZINC_GLYPH_HPP
+#ifndef CMZN_GLYPH_HPP__
+#define CMZN_GLYPH_HPP__
 
 #include "zinc/glyph.h"
 #include "zinc/graphicsmaterial.hpp"
@@ -408,4 +408,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* ZINC_GLYPH_HPP */
+#endif

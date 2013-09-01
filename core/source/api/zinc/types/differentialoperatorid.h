@@ -38,10 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_DIFFERENTIAL_OPERATOR_ID_H__
-#define __CMISS_DIFFERENTIAL_OPERATOR_ID_H__
+#ifndef CMZN_DIFFERENTIALOPERATORID_H__
+#define CMZN_DIFFERENTIALOPERATORID_H__
 
 	struct Cmiss_differential_operator;
 	typedef struct Cmiss_differential_operator *Cmiss_differential_operator_id;
 
-#endif /* __CMISS_DIFFERENTIAL_OPERATOR_ID_H__ */
+#endif

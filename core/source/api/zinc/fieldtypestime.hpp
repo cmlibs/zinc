@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_TIME_HPP__
-#define __ZN_FIELD_TYPES_TIME_HPP__
+#ifndef CMZN_FIELDTIME_HPP__
+#define CMZN_FIELDTIME_HPP__
 
 #include "zinc/fieldtime.h"
 #include "zinc/field.hpp"
@@ -92,4 +92,4 @@ inline FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_TIME_HPP__ */
+#endif /* CMZN_FIELDTIME_HPP__ */

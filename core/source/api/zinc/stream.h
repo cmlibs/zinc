@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_STREAM_H__
-#define __CMISS_STREAM_H__
+#ifndef CMZN_STREAM_H__
+#define CMZN_STREAM_H__
 
 #include "types/streamid.h"
 

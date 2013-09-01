@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_GRAPHICS_MODULE_HPP__
-#define __ZN_GRAPHICS_MODULE_HPP__
+#ifndef CMZN_GRAPHICSMODULE_HPP__
+#define CMZN_GRAPHICSMODULE_HPP__
 
 #include "zinc/graphicsmodule.h"
 #include "zinc/region.hpp"
@@ -148,4 +148,4 @@ public:
 
 } // namespace zinc
 
-#endif /* __ZN_GRAPHICS_MODULE_HPP__ */
+#endif

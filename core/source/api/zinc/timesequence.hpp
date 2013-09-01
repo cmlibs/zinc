@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_TIME_SEQUENCE_HPP__
-#define __ZN_TIME_SEQUENCE_HPP__
+#ifndef CMZN_TIMESEQUENCE_HPP__
+#define CMZN_TIMESEQUENCE_HPP__
 
 #include "zinc/timesequence.h"
 
@@ -102,4 +102,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_TIME_KEEPER_HPP__ */
+#endif

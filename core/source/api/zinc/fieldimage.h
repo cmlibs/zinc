@@ -41,8 +41,8 @@ Implements cmiss fields which wrap images, structured grid data.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_IMAGE_H)
-#define CMISS_FIELD_IMAGE_H
+#ifndef CMZN_FIELDIMAGE_H__
+#define CMZN_FIELDIMAGE_H__
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
@@ -698,4 +698,4 @@ ZINC_API int Cmiss_stream_information_image_set_pixel_format(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_IMAGE_H) */
+#endif

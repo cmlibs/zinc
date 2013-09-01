@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_H__
-#define __CMISS_FIELD_H__
+#ifndef CMZN_FIELD_H__
+#define CMZN_FIELD_H__
 
 #include "types/differentialoperatorid.h"
 #include "types/elementid.h"
@@ -586,4 +586,4 @@ ZINC_API Cmiss_field_id Cmiss_field_iterator_next(Cmiss_field_iterator_id field_
 }
 #endif
 
-#endif /* __CMISS_FIELD_H__ */
+#endif /* CMZN_FIELD_H__ */

@@ -39,8 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_CONTEXT_H__
-#define __CMISS_CONTEXT_H__
+#ifndef CMZN_CONTEXT_H__
+#define CMZN_CONTEXT_H__
 
 #include "types/contextid.h"
 #include "graphicsmodule.h"
@@ -133,4 +133,4 @@ ZINC_API int Cmiss_context_process_idle_event(Cmiss_context_id context);
 }
 #endif
 
-#endif /* __CMISS_CONTEXT_H__ */
+#endif /* CMZN_CONTEXT_H__ */

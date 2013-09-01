@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_TESSELLATION_H)
-#define CMISS_TESSELLATION_H
+#ifndef CMZN_TESSELLATION_H__
+#define CMZN_TESSELLATION_H__
 
 #include "types/tessellationid.h"
 

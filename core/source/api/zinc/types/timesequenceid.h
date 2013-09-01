@@ -38,10 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_TIME_SEQUENCE_ID_H)
+#ifndef CMZN_TIMESEQUENCEID_H__
+#define CMZN_TIMESEQUENCEID_H__
 
 	struct Cmiss_time_sequence;
 	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
-	#define CMISS_TIME_SEQUENCE_ID_H
 
 #endif /* CMISS_TIME_SEQUENCE_ID_H */

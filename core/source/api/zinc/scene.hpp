@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_CMISS_SCENE_HPP__
-#define __ZN_CMISS_SCENE_HPP__
+#ifndef CMZN_SCENE_HPP__
+#define CMZN_SCENE_HPP__
 
 #include "zinc/scene.h"
 #include "zinc/graphic.hpp"
@@ -237,4 +237,4 @@ public:
 
 } // namespace zinc
 
-#endif /* __ZN_CMISS_SCENE_HPP__ */
+#endif

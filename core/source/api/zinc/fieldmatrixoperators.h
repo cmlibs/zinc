@@ -41,8 +41,8 @@ The public interface to the Cmiss_fields that perform matrix operations.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_FIELD_MATRIX_OPERATORS_H__
-#define __CMISS_FIELD_MATRIX_OPERATORS_H__
+#ifndef CMZN_FIELDMATRIXOPERATORS_H__
+#define CMZN_FIELDMATRIXOPERATORS_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -167,4 +167,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_transpose(
 }
 #endif
 
-#endif /* __CMISS_FIELD_MATRIX_OPERATORS_H__ */
+#endif

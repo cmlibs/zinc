@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FONT_ID_H)
-#define CMISS_FONT_ID_H
+#ifndef CMZN_FONTID_H__
+#define CMZN_FONTID_H__
 
 #include "zinc/zincsharedobject.h"
 
@@ -112,4 +112,4 @@ ZINC_API char *Cmiss_font_render_type_enum_to_string(
 }
 #endif
 
-#endif /* CMISS_FONT_ID_H */
+#endif

@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_TIME_KEEPER_HPP__
-#define __ZN_TIME_KEEPER_HPP__
+#ifndef CMZN_TIMEKEEPER_HPP__
+#define CMZN_TIMEKEEPER_HPP__
 
 #include "zinc/timekeeper.h"
 #include "zinc/timenotifier.hpp"
@@ -133,4 +133,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_TIME_KEEPER_HPP__ */
+#endif

@@ -38,7 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHICS_MATERIAL_ID_H)
+#ifndef CMZN_GRAPHICSMATERIALID_H__
+#define CMZN_GRAPHICSMATERIALID_H__
 
 /***************************************************************************//**
  * A handle to cmiss material. cmiss material describes the
@@ -63,5 +64,4 @@
 	struct Cmiss_graphics_material_module;
 	typedef struct Cmiss_graphics_material_module * Cmiss_graphics_material_module_id;
 
-#define CMISS_GRAPHICS_MATERIAL_ID_H
-#endif /* CMISS_GRAPHICS_MATERIAL_ID_H */
+#endif

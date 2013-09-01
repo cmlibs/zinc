@@ -42,8 +42,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_GROUP_H)
-#define CMISS_FIELD_GROUP_H
+#ifndef CMZN_FIELDGROUP_H__
+#define CMZN_FIELDGROUP_H__
 
 #include "types/elementid.h"
 #include "types/fieldid.h"
@@ -310,4 +310,4 @@ ZINC_API Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_GROUP_H) */
+#endif

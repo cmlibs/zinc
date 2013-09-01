@@ -38,10 +38,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHICS_MODULE_ID_H)
+#ifndef CMZN_GRAPHICSMODULEID_H__
+#define CMZN_GRAPHICSMODULEID_H__
 
 struct Cmiss_graphics_module;
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
-#define CMISS_GRAPHICS_MODULE_ID_H
 
-#endif /* CMISS_GRAPHICS_MODULE_ID_H */
+#endif

@@ -38,11 +38,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_C_INLINE_ID_H
+#ifndef CMZN_CINLINE_H__
 #if defined (_MSC_VER)
-	#define CMISS_C_INLINE __inline
+	#define CMZN_C_INLINE __inline
 #else
-	#define CMISS_C_INLINE static inline
+	#define CMZN_C_INLINE static inline
 #endif
-#define CMISS_C_INLINE_ID_H
+#define CMZN_CINLINE_H__
 #endif

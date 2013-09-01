@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_NODESET_OPERATORS_H)
-#define CMISS_FIELD_NODESET_OPERATORS_H
+#ifndef CMZN_FIELDNODESETOPERATORS_H__
+#define CMZN_FIELDNODESETOPERATORS_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -146,4 +146,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_maximum(
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_NODESET_OPERATORS_H) */
+#endif

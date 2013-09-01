@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_MODULE_HPP__
-#define __ZN_FIELD_MODULE_HPP__
+#ifndef CMZN_FIELDMODULE_HPP__
+#define CMZN_FIELDMODULE_HPP__
 
 #include "zinc/fieldmodule.h"
 #include "zinc/field.hpp"
@@ -432,4 +432,4 @@ inline FieldModule Field::getFieldModule()
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_MODULE_HPP__ */
+#endif

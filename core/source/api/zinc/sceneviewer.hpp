@@ -33,8 +33,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __SCENE_VIEWER_HPP__
-#define __SCENE_VIEWER_HPP__
+#ifndef CMZN_SCENEVIEWER_HPP__
+#define CMZN_SCENEVIEWER_HPP__
 
 #include "zinc/sceneviewer.h"
 #include "zinc/sceneviewerinput.h"

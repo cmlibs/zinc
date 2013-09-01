@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_COMPOSITE_HPP__
-#define __ZN_FIELD_TYPES_COMPOSITE_HPP__
+#ifndef CMZN_FIELDCOMPOSITE_HPP__
+#define CMZN_FIELDCOMPOSITE_HPP__
 
 
 #include "zinc/fieldcomposite.h"
@@ -129,4 +129,4 @@ inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *s
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_COMPOSITE_HPP__ */
+#endif

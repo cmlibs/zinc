@@ -38,14 +38,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_SELECTION_ID_H)
+#ifndef CMZN_SELECTIONID_H__
+#define CMZN_SELECTIONID_H__
 
 	struct Cmiss_selection_handler;
 	typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
 
 	struct Cmiss_selection_event;
 	typedef struct Cmiss_selection_event * Cmiss_selection_event_id;
-
-	#define CMISS_SELECTION_ID_H
 
 #endif /* CMISS_SELECTION_ID_H */

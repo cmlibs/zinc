@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__
-#define __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__
+#ifndef CMZN_FIELDSUBOBJECTGROUP_HPP__
+#define CMZN_FIELDSUBOBJECTGROUP_HPP__
 
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/field.hpp"
@@ -120,4 +120,4 @@ inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_SUBOBJECT_GROUP_HPP__ */
+#endif

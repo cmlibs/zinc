@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __ZN_STREAM_HPP__
-#define __ZN_STREAM_HPP__
+#ifndef CMZN_STREAM_HPP__
+#define CMZN_STREAM_HPP__
 
 #include "zinc/stream.h"
 
@@ -206,4 +206,4 @@ public:
 }  // namespace zinc
 
 
-#endif /* __ZN_STREAM_HPP__ */
+#endif /* CMZN_STREAM_HPP__ */

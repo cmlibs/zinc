@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_CONDITIONAL_HPP__
-#define __ZN_FIELD_TYPES_CONDITIONAL_HPP__
+#ifndef CMZN_FIELDCONDITIONAL_HPP__
+#define CMZN_FIELDCONDITIONAL_HPP__
 
 #include "zinc/fieldconditional.h"
 #include "zinc/field.hpp"
@@ -70,4 +70,4 @@ inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, F
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_CONDITIONAL_HPP__ */
+#endif

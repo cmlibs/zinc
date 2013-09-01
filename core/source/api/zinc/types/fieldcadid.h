@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_CAD_ID_H)
-#define CMISS_FIELD_CAD_ID_H
+#ifndef CMZN_FIELDCADID_H__
+#define CMZN_FIELDCADID_H__
 
 struct Cmiss_field_cad_topology;
 typedef struct Cmiss_field_cad_topology *Cmiss_field_cad_topology_id;

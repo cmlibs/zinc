@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef ZINC_GLYPHID_H
-#define ZINC_GLYPHID_H
+#ifndef CMZN_GLYPHID_H__
+#define CMZN_GLYPHID_H__
 
 struct Cmiss_glyph_module;
 typedef struct Cmiss_glyph_module *Cmiss_glyph_module_id;
@@ -114,4 +114,4 @@ enum Cmiss_glyph_type
 	CMISS_GLYPH_AXES_SOLID_COLOUR /*!< unit solid arrow axes with materials red, green, blue */
 };
 
-#endif /* ZINC_GLYPHID_H */
+#endif

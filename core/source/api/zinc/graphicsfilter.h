@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHICS_FILTER_H__
-#define __CMISS_GRAPHICS_FILTER_H__
+#ifndef CMZN_GRAPHICSFILTER_H__
+#define CMZN_GRAPHICSFILTER_H__
 
 #include "types/fieldid.h"
 #include "types/graphicid.h"
@@ -427,4 +427,4 @@ ZINC_API int Cmiss_graphics_filter_operator_remove_operand(
 }
 #endif
 
-#endif /*__CMISS_GRAPHICS_FILTER_H__*/
+#endif

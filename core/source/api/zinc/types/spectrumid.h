@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_SPECTRUM_ID_H)
-#define CMISS_SPECTRUM_ID_H
+#ifndef CMZN_SPECTRUMID_H__
+#define CMZN_SPECTRUMID_H__
 
 struct Cmiss_spectrum_component;
 typedef struct Cmiss_spectrum_component *Cmiss_spectrum_component_id;
@@ -50,4 +50,4 @@ typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
 struct Cmiss_spectrum_module;
 typedef struct Cmiss_spectrum_module *Cmiss_spectrum_module_id;
 
-#endif /* CMISS_SPECTRUM_ID_H */
+#endif

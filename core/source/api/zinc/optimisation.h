@@ -40,8 +40,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_OPTIMISATION_H__
-#define __CMISS_OPTIMISATION_H__
+#ifndef CMZN_OPTIMISATION_H__
+#define CMZN_OPTIMISATION_H__
 
 /*
  Global types
@@ -464,4 +464,4 @@ ZINC_API int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation);
 }
 #endif
 
-#endif /* __CMISS_OPTIMISATION_H__ */
+#endif

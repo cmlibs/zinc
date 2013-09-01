@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_FIBRES_HPP__
-#define __ZN_FIELD_TYPES_FIBRES_HPP__
+#ifndef CMZN_FIELDFIBRES_HPP__
+#define CMZN_FIELDFIBRES_HPP__
 
 #include "zinc/fieldfibres.h"
 #include "zinc/field.hpp"
@@ -70,4 +70,4 @@ inline FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coo
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_FIBRES_HPP__ */
+#endif

@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_COORDINATE_TRANSFORMATION_H)
-#define CMISS_FIELD_COORDINATE_TRANSFORMATION_H
+#ifndef CMZN__FIELDCOORDINATETRANSFORMATION_H__
+#define CMZN__FIELDCOORDINATETRANSFORMATION_H__
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -85,4 +85,4 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_vector_coordinate_transformati
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_COORDINATE_TRANSFORMATION_H) */
+#endif /* ifndef CMZN__FIELDCOORDINATETRANSFORMATION_H */

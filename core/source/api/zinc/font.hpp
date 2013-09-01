@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_GRAPHICSFONT_HPP__
-#define __ZN_GRAPHICSFONT_HPP__
+#ifndef CMZN_FONT_HPP__
+#define CMZN_FONT_HPP__
 
 #include "zinc/font.h"
 
@@ -254,4 +254,4 @@ public:
 
 } // namespace zinc
 
-#endif /* __ZN_GRAPHICSFONT_HPP__ */
+#endif

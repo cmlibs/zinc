@@ -41,8 +41,8 @@ rewind and fast forward.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_TIME_KEEPER_H__
-#define __CMISS_TIME_KEEPER_H__
+#ifndef CMZN_TIMEKEEPER_H__
+#define CMZN_TIMEKEEPER_H__
 
 #include "types/timeid.h"
 #include "types/timekeeperid.h"
@@ -177,4 +177,4 @@ ZINC_API int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_ke
 }
 #endif
 
-#endif /* __CMISS_TIME_KEEPER_H__ */
+#endif

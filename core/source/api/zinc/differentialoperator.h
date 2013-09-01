@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_DIFFERENTIAL_OPERATOR_H__
-#define __CMISS_DIFFERENTIAL_OPERATOR_H__
+#ifndef CMZN_DIFFERENTIALOPERATOR_H__
+#define CMZN_DIFFERENTIALOPERATOR_H__
 
 #include "types/differentialoperatorid.h"
 
@@ -77,4 +77,4 @@ ZINC_API int Cmiss_differential_operator_destroy(
 }
 #endif
 
-#endif /* __CMISS_DIFFERENTIAL_OPERATOR_H__ */
+#endif /* CMZN_DIFFERENTIALOPERATOR_H__ */

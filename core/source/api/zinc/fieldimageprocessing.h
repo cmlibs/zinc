@@ -41,8 +41,8 @@ Implements cmiss fields which deal with image processing
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_IMAGE_PROCESSING_H)
-#define CMISS_FIELD_IMAGE_PROCESSING_H
+#ifndef CMZN_FIELDIMAGEPROCESSING_H__
+#define CMZN_FIELDIMAGEPROCESSING_H__
 
 #include "types/fieldid.h"
 #include "types/fieldimageprocessingid.h"
@@ -418,4 +418,4 @@ ZINC_API Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_
 }
 #endif
 
-#endif /* !defined (CMISS_FIELD_IMAGE_PROCESSING_H) */
+#endif

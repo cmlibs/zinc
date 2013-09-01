@@ -38,9 +38,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_GROUP_ID_H)
+#ifndef CMZN_FIELDGROUPID_H__
+#define CMZN_FIELDGROUPID_H__
 /** Handle to a finite_element type Cmiss_field */
 	struct Cmiss_field_group;
 	typedef struct Cmiss_field_group *Cmiss_field_group_id;
-	#define CMISS_FIELD_GROUP_ID_H
 #endif

@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__
-#define __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__
+#ifndef CMZN_FIELDTYPESFINITEELEMENT_HPP__
+#define CMZN_FIELDTYPESFINITEELEMENT_HPP__
 
 #include "zinc/fieldfiniteelement.h"
 #include "zinc/field.hpp"
@@ -226,4 +226,4 @@ inline FieldStoredString FieldModule::createStoredString()
 }
 
 }  // namespace zinc
-#endif /* __ZN_FIELD_TYPES_FINITE_ELEMENT_HPP__ */
+#endif /* CMZN_FIELD_TYPES_FINITE_ELEMENT_HPP__ */

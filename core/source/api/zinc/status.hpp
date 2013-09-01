@@ -62,4 +62,4 @@ enum Status
 
 } // namespace zinc
 
-#endif // CMZN_STATUS_HPP
+#endif

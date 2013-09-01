@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined __CMISS_SCENE_PICKER_H__
-#define __CMISS_SCENE_PICKER_H__
+#ifndef CMZN_SCENEPICKER_H__
+#define CMZN_SCENEPICKER_H__
 
 #include "types/graphicid.h"
 #include "types/graphicsfilterid.h"
@@ -209,4 +209,4 @@ ZINC_API int Cmiss_scene_picker_add_picked_elements_to_group(
 }
 #endif
 
-#endif /* __CMISS_SCENE_PICKER_H__ */
+#endif

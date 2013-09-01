@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__
-#define __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__
+#ifndef CMZN_FIELDMATRIXOPERATORS_HPP__
+#define CMZN_FIELDMATRIXOPERATORS_HPP__
 
 #include "zinc/fieldmatrixoperators.h"
 #include "zinc/field.hpp"
@@ -209,4 +209,4 @@ inline FieldTranspose FieldModule::createTranspose(int sourceNumberOfRows,
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_MATRIX_OPERATORS_HPP__ */
+#endif

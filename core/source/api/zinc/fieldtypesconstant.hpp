@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_CONSTANT_HPP__
-#define __ZN_FIELD_TYPES_CONSTANT_HPP__
+#ifndef CMZN_FIELDCONSTANT_HPP__
+#define CMZN_FIELDCONSTANT_HPP__
 
 #include "zinc/fieldconstant.h"
 #include "zinc/field.hpp"
@@ -92,4 +92,4 @@ inline FieldStringConstant FieldModule::createStringConstant(const char *stringC
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_CONSTANT_HPP__ */
+#endif

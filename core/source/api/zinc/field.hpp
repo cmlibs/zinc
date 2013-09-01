@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_HPP__
-#define __ZN_FIELD_HPP__
+#ifndef CMZN_FIELD_HPP__
+#define CMZN_FIELD_HPP__
 
 #include "zinc/field.h"
 #include "zinc/differentialoperator.hpp"
@@ -238,4 +238,4 @@ public:
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_HPP__ */
+#endif /* CMZN_FIELD_HPP__ */

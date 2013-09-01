@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined __CMISS_SELECTION_H__
-#define __CMISS_SELECTION_H__
+#ifndef CMZN_SELECTION_H__
+#define CMZN_SELECTION_H__
 
 #include "types/selectionid.h"
 
@@ -180,4 +180,4 @@ ZINC_API int Cmiss_selection_event_owning_scene_is_destroyed(
 }
 #endif
 
-#endif /* __CMISS_SELECTION_H__ */
+#endif /* CMZN_SELECTION_H__ */

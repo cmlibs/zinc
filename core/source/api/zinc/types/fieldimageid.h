@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CMISS_FIELD_IMAGE_ID_H
+#ifndef CMZN_FIELDIMAGEID_H__
 
 /*****************************************************************************//**
  * The image field specific handle to a image Cmiss_field.
@@ -76,6 +76,6 @@
 		CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR = 6
 	};
 
-	#define CMISS_FIELD_IMAGE_ID_H
+	#define CMZN_FIELDIMAGEID_H__
 
-#endif /* CMISS_FIELD_IMAGE_ID_H */
+#endif

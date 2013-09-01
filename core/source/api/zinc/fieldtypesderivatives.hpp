@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_FIELD_TYPES_DERIVATIVES_HPP__
-#define __ZN_FIELD_TYPES_DERIVATIVES_HPP__
+#ifndef CMZN_FIELDDERIVATIVES_HPP__
+#define CMZN_FIELDDERIVATIVES_HPP__
 
 #include "zinc/fieldderivatives.h"
 #include "zinc/field.hpp"
@@ -133,4 +133,4 @@ inline FieldGradient FieldModule::createGradient(Field& sourceField, Field& coor
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_TYPES_DERIVATIVES_HPP__ */
+#endif

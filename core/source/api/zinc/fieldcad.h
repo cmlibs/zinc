@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_CAD_H)
-#define CMISS_FIELD_CAD_H
+#ifndef CMZN_FIELDCAD_H__
+#define CMZN_FIELDCAD_H__
 
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_module_id.h"
@@ -85,5 +85,5 @@ Cmiss_cad_identifier_id Cmiss_field_cad_primitive_group_template_get_next_cad_pr
 	Cmiss_field_cad_primitive_group_template_id cad_primitive_group);
 
 
-#endif /* !defined (CMISS_FIELD_CAD_H) */
+#endif /* #ifndef CMZN_FIELDCAD_H */
 

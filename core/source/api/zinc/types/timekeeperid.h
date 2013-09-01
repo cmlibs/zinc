@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_TIME_KEEPER_ID_H)
-
+#ifndef CMZN_TIMEKEEPERID_H__
+#define CMZN_TIMEKEEPERID_H__
 /***************************************************************************//**
  * A handle to a time keeper.
  * Time keeper maintains a current time which can be automatically advanced
@@ -48,6 +48,5 @@
  */
 	struct Cmiss_time_keeper;
 	typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
-	#define CMISS_TIME_KEEPER_ID_H
 
-#endif /* CMISS_TIME_KEEPER_ID_H */
+#endif

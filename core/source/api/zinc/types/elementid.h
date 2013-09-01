@@ -39,7 +39,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 /** Handle to a finite element mesh. */
-#ifndef CMISS_ELEMENT_ID_H
+#ifndef CMZN_ELEMENTID_H__
+#define CMZN_ELEMENTID_H__
 
 	struct Cmiss_mesh;
 	typedef struct Cmiss_mesh *Cmiss_mesh_id;
@@ -77,8 +78,6 @@ enum Cmiss_element_face_type
 	/** Handle to an element basis function definition */
 	typedef struct Cmiss_element_basis *Cmiss_element_basis_id;
 
-	#define CMISS_ELEMENT_ID_H
-
 /**
  * Mode controlling how points are sampled from elements.
  */
@@ -98,4 +97,4 @@ enum Cmiss_element_point_sample_mode
 		/*!< One point at a specified location in the element chart. */
 };
 
-#endif /* CMISS_BASIS_FUNCTION_ID_DEFINED */
+#endif

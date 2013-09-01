@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __ZN_FIELD_CACHE_HPP__
-#define __ZN_FIELD_CACHE_HPP__
+#ifndef CMZN_FIELDCACHE_HPP__
+#define CMZN_FIELDCACHE_HPP__
 
 #include "zinc/field.h"
 #include "zinc/field.hpp"
@@ -174,4 +174,4 @@ inline bool Field::isDefinedAtLocation(FieldCache& cache)
 
 }  // namespace zinc
 
-#endif /* __ZN_FIELD_CACHE_HPP__ */
+#endif /* CMZN_FIELDCACHE_HPP__ */

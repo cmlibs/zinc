@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHIC_H__
-#define __CMISS_GRAPHIC_H__
+#ifndef CMZN_GRAPHIC_H__
+#define CMZN_GRAPHIC_H__
 
 #include "types/elementid.h"
 #include "types/fieldid.h"
@@ -1526,4 +1526,4 @@ ZINC_API int Cmiss_graphic_sampling_attributes_set_mode(
 }
 #endif
 
-#endif /*__CMISS_GRAPHIC_H__*/
+#endif

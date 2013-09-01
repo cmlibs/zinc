@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_NODE_HPP__
-#define __ZN_NODE_HPP__
+#ifndef CMZN_NODE_HPP__
+#define CMZN_NODE_HPP__
 
 #include "zinc/node.h"
 #include "zinc/field.hpp"
@@ -415,4 +415,4 @@ inline int Node::merge(NodeTemplate nodeTemplate)
 
 }  // namespace zinc
 
-#endif /* __ZN_NODE_HPP__ */
+#endif

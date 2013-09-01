@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_SCENE_H__
-#define __CMISS_SCENE_H__
+#ifndef CMZN_SCENE_H__
+#define CMZN_SCENE_H__
 
 #include "types/fieldid.h"
 #include "types/fieldgroupid.h"
@@ -377,4 +377,4 @@ ZINC_API Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene);
 }
 #endif
 
-#endif /* __CMISS_SCENE_H__ */
+#endif

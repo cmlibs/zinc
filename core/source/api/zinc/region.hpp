@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __ZN_REGION_HPP__
-#define __ZN_REGION_HPP__
+#ifndef CMZN_REGION_HPP__
+#define CMZN_REGION_HPP__
 
 #include "zinc/region.h"
 #include "zinc/fieldmodule.hpp"
@@ -308,4 +308,4 @@ inline StreamInformationRegion Region::createStreamInformation()
 
 }  // namespace zinc
 
-#endif /* __ZN_REGION_HPP__ */
+#endif
