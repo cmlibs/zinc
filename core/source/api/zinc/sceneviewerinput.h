@@ -131,17 +131,6 @@ ZINC_API int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id inp
  */
 ZINC_API int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type);
 
-/**
- * Converts mouse button-press and motion events set in the input into viewport zoom
- * and translate transformations.
- *
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
- * @param input  Handle to Cmiss_scene_viewer_input object.
- * @return  CMISS_OK if successful, any other value on failure.
- */
-ZINC_API int Cmiss_scene_viewer_input_viewport_transform(
-	Cmiss_scene_viewer_id scene_viewer, Cmiss_scene_viewer_input_id input);
-
 #ifdef __cplusplus
 }
 #endif
