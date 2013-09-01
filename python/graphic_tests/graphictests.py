@@ -7,8 +7,8 @@ import unittest
 
 from zinc.context import Context
 from zinc.glyph import Glyph
-from zinc.graphic import Graphic
 from zinc.field import Field
+from zinc.sceneviewer import SceneViewer
 from zinc import status
 
 class GraphicTestCase(unittest.TestCase):
@@ -66,6 +66,24 @@ class GraphicTestCase(unittest.TestCase):
         attributes.setBaseSize([4.8, 2.1, 7])
         base_size = attributes.getBaseSize(3)
         self.assertEqual([4.8, 2.1, 7], base_size[1])
+        
+    def testSceneViewerBackgroundColour(self):
+        svm = self.graphics_module.getSceneViewerModule()
+        sv = svm.createSceneViewer(SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.STEREO_MODE_MONO)
+        
+        result = sv.setBackgroundColourComponentRGB(0.3, 0.8, 0.65)
+        self.assertEqual(1, result)
+        (result, rgb) = sv.getBackgroundColourRGB()
+        self.assertEqual(1, result)
+        self.assertEqual([0.3, 0.8, 0.65], rgb)
+        
+        result = sv.setBackgroundColourRGB([0.1, 0.9, 0.4])
+        self.assertEqual(1, result)
+        (result, rgb) = sv.getBackgroundColourRGB()
+        self.assertEqual(1, result)
+        self.assertEqual([0.1, 0.9, 0.4], rgb)
+        
+        self.assertRaises(TypeError, sv.setBackgroundColourRGB, [3.0, 2.0])
     
 def suite():
     #import ImportTestCase
