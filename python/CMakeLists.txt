@@ -54,8 +54,8 @@ SET( PATH_SUFFIXES cmake )
 FIND_PACKAGE(Zinc REQUIRED)
 INCLUDE_DIRECTORIES(${ZINC_INCLUDE_DIRS})
 
-# Suppress the assignment operator overload warning for Python.
-SET(CMAKE_SWIG_FLAGS -w362 ${PYTHONLIBS_SWIG_FLAGS})
+# Suppress the overload operator warning for Python.
+SET(CMAKE_SWIG_FLAGS -w381 -w382 -w361 -w362 ${PYTHONLIBS_SWIG_FLAGS})
 
 SET(INTERFACE_SRCS
 	../interface/context.i
@@ -102,7 +102,6 @@ FOREACH(SWIG_INTERFACE ${INTERFACE_SRCS})
 	LIST(APPEND SWIG_MODULE_TARGETS ${SWIG_MODULE_${MODULE}_REAL_NAME})
 ENDFOREACH()
 
-FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "# Zinc Python package initialisation file.\n")
 
 set(PYPI_SRCS
 	MANIFEST.in
@@ -122,6 +121,9 @@ ENDIF()
 STRING(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION)
 GET_TARGET_PROPERTY(ZINC_LOCATION ${ZINC_LIBRARIES} LOCATION)
 STRING(REGEX MATCH "([0-9].[0-9].[0-9])|(r[0-9]+[M]?)" ZINC_VERSION "${ZINC_LOCATION}")
+
+# Write the version of PyZinc into the package file __init__.py
+FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "# Zinc Python package initialisation file.\n\n__version__ = \"${ZINC_VERSION}\"\n\n")
 
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)

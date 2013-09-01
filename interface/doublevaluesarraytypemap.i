@@ -285,6 +285,8 @@
 	delete[] $1;
 };
 
+%apply (double const *valuesIn3) { (double const *eyeValuesIn3), (double const *lookatValuesIn3), (double const *upVectorValuesIn3) };
+
 // array getter in-handler expects an integer array size only
 // and allocates array to accept output; see argout-handler
 %typemap(in, numinputs=0) ( double *valuesOut3)
@@ -328,4 +330,6 @@
 	}
 	delete[] $1;
 };
+
+%apply (double *valuesOut3) { (double *eyeValuesOut3), (double *lookatValuesOut3), (double *upVectorValuesOut3) };
 
