@@ -91,10 +91,6 @@ and the functions given their public names.
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
 #define Scene_viewer_set_interact_mode Cmiss_scene_viewer_set_interact_mode
-#define Scene_viewer_set_lookat_parameters_non_skew \
-   Cmiss_scene_viewer_set_lookat_parameters_non_skew
-#define Scene_viewer_get_lookat_parameters \
-   Cmiss_scene_viewer_get_lookat_parameters
 #define Scene_viewer_get_view_angle Cmiss_scene_viewer_get_view_angle
 #define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
 #define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
@@ -235,7 +231,8 @@ enum Scene_viewer_drag_mode
 	SV_DRAG_NOTHING,
 	SV_DRAG_TUMBLE,
 	SV_DRAG_TRANSLATE,
-	SV_DRAG_ZOOM
+	SV_DRAG_ZOOM,
+	SV_DRAG_FLY
 };
 
 struct Cmiss_scene_viewer_module
@@ -374,6 +371,8 @@ DESCRIPTION :
 	/* kept tumble axis and angle for spinning scene viewer */
 	double tumble_axis[3], tumble_angle;
 	int tumble_active;
+	/* Keep track of debt owed to near and far plane when in fly mode */
+	double near_plane_fly_debt, far_plane_fly_debt;
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffering_mode buffering_mode;
@@ -811,29 +810,6 @@ When the line draw mode is turned on (set to one) the lines are raised in the
 z direction when the GL_EXT_polygon_offset extension is available from the X
 Server.  This means that the lines appear solid rather than interfering with a
 surface in the same space.
-==============================================================================*/
-
-int Scene_viewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
-	double *eyex,double *eyey,double *eyez,
-	double *lookatx,double *lookaty,double *lookatz,
-	double *upx,double *upy,double *upz);
-/*******************************************************************************
-LAST MODIFIED : 18 November 1997
-
-DESCRIPTION :
-Gets the view direction and orientation of the Scene_viewer.
-==============================================================================*/
-
-int Scene_viewer_set_lookat_parameters_non_skew(
-	struct Scene_viewer *scene_viewer,double eyex,double eyey,double eyez,
-	double lookatx,double lookaty,double lookatz,
-	double upx,double upy,double upz);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1998
-
-DESCRIPTION :
-Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
-the up vector is orthogonal to the view direction - so projection is not skew.
 ==============================================================================*/
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,

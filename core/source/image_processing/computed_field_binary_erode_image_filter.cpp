@@ -179,13 +179,13 @@ and generate the outputImage.
 		// create a erode image filter
 		typedef itk::BinaryErodeImageFilter< ImageType , ImageType, StructuringElementType > FilterType;
 
-		typename FilterType::Pointer filter = FilterType::New();		
+		typename FilterType::Pointer filter = FilterType::New();
 		filter->SetKernel(structuringElement);
 		filter->SetErodeValue( binary_erode_image_filter->erode_value );
 		filter->SetErodeValue( 1 );
-		
+
 		// update filter output
-		
+
 		return_code = binary_erode_image_filter->update_output_image
 			(cache, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
@@ -276,9 +276,9 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		sprintf(temp_string, " radius %d", radius);
-		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " erode_value %g", erode_value);	
-		append_string(&command_string, temp_string, &error);		
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " erode_value %g", erode_value);
+		append_string(&command_string, temp_string, &error);
 }
 	else
 	{
@@ -322,8 +322,8 @@ int Cmiss_field_get_type_binary_erode_image_filter(struct Computed_field *field,
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYFILTER, 
-the source_field and erodes used by it are returned - 
+If the field is of type COMPUTED_FIELD_BINARYFILTER,
+the source_field and erodes used by it are returned -
 otherwise an error is reported.
 ==============================================================================*/
 {

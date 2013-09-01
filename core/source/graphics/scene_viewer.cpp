@@ -2988,6 +2988,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->near_plane=0.1;
 				scene_viewer->far_plane=1000.0;
 				scene_viewer->projection_mode=SCENE_VIEWER_PARALLEL;
+				scene_viewer->far_plane_fly_debt = 0.0;
+				scene_viewer->near_plane_fly_debt = 0.0;
 				scene_viewer->translate_rate=1.0;
 				scene_viewer->tumble_rate=1.5;
 				scene_viewer->zoom_rate=1.0;
@@ -3425,7 +3427,14 @@ Converts mouse button-press and motion events into viewing transformations in
 						{
 							if (0.0 != scene_viewer->zoom_rate)
 							{
-								scene_viewer->drag_mode=SV_DRAG_ZOOM;
+								if (input->input_modifier & INTERACTIVE_EVENT_MODIFIER_SHIFT)
+								{
+									scene_viewer->drag_mode=SV_DRAG_FLY;
+								}
+								else
+								{
+									scene_viewer->drag_mode = SV_DRAG_ZOOM;
+								}
 							}
 						} break;
 						default:
@@ -3608,6 +3617,58 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->top=radius;
 							view_changed=1;
 						} break;
+						case SV_DRAG_FLY:
+						{
+							width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+							height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+							if ((0<width)&&(0<height))
+							{
+								/* a = vector towards viewer */
+								double angle;
+								Cmiss_scene_viewer_get_view_angle(scene_viewer, &angle);
+								a[0] = scene_viewer->eyex-scene_viewer->lookatx;
+								a[1] = scene_viewer->eyey-scene_viewer->lookaty;
+								a[2] = scene_viewer->eyez-scene_viewer->lookatz;
+
+								delta_y = scene_viewer->previous_pointer_y-pointer_y;
+								double dist = norm3(a);
+								double dy = delta_y/((double)height);
+								if ((dist + dy*dist) > 0.01)
+								{
+//									printf("norm a = %f\n", norm3(a));
+									normalize3(a);
+
+									scene_viewer->eyex += (a[0]*dy*dist);
+									scene_viewer->eyey += (a[1]*dy*dist);
+									scene_viewer->eyez += (a[2]*dy*dist);
+									if (0.0001 < (scene_viewer->near_plane + dy*dist))
+									{
+										if (scene_viewer->near_plane_fly_debt != 0.0)
+										{
+											scene_viewer->near_plane_fly_debt -= dy*dist;
+											if (scene_viewer->near_plane_fly_debt > 0.0)
+											{
+												scene_viewer->near_plane += scene_viewer->near_plane_fly_debt;
+												scene_viewer->far_plane += scene_viewer->near_plane_fly_debt;
+												scene_viewer->near_plane_fly_debt = 0.0;
+											}
+										}
+										else
+										{
+											scene_viewer->near_plane += dy*dist;
+											scene_viewer->far_plane += dy*dist;
+										}
+									}
+									else
+									{
+										scene_viewer->near_plane_fly_debt += dy*dist;
+									}
+
+									Cmiss_scene_viewer_set_view_angle(scene_viewer, angle);
+									view_changed = 1;
+								}
+							}
+						} break;
 						default:
 						{
 						} break;
@@ -3627,10 +3688,10 @@ Converts mouse button-press and motion events into viewing transformations in
 			} break;
 			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
 			{
-				if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
-				{
-					scene_viewer->tumble_active = 1;
-				}
+				//-- if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
+				//-- {
+				//-- 	scene_viewer->tumble_active = 1;
+				//-- }
 #if defined (DEBUG_CODE)
 				printf("button %d release at %d %d\n",input->button_number,
 					input->position_x,input->position_y);
@@ -3677,52 +3738,11 @@ Converts mouse button-press and motion events into viewing transformations in
 	return (return_code);
 } /* Scene_viewer_input_transform */
 
-int Cmiss_scene_viewer_input_viewport_transform(
+int Cmiss_scene_viewer_process_input(
 	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-Converts mouse button-press and motion events into viewport zoom and translate
-transformations.
-==============================================================================*/
 {
 	return Scene_viewer_input_transform(scene_viewer, input);
 }
-
-int Cmiss_scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
-	struct Graphics_buffer_input *input)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2007
-
-DESCRIPTION :
-The callback for mouse or keyboard input in the Scene_viewer window. The
-resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
-mouse clicks and drags are converted to transformation; in Select mode OpenGL
-picking is performed with picked objects and mouse click and drag information
-returned to the scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_default_input_callback);
-	if (scene_viewer)
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_default_input_callback.  Don't be calling this!!!!  call == Cmiss_scene_viewer_input_viewport_transform ==");
-		Cmiss_scene_viewer_input_viewport_transform(scene_viewer, input);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_default_input_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-	/* We want to call any other callbacks even if this fails. */
-	return_code = 1;
-
-	return(return_code);
-} /* Scene_viewer_default_input_callback */
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -4548,7 +4568,99 @@ Sets the Scene_viewer light_model.
 	return (return_code);
 } /* Scene_viewer_set_light_model */
 
-int Scene_viewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
+int Cmiss_scene_viewer_set_eye_position(Cmiss_scene_viewer_id scene_viewer,
+	double const *eye)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && eye)
+	{
+		scene_viewer->eyex = eye[0];
+		scene_viewer->eyey = eye[1];
+		scene_viewer->eyez = eye[2];
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_get_eye_position(Cmiss_scene_viewer_id scene_viewer,
+	double *eye)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && eye)
+	{
+		eye[0] = scene_viewer->eyex;
+		eye[1] = scene_viewer->eyey;
+		eye[2] = scene_viewer->eyez;
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_set_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+	double const *lookat)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && lookat)
+	{
+		scene_viewer->lookatx = lookat[0];
+		scene_viewer->lookaty = lookat[1];
+		scene_viewer->lookatz = lookat[2];
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_get_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+	double *lookat)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && lookat)
+	{
+		lookat[0] = scene_viewer->lookatx;
+		lookat[1] = scene_viewer->lookaty;
+		lookat[2] = scene_viewer->lookatz;
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_set_up_vector(Cmiss_scene_viewer_id scene_viewer,
+	double const *upVector)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && upVector)
+	{
+		double upVectorUnit[] = {upVector[0], upVector[1], upVector[2]};
+		normalize3(upVectorUnit);
+		scene_viewer->upx = upVectorUnit[0];
+		scene_viewer->upy = upVectorUnit[1];
+		scene_viewer->upz = upVectorUnit[2];
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_get_up_vector(Cmiss_scene_viewer_id scene_viewer,
+	double *upVector)
+{
+	int return_code = CMISS_ERROR_ARGUMENT;
+	if (scene_viewer && upVector)
+	{
+		upVector[0] = scene_viewer->upx;
+		upVector[1] = scene_viewer->upy;
+		upVector[2] = scene_viewer->upz;
+		return_code = CMISS_OK;
+	}
+
+	return return_code;
+}
+
+int Cmiss_scene_viewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double *eyex,double *eyey,double *eyez,
 	double *lookatx,double *lookaty,double *lookatz,
 	double *upx,double *upy,double *upz)
@@ -4561,7 +4673,6 @@ Gets the view direction and orientation of the Scene_viewer.
 {
 	int return_code;
 
-	ENTER(Scene_viewer_get_lookat_parameters);
 	if (scene_viewer&&eyex&&eyey&&eyez&&lookatx&&lookaty&&lookatz&&upx&&upy&&upz)
 	{
 		*eyex=scene_viewer->eyex;
@@ -4578,13 +4689,12 @@ Gets the view direction and orientation of the Scene_viewer.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_lookat_parameters.  Invalid argument(s)");
+			"Cmiss_scene_viewer_get_lookat_parameters.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_get_lookat_parameters */
+} /* Cmiss_scene_viewer_get_lookat_parameters */
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double eyex,double eyey,double eyez,
@@ -4646,7 +4756,7 @@ Sets the view direction and orientation of the Scene_viewer.
 	return (return_code);
 } /* Scene_viewer_set_lookat_parameters */
 
-int Scene_viewer_set_lookat_parameters_non_skew(
+int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
 	struct Scene_viewer *scene_viewer,double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
 	double upx,double upy,double upz)
@@ -4661,7 +4771,6 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 	int return_code;
 	double tempv[3],upv[3],viewv[3];
 
-	ENTER(Scene_viewer_set_lookat_parameters_non_skew);
 	if (scene_viewer)
 	{
 		upv[0]=upx;
@@ -4695,7 +4804,7 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_viewer_set_lookat_parameters_non_skew.  "
+				"Cmiss_scene_viewer_set_lookat_parameters_non_skew.  "
 				"Up and view directions zero or colinear");
 			return_code=0;
 		}
@@ -4703,13 +4812,12 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_lookat_parameters_non_skew.  Missing scene_viewer");
+			"Cmiss_scene_viewer_set_lookat_parameters_non_skew.  Missing scene_viewer");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_lookat_parameters_non_skew */
+} /* Cmiss_scene_viewer_set_lookat_parameters_non_skew */
 
 double Scene_viewer_get_stereo_eye_spacing(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -5572,6 +5680,8 @@ eye_distance*0.99 in front of it.
 		{
 			scene_viewer->near_plane=eye_distance-clip_distance;
 		}
+		scene_viewer->far_plane_fly_debt = 0.0;
+		scene_viewer->near_plane_fly_debt = 0.0;
 		Scene_viewer_trigger_transform_callback(scene_viewer);
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
@@ -5760,7 +5870,9 @@ rendering a higher resolution image in parts.
 			scene_viewer->bottom=bottom;
 			scene_viewer->top=top;
 			scene_viewer->near_plane=near_plane;
+			scene_viewer->near_plane_fly_debt = 0.0;
 			scene_viewer->far_plane=far_plane;
+			scene_viewer->far_plane_fly_debt = 0.0;
 			Scene_viewer_trigger_transform_callback(scene_viewer);
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
@@ -7326,7 +7438,6 @@ clip plane in the <scene_viewer>.
 	{
 		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_near_and_far_plane.  "
 			"Missing scene_viewer parameter.");
-		return_code = 0;
 	}
 	LEAVE;
 

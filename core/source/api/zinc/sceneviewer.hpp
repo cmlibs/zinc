@@ -250,24 +250,66 @@ public:
 		return SceneViewerInput(Cmiss_scene_viewer_get_input(id));
 	}
 
-	int setInput(SceneViewerInput input)
+	int processInput(SceneViewerInput input)
 	{
-		return Cmiss_scene_viewer_input_viewport_transform(id, input.getId());
+		return Cmiss_scene_viewer_process_input(id, input.getId());
 	}
 
-	int getLookatParameters(double *eyex,double *eyey,double *eyez,
-		double *lookatx,double *lookaty,double *lookatz,
-		double *upx,double *upy,double *upz)
+	int getEyePosition(double *eyeValuesOut3)
 	{
-		return Cmiss_scene_viewer_get_lookat_parameters(id, eyex, eyey, eyez,
-			lookatx, lookaty, lookatz,
-			upx, upy, upz);
+		return Cmiss_scene_viewer_get_eye_position(id, eyeValuesOut3);
+	}
+
+	int setEyePosition(double const *eyeValuesIn3)
+	{
+		return Cmiss_scene_viewer_set_eye_position(id, eyeValuesIn3);
+	}
+
+	int getLookatPosition(double *lookatValuesOut3)
+	{
+		return Cmiss_scene_viewer_get_lookat_position(id, lookatValuesOut3);
+	}
+
+	int setLookatPosition(double const *lookatValuesIn3)
+	{
+		return Cmiss_scene_viewer_set_lookat_position(id, lookatValuesIn3);
+	}
+
+	int getUpVector(double *upVectorValuesOut3)
+	{
+		return Cmiss_scene_viewer_get_up_vector(id, upVectorValuesOut3);
+	}
+
+	int setUpVector(double const *upVectorValuesIn3)
+	{
+		return Cmiss_scene_viewer_set_up_vector(id, upVectorValuesIn3);
+	}
+
+	int getLookatParameters(double *eyeValuesOut3,double *lookatValuesOut3,double *upVectorValuesOut3)
+	{
+		return Cmiss_scene_viewer_get_lookat_parameters(id, &eyeValuesOut3[0], &eyeValuesOut3[1], &eyeValuesOut3[2],
+			&lookatValuesOut3[0], &lookatValuesOut3[1], &lookatValuesOut3[2],
+			&upVectorValuesOut3[0], &upVectorValuesOut3[1], &upVectorValuesOut3[2]);
+	}
+
+	int setLookatParametersNonSkew(double const *eyeValuesIn3, double const *lookatValuesIn3, double const *upVectorValuesIn3)
+	{
+		return Cmiss_scene_viewer_set_lookat_parameters_non_skew(id, eyeValuesIn3[0], eyeValuesIn3[1], eyeValuesIn3[2],
+			lookatValuesIn3[0], lookatValuesIn3[1], lookatValuesIn3[2],
+			upVectorValuesIn3[0], upVectorValuesIn3[1], upVectorValuesIn3[2]);
 	}
 
 	int getViewingVolume(double *left,double *right,double *bottom,double *top,
 		double *near_plane, double *far_plane)
 	{
 		return Cmiss_scene_viewer_get_viewing_volume(id, left, right, bottom, top,
+			near_plane, far_plane);
+	}
+
+	int setViewingVolume(double left, double right, double bottom, double top,
+		double near_plane, double far_plane)
+	{
+		return Cmiss_scene_viewer_set_viewing_volume(id, left, right, bottom, top,
 			near_plane, far_plane);
 	}
 
