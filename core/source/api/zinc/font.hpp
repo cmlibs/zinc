@@ -41,7 +41,9 @@
 
 #include "zinc/font.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class Font
@@ -252,6 +254,7 @@ public:
 	}
 };
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

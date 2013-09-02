@@ -1,3 +1,6 @@
+/***************************************************************************//**
+ * FILE : fieldcoordinatetransformation.hpp
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -33,37 +36,66 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDALIAS_HPP__
-#define CMZN_FIELDALIAS_HPP__
+#ifndef CMZN_FIELDCOORDINATETRANSFORMATION_HPP__
+#define CMZN_FIELDCOORDINATETRANSFORMATION_HPP__
 
-#include "zinc/fieldalias.h"
+#include "zinc/fieldcoordinatetransformation.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldAlias : public Field
+class FieldCoordinateTransformation: public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAlias(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldCoordinateTransformation(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldAlias FieldModule::createAlias(Field &sourceField);
-
+	friend FieldCoordinateTransformation FieldModule::createCoordinateTransformation(
+		Field& sourceField);
 public:
 
-	FieldAlias() : Field(0)
+	FieldCoordinateTransformation() : Field(0)
 	{ }
 
 };
 
-inline FieldAlias FieldModule::createAlias(Field &sourceField)
+class FieldVectorCoordinateTransformation: public Field
 {
-	return FieldAlias(cmzn_field_module_create_alias(id, sourceField.getId()));
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldVectorCoordinateTransformation(cmzn_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTransformation(
+		Field& vectorField, Field& coordinateField);
+
+public:
+
+	FieldVectorCoordinateTransformation() : Field(0)
+	{ }
+
+};
+
+inline FieldCoordinateTransformation FieldModule::createCoordinateTransformation(
+	Field& sourceField)
+{
+	return FieldCoordinateTransformation(cmzn_field_module_create_coordinate_transformation(
+		id, sourceField.getId()));
 }
 
-}  // namespace zinc
+inline FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTransformation(
+	Field& vectorField, Field& coordinateField)
+{
+	return FieldVectorCoordinateTransformation(cmzn_field_module_create_vector_coordinate_transformation(id,
+		vectorField.getId(), coordinateField.getId()));
+}
+
+}  // namespace Zinc
+}
 
 #endif

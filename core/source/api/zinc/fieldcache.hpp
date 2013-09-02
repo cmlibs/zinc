@@ -45,7 +45,9 @@
 #include "zinc/element.hpp"
 #include "zinc/node.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldCache
@@ -172,6 +174,7 @@ inline bool Field::isDefinedAtLocation(FieldCache& cache)
 	return (0 != cmzn_field_is_defined_at_location(id, cache.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif /* CMZN_FIELDCACHE_HPP__ */

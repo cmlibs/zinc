@@ -43,7 +43,9 @@
 #include "zinc/fieldmodule.hpp"
 #include "zinc/stream.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class StreamInformationRegion;
@@ -306,6 +308,7 @@ inline StreamInformationRegion Region::createStreamInformation()
 		cmzn_region_create_stream_information(id)));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

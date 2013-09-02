@@ -42,13 +42,15 @@
 #include "zinc/element.hpp"
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsfilter.hpp"
-#include "zinc/fieldtypesgroup.hpp"
+#include "zinc/fieldgroup.hpp"
 #include "zinc/node.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenepicker.h"
 #include "zinc/sceneviewer.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class ScenePicker
@@ -172,6 +174,7 @@ inline ScenePicker Scene::createPicker()
 	return ScenePicker(cmzn_scene_create_picker(id));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

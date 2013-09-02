@@ -1,7 +1,5 @@
-/**
- * FILE : scenecoordinatesystem.hpp
- *
- * Enumerated type for identifying scene and window coordinate systems.
+/***************************************************************************//**
+ * FILE : fieldtypeconditional.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -16,11 +14,11 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is cmgui.
+ * The Original Code is libZinc.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2013
+ * Portions created by the Initial Developer are Copyright (C) 2012
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,36 +36,41 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#ifndef CMZN_FIELDCONDITIONAL_HPP__
+#define CMZN_FIELDCONDITIONAL_HPP__
 
-#ifndef CMZN_SCENECOORDINATESYSTEM_HPP__
-#define CMZN_SCENECOORDINATESYSTEM_HPP__
-
-#include "scenecoordinatesystem.h"
+#include "zinc/fieldconditional.h"
+#include "zinc/field.hpp"
+#include "zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
 
-/**
- * Enumerated type for identifying scene and window coordinate systems.
- */
-enum SceneCoordinateSystem
+class FieldIf : public Field
 {
-	SCENE_COORDINATE_SYSTEM_INVALID = CMZN_SCENE_COORDINATE_SYSTEM_INVALID,
-	SCENE_COORDINATE_SYSTEM_LOCAL = CMZN_SCENE_COORDINATE_SYSTEM_LOCAL,
-	SCENE_COORDINATE_SYSTEM_WORLD = CMZN_SCENE_COORDINATE_SYSTEM_WORLD,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM,
-	SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP = CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP,
-	SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT,
-	SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIf(cmzn_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
+
+public:
+
+	FieldIf() : Field(0)
+	{	}
+
 };
 
-} // namespace Zinc
+inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3)
+{
+	return FieldIf(cmzn_field_module_create_if(id,
+		sourceField1.getId(), sourceField2.getId(), sourceField3.getId()));
+}
+
+}  // namespace Zinc
 }
 
 #endif

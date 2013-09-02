@@ -42,7 +42,9 @@
 
 #include "zinc/stream.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class StreamResource
@@ -203,7 +205,8 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 
 #endif /* CMZN_STREAM_HPP__ */

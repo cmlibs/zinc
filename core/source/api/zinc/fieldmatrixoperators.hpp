@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesmatrixoperators.hpp
+ * FILE : fieldmatrixoperators.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -43,7 +43,9 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldDeterminant : public Field
@@ -207,6 +209,7 @@ inline FieldTranspose FieldModule::createTranspose(int sourceNumberOfRows,
 		sourceNumberOfRows, sourceField.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

@@ -43,7 +43,9 @@
 #include "zinc/graphicsmaterial.hpp"
 #include "zinc/spectrum.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class Glyph
@@ -406,6 +408,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

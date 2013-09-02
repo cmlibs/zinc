@@ -45,7 +45,9 @@
 
 #include "zinc/status.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 enum Status
@@ -60,6 +62,7 @@ enum Status
 		/*!< value to be returned on success */
 };
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

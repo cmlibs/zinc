@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypestrigonometry.hpp
+ * FILE : fieldtrigonometry.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -43,7 +43,9 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldSin : public Field
@@ -195,6 +197,7 @@ inline FieldAtan2 FieldModule::createAtan2(Field& sourceField1, Field& sourceFie
 		sourceField2.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

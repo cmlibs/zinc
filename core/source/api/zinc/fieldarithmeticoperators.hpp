@@ -43,7 +43,9 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldAdd : public Field
@@ -290,6 +292,7 @@ inline FieldAbs FieldModule::createAbs(Field& sourceField)
 	return FieldAbs(cmzn_field_module_create_abs(id, sourceField.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

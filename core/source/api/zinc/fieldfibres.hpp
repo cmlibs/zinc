@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypestime.hpp
+ * FILE : fieldtypeconditional.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -19,7 +19,7 @@
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
  * Portions created by the Initial Developer are Copyright (C) 2012
- * the Initial Developer. All Rights Reserved.cmgui
+ * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
  *
@@ -36,60 +36,41 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDTIME_HPP__
-#define CMZN_FIELDTIME_HPP__
+#ifndef CMZN_FIELDFIBRES_HPP__
+#define CMZN_FIELDFIBRES_HPP__
 
-#include "zinc/fieldtime.h"
+#include "zinc/fieldfibres.h"
 #include "zinc/field.hpp"
-#include "zinc/timekeeper.hpp"
+#include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldTimeLookup : public Field
+class FieldFibreAxes : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeLookup(cmzn_field_id field_id) : Field(field_id)
-	{	}
+	// takes ownership of C handle, and responsibility for destroying it
+	explicit FieldFibreAxes(cmzn_field_id field_id) : Field(field_id)
+	{ }
 
-	friend FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField,
-		Field& timeField);
+	friend FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField);
 
 public:
 
-	FieldTimeLookup() : Field(0)
+	FieldFibreAxes() : Field(0)
 	{	}
 
 };
 
-class FieldTimeValue : public Field
+inline FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField)
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeValue(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper);
-
-public:
-
-	FieldTimeValue() : Field(0)
-	{	}
-
-};
-
-inline FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField, Field& timeField)
-{
-	return FieldTimeLookup(cmzn_field_module_create_time_lookup(id,
-		sourceField.getId(), timeField.getId()));
+	return FieldFibreAxes(cmzn_field_module_create_fibre_axes(id,
+		fibreField.getId(), coordinateField.getId()));
 }
 
-inline FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper)
-{
-	return FieldTimeValue(cmzn_field_module_create_time_value(id, timeKeeper.getId()));
+}  // namespace Zinc
 }
 
-}  // namespace zinc
-
-#endif /* CMZN_FIELDTIME_HPP__ */
+#endif

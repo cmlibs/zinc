@@ -42,7 +42,9 @@
 #include "zinc/field.h"
 #include "zinc/differentialoperator.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldCache;
@@ -236,6 +238,6 @@ public:
 
 };
 
-}  // namespace zinc
-
+}  // namespace Zinc
+}
 #endif /* CMZN_FIELD_HPP__ */

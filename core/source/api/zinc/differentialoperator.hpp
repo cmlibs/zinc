@@ -41,7 +41,9 @@
 
 #include "zinc/differentialoperator.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class DifferentialOperator
@@ -88,6 +90,7 @@ public:
 	}
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif /* CMZN_DIFFFERENTIAL_OPERATOR_HPP__ */

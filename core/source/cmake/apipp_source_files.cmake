@@ -7,25 +7,25 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmodule.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesalias.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesarithmeticoperators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypescomposite.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesconditional.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesconstant.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypescoordinatetransformation.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesderivatives.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesfibres.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesfiniteelement.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesgroup.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesimage.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesimageprocessing.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypeslogicaloperators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesmatrixoperators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesnodesetoperators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypessubobjectgroup.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypestime.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypestrigonometry.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtypesvectoroperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldalias.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldarithmeticoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcomposite.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconditional.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconstant.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcoordinatetransformation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldderivatives.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldfibres.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldfiniteelement.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldgroup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimage.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimageprocessing.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldlogicaloperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmatrixoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldnodesetoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsubobjectgroup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtime.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtrigonometry.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldvectoroperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphic.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsfilter.hpp

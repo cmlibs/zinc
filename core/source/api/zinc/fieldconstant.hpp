@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypeconditional.hpp
+ * FILE : fieldtypeconstant.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,38 +36,63 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDCONDITIONAL_HPP__
-#define CMZN_FIELDCONDITIONAL_HPP__
+#ifndef CMZN_FIELDCONSTANT_HPP__
+#define CMZN_FIELDCONSTANT_HPP__
 
-#include "zinc/fieldconditional.h"
+#include "zinc/fieldconstant.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldIf : public Field
+class FieldConstant : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIf(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldConstant(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
+	friend FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn);
 
 public:
 
-	FieldIf() : Field(0)
-	{	}
+	FieldConstant() : Field(0)
+	{ }
 
 };
 
-inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3)
+class FieldStringConstant : public Field
 {
-	return FieldIf(cmzn_field_module_create_if(id,
-		sourceField1.getId(), sourceField2.getId(), sourceField3.getId()));
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStringConstant(cmzn_field_id field_id) : Field(field_id)
+	{ }
+
+	friend FieldStringConstant FieldModule::createStringConstant(const char *stringConstant);
+
+public:
+
+	FieldStringConstant() : Field(0)
+	{ }
+
+};
+
+inline FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn)
+{
+	return FieldConstant(cmzn_field_module_create_constant(id,
+		valuesCount, valuesIn));
 }
 
-}  // namespace zinc
+inline FieldStringConstant FieldModule::createStringConstant(const char *stringConstant)
+{
+	return FieldStringConstant(cmzn_field_module_create_string_constant(id,
+		stringConstant));
+}
+
+}  // namespace Zinc
+}
 
 #endif

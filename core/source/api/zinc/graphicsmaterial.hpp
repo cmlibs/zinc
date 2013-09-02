@@ -43,7 +43,9 @@
 #include "zinc/fieldimage.h"
 #include "zinc/field.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class GraphicsMaterial
@@ -257,5 +259,5 @@ public:
 };
 
 } // namespace cmzn
-
+}
 #endif

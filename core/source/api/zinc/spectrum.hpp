@@ -41,7 +41,9 @@
 
 #include "zinc/spectrum.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class SpectrumComponent
@@ -500,6 +502,7 @@ public:
 	}
 };
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

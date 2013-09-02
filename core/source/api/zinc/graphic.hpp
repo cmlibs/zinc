@@ -49,7 +49,9 @@
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class GraphicLineAttributes;
@@ -801,6 +803,7 @@ inline GraphicSamplingAttributes Graphic::getSamplingAttributes()
 	return GraphicSamplingAttributes(cmzn_graphic_get_sampling_attributes(id));
 }
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

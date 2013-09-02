@@ -42,7 +42,9 @@
 #include "zinc/timekeeper.h"
 #include "zinc/timenotifier.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class TimeKeeper
@@ -131,6 +133,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif
