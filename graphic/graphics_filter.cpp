@@ -11,72 +11,72 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/graphicsfilter.hpp"
 
-TEST(Cmiss_graphics_filter_module_api, valid_args)
+TEST(cmzn_graphics_filter_module_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphics_filter_module_id gfm = Cmiss_graphics_module_get_filter_module(zinc.gm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter_module *>(0), gfm);
+	cmzn_graphics_filter_module_id gfm = cmzn_graphics_module_get_filter_module(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter_module *>(0), gfm);
 
-	int result = Cmiss_graphics_filter_module_begin_change(gfm);
+	int result = cmzn_graphics_filter_module_begin_change(gfm);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_filter_id filter = Cmiss_graphics_filter_module_create_filter_visibility_flags(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	cmzn_graphics_filter_id filter = cmzn_graphics_filter_module_create_filter_visibility_flags(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	result = Cmiss_graphics_filter_set_name(filter, "default");
+	result = cmzn_graphics_filter_set_name(filter, "default");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_module_end_change(gfm);
+	result = cmzn_graphics_filter_module_end_change(gfm);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_module_set_default_filter(gfm, filter);
+	result = cmzn_graphics_filter_module_set_default_filter(gfm, filter);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_managed(filter, true);
+	result = cmzn_graphics_filter_set_managed(filter, true);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_find_filter_by_name(gfm, "default");
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_find_filter_by_name(gfm, "default");
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_get_default_filter(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_get_default_filter(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_graphic_name(gfm, "lines");
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_create_filter_graphic_name(gfm, "lines");
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_region(gfm, zinc.root_region);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_create_filter_region(gfm, zinc.root_region);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_operator_and(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_create_filter_operator_and(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	filter = Cmiss_graphics_filter_module_create_filter_operator_or(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	filter = cmzn_graphics_filter_module_create_filter_operator_or(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	Cmiss_graphics_filter_module_destroy(&gfm);
+	cmzn_graphics_filter_module_destroy(&gfm);
 }
 
-TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
+TEST(cmzn_graphics_filter_module_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -123,134 +123,134 @@ TEST(Cmiss_graphics_filter_module_api, valid_args_cpp)
 	EXPECT_TRUE(filter.isValid());
 }
 
-TEST(Cmiss_graphics_filter_api, valid_args)
+TEST(cmzn_graphics_filter_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphics_filter_module_id gfm = Cmiss_graphics_module_get_filter_module(zinc.gm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter_module *>(0), gfm);
+	cmzn_graphics_filter_module_id gfm = cmzn_graphics_module_get_filter_module(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter_module *>(0), gfm);
 
-	Cmiss_graphics_filter_id filter = Cmiss_graphics_filter_module_get_default_filter(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), filter);
+	cmzn_graphics_filter_id filter = cmzn_graphics_filter_module_get_default_filter(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
-	int result = Cmiss_graphics_filter_set_name(filter, "visibility_flag");
+	int result = cmzn_graphics_filter_set_name(filter, "visibility_flag");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_filter_set_managed(filter, true);
+	result = cmzn_graphics_filter_set_managed(filter, true);
 	EXPECT_EQ(CMISS_OK, result);
-	EXPECT_TRUE(Cmiss_graphics_filter_is_managed(filter));
+	EXPECT_TRUE(cmzn_graphics_filter_is_managed(filter));
 
-	EXPECT_FALSE(Cmiss_graphics_filter_is_inverse(filter));
-	EXPECT_EQ(CMISS_OK, result = Cmiss_graphics_filter_set_inverse(filter, true));
-	EXPECT_TRUE(Cmiss_graphics_filter_is_inverse(filter));
-	EXPECT_EQ(CMISS_OK, result = Cmiss_graphics_filter_set_inverse(filter, false));
+	EXPECT_FALSE(cmzn_graphics_filter_is_inverse(filter));
+	EXPECT_EQ(CMISS_OK, result = cmzn_graphics_filter_set_inverse(filter, true));
+	EXPECT_TRUE(cmzn_graphics_filter_is_inverse(filter));
+	EXPECT_EQ(CMISS_OK, result = cmzn_graphics_filter_set_inverse(filter, false));
 
-	Cmiss_graphics_filter_id graphic_type_filter1 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter1);
-	EXPECT_FALSE(Cmiss_graphics_filter_is_managed(graphic_type_filter1));
-	Cmiss_graphics_filter_id graphic_type_filter2 = Cmiss_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), graphic_type_filter2);
-	Cmiss_graphics_filter_id domain_type_filter1 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_NODES);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), domain_type_filter1);
-	Cmiss_graphics_filter_id domain_type_filter2 = Cmiss_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_MESH_1D);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), domain_type_filter2);
+	cmzn_graphics_filter_id graphic_type_filter1 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), graphic_type_filter1);
+	EXPECT_FALSE(cmzn_graphics_filter_is_managed(graphic_type_filter1));
+	cmzn_graphics_filter_id graphic_type_filter2 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), graphic_type_filter2);
+	cmzn_graphics_filter_id domain_type_filter1 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_NODES);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), domain_type_filter1);
+	cmzn_graphics_filter_id domain_type_filter2 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_MESH_1D);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), domain_type_filter2);
 
-	Cmiss_graphic_id graphic = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), graphic);
+	cmzn_graphic_id graphic = cmzn_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
+	EXPECT_NE(static_cast<cmzn_graphic *>(0), graphic);
 
-	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter1, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(graphic_type_filter1, graphic);
 	EXPECT_EQ(0, result);
-	result = Cmiss_graphics_filter_evaluate_graphic(graphic_type_filter2, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(graphic_type_filter2, graphic);
 	EXPECT_EQ(1, result);
-	result = Cmiss_graphics_filter_evaluate_graphic(domain_type_filter1, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(domain_type_filter1, graphic);
 	EXPECT_EQ(0, result);
-	result = Cmiss_graphics_filter_evaluate_graphic(domain_type_filter2, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(domain_type_filter2, graphic);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_evaluate_graphic(filter, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(filter, graphic);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_id and_filter = Cmiss_graphics_filter_module_create_filter_operator_and(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), and_filter);
+	cmzn_graphics_filter_id and_filter = cmzn_graphics_filter_module_create_filter_operator_and(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), and_filter);
 
-	Cmiss_graphics_filter_id or_filter = Cmiss_graphics_filter_module_create_filter_operator_or(gfm);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter *>(0), or_filter);
+	cmzn_graphics_filter_id or_filter = cmzn_graphics_filter_module_create_filter_operator_or(gfm);
+	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), or_filter);
 
-	Cmiss_graphics_filter_operator_id and_operator = Cmiss_graphics_filter_cast_operator(and_filter);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter_operator *>(0), and_operator);
+	cmzn_graphics_filter_operator_id and_operator = cmzn_graphics_filter_cast_operator(and_filter);
+	EXPECT_NE(static_cast<cmzn_graphics_filter_operator *>(0), and_operator);
 
-	Cmiss_graphics_filter_operator_id or_operator = Cmiss_graphics_filter_cast_operator(or_filter);
-	EXPECT_NE(static_cast<Cmiss_graphics_filter_operator *>(0), or_operator);
+	cmzn_graphics_filter_operator_id or_operator = cmzn_graphics_filter_cast_operator(or_filter);
+	EXPECT_NE(static_cast<cmzn_graphics_filter_operator *>(0), or_operator);
 
-	result = Cmiss_graphics_filter_operator_append_operand(and_operator, graphic_type_filter1);
+	result = cmzn_graphics_filter_operator_append_operand(and_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_operator_insert_operand_before(and_operator, filter, graphic_type_filter1);
+	cmzn_graphics_filter_operator_insert_operand_before(and_operator, filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_set_operand_is_active(and_operator, filter, 1);
+	result = cmzn_graphics_filter_operator_set_operand_is_active(and_operator, filter, 1);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_get_operand_is_active(and_operator, filter);
+	result = cmzn_graphics_filter_operator_get_operand_is_active(and_operator, filter);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_set_operand_is_active(and_operator, graphic_type_filter1, 1);
+	result = cmzn_graphics_filter_operator_set_operand_is_active(and_operator, graphic_type_filter1, 1);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_get_operand_is_active(and_operator, graphic_type_filter1);
+	result = cmzn_graphics_filter_operator_get_operand_is_active(and_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_id temp_filter = Cmiss_graphics_filter_operator_get_first_operand(
+	cmzn_graphics_filter_id temp_filter = cmzn_graphics_filter_operator_get_first_operand(
 		and_operator);
 	result = (filter == temp_filter);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_id temp_filter2 = Cmiss_graphics_filter_operator_get_next_operand(
+	cmzn_graphics_filter_id temp_filter2 = cmzn_graphics_filter_operator_get_next_operand(
 		and_operator, temp_filter);
 	result = (graphic_type_filter1 == temp_filter2);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_append_operand(or_operator, graphic_type_filter1);
+	result = cmzn_graphics_filter_operator_append_operand(or_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_operator_insert_operand_before(or_operator, filter, graphic_type_filter1);
+	cmzn_graphics_filter_operator_insert_operand_before(or_operator, filter, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_evaluate_graphic(and_filter, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(and_filter, graphic);
 	EXPECT_EQ(0, result);
 
-	result = Cmiss_graphics_filter_evaluate_graphic(or_filter, graphic);
+	result = cmzn_graphics_filter_evaluate_graphic(or_filter, graphic);
 	EXPECT_EQ(1, result);
 
-	result = Cmiss_graphics_filter_operator_remove_operand(
+	result = cmzn_graphics_filter_operator_remove_operand(
 		or_operator, graphic_type_filter1);
 	EXPECT_EQ(1, result);
 
-	Cmiss_graphics_filter_destroy(&temp_filter2);
+	cmzn_graphics_filter_destroy(&temp_filter2);
 
-	Cmiss_graphics_filter_destroy(&temp_filter);
+	cmzn_graphics_filter_destroy(&temp_filter);
 
-	Cmiss_graphic_destroy(&graphic);
+	cmzn_graphic_destroy(&graphic);
 
-	Cmiss_graphics_filter_operator_destroy(&and_operator);
+	cmzn_graphics_filter_operator_destroy(&and_operator);
 
-	Cmiss_graphics_filter_operator_destroy(&or_operator);
+	cmzn_graphics_filter_operator_destroy(&or_operator);
 
-	Cmiss_graphics_filter_destroy(&and_filter);
+	cmzn_graphics_filter_destroy(&and_filter);
 
-	Cmiss_graphics_filter_destroy(&or_filter);
+	cmzn_graphics_filter_destroy(&or_filter);
 
-	Cmiss_graphics_filter_destroy(&graphic_type_filter1);
-	Cmiss_graphics_filter_destroy(&graphic_type_filter2);
-	Cmiss_graphics_filter_destroy(&domain_type_filter1);
-	Cmiss_graphics_filter_destroy(&domain_type_filter2);
+	cmzn_graphics_filter_destroy(&graphic_type_filter1);
+	cmzn_graphics_filter_destroy(&graphic_type_filter2);
+	cmzn_graphics_filter_destroy(&domain_type_filter1);
+	cmzn_graphics_filter_destroy(&domain_type_filter2);
 
-	Cmiss_graphics_filter_destroy(&filter);
+	cmzn_graphics_filter_destroy(&filter);
 
-	Cmiss_graphics_filter_module_destroy(&gfm);
+	cmzn_graphics_filter_module_destroy(&gfm);
 }
 
-TEST(Cmiss_graphics_filter_api, valid_args_cpp)
+TEST(cmzn_graphics_filter_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 

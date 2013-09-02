@@ -10,58 +10,58 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/graphicsmaterial.hpp"
 
-TEST(Cmiss_graphics_material_module_api, valid_args)
+TEST(cmzn_graphics_material_module_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphics_material_module_id materialmodule = Cmiss_graphics_module_get_material_module(zinc.gm);
-	EXPECT_NE(static_cast<Cmiss_graphics_material_module *>(0), materialmodule);
+	cmzn_graphics_material_module_id materialmodule = cmzn_graphics_module_get_material_module(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
-	int result = Cmiss_graphics_material_module_begin_change(materialmodule);
+	int result = cmzn_graphics_material_module_begin_change(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_material_id material = Cmiss_graphics_material_module_create_material(materialmodule);
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), material);
+	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(materialmodule);
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
-	result = Cmiss_graphics_material_set_name(material, "temp");
+	result = cmzn_graphics_material_set_name(material, "temp");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_managed(material, 1);
+	result = cmzn_graphics_material_set_managed(material, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_module_end_change(materialmodule);
+	result = cmzn_graphics_material_module_end_change(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_module_define_standard_materials(materialmodule);
+	result = cmzn_graphics_material_module_define_standard_materials(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_module_set_default_material(materialmodule, material);
+	result = cmzn_graphics_material_module_set_default_material(materialmodule, material);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_module_set_default_selected_material(materialmodule, material);
+	result = cmzn_graphics_material_module_set_default_selected_material(materialmodule, material);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_material_destroy(&material);
+	cmzn_graphics_material_destroy(&material);
 
-	material = Cmiss_graphics_material_module_find_material_by_name(materialmodule, "temp");
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), material);
+	material = cmzn_graphics_material_module_find_material_by_name(materialmodule, "temp");
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
-	Cmiss_graphics_material_destroy(&material);
+	cmzn_graphics_material_destroy(&material);
 
-	material = Cmiss_graphics_material_module_get_default_material(materialmodule);
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), material);
+	material = cmzn_graphics_material_module_get_default_material(materialmodule);
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
-	Cmiss_graphics_material_destroy(&material);
+	cmzn_graphics_material_destroy(&material);
 
-	material = Cmiss_graphics_material_module_get_default_selected_material(materialmodule);
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), material);
+	material = cmzn_graphics_material_module_get_default_selected_material(materialmodule);
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
-	Cmiss_graphics_material_destroy(&material);
+	cmzn_graphics_material_destroy(&material);
 
-	Cmiss_graphics_material_module_destroy(&materialmodule);
+	cmzn_graphics_material_module_destroy(&materialmodule);
 }
 
-TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
+TEST(cmzn_graphics_material_module_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -99,48 +99,48 @@ TEST(Cmiss_graphics_material_module_api, valid_args_cpp)
 	EXPECT_TRUE(material.isValid());
 }
 
-TEST(Cmiss_graphics_material_api, valid_args)
+TEST(cmzn_graphics_material_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphics_material_module_id materialmodule = Cmiss_graphics_module_get_material_module(zinc.gm);
-	EXPECT_NE(static_cast<Cmiss_graphics_material_module *>(0), materialmodule);
+	cmzn_graphics_material_module_id materialmodule = cmzn_graphics_module_get_material_module(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
-	int result = Cmiss_graphics_material_module_begin_change(materialmodule);
+	int result = cmzn_graphics_material_module_begin_change(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_material_id material = Cmiss_graphics_material_module_create_material(materialmodule);
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), material);
+	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(materialmodule);
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
-	result = Cmiss_graphics_material_set_name(material, "temp");
+	result = cmzn_graphics_material_set_name(material, "temp");
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_module_end_change(materialmodule);
+	result = cmzn_graphics_material_module_end_change(materialmodule);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_managed(material, 1);
+	result = cmzn_graphics_material_set_managed(material, 1);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_is_managed(material);
+	result = cmzn_graphics_material_is_managed(material);
 	EXPECT_EQ(1, result);
 
 	double inValue = 0.7, outValue = 0.0;
 
-	result = Cmiss_graphics_material_set_attribute_real(material,
+	result = cmzn_graphics_material_set_attribute_real(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, inValue);
 	EXPECT_EQ(CMISS_OK, result);
 
-	outValue = Cmiss_graphics_material_get_attribute_real(material,
+	outValue = cmzn_graphics_material_get_attribute_real(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA);
 	EXPECT_EQ(0.7, outValue);
 
 	inValue = 1.0;
 
-	result = Cmiss_graphics_material_set_attribute_real(material,
+	result = cmzn_graphics_material_set_attribute_real(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, inValue);
 	EXPECT_EQ(CMISS_OK, result);
 
-	outValue = Cmiss_graphics_material_get_attribute_real(material,
+	outValue = cmzn_graphics_material_get_attribute_real(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS);
 	EXPECT_EQ(1.0, outValue);
 
@@ -152,44 +152,44 @@ TEST(Cmiss_graphics_material_api, valid_args)
 	outValues[1] = 0.0;
 	outValues[2] = 0.0;
 
-	result = Cmiss_graphics_material_set_attribute_real3(material,
+	result = cmzn_graphics_material_set_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &(inValues[0]));
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_get_attribute_real3(material,
+	result = cmzn_graphics_material_get_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &outValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_attribute_real3(material,
+	result = cmzn_graphics_material_set_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &inValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_get_attribute_real3(material,
+	result = cmzn_graphics_material_get_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &outValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_attribute_real3(material,
+	result = cmzn_graphics_material_set_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &inValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_get_attribute_real3(material,
+	result = cmzn_graphics_material_get_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &outValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_set_attribute_real3(material,
+	result = cmzn_graphics_material_set_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &inValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	result = Cmiss_graphics_material_get_attribute_real3(material,
+	result = cmzn_graphics_material_get_attribute_real3(material,
 		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &outValues[0]);
 	EXPECT_EQ(CMISS_OK, result);
 
-	Cmiss_graphics_material_destroy(&material);
+	cmzn_graphics_material_destroy(&material);
 
-	Cmiss_graphics_material_module_destroy(&materialmodule);
+	cmzn_graphics_material_module_destroy(&materialmodule);
 }
 
-TEST(Cmiss_graphics_material_api, valid_args_cpp)
+TEST(cmzn_graphics_material_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 

@@ -16,42 +16,42 @@
 #include "zinc/fieldtypesconstant.hpp"
 #include "zinc/fieldtypescomposite.hpp"
 
-TEST(Cmiss_field_module_create_component, valid_args)
+TEST(cmzn_field_module_create_component, valid_args)
 {
 	ZincTestSetup zinc;
 
 	const double values[] = { 2.0, 4.0, 6.0 };
 	const int component_index = 2;
-	Cmiss_field_id f1 = Cmiss_field_module_create_constant(zinc.fm, 3, values);
-	EXPECT_NE((Cmiss_field_id)0, f1);
+	cmzn_field_id f1 = cmzn_field_module_create_constant(zinc.fm, 3, values);
+	EXPECT_NE((cmzn_field_id)0, f1);
 
-	Cmiss_field_id f2 = Cmiss_field_module_create_component(zinc.fm, f1, component_index);
-	EXPECT_NE((Cmiss_field_id)0, f2);
+	cmzn_field_id f2 = cmzn_field_module_create_component(zinc.fm, f1, component_index);
+	EXPECT_NE((cmzn_field_id)0, f2);
 
-	Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(zinc.fm);
+	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 	double value = 0.0;
-	EXPECT_EQ(CMISS_OK, Cmiss_field_evaluate_real(f2, cache, 1, &value));
+	EXPECT_EQ(CMISS_OK, cmzn_field_evaluate_real(f2, cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
-	Cmiss_field_cache_destroy(&cache);
+	cmzn_field_cache_destroy(&cache);
 
-	Cmiss_field_destroy(&f1);
-	Cmiss_field_destroy(&f2);
+	cmzn_field_destroy(&f1);
+	cmzn_field_destroy(&f2);
 }
 
-TEST(Cmiss_field_module_create_component, invalid_args)
+TEST(cmzn_field_module_create_component, invalid_args)
 {
 	ZincTestSetup zinc;
 	const double values[] = { 2.0, 4.0, 6.0 };
 	const int component_index = 2;
-	Cmiss_field_id f1 = Cmiss_field_module_create_constant(zinc.fm, 3, values);
-	EXPECT_NE((Cmiss_field_id)0, f1);
+	cmzn_field_id f1 = cmzn_field_module_create_constant(zinc.fm, 3, values);
+	EXPECT_NE((cmzn_field_id)0, f1);
 
-	EXPECT_EQ((Cmiss_field_id)0, Cmiss_field_module_create_component(0, f1, component_index));
-	EXPECT_EQ((Cmiss_field_id)0, Cmiss_field_module_create_component(zinc.fm, 0, component_index));
-	EXPECT_EQ((Cmiss_field_id)0, Cmiss_field_module_create_component(zinc.fm, f1, 0));
-	EXPECT_EQ((Cmiss_field_id)0, Cmiss_field_module_create_component(zinc.fm, f1, 4));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_field_module_create_component(0, f1, component_index));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_field_module_create_component(zinc.fm, 0, component_index));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_field_module_create_component(zinc.fm, f1, 0));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_field_module_create_component(zinc.fm, f1, 4));
 
-	Cmiss_field_destroy(&f1);
+	cmzn_field_destroy(&f1);
 }
 
 TEST(zincFieldModule_createComponent, valid_args)

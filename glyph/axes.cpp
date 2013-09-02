@@ -10,17 +10,17 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
-TEST(Cmiss_glyph_axes, create)
+TEST(cmzn_glyph_axes, create)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_glyph_id axisGlyph = Cmiss_glyph_module_find_glyph_by_type(zinc.glyph_module, CMISS_GLYPH_AXIS);
-	EXPECT_NE(static_cast<Cmiss_glyph *>(0), axisGlyph);
-	Cmiss_glyph_axes_id axes = Cmiss_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
-	EXPECT_NE(static_cast<Cmiss_glyph_axes *>(0), axes);
+	cmzn_glyph_id axisGlyph = cmzn_glyph_module_find_glyph_by_type(zinc.glyph_module, CMISS_GLYPH_AXIS);
+	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
+	cmzn_glyph_axes_id axes = cmzn_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
+	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
-	Cmiss_glyph_destroy(&axisGlyph);
-	Cmiss_glyph_axes_destroy(&axes);
+	cmzn_glyph_destroy(&axisGlyph);
+	cmzn_glyph_axes_destroy(&axes);
 }
 
 TEST(ZincGlyphAxes, create)
@@ -33,22 +33,22 @@ TEST(ZincGlyphAxes, create)
 	EXPECT_TRUE(axes.isValid());
 }
 
-TEST(Cmiss_glyph_axes, cast)
+TEST(cmzn_glyph_axes, cast)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "axes");
-	EXPECT_NE(static_cast<Cmiss_glyph *>(0), glyph);
-	Cmiss_glyph_axes_id axes = Cmiss_glyph_cast_axes(glyph);
-	EXPECT_NE(static_cast<Cmiss_glyph_axes *>(0), axes);
+	cmzn_glyph_id glyph = cmzn_glyph_module_find_glyph_by_name(zinc.glyph_module, "axes");
+	EXPECT_NE(static_cast<cmzn_glyph *>(0), glyph);
+	cmzn_glyph_axes_id axes = cmzn_glyph_cast_axes(glyph);
+	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
-	double axisWidth = Cmiss_glyph_axes_get_axis_width(axes);
+	double axisWidth = cmzn_glyph_axes_get_axis_width(axes);
 	ASSERT_DOUBLE_EQ(0.1, axisWidth);
 
-	ASSERT_EQ(glyph, Cmiss_glyph_axes_base_cast(axes));
+	ASSERT_EQ(glyph, cmzn_glyph_axes_base_cast(axes));
 
-	Cmiss_glyph_axes_destroy(&axes);
-	Cmiss_glyph_destroy(&glyph);
+	cmzn_glyph_axes_destroy(&axes);
+	cmzn_glyph_destroy(&glyph);
 }
 
 TEST(ZincGlyphAxes, cast)
@@ -67,48 +67,48 @@ TEST(ZincGlyphAxes, cast)
 	EXPECT_EQ(CMISS_OK, axes.setManaged(true));
 }
 
-TEST(Cmiss_glyph_axes, valid_attributes)
+TEST(cmzn_glyph_axes, valid_attributes)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_glyph_id axisGlyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "axis");
-	EXPECT_NE(static_cast<Cmiss_glyph *>(0), axisGlyph);
-	Cmiss_glyph_axes_id axes = Cmiss_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
-	EXPECT_NE(static_cast<Cmiss_glyph_axes *>(0), axes);
+	cmzn_glyph_id axisGlyph = cmzn_glyph_module_find_glyph_by_name(zinc.glyph_module, "axis");
+	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
+	cmzn_glyph_axes_id axes = cmzn_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
+	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
-	double axisWidth = Cmiss_glyph_axes_get_axis_width(axes);
+	double axisWidth = cmzn_glyph_axes_get_axis_width(axes);
 	ASSERT_DOUBLE_EQ(0.1, axisWidth);
-	EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_width(axes, 0.25));
-	axisWidth = Cmiss_glyph_axes_get_axis_width(axes);
+	EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_width(axes, 0.25));
+	axisWidth = cmzn_glyph_axes_get_axis_width(axes);
 	ASSERT_DOUBLE_EQ(0.25, axisWidth);
 
 	const char *axisLabels[3] = { "A", "B", "C" };
-	Cmiss_graphics_material_module_id materialModule = Cmiss_graphics_module_get_material_module(zinc.gm);
-	Cmiss_graphics_material_id red = Cmiss_graphics_material_module_find_material_by_name(materialModule, "red");
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), red);
+	cmzn_graphics_material_module_id materialModule = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_id red = cmzn_graphics_material_module_find_material_by_name(materialModule, "red");
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), red);
 
 	for (int i = 1; i <= 3; ++i)
 	{
-		EXPECT_EQ(static_cast<char *>(0), Cmiss_glyph_axes_get_axis_label(axes, i));
-		EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_label(axes, i, axisLabels[i - 1]));
-		char *label = Cmiss_glyph_axes_get_axis_label(axes, i);
+		EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(axes, i));
+		EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_label(axes, i, axisLabels[i - 1]));
+		char *label = cmzn_glyph_axes_get_axis_label(axes, i);
 		EXPECT_STREQ(axisLabels[i - 1], label);
-		Cmiss_deallocate(label);
+		cmzn_deallocate(label);
 
-		Cmiss_graphics_material_id material = Cmiss_glyph_axes_get_axis_material(axes, i);
-		EXPECT_EQ(static_cast<Cmiss_graphics_material *>(0), material);
-		EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_material(axes, i, red));
-		material = Cmiss_glyph_axes_get_axis_material(axes, i);
+		cmzn_graphics_material_id material = cmzn_glyph_axes_get_axis_material(axes, i);
+		EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), material);
+		EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_material(axes, i, red));
+		material = cmzn_glyph_axes_get_axis_material(axes, i);
 		EXPECT_EQ(red, material);
-		Cmiss_graphics_material_destroy(&material);
+		cmzn_graphics_material_destroy(&material);
 	}
 	// check can clear label
-	EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_label(axes, 1, 0));
+	EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_label(axes, 1, 0));
 
-	Cmiss_graphics_material_destroy(&red);
-	Cmiss_graphics_material_module_destroy(&materialModule);
-	Cmiss_glyph_destroy(&axisGlyph);
-	Cmiss_glyph_axes_destroy(&axes);
+	cmzn_graphics_material_destroy(&red);
+	cmzn_graphics_material_module_destroy(&materialModule);
+	cmzn_glyph_destroy(&axisGlyph);
+	cmzn_glyph_axes_destroy(&axes);
 }
 
 TEST(ZincGlyphAxes, valid_attributes)
@@ -137,7 +137,7 @@ TEST(ZincGlyphAxes, valid_attributes)
 		EXPECT_EQ(CMISS_OK, axes.setAxisLabel(i, axisLabels[i - 1]));
 		char *label = axes.getAxisLabel(i);
 		EXPECT_STREQ(axisLabels[i - 1], label);
-		Cmiss_deallocate(label);
+		cmzn_deallocate(label);
 
 		GraphicsMaterial material = axes.getAxisMaterial(i);
 		EXPECT_FALSE(material.isValid());
@@ -149,49 +149,49 @@ TEST(ZincGlyphAxes, valid_attributes)
 	EXPECT_EQ(CMISS_OK, axes.setAxisLabel(1, 0));
 }
 
-TEST(Cmiss_glyph_axes, invalid_attributes)
+TEST(cmzn_glyph_axes, invalid_attributes)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_glyph_id axisGlyph = Cmiss_glyph_module_find_glyph_by_name(zinc.glyph_module, "axis");
-	EXPECT_NE(static_cast<Cmiss_glyph *>(0), axisGlyph);
-	EXPECT_EQ(static_cast<Cmiss_glyph_axes *>(0), Cmiss_glyph_module_create_axes(0, axisGlyph, 0.1));
-	EXPECT_EQ(static_cast<Cmiss_glyph_axes *>(0), Cmiss_glyph_module_create_axes(zinc.glyph_module, 0, 0.1));
-	EXPECT_EQ(static_cast<Cmiss_glyph_axes *>(0), Cmiss_glyph_module_create_axes(zinc.glyph_module, axisGlyph, -0.1));
-	Cmiss_glyph_axes_id axes = Cmiss_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
-	EXPECT_NE(static_cast<Cmiss_glyph_axes *>(0), axes);
+	cmzn_glyph_id axisGlyph = cmzn_glyph_module_find_glyph_by_name(zinc.glyph_module, "axis");
+	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
+	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyph_module_create_axes(0, axisGlyph, 0.1));
+	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyph_module_create_axes(zinc.glyph_module, 0, 0.1));
+	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyph_module_create_axes(zinc.glyph_module, axisGlyph, -0.1));
+	cmzn_glyph_axes_id axes = cmzn_glyph_module_create_axes(zinc.glyph_module, axisGlyph, 0.1);
+	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
-	double axisWidth = Cmiss_glyph_axes_get_axis_width(0);
+	double axisWidth = cmzn_glyph_axes_get_axis_width(0);
 	ASSERT_DOUBLE_EQ(0.0, axisWidth);
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_width(0, 0.25));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_width(axes, -0.25));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_width(0, 0.25));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_width(axes, -0.25));
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_label(0, 1, "X"));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_label(axes, 0, "X"));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_label(axes, 4, "X"));
-	EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_label(axes, 1, "X"));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_label(0, 1, "X"));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_label(axes, 0, "X"));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_label(axes, 4, "X"));
+	EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_label(axes, 1, "X"));
 
-	EXPECT_EQ(static_cast<char *>(0), Cmiss_glyph_axes_get_axis_label(0, 1));
-	EXPECT_EQ(static_cast<char *>(0), Cmiss_glyph_axes_get_axis_label(axes, 0));
-	EXPECT_EQ(static_cast<char *>(0), Cmiss_glyph_axes_get_axis_label(axes, 4));
+	EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(0, 1));
+	EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(axes, 0));
+	EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(axes, 4));
 
-	Cmiss_graphics_material_module_id materialModule = Cmiss_graphics_module_get_material_module(zinc.gm);
-	Cmiss_graphics_material_id red = Cmiss_graphics_material_module_find_material_by_name(materialModule, "red");
-	EXPECT_NE(static_cast<Cmiss_graphics_material *>(0), red);
+	cmzn_graphics_material_module_id materialModule = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_id red = cmzn_graphics_material_module_find_material_by_name(materialModule, "red");
+	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), red);
 
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_material(0, 1, red));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_material(axes, 0, red));
-	EXPECT_EQ(CMISS_ERROR_ARGUMENT, Cmiss_glyph_axes_set_axis_material(axes, 4, red));
-	EXPECT_EQ(CMISS_OK, Cmiss_glyph_axes_set_axis_material(axes, 1, red));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(0, 1, red));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(axes, 0, red));
+	EXPECT_EQ(CMISS_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(axes, 4, red));
+	EXPECT_EQ(CMISS_OK, cmzn_glyph_axes_set_axis_material(axes, 1, red));
 
-	EXPECT_EQ(static_cast<Cmiss_graphics_material *>(0), Cmiss_glyph_axes_get_axis_material(0, 1));
-	EXPECT_EQ(static_cast<Cmiss_graphics_material *>(0), Cmiss_glyph_axes_get_axis_material(axes, 0));
-	EXPECT_EQ(static_cast<Cmiss_graphics_material *>(0), Cmiss_glyph_axes_get_axis_material(axes, 4));
+	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(0, 1));
+	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 0));
+	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 4));
 
-	Cmiss_graphics_material_destroy(&red);
-	Cmiss_graphics_material_module_destroy(&materialModule);
-	Cmiss_glyph_destroy(&axisGlyph);
-	Cmiss_glyph_axes_destroy(&axes);
+	cmzn_graphics_material_destroy(&red);
+	cmzn_graphics_material_module_destroy(&materialModule);
+	cmzn_glyph_destroy(&axisGlyph);
+	cmzn_glyph_axes_destroy(&axes);
 }
 
 TEST(ZincGlyphAxes, invalid_attributes)

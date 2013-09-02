@@ -17,17 +17,17 @@
 #include "zinc/fieldtypesconstant.hpp"
 #include "zinc/graphic.hpp"
 
-TEST(Cmiss_graphic_streamlines, create)
+TEST(cmzn_graphic_streamlines, create)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_destroy(&st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_destroy(&st));
 }
 
-TEST(Cmiss_graphic_streamlines, create_cpp)
+TEST(cmzn_graphic_streamlines, create_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -35,24 +35,24 @@ TEST(Cmiss_graphic_streamlines, create_cpp)
 	EXPECT_TRUE(st.isValid());
 }
 
-TEST(Cmiss_graphic_streamlines, cast)
+TEST(cmzn_graphic_streamlines, cast)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_id gr = Cmiss_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_STREAMLINES);
-	EXPECT_NE(static_cast<Cmiss_graphic *>(0), gr);
+	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_STREAMLINES);
+	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	Cmiss_graphic_streamlines_id st = Cmiss_graphic_cast_streamlines(gr);
-	EXPECT_EQ(reinterpret_cast<Cmiss_graphic_streamlines *>(gr), st);
-	EXPECT_EQ(static_cast<Cmiss_graphic_points *>(0), Cmiss_graphic_cast_points(gr));
+	cmzn_graphic_streamlines_id st = cmzn_graphic_cast_streamlines(gr);
+	EXPECT_EQ(reinterpret_cast<cmzn_graphic_streamlines *>(gr), st);
+	EXPECT_EQ(static_cast<cmzn_graphic_points *>(0), cmzn_graphic_cast_points(gr));
 
-	EXPECT_EQ(gr, Cmiss_graphic_streamlines_base_cast(st));
+	EXPECT_EQ(gr, cmzn_graphic_streamlines_base_cast(st));
 
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_destroy(&st));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_destroy(&gr));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_destroy(&st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_destroy(&gr));
 }
 
-TEST(Cmiss_graphic_streamlines, cast_cpp)
+TEST(cmzn_graphic_streamlines, cast_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -70,33 +70,33 @@ TEST(Cmiss_graphic_streamlines, cast_cpp)
 	ASSERT_TRUE(material.isValid());
 }
 
-TEST(Cmiss_graphic_streamlines, stream_vector_field)
+TEST(cmzn_graphic_streamlines, stream_vector_field)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	Cmiss_field_id stream_vector_field = Cmiss_field_module_create_constant(zinc.fm,
+	cmzn_field_id stream_vector_field = cmzn_field_module_create_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
-	EXPECT_NE(static_cast<Cmiss_field *>(0), stream_vector_field);
+	EXPECT_NE(static_cast<cmzn_field *>(0), stream_vector_field);
 
-	EXPECT_EQ((Cmiss_field_id)0, Cmiss_graphic_streamlines_get_stream_vector_field(st));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_stream_vector_field(st, stream_vector_field));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_graphic_streamlines_get_stream_vector_field(st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, stream_vector_field));
 
-	Cmiss_field_id temp_stream_vector_field = Cmiss_graphic_streamlines_get_stream_vector_field(st);
+	cmzn_field_id temp_stream_vector_field = cmzn_graphic_streamlines_get_stream_vector_field(st);
 	EXPECT_EQ(stream_vector_field, temp_stream_vector_field);
-	Cmiss_field_destroy(&temp_stream_vector_field);
-	Cmiss_field_destroy(&stream_vector_field);
+	cmzn_field_destroy(&temp_stream_vector_field);
+	cmzn_field_destroy(&stream_vector_field);
 
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_stream_vector_field(st, 0));
-	EXPECT_EQ(static_cast<Cmiss_field *>(0), Cmiss_graphic_streamlines_get_stream_vector_field(st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_streamlines_get_stream_vector_field(st));
 
-	Cmiss_graphic_streamlines_destroy(&st);
+	cmzn_graphic_streamlines_destroy(&st);
 }
 
-TEST(Cmiss_graphic_streamlines, stream_vector_field_cpp)
+TEST(cmzn_graphic_streamlines, stream_vector_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -120,21 +120,21 @@ TEST(Cmiss_graphic_streamlines, stream_vector_field_cpp)
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 }
 
-TEST(Cmiss_graphic_streamlines, track_direction)
+TEST(cmzn_graphic_streamlines, track_direction)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
-	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK, Cmiss_graphic_streamlines_get_track_direction(st));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_track_direction(st, CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK));
-	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK, Cmiss_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_track_direction(st, CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK));
+	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
 
-	Cmiss_graphic_streamlines_destroy(&st);
+	cmzn_graphic_streamlines_destroy(&st);
 }
 
-TEST(Cmiss_graphic_streamlines, track_direction_cpp)
+TEST(cmzn_graphic_streamlines, track_direction_cpp)
 {
 	ZincTestSetupCpp zinc;
 
@@ -146,22 +146,22 @@ TEST(Cmiss_graphic_streamlines, track_direction_cpp)
 	EXPECT_EQ(GraphicStreamlines::REVERSE_TRACK, st.getTrackDirection());
 }
 
-TEST(Cmiss_graphic_streamlines, track_length)
+TEST(cmzn_graphic_streamlines, track_length)
 {
 	ZincTestSetup zinc;
 
-	Cmiss_graphic_streamlines_id st = Cmiss_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<Cmiss_graphic_streamlines *>(0), st);
+	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
 	const double trackLength = 500.0;
-	EXPECT_DOUBLE_EQ(1.0, Cmiss_graphic_streamlines_get_track_length(st));
-	EXPECT_EQ(CMISS_OK, Cmiss_graphic_streamlines_set_track_length(st, trackLength));
-	EXPECT_DOUBLE_EQ(trackLength, Cmiss_graphic_streamlines_get_track_length(st));
+	EXPECT_DOUBLE_EQ(1.0, cmzn_graphic_streamlines_get_track_length(st));
+	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_track_length(st, trackLength));
+	EXPECT_DOUBLE_EQ(trackLength, cmzn_graphic_streamlines_get_track_length(st));
 
-	Cmiss_graphic_streamlines_destroy(&st);
+	cmzn_graphic_streamlines_destroy(&st);
 }
 
-TEST(Cmiss_graphic_streamlines, track_length_cpp)
+TEST(cmzn_graphic_streamlines, track_length_cpp)
 {
 	ZincTestSetupCpp zinc;
 

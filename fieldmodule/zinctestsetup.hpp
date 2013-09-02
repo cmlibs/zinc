@@ -12,25 +12,25 @@
 class ZincTestSetup
 {
 public:
-	Cmiss_context_id context;
-	Cmiss_region_id root_region;
-	Cmiss_field_module_id fm;
-	Cmiss_graphics_module_id gm;
-	Cmiss_scene_id scene;
+	cmzn_context_id context;
+	cmzn_region_id root_region;
+	cmzn_field_module_id fm;
+	cmzn_graphics_module_id gm;
+	cmzn_scene_id scene;
 
 	ZincTestSetup() :
-		context(Cmiss_context_create("test")),
-		root_region(Cmiss_context_get_default_region(context)),
-		fm(Cmiss_region_get_field_module(root_region))
+		context(cmzn_context_create("test")),
+		root_region(cmzn_context_get_default_region(context)),
+		fm(cmzn_region_get_field_module(root_region))
 	{
-		EXPECT_NE(static_cast<Cmiss_field_module *>(0), fm);
+		EXPECT_NE(static_cast<cmzn_field_module *>(0), fm);
 	}
 
 	~ZincTestSetup()
 	{
-		Cmiss_field_module_destroy(&fm);
-		Cmiss_region_destroy(&root_region);
-		Cmiss_context_destroy(&context);
+		cmzn_field_module_destroy(&fm);
+		cmzn_region_destroy(&root_region);
+		cmzn_context_destroy(&context);
 	}
 };
 
