@@ -61,14 +61,14 @@
  */
 enum cmzn_element_face_type
 {
-	CMISS_ELEMENT_FACE_INVALID = -1,
-	CMISS_ELEMENT_FACE_ALL,   /*!< include all faces */
-	CMISS_ELEMENT_FACE_XI1_0, /*!< only faces where top-level xi1 == 0 */
-	CMISS_ELEMENT_FACE_XI1_1, /*!< only faces where top-level xi1 == 1 */
-	CMISS_ELEMENT_FACE_XI2_0, /*!< only faces where top-level xi2 == 0 */
-	CMISS_ELEMENT_FACE_XI2_1, /*!< only faces where top-level xi2 == 1 */
-	CMISS_ELEMENT_FACE_XI3_0, /*!< only faces where top-level xi3 == 0 */
-	CMISS_ELEMENT_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
+	CMZN_ELEMENT_FACE_INVALID = -1,
+	CMZN_ELEMENT_FACE_ALL,   /*!< include all faces */
+	CMZN_ELEMENT_FACE_XI1_0, /*!< only faces where top-level xi1 == 0 */
+	CMZN_ELEMENT_FACE_XI1_1, /*!< only faces where top-level xi1 == 1 */
+	CMZN_ELEMENT_FACE_XI2_0, /*!< only faces where top-level xi2 == 0 */
+	CMZN_ELEMENT_FACE_XI2_1, /*!< only faces where top-level xi2 == 1 */
+	CMZN_ELEMENT_FACE_XI3_0, /*!< only faces where top-level xi3 == 0 */
+	CMZN_ELEMENT_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
 };
 
 	struct cmzn_element_iterator;
@@ -83,17 +83,17 @@ enum cmzn_element_face_type
  */
 enum cmzn_element_point_sample_mode
 {
-	CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID = 0,
-	CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES = 1,
+	CMZN_ELEMENT_POINT_SAMPLE_MODE_INVALID = 0,
+	CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES = 1,
 		/*!< Sample points at centres of element or tessellation cells */
-	CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS = 2,
+	CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS = 2,
 		/*!< Sample points at corners of element or tessellation cells */
-	CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON = 3,
+	CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON = 3,
 		/*!< Sample points randomly within each tessellation cell according to a 
 		     Poisson distribution with expected number given by:
 		     sample density field * cell volume, area or length, depending on dimension.
 		     The sample density field should be evaluated at the cell centre. */
-  CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION = 4
+  CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION = 4
 		/*!< One point at a specified location in the element chart. */
 };
 

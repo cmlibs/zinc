@@ -50,4 +50,4 @@
 	struct cmzn_time_notifier;
 	typedef struct cmzn_time_notifier *cmzn_time_notifier_id;
 
-#endif /* CMISS_TIME_ID_H */
+#endif /* CMZN_TIME_ID_H */

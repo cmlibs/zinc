@@ -985,15 +985,15 @@ int cmzn_field_image_get_attribute_integer(cmzn_field_image_id image,
 		Texture_get_original_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
 			{
 				return_value = width;
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
 			{
 				return_value = height;
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
 			{
 				return_value = depth;
 			} break;
@@ -1018,15 +1018,15 @@ double cmzn_field_image_get_attribute_real(cmzn_field_image_id image,
 		Texture_get_physical_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			{
 				return_value = (double)width;
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			{
 				return_value = (double)height;
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			{
 				return_value = (double)depth;
 			} break;
@@ -1051,15 +1051,15 @@ int cmzn_field_image_set_attribute_real(cmzn_field_image_id image,
 		Texture_get_physical_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			{
 				Texture_set_physical_size(texture, (ZnReal)value, height, depth);
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			{
 				Texture_set_physical_size(texture, width, (ZnReal)value, depth);
 			} break;
-			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
+			case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			{
 				Texture_set_physical_size(texture, width, height, (ZnReal)value);
 			} break;
@@ -1086,22 +1086,22 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
 			enum_string = "RAW_WIDTH_PIXELS";
 			break;
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
 			enum_string = "RAW_HEIGHT_PIXELS";
 			break;
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
 			enum_string = "RAW_DEPTH_PIXELS";
 			break;
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			enum_string = "PHYSICAL_WIDTH_PIXELS";
 			break;
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			enum_string = "PHYSICAL_HEIGHT_PIXELS";
 			break;
-		case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
+		case CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			enum_string = "PHYSICAL_DEPTH_PIXELS";
 			break;
 		default:
@@ -1708,40 +1708,40 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-		case CMISS_FIELD_IMAGE_COMBINE_BLEND:
+		case CMZN_FIELD_IMAGE_COMBINE_BLEND:
 			enum_string = "BLEND";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_DECAL:
+		case CMZN_FIELD_IMAGE_COMBINE_DECAL:
 			enum_string = "DECAL";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_MODULATE:
+		case CMZN_FIELD_IMAGE_COMBINE_MODULATE:
 			enum_string = "MODULATE";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_ADD:
+		case CMZN_FIELD_IMAGE_COMBINE_ADD:
 			enum_string = "ADD";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED:
+		case CMZN_FIELD_IMAGE_COMBINE_ADD_SIGNED:
 			enum_string = "ADD_SIGNED";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4:
 			enum_string = "MODULATE_SCALE_4";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_BLEND_SCALE_4:
 			enum_string = "BLEND_SCALE_4";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT:
+		case CMZN_FIELD_IMAGE_COMBINE_SUBTRACT:
 			enum_string = "SUBTRACT";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_ADD_SCALE_4:
 			enum_string = "ADD_SCALE_4";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4:
 			enum_string = "SUBTRACT_SCALE_4";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4:
 			enum_string = "INVERT_ADD_SCALE_4";
 			break;
-		case CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4:
+		case CMZN_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4:
 			enum_string = "INVERT_SUBTRACT_SCALE_4";
 			break;
 		default:
@@ -1805,10 +1805,10 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-		case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
+		case CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
 			enum_string = "UNCOMPRESSED";
 			break;
-		case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
+		case CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
 			enum_string = "AUTOMATIC";
 			break;
 		default:
@@ -1879,19 +1879,19 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-		case CMISS_FIELD_IMAGE_FILTER_NEAREST:
+		case CMZN_FIELD_IMAGE_FILTER_NEAREST:
 			enum_string = "NEAREST";
 			break;
-		case CMISS_FIELD_IMAGE_FILTER_LINEAR:
+		case CMZN_FIELD_IMAGE_FILTER_LINEAR:
 			enum_string = "LINEAR";
 			break;
-		case CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST:
+		case CMZN_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST:
 			enum_string = "NEAREST_MIPMAP_NEAREST";
 			break;
-		case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST:
+		case CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST:
 			enum_string = "LINEAR_MIPMAP_NEAREST";
 			break;
-		case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR:
+		case CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR:
 			enum_string = "LINEAR_MIPMAP_LINEAR";
 			break;
 		default:
@@ -1953,19 +1953,19 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-		case CMISS_FIELD_IMAGE_WRAP_CLAMP:
+		case CMZN_FIELD_IMAGE_WRAP_CLAMP:
 			enum_string = "CLAMP";
 			break;
-		case CMISS_FIELD_IMAGE_WRAP_REPEAT:
+		case CMZN_FIELD_IMAGE_WRAP_REPEAT:
 			enum_string = "REPEAT";
 			break;
-		case CMISS_FIELD_IMAGE_WRAP_EDGE_CLAMP:
+		case CMZN_FIELD_IMAGE_WRAP_EDGE_CLAMP:
 			enum_string = "EDGE_CLAMP";
 			break;
-		case CMISS_FIELD_IMAGE_WRAP_BORDER_CLAMP:
+		case CMZN_FIELD_IMAGE_WRAP_BORDER_CLAMP:
 			enum_string = "BORDER_CLAMP";
 			break;
-		case CMISS_FIELD_IMAGE_WRAP_MIRROR_REPEAT:
+		case CMZN_FIELD_IMAGE_WRAP_MIRROR_REPEAT:
 			enum_string = "MIRROR_REPEAT";
 			break;
 		default:

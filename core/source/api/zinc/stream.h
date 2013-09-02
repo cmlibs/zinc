@@ -67,7 +67,7 @@ ZINC_API cmzn_stream_information_id cmzn_stream_information_access(
  * Internally this just decrements the reference count.
  *
  * @param stream_information_address  Address of handle to the stream_information.
- * @return  status CMISS_OK if successfully destroyed the stream_information,
+ * @return  status CMZN_OK if successfully destroyed the stream_information,
  * any other value on failure.
  */
 ZINC_API int cmzn_stream_information_destroy(
@@ -142,7 +142,7 @@ ZINC_API cmzn_stream_resource_id cmzn_stream_resource_access(cmzn_stream_resourc
  * Internally this just decrements the reference count.
  *
  * @param resource_address  Address of handle to the io stream.
- * @return  status CMISS_OK if successfully destroyed the output stream handle,
+ * @return  status CMZN_OK if successfully destroyed the output stream handle,
  * any other value on failure.
  */
 ZINC_API int cmzn_stream_resource_destroy(cmzn_stream_resource_id *resource_address);
@@ -163,7 +163,7 @@ ZINC_API cmzn_stream_resource_file_id cmzn_stream_resource_cast_file(
  * Destroys a cmzn_stream_resource_file object.
  * @param resource_address  Pointer to a stream_resource_file object, which
  * is destroyed and the pointer is set to NULL.
- * @return  status CMISS_OK if the operation is successful, any other value on failure.
+ * @return  status CMZN_OK if the operation is successful, any other value on failure.
  */
 ZINC_API int cmzn_stream_resource_file_destroy(
 	cmzn_stream_resource_file_id *resource_address);
@@ -214,7 +214,7 @@ ZINC_API cmzn_stream_resource_memory_id cmzn_stream_resource_cast_memory(
  *
  * @param resource_address  Pointer to a stream_resource_memory object, which
  * is destroyed and the pointer is set to NULL.
- * @return  status CMISS_OK if the operation is successful, any other value on failure.
+ * @return  status CMZN_OK if the operation is successful, any other value on failure.
  */
 ZINC_API int cmzn_stream_resource_memory_destroy(
 	cmzn_stream_resource_memory_id *resource_address);
@@ -247,7 +247,7 @@ ZINC_C_INLINE cmzn_stream_resource_id cmzn_stream_resource_memory_base_cast(
  * 	memory block.
  * @param memory_buffer_size  Will be set to the length of
  * 	the returned memory block.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_stream_resource_memory_get_buffer(cmzn_stream_resource_memory_id resource,
 	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
@@ -267,7 +267,7 @@ ZINC_API int cmzn_stream_resource_memory_get_buffer(cmzn_stream_resource_memory_
  * 	memory block.
  * @param memory_buffer_size  Will be set to the length of
  * 	the returned memory block.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_stream_resource_memory_get_buffer_copy(
 	cmzn_stream_resource_memory_id resource, void **memory_buffer_references,

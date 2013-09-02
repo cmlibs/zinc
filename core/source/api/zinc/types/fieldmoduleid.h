@@ -42,4 +42,4 @@
 	struct cmzn_field_module;
 	typedef struct cmzn_field_module *cmzn_field_module_id;
 	#define CMZN_FIELDMODULEID_H__
-#endif /* CMISS_FIELD_MODULE_ID_H */
+#endif /* CMZN_FIELD_MODULE_ID_H */

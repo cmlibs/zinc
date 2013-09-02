@@ -22,18 +22,18 @@ DESCRIPTION :
 The functions that interface Photoface to cmiss.  All functions have an integer
 return code - zero is success, non-zero is failure.
 ==============================================================================*/
-#if !defined (PHOTOFACE_CMISS_H)
-#define PHOTOFACE_CMISS_H
+#if !defined (PHOTOFACE_CMZN_H)
+#define PHOTOFACE_CMZN_H
 
-#if defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS)
-#if defined (CMISSDLLEXPORT)
-#define CMISSDECLSPEC __declspec( dllexport )
-#else /* defined (CMISSDLLEXPORT)*/
-#define CMISSDECLSPEC __declspec( dllimport )
-#endif /* defined (CMISSDLLEXPORT)*/
-#else /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
-#define CMISSDECLSPEC
-#endif /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
+#if defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS)
+#if defined (CMZNDLLEXPORT)
+#define CMZNDECLSPEC __declspec( dllexport )
+#else /* defined (CMZNDLLEXPORT)*/
+#define CMZNDECLSPEC __declspec( dllimport )
+#endif /* defined (CMZNDLLEXPORT)*/
+#else /* defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS) */
+#define CMZNDECLSPEC
+#endif /* defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS) */
 
 #define ERROR_MESSAGE
 
@@ -98,7 +98,7 @@ Global functions
 ----------------
 */
 #if defined (ERROR_MESSAGE)
-CMISSDECLSPEC int pf_get_error_message(char **message);
+CMZNDECLSPEC int pf_get_error_message(char **message);
 /*******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -109,7 +109,7 @@ The string should be freed when no longer required.
 ==============================================================================*/
 #endif /* defined (ERROR_MESSAGE) */
 
-CMISSDECLSPEC int pf_specify_paths(char *photoface_local_path,
+CMZNDECLSPEC int pf_specify_paths(char *photoface_local_path,
 	char *photoface_remote_path);
 /*******************************************************************************
 LAST MODIFIED : 19 October 2001
@@ -127,7 +127,7 @@ two strings should still be set but they will be identical.
 If either path is NULL then the internal storage for that path is free'd.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_setup(char *model_name,char *state,int *pf_job_id);
+CMZNDECLSPEC int pf_setup(char *model_name,char *state,int *pf_job_id);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -138,7 +138,7 @@ information about the face in the image, such as "smiling", which may allow
 adjustment of the generic head.  On success, the <pf_job_id> is set.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_close(int pf_job_id);
+CMZNDECLSPEC int pf_close(int pf_job_id);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -147,7 +147,7 @@ Closes the photoface job, freeing any internal memory and stopping any
 internal processes associated with the job.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_define_markers(int pf_job_id,int number_of_markers,char **marker_names,
+CMZNDECLSPEC int pf_define_markers(int pf_job_id,int number_of_markers,char **marker_names,
   float *marker_3d_generic_positions);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -169,7 +169,7 @@ Please note that
   points.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_specify_markers(int pf_job_id,int number_of_markers,char **marker_names,
+CMZNDECLSPEC int pf_specify_markers(int pf_job_id,int number_of_markers,char **marker_names,
   float *marker_2d_positions,float *marker_confidences);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -188,7 +188,7 @@ Specify <number_of_markers> using
   one with the larger confidence has a better position estimate.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_marker_fitted_positions(int pf_job_id,int number_of_markers,
+CMZNDECLSPEC int pf_get_marker_fitted_positions(int pf_job_id,int number_of_markers,
 	char **marker_names,float *marker_fitted_3d_positions);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -199,7 +199,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 (marker number varying slowest).
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_view_align(int pf_job_id,float *error_measure);
+CMZNDECLSPEC int pf_view_align(int pf_job_id,float *error_measure);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -208,7 +208,7 @@ Calculates the view that aligns the model to the specified markers and returns
 an <error_measure>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_view(int pf_job_id,float *eye_point,float *interest_point,
+CMZNDECLSPEC int pf_get_view(int pf_job_id,float *eye_point,float *interest_point,
 	float *up_vector,float *view_angle);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -219,7 +219,7 @@ Returns the current view as an <eye_point> (3 component vector), an
 <view_angle> (scalar).  Assumes that all storage has been assigned large enough.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_specify_view(int pf_job_id,float *eye_point,float *interest_point,
+CMZNDECLSPEC int pf_specify_view(int pf_job_id,float *eye_point,float *interest_point,
 	float *up_vector,float view_angle);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -230,7 +230,7 @@ Sets the current view as an <eye_point> (3 component vector), an
 <view_angle> (scalar).  It is an alternative/override for pf_view_align.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_fit(int pf_job_id,float *error_measure);
+CMZNDECLSPEC int pf_fit(int pf_job_id,float *error_measure);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -239,7 +239,7 @@ Fits the model to the specified markers, using the current transformation
 matrix, and returns an <error_measure>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_head_model(int pf_job_id,int *number_of_vertices,
+CMZNDECLSPEC int pf_get_head_model(int pf_job_id,int *number_of_vertices,
 	float **vertex_3d_locations,int *number_of_texture_vertices,
 	float **texture_vertex_3d_locations,int *number_of_triangles,
 	int **triangle_vertices,int **triangle_texture_vertices);
@@ -260,7 +260,7 @@ Returns the current transformed generic head as
 The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
+CMZNDECLSPEC int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
   float **vertex_3d_locations_or_offsets);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -273,7 +273,7 @@ mode number fastest.
 The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_specify_image(int pf_job_id,int width,int height,
+CMZNDECLSPEC int pf_specify_image(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *image);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -282,7 +282,7 @@ DESCRIPTION :
 Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,
+CMZNDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *texture);
 /*******************************************************************************
 LAST MODIFIED : 26 June 2001
@@ -292,7 +292,7 @@ The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_hair_model(int pf_job_id,int *number_of_vertices,
+CMZNDECLSPEC int pf_get_hair_model(int pf_job_id,int *number_of_vertices,
 	float **vertex_3d_locations,int *number_of_texture_vertices,
 	float **texture_vertex_3d_locations,int *number_of_triangles,
 	int **triangle_vertices,int **triangle_texture_vertices);
@@ -313,7 +313,7 @@ Returns the current transformed generic head as
 The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_specify_hair_mask(int pf_job_id,int width,int height,
+CMZNDECLSPEC int pf_specify_hair_mask(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *image);
 /*******************************************************************************
 LAST MODIFIED : 21 June 2001
@@ -322,7 +322,7 @@ DESCRIPTION :
 Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_hair_texture(int pf_job_id,int width,int height,
+CMZNDECLSPEC int pf_get_hair_texture(int pf_job_id,int width,int height,
 	enum PF_image_format image_format, char *texture);
 /*******************************************************************************
 LAST MODIFIED : 26 June 2001
@@ -332,7 +332,7 @@ The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_distorted_background(int pf_job_id,int width,int height,
+CMZNDECLSPEC int pf_get_distorted_background(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *texture);
 /*******************************************************************************
 LAST MODIFIED : 26 June 2001
@@ -342,7 +342,7 @@ The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_convert_2d_positions_to_texture_coordinates(int pf_job_id,
+CMZNDECLSPEC int pf_convert_2d_positions_to_texture_coordinates(int pf_job_id,
 	enum PF_geometry_component component,
 	int number_of_points, float *convert_2d_positions, float *texture_positions);
 /*******************************************************************************
@@ -382,7 +382,7 @@ Macros
 	( number ) * sizeof( type ) ) )
 #endif /* defined (MEMORY_CHECKING) */
 
-#endif /* !defined (PHOTOFACE_CMISS_H) */
+#endif /* !defined (PHOTOFACE_CMZN_H) */
 
 /*
 $Log$
@@ -402,7 +402,7 @@ Revision 1.5  2001/10/26 21:47:48  bdawson
 Completely re-did error messages
 
 Revision 1.4  2001/10/18 18:15:21  bdawson
-interLin, photoface_cmiss.h: free arrays passed by CMISS interface to stop leaks. PFeyeteeth: new logic for pupils
+interLin, photoface_cmiss.h: free arrays passed by CMZN interface to stop leaks. PFeyeteeth: new logic for pupils
 
 Revision 1.3  2001/10/16 16:52:06  bdawson
 Added return of error messages through the database so can see errors in release mode

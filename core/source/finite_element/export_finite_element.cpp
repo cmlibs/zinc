@@ -2501,7 +2501,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				if (write_data)
 				{
 					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
-						CMISS_FIELD_DOMAIN_DATA);
+						CMZN_FIELD_DOMAIN_DATA);
 					if (group)
 					{
 						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
@@ -2530,7 +2530,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				{
 					write_nodes_data.last_node = (struct FE_node *)NULL;
 					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
-						CMISS_FIELD_DOMAIN_NODES);
+						CMZN_FIELD_DOMAIN_NODES);
 					if (group)
 					{
 						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
@@ -2575,11 +2575,11 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
 				for (int dimension = 1; dimension <= highest_dimension; dimension++)
 				{
-					if ((dimension == 1 && (write_elements & CMISS_FIELD_DOMAIN_MESH_1D)) ||
-						(dimension == 2 && (write_elements & CMISS_FIELD_DOMAIN_MESH_2D)) ||
-						(dimension == 3 && (write_elements & CMISS_FIELD_DOMAIN_MESH_3D)) ||
+					if ((dimension == 1 && (write_elements & CMZN_FIELD_DOMAIN_MESH_1D)) ||
+						(dimension == 2 && (write_elements & CMZN_FIELD_DOMAIN_MESH_2D)) ||
+						(dimension == 3 && (write_elements & CMZN_FIELD_DOMAIN_MESH_3D)) ||
 						(dimension == highest_dimension &&
-							(write_elements & CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)))
+							(write_elements & CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)))
 					{
 						cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
 						if (group)
@@ -2685,7 +2685,7 @@ static int write_cmzn_region(ostream *output_file,
 		{
 			char *region_path = cmzn_region_get_relative_path(region, root_region);
 			int len = strlen(region_path);
-			if ((1 < len) && (region_path[len - 1] == CMISS_REGION_PATH_SEPARATOR_CHAR))
+			if ((1 < len) && (region_path[len - 1] == CMZN_REGION_PATH_SEPARATOR_CHAR))
 			{
 				region_path[len - 1] = '\0';
 			}

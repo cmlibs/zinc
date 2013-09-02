@@ -1532,15 +1532,15 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 				{
 					switch (line_shape)
 					{
-						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+						case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 						{
 							surface_points_per_step = 8;
 						} break;
-						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+						case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 						{
 							surface_points_per_step = circleDivisions + 1;
 						} break;
-						case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+						case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 						default:
 						{
 							surface_points_per_step = 2;
@@ -1609,7 +1609,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 								cross_thickness[2] = stream_normal[2] * 0.5f * GLfloat(thickness);
 								switch (line_shape)
 								{
-									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+									case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 									default:
 									{
 										(*point)[0] = stream_point[0] + cross_width[0];
@@ -1639,7 +1639,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 											datum++;
 										}
 									} break;
-									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+									case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 									{
 										for (d = 0 ; d < surface_points_per_step ; d++)
 										{
@@ -1677,7 +1677,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 											}
 										}
 									} break;
-									case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+									case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 									{
 										(*point)[0] = stream_point[0] + cross_width[0]
 										                                            + cross_thickness[0];

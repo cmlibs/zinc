@@ -63,7 +63,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(cmzn_region_change, \
+FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
 	struct cmzn_region *, struct cmzn_region_changes *);
 
 /***************************************************************************//**
@@ -99,7 +99,7 @@ struct cmzn_region
 	int hierarchical_change_level;
 	cmzn_region_changes changes;
 	/* list of change callbacks */
-	struct LIST(CMISS_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
 
 	/* number of objects using this region */
 	int access_count;
@@ -110,9 +110,9 @@ Module functions
 ----------------
 */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(cmzn_region_change, void)
+DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_region_change, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(cmzn_region_change, \
+DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_region_change, \
 	struct cmzn_region *, struct cmzn_region_changes *)
 
 /***************************************************************************//**
@@ -223,7 +223,7 @@ region. No messages sent if change count positive or no changes have occurred.
 			region->changes.child_added = (struct cmzn_region *)NULL;
 			region->changes.child_removed = (struct cmzn_region *)NULL;
 			/* send the callbacks */
-			CMISS_CALLBACK_LIST_CALL(cmzn_region_change)(
+			CMZN_CALLBACK_LIST_CALL(cmzn_region_change)(
 				region->change_callback_list, region, &changes);
 			// deaccess child pointers from message
 			REACCESS(cmzn_region)(&changes.child_added, NULL);
@@ -280,13 +280,13 @@ struct cmzn_region *cmzn_region_find_subregion_at_path_internal(
 		char *path_copy = duplicate_string(path);
 		char *child_name = path_copy;
 		/* skip leading separator */
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
 		{
 			child_name++;
 		}
 		char *child_name_end;
 		while (subregion && (child_name_end =
-			strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
+			strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR)))
 		{
 			*child_name_end = '\0';
 			subregion = cmzn_region_find_child_by_name_internal(subregion, child_name);
@@ -327,7 +327,7 @@ struct cmzn_region *CREATE(cmzn_region)(struct cmzn_region *base_region)
 		region->changes.child_added = NULL;
 		region->changes.child_removed = NULL;
 		region->change_callback_list =
-			CREATE(LIST(CMISS_CALLBACK_ITEM(cmzn_region_change)))();
+			CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))();
 		region->field_manager = CREATE(MANAGER(Computed_field))();
 		Computed_field_manager_set_region(region->field_manager, region);
 		region->field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
@@ -401,7 +401,7 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
 			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
 
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_region_change)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
 				&(region->change_callback_list));
 
 			cmzn_region_detach_fields(region);
@@ -555,13 +555,13 @@ struct cmzn_region *cmzn_region_create_subregion(
 		region = ACCESS(cmzn_region)(top_region);
 		char *path_copy = duplicate_string(path);
 		char *child_name = path_copy;
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
 		{
 			child_name++;
 		}
 		while (region && child_name && (child_name[0] != '\0'))
 		{
-			char *child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR);
+			char *child_name_end = strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR);
 			if (child_name_end)
 			{
 				*child_name_end = '\0';
@@ -766,7 +766,7 @@ int cmzn_region_end_hierarchical_change(struct cmzn_region *region)
 }
 
 int cmzn_region_add_callback(struct cmzn_region *region,
-	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -781,7 +781,7 @@ struct cmzn_region_changes * and the void *user_data.
 	ENTER(cmzn_region_add_callback);
 	if (region && function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(cmzn_region_change)(
+		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_region_change)(
 			region->change_callback_list, function, user_data))
 		{
 			return_code = 1;
@@ -805,7 +805,7 @@ struct cmzn_region_changes * and the void *user_data.
 } /* cmzn_region_add_callback */
 
 int cmzn_region_remove_callback(struct cmzn_region *region,
-	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -818,7 +818,7 @@ Removes the callback calling <function> with <user_data> from <region>.
 	ENTER(cmzn_region_remove_callback);
 	if (region && function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_region_change)(
+		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_region_change)(
 			region->change_callback_list, function, user_data))
 		{
 			return_code = 1;
@@ -890,7 +890,7 @@ int cmzn_region_set_name(struct cmzn_region *region, const char *name)
 
 char *cmzn_region_get_root_region_path(void)
 {
-	return duplicate_string(CMISS_REGION_PATH_SEPARATOR_STRING);
+	return duplicate_string(CMZN_REGION_PATH_SEPARATOR_STRING);
 }
 
 char *cmzn_region_get_path(struct cmzn_region *region)
@@ -914,7 +914,7 @@ char *cmzn_region_get_path(struct cmzn_region *region)
 				error = 1;
 			}
 		}
-		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
+		append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error);
 	}
 	LEAVE;
 
@@ -949,7 +949,7 @@ char *cmzn_region_get_relative_path(struct cmzn_region *region,
 				error = 1;
 			}
 		}
-		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
+		append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error);
 	}
 	LEAVE;
 
@@ -1229,7 +1229,7 @@ int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 		path_copy = duplicate_string(path);
 		child_name = path_copy;
 		/* skip leading separator */
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
 		{
 			child_name++;
 		}
@@ -1238,7 +1238,7 @@ int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 
 		while (next_region && (*child_name != '\0'))
 		{
-			child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR);
+			child_name_end = strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR);
 			if (child_name_end)
 			{
 				*child_name_end = '\0';
@@ -1257,13 +1257,13 @@ int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 			}
 			if (child_name_end)
 			{
-				*child_name_end = CMISS_REGION_PATH_SEPARATOR_CHAR;
+				*child_name_end = CMZN_REGION_PATH_SEPARATOR_CHAR;
 			}
 		}
 
 		length = child_name - child_name_start;
 		if ((length > 0) &&
-			(*(child_name - 1) == CMISS_REGION_PATH_SEPARATOR_CHAR))
+			(*(child_name - 1) == CMZN_REGION_PATH_SEPARATOR_CHAR))
 		{
 			length--;
 		}
@@ -1285,7 +1285,7 @@ int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 		else
 		{
 			/* remove trailing '/' */
-			if (child_name[length-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+			if (child_name[length-1] == CMZN_REGION_PATH_SEPARATOR_CHAR)
 			{
 				length--;
 			}
@@ -1569,7 +1569,7 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 				// merge node groups
 				for (int i = 0; i < 2; i++)
 				{
-					cmzn_field_domain_type nodeset_domain_type = i ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES;
+					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES;
 					cmzn_nodeset_id source_nodeset = cmzn_field_module_find_nodeset_by_domain_type(source_field_module, nodeset_domain_type);
 					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_node_group(source_group, source_nodeset);
 					if (source_node_group)

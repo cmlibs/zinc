@@ -81,9 +81,9 @@ typedef struct cmzn_graphic_streamlines *cmzn_graphic_streamlines_id;
  */
 enum cmzn_graphic_streamlines_track_direction
 {
-	CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID = 0,
-	CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK = 1,
-	CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK = 2
+	CMZN_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID = 0,
+	CMZN_GRAPHIC_STREAMLINES_FORWARD_TRACK = 1,
+	CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK = 2
 };
 
 /**
@@ -98,12 +98,12 @@ typedef struct cmzn_graphic_surfaces *cmzn_graphic_surfaces_id;
  */
 enum cmzn_graphic_type
 {
-	CMISS_GRAPHIC_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_POINTS = 1,
-	CMISS_GRAPHIC_LINES = 2,
-	CMISS_GRAPHIC_SURFACES = 3,
-	CMISS_GRAPHIC_CONTOURS = 4,
-	CMISS_GRAPHIC_STREAMLINES = 5
+	CMZN_GRAPHIC_TYPE_INVALID = 0,
+	CMZN_GRAPHIC_POINTS = 1,
+	CMZN_GRAPHIC_LINES = 2,
+	CMZN_GRAPHIC_SURFACES = 3,
+	CMZN_GRAPHIC_CONTOURS = 4,
+	CMZN_GRAPHIC_STREAMLINES = 5
 };
 
 /**
@@ -113,18 +113,18 @@ enum cmzn_graphic_type
  */
 enum cmzn_graphic_select_mode
 {
-	CMISS_GRAPHIC_SELECT_MODE_INVALID = 0,
-	CMISS_GRAPHIC_SELECT_ON = 1,
+	CMZN_GRAPHIC_SELECT_MODE_INVALID = 0,
+	CMZN_GRAPHIC_SELECT_ON = 1,
 		/*!< draw all objects with unselected objects drawn in standard material,
 		  selected objects in selected_material, and with picking enabled.
 		  Default mode for any new graphic. */
-	CMISS_GRAPHIC_NO_SELECT = 2,
+	CMZN_GRAPHIC_NO_SELECT = 2,
 		/*!< object IDs are not generated so individual nodes/elements cannot be
 		  picked nor highlighted. More efficient if picking and highlighting are not
 		  required. */
-	CMISS_GRAPHIC_DRAW_SELECTED = 3,
+	CMZN_GRAPHIC_DRAW_SELECTED = 3,
 		/*!< draw only selected objects in selected_material, with picking enabled */
-	CMISS_GRAPHIC_DRAW_UNSELECTED = 4
+	CMZN_GRAPHIC_DRAW_UNSELECTED = 4
 		/*!< draw only unselected objects in standard material, with picking enabled. */
 };
 
@@ -147,11 +147,11 @@ typedef struct cmzn_graphic_line_attributes * cmzn_graphic_line_attributes_id;
  */
 enum cmzn_graphic_line_attributes_shape
 {
-	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID = 0,
-	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE = 1,
-	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON = 2,
-	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION = 3,
-	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION = 4
+	CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID = 0,
+	CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE = 1,
+	CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON = 2,
+	CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION = 3,
+	CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION = 4
 };
 
 /**
@@ -166,9 +166,9 @@ typedef struct cmzn_graphic_sampling_attributes * cmzn_graphic_sampling_attribut
  */
 enum cmzn_graphic_render_polygon_mode
 {
-	CMISS_GRAPHIC_RENDER_POLYGON_MODE_INVALID = 0,
-	CMISS_GRAPHIC_RENDER_POLYGON_SHADED = 1,   /*!< Draw filled polygons */
-	CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
+	CMZN_GRAPHIC_RENDER_POLYGON_MODE_INVALID = 0,
+	CMZN_GRAPHIC_RENDER_POLYGON_SHADED = 1,   /*!< Draw filled polygons */
+	CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
 };
 
 #endif

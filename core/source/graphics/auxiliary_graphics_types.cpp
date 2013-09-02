@@ -68,19 +68,19 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_select_mode)
 	ENTER(ENUMERATOR_STRING(cmzn_graphic_select_mode));
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHIC_SELECT_ON:
+		case CMZN_GRAPHIC_SELECT_ON:
 		{
 			enumerator_string = "select_on";
 		} break;
-		case CMISS_GRAPHIC_NO_SELECT:
+		case CMZN_GRAPHIC_NO_SELECT:
 		{
 			enumerator_string = "no_select";
 		} break;
-		case CMISS_GRAPHIC_DRAW_SELECTED:
+		case CMZN_GRAPHIC_DRAW_SELECTED:
 		{
 			enumerator_string = "draw_selected";
 		} break;
-		case CMISS_GRAPHIC_DRAW_UNSELECTED:
+		case CMZN_GRAPHIC_DRAW_UNSELECTED:
 		{
 			enumerator_string = "draw_unselected";
 		} break;
@@ -162,19 +162,19 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_line_attributes_shape)
 {
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
+		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
 		{
 			return "line";
 		} break;
-		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
 		{
 			return "ribbon";
 		} break;
-		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 		{
 			return "circle_extrusion";
 		} break;
-		case CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 		{
 			return "square_extrusion";
 		} break;
@@ -192,11 +192,11 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_streamlines_track_direction)
 {
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK:
+		case CMZN_GRAPHIC_STREAMLINES_FORWARD_TRACK:
 		{
 			return "forward_track";
 		} break;
-		case CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK:
+		case CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK:
 		{
 			return "reverse_track";
 		} break;
@@ -252,11 +252,11 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_render_polygon_mode)
 	ENTER(ENUMERATOR_STRING(cmzn_graphic_render_polygon_mode));
 	switch (enumerator_value)
 	{
-		case CMISS_GRAPHIC_RENDER_POLYGON_SHADED:
+		case CMZN_GRAPHIC_RENDER_POLYGON_SHADED:
 		{
 			enumerator_string = "render_shaded";
 		} break;
-		case CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME:
+		case CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME:
 		{
 			enumerator_string = "render_wireframe";
 		} break;

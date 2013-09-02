@@ -66,17 +66,17 @@ extern "C" {
  */
 enum cmzn_optimisation_method
 {
-	CMISS_OPTIMISATION_METHOD_INVALID = 0,
+	CMZN_OPTIMISATION_METHOD_INVALID = 0,
 	/*!< Invalid or unspecified optimisation method.
 	 */
-	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
+	CMZN_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
 	/*!< The default optimisation method. Suitable for most problems with a small
 	 * set of independent parameters.
 	 * Given a scalar valued objective function (scalar sum of all objective
 	 * fields' components), finds the set of DOFs for the independent field(s)
 	 * which minimises the objective function value.
 	 */
-	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
+	CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
 	/*!< A least squares method better suited to larger problems.
 	 * Finds the set of independent field(s) DOF values which minimises the
 	 * squares of the objective components supplied. Works specially with fields
@@ -91,7 +91,7 @@ enum cmzn_optimisation_method
  */
 enum cmzn_optimisation_attribute
 {
-	CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE = 1,
+	CMZN_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE = 1,
 	/*!< (Opt++ stopping tolerance) Assigns a stopping tolerance for an optimisation algorithm. Please
 	 * assign tolerances that make sense given the accuracy of your function. For example, setting
 	 * TOLERANCE to 1.e-4 in your problem means the optimisation algorithm converges when the function
@@ -99,7 +99,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 1.49012e-8
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE = 2,
+	CMZN_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE = 2,
 	/*!< (Opt++ stopping tolerance) Assigns a stopping tolerance for an optimisation algorithm. Please
 	 * assign tolerances that make sense given your function accuracy. For example, setting
 	 * GRADIENT_TOLERANCE to 1.e-6 in your problem means the optimisation algorithm converges when the
@@ -107,7 +107,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 6.05545e-6
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE = 3,
+	CMZN_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE = 3,
 	/*!< (Opt++ stopping tolerance) Assigns a stopping tolerance for the optimisation algorithm. Please
 	 * set tolerances that make sense, given the accuracy of your function. For example, setting
 	 * STEP_TOLERANCE to 1.e-2 in your problem means the optimisation algorithm converges when the relative
@@ -115,7 +115,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 1.49012e-8
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS = 4,
+	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS = 4,
 	/*!< (Opt++ stopping tolerance) Places a limit on the number of iterations of the optimisation algorithm.
 	 * It is useful when your
 	 * function is computationally expensive or you are debugging the optimisation algorithm. When
@@ -125,7 +125,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 100.
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS = 5,
+	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS = 5,
 	/*!< (Opt++ stopping tolerance) Places an upper bound on the number of function evaluations. The method
 	 * is useful when your function
 	 * is computationally expensive and you only have time to perform a limited number of evaluations. When
@@ -135,7 +135,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 1000
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP = 6,
+	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP = 6,
 	/*<! (Opt++ steplength control) Places an upper bound on the length of the step that can be taken at each
 	 * iteration of the optimisation
 	 * algorithm. If the scale of your optimisation parameters exceeds the bound, adjust accordingly. If you want
@@ -144,7 +144,7 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 1.0e3
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP = 7,
+	CMZN_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP = 7,
 	/*<! (Opt++ steplength control) Places a lower bound on the length of the step that can be taken at each
 	 * iteration of the optimisation
 	 * algorithm. If the scale of your optimisation parameters exceeds the bound, adjust accordingly. If you
@@ -153,14 +153,14 @@ enum cmzn_optimisation_attribute
 	 *
 	 * Default value: 1.49012e-8
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE = 8,
+	CMZN_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE = 8,
 	/*!< (Opt++ globalisation strategy parameter) In practice, the linesearch tolerance is set to a small value,
 	 * so that almost any decrease in the function value results in an acceptable step. Suggested values are
 	 * 1.e-4 for Newton methods and 1.e-1 for more exact line searches.
 	 *
 	 * Default value: 1.e-4
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS = 9,
+	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS = 9,
 	/*<! (Opt++ globalisation strategy parameter) Only relevant when you use a algorithm with a linesearch
 	 * search strategy. The value places a limit on the number of iterations in the linesearch routine of the
 	 * optimisation algorithm. If the limit is reached before computing a step with acceptable decrease, the
@@ -174,7 +174,7 @@ enum cmzn_optimisation_attribute
 	 * @todo Reserving this one for when trust region methods are available via the API. Currently everything
 	 * uses linesearch methods only.
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10,
+	CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10,
 	/*<! (Opt++ globalisation strategy parameter) Only relevant when you are using an algorithm with a trust-region
 	 * or a trustpds search strategy. The value initialises the size of the trust region.
 	 *
@@ -214,7 +214,7 @@ ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id opti
  * Destroys reference to the optimisation object and sets pointer/handle to NULL.
  *
  * @param optimisation_address  Address of optimisation object reference.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address);
 
@@ -232,7 +232,7 @@ ZINC_API enum cmzn_optimisation_method cmzn_optimisation_get_method(
  *
  * @param optimisation  Handle to the optimisation object.
  * @param method  The optimisation method to use.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_method method);
@@ -273,7 +273,7 @@ ZINC_API int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimi
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this optimisation object.
  */
 ZINC_API int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
@@ -295,7 +295,7 @@ ZINC_API double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimi
  * @param optimisation  Handle to the optimisation object.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or able to be set for this optimisation object.
  */
 ZINC_API int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
@@ -364,7 +364,7 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_independent_field(
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued independent field to add to the optimisation object
  * (accessed internally so safe for caller to destroy locally).
- * @return  Status CMISS_OK if field successfully added, any other value if
+ * @return  Status CMZN_OK if field successfully added, any other value if
  * failed or already added.
  */
 ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
@@ -375,7 +375,7 @@ ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimi
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  The independent field to remove.
- * @return  Status CMISS_OK if field successfully removed, any other value if
+ * @return  Status CMZN_OK if field successfully removed, any other value if
  * failed or field not found.
  */
 ZINC_API int cmzn_optimisation_remove_independent_field(
@@ -425,7 +425,7 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_objective_field(
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object
  * (accessed internally so safe for caller to destroy locally).
- * @return  Status CMISS_OK if field successfully added, any other value if
+ * @return  Status CMZN_OK if field successfully added, any other value if
  * failed or already added.
  */
 ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisation,
@@ -436,7 +436,7 @@ ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisa
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  The objective field to remove.
- * @return   Status CMISS_OK if field successfully removed, any other value if
+ * @return   Status CMZN_OK if field successfully removed, any other value if
  * failed or field not found.
  */
 ZINC_API int cmzn_optimisation_remove_objective_field(
@@ -455,7 +455,7 @@ ZINC_API char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimi
  * Perform the optimisation described by the provided optimisation object.
  *
  * @param optimisation Handle to the cmzn optimisation object.
- * @return Status CMISS_OK if optimisation completed successfully (stopping
+ * @return Status CMZN_OK if optimisation completed successfully (stopping
  * criteria satisfied), and any other value on failure.
  */
 ZINC_API int cmzn_optimisation_optimise(cmzn_optimisation_id optimisation);

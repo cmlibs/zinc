@@ -41,8 +41,8 @@ The public interface to the cmzn_IO object.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __API_CMISS_FDIO_H__
-#define __API_CMISS_FDIO_H__
+#ifndef __API_CMZN_FDIO_H__
+#define __API_CMZN_FDIO_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,4 +158,4 @@ previously set will be cancelled.
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-#endif /* __API_CMISS_FDIO_H__ */
+#endif /* __API_CMZN_FDIO_H__ */

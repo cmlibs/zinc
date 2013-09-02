@@ -36,8 +36,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_SCENE_HPP)
-#define CMISS_SCENE_HPP
+#if !defined (CMZN_SCENE_HPP)
+#define CMZN_SCENE_HPP
 
 #include "general/callback_class.hpp"
 
@@ -67,4 +67,4 @@ int cmzn_scene_compile_tree(cmzn_scene *cmiss_scene,
 
 int build_Scene(cmzn_scene_id scene, cmzn_graphics_filter_id filter);
 
-#endif /* !defined (CMISS_SCENE_HPP) */
+#endif /* !defined (CMZN_SCENE_HPP) */

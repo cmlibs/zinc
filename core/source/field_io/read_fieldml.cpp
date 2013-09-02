@@ -71,14 +71,14 @@ struct ShapeType
 
 const ShapeType libraryShapes[] =
 {
-	{ "shape.unit.line",        1, CMISS_ELEMENT_SHAPE_LINE },
-	{ "shape.unit.square",      2, CMISS_ELEMENT_SHAPE_SQUARE },
-	{ "shape.unit.triangle",    2, CMISS_ELEMENT_SHAPE_TRIANGLE },
-	{ "shape.unit.cube",        3, CMISS_ELEMENT_SHAPE_CUBE },
-	{ "shape.unit.tetrahedron", 3, CMISS_ELEMENT_SHAPE_TETRAHEDRON },
-	{ "shape.unit.wedge12",     3, CMISS_ELEMENT_SHAPE_WEDGE12 },
-	{ "shape.unit.wedge13",     3, CMISS_ELEMENT_SHAPE_WEDGE13 },
-	{ "shape.unit.wedge23",     3, CMISS_ELEMENT_SHAPE_WEDGE23 }
+	{ "shape.unit.line",        1, CMZN_ELEMENT_SHAPE_LINE },
+	{ "shape.unit.square",      2, CMZN_ELEMENT_SHAPE_SQUARE },
+	{ "shape.unit.triangle",    2, CMZN_ELEMENT_SHAPE_TRIANGLE },
+	{ "shape.unit.cube",        3, CMZN_ELEMENT_SHAPE_CUBE },
+	{ "shape.unit.tetrahedron", 3, CMZN_ELEMENT_SHAPE_TETRAHEDRON },
+	{ "shape.unit.wedge12",     3, CMZN_ELEMENT_SHAPE_WEDGE12 },
+	{ "shape.unit.wedge13",     3, CMZN_ELEMENT_SHAPE_WEDGE13 },
+	{ "shape.unit.wedge23",     3, CMZN_ELEMENT_SHAPE_WEDGE23 }
 };
 const int numLibraryShapes = sizeof(libraryShapes) / sizeof(ShapeType);
 
@@ -106,23 +106,23 @@ struct BasisType
 
 const BasisType libraryBases[] =
 {
-	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
+	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
 	// GRC add Hermite!
 	// GRC add vtk, zienkiewicz simplex ordering, swizzle
 };
@@ -967,7 +967,7 @@ enum cmzn_element_shape_type FieldMLReader::getElementShapeFromName(const char *
 		}
 	}
 	display_message(ERROR_MESSAGE, "Read FieldML:  Unrecognised element shape %s", shapeName);
-	return CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+	return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 }
 
 int FieldMLReader::readMeshes()
@@ -1010,7 +1010,7 @@ int FieldMLReader::readMeshes()
 		// determine element shape mapping
 
 		FmlObjectHandle fmlShapeEvaluator = Fieldml_GetMeshShapes(fmlSession, fmlMeshType);
-		cmzn_element_shape_type const_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+		cmzn_element_shape_type const_shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 		cmzn_field_integer_parameters_id elementShapeParameters = 0; // used only if shape evaluator uses indirect map
 		if (fmlShapeEvaluator == FML_INVALID_OBJECT_HANDLE)
 		{
@@ -1070,7 +1070,7 @@ int FieldMLReader::readMeshes()
 					{
 						// Case 1. single recognised shape external evaluator = all elements same shape
 						const_shape_type = getElementShapeFromName(getName(fmlShapeEvaluator).c_str());
-						if (const_shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+						if (const_shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 						{
 							display_message(ERROR_MESSAGE, "Read FieldML:  Unrecognised element shape evaluator %s for mesh type %s.",
 								getName(fmlShapeEvaluator).c_str(), name.c_str());
@@ -1131,19 +1131,19 @@ int FieldMLReader::readMeshes()
 			return_code = 0;
 		}
 		FmlObjectHandle fmlLastElementShapeEvaluator = FML_INVALID_OBJECT_HANDLE;
-		cmzn_element_shape_type last_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+		cmzn_element_shape_type last_shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 		cmzn_ensemble_index_id elementIndex = elementShapeParameters ?
 			cmzn_field_integer_parameters_create_index(elementShapeParameters) : 0;
 		while (return_code)
 		{
 			int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
 			cmzn_element_shape_type shape_type = const_shape_type;
-			if (const_shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+			if (const_shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 			{
 				int shapeIdentifier = elementIdentifier;
 				if (elementShapeParameters &&
-					((CMISS_OK != cmzn_ensemble_index_set_entry(elementIndex, elementsIterator)) ||
-					 (CMISS_OK != cmzn_field_integer_parameters_get_values(elementShapeParameters, elementIndex, 1, &shapeIdentifier))))
+					((CMZN_OK != cmzn_ensemble_index_set_entry(elementIndex, elementsIterator)) ||
+					 (CMZN_OK != cmzn_field_integer_parameters_get_values(elementShapeParameters, elementIndex, 1, &shapeIdentifier))))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Failed to map shape of element %d in mesh type %s.",
 						elementIdentifier, name.c_str());
@@ -1163,7 +1163,7 @@ int FieldMLReader::readMeshes()
 						shape_type = getElementShapeFromName(getName(fmlElementShapeEvaluator).c_str());
 						fmlLastElementShapeEvaluator = fmlElementShapeEvaluator;
 					}
-					if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+					if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 					{
 						display_message(ERROR_MESSAGE, "Read FieldML:  Could not get shape of element %d in mesh type %s.",
 							elementIdentifier, name.c_str());
@@ -1454,12 +1454,12 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
 	{
 		// overzealous to help ensure there is at least one 'coordinate' field to define faces
-		cmzn_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
+		cmzn_field_set_attribute_integer(field, CMZN_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
 	}
 
 	// create nodes and set node parameters
 
-	cmzn_nodeset_id nodes = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodes = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
 	cmzn_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
@@ -1588,7 +1588,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				cmzn_element_template_destroy(&element_template);
 			element_template = cmzn_mesh_create_element_template(mesh);
 			// do not want to override shape of existing elements:
-			cmzn_element_template_set_shape_type(element_template, CMISS_ELEMENT_SHAPE_TYPE_INVALID);
+			cmzn_element_template_set_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
 			for (int ic = 0; ic < componentCount; ic++)
 			{

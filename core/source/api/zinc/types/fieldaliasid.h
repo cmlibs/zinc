@@ -45,4 +45,4 @@
 	struct cmzn_field_alias;
 	typedef struct cmzn_field_alias *cmzn_field_alias_id;
 	#define CMZN_FIELDALIASID_H__
-#endif /* CMISS_FIELD_ALIAS_ID_H */
+#endif /* CMZN_FIELD_ALIAS_ID_H */

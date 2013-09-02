@@ -55,7 +55,7 @@ Wraps itk::SigmoidImageFilter
 #include "itkVector.h"
 #include "itkSigmoidImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

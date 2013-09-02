@@ -61,7 +61,7 @@ ZINC_API cmzn_spectrum_module_id cmzn_spectrum_module_access(
 *
 * @param spectrum_module_address  Address of handle to spectrum module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_spectrum_module_destroy(
 	cmzn_spectrum_module_id *spectrum_module_address);
@@ -83,7 +83,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrum_module_create_spectrum(
 * @see cmzn_spectrum_module_end_change
 *
 * @param spectrum_module  The spectrum_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_spectrum_module_begin_change(cmzn_spectrum_module_id spectrum_module);
 
@@ -94,7 +94,7 @@ ZINC_API int cmzn_spectrum_module_begin_change(cmzn_spectrum_module_id spectrum_
 * cached change messages are sent out to clients.
 *
 * @param spectrum_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_spectrum_module_end_change(cmzn_spectrum_module_id spectrum_module);
 
@@ -111,7 +111,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrum_module_find_spectrum_by_name(
 
 /**
 * Get the default spectrum, if any. By default, a single component spectrum
-* with CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW is returned.
+* with CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW is returned.
 * Call cmzn_spectrum_module_set_default_spectrum to change the default
 * spectrum.
 *
@@ -127,7 +127,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrum_module_get_default_spectrum(
 *
 * @param spectrum_module  spectrum module to modify
 * @param spectrum  The spectrum to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_spectrum_module_set_default_spectrum(
 	cmzn_spectrum_module_id spectrum_module,
@@ -146,7 +146,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrum_access(cmzn_spectrum_id spectrum);
  *
  * @param spectrum  address to the handle to the "to be destroyed"
  *   cmiss spectrum.
- * @return  status CMISS_OK if successfully destroy spectrum, any other value
+ * @return  status CMZN_OK if successfully destroy spectrum, any other value
  * on failure.
  */
 ZINC_API int cmzn_spectrum_destroy(cmzn_spectrum_id *spectrum);
@@ -168,7 +168,7 @@ ZINC_API bool cmzn_spectrum_is_managed(cmzn_spectrum_id spectrum);
  *
  * @param spectrum  Handle to the cmiss spectrum.
  * @param value  The new value for the managed flag: true or false.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_spectrum_set_managed(cmzn_spectrum_id spectrum, bool value);
 
@@ -186,7 +186,7 @@ ZINC_API char *cmzn_spectrum_get_name(cmzn_spectrum_id spectrum);
  *
  * @param spectrum  The handle to cmiss graphical spectrum.
  * @param name  name to be set to the spectrum
- * @return  status CMISS_OK if successfully set/change name for spectrum,
+ * @return  status CMZN_OK if successfully set/change name for spectrum,
  * any other value on failure.
  */
 ZINC_API int cmzn_spectrum_set_name(cmzn_spectrum_id spectrum, const char *name);
@@ -209,7 +209,7 @@ ZINC_API bool cmzn_spectrum_is_material_overwrite(cmzn_spectrum_id spectrum);
  *
  * @param spectrum  Handle to a cmiss_spectrum object.
  *
- * @return  CMISS_OK if successfully set, any other value on failure.
+ * @return  CMZN_OK if successfully set, any other value on failure.
  */
 ZINC_API int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum, bool overwrite);
 
@@ -223,7 +223,7 @@ ZINC_API int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum, boo
  * at once.
  *
  * @param scene  The handle to the spectrum.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_spectrum_begin_change(cmzn_spectrum_id spectrum);
 
@@ -237,7 +237,7 @@ ZINC_API int cmzn_spectrum_begin_change(cmzn_spectrum_id spectrum);
  * at once.
  *
  * @param spectrum  The handle to the spectrum.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_spectrum_end_change(cmzn_spectrum_id spectrum);
 
@@ -296,7 +296,7 @@ ZINC_API cmzn_spectrum_component_id cmzn_spectrum_get_previous_component(
  * @param component  cmiss_spectrum_component to be moved.
  * @param ref_component  <component> will be moved into the current position of this
  * 		cmiss_spectrum_component
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_spectrum_move_component_before(
 	cmzn_spectrum_id spectrum, cmzn_spectrum_component_id component,
@@ -310,7 +310,7 @@ ZINC_API int cmzn_spectrum_move_component_before(
  *   from.
  * @param component  The handle to a spectrum component object which will be
  *   removed from the spectrum.
- * @return  Status CMISS_OK if successfully remove component from spectrum,
+ * @return  Status CMZN_OK if successfully remove component from spectrum,
  * any other value on failure.
  */
 ZINC_API int cmzn_spectrum_remove_component(cmzn_spectrum_id spectrum,
@@ -321,7 +321,7 @@ ZINC_API int cmzn_spectrum_remove_component(cmzn_spectrum_id spectrum,
  *
  * @param spectrum  The handle to the spectrum of which the component is removed
  *   from.
- * @return  Status CMISS_OK if successfully remove all components from spectrum,
+ * @return  Status CMZN_OK if successfully remove all components from spectrum,
  * any other value on failure.
  */
 ZINC_API int cmzn_spectrum_remove_all_components(cmzn_spectrum_id spectrum);
@@ -340,7 +340,7 @@ ZINC_API cmzn_spectrum_component_id cmzn_spectrum_component_access(
  * Destroys the spectrum_component and sets the pointer to NULL.
  *
  * @param component_address  The pointer to the handle of the spectrum_component.
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_destroy(
 	cmzn_spectrum_component_id *component_address);
@@ -364,7 +364,7 @@ ZINC_API double cmzn_spectrum_component_get_range_minimum(
  * @param component  The handle of the spectrum_component.
  * @value  the value to be set for range minimum
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_range_minimum(
 	cmzn_spectrum_component_id component,	double value);
@@ -388,7 +388,7 @@ ZINC_API double cmzn_spectrum_component_get_range_maximum(
  * @param component  The handle of the spectrum_component.
  * @value  the value to be set for range maximum
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_range_maximum(
 	cmzn_spectrum_component_id component,	double value);
@@ -412,7 +412,7 @@ ZINC_API double cmzn_spectrum_component_get_colour_minimum(
  * @param component  The handle of the spectrum_component.
  * @value  the minimum colour value to be set
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_colour_minimum(
 	cmzn_spectrum_component_id component, double value);
@@ -436,7 +436,7 @@ ZINC_API double cmzn_spectrum_component_get_colour_maximum(
  * @param component  The handle of the spectrum_component.
  * @value  the maximum colour value to be set
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_colour_maximum(
 	cmzn_spectrum_component_id component, double value);
@@ -461,14 +461,14 @@ ZINC_API double cmzn_spectrum_component_get_step_value(
  * @param component  The handle of the spectrum_component.
  * @value  the step value to be set
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_step_value(
 	cmzn_spectrum_component_id component,	double value);
 
 /**
  * Get the value which alters the colour progression when scale type
- * is set to CMISS_SPECTRUM_COMPONENT_SCALE_LOG
+ * is set to CMZN_SPECTRUM_COMPONENT_SCALE_LOG
  *
  * @param component  The handle of the spectrum_component.
  *
@@ -479,12 +479,12 @@ ZINC_API double cmzn_spectrum_component_get_exaggeration(
 
 /**
  * Set the value which alters the colour progression when scale type
- * is set to CMISS_SPECTRUM_COMPONENT_SCALE_LOG
+ * is set to CMZN_SPECTRUM_COMPONENT_SCALE_LOG
  *
  * @param component  The handle of the spectrum_component.
  * @value  the exaggeration value to be set
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_exaggeration(
 	cmzn_spectrum_component_id component,	double value);
@@ -509,7 +509,7 @@ ZINC_API double cmzn_spectrum_component_get_banded_ratio(
  * @param component  The handle of the spectrum_component.
  * @value  the banded ratio to be set
  *
- * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrum_component_set_banded_ratio(
 	cmzn_spectrum_component_id component,	double value);
@@ -531,7 +531,7 @@ ZINC_API bool cmzn_spectrum_component_is_active(
  *
  * @param component  Handle to the cmiss spectrum component.
  * @param active  Value to be set to the cmiss spectrum component.
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_active(
@@ -554,7 +554,7 @@ ZINC_API bool cmzn_spectrum_component_is_colour_reverse(
  *
  * @param component  Handle to the cmiss spectrum component.
  * @param reverse  Value to be set to the cmiss spectrum component.
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_colour_reverse(
@@ -579,7 +579,7 @@ ZINC_API bool cmzn_spectrum_component_is_extend_above(
  *
  * @param component  Handle to the cmiss spectrum component.
  * @param extend_above  Value to be set to the cmiss spectrum component.
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_extend_above(
@@ -604,7 +604,7 @@ ZINC_API bool cmzn_spectrum_component_is_extend_below(
  *
  * @param component  Handle to the cmiss spectrum component.
  * @param extend_below  Value to be set to the cmiss spectrum component.
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_extend_below(
@@ -632,7 +632,7 @@ ZINC_API int cmzn_spectrum_component_get_field_component(
  * @param component  Handle to the cmiss spectrum component.
  * @param component_number  field component number for this spectrum to lookup.
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_field_component(
@@ -640,7 +640,7 @@ ZINC_API int cmzn_spectrum_component_set_field_component(
 
 /**
  * Get the number of bands this component contains within its range in
- * CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED
+ * CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED
  *
  * @param component  Handle to the cmiss spectrum component.
  *
@@ -651,12 +651,12 @@ ZINC_API int cmzn_spectrum_component_get_number_of_bands(cmzn_spectrum_component
 
 /**
  * Set the number of bands this component contains within its range in
- * CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED
+ * CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED
  *
  * @param component  Handle to the cmiss spectrum component.
  * @param number of bands  number of bands for this component
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * failed.
  */
 ZINC_API int cmzn_spectrum_component_set_number_of_bands(cmzn_spectrum_component_id component,
@@ -664,12 +664,12 @@ ZINC_API int cmzn_spectrum_component_set_number_of_bands(cmzn_spectrum_component
 
 enum cmzn_spectrum_component_scale_type
 {
-	CMISS_SPECTRUM_COMPONENT_SCALE_INVALID = 0,
-	CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR = 1,
+	CMZN_SPECTRUM_COMPONENT_SCALE_INVALID = 0,
+	CMZN_SPECTRUM_COMPONENT_SCALE_LINEAR = 1,
 	/*!< The colour value on spectrum will be interpolated linearly in range when
 	 * this mode is chosen.
 	 */
-	CMISS_SPECTRUM_COMPONENT_SCALE_LOG = 2
+	CMZN_SPECTRUM_COMPONENT_SCALE_LOG = 2
 };
 
 /**
@@ -678,7 +678,7 @@ enum cmzn_spectrum_component_scale_type
  * @param component  Handle to the cmiss spectrum component.
  *
  * @return  interpolation_mode set for this spectrum.
- *   CMISS_SPECTRUM_COMPONENT_SCALE_INVALID if failed or
+ *   CMZN_SPECTRUM_COMPONENT_SCALE_INVALID if failed or
  *   mode is not set correctly
  */
 ZINC_API enum cmzn_spectrum_component_scale_type
@@ -690,7 +690,7 @@ ZINC_API enum cmzn_spectrum_component_scale_type
  * @param component  Handle to the cmiss spectrum component.
  * @param interpolation_mode  Interpolation mode to be set for spectrum component
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * 	failed.
  */
 ZINC_API int cmzn_spectrum_component_set_scale_type(
@@ -704,50 +704,50 @@ ZINC_API int cmzn_spectrum_component_set_scale_type(
  */
 enum cmzn_spectrum_component_colour_mapping
 {
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID = 0,
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA = 1,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID = 0,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA = 1,
 	/*!< This colour mapping alters the alpha (transparency value) for
 	 * primitives.
 	 * This mode does not alter the rgb value and
 	 * should be used with other spectrum component or with
 	 * overwrite_material set to 0 in spectrum.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED = 2,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED = 2,
 	/*!< This colour mapping create non-coloured strips/bands.
-	 *  appearances can be altered by value of CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO
+	 *  appearances can be altered by value of CMZN_SPECTRUM_COMPONENT_ATTRIBUTE_BANDED_RATIO
 	 *  and value of number of bands.
 	 *  This mode does not alter the rgb value except for the bands and
 	 *  should be used with other spectrum component or with
 	 *  overwrite_material set to 0 in spectrum.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE = 3,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE = 3,
 	/*!< This colour mapping create a colour spectrum from black to blue.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN = 4,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN = 4,
 	/*!< This colour mapping create a colour spectrum from black to green.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME = 5,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME = 5,
 	/*!< This colour mapping create a monochrome (grey scale) spectrum.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW = 6,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW = 6,
 	/*!< This colour mapping create a spectrum from blue to red, similar
 	 * to the colour of a rainbow.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED = 7,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED = 7,
 	/*!< This colour mapping create a colour spectrum from black to red.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP = 8,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP = 8,
 	/*!< This colour mapping create a spectrum with only two colours, red and green.
 	 * The boundary between red and green can be altered by
-	 * CMISS_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE.
+	 * CMZN_SPECTRUM_COMPONENT_ATTRIBUTE_STEP_VALUE.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE = 9,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE = 9,
 	/*!< This colour mapping create a colour spectrum from black to blue.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED = 10,
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED = 10,
 	/*!< This colour mapping create a colour spectrum from black to red.
 	 */
-	CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN = 11
+	CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN = 11
 	/*!< This colour mapping create a colour spectrum from black to green.
 	 */
 };
@@ -778,7 +778,7 @@ ZINC_API char *cmzn_spectrum_component_colour_mapping_enum_to_string(
  * @param component  Handle to the cmiss spectrum component.
  *
  * @return  colour_mapping of the spectrum component.
- *   CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID if failed or
+ *   CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_INVALID if failed or
  *   mode is not set correctly.
  */
 ZINC_API enum cmzn_spectrum_component_colour_mapping
@@ -790,7 +790,7 @@ cmzn_spectrum_component_get_colour_mapping(cmzn_spectrum_component_id component)
  * @param component  Handle to the cmiss spectrum component.
  * @param colour_mapping  colour_mapping to be set for spectrum component
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * 	failed.
  */
 ZINC_API int cmzn_spectrum_component_set_colour_mapping(

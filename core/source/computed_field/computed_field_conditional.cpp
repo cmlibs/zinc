@@ -64,7 +64,7 @@ class Computed_field_if : public Computed_field_core
 
 public:
 	Computed_field_if() : Computed_field_core()
-		, value_type(CMISS_FIELD_VALUE_TYPE_INVALID)
+		, value_type(CMZN_FIELD_VALUE_TYPE_INVALID)
 	{
 	}
 
@@ -95,11 +95,11 @@ private:
 
 	virtual FieldValueCache *createValueCache(cmzn_field_cache& /* parentCache */)
 	{
-		if (value_type == CMISS_FIELD_VALUE_TYPE_REAL)
+		if (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
 			return new RealFieldValueCache(field->number_of_components);
-		else if (value_type == CMISS_FIELD_VALUE_TYPE_STRING)
+		else if (value_type == CMZN_FIELD_VALUE_TYPE_STRING)
 			return new StringFieldValueCache();
-		else if (value_type == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION)
+		else if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 			return new MeshLocationFieldValueCache();
 
 		return 0;
@@ -145,7 +145,7 @@ int Computed_field_if::evaluate(cmzn_field_cache& cache, FieldValueCache& inValu
 				calculate_field_three = 1;
 			}
 		}
-		if (value_type == CMISS_FIELD_VALUE_TYPE_REAL)
+		if (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 			RealFieldValueCache *source2Cache = 0;
@@ -197,7 +197,7 @@ int Computed_field_if::evaluate(cmzn_field_cache& cache, FieldValueCache& inValu
 				return 1;
 			}
 		}
-		else if (value_type == CMISS_FIELD_VALUE_TYPE_STRING)
+		else if (value_type == CMZN_FIELD_VALUE_TYPE_STRING)
 		{
 			StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
 			StringFieldValueCache *useSourceCache = calculate_field_two ?
@@ -209,7 +209,7 @@ int Computed_field_if::evaluate(cmzn_field_cache& cache, FieldValueCache& inValu
 				return 1;
 			}
 		}
-		else if (value_type == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION)
+		else if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 		{
 		}
 	}

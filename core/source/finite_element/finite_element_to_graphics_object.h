@@ -169,7 +169,7 @@ The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 <select_mode> is used in combination with the <element_selected> and
 <selected_ranges> to draw only those points with numbers in or out of the given
-ranges when given value CMISS_GRAPHIC_DRAW_SELECTED or CMISS_GRAPHIC_DRAW_UNSELECTED.
+ranges when given value CMZN_GRAPHIC_DRAW_SELECTED or CMZN_GRAPHIC_DRAW_UNSELECTED.
 If <element_selected> is true, all points are selected, otherwise selection is
 determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
 numbers are selected.

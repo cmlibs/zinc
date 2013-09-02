@@ -5,7 +5,7 @@ LAST MODIFIED : 10 November 2004
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
-interface to CMISS.
+interface to CMZN.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -3406,7 +3406,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							if ('R' == first_character_in_token)
 							{
 								cmzn_region_destroy(&region);
-								if (region_path && (CMISS_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
+								if (region_path && (CMZN_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
 								{
 									region = cmzn_region_find_subregion_at_path(root_region, region_path);
 									if (!region)
@@ -3427,7 +3427,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
 										"Missing \'%c\' at start of region path \'%s\'.  %s",
-										CMISS_REGION_PATH_SEPARATOR_CHAR, region_path, location);
+										CMZN_REGION_PATH_SEPARATOR_CHAR, region_path, location);
 									DEALLOCATE(location);
 									return_code = 0;
 								}
@@ -3688,7 +3688,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 										{
 											cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
 											cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
-												use_data_meta_flag ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
+												use_data_meta_flag ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
 											if (!node_group)
 											{

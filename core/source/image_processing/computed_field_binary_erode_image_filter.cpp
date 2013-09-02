@@ -55,7 +55,7 @@ Wraps itk::BinaryErodeImageFilter
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryErodeImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

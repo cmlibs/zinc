@@ -38,8 +38,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_BTREE_HPP)
-#define CMISS_BTREE_HPP
+#if !defined (CMZN_BTREE_HPP)
+#define CMZN_BTREE_HPP
 
 #include <functional>
 
@@ -1337,4 +1337,4 @@ public:
 	}
 };
 
-#endif /* !defined (CMISS_BTREE_HPP) */
+#endif /* !defined (CMZN_BTREE_HPP) */

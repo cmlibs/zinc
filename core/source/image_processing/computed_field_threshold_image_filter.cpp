@@ -67,7 +67,7 @@ can be used in three different ways.
 #include "itkVector.h"
 #include "itkThresholdImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 {

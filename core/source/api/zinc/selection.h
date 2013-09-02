@@ -50,11 +50,11 @@ typedef void (*cmzn_selection_handler_callback_function)(
 
 enum cmzn_selection_change_type
 {
-	CMISS_SELECTION_NO_CHANGE = 0,
-	CMISS_SELECTION_CLEAR = 1,     /*!< selection is empty, but wasn't before */
-	CMISS_SELECTION_ADD = 2,       /*!< objects have been added only */
-	CMISS_SELECTION_REMOVE = 3,    /*!< objects have been removed only */
-	CMISS_SELECTION_REPLACE = 4   /*!< contents replaced: clear+add, add+remove */
+	CMZN_SELECTION_NO_CHANGE = 0,
+	CMZN_SELECTION_CLEAR = 1,     /*!< selection is empty, but wasn't before */
+	CMZN_SELECTION_ADD = 2,       /*!< objects have been added only */
+	CMZN_SELECTION_REMOVE = 3,    /*!< objects have been removed only */
+	CMZN_SELECTION_REPLACE = 4   /*!< contents replaced: clear+add, add+remove */
 };
 
 /***************************************************************************//**
@@ -81,7 +81,7 @@ ZINC_API cmzn_selection_handler_id cmzn_selection_handler_access(
  * Internally this just decrements the reference count.
  *
  * @param selection_handler  Handle to the cmiss selection_handler.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection_handler);
 
@@ -90,7 +90,7 @@ ZINC_API int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection
  * remove the callback function from the seleciton handler.
  *
  * @param selection_handler  Handle to the cmiss selection_handler.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id selection_handler);
 
@@ -103,7 +103,7 @@ ZINC_API int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id sel
  * @param function  function to be called when event is triggered.
  * @param user_data_in  Void pointer to an user object. User is responsible for
  *   the life time of such object.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_set_callback(cmzn_selection_handler_id selection_handler,
 		cmzn_selection_handler_callback_function function, void *user_data_in);
@@ -128,7 +128,7 @@ ZINC_API cmzn_selection_event_id cmzn_selection_event_access(
  * cmzn_selection_event_access function.
  *
  * @param selection_event  Handle to the cmiss selection_handler.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_event_destroy(cmzn_selection_event_id *selection_event_address);
 
@@ -160,7 +160,7 @@ ZINC_API int cmzn_selection_handler_get_hierarchical(cmzn_selection_handler_id s
  *
  * @param selection_event  Handle to the cmiss_selection_event.
  * @param hierarchical_flag  flag to be set.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_set_hierarchical(cmzn_selection_handler_id selection_handler,
 	int hierarchical_flag);

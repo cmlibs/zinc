@@ -67,7 +67,7 @@ ZINC_API cmzn_font_module_id cmzn_font_module_access(
 *
 * @param font_module_address  Address of handle to font module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_font_module_destroy(
 	cmzn_font_module_id *font_module_address);
@@ -89,7 +89,7 @@ ZINC_API cmzn_font_id cmzn_font_module_create_font(
 * @see cmzn_font_module_end_change
 *
 * @param font_module  The font_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_font_module_begin_change(cmzn_font_module_id font_module);
 
@@ -100,7 +100,7 @@ ZINC_API int cmzn_font_module_begin_change(cmzn_font_module_id font_module);
 * cached change messages are sent out to clients.
 *
 * @param font_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_font_module_end_change(cmzn_font_module_id font_module);
 
@@ -130,7 +130,7 @@ ZINC_API cmzn_font_id cmzn_font_module_get_default_font(
 *
 * @param font_module  font module to modify
 * @param font  The font to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_font_module_set_default_font(
 	cmzn_font_module_id font_module,
@@ -149,7 +149,7 @@ ZINC_API cmzn_font_id cmzn_font_access(cmzn_font_id font);
  *
  * @param font_address  address to the handle to the "to be destroyed"
  *   cmiss graphics font.
- * @return  status CMISS_OK if successfully destroy graphics font, any other value
+ * @return  status CMZN_OK if successfully destroy graphics font, any other value
  * on failure.
  */
 ZINC_API int cmzn_font_destroy(cmzn_font_id *font_address);
@@ -168,7 +168,7 @@ ZINC_API char *cmzn_font_get_name(cmzn_font_id font);
  *
  * @param font  The handle to cmiss graphics font.
  * @param name  name to be set to the font
- * @return  status CMISS_OK if successfully set/change name for font,
+ * @return  status CMZN_OK if successfully set/change name for font,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_name(cmzn_font_id font,
@@ -188,7 +188,7 @@ ZINC_API cmzn_font_type cmzn_font_get_font_type(
  *
  * @param font  The handle to cmiss graphics font.
  * @param font_type  the true type font to use for font.
- * @return  status CMISS_OK if successfully set the true type for font,
+ * @return  status CMZN_OK if successfully set the true type for font,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_font_type(cmzn_font_id font,
@@ -208,7 +208,7 @@ ZINC_API cmzn_font_render_type cmzn_font_get_render_type(
  *
  * @param font  The handle to cmiss graphics font.
  * @param render_type  the render type to use for font.
- * @return  status CMISS_OK if successfully set the font type,
+ * @return  status CMZN_OK if successfully set the font type,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_render_type(cmzn_font_id font,
@@ -227,7 +227,7 @@ ZINC_API int cmzn_font_get_bold(cmzn_font_id font);
  *
  * @param font  The handle to cmiss graphics font.
  * @param bold  1 to enable bold text or 0 to disable it.
- * @return  status CMISS_OK if successfully enable/disable bold text,
+ * @return  status CMZN_OK if successfully enable/disable bold text,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_bold(cmzn_font_id font, int bold);
@@ -245,7 +245,7 @@ ZINC_API double cmzn_font_get_depth(cmzn_font_id font);
  *
  * @param font  The handle to cmiss graphics font.
  * @param depth  depth of the font to be set.
- * @return  status CMISS_OK if successfully set depth for font,
+ * @return  status CMZN_OK if successfully set depth for font,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_depth(cmzn_font_id font, double depth);
@@ -263,7 +263,7 @@ ZINC_API int cmzn_font_get_italic(cmzn_font_id font);
  *
  * @param font  The handle to cmiss graphics font.
  * @param italic  1 to enable italic text or 0 to disable it.
- * @return  status CMISS_OK if successfully enable/disable italic text,
+ * @return  status CMZN_OK if successfully enable/disable italic text,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_italic(cmzn_font_id font, int italic);
@@ -281,7 +281,7 @@ ZINC_API int cmzn_font_get_size(cmzn_font_id font);
  *
  * @param font  The handle to cmiss graphics font.
  * @param size  size of the font to be set.
- * @return  status CMISS_OK if successfully set size for font,
+ * @return  status CMZN_OK if successfully set size for font,
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_size(cmzn_font_id font, int size);

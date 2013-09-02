@@ -60,7 +60,7 @@ extern "C" {
  * for passing to a projection field. The values are continuously updated with
  * changes to the scene_viewer and become invalid if the scene_viewer is
  * destroyed.
- * Note CMISS_SCENE_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
+ * Note CMZN_SCENE_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
  * of the scene for the owning region of field, which is transformed from
  * world coordinates by the cumulative transformation matrices of all scenes
  * down from the root region of the scene viewer's scene.

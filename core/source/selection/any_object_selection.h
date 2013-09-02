@@ -78,7 +78,7 @@ Data broadcast with callbacks from <Any_object_selection> describing the changes
 	struct LIST(Any_object) *newly_unselected_any_object_list;
 }; /* struct Any_object_selection_changes */
 
-DECLARE_CMISS_CALLBACK_TYPES(Any_object_selection_change, \
+DECLARE_CMZN_CALLBACK_TYPES(Any_object_selection_change, \
 	struct Any_object_selection *,struct Any_object_selection_changes *, void);
 
 /*
@@ -105,7 +105,7 @@ Destroys the Any_object_selection.
 
 int Any_object_selection_add_callback(
 	struct Any_object_selection *any_object_selection,
-	CMISS_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 23 August 2000
 
@@ -118,7 +118,7 @@ void *user_data.
 
 int Any_object_selection_remove_callback(
 	struct Any_object_selection *any_object_selection,
-	CMISS_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 23 August 2000
 

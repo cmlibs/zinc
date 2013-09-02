@@ -55,7 +55,7 @@ Wraps itk::DerivativeImageFilter
 #include "itkVector.h"
 #include "itkDerivativeImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_NODE_PRIVATE_HPP)
-#define CMISS_NODE_PRIVATE_HPP
+#if !defined (CMZN_NODE_PRIVATE_HPP)
+#define CMZN_NODE_PRIVATE_HPP
 
 #include "zinc/node.h"
 
@@ -54,7 +54,7 @@ struct FE_region;
  * for the master nodeset expected to own the element's nodes.
  * @param element  The element whose nodes are to be added. Face elements
  * inherit nodes from parent elements via field mappings.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_nodeset_group_add_element_nodes(
 	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element);
@@ -67,7 +67,7 @@ int cmzn_nodeset_group_add_element_nodes(
  * subgroup for the master nodeset expected to own the element's nodes.
  * @param element  The element whose nodes are to be removed. Face elements
  * inherit nodes from parent elements via field mappings.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_nodeset_group_remove_element_nodes(
 	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element);
@@ -110,4 +110,4 @@ int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
 cmzn_nodeset_group_id cmzn_field_module_create_nodeset_group_from_name_internal(
 	cmzn_field_module_id field_module, const char *nodeset_group_name);
 
-#endif /* !defined (CMISS_NODE_PRIVATE_HPP) */
+#endif /* !defined (CMZN_NODE_PRIVATE_HPP) */

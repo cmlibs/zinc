@@ -66,14 +66,14 @@ extern "C" {
  */
 enum cmzn_stream_information_image_file_format
 {
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID = 0,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP = 1,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM = 2,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG = 3,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF = 4,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG = 5,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI = 6,
-	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF = 7
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID = 0,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP = 1,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM = 2,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG = 3,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF = 4,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG = 5,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI = 6,
+	CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF = 7
 };
 
 /***************************************************************************//**
@@ -102,21 +102,21 @@ ZINC_API char *cmzn_stream_information_image_file_format_enum_to_string(
  */
 enum cmzn_field_image_combine_mode
 {
-	CMISS_FIELD_IMAGE_COMBINE_INVALID = 0,
-	CMISS_FIELD_IMAGE_COMBINE_BLEND = 1,
-	CMISS_FIELD_IMAGE_COMBINE_DECAL = 2,
-	CMISS_FIELD_IMAGE_COMBINE_MODULATE = 3,
-	CMISS_FIELD_IMAGE_COMBINE_ADD = 4,
-	CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED = 5,  /*!< Add the value and subtract 0.5 so the texture value
+	CMZN_FIELD_IMAGE_COMBINE_INVALID = 0,
+	CMZN_FIELD_IMAGE_COMBINE_BLEND = 1,
+	CMZN_FIELD_IMAGE_COMBINE_DECAL = 2,
+	CMZN_FIELD_IMAGE_COMBINE_MODULATE = 3,
+	CMZN_FIELD_IMAGE_COMBINE_ADD = 4,
+	CMZN_FIELD_IMAGE_COMBINE_ADD_SIGNED = 5,  /*!< Add the value and subtract 0.5 so the texture value
 								 effectively ranges from -0.5 to 0.5 */
-	CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 6,  /*!< Multiply and then scale by 4, so that we can
+	CMZN_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 6,  /*!< Multiply and then scale by 4, so that we can
 										 scale down or up */
-	CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 7,  /*!< Same as blend with a 4 * scaling */
-	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT = 8,
-	CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 9,
-	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 10,
-	CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 11,
-	CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 12
+	CMZN_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 7,  /*!< Same as blend with a 4 * scaling */
+	CMZN_FIELD_IMAGE_COMBINE_SUBTRACT = 8,
+	CMZN_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 9,
+	CMZN_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 10,
+	CMZN_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 11,
+	CMZN_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 12
 };
 
 /***************************************************************************//**
@@ -145,9 +145,9 @@ ZINC_API char *cmzn_field_image_combine_mode_enum_to_string(
  */
 enum cmzn_field_image_hardware_compression_mode
 {
-	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
-	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
-	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
+	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
+	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
+	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
 	/*!< Allow the hardware to choose the compression */
 };
 
@@ -176,12 +176,12 @@ ZINC_API char *cmzn_field_image_hardware_compression_mode_enum_to_string(
  */
 enum cmzn_field_image_filter_mode
 {
-	CMISS_FIELD_IMAGE_FILTER_INVALID = 0,
-	CMISS_FIELD_IMAGE_FILTER_NEAREST = 1,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR = 2,
-	CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 3,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 4,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
+	CMZN_FIELD_IMAGE_FILTER_INVALID = 0,
+	CMZN_FIELD_IMAGE_FILTER_NEAREST = 1,
+	CMZN_FIELD_IMAGE_FILTER_LINEAR = 2,
+	CMZN_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 3,
+	CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 4,
+	CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
 };
 
 /***************************************************************************//**
@@ -210,16 +210,16 @@ ZINC_API char *cmzn_field_image_filter_mode_enum_to_string(
  */
 enum cmzn_field_image_wrap_mode
 {
-	CMISS_FIELD_IMAGE_WRAP_INVALID = 0,
-	CMISS_FIELD_IMAGE_WRAP_CLAMP = 1,/*!< With repeating textures and when texture
+	CMZN_FIELD_IMAGE_WRAP_INVALID = 0,
+	CMZN_FIELD_IMAGE_WRAP_CLAMP = 1,/*!< With repeating textures and when texture
 	 coordinates greater than [0,1], the texture will repeat*/
-	CMISS_FIELD_IMAGE_WRAP_REPEAT = 2,
-	CMISS_FIELD_IMAGE_WRAP_EDGE_CLAMP = 3, /*!< always ignore the border,
+	CMZN_FIELD_IMAGE_WRAP_REPEAT = 2,
+	CMZN_FIELD_IMAGE_WRAP_EDGE_CLAMP = 3, /*!< always ignore the border,
 		texels at or near the edge of the texure are used for texturing */
-	CMISS_FIELD_IMAGE_WRAP_BORDER_CLAMP = 4, /*!< With nearest filter mode,
+	CMZN_FIELD_IMAGE_WRAP_BORDER_CLAMP = 4, /*!< With nearest filter mode,
 		closest texel in the texture is used, with linear filter mode, a weighted
 		combiination in a 2x2 awrray of colour data us used */
-	CMISS_FIELD_IMAGE_WRAP_MIRROR_REPEAT = 5/*!< Texture will be flip-flop outside
+	CMZN_FIELD_IMAGE_WRAP_MIRROR_REPEAT = 5/*!< Texture will be flip-flop outside
 		of the range. Texture may appear up-right in coordinate range[0,1] but
 		upside-down in coordinate range[1,2]*/
 };
@@ -246,13 +246,13 @@ ZINC_API char *cmzn_field_image_wrap_mode_enum_to_string(
 
 enum cmzn_field_image_attribute
 {
-	CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = 3,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS = 4,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = 5,
-	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = 6
+	CMZN_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = 3,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS = 4,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = 5,
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = 6
 };
 
 /***************************************************************************//**
@@ -353,7 +353,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image
  * Internally this just decrements the reference count.
  *
  * @param image_address  Address of handle to the image field.
- * @return  Status CMISS_OK if successfully destroyed the image handle,
+ * @return  Status CMZN_OK if successfully destroyed the image handle,
  * any other value on failure.
  */
 ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
@@ -384,7 +384,7 @@ ZINC_API double cmzn_field_image_get_attribute_real(cmzn_field_image_id image,
  * @param stream_information  Handle to the cmiss stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this image.
  */
 ZINC_API int cmzn_field_image_set_attribute_real(cmzn_field_image_id image,
@@ -403,7 +403,7 @@ ZINC_API int cmzn_field_image_set_attribute_real(cmzn_field_image_id image,
  * @param stream_information  Information about the supplied formatted image data.
  * At a minimum it should specify either a filename or a memory block
  * reference.
- * @return  Status CMISS_OK if the operation is successful, any other value on
+ * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */
 ZINC_API int cmzn_field_image_read(cmzn_field_image_id image_field,
@@ -416,7 +416,7 @@ ZINC_API int cmzn_field_image_read(cmzn_field_image_id image_field,
  * @param image_field  The field image to be read into.
  * @param file_name  name of the file to read from.
  *
- * @return  Status CMISS_OK if data successfully read and merged into specified
+ * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
 ZINC_API int cmzn_field_image_read_file(cmzn_field_image_id image_field, const char *file_name);
@@ -438,7 +438,7 @@ ZINC_API int cmzn_field_image_read_file(cmzn_field_image_id image_field, const c
  * @param image_field The image field.
  * @param stream_information  Information specifying the required format
  * for the returned formatted image data.
- * @return  Status CMISS_OK if the operation is successful, any other value
+ * @return  Status CMZN_OK if the operation is successful, any other value
  * on failure.
  */
 ZINC_API int cmzn_field_image_write(cmzn_field_image_id image_field,
@@ -450,7 +450,7 @@ ZINC_API int cmzn_field_image_write(cmzn_field_image_id image_field,
  * @param image_field  The image_field which stores the image.
  * @param file_name  name of the file to write to..
  *
- * @return  Status CMISS_OK if data is successfully written out, any other value
+ * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */
 ZINC_API int cmzn_field_image_write_file(cmzn_field_image_id image_field,
@@ -471,7 +471,7 @@ ZINC_API enum cmzn_field_image_combine_mode cmzn_field_image_get_combine_mode(
  * @param image_field  The image field.
  * @param combine_mode  Enumerator describing how the image is combined with the
  * 		material.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
    enum cmzn_field_image_combine_mode combine_mode);
@@ -492,7 +492,7 @@ ZINC_API enum cmzn_field_image_hardware_compression_mode cmzn_field_image_get_ha
  * @param image_field  The image field.
  * @param compression_mode  Enumerator describing how the image is combined with the
  * 		material.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_hardware_compression_mode(cmzn_field_image_id image_field,
    enum cmzn_field_image_hardware_compression_mode compression_mode);
@@ -513,7 +513,7 @@ ZINC_API enum cmzn_field_image_filter_mode cmzn_field_image_get_filter_mode(
  * @param image_field  The image field.
  * @param filter_mode  Enumerator describing how the graphics hardware rasterises
  *   the texture onto the screen.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_filter_mode(cmzn_field_image_id image_field,
    enum cmzn_field_image_filter_mode filter_mode);
@@ -533,7 +533,7 @@ ZINC_API enum cmzn_field_image_wrap_mode cmzn_field_image_get_wrap_mode(
  * @param image_field  The image field.
  * @param filter_mode  Enumerator describing how image is wrapped outside
  * 	the range [0,1].
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
    enum cmzn_field_image_wrap_mode filter_mode);
@@ -552,19 +552,19 @@ ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image,
 
 enum cmzn_stream_information_image_attribute
 {
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
+	CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
 	/*!< Integer specifies the pixel width for binary data reading in using this
 	 * stream_information.
 	 */
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
+	CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
 	/*!< Integer specifies the pixel height for binary data reading in using this
 	 * stream_information.
 	 */
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = 3,
+	CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = 3,
 	/*!< Integer specifies the number of bytes per component for binary data using
 	 * this stream_information. Only 8 and 16 bits are supported at the moment.
 	 */
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = 4
+	CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = 4
 	/*!< Real number specifies the quality for binary data using this stream_information.
 	 * This parameter controls compression for compressed lossy formats,
 	 * where a quality of 1.0 specifies the least lossy output for a given format and a
@@ -604,7 +604,7 @@ ZINC_API cmzn_stream_information_id cmzn_field_image_create_stream_information(
  *
  * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_stream_information_image_destroy(
 	cmzn_stream_information_image_id *stream_information_address);
@@ -647,7 +647,7 @@ ZINC_C_INLINE cmzn_stream_information_id
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true.
  *
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  *	failed or attribute not valid or unable to be set for this
  * 	stream_information_image.
  */
@@ -661,7 +661,7 @@ ZINC_API int cmzn_stream_information_image_set_attribute_integer(
  * @param stream_information  Handle to the cmiss stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
- * @return   Status CMISS_OK if attribute successfully set, any other value if
+ * @return   Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this
  * stream_information_image.
  */
@@ -676,7 +676,7 @@ ZINC_API int cmzn_stream_information_image_set_attribute_real(
  *
  * @param stream_information  The storage information object.
  * @param file_format  The image file format.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_stream_information_image_set_file_format(
 	cmzn_stream_information_image_id stream_information,
@@ -688,7 +688,7 @@ ZINC_API int cmzn_stream_information_image_set_file_format(
  *
  * @param stream_information  The storage information object.
  * @param pixel_format  The pixel_format of the formatted data.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_stream_information_image_set_pixel_format(
 	cmzn_stream_information_image_id stream_information,

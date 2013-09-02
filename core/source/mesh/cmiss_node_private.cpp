@@ -617,31 +617,31 @@ private:
 		FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (nodal_value_type)
 		{
-			case CMISS_NODAL_VALUE_TYPE_INVALID:
+			case CMZN_NODAL_VALUE_TYPE_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMISS_NODAL_VALUE:
+			case CMZN_NODAL_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMISS_NODAL_D_DS1:
+			case CMZN_NODAL_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMISS_NODAL_D_DS2:
+			case CMZN_NODAL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMISS_NODAL_D_DS3:
+			case CMZN_NODAL_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMISS_NODAL_D2_DS1DS2:
+			case CMZN_NODAL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMISS_NODAL_D2_DS1DS3:
+			case CMZN_NODAL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMISS_NODAL_D2_DS2DS3:
+			case CMZN_NODAL_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMISS_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODAL_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}
@@ -908,11 +908,11 @@ cmzn_nodeset_id cmzn_field_module_find_nodeset_by_domain_type(
 	{
 		cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
 		FE_region *fe_region = 0;
-		if (CMISS_FIELD_DOMAIN_NODES == domain_type)
+		if (CMZN_FIELD_DOMAIN_NODES == domain_type)
 		{
 			fe_region = cmzn_region_get_FE_region(region);
 		}
-		else if (CMISS_FIELD_DOMAIN_DATA == domain_type)
+		else if (CMZN_FIELD_DOMAIN_DATA == domain_type)
 		{
 			fe_region = FE_region_get_data_FE_region(cmzn_region_get_FE_region(region));
 		}
@@ -945,11 +945,11 @@ cmzn_nodeset_id cmzn_field_module_find_nodeset_by_name(
 		{
 			if (0 == strcmp(nodeset_name, "nodes"))
 			{
-				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
 			}
 			else if (0 == strcmp(nodeset_name, "datapoints"))
 			{
-				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_DATA);
+				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_DATA);
 			}
 		}
 	}
@@ -1336,28 +1336,28 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMISS_NODAL_VALUE:
+			case CMZN_NODAL_VALUE:
 				enum_string = "VALUE";
 				break;
-			case CMISS_NODAL_D_DS1:
+			case CMZN_NODAL_D_DS1:
 				enum_string = "D_DS1";
 				break;
-			case CMISS_NODAL_D_DS2:
+			case CMZN_NODAL_D_DS2:
 				enum_string = "D_DS2";
 				break;
-			case CMISS_NODAL_D_DS3:
+			case CMZN_NODAL_D_DS3:
 				enum_string = "D_DS3";
 				break;
-			case CMISS_NODAL_D2_DS1DS2:
+			case CMZN_NODAL_D2_DS1DS2:
 				enum_string = "D2_DS1DS2";
 				break;
-			case CMISS_NODAL_D2_DS1DS3:
+			case CMZN_NODAL_D2_DS1DS3:
 				enum_string = "_D2_DS1DS3";
 				break;
-			case CMISS_NODAL_D2_DS2DS3:
+			case CMZN_NODAL_D2_DS2DS3:
 				enum_string = "D2_DS2DS3";
 				break;
-			case CMISS_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODAL_D3_DS1DS2DS3:
 				enum_string = "D3_DS1DS2DS3";
 				break;
 			default:

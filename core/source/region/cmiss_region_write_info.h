@@ -41,8 +41,8 @@ Data structure shared by several region export modules.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_REGION_WRITE_INFO_H)
-#define CMISS_REGION_WRITE_INFO_H
+#if !defined (CMZN_REGION_WRITE_INFO_H)
+#define CMZN_REGION_WRITE_INFO_H
 
 #include "region/cmiss_region.h"
 #include "general/list.h"
@@ -55,9 +55,9 @@ Module types
 
 enum cmzn_region_write_status
 {
-	CMISS_REGION_NOT_WRITTEN,
-	CMISS_REGION_DECLARED,
-	CMISS_REGION_WRITTEN
+	CMZN_REGION_NOT_WRITTEN,
+	CMZN_REGION_DECLARED,
+	CMZN_REGION_WRITTEN
 };
 
 struct cmzn_region_write_info;
@@ -119,4 +119,4 @@ DESCRIPTION :
 The returned path is not to be deallocated.
 ==============================================================================*/
 
-#endif /* !defined (CMISS_REGION_WRITE_INFO_H) */
+#endif /* !defined (CMZN_REGION_WRITE_INFO_H) */

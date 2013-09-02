@@ -43,7 +43,7 @@
 
 #include "general/list.h"
 
-#define CMISS_SET( object_type )  cmzn_set_ ## object_type
+#define CMZN_SET( object_type )  cmzn_set_ ## object_type
 
 #define FULL_DECLARE_INDEXED_LIST_STL_TYPE( object_type )
 
@@ -55,13 +55,13 @@ Global functions
 #define DECLARE_CREATE_INDEXED_LIST_STL_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_LIST_FUNCTION(object_type) \
 { \
-	return reinterpret_cast<struct LIST(object_type) *>(CMISS_SET(object_type)::create_independent()); \
+	return reinterpret_cast<struct LIST(object_type) *>(CMZN_SET(object_type)::create_independent()); \
 }
 
 #define DECLARE_CREATE_RELATED_INDEXED_LIST_STL_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_RELATED_LIST_FUNCTION(object_type) \
 { \
-	CMISS_SET(object_type) *other = reinterpret_cast<CMISS_SET(object_type) *>(other_list); \
+	CMZN_SET(object_type) *other = reinterpret_cast<CMZN_SET(object_type) *>(other_list); \
 	return reinterpret_cast<struct LIST(object_type) *>(other->create_related()); \
 }
 
@@ -70,9 +70,9 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 { \
 	if (list_address) \
 	{ \
-		CMISS_SET(object_type) **cmiss_set_address = \
-			reinterpret_cast<CMISS_SET(object_type) **>(list_address); \
-		return CMISS_SET(object_type)::deaccess(cmiss_set_address); \
+		CMZN_SET(object_type) **cmiss_set_address = \
+			reinterpret_cast<CMZN_SET(object_type) **>(list_address); \
+		return CMZN_SET(object_type)::deaccess(cmiss_set_address); \
 	} \
 	return 0; \
 }
@@ -83,8 +83,8 @@ PROTOTYPE_COPY_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (target_list && source_list) \
 	{ \
-		CMISS_SET(object_type) *target = reinterpret_cast<CMISS_SET(object_type) *>(target_list); \
-		CMISS_SET(object_type) *source = reinterpret_cast<CMISS_SET(object_type) *>(source_list); \
+		CMZN_SET(object_type) *target = reinterpret_cast<CMZN_SET(object_type) *>(target_list); \
+		CMZN_SET(object_type) *source = reinterpret_cast<CMZN_SET(object_type) *>(source_list); \
 		*target = *source; \
 		return_code = 1; \
 	} \
@@ -103,7 +103,7 @@ PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (object && list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 		return_code = (1 == cmiss_set->erase(object)); \
 		if (!return_code) \
 		{ \
@@ -126,13 +126,13 @@ PROTOTYPE_REMOVE_OBJECTS_FROM_LIST_THAT_FUNCTION(object_type) \
 	int return_code; \
 	if (conditional && list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		CMISS_SET(object_type)::iterator iter = cmiss_set->begin(); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		CMZN_SET(object_type)::iterator iter = cmiss_set->begin(); \
 		while (iter != cmiss_set->end()) \
 		{ \
 			if ((conditional)(*iter,user_data)) \
 			{ \
-				CMISS_SET(object_type)::iterator tmp = iter; \
+				CMZN_SET(object_type)::iterator tmp = iter; \
 				++iter; \
 				cmiss_set->erase(tmp); \
 			} \
@@ -158,7 +158,7 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 		cmiss_set->clear(); \
 		return_code = 1; \
 	} \
@@ -177,8 +177,8 @@ PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
 	int return_code; \
 	if (object && list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		std::pair<CMISS_SET(object_type)::iterator,bool> result = cmiss_set->insert(object); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		std::pair<CMZN_SET(object_type)::iterator,bool> result = cmiss_set->insert(object); \
 		if (result.second) \
 		{ \
 			return_code = 1; \
@@ -204,7 +204,7 @@ PROTOTYPE_NUMBER_IN_LIST_FUNCTION(object_type) \
 { \
 	if (list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 		return static_cast<int>(cmiss_set->size()); \
 	} \
 	display_message(ERROR_MESSAGE, \
@@ -218,8 +218,8 @@ PROTOTYPE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 	int return_code = 0; \
 	if (list && object) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		CMISS_SET(object_type)::iterator iter = cmiss_set->find(object); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		CMZN_SET(object_type)::iterator iter = cmiss_set->find(object); \
 		if (iter != cmiss_set->end()) \
 		{ \
 			if (*iter == object) \
@@ -241,8 +241,8 @@ PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
 { \
 	if (list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		for (CMISS_SET(object_type)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter) \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		for (CMZN_SET(object_type)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter) \
 		{ \
 			if ((!conditional) || ((conditional)(*iter,user_data))) \
 				return *iter; \
@@ -262,8 +262,8 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 	int return_code = 1; \
 	if (list && iterator) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		for (CMISS_SET(object_type)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter) \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		for (CMZN_SET(object_type)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter) \
 		{ \
 			if (!(iterator)(*iter, user_data)) \
 			{ \
@@ -284,7 +284,7 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 #define DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION( object_type , iterator_type ) \
 PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(object_type,iterator_type) \
 { \
-	CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+	CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 	if (cmiss_set) \
 		return new iterator_type(cmiss_set); \
 	return 0; \
@@ -299,8 +299,8 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	if (list) \
 	{ \
 		object_type ## _identifier tmp(identifier); \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		CMISS_SET(object_type)::iterator iter = cmiss_set->find(tmp.getPseudoObject()); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
+		CMZN_SET(object_type)::iterator iter = cmiss_set->find(tmp.getPseudoObject()); \
 		if (iter != cmiss_set->end()) \
 			object = *iter; \
 	} \
@@ -333,7 +333,7 @@ PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 { \
 	if (list && object) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 		return cmiss_set->begin_identifier_change(object); \
 	} \
 	else \
@@ -362,7 +362,7 @@ PROTOTYPE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 { \
 	if (list) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 		cmiss_set->end_identifier_change(); \
 	} \
 	else \

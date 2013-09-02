@@ -115,7 +115,7 @@ private:
 
 	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
 	{
-		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMZN_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return 1;
 		return 0;
 	}

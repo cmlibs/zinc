@@ -351,7 +351,7 @@ private:
 
 	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
 	{
-		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMZN_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
 		return 0;
 	}
@@ -360,7 +360,7 @@ private:
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMZN_FIELD_ATTRIBUTE_IS_COORDINATE)
 		{
 			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
 			if (value)
@@ -381,22 +381,22 @@ private:
 	virtual cmzn_field_value_type get_value_type() const
 	{
 		enum Value_type fe_value_type = get_FE_field_value_type(fe_field);
-		cmzn_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
+		cmzn_field_value_type value_type = CMZN_FIELD_VALUE_TYPE_INVALID;
 		switch (fe_value_type)
 		{
 			case ELEMENT_XI_VALUE:
-				value_type = CMISS_FIELD_VALUE_TYPE_MESH_LOCATION;
+				value_type = CMZN_FIELD_VALUE_TYPE_MESH_LOCATION;
 				break;
 			case STRING_VALUE:
 			case URL_VALUE:
-				value_type = CMISS_FIELD_VALUE_TYPE_STRING;
+				value_type = CMZN_FIELD_VALUE_TYPE_STRING;
 				break;
 			case DOUBLE_VALUE:
 			case FE_VALUE_VALUE:
 			case FLT_VALUE:
 			case INT_VALUE:
 			case SHORT_VALUE:
-				value_type = CMISS_FIELD_VALUE_TYPE_REAL;
+				value_type = CMZN_FIELD_VALUE_TYPE_REAL;
 				break;
 			default:
 				break;
@@ -2468,7 +2468,7 @@ cmzn_field_id cmzn_field_module_create_embedded(
 {
 	struct Computed_field *field = 0;
 	if (field_module && embedded_location_field && source_field &&
-		(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION ==
+		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION ==
 			cmzn_field_get_value_type(embedded_location_field)) &&
 		Computed_field_has_numerical_components(source_field, NULL))
 	{
@@ -2520,7 +2520,7 @@ public:
 	Computed_field_find_mesh_location(cmzn_mesh_id mesh) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT)
+		search_mode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT)
 	{
 	};
 
@@ -2588,7 +2588,7 @@ private:
 
 	virtual cmzn_field_value_type get_value_type() const
 	{
-		return CMISS_FIELD_VALUE_TYPE_MESH_LOCATION;
+		return CMZN_FIELD_VALUE_TYPE_MESH_LOCATION;
 	}
 
 };
@@ -2635,7 +2635,7 @@ int Computed_field_find_mesh_location::evaluate(cmzn_field_cache& cache, FieldVa
 		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
 			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
 			meshLocationValueCache.xi, mesh, /*propagate_field*/0,
-			/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
+			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
 			&& meshLocationValueCache.element)
 		{
 			cmzn_element_access(meshLocationValueCache.element);
@@ -2651,7 +2651,7 @@ int Computed_field_find_mesh_location::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    search mode : ");
-		if (search_mode == CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
 		{
 			display_message(INFORMATION_MESSAGE, " find_nearest\n");
 		}
@@ -2681,7 +2681,7 @@ char *Computed_field_find_mesh_location::get_command_string()
 	{
 		append_string(&command_string, computed_field_find_mesh_location_type_string, &error);
 
-		if (search_mode == CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
@@ -2793,10 +2793,10 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-			case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
+			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
 				enum_string = "FIND_EXACT";
 				break;
-			case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
+			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
 				enum_string = "FIND_NEAREST";
 				break;
 			default:
@@ -2825,7 +2825,7 @@ enum cmzn_field_find_mesh_location_search_mode
 		cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
 	cmzn_field_find_mesh_location_search_mode search_mode =
-		CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT;
+		CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT;
 	if (find_mesh_location_field)
 	{
 		search_mode = find_mesh_location_field->get_core()->get_search_mode();
@@ -4073,31 +4073,31 @@ cmzn_field_id cmzn_field_module_create_node_value(
 		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (type)
 		{
-			case CMISS_NODAL_VALUE_TYPE_INVALID:
+			case CMZN_NODAL_VALUE_TYPE_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMISS_NODAL_VALUE:
+			case CMZN_NODAL_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMISS_NODAL_D_DS1:
+			case CMZN_NODAL_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMISS_NODAL_D_DS2:
+			case CMZN_NODAL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMISS_NODAL_D_DS3:
+			case CMZN_NODAL_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMISS_NODAL_D2_DS1DS2:
+			case CMZN_NODAL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMISS_NODAL_D2_DS1DS3:
+			case CMZN_NODAL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMISS_NODAL_D2_DS2DS3:
+			case CMZN_NODAL_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMISS_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODAL_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}

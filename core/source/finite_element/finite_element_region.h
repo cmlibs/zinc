@@ -77,7 +77,7 @@ the changes are limited to the fields listed in the <fe_field_changes>.
 	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 }; /* struct FE_region_changes */
 
-DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
+DECLARE_CMZN_CALLBACK_TYPES(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *, void);
 
 /*
@@ -224,7 +224,7 @@ Automatically calls the same function for any master_FE_region.
 ==============================================================================*/
 
 int FE_region_add_callback(struct FE_region *fe_region,
-	CMISS_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 10 December 2002
 
@@ -235,7 +235,7 @@ struct FE_region_changes * and the void *user_data.
 ==============================================================================*/
 
 int FE_region_remove_callback(struct FE_region *fe_region,
-	CMISS_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 10 December 2002
 

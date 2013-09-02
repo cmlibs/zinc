@@ -64,7 +64,7 @@ enum Coordinate_system_type
 LAST MODIFIED : 24 August 1999
 
 DESCRIPTION :
-The possible coordinate systems.  Values specified to correspond to CMISS
+The possible coordinate systems.  Values specified to correspond to CMZN
 ==============================================================================*/
 {
 	CYLINDRICAL_POLAR=2,

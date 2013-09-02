@@ -65,7 +65,7 @@ int cmzn_nodeset_assign_field_from_source(
 			Computed_field_get_number_of_components(destination_field);
 		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		// can always evaluate to a string value
-		if ((value_type == CMISS_FIELD_VALUE_TYPE_STRING) ||
+		if ((value_type == CMZN_FIELD_VALUE_TYPE_STRING) ||
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
 				(cmzn_field_get_value_type(source_field) == value_type)))
 		{
@@ -82,20 +82,20 @@ int cmzn_nodeset_assign_field_from_source(
 			while (return_code && (0 != (node = cmzn_node_iterator_next(iterator))))
 			{
 				cmzn_field_cache_set_node(field_cache, node);
-				if ((!conditional_field) || (CMISS_OK == cmzn_field_evaluate_boolean(conditional_field, field_cache)))
+				if ((!conditional_field) || (CMZN_OK == cmzn_field_evaluate_boolean(conditional_field, field_cache)))
 				{
-					if ((CMISS_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
+					if ((CMZN_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
 					{
 						switch (value_type)
 						{
-						case CMISS_FIELD_VALUE_TYPE_MESH_LOCATION:
+						case CMZN_FIELD_VALUE_TYPE_MESH_LOCATION:
 							{
 								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 								cmzn_element_id element = cmzn_field_evaluate_mesh_location(
 									source_field, field_cache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 								if (element)
 								{
-									if ((CMISS_OK == cmzn_field_assign_mesh_location(destination_field, field_cache,
+									if ((CMZN_OK == cmzn_field_assign_mesh_location(destination_field, field_cache,
 										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)))
 									{
 										++success_count;
@@ -103,20 +103,20 @@ int cmzn_nodeset_assign_field_from_source(
 									cmzn_element_destroy(&element);
 								}
 							} break;
-						case CMISS_FIELD_VALUE_TYPE_REAL:
+						case CMZN_FIELD_VALUE_TYPE_REAL:
 							{
-								if ((CMISS_OK == cmzn_field_evaluate_real(source_field, field_cache, number_of_components, values)) &&
-									(CMISS_OK == cmzn_field_assign_real(destination_field, field_cache, number_of_components, values)))
+								if ((CMZN_OK == cmzn_field_evaluate_real(source_field, field_cache, number_of_components, values)) &&
+									(CMZN_OK == cmzn_field_assign_real(destination_field, field_cache, number_of_components, values)))
 								{
 									++success_count;
 								}
 							} break;
-						case CMISS_FIELD_VALUE_TYPE_STRING:
+						case CMZN_FIELD_VALUE_TYPE_STRING:
 							{
 								char *string_value = cmzn_field_evaluate_string(source_field, field_cache);
 								if (string_value)
 								{
-									if ((CMISS_OK == cmzn_field_assign_string(destination_field, field_cache, string_value)))
+									if ((CMZN_OK == cmzn_field_assign_string(destination_field, field_cache, string_value)))
 									{
 										++success_count;
 									}
@@ -234,7 +234,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 				{
 					element_point_ranges_identifier.element = element;
 					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.sample_mode = CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
+					element_point_ranges_identifier.sample_mode = CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
 					/* already set the number_in_xi, above */
 					if (0 != (element_point_ranges = ACCESS(Element_point_ranges)(
 							 FIND_BY_IDENTIFIER_IN_LIST(
@@ -253,7 +253,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 				{
 					element_point_ranges_identifier.element = element;
 					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.sample_mode = CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
+					element_point_ranges_identifier.sample_mode = CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
 					/* already set the number_in_xi, above */
 					element_point_ranges = ACCESS(Element_point_ranges)(
 						CREATE(Element_point_ranges)(

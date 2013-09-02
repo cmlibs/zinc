@@ -41,8 +41,8 @@ Private interface for attaching any object type to cmzn_region objects.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_REGION_PRIVATE_H)
-#define CMISS_REGION_PRIVATE_H
+#if !defined (CMZN_REGION_PRIVATE_H)
+#define CMZN_REGION_PRIVATE_H
 
 #include "general/any_object.h"
 #include "region/cmiss_region.h"
@@ -105,4 +105,4 @@ Returns the list of objects, abstractly stored as struct Any_object from
 This function is only externally visible to context objects.
 ==============================================================================*/
 
-#endif /* !defined (CMISS_REGION_PRIVATE_H) */
+#endif /* !defined (CMZN_REGION_PRIVATE_H) */

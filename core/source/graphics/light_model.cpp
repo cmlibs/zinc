@@ -124,9 +124,9 @@ public:
 				delete light_module;
 			}
 			light_module = 0;
-			return CMISS_OK;
+			return CMZN_OK;
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	struct MANAGER(Light_model) *getManager()
@@ -208,7 +208,7 @@ public:
 	int setDefaultLightModel(Light_model *lightModel)
 	{
 		REACCESS(Light_model)(&this->defaultLightModel, lightModel);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 };
@@ -998,7 +998,7 @@ int Light_model_module_destroy(Light_model_module **light_model_module_address)
 {
 	if (light_model_module_address)
 		return Light_model_module::deaccess(*light_model_module_address);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 Light_model *Light_model_module_create_light_model(
@@ -1013,14 +1013,14 @@ int Light_model_module_begin_change(Light_model_module *light_model_module)
 {
 	if (light_model_module)
 		return light_model_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 int Light_model_module_end_change(Light_model_module *light_model_module)
 {
 	if (light_model_module)
 		return light_model_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 Light_model *Light_model_module_find_light_model_by_name(

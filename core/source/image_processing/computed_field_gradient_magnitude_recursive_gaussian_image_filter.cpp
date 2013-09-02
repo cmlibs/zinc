@@ -55,7 +55,7 @@ Wraps itk::GradientMagnitudeRecursiveGaussianImageFilter
 #include "itkVector.h"
 #include "itkGradientMagnitudeRecursiveGaussianImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

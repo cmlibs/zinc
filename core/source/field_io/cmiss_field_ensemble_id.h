@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_ENSEMBLE_ID_H)
-#define CMISS_FIELD_ENSEMBLE_ID_H
+#if !defined (CMZN_FIELD_ENSEMBLE_ID_H)
+#define CMZN_FIELD_ENSEMBLE_ID_H
 
 /***************************************************************************//**
  * The ensemble type specific handle to an ensemble cmzn_field.

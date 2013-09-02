@@ -6,7 +6,7 @@ CREATED : 19 June 2010
 
 DESCRIPTION :
 The data structures used for representing cad elements in the graphical
-interface to CMISS.
+interface to CMZN.
 */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

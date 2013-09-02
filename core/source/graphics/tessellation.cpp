@@ -107,9 +107,9 @@ public:
 				delete tessellation_module;
 			}
 			tessellation_module = 0;
-			return CMISS_OK;
+			return CMZN_OK;
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	struct MANAGER(cmzn_tessellation) *getManager()
@@ -186,7 +186,7 @@ public:
 	int setDefaultTessellation(cmzn_tessellation *tessellation)
 	{
 		REACCESS(cmzn_tessellation)(&this->defaultTessellation, tessellation);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 	cmzn_tessellation *getDefaultPointsTessellation()
@@ -216,7 +216,7 @@ public:
 	int setDefaultPointsTessellation(cmzn_tessellation *tessellation)
 	{
 		REACCESS(cmzn_tessellation)(&this->defaultPointsTessellation, tessellation);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 };
@@ -327,7 +327,7 @@ public:
 			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(this,
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_tessellation));
 		}
-		return (inCircleDivisions == this->circleDivisions) ? CMISS_OK : CMISS_ERROR_ARGUMENT;
+		return (inCircleDivisions == this->circleDivisions) ? CMZN_OK : CMZN_ERROR_ARGUMENT;
 	}
 
 	/** get minimum divisions for a particular dimension >= 0 */
@@ -641,7 +641,7 @@ int cmzn_tessellation_module_destroy(cmzn_tessellation_module_id *tessellation_m
 {
 	if (tessellation_module_address)
 		return cmzn_tessellation_module::deaccess(*tessellation_module_address);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_tessellation_id cmzn_tessellation_module_create_tessellation(
@@ -664,14 +664,14 @@ int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id tessellati
 {
 	if (tessellation_module)
 		return tessellation_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_tessellation_module_end_change(cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_tessellation_id cmzn_tessellation_module_find_tessellation_by_name(
@@ -754,9 +754,9 @@ int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(tessellation,
 				MANAGER_CHANGE_NOT_RESULT(cmzn_tessellation));
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_tessellation_get_name(struct cmzn_tessellation *tessellation)
@@ -853,7 +853,7 @@ int cmzn_tessellation_set_circle_divisions(
 {
 	if (tessellation)
 		return tessellation->setCircleDivisions(circleDivisions);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_tessellation_get_minimum_divisions(cmzn_tessellation_id tessellation,
@@ -879,13 +879,13 @@ int cmzn_tessellation_set_minimum_divisions(cmzn_tessellation_id tessellation,
 		{
 			if (valuesIn[i] < 1)
 			{
-				return CMISS_ERROR_ARGUMENT;
+				return CMZN_ERROR_ARGUMENT;
 			}
 		}
 		tessellation->set_minimum_divisions(valuesCount, valuesIn);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_tessellation_get_refinement_factors(cmzn_tessellation_id tessellation,
@@ -911,13 +911,13 @@ int cmzn_tessellation_set_refinement_factors(cmzn_tessellation_id tessellation,
 		{
 			if (valuesIn[i] < 1)
 			{
-				return CMISS_ERROR_ARGUMENT;
+				return CMZN_ERROR_ARGUMENT;
 			}
 		}
 		tessellation->set_refinement_factors(valuesCount, valuesIn);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_tessellation_id cmzn_tessellation_module_find_or_create_fixed_tessellation(

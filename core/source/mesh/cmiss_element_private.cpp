@@ -63,18 +63,18 @@ inline int cmzn_element_shape_type_get_dimension(
 {
 	switch (shape_type)
 	{
-		case CMISS_ELEMENT_SHAPE_LINE:
+		case CMZN_ELEMENT_SHAPE_LINE:
 			return 1;
 			break;
-		case CMISS_ELEMENT_SHAPE_SQUARE:
-		case CMISS_ELEMENT_SHAPE_TRIANGLE:
+		case CMZN_ELEMENT_SHAPE_SQUARE:
+		case CMZN_ELEMENT_SHAPE_TRIANGLE:
 			return 2;
 			break;
-		case CMISS_ELEMENT_SHAPE_CUBE:
-		case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
-		case CMISS_ELEMENT_SHAPE_WEDGE12:
-		case CMISS_ELEMENT_SHAPE_WEDGE13:
-		case CMISS_ELEMENT_SHAPE_WEDGE23:
+		case CMZN_ELEMENT_SHAPE_CUBE:
+		case CMZN_ELEMENT_SHAPE_TETRAHEDRON:
+		case CMZN_ELEMENT_SHAPE_WEDGE12:
+		case CMZN_ELEMENT_SHAPE_WEDGE13:
+		case CMZN_ELEMENT_SHAPE_WEDGE23:
 			return 3;
 			break;
 		default:
@@ -152,14 +152,14 @@ public:
 	int isValid() const
 	{
 		int return_code = 1;
-		if (0 < getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_TYPE_INVALID))
+		if (0 < getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_TYPE_INVALID))
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_element_basis::isValid.  Function type not set");
 			return_code = 0;
 		}
-		if ((1 == getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX)) ||
-			(1 == getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX)))
+		if ((1 == getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX)) ||
+			(1 == getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX)))
 		{
 			display_message(ERROR_MESSAGE, "cmzn_element_basis::isValid.  "
 				"Must be at least 2 linked dimension for simplex basis");
@@ -184,22 +184,22 @@ public:
 			FE_basis_type fe_basis_type = FE_BASIS_TYPE_INVALID;
 			switch (function_types[i])
 			{
-			case CMISS_BASIS_FUNCTION_CONSTANT:
+			case CMZN_BASIS_FUNCTION_CONSTANT:
 				fe_basis_type = FE_BASIS_CONSTANT;
 				break;
-			case CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE:
 				fe_basis_type = LINEAR_LAGRANGE;
 				break;
-			case CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
 				fe_basis_type = QUADRATIC_LAGRANGE;
 				break;
-			case CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE:
 				fe_basis_type = CUBIC_LAGRANGE;
 				break;
-			case CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX:
+			case CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX:
 				fe_basis_type = LINEAR_SIMPLEX;
 				break;
-			case CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
+			case CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
 				fe_basis_type = QUADRATIC_SIMPLEX;
 				break;
 			default:
@@ -232,7 +232,7 @@ public:
 	enum cmzn_basis_function_type getFunctionType(int chart_component) const
 	{
 		if ((chart_component < 1) || (chart_component > dimension))
-			return CMISS_BASIS_FUNCTION_TYPE_INVALID;
+			return CMZN_BASIS_FUNCTION_TYPE_INVALID;
 		return function_types[chart_component - 1];
 	}
 
@@ -249,7 +249,7 @@ public:
 		// GRC this should be handled by making an FE_basis and asking it
 		int number_of_nodes = 1;
 		int linearSimplexDimensions =
-			getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX);
+			getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX);
 		switch (linearSimplexDimensions)
 		{
 			case 0:
@@ -266,7 +266,7 @@ public:
 				break;
 		}
 		int quadraticSimplexDimensions =
-			getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX);
+			getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX);
 		switch (quadraticSimplexDimensions)
 		{
 			case 0:
@@ -293,19 +293,19 @@ public:
 		{
 			switch (function_types[i])
 			{
-				case CMISS_BASIS_FUNCTION_CONSTANT:
+				case CMZN_BASIS_FUNCTION_CONSTANT:
 					break;
-				case CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE:
+				case CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE:
 					number_of_nodes *= 2;
 					break;
-				case CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
+				case CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
 					number_of_nodes *= 3;
 					break;
-				case CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE:
+				case CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE:
 					number_of_nodes *= 4;
 					break;
-				case CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX:
-				case CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
+				case CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX:
+				case CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
 					// handled above
 					break;
 				default:
@@ -460,7 +460,7 @@ public:
 	cmzn_element_template(FE_region *fe_region, int element_dimension) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		element_dimension(element_dimension),
-		shape_type(CMISS_ELEMENT_SHAPE_TYPE_INVALID),
+		shape_type(CMZN_ELEMENT_SHAPE_TYPE_INVALID),
 		shape_is_set(false),
 		element_number_of_nodes(0),
 		template_element(NULL),
@@ -489,7 +489,7 @@ public:
 
 	int setShapeType(cmzn_element_shape_type in_shape_type)
 	{
-		if (in_shape_type != CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+		if (in_shape_type != CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 		{
 			int shape_dimension = cmzn_element_shape_type_get_dimension(in_shape_type);
 			if (shape_dimension != element_dimension)
@@ -629,7 +629,7 @@ public:
 		if (return_code)
 		{
 			FE_element_shape *fe_element_shape = NULL;
-			if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 			{
 				fe_element_shape = FE_element_shape_create_unspecified(fe_region, element_dimension);
 			}
@@ -688,7 +688,7 @@ public:
 		int return_code = 0;
 		if (validate())
 		{
-			if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 			{
 				// leave the element shape intact
 				struct FE_element_shape *element_shape = 0;
@@ -1337,7 +1337,7 @@ enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
 {
 	if (element_basis)
 		return element_basis->getFunctionType(chart_component);
-	return CMISS_BASIS_FUNCTION_TYPE_INVALID;
+	return CMZN_BASIS_FUNCTION_TYPE_INVALID;
 }
 
 int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
@@ -1377,7 +1377,7 @@ enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
 {
 	if (element_template)
 		return element_template->getShapeType();
-	return CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+	return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 }
 
 int cmzn_element_template_set_shape_type(cmzn_element_template_id element_template,
@@ -1465,7 +1465,7 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 enum cmzn_element_shape_type cmzn_element_get_shape_type(
 	cmzn_element_id element)
 {
-	cmzn_element_shape_type shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+	cmzn_element_shape_type shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
 		struct FE_element_shape *fe_element_shape = NULL;
@@ -1491,28 +1491,28 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMISS_ELEMENT_SHAPE_LINE:
+			case CMZN_ELEMENT_SHAPE_LINE:
 				enum_string = "LINE";
 				break;
-			case CMISS_ELEMENT_SHAPE_SQUARE:
+			case CMZN_ELEMENT_SHAPE_SQUARE:
 				enum_string = "SQUARE";
 				break;
-			case CMISS_ELEMENT_SHAPE_TRIANGLE:
+			case CMZN_ELEMENT_SHAPE_TRIANGLE:
 				enum_string = "TRIANGLE";
 				break;
-			case CMISS_ELEMENT_SHAPE_CUBE:
+			case CMZN_ELEMENT_SHAPE_CUBE:
 				enum_string = "CUBE";
 				break;
-			case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
+			case CMZN_ELEMENT_SHAPE_TETRAHEDRON:
 				enum_string = "TETRAHEDRON";
 				break;
-			case CMISS_ELEMENT_SHAPE_WEDGE12:
+			case CMZN_ELEMENT_SHAPE_WEDGE12:
 				enum_string = "WEDGE12";
 				break;
-			case CMISS_ELEMENT_SHAPE_WEDGE13:
+			case CMZN_ELEMENT_SHAPE_WEDGE13:
 				enum_string = "WEDGE13";
 				break;
-			case CMISS_ELEMENT_SHAPE_WEDGE23:
+			case CMZN_ELEMENT_SHAPE_WEDGE23:
 				enum_string = "_WEDGE23";
 				break;
 			default:
@@ -1542,22 +1542,22 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMISS_BASIS_FUNCTION_CONSTANT:
+			case CMZN_BASIS_FUNCTION_CONSTANT:
 				enum_string = "CONSTANT";
 				break;
-			case CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE:
 				enum_string = "LINEAR_LAGRANGE";
 				break;
-			case CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
 				enum_string = "QUADRATIC_LAGRANGE";
 				break;
-			case CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE:
+			case CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE:
 				enum_string = "CUBIC_LAGRANGE";
 				break;
-			case CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX:
+			case CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX:
 				enum_string = "LINEAR_SIMPLEX";
 				break;
-			case CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
+			case CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
 				enum_string = "QUADRATIC_SIMPLEX";
 				break;
 			default:

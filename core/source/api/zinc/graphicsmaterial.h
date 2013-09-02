@@ -52,38 +52,38 @@ extern "C" {
  */
 enum cmzn_graphics_material_attribute
 {
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_INVALID = 0,
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA = 1,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_INVALID = 0,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA = 1,
 	/*!< Opacity of the material. Transparent or translucent objects has
 	 * lower alpha values then an opaque ones. Minimum acceptable value is 0
 	 * and maximum acceptable value is 1. Use attribute_real to get and set
 	 * its values.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT = 2,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT = 2,
 	/*!< Ambient colour of the material. Ambient colour simulates the colour
 	 * of the material when it does not receive direct illumination.
 	 * Composed of RGB components. Use attribute_real3 to get and set its
 	 * values. Minimum acceptable value is 0 and maximum acceptable value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE = 3,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE = 3,
 	/*!< Diffuse colour of the material. Diffuse colour response to light that
 	 * comes from one direction and this colour scattered equally in all directions
 	 * once the light hits it. Composed of RGB components. Use attribute_real3
 	 * to get and set its values. Minimum acceptable value is 0 and maximum acceptable
 	 * value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION = 4,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION = 4,
 	/*!< Emissive colour of the material. Emissive colour simulates colours
 	 * that is originating from the material itself. Composed of RGB components.
 	 * Use attribute_real3 to get and set its values. Minimum acceptable value is 0
 	 * and maximum acceptable value is 1.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS = 5,
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS = 5,
 	/*!< Shininess determines the brightness of the highlight. Minimum acceptable
 	 * value is 0 and maximum acceptable value is 1. Use attribute_real to get and
 	 * set its values.
 	 */
-	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR = 6
+	CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR = 6
 	/*!< Specular colour of the material. Specular colour produces highlights.
 	 * Unlike ambient and diffuse, specular colour depends on location of
 	 * the viewpoint, it is brightest along the direct angle of reflection.
@@ -108,7 +108,7 @@ ZINC_API cmzn_graphics_material_module_id cmzn_graphics_material_module_access(
 *
 * @param material_module_address  Address of handle to graphics_material module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_material_module_destroy(
 	cmzn_graphics_material_module_id *material_module_address);
@@ -130,7 +130,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_module_create_material
 * @see cmzn_graphics_material_module_end_change
 *
 * @param material_module  The graphics_material_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_material_module_begin_change(
 	cmzn_graphics_material_module_id material_module);
@@ -142,7 +142,7 @@ ZINC_API int cmzn_graphics_material_module_begin_change(
 * cached change messages are sent out to clients.
 *
 * @param material_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_graphics_material_module_end_change(
 	cmzn_graphics_material_module_id material_module);
@@ -173,7 +173,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_module_get_default_mat
 *
 * @param material_module  graphics_material module to modify
 * @param material  The graphics_material to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_material_module_set_default_material(
 	cmzn_graphics_material_module_id material_module,
@@ -194,7 +194,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_module_get_default_sel
 *
 * @param material_module  graphics_material module to modify
 * @param material  The graphics_material to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_material_module_set_default_selected_material(
 	cmzn_graphics_material_module_id material_module,
@@ -205,7 +205,7 @@ ZINC_API int cmzn_graphics_material_module_set_default_selected_material(
  * by graphics module.
  *
  * @param material_module  Pointer to a Material_module object.
- * @return  Status CMISS_OK if successfully create a list of standard materials
+ * @return  Status CMZN_OK if successfully create a list of standard materials
  * into material module, any other value on failure.
  */
 ZINC_API int cmzn_graphics_material_module_define_standard_materials(
@@ -251,7 +251,7 @@ ZINC_API bool cmzn_graphics_material_is_managed(cmzn_graphics_material_id materi
  *
  * @param graphics material  The graphics material to modify.
  * @param value  The new value for the managed flag: true or false.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_material_set_managed(cmzn_graphics_material_id material,
 	bool value);
@@ -270,7 +270,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_access(cmzn_graphics_m
  *
  * @param material  address to the handle to the "to be destroyed"
  *   cmiss material.
- * @return  Status CMISS_OK if successfully destroy material, any other value on
+ * @return  Status CMZN_OK if successfully destroy material, any other value on
  * failure.
  */
 ZINC_API int cmzn_graphics_material_destroy(cmzn_graphics_material_id *material);
@@ -291,7 +291,7 @@ ZINC_API double cmzn_graphics_material_get_attribute_real(cmzn_graphics_material
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
  */
 ZINC_API int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id material,
@@ -303,7 +303,7 @@ ZINC_API int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id
  *
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the vectors attribute to get.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_id material,
 	enum cmzn_graphics_material_attribute attribute, double *values);
@@ -314,7 +314,7 @@ ZINC_API int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_i
  *
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the vectors attribute to get.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
  */
 ZINC_API int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_id material,
@@ -334,7 +334,7 @@ ZINC_API char *cmzn_graphics_material_get_name(cmzn_graphics_material_id materia
  *
  * @param material  The handle to the cmiss material.
  * @param name  name to be set to the material
- * @return  Status CMISS_OK if successfully set/change name for material,
+ * @return  Status CMZN_OK if successfully set/change name for material,
  * any other value on failure.
  */
 ZINC_API int cmzn_graphics_material_set_name(
@@ -350,7 +350,7 @@ ZINC_API int cmzn_graphics_material_set_name(
  * @param field  handle to a general cmiss field.
  * @param image_number  integer to identify which image field to be set in
  * 		material.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_material_set_image_field(cmzn_graphics_material_id material,
 	int image_number, cmzn_field_image_id image_field);

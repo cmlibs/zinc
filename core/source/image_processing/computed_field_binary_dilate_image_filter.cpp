@@ -55,7 +55,7 @@ Wraps itk::BinaryDilateImageFilter
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryDilateImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

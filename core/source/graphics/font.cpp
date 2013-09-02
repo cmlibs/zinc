@@ -115,9 +115,9 @@ public:
 				delete font_module;
 			}
 			font_module = 0;
-			return CMISS_OK;
+			return CMZN_OK;
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	struct MANAGER(cmzn_font) *getManager()
@@ -193,7 +193,7 @@ public:
 	int setDefaultFont(cmzn_font *font)
 	{
 		REACCESS(cmzn_font)(&this->defaultFont, font);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 };
@@ -215,7 +215,7 @@ int cmzn_font_module_destroy(cmzn_font_module_id *font_module_address)
 {
 	if (font_module_address)
 		return cmzn_font_module::deaccess(*font_module_address);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_font_id cmzn_font_module_create_font(
@@ -238,14 +238,14 @@ int cmzn_font_module_begin_change(cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_font_module_end_change(cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_font_id cmzn_font_module_find_font_by_name(
@@ -466,8 +466,8 @@ DESCRIPTION :
 		font->italic = 0;
 		font->bold = 0;
 		font->depth = 0.1;
-		font->font_type = CMISS_FONT_TYPE_OpenSans;
-		font->render_type = CMISS_FONT_RENDER_TYPE_BITMAP;
+		font->font_type = CMZN_FONT_TYPE_OpenSans;
+		font->render_type = CMZN_FONT_RENDER_TYPE_BITMAP;
 		font->manager = (struct MANAGER(cmzn_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(cmzn_font);
 		font->ftFont = 0;
@@ -528,7 +528,7 @@ unsigned int cmzn_font_get_font_buffer(struct cmzn_font *font,
 	unsigned int font_type_length = 0;
 	switch (font->font_type)
 	{
-		case CMISS_FONT_TYPE_OpenSans:
+		case CMZN_FONT_TYPE_OpenSans:
 		{
 			if (font->bold)
 			{
@@ -593,10 +593,10 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			{
 				switch (font->render_type)
 				{
-				case CMISS_FONT_RENDER_TYPE_BITMAP:
-				case CMISS_FONT_RENDER_TYPE_PIXMAP:
+				case CMZN_FONT_RENDER_TYPE_BITMAP:
+				case CMZN_FONT_RENDER_TYPE_PIXMAP:
 				{
-					if (font->render_type == CMISS_FONT_RENDER_TYPE_BITMAP)
+					if (font->render_type == CMZN_FONT_RENDER_TYPE_BITMAP)
 						font->ftFont = new FTBitmapFont(font_type_buffer, font_type_length);
 					else
 						font->ftFont = new FTPixmapFont(font_type_buffer, font_type_length);
@@ -610,13 +610,13 @@ Compiles the specified <font> so it can be used by the graphics.  The
 						font->ftFont->UseDisplayList(false);
 					}
 				} break;
-				case CMISS_FONT_RENDER_TYPE_POLYGON:
-				case CMISS_FONT_RENDER_TYPE_OUTLINE:
-				case CMISS_FONT_RENDER_TYPE_EXTRUDE:
+				case CMZN_FONT_RENDER_TYPE_POLYGON:
+				case CMZN_FONT_RENDER_TYPE_OUTLINE:
+				case CMZN_FONT_RENDER_TYPE_EXTRUDE:
 				{
-					if (font->render_type == CMISS_FONT_RENDER_TYPE_POLYGON)
+					if (font->render_type == CMZN_FONT_RENDER_TYPE_POLYGON)
 						font->ftFont = new FTPolygonFont(font_type_buffer, font_type_length);
-					else if (font->render_type == CMISS_FONT_RENDER_TYPE_OUTLINE)
+					else if (font->render_type == CMZN_FONT_RENDER_TYPE_OUTLINE)
 						font->ftFont = new FTOutlineFont(font_type_buffer, font_type_length);
 					else
 						font->ftFont = new FTExtrudeFont(font_type_buffer, font_type_length);
@@ -671,15 +671,15 @@ DESCRIPTION :
 		{
 			switch (font->render_type)
 			{
-				case CMISS_FONT_RENDER_TYPE_BITMAP:
-				case CMISS_FONT_RENDER_TYPE_PIXMAP:
+				case CMZN_FONT_RENDER_TYPE_BITMAP:
+				case CMZN_FONT_RENDER_TYPE_PIXMAP:
 				{
 					glRasterPos3f(x, y, z);
 					font->ftFont->Render(text);
 				} break;
-				case CMISS_FONT_RENDER_TYPE_POLYGON:
-				case CMISS_FONT_RENDER_TYPE_OUTLINE:
-				case CMISS_FONT_RENDER_TYPE_EXTRUDE:
+				case CMZN_FONT_RENDER_TYPE_POLYGON:
+				case CMZN_FONT_RENDER_TYPE_OUTLINE:
+				case CMZN_FONT_RENDER_TYPE_EXTRUDE:
 				{
 					glMatrixMode(GL_MODELVIEW);
 					glPushMatrix();
@@ -783,7 +783,7 @@ cmzn_font_type cmzn_font_get_font_type(
 	}
 	else
 	{
-		return CMISS_FONT_TYPE_INVALID;
+		return CMZN_FONT_TYPE_INVALID;
 	}
 }
 
@@ -814,7 +814,7 @@ cmzn_font_render_type cmzn_font_get_render_type(
 	}
 	else
 	{
-		return CMISS_FONT_RENDER_TYPE_INVALID;
+		return CMZN_FONT_RENDER_TYPE_INVALID;
 	}
 }
 
@@ -884,7 +884,7 @@ int cmzn_font_set_depth(cmzn_font_id font, double depth)
 		if (font->depth != depth)
 		{
 			font->depth = depth;
-			if (font->render_type == CMISS_FONT_RENDER_TYPE_EXTRUDE)
+			if (font->render_type == CMZN_FONT_RENDER_TYPE_EXTRUDE)
 				cmzn_font_changed(font);
 		}
 		return 1;
@@ -993,19 +993,19 @@ public:
 		const char *enum_string = 0;
 		switch (render_type)
 		{
-		case CMISS_FONT_RENDER_TYPE_BITMAP:
+		case CMZN_FONT_RENDER_TYPE_BITMAP:
 			enum_string = "BITMAP";
 			break;
-		case CMISS_FONT_RENDER_TYPE_PIXMAP:
+		case CMZN_FONT_RENDER_TYPE_PIXMAP:
 			enum_string = "PIXMAP";
 			break;
-		case CMISS_FONT_RENDER_TYPE_POLYGON:
+		case CMZN_FONT_RENDER_TYPE_POLYGON:
 			enum_string = "POLYGON";
 			break;
-		case CMISS_FONT_RENDER_TYPE_OUTLINE:
+		case CMZN_FONT_RENDER_TYPE_OUTLINE:
 			enum_string = "OUTLINE";
 			break;
-		case CMISS_FONT_RENDER_TYPE_EXTRUDE:
+		case CMZN_FONT_RENDER_TYPE_EXTRUDE:
 			enum_string = "EXTRUDE";
 			break;
 		default:
@@ -1044,7 +1044,7 @@ public:
 		const char *enum_string = 0;
 		switch (font_type)
 		{
-		case CMISS_FONT_TYPE_OpenSans:
+		case CMZN_FONT_TYPE_OpenSans:
 			enum_string = "OpenSans";
 			break;
 		default:

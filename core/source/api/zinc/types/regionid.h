@@ -60,4 +60,4 @@
 	struct cmzn_stream_information_region;
   typedef struct cmzn_stream_information_region * cmzn_stream_information_region_id;
 
-#endif /* CMISS_REGION_ID_H */
+#endif /* CMZN_REGION_ID_H */

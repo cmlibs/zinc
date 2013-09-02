@@ -46,7 +46,7 @@ extern "C" {
 #include "general/list.h"
 }
 
-#define CMISS_BTREE( object_type )  cmzn_set_ ## object_type
+#define CMZN_BTREE( object_type )  cmzn_set_ ## object_type
 
 #define FULL_DECLARE_INDEXED_LIST_BTREE_TYPE( object_type )
 
@@ -58,13 +58,13 @@ Global functions
 #define DECLARE_CREATE_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_LIST_FUNCTION(object_type) \
 { \
-	return reinterpret_cast<struct LIST(object_type) *>(CMISS_BTREE(object_type)::create_independent()); \
+	return reinterpret_cast<struct LIST(object_type) *>(CMZN_BTREE(object_type)::create_independent()); \
 }
 
 #define DECLARE_CREATE_RELATED_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_RELATED_LIST_FUNCTION(object_type) \
 { \
-	CMISS_BTREE(object_type) *other = reinterpret_cast<CMISS_BTREE(object_type) *>(other_list); \
+	CMZN_BTREE(object_type) *other = reinterpret_cast<CMZN_BTREE(object_type) *>(other_list); \
 	return reinterpret_cast<struct LIST(object_type) *>(other->create_related()); \
 }
 
@@ -73,9 +73,9 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 { \
 	if (list_address) \
 	{ \
-		CMISS_BTREE(object_type) **cmiss_btree_address = \
-			reinterpret_cast<CMISS_BTREE(object_type) **>(list_address); \
-		return CMISS_BTREE(object_type)::deaccess(cmiss_btree_address); \
+		CMZN_BTREE(object_type) **cmiss_btree_address = \
+			reinterpret_cast<CMZN_BTREE(object_type) **>(list_address); \
+		return CMZN_BTREE(object_type)::deaccess(cmiss_btree_address); \
 	} \
 	return 0; \
 }
@@ -86,8 +86,8 @@ PROTOTYPE_COPY_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (target_list && source_list) \
 	{ \
-		CMISS_BTREE(object_type) *target = reinterpret_cast<CMISS_BTREE(object_type) *>(target_list); \
-		CMISS_BTREE(object_type) *source = reinterpret_cast<CMISS_BTREE(object_type) *>(source_list); \
+		CMZN_BTREE(object_type) *target = reinterpret_cast<CMZN_BTREE(object_type) *>(target_list); \
+		CMZN_BTREE(object_type) *source = reinterpret_cast<CMZN_BTREE(object_type) *>(source_list); \
 		*target = *source; \
 		return_code = 1; \
 	} \
@@ -106,7 +106,7 @@ PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (object && list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return_code = (1 == cmiss_btree->erase(object)); \
 		if (!return_code) \
 		{ \
@@ -129,7 +129,7 @@ PROTOTYPE_REMOVE_OBJECTS_FROM_LIST_THAT_FUNCTION(object_type) \
 	int return_code; \
 	if (conditional && list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return_code = cmiss_btree->erase_conditional(conditional, user_data); \
 	} \
 	else \
@@ -147,7 +147,7 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_LIST_FUNCTION(object_type) \
 	int return_code; \
 	if (list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		cmiss_btree->clear(); \
 		return_code = 1; \
 	} \
@@ -166,7 +166,7 @@ PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
 	int return_code; \
 	if (object && list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return_code = cmiss_btree->insert(object); \
 		if (!return_code) \
 		{ \
@@ -189,7 +189,7 @@ PROTOTYPE_NUMBER_IN_LIST_FUNCTION(object_type) \
 { \
 	if (list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return cmiss_btree->size(); \
 	} \
 	display_message(ERROR_MESSAGE, \
@@ -203,7 +203,7 @@ PROTOTYPE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 	int return_code = 0; \
 	if (list && object) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return_code = cmiss_btree->contains(object); \
 	} \
 	else \
@@ -219,7 +219,7 @@ PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
 { \
 	if (list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return cmiss_btree->find_first_object_that(conditional, user_data); \
 	} \
 	else \
@@ -236,7 +236,7 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 	int return_code = 1; \
 	if (list && iterator) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return_code = cmiss_btree->for_each_object(iterator, user_data); \
 	} \
 	else \
@@ -251,7 +251,7 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 #define DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION( object_type , iterator_type ) \
 PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(object_type,iterator_type) \
 { \
-	CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+	CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 	if (cmiss_btree) \
 		return new iterator_type(cmiss_btree); \
 	return 0; \
@@ -265,7 +265,7 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	struct object_type *object = 0; \
 	if (list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		object = cmiss_btree->find_object_by_identifier(identifier); \
 	} \
 	else \
@@ -297,7 +297,7 @@ PROTOTYPE_INDEXED_LIST_BTREE_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 { \
 	if (list && object) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return cmiss_btree->begin_identifier_change(object); \
 	} \
 	else \
@@ -326,7 +326,7 @@ PROTOTYPE_INDEXED_LIST_BTREE_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 { \
 	if (list) \
 	{ \
-		CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		cmiss_btree->end_identifier_change(); \
 	} \
 	else \
@@ -339,7 +339,7 @@ PROTOTYPE_INDEXED_LIST_BTREE_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 
 #define LIST_BTREE_STATISTICS(object_type,list) \
 { \
-	CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+	CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 	int stem_count = 0; \
 	int leaf_count = 0; \
 	int min_leaf_depth = 0; \

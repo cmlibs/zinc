@@ -55,16 +55,16 @@ extern "C" {
 
 enum cmzn_time_keeper_attribute
 {
-	CMISS_TIME_KEEPER_ATTRIBUTE_INVALID = 0,
-	CMISS_TIME_KEEPER_ATTRIBUTE_TIME = 1,
+	CMZN_TIME_KEEPER_ATTRIBUTE_INVALID = 0,
+	CMZN_TIME_KEEPER_ATTRIBUTE_TIME = 1,
 	/*!< Current time of the time keeper. This is a real number attribute.
 	 */
-	CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME = 2,
+	CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME = 2,
 	/*!< Minimum allowed time of the time keeper. The time keeper will not
 	 * allow any time lower then the minimum time specified by this function.
 	 * This is a real number attribute.
 	 */
-	CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME = 3
+	CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME = 3
 	/*!< Maximum allowed time of the time keeper. The time keeper will not allow
 	 * any time larger than the value set by this function.
 	 * This is a real number attribute.
@@ -104,7 +104,7 @@ ZINC_API cmzn_time_keeper_id cmzn_time_keeper_access(cmzn_time_keeper_id time_ke
  * Internally this just decrements the reference count.
  *
  * @param time_keeper_address  The address to the handle to time keeper
- * @return  Status CMISS_OK if successfully destroy the time keeper,
+ * @return  Status CMZN_OK if successfully destroy the time keeper,
  * any other value on failure.
  */
 ZINC_API int cmzn_time_keeper_destroy(cmzn_time_keeper_id *time_keeper_address);
@@ -125,7 +125,7 @@ ZINC_API double cmzn_time_keeper_get_attribute_real(cmzn_time_keeper_id time_kee
  * @param time_keeper  Handle to the cmiss time_keeper.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this time_keeper object.
  */
 ZINC_API int cmzn_time_keeper_set_attribute_real(cmzn_time_keeper_id time_keeper,
@@ -156,7 +156,7 @@ ZINC_API cmzn_time_notifier_id cmzn_time_keeper_create_notifier_regular(
  *
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
- * @return  Status CMISS_OK if successfully set time notifier to time keeper,
+ * @return  Status CMZN_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
 ZINC_API int cmzn_time_keeper_add_time_notifier(cmzn_time_keeper_id time_keeper,
@@ -167,7 +167,7 @@ ZINC_API int cmzn_time_keeper_add_time_notifier(cmzn_time_keeper_id time_keeper,
  * access count of the time notifier.
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
- * @return  Status CMISS_OK if successfully set time notifier to time keeper,
+ * @return  Status CMZN_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
 ZINC_API int cmzn_time_keeper_remove_time_notifier(cmzn_time_keeper_id time_keeper,

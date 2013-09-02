@@ -60,28 +60,28 @@ extern "C" {
  */
 enum cmzn_field_attribute
 {
-	CMISS_FIELD_ATTRIBUTE_INVALID = 0,
-	CMISS_FIELD_ATTRIBUTE_IS_MANAGED = 1,
+	CMZN_FIELD_ATTRIBUTE_INVALID = 0,
+	CMZN_FIELD_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) field is destroyed when no longer
 	 * in use, i.e. when number of external references to it, including use as a
 	 * source for other fields, drops to zero. Set to 1 to manage field
 	 * indefinitely, or until this attribute is reset to zero (which effectively
 	 * marks a formerly managed field as pending destruction).
 	 */
-	CMISS_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
+	CMZN_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
 	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
 	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
 	 * and other operations. Can only be set for some fields e.g. finite_element
 	 * where its default is 0 (false). Some fields e.g. cad geometry have this
 	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
 	 */
-	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
+	CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
 	/*!< Integer number of components of field.
 	 */
-	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
+	CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
 	/*!< Integer number of source fields the field is a function of.
 	 */
-	CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS = 5,
+	CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS = 5,
 	/*!< Real focus parameter for coordinate system types PROLATE_SPHEROIDAL and
 	 * OBLATE_SPHEROIDAL. Must be positive.
 	 */
@@ -96,15 +96,15 @@ enum cmzn_field_attribute
  */
 enum cmzn_field_coordinate_system_type
 {
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
-		/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
-		/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
-	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
+		/*!< uses CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
+		/*!< uses CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
 		/*!< For Euler angles specifying fibre axes orientation from default
 		 * aligned with element xi coordinates. */
 };
@@ -175,7 +175,7 @@ ZINC_API cmzn_field_id cmzn_field_access(cmzn_field_id field);
  * Internally this just decrements the reference count.
  *
  * @param field_address  address to the handle to field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_destroy(cmzn_field_id *field_address);
 
@@ -199,7 +199,7 @@ ZINC_API bool cmzn_field_is_managed(cmzn_field_id field);
  *
  * @param field  The field to modify.
  * @param value  The new value for the managed flag: true or false.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_set_managed(cmzn_field_id field, bool value);
 
@@ -213,7 +213,7 @@ ZINC_API int cmzn_field_set_managed(cmzn_field_id field, bool value);
  * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
  * that it equals or exceeds the dimension of the element.
  * @param chart_coordinates  Array containing chart coordinate location to set.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_assign_mesh_location(cmzn_field_id field,
 	cmzn_field_cache_id cache, cmzn_element_id element,
@@ -233,7 +233,7 @@ ZINC_API int cmzn_field_assign_mesh_location(cmzn_field_id field,
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
  * @param values  Array of real values to assign to field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cache,
 	int number_of_values, const double *values);
@@ -246,7 +246,7 @@ ZINC_API int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cac
  * @param field  The field to assign a string value to.
  * @param cache  Store of location to assign at and intermediate field values.
  * @param string_value  The string value to assign to field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id cache,
 	const char *string_value);
@@ -274,7 +274,7 @@ ZINC_API cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
  * @param values  Array of real values to evaluate into.
- * @return  Status CMISS_OK on success, any other value on failure including if
+ * @return  Status CMZN_OK on success, any other value on failure including if
  * field is not defined at cache location.
  */
 ZINC_API int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id cache,
@@ -312,7 +312,7 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
  * @param number_of_values  Size of values array, must equal number of
  * components of field.
  * @param values  Array of real values to evaluate derivatives into.
- * @return  Status CMISS_OK on success, any other value on failure including
+ * @return  Status CMZN_OK on success, any other value on failure including
  * if field is not defined at cache location.
  */
 ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
@@ -336,7 +336,7 @@ ZINC_API int cmzn_field_get_attribute_integer(cmzn_field_id field,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid for this field.
  */
 ZINC_API int cmzn_field_set_attribute_integer(cmzn_field_id field,
@@ -358,7 +358,7 @@ ZINC_API double cmzn_field_get_attribute_real(cmzn_field_id field,
  * @param field  The field to set the attribute for.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid for this field.
  */
 ZINC_API int cmzn_field_set_attribute_real(cmzn_field_id field,
@@ -386,12 +386,12 @@ ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system
 /***************************************************************************//**
  * Set the coordinate system type to interpret field values in.
  * Note PROLATE_SPHEROIDAL and OBLATE_SPHEROIDAL coordinate system types also
- * require the real CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS to be set to a
+ * require the real CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS to be set to a
  * positive value.
  *
  * @param field  The field to modify.
  * @param coordinate_system_type  The type of coordinate system.
- * @return  Status CMISS_OK if successfully set, any other value if failed.
+ * @return  Status CMZN_OK if successfully set, any other value if failed.
  */
 ZINC_API int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 	enum cmzn_field_coordinate_system_type coordinate_system_type);
@@ -411,7 +411,7 @@ ZINC_API char *cmzn_field_get_name(cmzn_field_id field);
  *
  * @param field  The field to be named.
  * @param name  The new name for the field.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_set_name(cmzn_field_id field, const char *name);
 
@@ -441,10 +441,10 @@ ZINC_API cmzn_field_module_id cmzn_field_get_field_module(cmzn_field_id field);
  */
 enum cmzn_field_value_type
 {
-	CMISS_FIELD_VALUE_TYPE_INVALID = 0,
-	CMISS_FIELD_VALUE_TYPE_REAL = 1,
-	CMISS_FIELD_VALUE_TYPE_STRING = 2,
-	CMISS_FIELD_VALUE_TYPE_MESH_LOCATION = 3
+	CMZN_FIELD_VALUE_TYPE_INVALID = 0,
+	CMZN_FIELD_VALUE_TYPE_REAL = 1,
+	CMZN_FIELD_VALUE_TYPE_STRING = 2,
+	CMZN_FIELD_VALUE_TYPE_MESH_LOCATION = 3
 };
 
 /***************************************************************************//**
@@ -490,7 +490,7 @@ ZINC_API cmzn_field_cache_id cmzn_field_cache_access(cmzn_field_cache_id cache);
  * Internally this just decrements the reference count.
  *
  * @param cache_address  Address of handle to field cache to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_destroy(cmzn_field_cache_id *cache_address);
 
@@ -502,7 +502,7 @@ ZINC_API int cmzn_field_cache_destroy(cmzn_field_cache_id *cache_address);
  *
  * @param cache  The field cache to set the location in.
  * @param element  The element to set. Must belong to same region as cache.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_set_element(cmzn_field_cache_id cache,
 	cmzn_element_id element);
@@ -521,7 +521,7 @@ ZINC_API int cmzn_field_cache_set_element(cmzn_field_cache_id cache,
  * @param chart_coordinates  Location in element chart. Value is not checked;
  * caller is responsible for supplying locations within the bounds of the
  * element shape.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
 	cmzn_element_id element, int number_of_chart_coordinates,
@@ -538,7 +538,7 @@ ZINC_API int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
  * @param number_of_values  The size of the values array: number of field
  * components.
  * @param values  The field values to set.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
 	cmzn_field_id reference_field, int number_of_values, const double *values);
@@ -551,7 +551,7 @@ ZINC_API int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
  * @param cache  The field cache to set the location in.
  * @param node  The node to set as spatial location. Must belong to same region
  * as cache.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id node);
 
@@ -560,7 +560,7 @@ ZINC_API int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id n
  *
  * @param cache  The field cache to set the location in.
  * @param time  The time value to be set.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time);
 
@@ -568,7 +568,7 @@ ZINC_API int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time);
  * Destroys this handle to the field_iterator and sets it to NULL.
  *
  * @param field_iterator_address  Address of handle to field_iterator to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_iterator_destroy(cmzn_field_iterator_id *field_iterator_address);
 

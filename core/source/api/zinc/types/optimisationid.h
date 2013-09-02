@@ -44,4 +44,4 @@
 	struct cmzn_optimisation;
 	typedef struct cmzn_optimisation* cmzn_optimisation_id;
 
-#endif /* CMISS_OPTIMISATION_ID_DEFINED */
+#endif /* CMZN_OPTIMISATION_ID_DEFINED */

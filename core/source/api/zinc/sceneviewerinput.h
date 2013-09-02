@@ -66,7 +66,7 @@ ZINC_API cmzn_scene_viewer_input_id cmzn_scene_viewer_input_access(cmzn_scene_vi
  * Internally this just decrements the reference count.
  *
  * @param address_input  Address of handle to cmzn_scene_viewer_input object.
- * @return  CMISS_OK if successfully deaccess cmzn_scene_viewer_input, any other value on
+ * @return  CMZN_OK if successfully deaccess cmzn_scene_viewer_input, any other value on
  * failure.
  */
 ZINC_API int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *address_input);
@@ -77,7 +77,7 @@ ZINC_API int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *address
  * @param input  Handle to cmzn_scene_viewer_input object.
  * @param x The x-coordinate of the input position.
  * @param y The y-coordinate of the input position.
- * @return  CMISS_OK if successful, any other value on failure.
+ * @return  CMZN_OK if successful, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_position(cmzn_scene_viewer_input_id input, int x, int y);
 
@@ -108,7 +108,7 @@ ZINC_API cmzn_scene_viewer_input_modifier cmzn_scene_viewer_input_get_modifier(c
  *
  * @param input  Handle to cmzn_scene_viewer_input object.
  * @param number  The numeric value of the button.
- * @return  CMISS_OK if successful, any other value on failure.
+ * @return  CMZN_OK if successful, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_id input, int number);
 
@@ -117,7 +117,7 @@ ZINC_API int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_i
  *
  * @param input cmzn scene viewer input.
  * @param button cmzn scene viewer input button enumeration value.
- * @return CMISS_OK on success, any other value on failure.
+ * @return CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_button_type button);
 
@@ -127,7 +127,7 @@ ZINC_API int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input
  *
  * @param input  Handle to cmzn_scene_viewer_input object.
  * @param type  Enumerator for the input event type.
- * @return  CMISS_OK if successful, any other value on failure.
+ * @return  CMZN_OK if successful, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_event_type type);
 

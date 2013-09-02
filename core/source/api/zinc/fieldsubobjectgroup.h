@@ -98,7 +98,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_node_group_base_cast(cmzn_field_node_grou
  * Destroy the reference to the node group.
  *
  * @param group_address  address to the handle to the node group field
- * @return  Status CMISS_OK if successfully destroy the node group,
+ * @return  Status CMZN_OK if successfully destroy the node group,
  * any other value on failure.
  */
 ZINC_API int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_address);
@@ -155,7 +155,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_element_group_base_cast(cmzn_field_elemen
  * Destroy the reference to the element group.
  *
  * @param element_group_address  address to the handle to the element group field
- * @return  Status CMISS_OK if successfully destroy the element group,
+ * @return  Status CMZN_OK if successfully destroy the element group,
  * any other value on failure.
  */
 ZINC_API int cmzn_field_element_group_destroy(cmzn_field_element_group_id *element_group_address);

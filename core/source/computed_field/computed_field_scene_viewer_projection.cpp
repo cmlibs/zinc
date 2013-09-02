@@ -153,8 +153,8 @@ DESCRIPTION :
 					Computed_field_scene_viewer_projection_scene_viewer_callback,
 				 		(void *)field);
 			}
-			if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-				(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
+			if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+				(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
 			{
 				add_transformation_callback();
 			}
@@ -548,8 +548,8 @@ int Computed_field_scene_viewer_projection::evaluate(cmzn_field_cache& cache, Fi
 int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 {
 	int return_code = 0;
-	if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-		(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
+	if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+		(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
 	{
 		cmzn_field_id field = getField();
 		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
@@ -744,8 +744,8 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 	cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
 	if (current_scene != top_scene)
 	{
-		if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-			(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
+		if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
+			(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
 		{
 			remove_transformation_callback();
 			add_transformation_callback();

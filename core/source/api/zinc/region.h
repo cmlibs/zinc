@@ -77,7 +77,7 @@ ZINC_API cmzn_region_id cmzn_region_access(cmzn_region_id region);
  *
  * @param region_address  The address to the handle of the region
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
 
@@ -91,7 +91,7 @@ ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
  * is no need to call cmzn_field_module_begin_change/end_change as well.
  *
  * @param region  The region to begin change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_begin_change(cmzn_region_id region);
 
@@ -103,7 +103,7 @@ ZINC_API int cmzn_region_begin_change(cmzn_region_id region);
  * Important: Do not pair with cmzn_region_begin_hierarchical_change.
  *
  * @param region  The region to end change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_end_change(cmzn_region_id region);
 
@@ -114,7 +114,7 @@ ZINC_API int cmzn_region_end_change(cmzn_region_id region);
  * Important: Do not pair with non-hierarchical cmzn_region_end_change.
  *
  * @param region  The root of the region tree to begin change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
 
@@ -126,7 +126,7 @@ ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
  * Important: Do not pair with non-hierarchical cmzn_region_begin_change.
  *
  * @param region  The root of the region tree to end change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_end_hierarchical_change(cmzn_region_id region);
 
@@ -148,7 +148,7 @@ ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
  *
  * @param region  The region to be named.
  * @param name  The new name for the region.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
 
@@ -206,7 +206,7 @@ ZINC_API void cmzn_region_reaccess_next_sibling(cmzn_region_id *region_address);
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to add.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_append_child(cmzn_region_id region, cmzn_region_id new_child);
 
@@ -220,7 +220,7 @@ ZINC_API int cmzn_region_append_child(cmzn_region_id region, cmzn_region_id new_
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to append.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_insert_child_before(cmzn_region_id region,
 	cmzn_region_id new_child, cmzn_region_id ref_child);
@@ -231,7 +231,7 @@ ZINC_API int cmzn_region_insert_child_before(cmzn_region_id region,
  *
  * @param region  The current parent region of old_child.
  * @param old_child  The child to remove.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_remove_child(cmzn_region_id region,
 	cmzn_region_id old_child);
@@ -322,7 +322,7 @@ ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
  * @param region  The region to read the resources in stream_information into.
  * @param stream_information Handle to the cmzn_stream_information containing
  * 		information to read file into.
- * @return  Status CMISS_OK if data successfully read and merged into specified
+ * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
 ZINC_API int cmzn_region_read(cmzn_region_id region,
@@ -335,7 +335,7 @@ ZINC_API int cmzn_region_read(cmzn_region_id region,
  * @param region  The region to be read into
  * @param file_name  name of the file to read from.
  *
- * @return  Status CMISS_OK if data successfully read and merged into specified
+ * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
 ZINC_API int cmzn_region_read_file(cmzn_region_id region, const char *file_name);
@@ -347,7 +347,7 @@ ZINC_API int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
  * @param stream_information Handle to the cmzn_stream_information containing
  * 		information to read file into.
  *
- * @return  Status CMISS_OK if data is successfully written out, any other value
+ * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */
 ZINC_API int cmzn_region_write(cmzn_region_id region,
@@ -359,15 +359,15 @@ ZINC_API int cmzn_region_write(cmzn_region_id region,
  * @param region  The region to be written out.
  * @param file_name  name of the file to write to..
  *
- * @return  Status CMISS_OK if data is successfully written out, any other value
+ * @return  Status CMZN_OK if data is successfully written out, any other value
  * otherwise.
  */
 ZINC_API int cmzn_region_write_file(cmzn_region_id region, const char *file_name);
 
 enum cmzn_stream_information_region_attribute
 {
-	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_INVALID = 0,
-	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
+	CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_INVALID = 0,
+	CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
 };
 
 
@@ -436,7 +436,7 @@ ZINC_C_INLINE cmzn_stream_information_id cmzn_stream_information_region_base_cas
  *
  * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
- * @return  Status CMISS_OK if the operation is successful, any other value on
+ * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */
 ZINC_API int cmzn_stream_information_region_destroy(
@@ -472,7 +472,7 @@ ZINC_API double cmzn_stream_information_region_get_attribute_real(
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
- * @return  status CMISS_OK if attribute successfully set, any other value if
+ * @return  status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this
  * cmzn_stream_information_region.
  */
@@ -516,7 +516,7 @@ ZINC_API double cmzn_stream_information_region_get_resource_attribute_real(
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
- * @return   status CMISS_OK if attribute successfully set, any other value if
+ * @return   status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this
  * cmzn_stream_information_region.
  */
@@ -532,7 +532,7 @@ ZINC_API int cmzn_stream_information_region_set_resource_attribute_real(
  * @param stream_information  Handle to the cmzn_stream_information_region.
  * @param resource  Handle to the cmzn_stream_resource.
  * @return  Bitmasks for specified domain types for stream resource,
- * 	CMISS_FIELD_DOMAIN_TYPE_INVALID if failed or unset
+ * 	CMZN_FIELD_DOMAIN_TYPE_INVALID if failed or unset
  */
 ZINC_API int cmzn_stream_information_region_get_resource_domain_type(
 	cmzn_stream_information_region_id stream_information, cmzn_stream_resource_id resource);
@@ -548,16 +548,16 @@ ZINC_API int cmzn_stream_information_region_get_resource_domain_type(
  * @param resource  Handle to the cmzn_stream_resource.
  * @param domain_type  Bitmasks for the domain type to be set for output. It currently supports
  *   the following domains:
- *   CMISS_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
- *   CMISS_FIELD_DOMAIN_NODES - Enable output of nodes
- *   CMISS_FIELD_DOMAIN_DATA - Enable output of datapoints
- *   CMISS_FIELD_DOMAIN_MESH_1D - Enable output of 1D mesh
- *   CMISS_FIELD_DOMAIN_MESH_2D - Enable output of 2D mesh
- *   CMISS_FIELD_DOMAIN_MESH_3D - Enable output of 3D mesh
- *   CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION - Enable output of mesh with highest
+ *   CMZN_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
+ *   CMZN_FIELD_DOMAIN_NODES - Enable output of nodes
+ *   CMZN_FIELD_DOMAIN_DATA - Enable output of datapoints
+ *   CMZN_FIELD_DOMAIN_MESH_1D - Enable output of 1D mesh
+ *   CMZN_FIELD_DOMAIN_MESH_2D - Enable output of 2D mesh
+ *   CMZN_FIELD_DOMAIN_MESH_3D - Enable output of 3D mesh
+ *   CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION - Enable output of mesh with highest
  *   dimension possible
  *
- * @return   status CMISS_OK if domain_type is successfully set, any other value if
+ * @return   status CMZN_OK if domain_type is successfully set, any other value if
  *   failed or domain_type not valid or unable to be set for this
  * cmzn_stream_information_region.
  */

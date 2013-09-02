@@ -128,9 +128,9 @@ DESCRIPTION:
 
   ENTER(gtk_cmiss_scene_viewer_destroy);
 
-  if (object && (GTK_IS_CMISS_SCENE_VIEWER(object)))
+  if (object && (GTK_IS_CMZN_SCENE_VIEWER(object)))
   {
-	  gtk_cmiss_scene_viewer = GTK_CMISS_SCENE_VIEWER(object);
+	  gtk_cmiss_scene_viewer = GTK_CMZN_SCENE_VIEWER(object);
 	  
 	  if (gtk_cmiss_scene_viewer->cmiss_scene_viewer)
 	  {
@@ -219,15 +219,15 @@ DESCRIPTION:
 	ENTER(gtk_cmiss_scene_viewer_new);
 
 #if GTK_MAJOR_VERSION >= 2
-	gtk_cmiss_scene_viewer = g_object_new(GTK_TYPE_CMISS_SCENE_VIEWER, NULL);
+	gtk_cmiss_scene_viewer = g_object_new(GTK_TYPE_CMZN_SCENE_VIEWER, NULL);
 #else /* GTK_MAJOR_VERSION >= 2 */
 	gtk_cmiss_scene_viewer = gtk_type_new(gtk_cmiss_scene_viewer_get_type());
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
 	gtk_cmiss_scene_viewer->cmiss_scene_viewer = cmzn_scene_viewer_create_gtk(
 		scene_viewer_module,
-		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
-		CMISS_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 
+		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMZN_SCENE_VIEWER_BUFFERING_DOUBLE,
+		CMZN_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 
 		/*minimum_depth_buffer_depth*/8, /*minimum_accumulation_buffer_depth*/8);
 
 	gtk_cmiss_scene_viewer->cmiss_scene_viewer_module = scene_viewer_module;

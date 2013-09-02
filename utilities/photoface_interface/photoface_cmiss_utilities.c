@@ -104,7 +104,7 @@ and removing unused basis version 1 paramters.
 Global functions
 ----------------
 */
-CMISSDECLSPEC int pf_write_head_model(const char *obj_file_name,
+CMZNDECLSPEC int pf_write_head_model(const char *obj_file_name,
 	int number_of_vertices,int number_of_dynamic_vertices,
 	float *vertex_3d_locations,int number_of_texture_vertices,
 	float *texture_vertex_3d_locations,int number_of_triangles,
@@ -177,7 +177,7 @@ to the specified <obj_file>.
 	return (return_code);
 } /* pf_write_head_model */
 
-CMISSDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
+CMZNDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
 	int number_of_vertices,float *vertex_3d_locations_or_offsets)
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -205,7 +205,7 @@ Copied from lib/emlib.c
 	return (return_code);
 } /* pf_write_basis */
 
-CMISSDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
+CMZNDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
 	char *texture)
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -264,7 +264,7 @@ Writes the <texture> to the <jpeg_file>.
 	return (return_code);
 } /* pf_write_texture */
 
-CMISSDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
+CMZNDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
 	float *eye_point,float *interest_point,float *up_vector,float view_angle,
 	float *left_eye,float *right_eye)
 /*******************************************************************************

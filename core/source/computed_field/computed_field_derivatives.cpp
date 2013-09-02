@@ -62,7 +62,7 @@ class Computed_field_derivatives_package : public Computed_field_type_package
 {
 };
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

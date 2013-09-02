@@ -55,7 +55,7 @@ Wraps itk::CurvatureAnisotropicDiffusionImageFilter
 #include "itkVector.h"
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

@@ -44,7 +44,7 @@
 /** Handle to a finite_element type cmzn_field */
 struct cmzn_field_finite_element;
 typedef struct cmzn_field_finite_element *cmzn_field_finite_element_id;
-#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
+#define CMZN_FIELD_FINITE_ELEMENT_ID_DEFINED
 
 /** Handle to a find_mesh_location type cmzn_field */
 struct cmzn_field_find_mesh_location;

@@ -55,8 +55,8 @@ namespace cmzn
  */
 typedef int EnsembleEntryRef;
 
-const cmzn_ensemble_identifier CMISS_INVALID_ENSEMBLE_IDENTIFIER = -1;
-const EnsembleEntryRef CMISS_INVALID_ENSEMBLE_ENTRY_REF = -1;
+const cmzn_ensemble_identifier CMZN_INVALID_ENSEMBLE_IDENTIFIER = -1;
+const EnsembleEntryRef CMZN_INVALID_ENSEMBLE_ENTRY_REF = -1;
 
 /***************************************************************************//**
  * A domain comprising a set of entries / indexes with unique unsigned integer
@@ -87,8 +87,8 @@ public:
 		Computed_field_core(),
 		contiguous(true),
 		firstFreeIdentifier(1),
-		firstIdentifier(CMISS_INVALID_ENSEMBLE_IDENTIFIER),
-		lastIdentifier(CMISS_INVALID_ENSEMBLE_IDENTIFIER),
+		firstIdentifier(CMZN_INVALID_ENSEMBLE_IDENTIFIER),
+		lastIdentifier(CMZN_INVALID_ENSEMBLE_IDENTIFIER),
 		entryCount(0),
 		refCount(0),
 		activeIterators(NULL),
@@ -431,7 +431,7 @@ struct cmzn_ensemble_index
 			iterator(NULL),
 			ensemble_group(NULL),
 			indexRefLimit(0),
-			firstRef(cmzn::CMISS_INVALID_ENSEMBLE_ENTRY_REF),
+			firstRef(cmzn::CMZN_INVALID_ENSEMBLE_ENTRY_REF),
 			valuesIterator(NULL)
 		{
 		}

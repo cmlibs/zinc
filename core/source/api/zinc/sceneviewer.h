@@ -79,28 +79,28 @@ extern "C" {
  */
 enum cmzn_scene_viewer_buffering_mode
 {
-	CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE,
-	CMISS_SCENE_VIEWER_BUFFERING_SINGLE,
-	CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
-	CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY,
-	CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
+	CMZN_SCENE_VIEWER_BUFFERING_ANY_MODE,
+	CMZN_SCENE_VIEWER_BUFFERING_SINGLE,
+	CMZN_SCENE_VIEWER_BUFFERING_DOUBLE,
+	CMZN_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY,
+	CMZN_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
 };
 
 /**
  * Controls the way the mouse and keyboard are used to interact with the scene viewer.
- * CMISS_SCENE_VIEWER_INTERACT_STANDARD is the traditional cmgui mode.
+ * CMZN_SCENE_VIEWER_INTERACT_STANDARD is the traditional cmgui mode.
  *   Rotate: Left mouse button
  *   Translate: Middle mouse button
  *   Zoom: Right mouse button
- * CMISS_SCENE_VIEWER_INTERACT_2D is a mode more suitable for 2D use
+ * CMZN_SCENE_VIEWER_INTERACT_2D is a mode more suitable for 2D use
  *   Translate: Left mouse button
  *   Rotate: Middle mouse button
  *   Zoom: Right mouse button
  */
 enum cmzn_scene_viewer_interact_mode
 {
-	CMISS_SCENE_VIEWER_INTERACT_STANDARD,
-	CMISS_SCENE_VIEWER_INTERACT_2D
+	CMZN_SCENE_VIEWER_INTERACT_STANDARD,
+	CMZN_SCENE_VIEWER_INTERACT_2D
 };
 
 /**
@@ -111,9 +111,9 @@ enum cmzn_scene_viewer_interact_mode
  */
 enum cmzn_scene_viewer_stereo_mode
 {
-	CMISS_SCENE_VIEWER_STEREO_ANY_MODE,
-	CMISS_SCENE_VIEWER_STEREO_MONO,
-	CMISS_SCENE_VIEWER_STEREO_STEREO
+	CMZN_SCENE_VIEWER_STEREO_ANY_MODE,
+	CMZN_SCENE_VIEWER_STEREO_MONO,
+	CMZN_SCENE_VIEWER_STEREO_STEREO
 };
 
 /**
@@ -129,9 +129,9 @@ enum cmzn_scene_viewer_stereo_mode
  */
 enum cmzn_scene_viewer_viewport_mode
 {
-	CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE,
-	CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE,
-	CMISS_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE
+	CMZN_SCENE_VIEWER_VIEWPORT_ABSOLUTE,
+	CMZN_SCENE_VIEWER_VIEWPORT_RELATIVE,
+	CMZN_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE
 };
 
 /**
@@ -139,8 +139,8 @@ enum cmzn_scene_viewer_viewport_mode
  */
 enum cmzn_scene_viewer_projection_mode
 {
-	CMISS_SCENE_VIEWER_PROJECTION_PARALLEL,
-	CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE
+	CMZN_SCENE_VIEWER_PROJECTION_PARALLEL,
+	CMZN_SCENE_VIEWER_PROJECTION_PERSPECTIVE
 };
 
 /**
@@ -152,9 +152,9 @@ enum cmzn_scene_viewer_projection_mode
  */
 enum cmzn_scene_viewer_blending_mode
 {
-	CMISS_SCENE_VIEWER_BLENDING_NORMAL,
-	CMISS_SCENE_VIEWER_BLENDING_NONE,
-	CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA
+	CMZN_SCENE_VIEWER_BLENDING_NORMAL,
+	CMZN_SCENE_VIEWER_BLENDING_NONE,
+	CMZN_SCENE_VIEWER_BLENDING_TRUE_ALPHA
 };
 
 /**
@@ -162,12 +162,12 @@ enum cmzn_scene_viewer_blending_mode
  */
 enum cmzn_scene_viewer_input_event_type
 {
-	CMISS_SCENE_VIEWER_INPUT_INVALID,
-	CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY,
-	CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS,
-	CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE,
-	CMISS_SCENE_VIEWER_INPUT_KEY_PRESS,
-	CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE
+	CMZN_SCENE_VIEWER_INPUT_INVALID,
+	CMZN_SCENE_VIEWER_INPUT_MOTION_NOTIFY,
+	CMZN_SCENE_VIEWER_INPUT_BUTTON_PRESS,
+	CMZN_SCENE_VIEWER_INPUT_BUTTON_RELEASE,
+	CMZN_SCENE_VIEWER_INPUT_KEY_PRESS,
+	CMZN_SCENE_VIEWER_INPUT_KEY_RELEASE
 };
 
 /**
@@ -175,11 +175,11 @@ enum cmzn_scene_viewer_input_event_type
  */
 enum cmzn_scene_viewer_input_modifier_flags
 {
-	CMISS_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
-	CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
-	CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
-	CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
-	CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
 };
 
 /*
@@ -202,7 +202,7 @@ ZINC_API cmzn_scene_viewer_id cmzn_scene_viewer_access(cmzn_scene_viewer_id scen
  *
  * @param scene_viewer_id_address  The address to the handle of the scene_viewer
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_destroy(cmzn_scene_viewer_id *scene_viewer_id_address);
 
@@ -227,7 +227,7 @@ ZINC_API int cmzn_scene_viewer_set_interact_mode(cmzn_scene_viewer_id scene_view
  *
  * @param scene_viewer  Handle to the scene viewer.
  * @param eye  Array of three values containing the new eye position.
- * @return Status CMISS_OK on success, any other value on failure.
+ * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_set_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double const *eye);
@@ -237,7 +237,7 @@ ZINC_API int cmzn_scene_viewer_set_eye_position(cmzn_scene_viewer_id scene_viewe
  *
  * @param  scene_viewer  Handle to the scene viewer.
  * @param  eye  Array of size 3 to hold the values of the eye position.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_get_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double *eye);
@@ -247,7 +247,7 @@ ZINC_API int cmzn_scene_viewer_get_eye_position(cmzn_scene_viewer_id scene_viewe
  *
  * @param scene_viewer  Handle to the scene viewer.
  * @param lookat  Array of three values containing the new lookat position.
- * @return Status CMISS_OK on success, any other value on failure.
+ * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_set_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double const *lookat);
@@ -257,7 +257,7 @@ ZINC_API int cmzn_scene_viewer_set_lookat_position(cmzn_scene_viewer_id scene_vi
  *
  * @param  scene_viewer  Handle to the scene viewer.
  * @param  lookat  Array of size 3 to hold the values of the lookat position.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_get_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double *lookat);
@@ -267,7 +267,7 @@ ZINC_API int cmzn_scene_viewer_get_lookat_position(cmzn_scene_viewer_id scene_vi
  *
  * @param scene_viewer  Handle to the scene viewer.
  * @param upVector  Array of three values containing the new up vector.
- * @return Status CMISS_OK on success, any other value on failure.
+ * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_set_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double const *upVector);
@@ -277,7 +277,7 @@ ZINC_API int cmzn_scene_viewer_set_up_vector(cmzn_scene_viewer_id scene_viewer,
  *
  * @param  scene_viewer  Handle to the scene viewer.
  * @param  upVector  Array of size 3 to hold the values of the up vector.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_get_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double *upVector);
@@ -443,7 +443,7 @@ ZINC_API int cmzn_scene_viewer_set_perturb_lines(cmzn_scene_viewer_id scene_view
  *
  * @param scene_viewer The handle to the scene viewer
  * @param valuesOut3 The rgb components of the colour with values between [0, 1.0]
- * @return CMISS_OK if successful, any other value otherwise
+ * @return CMZN_OK if successful, any other value otherwise
  */
 ZINC_API int cmzn_scene_viewer_get_background_colour_rgb(
 	cmzn_scene_viewer_id scene_viewer, double *valuesOut3);
@@ -456,7 +456,7 @@ ZINC_API int cmzn_scene_viewer_get_background_colour_rgb(
  * @param red The red component value between [0, 1.0]
  * @param green The green component value between [0, 1.0]
  * @param blue The blue component value between [0, 1.0]
- * @return CMISS_OK if successful, any other value otherwise
+ * @return CMZN_OK if successful, any other value otherwise
  */
 ZINC_API int cmzn_scene_viewer_set_background_colour_component_rgb(
 	cmzn_scene_viewer_id scene_viewer, double red, double green, double blue);
@@ -468,7 +468,7 @@ ZINC_API int cmzn_scene_viewer_set_background_colour_component_rgb(
  *
  * @param scene_viewer The handle to the scene viewer
  * @param valuesIn3 The rgb components of the colour
- * @return CMISS_OK if successful, any other value otherwise
+ * @return CMZN_OK if successful, any other value otherwise
  */
 ZINC_API int cmzn_scene_viewer_set_background_colour_rgb(
 	cmzn_scene_viewer_id scene_viewer, const double *valuesIn3);
@@ -645,7 +645,7 @@ ZINC_API int cmzn_scene_viewer_remove_transform_callback(
  *
  * @param input_address  The address to the handle of the input
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 //-- ZINC_API int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *input_address);
 
@@ -655,7 +655,7 @@ ZINC_API int cmzn_scene_viewer_remove_transform_callback(
  *
  * @param scene_viewer  Handle to cmzn_scene_viewer object.
  * @param input_data  Description of the input event.
- * @return  Status CMISS_OK on success, any other value if failed.
+ * @return  Status CMZN_OK on success, any other value if failed.
  */
 ZINC_API int cmzn_scene_viewer_process_input(cmzn_scene_viewer_id scene_viewer,
 	cmzn_scene_viewer_input_id input_data);
@@ -696,7 +696,7 @@ ZINC_API cmzn_scene_id cmzn_scene_viewer_get_scene(cmzn_scene_viewer_id scene_vi
  *
  * @param scene viewer  Scene viewer to set filter for.
  * @param filter  Filter to be set for scene viewer.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
 	cmzn_graphics_filter_id filter);
@@ -758,7 +758,7 @@ ZINC_API cmzn_scene_viewer_module_id cmzn_scene_viewer_module_access(cmzn_scene_
  * Destroys the scene viewer module and sets the pointer to 0.
  *
  * @param scene_viewer_module_address  The pointer to the handle of the scene viewer module.
- * @return  Status CMISS_OK if handle successfully destroyed, otherwise any other value.
+ * @return  Status CMZN_OK if handle successfully destroyed, otherwise any other value.
  */
 ZINC_API int cmzn_scene_viewer_module_destroy(cmzn_scene_viewer_module_id *scene_viewer_module_address);
 
@@ -767,22 +767,22 @@ ZINC_API int cmzn_scene_viewer_module_destroy(cmzn_scene_viewer_module_id *scene
  */
 enum cmzn_scene_viewer_transparency_mode
 {
-	CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID = 0,
-	CMISS_SCENE_VIEWER_TRANSPARENCY_FAST = 1,
-	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_FAST just includes
+	CMZN_SCENE_VIEWER_TRANSPARENCY_INVALID = 0,
+	CMZN_SCENE_VIEWER_TRANSPARENCY_FAST = 1,
+	/*!< CMZN_CMZN_SCENE_VIEWER_TRANSPARENCY_FAST just includes
 	 * transparent objects in the normal render, this causes them
 	 * to obscure other objects behind if they are drawn first.
 	 */
-	CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW = 2,
-	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW puts out all the
+	CMZN_SCENE_VIEWER_TRANSPARENCY_SLOW = 2,
+	/*!< CMZN_CMZN_SCENE_VIEWER_TRANSPARENCY_SLOW puts out all the
 	 * opaque geometry first and then ignores the depth test while
 	 * drawing all partially transparent objects, this ensures everything
 	 * is drawn but multiple layers of transparency will always draw
 	 * on top of each other which means a surface that is behind another
 	 * may be drawn over the top of one that is supposed to be in front.
 	 */
-	CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT = 3
-	/*!< CMISS_CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT uses
+	CMZN_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT = 3
+	/*!< CMZN_CMZN_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT uses
 	 * some Nvidia extensions to implement a full back to front perl pixel
 	 * fragment sort correctly rendering transparency with a small number
 	 * of passes, specified by "transparency layers". This uses all the
@@ -805,7 +805,7 @@ enum cmzn_scene_viewer_transparency_mode
  * @param scene_viewer  Handle to the scene_viewer.
  *
  * @return  transparency_mode set for this scene_viewer.
- *   CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT if failed or
+ *   CMZN_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT if failed or
  *   mode is not set correctly
  */
 ZINC_API enum cmzn_scene_viewer_transparency_mode cmzn_scene_viewer_get_transparency_mode(
@@ -820,7 +820,7 @@ ZINC_API enum cmzn_scene_viewer_transparency_mode cmzn_scene_viewer_get_transpar
  * @param scene_viewer  Handle to the scene_viewer.
  * @param transparency_mode  Transparency mode to be set for scene_viewer
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * 	failed.
  */
 ZINC_API int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_viewer,
@@ -828,7 +828,7 @@ ZINC_API int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_
 
 
 /**
- * Get the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * Get the number of layers used in the CMZN_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
  * transparency_mode.
  *
  * @See cmzn_scene_viewer_transparency_mode
@@ -841,7 +841,7 @@ ZINC_API int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_
 ZINC_API int cmzn_scene_viewer_get_transparency_layers(cmzn_scene_viewer_id scene_viewer);
 
 /**
- * Set the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * Set the number of layers used in the CMZN_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
  * transparency_mode.
  *
  * @See cmzn_scene_viewer_transparency_mode
@@ -849,7 +849,7 @@ ZINC_API int cmzn_scene_viewer_get_transparency_layers(cmzn_scene_viewer_id scen
  * @param scene_viewer  Handle to the cmiss scene_viewer component.
  * @param layers  number of layers to be set for this scene viewer.
  *
- * @return  CMISS_OK if value is set successfully, any other value if
+ * @return  CMZN_OK if value is set successfully, any other value if
  * 	failed.
  */
 ZINC_API int cmzn_scene_viewer_set_transparency_layers(cmzn_scene_viewer_id scene_viewer,

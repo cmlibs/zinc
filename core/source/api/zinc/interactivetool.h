@@ -53,7 +53,7 @@ extern "C" {
  *
  * @param interactive_tool  Handle to a cmzn_interactive_tool object.
  * @param command  Command to be executed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_interactive_tool_execute_command(cmzn_interactive_tool_id interactive_tool,
 	const char *command);
@@ -73,7 +73,7 @@ cmzn_interactive_tool_id cmzn_interactive_tool_access(
  *
  * @param interactive_tool  address to the handle to the "to be destroyed"
  *   cmiss interactive_tool.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_interactive_tool_destroy(cmzn_interactive_tool_id *interactive_tool);
 

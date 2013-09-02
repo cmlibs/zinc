@@ -351,7 +351,7 @@ cmzn_cad_colour::cmzn_cad_colour_type examineShapeForColor( Handle_TDocStd_Docum
 		}
 	}
 
-	return cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED;
+	return cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED;
 }
 
 cmzn_cad_colour::cmzn_cad_colour_type examineShapeForColor( Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, Quantity_Color &aColor )
@@ -367,13 +367,13 @@ cmzn_cad_colour::cmzn_cad_colour_type examineShapeForColor( Handle_TDocStd_Docum
 		}
 	}
 
-	return cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED;
+	return cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED;
 }
 
 void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& colourMap, const TopoDS_Shape& shape)
 {
 	Quantity_Color color = Quantity_NOC_WHITE;
-	cmzn_cad_colour::cmzn_cad_colour_type colour_type = cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED;
+	cmzn_cad_colour::cmzn_cad_colour_type colour_type = cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED;
 	{
 		TopExp_Explorer Ex1, Ex2, Ex3, Ex4, Ex5, Ex6;
 		int solid_index = 0;
@@ -381,7 +381,7 @@ void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& co
 		{
 			examineShapeForColor(xdeDoc, Ex1.Current(), TopAbs_SOLID);
 			colour_type = examineShapeForColor(xdeDoc, Ex1.Current(), color);
-			if (colour_type != cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
+			if (colour_type != cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED)
 			{
 				Cad_topology_primitive_identifier cad_id;
 				cmzn_cad_colour cad_colour(colour_type, color);
@@ -397,7 +397,7 @@ void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& co
 					//DEBUG_PRINT("Checking face %d, on surface %d\n", face_index, solid_index);
 					examineShapeForColor(xdeDoc, Ex3.Current(), TopAbs_FACE);
 					colour_type = examineShapeForColor(xdeDoc, Ex3.Current(), color);
-					if (colour_type != cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
+					if (colour_type != cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED)
 					{
 						Cad_topology_primitive_identifier cad_id(face_index);
 						cmzn_cad_colour cad_colour(colour_type, color);
@@ -412,7 +412,7 @@ void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& co
 						{
 							examineShapeForColor(xdeDoc, Ex5.Current(), TopAbs_EDGE);
 							colour_type = examineShapeForColor(xdeDoc, Ex4.Current(), color);
-							if (colour_type != cmzn_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
+							if (colour_type != cmzn_cad_colour::CMZN_CAD_COLOUR_NOT_DEFINED)
 							{
 								Cad_topology_primitive_identifier cad_id(face_index, edge_index);
 								cmzn_cad_colour cad_colour(colour_type, color);

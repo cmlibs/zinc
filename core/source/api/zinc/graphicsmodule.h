@@ -80,7 +80,7 @@ ZINC_API cmzn_graphics_module_id cmzn_graphics_module_access(
  *
  * @param graphics_module_address  Address of the graphics module handle to be
  * destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_module_destroy(
 	cmzn_graphics_module_id *graphics_module_address);

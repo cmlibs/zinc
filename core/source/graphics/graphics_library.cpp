@@ -626,7 +626,7 @@ initialiased.
 static int Graphics_library_query_environment_extension(const char *extName)
 {
 	int error = 0, return_code;
-	char *environment_variable = duplicate_string("CMISS_");
+	char *environment_variable = duplicate_string("CMZN_");
 	char *environment_value;
 
 	return_code=GLEXTENSION_UNSURE;

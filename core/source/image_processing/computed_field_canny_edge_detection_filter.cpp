@@ -54,7 +54,7 @@ Wraps itk::MeanImageFilter
 #include "itkVector.h"
 #include "itkCannyEdgeDetectionImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

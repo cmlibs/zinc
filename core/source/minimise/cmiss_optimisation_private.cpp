@@ -65,7 +65,7 @@ int cmzn_optimisation::runOptimisation()
 	int return_code = 1;
 	solution_report.str("");
 	// check required attributes are set
-	if (method == CMISS_OPTIMISATION_METHOD_INVALID)
+	if (method == CMZN_OPTIMISATION_METHOD_INVALID)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Optimisation method invalid or not set.");
 		return_code = 0;
@@ -115,15 +115,15 @@ enum cmzn_optimisation_method cmzn_optimisation_get_method(cmzn_optimisation_id 
 {
 	if (optimisation)
 		return optimisation->method;
-	return CMISS_OPTIMISATION_METHOD_INVALID;
+	return CMZN_OPTIMISATION_METHOD_INVALID;
 }
 
 int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_method method)
 {
 	if (optimisation && (
-		(method == CMISS_OPTIMISATION_METHOD_QUASI_NEWTON) ||
-		(method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)))
+		(method == CMZN_OPTIMISATION_METHOD_QUASI_NEWTON) ||
+		(method == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)))
 	{
 		optimisation->method = method;
 		return 1;
@@ -139,10 +139,10 @@ public:
 		const char *enum_string = 0;
 		switch (method)
 		{
-			case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
+			case CMZN_OPTIMISATION_METHOD_QUASI_NEWTON:
 				enum_string = "QUASI_NEWTON";
 				break;
-			case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
+			case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 				enum_string = "LEAST_SQUARES_QUASI_NEWTON";
 				break;
 			default:
@@ -173,13 +173,13 @@ int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimisation,
 	{
 		switch (attribute)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			return optimisation->maximumIterations;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
 			return optimisation->maximumNumberFunctionEvaluations;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			return optimisation->maximumBacktrackIterations;
 			break;
 		default:
@@ -197,13 +197,13 @@ int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
 	{
 		switch (attribute)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			optimisation->maximumIterations = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
 			optimisation->maximumNumberFunctionEvaluations = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			optimisation->maximumBacktrackIterations = value;
 			break;
 		default:
@@ -221,25 +221,25 @@ double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimisation,
 	{
 		switch (attribute)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
 			return optimisation->functionTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
 			return optimisation->gradientTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
 			return optimisation->stepTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
 			return optimisation->maximumStep;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
 			return optimisation->minimumStep;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
 			return optimisation->linesearchTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			return optimisation->trustRegionSize;
 			break;
 		default:
@@ -257,25 +257,25 @@ int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
 	{
 		switch (attribute)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
 			optimisation->functionTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
 			optimisation->gradientTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
 			optimisation->stepTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
 			optimisation->maximumStep = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+		case CMZN_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
 			optimisation->minimumStep = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
 			optimisation->linesearchTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
+		case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			optimisation->trustRegionSize = value;
 			break;
 		default:
@@ -294,34 +294,34 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+			case CMZN_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
 				enum_string = "FUNCTION_TOLERANCE";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+			case CMZN_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
 				enum_string = "GRADIENT_TOLERANCE";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+			case CMZN_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
 				enum_string = "STEP_TOLERANCE";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
+			case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 				enum_string = "MAXIMUM_ITERATIONS";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
+			case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
 				enum_string = "MAXIMUM_FUNCTION_EVALUATIONS";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+			case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
 				enum_string = "MAXIMUM_STEP";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+			case CMZN_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
 				enum_string = "MINIMUM_STEP";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+			case CMZN_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
 				enum_string = "LINESEARCH_TOLERANCE";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+			case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 				enum_string = "MAXIMUM_BACKTRACK_ITERATIONS";
 				break;
-			case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
+			case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 				enum_string = "TRUST_REGION_SIZE";
 				break;
 			default:

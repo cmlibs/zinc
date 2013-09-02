@@ -37,8 +37,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_GRAPHIC_H)
-#define CMISS_GRAPHIC_H
+#if !defined (CMZN_GRAPHIC_H)
+#define CMZN_GRAPHIC_H
 
 #include "zinc/fieldgroup.h"
 #include "zinc/graphic.h"
@@ -369,7 +369,7 @@ bool cmzn_graphic_selects_elements(struct cmzn_graphic *graphic);
 
 /**
  * Returns the dimension of the domain used in the graphic. Note for domain
- * type CMISS_DOMAIN_MESH_HIGHEST_DIMENSION the region is checked for the
+ * type CMZN_DOMAIN_MESH_HIGHEST_DIMENSION the region is checked for the
  * highest dimension.
  * @param graphic  The graphic to query.
  * @return  The dimension of the graphic domain, or -1 on error.
@@ -385,7 +385,7 @@ int cmzn_graphic_selects_cad_primitives(struct cmzn_graphic *graphic);
 #endif /* defined (USE_OPENCASCADE) */
 
 /***************************************************************************//**
- *Returns the settings type of the <graphic>, eg. CMISS_GRAPHIC_LINES.
+ *Returns the settings type of the <graphic>, eg. CMZN_GRAPHIC_LINES.
  */
 enum cmzn_graphic_type cmzn_graphic_get_graphic_type(
 	struct cmzn_graphic *graphic);
@@ -436,7 +436,7 @@ enum Streamline_data_type cmzn_graphic_get_streamline_data_type(
 /**
  * Sets the streamline data type which allows extended options for colouring
  * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_graphic_set_streamline_data_type(cmzn_graphic_id graphic,
 	enum Streamline_data_type streamline_data_type);
@@ -461,7 +461,7 @@ double cmzn_graphic_contours_get_decimation_threshold(
 /**
  * Set iso surface decimation threshold, controlling polygon reduction.
  * Converts iso surface into a voltex first.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 int cmzn_graphic_contours_set_decimation_threshold(
 	cmzn_graphic_contours_id contours_graphic, double decimation_threshold);

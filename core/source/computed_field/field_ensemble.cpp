@@ -100,7 +100,7 @@ void Field_ensemble::updateFirstFreeIdentifier()
 {
 	if (firstFreeIdentifier != (lastIdentifier + 1))
 	{
-		while (CMISS_INVALID_ENSEMBLE_ENTRY_REF !=
+		while (CMZN_INVALID_ENSEMBLE_ENTRY_REF !=
 			findEntryByIdentifier(firstFreeIdentifier))
 		{
 			firstFreeIdentifier++;
@@ -129,7 +129,7 @@ EnsembleEntryRef Field_ensemble::createEntryPrivate(cmzn_ensemble_identifier ide
 {
 	if (identifier < 0)
 		return 0;
-	EnsembleEntryRef ref = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+	EnsembleEntryRef ref = CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 	if (contiguous)
 	{
 		if (0 == entryCount)
@@ -183,7 +183,7 @@ EnsembleEntryRef Field_ensemble::createEntry(cmzn_ensemble_identifier identifier
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
 	if (ref >= 0)
-		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+		return CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 	return createEntryPrivate(identifier);
 }
 
@@ -198,7 +198,7 @@ EnsembleEntryRef Field_ensemble::findOrCreateEntry(cmzn_ensemble_identifier iden
 
 EnsembleEntryRef Field_ensemble::findEntryByIdentifier(cmzn_ensemble_identifier identifier)
 {
-	EnsembleEntryRef ref = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+	EnsembleEntryRef ref = CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 	if (identifier >= 0)
 	{
 		if (contiguous)
@@ -251,7 +251,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 		if (identifier >= 0)
 		{
 			identifierMap.erase(identifier);
-			entries.setValue(ref, CMISS_INVALID_ENSEMBLE_IDENTIFIER);
+			entries.setValue(ref, CMZN_INVALID_ENSEMBLE_IDENTIFIER);
 			if (identifier <= firstFreeIdentifier)
 				firstFreeIdentifier = identifier;
 			entryCount--;
@@ -259,8 +259,8 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 			{
 				if (0 == entryCount)
 				{
-					firstIdentifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
-					lastIdentifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+					firstIdentifier = CMZN_INVALID_ENSEMBLE_IDENTIFIER;
+					lastIdentifier = CMZN_INVALID_ENSEMBLE_IDENTIFIER;
 					firstFreeIdentifier = 1;
 				}
 				else
@@ -286,7 +286,7 @@ int Field_ensemble::removeEntryWithIdentifier(cmzn_ensemble_identifier identifie
 
 cmzn_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref)
 {
-	cmzn_ensemble_identifier identifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+	cmzn_ensemble_identifier identifier = CMZN_INVALID_ENSEMBLE_IDENTIFIER;
 	if ((0 <= ref) && (ref < refCount))
 	{
 		if (contiguous)
@@ -300,7 +300,7 @@ cmzn_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref
 EnsembleEntryRef Field_ensemble::getFirstEntryRef()
 {
 	if (0 == entryCount)
-		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+		return CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 	if (contiguous)
 		return 0;
 	return identifierMap.begin()->second;
@@ -335,14 +335,14 @@ EnsembleEntryRef Field_ensemble::getNextEntryRef(EnsembleEntryRef ref)
 			}
 		}
 	}
-	return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+	return CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 }
 
 EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	bool_array<EnsembleEntryRef>& values)
 {
 	if (ref < 0)
-		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+		return CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 	EnsembleEntryRef newRef = ref;
 	if (contiguous)
 	{
@@ -351,7 +351,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 			newRef++;
 			if (newRef >= refCount)
 			{
-				newRef = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+				newRef = CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 				break;
 			}
 		} while (!values.getBool(newRef));
@@ -367,7 +367,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 			iter++;
 			if (iter == identifierMap.end())
 			{
-				newRef = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+				newRef = CMZN_INVALID_ENSEMBLE_ENTRY_REF;
 				break;
 			}
 			newRef = iter->second;
@@ -378,7 +378,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 
 cmzn_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef ref)
 {
-	if (CMISS_INVALID_ENSEMBLE_IDENTIFIER == getEntryIdentifier(ref))
+	if (CMZN_INVALID_ENSEMBLE_IDENTIFIER == getEntryIdentifier(ref))
 		return NULL;
 	cmzn_ensemble_iterator *iterator = NULL;
 	if (availableIterators)
@@ -547,7 +547,7 @@ cmzn_ensemble_iterator *cmzn_field_ensemble_find_or_create_entry(
 	{
 		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
 		cmzn::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
-		if (cmzn::CMISS_INVALID_ENSEMBLE_ENTRY_REF == ref)
+		if (cmzn::CMZN_INVALID_ENSEMBLE_ENTRY_REF == ref)
 		{
 			ref = ensemble->createEntry(identifier);
 		}

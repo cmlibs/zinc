@@ -55,7 +55,7 @@ Wraps itk::MeanImageFilter
 #include "itkVector.h"
 #include "itkFastMarchingImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

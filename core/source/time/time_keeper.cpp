@@ -326,15 +326,15 @@ double cmzn_time_keeper_get_attribute_real(cmzn_time_keeper_id time_keeper,
 	{
 		switch (attribute)
 		{
-			case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
 			{
 				value = time_keeper->getTime();
 			} break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
 			{
 				value = time_keeper->getMinimum();
 			}	break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
 			{
 				value = time_keeper->getMaximum();
 			} break;
@@ -357,15 +357,15 @@ int cmzn_time_keeper_set_attribute_real(cmzn_time_keeper_id time_keeper,
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
 			{
 				return_code = time_keeper->setTime(value);
 			} break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
 			{
 				return_code = time_keeper->setMinimum(value);
 			}	break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
 			{
 				return_code = time_keeper->setMaximum(value);
 			} break;
@@ -388,13 +388,13 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
 				enum_string = "TIME";
 				break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
 				enum_string = "MINIMUM_TIME";
 				break;
-			case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
 				enum_string = "MAXIMUM_TIME";
 				break;
 			default:

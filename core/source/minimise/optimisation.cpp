@@ -128,7 +128,7 @@ int Minimisation::prepareOptimisation()
 	if (optimisation.objectiveFields.size() != objectiveFields.size())
 		return_code = 0;
 	return_code = return_code && construct_dof_arrays();
-	if (optimisation.method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
+	if (optimisation.method == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
 	{
 		totalLeastSquaresTerms = 0;
 		for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
@@ -170,10 +170,10 @@ int Minimisation::runOptimisation()
 	int return_code = 0;
 	switch (optimisation.method)
 	{
-	case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
+	case CMZN_OPTIMISATION_METHOD_QUASI_NEWTON:
 		return_code = minimise_QN();
 		break;
-	case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
+	case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 		return_code = minimise_LSQN();
 		break;
 	default:
@@ -220,7 +220,7 @@ int Minimisation::construct_dof_arrays()
 			// should only have one independent field
 			FE_field *fe_field;
 			Computed_field_get_type_finite_element(independentField, &fe_field);
-			cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+			cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
 			cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
 			cmzn_node_id node = 0;
 			while ((0 != (node = cmzn_node_iterator_next_non_access(iterator))) && return_code)

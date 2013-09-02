@@ -426,7 +426,7 @@ yet we just don't know.
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_SGIS_generate_mipmap);
 #endif
 /* Fake extension to control whether display lists are used or not.
- * This is only determined by the corresponding CMISS_GL_display_list environment
+ * This is only determined by the corresponding CMZN_GL_display_list environment
  * variable. */
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 /* Extension function handles */

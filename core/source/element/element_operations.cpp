@@ -692,9 +692,9 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 			cmzn_element_shape_type shape_type = cmzn_element_get_shape_type(element);
 			switch (shape_type)
 			{
-			case CMISS_ELEMENT_SHAPE_LINE:
-			case CMISS_ELEMENT_SHAPE_SQUARE:
-			case CMISS_ELEMENT_SHAPE_CUBE:
+			case CMZN_ELEMENT_SHAPE_LINE:
+			case CMZN_ELEMENT_SHAPE_SQUARE:
+			case CMZN_ELEMENT_SHAPE_CUBE:
 				{
 					for (int g = 0; g < number_of_gauss_points; g++)
 					{
@@ -712,7 +712,7 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 						id++;
 					}
 				} break;
-			case CMISS_ELEMENT_SHAPE_TRIANGLE:
+			case CMZN_ELEMENT_SHAPE_TRIANGLE:
 				{
 					const int tri_count = triangleCount[order - 1];
 					const int tri_offset = triangleOffset[order - 1];
@@ -734,7 +734,7 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 						id++;
 					}
 				} break;
-			case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
+			case CMZN_ELEMENT_SHAPE_TETRAHEDRON:
 				{
 					const int tet_count = tetrahedronCount[order - 1];
 					const int tet_offset = tetrahedronOffset[order - 1];
@@ -756,26 +756,26 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 						id++;
 					}
 				} break;
-			case CMISS_ELEMENT_SHAPE_WEDGE12:
-			case CMISS_ELEMENT_SHAPE_WEDGE13:
-			case CMISS_ELEMENT_SHAPE_WEDGE23:
+			case CMZN_ELEMENT_SHAPE_WEDGE12:
+			case CMZN_ELEMENT_SHAPE_WEDGE13:
+			case CMZN_ELEMENT_SHAPE_WEDGE23:
 				{
 					const int tri_count = triangleCount[order - 1];
 					const int tri_offset = triangleOffset[order - 1];
 					int line_axis, tri_axis1, tri_axis2;
-					if (shape_type == CMISS_ELEMENT_SHAPE_WEDGE12)
+					if (shape_type == CMZN_ELEMENT_SHAPE_WEDGE12)
 					{
 						line_axis = 2;
 						tri_axis1 = 0;
 						tri_axis2 = 1;
 					}
-					else if (shape_type == CMISS_ELEMENT_SHAPE_WEDGE13)
+					else if (shape_type == CMZN_ELEMENT_SHAPE_WEDGE13)
 					{
 						line_axis = 1;
 						tri_axis1 = 0;
 						tri_axis2 = 2;
 					}
-					else // (shape_type == CMISS_ELEMENT_SHAPE_WEDGE23)
+					else // (shape_type == CMZN_ELEMENT_SHAPE_WEDGE23)
 					{
 						line_axis = 0;
 						tri_axis1 = 1;

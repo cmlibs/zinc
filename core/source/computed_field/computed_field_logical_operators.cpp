@@ -484,7 +484,7 @@ int Computed_field_equal_to::evaluate(cmzn_field_cache& cache, FieldValueCache& 
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	switch (cmzn_field_get_value_type(getSourceField(0)))
 	{
-		case CMISS_FIELD_VALUE_TYPE_REAL:
+		case CMZN_FIELD_VALUE_TYPE_REAL:
 		{
 			RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 			RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
@@ -498,7 +498,7 @@ int Computed_field_equal_to::evaluate(cmzn_field_cache& cache, FieldValueCache& 
 				return 1;
 			}
 		} break;
-		case CMISS_FIELD_VALUE_TYPE_STRING:
+		case CMZN_FIELD_VALUE_TYPE_STRING:
 		{
 			StringFieldValueCache *source1Cache = StringFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 			StringFieldValueCache *source2Cache = StringFieldValueCache::cast(getSourceField(1)->evaluate(cache));

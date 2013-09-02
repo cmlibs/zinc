@@ -53,34 +53,34 @@ public:
         const char *enum_string = 0;
         switch (system)
         {
-        case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
+        case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
             enum_string = "LOCAL";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
+        case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
             enum_string = "WORLD";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
             enum_string = "NORMALISED_WINDOW_FILL";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
             enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
             enum_string = "NORMALISED_WINDOW_FIT_LEFT";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
             enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
             enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+        case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
             enum_string = "NORMALISED_WINDOW_FIT_TOP";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+        case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
             enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
             break;
-        case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+        case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
             enum_string = "WINDOW_PIXEL_TOP_LEFT";
             break;
         default:
@@ -125,16 +125,16 @@ int cmzn_scene_coordinate_system_get_viewport(
 	int return_code = 1;
 	switch (coordinate_system)
 	{
-	case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+	case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
 		// do nothing
 		break;
-	case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+	case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
 		*left = 0.0;
 		*right = (double)(int)(viewport_width + 0.5);
 		*bottom = 0.0;
 		*top = (double)(int)(viewport_height + 0.5);
 		break;
-	case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+	case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 		*left = 0.0;
 		*right = (double)(int)(viewport_width + 0.5);
 		*bottom = (double)(int)(-viewport_height - 0.5);
@@ -146,15 +146,15 @@ int cmzn_scene_coordinate_system_get_viewport(
 			double width_to_height_ratio = viewport_width/viewport_height;
 			switch (coordinate_system)
 			{
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
 					*right = 2.0*width_to_height_ratio - 1.0;
 					break;
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
 					*left = -2.0*width_to_height_ratio + 1.0;
 					break;
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
 					*left = -width_to_height_ratio;
 					*right = width_to_height_ratio;
 					break;
@@ -168,16 +168,16 @@ int cmzn_scene_coordinate_system_get_viewport(
 			double height_to_width_ratio = viewport_height / viewport_width;
 			switch (coordinate_system)
 			{
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
 					*bottom = -height_to_width_ratio;
 					*top = height_to_width_ratio;
 					break;
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
 					*bottom = -2.0*height_to_width_ratio + 1.0;
 					break;
-				case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+				case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
 					*top = 2.0*height_to_width_ratio - 1.0;
 					break;
 				default:
@@ -206,12 +206,12 @@ int cmzn_scene_coordinate_system_is_window_relative(
 	enum cmzn_scene_coordinate_system coordinate_system)
 {
 	return
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT) ||
-		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT);
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT) ||
+		(coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT);
 }

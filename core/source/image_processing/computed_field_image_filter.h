@@ -63,7 +63,7 @@ equivalent to the scene_viewer assigned to it.
 #  define DONOTUSE_TEMPLATETEMPLATES
 #endif /* defined (SGI) */
 
-namespace CMISS {
+namespace CMZN {
 
 class computed_field_image_filter_Functor
 {
@@ -1312,7 +1312,7 @@ Evaluate the templated version of this filter
 	return 0;
 }
 
-} //CMISS namespace
+} //CMZN namespace
 
 
 #endif /* computed_field_image_filter_H */

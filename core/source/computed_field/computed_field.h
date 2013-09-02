@@ -206,7 +206,7 @@ computed <field_list>.
 
 /***************************************************************************//**
  * List conditional function returning true if field value type is
- * CMISS_FIELD_VALUE_TYPE_STRING.
+ * CMZN_FIELD_VALUE_TYPE_STRING.
  */
 int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void);

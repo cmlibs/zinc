@@ -68,7 +68,7 @@ ZINC_API cmzn_differential_operator_id cmzn_differential_operator_access(
  *
  * @param differential_operator_address  Address of differential operator
  * reference.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_differential_operator_destroy(
 	cmzn_differential_operator_id *differential_operator_address);

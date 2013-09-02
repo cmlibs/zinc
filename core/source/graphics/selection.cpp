@@ -56,7 +56,7 @@ struct cmzn_selection_event
 	int owning_scene_destroyed, access_count;
 
 	cmzn_selection_event() :
-		change_type(CMISS_SELECTION_NO_CHANGE),
+		change_type(CMZN_SELECTION_NO_CHANGE),
 		owning_scene_destroyed(0),
 		access_count(1)
 	{
@@ -219,7 +219,7 @@ static void cmzn_selection_handler_callback(
 				int change = Computed_field_manager_message_get_object_change_and_detail(
 					message, cmzn_field_group_base_cast(group_field), &source_change_detail);
 				cmzn_selection_event_id event = new cmzn_selection_event();
-				event->change_type = CMISS_SELECTION_NO_CHANGE;
+				event->change_type = CMZN_SELECTION_NO_CHANGE;
 				if (change & MANAGER_CHANGE_RESULT(Computed_field))
 				{
 					selection_changed = 1;
@@ -227,12 +227,12 @@ static void cmzn_selection_handler_callback(
 				else if (change & MANAGER_CHANGE_REMOVE(Computed_field))
 				{
 					selection_changed = 1;
-					event->change_type = CMISS_SELECTION_CLEAR;
+					event->change_type = CMZN_SELECTION_CLEAR;
 				}
 				else if (change & MANAGER_CHANGE_ADD(Computed_field))
 				{
 					selection_changed = 1;
-					event->change_type = CMISS_SELECTION_ADD;
+					event->change_type = CMZN_SELECTION_ADD;
 				}
 				if (selection_changed)
 				{
@@ -240,37 +240,37 @@ static void cmzn_selection_handler_callback(
 					{
 						const cmzn_field_group_base_change_detail *group_change_detail =
 							dynamic_cast<const cmzn_field_group_base_change_detail *>(source_change_detail);
-						cmzn_field_group_change_type group_change = CMISS_FIELD_GROUP_NO_CHANGE;
+						cmzn_field_group_change_type group_change = CMZN_FIELD_GROUP_NO_CHANGE;
 						if (selection_handler->hierarchical_flag)
 							group_change = group_change_detail->getChange();
 						else
 							group_change = group_change_detail->getLocalChange();
 						switch (group_change)
 						{
-							case CMISS_FIELD_GROUP_CLEAR:
+							case CMZN_FIELD_GROUP_CLEAR:
 							{
-								event->change_type = CMISS_SELECTION_CLEAR;
+								event->change_type = CMZN_SELECTION_CLEAR;
 							} break;
-							case CMISS_FIELD_GROUP_ADD:
+							case CMZN_FIELD_GROUP_ADD:
 							{
-								event->change_type = CMISS_SELECTION_ADD;
+								event->change_type = CMZN_SELECTION_ADD;
 							} break;
-							case CMISS_FIELD_GROUP_REMOVE:
+							case CMZN_FIELD_GROUP_REMOVE:
 							{
-								event->change_type = CMISS_SELECTION_REMOVE;
+								event->change_type = CMZN_SELECTION_REMOVE;
 							} break;
-							case CMISS_FIELD_GROUP_REPLACE:
+							case CMZN_FIELD_GROUP_REPLACE:
 							{
-								event->change_type = CMISS_SELECTION_REPLACE;
+								event->change_type = CMZN_SELECTION_REPLACE;
 							} break;
 							default:
 							{
-								event->change_type = CMISS_SELECTION_NO_CHANGE;
+								event->change_type = CMZN_SELECTION_NO_CHANGE;
 							} break;
 						}
 					}
 					event->owning_scene_destroyed = selection_handler->owning_scene_destroyed;
-					if (event->change_type != CMISS_SELECTION_NO_CHANGE)
+					if (event->change_type != CMZN_SELECTION_NO_CHANGE)
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
 				cmzn_selection_event_destroy(&event);
@@ -392,7 +392,7 @@ int cmzn_selection_handler_scene_destroyed(cmzn_selection_handler_id selection_h
 		if (selection_handler->function)
 		{
 			cmzn_selection_event_id event = new cmzn_selection_event();
-			event->change_type = CMISS_SELECTION_NO_CHANGE;
+			event->change_type = CMZN_SELECTION_NO_CHANGE;
 			event->owning_scene_destroyed = 1;
 			(selection_handler->function)(event, selection_handler->user_data);
 			cmzn_selection_event_destroy(&event);

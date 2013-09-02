@@ -100,7 +100,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_finite_element_base_cast(
  *
  * @param finite_element_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address);
@@ -174,7 +174,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_find_mesh_location_base_cast(
  *
  * @param find_mesh_location_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_find_mesh_location_destroy(
 	cmzn_field_find_mesh_location_id *find_mesh_location_field_address);
@@ -194,11 +194,11 @@ ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
  */
 enum cmzn_field_find_mesh_location_search_mode
 {
-	CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT = 1,
+	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT = 1,
 	/*!< Only location where mesh field value is exactly equal to source field is
 	 * returned. This is the default search criterion.
 	 */
-	CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST = 2,
+	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST = 2,
 	/*!< Location of RMS nearest value of mesh field to source field is returned.
 	 */
 };
@@ -240,7 +240,7 @@ ZINC_API enum cmzn_field_find_mesh_location_search_mode
  *
  * @param find_mesh_location_field  The field to modify.
  * @param search_mode  The search mode to set.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
 	cmzn_field_find_mesh_location_id find_mesh_location_field,
@@ -304,7 +304,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_mesh_location_base_cast(
  *
  * @param stored_mesh_location_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_stored_mesh_location_destroy(
 	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address);
@@ -351,7 +351,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_string_base_cast(
  *
  * @param stored_string_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_stored_string_destroy(
 	cmzn_field_stored_string_id *stored_string_field_address);

@@ -55,10 +55,10 @@ typedef std::multimap<cmzn_region *, cmzn_node_id> Region_node_map;
 
 enum cmzn_scene_picker_object_type
 {
-	CMISS_SCENE_PICKER_OBJECT_ANY = 0,
-	CMISS_SCENE_PICKER_OBJECT_NODE = 1,
-	CMISS_SCENE_PICKER_OBJECT_ELEMENT = 2,
-	CMISS_SCENE_PICKER_OBJECT_DATA = 3
+	CMZN_SCENE_PICKER_OBJECT_ANY = 0,
+	CMZN_SCENE_PICKER_OBJECT_NODE = 1,
+	CMZN_SCENE_PICKER_OBJECT_ELEMENT = 2,
+	CMZN_SCENE_PICKER_OBJECT_DATA = 3
 };
 
 struct cmzn_scene_picker

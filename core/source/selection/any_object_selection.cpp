@@ -52,7 +52,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(Any_object_selection_change, \
+FULL_DECLARE_CMZN_CALLBACK_TYPES(Any_object_selection_change, \
 	struct Any_object_selection *,struct Any_object_selection_changes *);
 
 struct Any_object_selection
@@ -74,7 +74,7 @@ Global store of selected any_objects for group actions and highlighting.
 		 not already selected; excludes those subsequently selected */
 	struct LIST(Any_object) *newly_unselected_any_object_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CMISS_CALLBACK_ITEM(Any_object_selection_change)) *change_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(Any_object_selection_change)) *change_callback_list;
 }; /* struct Any_object_selection */
 
 /*
@@ -82,9 +82,9 @@ Module functions
 ----------------
 */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Any_object_selection_change, void)
+DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(Any_object_selection_change, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(Any_object_selection_change, \
+DEFINE_CMZN_CALLBACK_FUNCTIONS(Any_object_selection_change, \
 	struct Any_object_selection *,struct Any_object_selection_changes *)
 
 static int Any_object_selection_update(
@@ -118,7 +118,7 @@ is on or if no such changes have occurred.
 				changes.newly_unselected_any_object_list=
 					any_object_selection->newly_unselected_any_object_list;
 				/* send the callbacks */
-				CMISS_CALLBACK_LIST_CALL(Any_object_selection_change)(
+				CMZN_CALLBACK_LIST_CALL(Any_object_selection_change)(
 					any_object_selection->change_callback_list,
 					any_object_selection,&changes);
 				/* clear the newly selected and unselected lists */
@@ -167,7 +167,7 @@ highlighting.
 		any_object_selection->newly_unselected_any_object_list=
 			CREATE(LIST(Any_object))();
 		any_object_selection->change_callback_list=
-			CREATE(LIST(CMISS_CALLBACK_ITEM(Any_object_selection_change)))();
+			CREATE(LIST(CMZN_CALLBACK_ITEM(Any_object_selection_change)))();
 		if (!(any_object_selection->any_object_list&&
 			any_object_selection->newly_selected_any_object_list&&
 			any_object_selection->newly_unselected_any_object_list&&
@@ -209,7 +209,7 @@ Destroys the Any_object_selection.
 			&(any_object_selection->newly_selected_any_object_list));
 		DESTROY(LIST(Any_object))(
 			&(any_object_selection->newly_unselected_any_object_list));
-		DESTROY(LIST(CMISS_CALLBACK_ITEM(Any_object_selection_change)))(
+		DESTROY(LIST(CMZN_CALLBACK_ITEM(Any_object_selection_change)))(
 			&(any_object_selection->change_callback_list));
 		DEALLOCATE(*any_object_selection_address);
 		return_code=1;
@@ -227,7 +227,7 @@ Destroys the Any_object_selection.
 
 int Any_object_selection_add_callback(
 	struct Any_object_selection *any_object_selection,
-	CMISS_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data)
+	CMZN_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2000
 
@@ -243,7 +243,7 @@ void *user_data.
 	ENTER(Any_object_selection_add_callback);
 	if (any_object_selection&&function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Any_object_selection_change)(
+		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(Any_object_selection_change)(
 			any_object_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -268,7 +268,7 @@ void *user_data.
 
 int Any_object_selection_remove_callback(
 	struct Any_object_selection *any_object_selection,
-	CMISS_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data)
+	CMZN_CALLBACK_FUNCTION(Any_object_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2000
 
@@ -282,7 +282,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(Any_object_selection_remove_callback);
 	if (any_object_selection&&function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Any_object_selection_change)(
+		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(Any_object_selection_change)(
 			any_object_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;

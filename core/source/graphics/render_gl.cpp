@@ -210,24 +210,24 @@ public:
 		  int return_code = 1;
 		  switch (coordinate_system)
 		  {
-		  case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPushMatrix();
 				  glLoadMatrixd(world_view_matrix);
 			  } break;
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  if (picking)
 				  {
@@ -273,23 +273,23 @@ public:
 	  {
 		  switch (coordinate_system)
 		  {
-		  case CMISS_SCENE_COORDINATE_SYSTEM_LOCAL:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WORLD:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPopMatrix();
 			  } break;
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  /* Pop the model matrix stack */
 				  glMatrixMode(GL_PROJECTION);
@@ -658,7 +658,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 				cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 				int object_name = glyph_set->object_name;
 				cmzn_glyph_type glyph_type = glyph ?
-					GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
+					GT_object_get_glyph_type(glyph) : CMZN_GLYPH_NONE;
 				// output static labels at each point, if supplied
 				const int number_of_glyphs =
 					cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
@@ -673,8 +673,8 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					}
 				}
 
-				if ((glyph_type == CMISS_GLYPH_POINT) &&
-					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+				if ((glyph_type == CMZN_GLYPH_POINT) &&
+					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)
 					{
@@ -766,8 +766,8 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glEnd();
 					}
 				}
-				else if ((glyph_type == CMISS_GLYPH_LINE) &&
-					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+				else if ((glyph_type == CMZN_GLYPH_LINE) &&
+					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)
 					{
@@ -865,8 +865,8 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						glEnd();
 					}
 				}
-				else if ((glyph_type == CMISS_GLYPH_CROSS) &&
-					(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+				else if ((glyph_type == CMZN_GLYPH_CROSS) &&
+					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
 				{
 					if (lighting_on)
 					{
@@ -1134,7 +1134,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 											glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
 											*point, *axis1, *axis2, *axis3, *scale,
 											temp_point, temp_axis1, temp_axis2, temp_axis3);
-										if ((glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
+										if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
 										{
 											for (int j = 0; j < 3; ++j)
 											{
@@ -3070,7 +3070,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 			spectrum=get_GT_object_spectrum(object);
 			/* determine if picking names are to be output */
 			picking_names = renderer->picking &&
-				(CMISS_GRAPHIC_NO_SELECT != GT_object_get_select_mode(object));
+				(CMZN_GRAPHIC_NO_SELECT != GT_object_get_select_mode(object));
 			/* determine which material to use */
 			if (draw_selected)
 			{
@@ -3799,7 +3799,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							{
 								glPushName(0);
 							}
-							bool wireframe_flag = (surface->render_polygon_mode == CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME);
+							bool wireframe_flag = (surface->render_polygon_mode == CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME);
 							if (wireframe_flag)
 							{
 								glPushAttrib(GL_POLYGON_BIT);
@@ -4437,8 +4437,8 @@ struct GT_object *graphics_object,
 			}
 			graphics_object_no++;
 
-			if ((CMISS_GRAPHIC_SELECT_ON == graphics_object_item->select_mode) ||
-				(CMISS_GRAPHIC_DRAW_SELECTED == graphics_object_item->select_mode))
+			if ((CMZN_GRAPHIC_SELECT_ON == graphics_object_item->select_mode) ||
+				(CMZN_GRAPHIC_DRAW_SELECTED == graphics_object_item->select_mode))
 			{
 				if (graphics_object_item->selected_material)
 				{
@@ -4459,7 +4459,7 @@ struct GT_object *graphics_object,
 				}
 			}
 			// there is no highlight_functor when picking, but draw_selected graphics need to be pickable
-			if ((CMISS_GRAPHIC_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
+			if ((CMZN_GRAPHIC_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
 			{
 				if (graphics_object_item->default_material)
 				{

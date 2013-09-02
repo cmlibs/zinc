@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_REGION_STREAM_HPP)
-#define CMISS_REGION_STREAM_HPP
+#if !defined (CMZN_REGION_STREAM_HPP)
+#define CMZN_REGION_STREAM_HPP
 
 #include "zinc/types/fieldid.h"
 #include "zinc/region.h"
@@ -54,7 +54,7 @@ public:
 
 	cmzn_region_resource_properties(cmzn_stream_resource_id resource_in) :
 		cmzn_resource_properties(resource_in), time_enabled(false),
-		time(0.0), domain_type((int)CMISS_FIELD_DOMAIN_TYPE_INVALID)
+		time(0.0), domain_type((int)CMZN_FIELD_DOMAIN_TYPE_INVALID)
 	{
 	}
 
@@ -87,7 +87,7 @@ public:
 	int setDomainType(int domain_type_in)
 	{
 		domain_type = domain_type_in;
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 private:
@@ -210,7 +210,7 @@ public:
 				return resource_properties->getDomainType();
 			}
 		}
-		return CMISS_FIELD_DOMAIN_TYPE_INVALID;
+		return CMZN_FIELD_DOMAIN_TYPE_INVALID;
 	}
 
 	int setResourceDomainType(cmzn_stream_resource_id resource, int domain_type_in)
@@ -224,7 +224,7 @@ public:
 				return resource_properties->setDomainType(domain_type_in);
 			}
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	cmzn_region_id getRegion()
@@ -263,4 +263,4 @@ cmzn_region_id cmzn_stream_information_region_get_region_private(
 cmzn_region_id cmzn_stream_information_region_get_root_region(
 	cmzn_stream_information_region_id stream_information);
 
-#endif /* CMISS_REGION_STREAM_HPP */
+#endif /* CMZN_REGION_STREAM_HPP */
