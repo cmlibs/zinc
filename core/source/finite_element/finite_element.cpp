@@ -1,19 +1,8 @@
-/*******************************************************************************
-FILE : finite_element.cpp
-
-LAST MODIFIED : 20 December 2005
-
-DESCRIPTION :
-Functions for manipulating finite element structures.
-???DB.  Can FE_node_field_info become a module type ?  (create_FE_node would be
-	given the element field lists)
-???DB.  Get rid of the find_FE_ and replace with FIRST_OBJECT_IN_/FIND_BY_IDEN ?
-???DB.  enum FE_basis_type ?
-???DB.  calculate_FE_node_field ?
-???DB.  change FE_nodes so that request a particular value for a particular
-	field (see merge_FE_node)
-???DB.  Should the list_ routines be in their own module ?
-==============================================================================*/
+/**
+ * FILE : finite_element.cpp
+ *
+ * Finite element data structures and functions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -24935,17 +24924,17 @@ the derivatives will start at the first position of <jacobian>.
 							while (return_code&&(i<number_of_xi_coordinates))
 							{
 								xi_coordinate=xi_coordinates[i];
-								if (0>xi_coordinate)
+								if (0.0 > xi_coordinate)
 								{
 									xi_coordinate = 0.0;
 								}
-								if (xi_coordinate>1)
+								if (xi_coordinate > 1.0)
 								{
 									xi_coordinate = 1.0;
 								}
 								/* get xi_offset = lower grid number for cell in xi_coordinate
 									 i, and xi_coordinate = fractional xi value in grid cell */
-								if (1==xi_coordinate)
+								if (1.0 == xi_coordinate)
 								{
 									if (number_in_xi[i] > 0)
 									{
@@ -24972,10 +24961,12 @@ the derivatives will start at the first position of <jacobian>.
 										element_field_values->component_grid_offset_in_xi[this_comp_no][i];
 									element_value_offset++;
 								}
-								temp=1-xi_coordinate;
+								temp = 1.0 - xi_coordinate;
 								basis_value=basis_function_values;
 								if (jacobian)
 								{
+									// derivatives are w.r.t. element xi, not the grid element xi
+									FE_value grid_xi_scaling = static_cast<FE_value>(number_in_xi[i]);
 									for (j=1;j<=i;j++)
 									{
 										basis_value=basis_function_values+(j*number_of_values+m);
@@ -24991,8 +24982,8 @@ the derivatives will start at the first position of <jacobian>.
 									for (l=m;l>0;l--)
 									{
 										basis_value--;
-										basis_value[j]= -(*basis_value);
-										basis_value[j+m]= *basis_value;
+										basis_value[j]= -(*basis_value)*grid_xi_scaling;
+										basis_value[j+m]= (*basis_value)*grid_xi_scaling;
 									}
 								}
 								basis_value=basis_function_values+m;
