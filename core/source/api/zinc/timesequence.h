@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_time_sequence.h
+ * FILE : time_sequence.h
  *
  * The public interface to cmzn_time_sequence.
  */

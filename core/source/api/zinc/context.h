@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * cmiss_context.h
+ * context.h
  *
  * API to access the main root structure of cmgui.
  */
@@ -81,7 +81,7 @@ ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 /***************************************************************************//**
  * Returns a handle to the default graphics module.
  *
- * @param context  Handle to a cmiss_context object.
+ * @param context  Handle to a context object.
  * @return  The handle to the default graphics module of the context if
  *    successfully called, otherwise 0.
  */
@@ -91,7 +91,7 @@ ZINC_API cmzn_graphics_module_id cmzn_context_get_graphics_module(
 /***************************************************************************//**
  * Returns the default region in the context.
  *
- * @param context  Handle to a cmiss_context object.
+ * @param context  Handle to a context object.
  * @return  The handle to the default region of the context if successfully
  *    called, otherwise 0.
  */
@@ -103,7 +103,7 @@ ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context)
  * for addition to an existing region tree, use cmzn_region_create_region.
  *
  * @see cmzn_region_create_region
- * @param context  Handle to a cmiss_context object.
+ * @param context  Handle to a context object.
  * @return  Reference to newly created region if successful, otherwise NULL.
  */
 ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
@@ -113,7 +113,7 @@ ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
  * the returned time keeper by one.
  * User interface must be enabled before this function can be called successfully.
  *
- * @param context  Handle to a cmiss_context object.
+ * @param context  Handle to a context object.
  * @return  The time keeper if successfully called otherwise NULL.
  */
 ZINC_API cmzn_time_keeper_id cmzn_context_get_default_time_keeper(
@@ -124,7 +124,7 @@ ZINC_API cmzn_time_keeper_id cmzn_context_get_default_time_keeper(
  * (such as redrawing the scene viewer) if a main loop is provided for cmgui.
  * This function does not trigger any time event.
  *
- * @param context  Handle to a cmiss_context object.
+ * @param context  Handle to a context object.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_process_idle_event(cmzn_context_id context);

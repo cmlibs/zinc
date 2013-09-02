@@ -267,7 +267,7 @@ ZINC_API int cmzn_graphics_filter_evaluate_graphic(cmzn_graphics_filter_id filte
 /***************************************************************************//**
  * Return an allocated string containing graphics_filter name.
  *
- * @param graphics_filter  handle to the cmiss scene filter.
+ * @param graphics_filter  handle to the zinc scene filter.
  * @return  allocated string containing graphics_filter name, or NULL on failure.
  * Up to caller to free using cmzn_deallocate().
  */

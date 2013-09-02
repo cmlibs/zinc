@@ -61,7 +61,7 @@ public:
 
 	Context() : id(0)
 	{ }
-	// Creates a new cmzn Context instance
+	// Creates a new zinc Context instance
 	Context(const char *contextName) :
 		id(cmzn_context_create(contextName))
 	{ }

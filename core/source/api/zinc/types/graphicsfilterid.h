@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_graphics_filter_id.h
+ * FILE : graphicsfilterid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_field_image_processing.h
+FILE : fieldimageprocessing.h
 
 LAST MODIFIED : 26 Septemeber 2008
 
 DESCRIPTION :
-Implements cmiss fields which deal with image processing
+Implements zinc fields which deal with image processing
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

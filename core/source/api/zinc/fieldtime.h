@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_field_time.h
+FILE : fieldtime.h
 
 LAST MODIFIED : 16 Nov 2011
 
 DESCRIPTION :
-Implements cmiss fields that is controlled by time.
+Implements zinc fields that is controlled by time.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

@@ -1,7 +1,7 @@
 /*****************************************************************************//**
- * FILE : cmiss_field_alias.h
+ * FILE : fieldalias.h
  *
- * Implements a cmiss field which is an alias for another field, commonly from a
+ * Implements a zinc field which is an alias for another field, commonly from a
  * different region to make it available locally.
  *
  */
@@ -54,7 +54,7 @@ extern "C" {
 #endif
 
 /**
- * Creates a cmiss field which is an alias for another field, possibly from
+ * Creates a zinc field which is an alias for another field, possibly from
  * another region.
  * This is the main mechanism for reusing field definitions from other regions.
  *

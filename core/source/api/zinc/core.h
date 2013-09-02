@@ -2,7 +2,7 @@
  * @file core.h
  */
 /*******************************************************************************
-FILE : cmiss_core.h
+FILE : core.h
 
 LAST MODIFIED : 12 August 2003
 

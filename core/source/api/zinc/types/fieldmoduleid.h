@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_module_id.h
+ * FILE : fieldmoduleid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_stream_id.h
+ * FILE : streamid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -42,7 +42,7 @@
 #define CMZN_STREAMID_H__
 
 /***************************************************************************//**
- * A handle to cmiss stream information. Stream information maintain, create
+ * A handle to zinc stream information. Stream information maintain, create
  * and give details to stream_resources for reading in or writing onto
  * external resources.
  * User can get a handle to stream information from different objects that
@@ -63,7 +63,7 @@
 	typedef struct cmzn_stream_information *cmzn_stream_information_id;
 
 /***************************************************************************//**
- * A handle to cmiss stream resource. Stream resource give description of the
+ * A handle to zinc stream resource. Stream resource give description of the
  * file or memory for read/write.
  * User can get a handle to stream resource through cmzn_stream_information.
  * The stream is then add into the stream information and user can associate
@@ -83,7 +83,7 @@
 	typedef struct cmzn_stream_resource *cmzn_stream_resource_id;
 
 	/***************************************************************************//**
-	 * A handle to cmiss stream resource file. Stream resource file give description
+	 * A handle to zinc stream resource file. Stream resource file give description
 	 * of the file for reading/writing.
 	 * User can get a handle to stream resource through cmzn_stream_information.
 	 * The stream is then add into the stream information and user can associate
@@ -98,7 +98,7 @@
 	typedef struct cmzn_stream_resource_file *cmzn_stream_resource_file_id;
 
 	/***************************************************************************//**
-	 * A handle to cmiss stream resource memory. Stream resource memory give
+	 * A handle to zinc stream resource memory. Stream resource memory give
 	 * description of the memory for reading/writing.
 	 * User can get a handle to stream resource through cmzn_stream_information.
 	 * The stream is then add into the stream information and user can associate

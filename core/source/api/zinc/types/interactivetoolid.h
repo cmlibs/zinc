@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_interactive_tool_id.h
+ * FILE : interactivetoolid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_time_sequence_id.h
+ * FILE : timesequenceid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

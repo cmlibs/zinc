@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_scene_id.h
+ * FILE : sceneid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -42,7 +42,7 @@
 #define CMZN_SCENEID_H__
 
 /***************************************************************************//**
- * A handle to cmiss scene, cmiss scene contains a top region to display
+ * A handle to zinc scene, zinc scene contains a top region to display
  * scene of itself and all of its child regions, it also store a a
  * collections of objects that make up a 3-D graphical model - lights,
  * materials, primitives, etc. Also contains interface rouitines for having

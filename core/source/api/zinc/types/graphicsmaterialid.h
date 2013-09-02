@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_graphics_material_id.h
+ * FILE : graphicsmaterialid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -42,7 +42,7 @@
 #define CMZN_GRAPHICSMATERIALID_H__
 
 /***************************************************************************//**
- * A handle to cmiss material. cmiss material describes the
+ * A handle to zinc material. zinc material describes the
  * colour, shading and other graphical properties of a material, it is highly
  * similar to material described by OpenGL.
  * User can get a handle to material either through create new material using

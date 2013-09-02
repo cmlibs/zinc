@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_node.h
+ * FILE : node.h
  *
  * The public interface to cmzn_node.
  *

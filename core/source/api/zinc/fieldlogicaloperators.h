@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_field_logical_operators.h
+FILE : fieldlogicaloperators.h
 
 LAST MODIFIED : 16 May 2008
 
@@ -57,7 +57,7 @@ extern "C" {
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one AND source_field_two is non-zero, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
@@ -70,7 +70,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_and(cmzn_field_module_id field_m
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one EQUALS that component of source_field_two, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
@@ -84,7 +84,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_equal_to(
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one is greater than the component value in source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -98,7 +98,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_greater_than(
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -112,7 +112,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_less_than(
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
@@ -137,7 +137,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_not(cmzn_field_module_id field_m
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero (but not both), 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field

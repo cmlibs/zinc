@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_field_composite.h
+FILE : fieldcomposite.h
 
 LAST MODIFIED : 13 May 2008
 

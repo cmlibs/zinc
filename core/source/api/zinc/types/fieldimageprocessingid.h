@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_iamge_processing_id.h
+ * FILE : fieldimageprocessingid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -42,19 +42,19 @@
 #define CMZN_FIELDIMAGEPROCESSINGID_H__
 
 /*****************************************************************************//**
- * The image field specific handle to a cmzn binary threshold field.
+ * The image field specific handle to a zinc binary threshold field.
  */
 struct cmzn_field_binary_threshold_image_filter;
 typedef struct cmzn_field_binary_threshold_image_filter * cmzn_field_binary_threshold_image_filter_id;
 
 /*****************************************************************************//**
- * The image field specific handle to a cmzn discrete gaussian field.
+ * The image field specific handle to a zinc discrete gaussian field.
  */
 struct cmzn_field_discrete_gaussian_image_filter;
 typedef struct cmzn_field_discrete_gaussian_image_filter * cmzn_field_discrete_gaussian_image_filter_id;
 
 /*****************************************************************************//**
- * The image field specific handle to a cmzn threshold field.
+ * The image field specific handle to a zinc threshold field.
  */
 struct cmzn_field_threshold_image_filter;
 typedef struct cmzn_field_threshold_image_filter * cmzn_field_threshold_image_filter_id;

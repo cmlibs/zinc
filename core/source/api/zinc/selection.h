@@ -1,3 +1,6 @@
+/***************************************************************************//**
+ * FILE : selection.h
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -80,7 +83,7 @@ ZINC_API cmzn_selection_handler_id cmzn_selection_handler_access(
  * Destroys this reference to the selection handler (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
- * @param selection_handler  Handle to the cmiss selection_handler.
+ * @param selection_handler  Handle to the zinc selection_handler.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection_handler);
@@ -89,7 +92,7 @@ ZINC_API int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection
  * Stop and clear selection callback. This will stop the callback and also
  * remove the callback function from the seleciton handler.
  *
- * @param selection_handler  Handle to the cmiss selection_handler.
+ * @param selection_handler  Handle to the zinc selection_handler.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id selection_handler);
@@ -99,7 +102,7 @@ ZINC_API int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id sel
  * This function also starts the callback.
  *
  * @see cmzn_selection_handler_callback_function
- * @param selection_handler  Handle to the cmiss_selection_handler.
+ * @param selection_handler  Handle to the selection_handler.
  * @param function  function to be called when event is triggered.
  * @param user_data_in  Void pointer to an user object. User is responsible for
  *   the life time of such object.
@@ -127,7 +130,7 @@ ZINC_API cmzn_selection_event_id cmzn_selection_event_access(
  * function unless, an additional reference count has been added through
  * cmzn_selection_event_access function.
  *
- * @param selection_event  Handle to the cmiss selection_handler.
+ * @param selection_event  Handle to the zinc selection_handler.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_selection_event_destroy(cmzn_selection_event_id *selection_event_address);
@@ -137,7 +140,7 @@ ZINC_API int cmzn_selection_event_destroy(cmzn_selection_event_id *selection_eve
  * selection changes.
  * @see cmzn_selection_change_type
  *
- * @param selection_event  Handle to the cmiss_selection_event.
+ * @param selection_event  Handle to the selection_event.
  * @return  cmzn_selection_change_type  The type of recent changes.
  */
 ZINC_API enum cmzn_selection_change_type cmzn_selection_event_get_change_type(
@@ -148,7 +151,7 @@ ZINC_API enum cmzn_selection_change_type cmzn_selection_event_get_change_type(
  * of the local regions and its childrens scene has changed or only trigger
  * event with selection changes of the local region scene.
  *
- * @param selection_event  Handle to the cmiss_selection_event.
+ * @param selection_event  Handle to the selection_event.
  * @return  1 if selection handler triggers hierarchical changes, 0 otherwise.
  */
 ZINC_API int cmzn_selection_handler_get_hierarchical(cmzn_selection_handler_id selection_handler);
@@ -158,7 +161,7 @@ ZINC_API int cmzn_selection_handler_get_hierarchical(cmzn_selection_handler_id s
  * of the local regions and its childrens scene has changed or only trigger
  * event with selection changes of the local region scene.
  *
- * @param selection_event  Handle to the cmiss_selection_event.
+ * @param selection_event  Handle to the selection_event.
  * @param hierarchical_flag  flag to be set.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
@@ -170,7 +173,7 @@ ZINC_API int cmzn_selection_handler_set_hierarchical(cmzn_selection_handler_id s
  * selection handler triggering this event has been destroyed. If it is destroyed,
  * no more event callback will be triggered after the current one.
  *
- * @param selection_event  Handle to the cmiss_selection_event.
+ * @param selection_event  Handle to the selection_event.
  * @return  1 if scene is destroyed, 0 if not.
  */
 ZINC_API int cmzn_selection_event_owning_scene_is_destroyed(

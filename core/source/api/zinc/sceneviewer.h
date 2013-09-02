@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_scene_viewer.h
+FILE : sceneviewer.h
 
 LAST MODIFIED : 7 November 2007
 
@@ -735,13 +735,13 @@ ZINC_API unsigned int cmzn_scene_viewer_get_frame_count(cmzn_scene_viewer_id sce
  * Returns a handle to a scene viewer object.  The scene viewer attributes for
  * buffering mode and stereo mode are also set.
  *
- * @param cmiss_scene_viewer_module  Handle to a cmiss_scene_viewer_module object.
+ * @param scene_viewer_module  Handle to a scene_viewer_module object.
  * @param buffer_mode  The buffering mode in use for the OpenGL context.
  * @param stereo_mode  The stereo mode in use for the OpenGL context.
  * @return  A handle to a scene viewer if successfully created otherwise 0.
  */
 ZINC_API cmzn_scene_viewer_id cmzn_scene_viewer_module_create_scene_viewer(
-	cmzn_scene_viewer_module_id cmiss_scene_viewer_module,
+	cmzn_scene_viewer_module_id scene_viewer_module,
 	enum cmzn_scene_viewer_buffering_mode buffer_mode,
 	enum cmzn_scene_viewer_stereo_mode stereo_mode);
 
@@ -833,7 +833,7 @@ ZINC_API int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_
  *
  * @See cmzn_scene_viewer_transparency_mode
  *
- * @param scene_viewer  Handle to the cmiss scene_viewer component.
+ * @param scene_viewer  Handle to the zinc scene_viewer component.
  *
  * @return  number of layers for this scene viewer. Any otehr value if failed or
  *   it is not set correctly.
@@ -846,7 +846,7 @@ ZINC_API int cmzn_scene_viewer_get_transparency_layers(cmzn_scene_viewer_id scen
  *
  * @See cmzn_scene_viewer_transparency_mode
  *
- * @param scene_viewer  Handle to the cmiss scene_viewer component.
+ * @param scene_viewer  Handle to the zinc scene_viewer component.
  * @param layers  number of layers to be set for this scene viewer.
  *
  * @return  CMZN_OK if value is set successfully, any other value if

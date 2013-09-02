@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_scene_viewer_id.h
+ * FILE : sceneviewerid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

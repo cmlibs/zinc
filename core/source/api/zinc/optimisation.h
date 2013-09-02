@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * @file cmiss_optimisation.h
+ * @file optimisation.h
  *
  * The public interface to cmzn_optimisation class which can minimise N
  * objective functions by modifying parameters of M independent fields.
@@ -454,7 +454,7 @@ ZINC_API char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimi
 /***************************************************************************//**
  * Perform the optimisation described by the provided optimisation object.
  *
- * @param optimisation Handle to the cmzn optimisation object.
+ * @param optimisation Handle to the zinc optimisation object.
  * @return Status CMZN_OK if optimisation completed successfully (stopping
  * criteria satisfied), and any other value on failure.
  */

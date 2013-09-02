@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_field_trigonometry.h
+FILE : fieldtrigonometry.h
 
 DESCRIPTION :
 The public interface to the cmzn_fields that perform trigonometry.

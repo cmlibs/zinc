@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_finite_element_id.h
+ * FILE : fieldfiniteelementid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

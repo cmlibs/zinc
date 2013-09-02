@@ -1,3 +1,6 @@
+/***************************************************************************//**
+ * FILE : sceneviewerinput.h
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -115,8 +118,8 @@ ZINC_API int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_i
 /**
  * Set the button for the scene viewer input.
  *
- * @param input cmzn scene viewer input.
- * @param button cmzn scene viewer input button enumeration value.
+ * @param input zinc scene viewer input.
+ * @param button zinc scene viewer input button enumeration value.
  * @return CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_button_type button);

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_differential_operator_id.h
+ * FILE : differentialoperatorid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

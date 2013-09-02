@@ -1,5 +1,5 @@
 /**
- * FILE : cmiss_field_vector_operators.h
+ * FILE : fieldvectoroperators.h
  *
  * The public interface to the cmzn_fields that perform vector operations.
  */

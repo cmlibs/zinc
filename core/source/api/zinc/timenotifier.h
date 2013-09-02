@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_time.h
+FILE : timenotifier.h
 
 DESCRIPTION :
 The public interface to the cmzn_time_notifier which supplies a concept of time
@@ -67,7 +67,7 @@ typedef int (*cmzn_time_notifier_callback)(cmzn_time_notifier_id time_notifier,
  * Access the time notifier, increase the access count of the time notifier
  * by one.
  *
- * @param time_notifier  handle to the "to be access" cmiss time_notifier.
+ * @param time_notifier  handle to the "to be access" zinc time_notifier.
  * @return  handle to time_notifier if successfully access time_notifier.
  */
 ZINC_API cmzn_time_notifier_id cmzn_time_notifier_access(

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_spectrum_id.h
+ * FILE : spectrumid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

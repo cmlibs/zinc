@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * cmiss_tessellation.h
+ * tessellation.h
  *
  * Public interface to tessellation objects. These describe how elements or
  * other continuous field domains are subdivided into graphics.
@@ -237,7 +237,7 @@ ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 /**
  * Return an allocated string containing tessellation name.
  *
- * @param tessellation  handle to the cmiss tessellation.
+ * @param tessellation  handle to the zinc tessellation.
  * @return  allocated string containing tessellation name, or NULL on failure.
  * Up to caller to free using cmzn_deallocate().
  */
@@ -246,7 +246,7 @@ ZINC_API char *cmzn_tessellation_get_name(cmzn_tessellation_id tessellation);
 /**
  * Set/change name for <tessellation>.
  *
- * @param tessellation  The handle to cmiss tessellation.
+ * @param tessellation  The handle to zinc tessellation.
  * @param name  name to be set to the tessellation
  * @return  status CMZN_OK if successfully set/change name for tessellation,
  * any other value on failure.
