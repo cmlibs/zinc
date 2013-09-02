@@ -52,7 +52,7 @@
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-        return Cmiss_time_notifier_add_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+        return cmzn_time_notifier_add_callback(($self)->getId(),callbackToPython, (void *)my_callback);
     }
 
     int removeCallback(PyObject *callbackObject)
@@ -64,7 +64,7 @@
         }
 
         Py_XDECREF(callbackObject);         /* Add a reference to new callback */
-        return Cmiss_time_notifier_remove_callback(($self)->getId(),callbackToPython,
+        return cmzn_time_notifier_remove_callback(($self)->getId(),callbackToPython,
             (void *)callbackObject);
     }
 }
@@ -78,7 +78,7 @@ struct TimeNotifierPyDataObject
     PyObject *userObject;
 };
 
-static int callbackToPython(Cmiss_time_notifier_id time_notifier,
+static int callbackToPython(cmzn_time_notifier_id time_notifier,
     double current_time, void *user_data)
 {
     PyObject *arglist = NULL;
@@ -86,7 +86,7 @@ static int callbackToPython(Cmiss_time_notifier_id time_notifier,
     PyObject *my_callback = (PyObject *)user_data;
     /* convert time_notifier to python object */
     PyObject *obj = NULL;
-    zinc::TimeNotifier *timeNotifier = new zinc::TimeNotifier(Cmiss_time_notifier_access(time_notifier));
+    zinc::TimeNotifier *timeNotifier = new zinc::TimeNotifier(cmzn_time_notifier_access(time_notifier));
     obj = SWIG_NewPointerObj(SWIG_as_voidptr(timeNotifier), SWIGTYPE_p_zinc__TimeNotifier, 1);
     /* Time to call the callback */
     arglist = Py_BuildValue("(Nd)", obj, current_time);

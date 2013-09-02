@@ -1,5 +1,5 @@
 /*******************************************************************************
- * CmissGraphicsModule.i
+ * graphicsmodule.i
  * 
  * Swig interface file for cmiss graphics module.
  */

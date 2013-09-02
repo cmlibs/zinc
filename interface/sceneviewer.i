@@ -58,7 +58,7 @@
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-    	return Cmiss_scene_viewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+    	return cmzn_scene_viewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
     }
     
     int removeRepaintRequiredCallback(PyObject *callbackObject)
@@ -68,7 +68,7 @@
            	PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
            	return 0;
         }
-    	int return_code = Cmiss_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
+    	int return_code = cmzn_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
     		(void *)callbackObject);
     	Py_XDECREF(callbackObject);         /* Add a reference to new callback */
     	return return_code;
@@ -87,7 +87,7 @@ struct SceneViewerPyDataObject
 	PyObject *userObject;
 };
 	
-static void callbackToPython(Cmiss_scene_viewer_id scene_viewer,
+static void callbackToPython(cmzn_scene_viewer_id scene_viewer,
 	void *callback_data, void *user_data)
 {
 	PyObject *arglist = NULL;
@@ -95,7 +95,7 @@ static void callbackToPython(Cmiss_scene_viewer_id scene_viewer,
 	PyObject *my_callback = (PyObject *)user_data;
 	/* convert time_notifier to python object */
 	PyObject *obj = NULL;
-	zinc::SceneViewer *sceneViewer = new zinc::SceneViewer(Cmiss_scene_viewer_access(scene_viewer));
+	zinc::SceneViewer *sceneViewer = new zinc::SceneViewer(cmzn_scene_viewer_access(scene_viewer));
 	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneViewer), SWIGTYPE_p_zinc__SceneViewer, 1);
 	/* Time to call the callback */
 	arglist = Py_BuildValue("(N)", obj);
