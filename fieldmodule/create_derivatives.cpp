@@ -5,6 +5,7 @@
 #include <zinc/status.h>
 #include <zinc/core.h>
 #include <zinc/context.h>
+#include <zinc/differentialoperator.h>
 #include <zinc/region.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/field.h>
@@ -16,6 +17,7 @@
 
 #include "test_resources.h"
 
+#include "zinctestsetup.hpp"
 
 TEST(cmzn_field_module_create_derivative, invalid_args)
 {
@@ -369,3 +371,65 @@ TEST(cmzn_field_module_create_gradient, valid_args)
 	cmzn_context_destroy(&context);
 }
 
+// Issue 3317: Gradient field calculations for grid based scalar fields are not
+// being scaled by the number of grid points in each xi direction. The resulting
+// gradients are smaller than their correct values.
+TEST(cmzn_field, issue_3317_grid_derivatives)
+{
+	ZincTestSetup zinc;
+
+	int result;
+	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	EXPECT_EQ(CMISS_OK, result);
+	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_GRID_RESOURCE));
+	EXPECT_EQ(CMISS_OK, result);
+
+	cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(zinc.fm, 3);
+	EXPECT_NE((cmzn_mesh_id)0, mesh);
+
+	cmzn_differential_operator_id d_dxi1 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, /*term*/1);
+	EXPECT_NE((cmzn_differential_operator_id)0, d_dxi1);
+	cmzn_differential_operator_id d_dxi2 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, /*term*/2);
+	EXPECT_NE((cmzn_differential_operator_id)0, d_dxi2);
+	cmzn_differential_operator_id d_dxi3 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, /*term*/3);
+	EXPECT_NE((cmzn_differential_operator_id)0, d_dxi3);
+
+	cmzn_field_id coordinates = cmzn_field_module_find_field_by_name(zinc.fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
+	cmzn_field_id potential = cmzn_field_module_find_field_by_name(zinc.fm, "potential");
+	EXPECT_NE(static_cast<cmzn_field *>(0), potential);
+
+	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
+	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
+	const double chartLocation[] = { 0.25, 1.0/6.0, 0.125 };
+	cmzn_field_cache_set_mesh_location(cache, element, 3, chartLocation);
+	cmzn_element_destroy(&element);
+
+	double outValue;
+	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_real(potential, cache, 1, &outValue));
+	ASSERT_DOUBLE_EQ(1.75, outValue);
+	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi1, cache, 1, &outValue));
+	ASSERT_DOUBLE_EQ(2.0, outValue);
+	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi2, cache, 1, &outValue));
+	ASSERT_DOUBLE_EQ(1.5, outValue);
+	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi3, cache, 1, &outValue));
+	ASSERT_DOUBLE_EQ(8.0, outValue);
+
+	cmzn_field_id grad_potential = cmzn_field_module_create_gradient(zinc.fm, potential, coordinates);
+	EXPECT_NE(static_cast<cmzn_field *>(0), grad_potential);
+
+	double outValues[3];
+	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_real(grad_potential, cache, 3, outValues));
+	ASSERT_DOUBLE_EQ(2.0, outValues[0]);
+	ASSERT_DOUBLE_EQ(1.5, outValues[1]);
+	ASSERT_DOUBLE_EQ(8.0, outValues[2]);
+
+	cmzn_field_destroy(&grad_potential);
+	cmzn_field_cache_destroy(&cache);
+	cmzn_field_destroy(&potential);
+	cmzn_field_destroy(&coordinates);
+	cmzn_differential_operator_destroy(&d_dxi1);
+	cmzn_differential_operator_destroy(&d_dxi2);
+	cmzn_differential_operator_destroy(&d_dxi3);
+	cmzn_mesh_destroy(&mesh);
+}
