@@ -5,8 +5,8 @@ Created on May 22, 2013
 '''
 import unittest
 
-from zinc.context import Context
-#from zinc.region import Region
+from opencmiss.zinc.context import Context
+#from opencmiss.zinc.region import Region
 
 class RegionTestCase(unittest.TestCase):
 

@@ -5,9 +5,9 @@ Created on Aug 31, 2013
 '''
 import unittest
 
-from zinc.context import Context
-from zinc.sceneviewer import SceneViewer
-from zinc import status
+from opencmiss.zinc.context import Context
+from opencmiss.zinc.sceneviewer import SceneViewer
+from opencmiss.zinc import status
 
 class SceneViewerTestCase(unittest.TestCase):
 

@@ -5,11 +5,11 @@ Created on May 22, 2013
 '''
 import unittest
 
-from zinc.context import Context
-from zinc.glyph import Glyph
-from zinc.field import Field
-from zinc.sceneviewer import SceneViewer
-from zinc import status
+from opencmiss.zinc.context import Context
+from opencmiss.zinc.glyph import Glyph
+from opencmiss.zinc.field import Field
+from opencmiss.zinc.sceneviewer import SceneViewer
+from opencmiss.zinc import status
 
 class GraphicTestCase(unittest.TestCase):
 

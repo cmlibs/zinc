@@ -3,76 +3,76 @@ import os, sys, unittest
 class ImportTestCase(unittest.TestCase):
 
     def testImportContext(self):
-        from zinc import context
+        from opencmiss.zinc import context
 
     def testImportDifferentialOperator(self):
-        from zinc import differentialoperator
+        from opencmiss.zinc import differentialoperator
     
     def testImportElement(self):
-        from zinc import element
+        from opencmiss.zinc import element
     
     def testImportField(self):
-        from zinc import field
+        from opencmiss.zinc import field
     
     def testImportFieldCache(self):
-        from zinc import fieldcache
+        from opencmiss.zinc import fieldcache
     
     def testImportFieldModule(self):
-        from zinc import fieldmodule
+        from opencmiss.zinc import fieldmodule
     
     def testImportGraphic(self):
-        from zinc import graphic
+        from opencmiss.zinc import graphic
     
     def testImportGraphicsFilter(self):
-        from zinc import graphicsfilter
+        from opencmiss.zinc import graphicsfilter
     
     def testImportGraphicsMaterial(self):
-        from zinc import graphicsmaterial
+        from opencmiss.zinc import graphicsmaterial
     
     def testImportGraphicsModule(self):
-        from zinc import graphicsmodule
+        from opencmiss.zinc import graphicsmodule
     
     def testImportNode(self):
-        from zinc import node
+        from opencmiss.zinc import node
     
     def testImportOptimisation(self):
-        from zinc import optimisation
+        from opencmiss.zinc import optimisation
     
     def testImportRegion(self):
-        from zinc import region
+        from opencmiss.zinc import region
     
     def testImportScene(self):
-        from zinc import scene
+        from opencmiss.zinc import scene
     
     def testImportSceneCoordinateSystem(self):
-        from zinc import scenecoordinatesystem
+        from opencmiss.zinc import scenecoordinatesystem
     
     def testImportSceneViewer(self):
-        from zinc import sceneviewer
+        from opencmiss.zinc import sceneviewer
     
     def testImportSelection(self):
-        from zinc import selection
+        from opencmiss.zinc import selection
     
     def testImportSpectrum(self):
-        from zinc import spectrum
+        from opencmiss.zinc import spectrum
     
     def testImportStatus(self):
-        from zinc import status
+        from opencmiss.zinc import status
     
     def testImportStream(self):
-        from zinc import stream
+        from opencmiss.zinc import stream
     
     def testImportTessellation(self):
-        from zinc import tessellation
+        from opencmiss.zinc import tessellation
     
     def testImportTimeKeeper(self):
-        from zinc import timekeeper
+        from opencmiss.zinc import timekeeper
     
     def testImportTimeNotifier(self):
-        from zinc import timenotifier
+        from opencmiss.zinc import timenotifier
     
     def testImportTimeSequence(self):
-        from zinc import timesequence
+        from opencmiss.zinc import timesequence
     
 
 
