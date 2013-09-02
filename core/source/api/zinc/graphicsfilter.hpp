@@ -43,7 +43,9 @@
 #include "zinc/graphic.hpp"
 #include "zinc/region.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class GraphicsFilter
@@ -302,6 +304,7 @@ public:
 	}
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesgroup.hpp
+ * FILE : fieldgroup.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -42,12 +42,14 @@
 #include "zinc/fieldgroup.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
-#include "zinc/fieldtypessubobjectgroup.hpp"
+#include "zinc/fieldsubobjectgroup.hpp"
 #include "zinc/node.hpp"
 #include "zinc/element.hpp"
 #include "zinc/region.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldGroup : public Field
@@ -184,6 +186,7 @@ inline FieldGroup FieldModule::createGroup()
 	return FieldGroup(cmzn_field_module_create_group(id));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

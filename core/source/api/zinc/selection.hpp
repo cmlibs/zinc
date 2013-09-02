@@ -41,7 +41,9 @@
 
 #include "zinc/selection.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class SelectionHandler
@@ -174,6 +176,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

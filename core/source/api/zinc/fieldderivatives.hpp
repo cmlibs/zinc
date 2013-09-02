@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypecomposite.hpp
+ * FILE : fieldderivatives.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -18,7 +18,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2012
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -36,97 +36,104 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDCOMPOSITE_HPP__
-#define CMZN_FIELDCOMPOSITE_HPP__
+#ifndef CMZN_FIELDDERIVATIVES_HPP__
+#define CMZN_FIELDDERIVATIVES_HPP__
 
-
-#include "zinc/fieldcomposite.h"
+#include "zinc/fieldderivatives.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldIdentity : public Field
+class FieldDerivative : public Field
 {
-
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIdentity(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldDerivative(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldIdentity FieldModule::createIdentity(Field& sourceField);
+	friend FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index);
 
 public:
 
-	FieldIdentity() : Field(0)
+	FieldDerivative() : Field(0)
 	{	}
 
 };
 
-class FieldComponent : public Field
+class FieldCurl : public Field
 {
-
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldComponent(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldCurl(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex);
+	friend FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField);
 
 public:
 
-	FieldComponent() : Field(0)
-	{	}
-
-
-
-};
-
-class FieldConcatenate : public Field
-{
-private:
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConcatenate(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields);
-
-public:
-
-	FieldConcatenate() : Field(0)
+	FieldCurl() : Field(0)
 	{	}
 
 };
 
-inline FieldIdentity FieldModule::createIdentity(Field& sourceField)
+class FieldDivergence : public Field
 {
-	return FieldIdentity(cmzn_field_module_create_identity(id, sourceField.getId()));
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDivergence(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField);
+
+public:
+
+	FieldDivergence() : Field(0)
+	{	}
+
+};
+
+class FieldGradient : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldGradient(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField);
+
+public:
+
+	FieldGradient() : Field(0)
+	{	}
+
+};
+
+inline FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index)
+{
+	return FieldDerivative(cmzn_field_module_create_derivative(id, sourceField.getId(), xi_index));
 }
 
-inline FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex)
+inline FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField)
 {
-	return FieldComponent(cmzn_field_module_create_component(id,
-		sourceField.getId(), componentIndex));
+	return FieldCurl(cmzn_field_module_create_curl(id, vectorField.getId(), coordinateField.getId()));
 }
 
-inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields)
+inline FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField)
 {
-	cmzn_field_id concatenateField = 0;
-	if (fieldsCount > 0)
-	{
-		cmzn_field_id *source_fields = new cmzn_field_id[fieldsCount];
-		for (int i = 0; i < fieldsCount; i++)
-		{
-			source_fields[i] = sourceFields[i].getId();
-		}
-		concatenateField = cmzn_field_module_create_concatenate(id, fieldsCount, source_fields);
-		delete[] source_fields;
-	}
-	return FieldConcatenate(concatenateField);
+	return FieldDivergence(cmzn_field_module_create_divergence(id, vectorField.getId(), coordinateField.getId()));
 }
 
-}  // namespace zinc
+inline FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField)
+{
+	return FieldGradient(cmzn_field_module_create_gradient(id, sourceField.getId(),
+		coordinateField.getId()));
+}
+
+}  // namespace Zinc
+}
 
 #endif

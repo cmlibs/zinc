@@ -41,7 +41,9 @@
 
 #include "zinc/timesequence.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class TimeSequence
@@ -100,6 +102,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

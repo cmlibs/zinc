@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesimage.hpp
+ * FILE : fieldimage.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,7 +45,9 @@
 #include "zinc/stream.hpp"
 
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 class StreamInformationImage;
 
@@ -331,6 +333,6 @@ inline FieldImage FieldModule::createImageFromSource(Field& domain_field, Field&
 		domain_field.getId(), source_field.getId()));
 }
 
-} // namespace cmzn
-
+} // namespace Zinc
+}
 #endif

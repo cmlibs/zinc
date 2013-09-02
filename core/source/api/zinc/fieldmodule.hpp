@@ -47,7 +47,9 @@
 #include "zinc/optimisation.hpp"
 #include "zinc/timesequence.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldAlias;
@@ -430,6 +432,7 @@ inline FieldModule Field::getFieldModule()
 	return FieldModule(*this);
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

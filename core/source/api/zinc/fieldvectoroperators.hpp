@@ -43,7 +43,9 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldCrossProduct : public Field
@@ -175,6 +177,7 @@ inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField)
 		sourceField.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

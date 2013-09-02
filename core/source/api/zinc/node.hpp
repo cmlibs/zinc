@@ -42,7 +42,9 @@
 #include "zinc/node.h"
 #include "zinc/field.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class NodeTemplate;
@@ -413,6 +415,7 @@ inline int Node::merge(NodeTemplate nodeTemplate)
 	return cmzn_node_merge(id, nodeTemplate.getId());
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

@@ -42,10 +42,12 @@
 #include "zinc/scene.h"
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsfilter.hpp"
-#include "zinc/fieldtypesgroup.hpp"
+#include "zinc/fieldgroup.hpp"
 #include "zinc/selection.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class ScenePicker;
@@ -235,6 +237,7 @@ public:
 
 };
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

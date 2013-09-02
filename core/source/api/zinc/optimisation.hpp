@@ -42,7 +42,9 @@
 #include "zinc/optimisation.h"
 #include "zinc/field.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class Optimisation
@@ -206,6 +208,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

@@ -51,7 +51,9 @@
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class GraphicsModule
@@ -146,6 +148,7 @@ public:
 
 };
 
-} // namespace zinc
+} // namespace Zinc
+}
 
 #endif

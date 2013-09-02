@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesderivatives.hpp
+ * FILE : fieldsubobjectgroup.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -18,7 +18,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2010
+ * Portions created by the Initial Developer are Copyright (C) 2012
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -36,101 +36,91 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDDERIVATIVES_HPP__
-#define CMZN_FIELDDERIVATIVES_HPP__
+#ifndef CMZN_FIELDSUBOBJECTGROUP_HPP__
+#define CMZN_FIELDSUBOBJECTGROUP_HPP__
 
-#include "zinc/fieldderivatives.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
+#include "zinc/node.hpp"
+#include "zinc/element.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldDerivative : public Field
-{
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDerivative(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index);
-
-public:
-
-	FieldDerivative() : Field(0)
-	{	}
-
-};
-
-class FieldCurl : public Field
+class FieldElementGroup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCurl(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldElementGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField);
+	friend FieldElementGroup FieldModule::createElementGroup(Mesh& mesh);
 
 public:
 
-	FieldCurl() : Field(0)
+	FieldElementGroup() : Field(0)
 	{	}
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldElementGroup(cmzn_field_element_group_id field_element_group_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_element_group_id))
+	{ }
+
+	FieldElementGroup(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_element_group(field.getId())))
+	{	}
+
+	MeshGroup getMesh()
+	{
+		return MeshGroup(cmzn_field_element_group_get_mesh(
+			reinterpret_cast<cmzn_field_element_group_id>(id)));
+	}
 };
 
-class FieldDivergence : public Field
+class FieldNodeGroup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDivergence(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodeGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField);
+	friend FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset);
 
 public:
 
-	FieldDivergence() : Field(0)
+	FieldNodeGroup() : Field(0)
 	{	}
 
-};
-
-class FieldGradient : public Field
-{
-private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGradient(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodeGroup(cmzn_field_node_group_id field_node_group_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_node_group_id))
+	{ }
+
+	FieldNodeGroup(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_node_group(field.getId())))
 	{	}
 
-	friend FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField);
-
-public:
-
-	FieldGradient() : Field(0)
-	{	}
-
+	NodesetGroup getNodeset()
+	{
+		return NodesetGroup(cmzn_field_node_group_get_nodeset(
+			reinterpret_cast<cmzn_field_node_group_id>(id)));
+	}
 };
 
-inline FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index)
+inline FieldElementGroup FieldModule::createElementGroup(Mesh& mesh)
 {
-	return FieldDerivative(cmzn_field_module_create_derivative(id, sourceField.getId(), xi_index));
+	return FieldElementGroup(cmzn_field_module_create_element_group(id, mesh.getId()));
 }
 
-inline FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField)
+inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
 {
-	return FieldCurl(cmzn_field_module_create_curl(id, vectorField.getId(), coordinateField.getId()));
+	return FieldNodeGroup(cmzn_field_module_create_node_group(id, nodeset.getId()));
 }
 
-inline FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField)
-{
-	return FieldDivergence(cmzn_field_module_create_divergence(id, vectorField.getId(), coordinateField.getId()));
+}  // namespace Zinc
 }
-
-inline FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField)
-{
-	return FieldGradient(cmzn_field_module_create_gradient(id, sourceField.getId(),
-		coordinateField.getId()));
-}
-
-}  // namespace zinc
 
 #endif

@@ -43,7 +43,9 @@
 #include "zinc/fieldimageprocessing.h"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldBinaryDilateImageFilter : public Field
@@ -325,6 +327,7 @@ inline FieldSigmoidImageFilter
 			sourceField.getId(), min, max, alpha, beta));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

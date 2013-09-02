@@ -46,7 +46,9 @@
 #include "zinc/timekeeper.hpp"
 #include "zinc/sceneviewer.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class Context
@@ -124,7 +126,7 @@ public:
 
 };
 
-}  // namespace zinc
-
+}  // namespace Zinc
+}
 
 #endif /* CMZN_CONTEXT_HPP__ */

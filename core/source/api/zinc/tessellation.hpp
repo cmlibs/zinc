@@ -41,7 +41,9 @@
 
 #include "zinc/tessellation.h"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class Tessellation
@@ -234,6 +236,7 @@ public:
 	}
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

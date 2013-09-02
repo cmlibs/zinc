@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesnodesetoperators.hpp
+ * FILE : fieldnodesetoperators.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -43,7 +43,9 @@
 #include "zinc/field.hpp"
 #include "zinc/node.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldNodesetSum : public Field
@@ -187,6 +189,7 @@ inline FieldNodesetMaximum FieldModule::createNodesetMaximum(
 		sourceField.getId(), nodeset.getId()));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif

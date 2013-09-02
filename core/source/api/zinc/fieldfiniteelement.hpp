@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypesfiniteelement.hpp
+ * FILE : fieldfiniteelement.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -44,7 +44,9 @@
 #include "zinc/fieldmodule.hpp"
 #include "zinc/element.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class FieldFiniteElement : public Field
@@ -225,5 +227,6 @@ inline FieldStoredString FieldModule::createStoredString()
 	return FieldStoredString(cmzn_field_module_create_stored_string(id));
 }
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 #endif /* CMZN_FIELD_TYPES_FINITE_ELEMENT_HPP__ */

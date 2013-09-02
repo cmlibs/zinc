@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : fieldtypeconstant.hpp
+ * FILE : fieldtypecomposite.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,60 +36,100 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef CMZN_FIELDCONSTANT_HPP__
-#define CMZN_FIELDCONSTANT_HPP__
+#ifndef CMZN_FIELDCOMPOSITE_HPP__
+#define CMZN_FIELDCOMPOSITE_HPP__
 
-#include "zinc/fieldconstant.h"
+
+#include "zinc/fieldcomposite.h"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
-class FieldConstant : public Field
+class FieldIdentity : public Field
 {
+
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConstant(cmzn_field_id field_id) : Field(field_id)
-	{ }
+	explicit FieldIdentity(cmzn_field_id field_id) : Field(field_id)
+	{	}
 
-	friend FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn);
+	friend FieldIdentity FieldModule::createIdentity(Field& sourceField);
 
 public:
 
-	FieldConstant() : Field(0)
-	{ }
+	FieldIdentity() : Field(0)
+	{	}
 
 };
 
-class FieldStringConstant : public Field
+class FieldComponent : public Field
 {
+
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStringConstant(cmzn_field_id field_id) : Field(field_id)
-	{ }
+	explicit FieldComponent(cmzn_field_id field_id) : Field(field_id)
+	{	}
 
-	friend FieldStringConstant FieldModule::createStringConstant(const char *stringConstant);
+	friend FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex);
 
 public:
 
-	FieldStringConstant() : Field(0)
-	{ }
+	FieldComponent() : Field(0)
+	{	}
+
+
 
 };
 
-inline FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn)
+class FieldConcatenate : public Field
 {
-	return FieldConstant(cmzn_field_module_create_constant(id,
-		valuesCount, valuesIn));
+private:
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldConcatenate(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields);
+
+public:
+
+	FieldConcatenate() : Field(0)
+	{	}
+
+};
+
+inline FieldIdentity FieldModule::createIdentity(Field& sourceField)
+{
+	return FieldIdentity(cmzn_field_module_create_identity(id, sourceField.getId()));
 }
 
-inline FieldStringConstant FieldModule::createStringConstant(const char *stringConstant)
+inline FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex)
 {
-	return FieldStringConstant(cmzn_field_module_create_string_constant(id,
-		stringConstant));
+	return FieldComponent(cmzn_field_module_create_component(id,
+		sourceField.getId(), componentIndex));
 }
 
-}  // namespace zinc
+inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields)
+{
+	cmzn_field_id concatenateField = 0;
+	if (fieldsCount > 0)
+	{
+		cmzn_field_id *source_fields = new cmzn_field_id[fieldsCount];
+		for (int i = 0; i < fieldsCount; i++)
+		{
+			source_fields[i] = sourceFields[i].getId();
+		}
+		concatenateField = cmzn_field_module_create_concatenate(id, fieldsCount, source_fields);
+		delete[] source_fields;
+	}
+	return FieldConcatenate(concatenateField);
+}
+
+}  // namespace Zinc
+}
 
 #endif

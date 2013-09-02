@@ -45,7 +45,9 @@
 #include "zinc/differentialoperator.hpp"
 #include "zinc/node.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class ElementTemplate;
@@ -550,7 +552,7 @@ inline int Element::merge(ElementTemplate& elementTemplate)
 	return cmzn_element_merge(id, elementTemplate.getId());
 }
 
-}  // namespace zinc
-
+}  // namespace Zinc
+}
 
 #endif /* CMZN_ELEMENT_HPP__ */

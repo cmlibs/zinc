@@ -41,7 +41,9 @@
 #include "zinc/scene.hpp"
 #include "zinc/graphicsfilter.hpp"
 
-namespace zinc
+namespace OpenCMISS
+{
+namespace Zinc
 {
 
 class SceneViewerInput
@@ -413,6 +415,7 @@ public:
 
 };
 
-}  // namespace zinc
+}  // namespace Zinc
+}
 
 #endif
