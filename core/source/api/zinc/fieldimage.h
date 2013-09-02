@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_field_image.h
+FILE : fieldimage.h
 
 LAST MODIFIED : 24 June 2008
 
 DESCRIPTION :
-Implements cmiss fields which wrap images, structured grid data.
+Implements zinc fields which wrap images, structured grid data.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -361,7 +361,7 @@ ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field image.
  *
- * @param image  Handle to the cmiss field image.
+ * @param image  Handle to the zinc field image.
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
@@ -371,7 +371,7 @@ ZINC_API int cmzn_field_image_get_attribute_integer(cmzn_field_image_id image,
 /***************************************************************************//**
  * Get a real attribute of the field image.
  *
- * @param image  Handle to the cmiss field image.
+ * @param image  Handle to the zinc field image.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
@@ -381,7 +381,7 @@ ZINC_API double cmzn_field_image_get_attribute_real(cmzn_field_image_id image,
 /***************************************************************************//**
  * Set an double attribute of the image.
  *
- * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param stream_information  Handle to the zinc stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  * @return  Status CMZN_OK if attribute successfully set, any other value if
@@ -642,7 +642,7 @@ ZINC_C_INLINE cmzn_stream_information_id
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the stream_information_image.
  *
- * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param stream_information  Handle to the zinc stream_information_image.
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true.
@@ -658,7 +658,7 @@ ZINC_API int cmzn_stream_information_image_set_attribute_integer(
 /***************************************************************************//**
  * Set an double attribute of the stream_information_image.
  *
- * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param stream_information  Handle to the zinc stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  * @return   Status CMZN_OK if attribute successfully set, any other value if

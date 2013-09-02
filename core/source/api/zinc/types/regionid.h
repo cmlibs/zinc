@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_region_id.h
+ * FILE : regionid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -45,12 +45,12 @@
   typedef struct cmzn_region * cmzn_region_id;
 
  /***************************************************************************//**
-  * A handle to cmiss stream information region. Stream information region is a
+  * A handle to zinc stream information region. Stream information region is a
   * derived type of cmzn_stream_information_id.
   * User can create and get a handle to stream information region with functions
   * provided with cmzn_region.
   * User can use this derived type to set number of informations associate with
-  * images inputs and outputs. See cmiss_region.h for more information.
+  * images inputs and outputs. See region.h for more information.
   *
   * #see cmzn_stream_information_id
   * #see cmzn_field_image_create_stream_information

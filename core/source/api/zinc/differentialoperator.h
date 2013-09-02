@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_differential_operator.h
+ * FILE : differentialoperator.h
  *
  * Public interface to differential operator objects used to specify which
  * field derivative to evaluate.

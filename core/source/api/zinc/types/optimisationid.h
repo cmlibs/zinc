@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_optimisation_id.h
+ * FILE : optimisationid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

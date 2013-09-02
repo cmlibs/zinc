@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_field_group.h
+ * FILE : fieldgroup.h
  *
- * Implements a cmiss field which maintains a group or selection of objects
+ * Implements a zinc field which maintains a group or selection of objects
  * from the region including the region itself, other fields representing domain
  * object groups (e.g. node, element), and related groups from child regions.
  * The field evaluates to 1 (true) at domain locations in the group, and 0

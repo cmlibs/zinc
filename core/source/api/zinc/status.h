@@ -1,5 +1,5 @@
 /**
- * FILE : cmiss_status.h
+ * FILE : status.h
  *
  * The public interface to cmzn_status.
  *

@@ -1,5 +1,5 @@
 /*****************************************************************************//**
- * FILE : cmiss_field_module.h
+ * FILE : fieldmodule.h
  *
  * Public interface to the field module including its generic functions.
  */

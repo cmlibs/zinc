@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_time_keeper.h
+FILE : timekeeper.h
 
 LAST MODIFIED : 2 Mar 2009
 
@@ -94,7 +94,7 @@ ZINC_API char *cmzn_time_keeper_attribute_enum_to_string(
 /***************************************************************************//**
  * Access the time_keeper, increase the access count of the time keeper by one.
  *
- * @param time_keeper  handle to the "to be access" cmiss time_keeper.
+ * @param time_keeper  handle to the "to be access" zinc time_keeper.
  * @return  handle to time_keeper if successfully access time_keeper.
  */
 ZINC_API cmzn_time_keeper_id cmzn_time_keeper_access(cmzn_time_keeper_id time_keeper);
@@ -112,7 +112,7 @@ ZINC_API int cmzn_time_keeper_destroy(cmzn_time_keeper_id *time_keeper_address);
 /***************************************************************************//**
  * Get a real value of an attribute of the time keeper.
  *
- * @param time_keeper  Handle to the cmiss time_keeper.
+ * @param time_keeper  Handle to the zinc time_keeper.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
@@ -122,7 +122,7 @@ ZINC_API double cmzn_time_keeper_get_attribute_real(cmzn_time_keeper_id time_kee
 /***************************************************************************//**
  * Set a real value for an attribute of the time_keeper.
  *
- * @param time_keeper  Handle to the cmiss time_keeper.
+ * @param time_keeper  Handle to the zinc time_keeper.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
  * @return  Status CMZN_OK if attribute successfully set, any other value if

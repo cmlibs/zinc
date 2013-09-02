@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_image_id.h
+ * FILE : fieldimageid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -47,12 +47,12 @@
 	typedef struct cmzn_field_image *cmzn_field_image_id;
 
 /***************************************************************************//**
- * A handle to cmiss stream information image. Stream information image is a
+ * A handle to zinc stream information image. Stream information image is a
  * derived type of cmzn_stream_information_id.
  * User can create and get a handle to stream information image with functions
  * provided with cmzn_field_image.
  * User can use this derived type to set number of informations associate with
- * images inputs and outputs. See cmiss_field_image.h for more information.
+ * images inputs and outputs. See fieldimage.h for more information.
  *
  * #see cmzn_stream_information_id
  * #see cmzn_field_image_create_stream_information

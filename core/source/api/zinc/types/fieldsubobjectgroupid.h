@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_subobject_group_id.h
+ * FILE : fieldsubobjectgroupid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

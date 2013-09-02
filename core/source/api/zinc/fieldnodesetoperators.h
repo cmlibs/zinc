@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_nodeset_operators.h
+ * FILE : fieldnodesetoperators.h
  *
  * Implements field operators that sum or process fields over a nodeset.
  */

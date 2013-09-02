@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_field.h
+ * FILE : field.h
  *
- * The public interface to the cmzn field base object.
+ * The public interface to the zinc field base object.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

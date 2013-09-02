@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_subobject_group.h
+ * FILE : fieldsubobjectgroup.h
  *
  * Implements region sub object groups, e.g. node group, element group.
  * These group fields evaluate to 1 (true) at domain locations in the group, and

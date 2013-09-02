@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_field_conditional.h
+FILE : fieldconditional.h
 
 LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
-Implements cmiss fields which conditionally calculate their inputs.
+Implements zinc fields which conditionally calculate their inputs.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

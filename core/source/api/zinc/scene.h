@@ -190,9 +190,9 @@ ZINC_API cmzn_graphic_surfaces_id cmzn_scene_create_graphic_surfaces(
  * Return a handle to selection handler for this scene. User can add and
  * remove callback functions of the selection handler. The callback functions
  * will be called when selection on the scene has changed. Please see
- * cmiss_selection.h for more detail
+ * selection.h for more detail
  *
- * @param scene  Handle to a cmiss_scene object.
+ * @param scene  Handle to a scene object.
  * @return  selection handler of this scene if successful, otherwise NULL.
  */
 ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
@@ -227,17 +227,17 @@ ZINC_API cmzn_graphic_id cmzn_scene_find_graphic_by_name(cmzn_scene_id scene,
 /***************************************************************************//**
  * Get the first graphic on the graphics list of <scene>.
 
- * @param scene  Handle to a cmiss_scene object.
- * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
+ * @param scene  Handle to a scene object.
+ * @return  Handle to a graphic object if successful, otherwise NULL;
  */
 ZINC_API cmzn_graphic_id cmzn_scene_get_first_graphic(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Get the next graphic after <ref_graphic> on the graphics list of <scene>.
 
- * @param scene  Handle to a cmiss_scene object.
- * @param ref_graphic  Handle to a cmiss_graphic object.
- * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
+ * @param scene  Handle to a scene object.
+ * @param ref_graphic  Handle to a graphic object.
+ * @return  Handle to a graphic object if successful, otherwise NULL;
  */
 ZINC_API cmzn_graphic_id cmzn_scene_get_next_graphic(cmzn_scene_id scene,
 	cmzn_graphic_id ref_graphic);
@@ -245,9 +245,9 @@ ZINC_API cmzn_graphic_id cmzn_scene_get_next_graphic(cmzn_scene_id scene,
 /***************************************************************************//**
  * Get the graphic before <ref_graphic> on the graphics list of <scene>.
 
- * @param scene  Handle to a cmiss_scene object.
- * @param ref_grpahic  Handle to a cmiss_graphic object.
- * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
+ * @param scene  Handle to a scene object.
+ * @param ref_grpahic  Handle to a graphic object.
+ * @return  Handle to a graphic object if successful, otherwise NULL;
  */
 ZINC_API cmzn_graphic_id cmzn_scene_get_previous_graphic(cmzn_scene_id scene,
 	cmzn_graphic_id ref_graphic);
@@ -265,7 +265,7 @@ ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
  * This function will only return selection group that is still being managed.
  * Caller must destroy the reference to the handler.
  *
- * @param cmiss_scene  pointer to the cmiss_scene.
+ * @param scene  pointer to the scene.
  *
  * @return Return selection group if successfully otherwise null.
  */
@@ -280,7 +280,7 @@ ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene)
  * Selection field set in the scene using this function will not have its
  * access count increased.
  *
- * @param cmiss_scene  pointer to the cmiss_scene.
+ * @param scene  pointer to the scene.
  * @param selection_field  selection field to be set for this group.
  * @return  Status CMZN_OK on success, any other value on failure.
  */

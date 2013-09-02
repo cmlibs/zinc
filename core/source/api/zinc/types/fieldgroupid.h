@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_group_id.h
+ * FILE : fieldgroupid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

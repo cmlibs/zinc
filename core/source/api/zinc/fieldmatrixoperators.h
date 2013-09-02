@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_field_matrix_operators.h
+FILE : fieldmatrixoperators.h
 
 LAST MODIFIED : 17 June 2011
 

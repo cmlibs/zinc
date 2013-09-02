@@ -1,3 +1,6 @@
+/***************************************************************************//**
+ * FILE : interactivetool.h
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -72,7 +75,7 @@ cmzn_interactive_tool_id cmzn_interactive_tool_access(
  * Destroy the interactive_tool.
  *
  * @param interactive_tool  address to the handle to the "to be destroyed"
- *   cmiss interactive_tool.
+ *   zinc interactive_tool.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_interactive_tool_destroy(cmzn_interactive_tool_id *interactive_tool);

@@ -1,3 +1,6 @@
+/***************************************************************************//**
+ * FILE : graphicsmaterial.h
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -259,7 +262,7 @@ ZINC_API int cmzn_graphics_material_set_managed(cmzn_graphics_material_id materi
 /***************************************************************************//**
  * Access the material, increase the access count of the material by one.
  *
- * @param material  handle to the "to be access" cmiss material.
+ * @param material  handle to the "to be access" zinc material.
  * @return  handle to material if successfully access material.
  */
 ZINC_API cmzn_graphics_material_id cmzn_graphics_material_access(cmzn_graphics_material_id material);
@@ -269,7 +272,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_access(cmzn_graphics_m
  * Internally this just decrements the reference count.
  *
  * @param material  address to the handle to the "to be destroyed"
- *   cmiss material.
+ *   zinc material.
  * @return  Status CMZN_OK if successfully destroy material, any other value on
  * failure.
  */
@@ -278,7 +281,7 @@ ZINC_API int cmzn_graphics_material_destroy(cmzn_graphics_material_id *material)
 /***************************************************************************//**
  * Get a real value of an attribute of the graphics material.
  *
- * @param material  Handle to the cmiss material.
+ * @param material  Handle to the zinc material.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
@@ -288,7 +291,7 @@ ZINC_API double cmzn_graphics_material_get_attribute_real(cmzn_graphics_material
 /***************************************************************************//**
  * Set a real value for an attribute of the graphics material.
  *
- * @param material  Handle to the cmiss material.
+ * @param material  Handle to the zinc material.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
  * @return  Status CMZN_OK if attribute successfully set, any other value if
@@ -301,7 +304,7 @@ ZINC_API int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id
  * Get a 3 components vectors of an attribute of the graphics material.
  * <values> should be allocated with enough space for 3 components.
  *
- * @param material  Handle to the cmiss material.
+ * @param material  Handle to the zinc material.
  * @param attribute  The identifier of the vectors attribute to get.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
@@ -312,7 +315,7 @@ ZINC_API int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_i
  * Set a 3 components vectors of an attribute for the graphics material.
  * <values> should be a vectors with 3 components containg valid values.
  *
- * @param material  Handle to the cmiss material.
+ * @param material  Handle to the zinc material.
  * @param attribute  The identifier of the vectors attribute to get.
  * @return  Status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this material object.
@@ -323,7 +326,7 @@ ZINC_API int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_i
 /***************************************************************************//**
  * Return an allocated string containing material name.
  *
- * @param material  handle to the cmiss material.
+ * @param material  handle to the zinc material.
  * @return  allocated string containing material name, otherwise NULL. Up to
  * caller to free using cmzn_deallocate().
  */
@@ -332,7 +335,7 @@ ZINC_API char *cmzn_graphics_material_get_name(cmzn_graphics_material_id materia
 /***************************************************************************//**
  * Set/change name for <material>.
  *
- * @param material  The handle to the cmiss material.
+ * @param material  The handle to the zinc material.
  * @param name  name to be set to the material
  * @return  Status CMZN_OK if successfully set/change name for material,
  * any other value on failure.
@@ -341,13 +344,13 @@ ZINC_API int cmzn_graphics_material_set_name(
 	cmzn_graphics_material_id material, const char *name);
 
 /***************************************************************************//**
- * Set a cmiss_field containing an image for a cmzn_graphics_material.
+ * Set a field containing an image for a cmzn_graphics_material.
  * This image will be displayed with the material as the corresponding texture.
  * This function read in a general field but it may not work properly if
  * the field passing in is not an image field.
  *
- * @param material  handle to the cmiss material.
- * @param field  handle to a general cmiss field.
+ * @param material  handle to the zinc material.
+ * @param field  handle to a general zinc field.
  * @param image_number  integer to identify which image field to be set in
  * 		material.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -356,14 +359,14 @@ ZINC_API int cmzn_graphics_material_set_image_field(cmzn_graphics_material_id ma
 	int image_number, cmzn_field_image_id image_field);
 
 /***************************************************************************//**
- * Get the cmiss_field containing an image from a cmzn_graphics_material which is
+ * Get the field containing an image from a cmzn_graphics_material which is
  * used as a texture when displaying. The target image field is specified by the
  * identifier.
  *
- * @param material  handle to the cmiss material.
+ * @param material  handle to the zinc material.
  * @param image_number  integer to identify which image field to get in material.
- * @return  cmiss_field if a field has been sett for the material, otherwise NULL.
- * 		This also incremenet the access count of the cmiss_field by 1;
+ * @return  field if a field has been sett for the material, otherwise NULL.
+ * 		This also incremenet the access count of the field by 1;
  */
 ZINC_API cmzn_field_image_id cmzn_graphics_material_get_image_field(
 	cmzn_graphics_material_id material, int image_number);

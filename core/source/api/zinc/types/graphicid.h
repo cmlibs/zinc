@@ -1,5 +1,5 @@
 /**
- * FILE : cmiss_graphic_id.h
+ * FILE : graphicid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -42,7 +42,7 @@
 #define CMZN_GRAPHICID_H__
 
 /**
- * A handle to cmiss graphic. cmzn graphic is individual graphic representation
+ * A handle to zinc graphic. zinc graphic is individual graphic representation
  * such as lines, surfaces, node points and etc of a scene. These graphics
  * can be customised through a number of set functions.
  */

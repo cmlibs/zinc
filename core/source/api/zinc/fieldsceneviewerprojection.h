@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_scene_viewer_projection.h
+ * FILE : fieldsceneviewerprojection.h
  *
  * A field which extract a transformation matrix from a scene viewer for use in
  * field expressions.

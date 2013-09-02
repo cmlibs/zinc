@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_stream.h
+ * FILE : stream.h
  *
- * The public interface to cmzn_stream.
+ * The public interface to zinc stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -111,7 +111,7 @@ ZINC_API cmzn_stream_resource_id cmzn_stream_information_create_resource_memory(
 
 /***************************************************************************//**
  * Creates a stream_resource of memory type and store the pointer to the buffer,
- * the pointer can then be read into a cmzn object. This function does not
+ * the pointer can then be read into a zinc object. This function does not
  * copy the buffer, user is responsible for the life time of the buffer. Please
  * make sure the buffer is valid when reading the stream information.
  * #see cmzn_field_image_read

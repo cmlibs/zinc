@@ -1,5 +1,5 @@
 /*******************************************************************************
- * FILE : cmiss_field_coordinate_transformation.h
+ * FILE : fieldcoordinatetransformation.h
  *
  * Field coordinate transformation operators.
  */

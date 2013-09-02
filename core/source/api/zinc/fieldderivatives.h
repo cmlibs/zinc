@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_field_derivatives.h
+FILE : fieldderivatives.h
 
 DESCRIPTION :
 The public interface to the cmzn_fields that perform derivation.

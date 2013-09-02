@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_finite_element.h
+ * FILE : fieldfiniteelement.h
  *
  * Implements fields interpolated over finite element meshes with
  * parameters indexed by nodes.

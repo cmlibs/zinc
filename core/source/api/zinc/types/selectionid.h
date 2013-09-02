@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_selection_id.h
+ * FILE : selectionid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

@@ -1,5 +1,5 @@
 /**
- * FILE : cmiss_field_arithmetic_operators.h
+ * FILE : fieldarithmeticoperators.h
  *
  * The public interface to the cmzn_fields that perform arithmetic operators.
  */
@@ -54,7 +54,7 @@ extern "C" {
 /**
  * Creates a field where the which calculates the components of source_field_one
  * raised to the power of the components in source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -68,7 +68,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_power(cmzn_field_module_id field
 /**
  * Creates a field where the which multiplies the components of source_field_one and
  * source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -82,7 +82,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_multiply(cmzn_field_module_id fi
 /**
  * Creates a field where the which divides the components of source_field_one
  * by source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -96,7 +96,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_divide(cmzn_field_module_id fiel
 /**
  * Creates a field where the which adds the components of source_field_one and
  * source_field_two.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
@@ -110,7 +110,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_add(cmzn_field_module_id field_m
 /**
  * Creates a field where the which subtracts the components of source_field_two
  * from source_field_one.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field

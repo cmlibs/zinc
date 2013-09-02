@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_tessellation_id.h
+ * FILE : tessellationid.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

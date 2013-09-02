@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_field_cad.h
+ * FILE : fieldcad.h
  * 
- * The public interface to cmiss fields which wrap cad entities.
+ * The public interface to zinc fields which wrap cad entities.
  * Warning: prototype!
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -41,11 +41,11 @@
 #ifndef CMZN_FIELDCAD_H__
 #define CMZN_FIELDCAD_H__
 
-#include "types/cmiss_field_id.h"
-#include "types/cmiss_field_module_id.h"
-#include "types/cmiss_region_id.h"
-#include "types/cmiss_field_cad_id.h"
-#include "types/cmiss_field_group_id.h"
+#include "types/field_id.h"
+#include "types/field_module_id.h"
+#include "types/region_id.h"
+#include "types/field_cad_id.h"
+#include "types/field_group_id.h"
 
 int cmzn_region_import_cad_file(cmzn_region_id region, const char *file_name);
 

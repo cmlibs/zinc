@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_element.h
+ * FILE : element.h
  *
  * The public interface to cmzn_element, finite element meshes.
  */
@@ -149,7 +149,7 @@ ZINC_API cmzn_element_basis_id cmzn_field_module_create_element_basis(
 /***************************************************************************//**
  * Get a handle to the default mesh of a given dimension. Cmgui is currently
  * limited to 1 mesh of each dimension from 1 to 3. These meshes have default
- * names of "cmiss_mesh_Nd", where "N" is the dimension.
+ * names of "mesh_Nd", where "N" is the dimension.
  *
  * @param field_module  The field module the mesh belongs to.
  * @param dimension  The dimension of the mesh from 1 to 3.
