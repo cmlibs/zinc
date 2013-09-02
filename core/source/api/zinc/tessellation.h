@@ -59,8 +59,8 @@ extern "C" {
 * @param tessellation_module  The tessellation module to obtain a new reference to.
 * @return  Tessellation module with incremented reference count.
 */
-ZINC_API Cmiss_tessellation_module_id Cmiss_tessellation_module_access(
-	Cmiss_tessellation_module_id tessellation_module);
+ZINC_API cmzn_tessellation_module_id cmzn_tessellation_module_access(
+	cmzn_tessellation_module_id tessellation_module);
 
 /**
 * Destroys this reference to the tessellation module (and sets it to NULL).
@@ -70,8 +70,8 @@ ZINC_API Cmiss_tessellation_module_id Cmiss_tessellation_module_access(
 *   to destroy.
 * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
 */
-ZINC_API int Cmiss_tessellation_module_destroy(
-	Cmiss_tessellation_module_id *tessellation_module_address);
+ZINC_API int cmzn_tessellation_module_destroy(
+	cmzn_tessellation_module_id *tessellation_module_address);
 
 /**
  * Create and return a handle to a new tessellation.
@@ -80,30 +80,30 @@ ZINC_API int Cmiss_tessellation_module_destroy(
  * tessellation will belong to.
  * @return  Handle to the newly created tessellation if successful, otherwise NULL.
  */
-ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_create_tessellation(
-	Cmiss_tessellation_module_id tessellation_module);
+ZINC_API cmzn_tessellation_id cmzn_tessellation_module_create_tessellation(
+	cmzn_tessellation_module_id tessellation_module);
 
 /**
 * Begin caching or increment cache level for this tessellation module. Call this
 * function before making multiple changes to minimise number of change messages
 * sent to clients. Must remember to end_change after completing changes.
-* @see Cmiss_tessellation_module_end_change
+* @see cmzn_tessellation_module_end_change
 *
 * @param tessellation_module  The tessellation_module to begin change cache on.
 * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
 */
-ZINC_API int Cmiss_tessellation_module_begin_change(Cmiss_tessellation_module_id tessellation_module);
+ZINC_API int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id tessellation_module);
 
 /***************************************************************************//**
 * Decrement cache level or end caching of changes for the tessellation module.
-* Call Cmiss_tessellation_module_begin_change before making multiple changes
+* Call cmzn_tessellation_module_begin_change before making multiple changes
 * and call this afterwards. When change level is restored to zero,
 * cached change messages are sent out to clients.
 *
 * @param tessellation_module  The glyph_module to end change cache on.
 * @return  Status CMISS_OK on success, any other value on failure.
 */
-ZINC_API int Cmiss_tessellation_module_end_change(Cmiss_tessellation_module_id tessellation_module);
+ZINC_API int cmzn_tessellation_module_end_change(cmzn_tessellation_module_id tessellation_module);
 
 /**
 * Find the tessellation with the specified name, if any.
@@ -113,8 +113,8 @@ ZINC_API int Cmiss_tessellation_module_end_change(Cmiss_tessellation_module_id t
 * @return  Handle to the tessellation of that name, or 0 if not found.
 * 	Up to caller to destroy returned handle.
 */
-ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_find_tessellation_by_name(
-	Cmiss_tessellation_module_id tessellation_module, const char *name);
+ZINC_API cmzn_tessellation_id cmzn_tessellation_module_find_tessellation_by_name(
+	cmzn_tessellation_module_id tessellation_module, const char *name);
 
 /**
  * Get the default tessellation to be used by new lines, surfaces and
@@ -126,8 +126,8 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_find_tessellation_by_na
  * @return  Handle to the default tessellation, or 0 on error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_tessellation(
-	Cmiss_tessellation_module_id tessellation_module);
+ZINC_API cmzn_tessellation_id cmzn_tessellation_module_get_default_tessellation(
+	cmzn_tessellation_module_id tessellation_module);
 
 /**
  * Set the default tessellation to be used by new lines, surfaces and
@@ -137,9 +137,9 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_tessellatio
  * @param tessellation  The tessellation to set as default.
  * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_module_set_default_tessellation(
-	Cmiss_tessellation_module_id tessellation_module,
-	Cmiss_tessellation_id tessellation);
+ZINC_API int cmzn_tessellation_module_set_default_tessellation(
+	cmzn_tessellation_module_id tessellation_module,
+	cmzn_tessellation_id tessellation);
 
 /**
  * Get the default tessellation to be used by new points and streamlines
@@ -151,8 +151,8 @@ ZINC_API int Cmiss_tessellation_module_set_default_tessellation(
  * @return  Handle to the default points tessellation, or 0 on error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_points_tessellation(
-	Cmiss_tessellation_module_id tessellation_module);
+ZINC_API cmzn_tessellation_id cmzn_tessellation_module_get_default_points_tessellation(
+	cmzn_tessellation_module_id tessellation_module);
 
 /**
  * Set the default tessellation to be used by new points and streamlines
@@ -162,9 +162,9 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_module_get_default_points_tess
  * @param tessellation  The tessellation to set as default for points.
  * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_module_set_default_points_tessellation(
-	Cmiss_tessellation_module_id tessellation_module,
-	Cmiss_tessellation_id tessellation);
+ZINC_API int cmzn_tessellation_module_set_default_points_tessellation(
+	cmzn_tessellation_module_id tessellation_module,
+	cmzn_tessellation_id tessellation);
 
 /**
  * Returns a new reference to the tessellation with reference count incremented.
@@ -173,7 +173,7 @@ ZINC_API int Cmiss_tessellation_module_set_default_points_tessellation(
  * @param tessellation  The tessellation to obtain a new reference to.
  * @return  New tessellation reference with incremented reference count.
  */
-ZINC_API Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation);
+ZINC_API cmzn_tessellation_id cmzn_tessellation_access(cmzn_tessellation_id tessellation);
 
 /**
  * Destroys this reference to the tessellation (and sets it to NULL).
@@ -183,7 +183,7 @@ ZINC_API Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id t
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
+ZINC_API int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_address);
 
 /**
  * Gets the number of line segments used to approximate circles in graphics
@@ -193,8 +193,8 @@ ZINC_API int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_addr
  * @param tessellation  The tessellation to query.
  * @return  The number of circle divisions, or 0 on error.
  */
-ZINC_API int Cmiss_tessellation_get_circle_divisions(
-	Cmiss_tessellation_id tessellation);
+ZINC_API int cmzn_tessellation_get_circle_divisions(
+	cmzn_tessellation_id tessellation);
 
 /**
  * Sets the number of line segments used to approximate circles in graphics
@@ -206,17 +206,17 @@ ZINC_API int Cmiss_tessellation_get_circle_divisions(
  * a circle, at least 3, but larger even numbers are recommended.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_circle_divisions(
-	Cmiss_tessellation_id tessellation, int circleDivisions);
+ZINC_API int cmzn_tessellation_set_circle_divisions(
+	cmzn_tessellation_id tessellation, int circleDivisions);
 
 /**
  * Get managed status of tessellation in its owning tessellation_module.
- * @see Cmiss_tessellation_set_managed
+ * @see cmzn_tessellation_set_managed
  *
  * @param tessellation  The tessellation to query.
  * @return  1 (true) if tessellation is managed, otherwise 0 (false).
  */
-ZINC_API bool Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation);
+ZINC_API bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation);
 
 /**
  * Set managed status of tessellation in its owning tessellation module.
@@ -231,7 +231,7 @@ ZINC_API bool Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation);
  * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
+ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 	bool value);
 
 /**
@@ -239,9 +239,9 @@ ZINC_API int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
  *
  * @param tessellation  handle to the cmiss tessellation.
  * @return  allocated string containing tessellation name, or NULL on failure.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
+ZINC_API char *cmzn_tessellation_get_name(cmzn_tessellation_id tessellation);
 
 /**
  * Set/change name for <tessellation>.
@@ -251,24 +251,24 @@ ZINC_API char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
  * @return  status CMISS_OK if successfully set/change name for tessellation,
  * any other value on failure.
  */
-ZINC_API int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *name);
+ZINC_API int cmzn_tessellation_set_name(cmzn_tessellation_id tessellation, const char *name);
 
 /**
  * Gets the minimum number of line segments used to approximate curves in each
  * element dimension for coarse tessellation.
  *
- * @see Cmiss_tessellation_set_minimum_divisions
+ * @see cmzn_tessellation_set_minimum_divisions
  * @param tessellation  The tessellation to query.
  * @param valuesCount  The size of the minimum_divisions array to fill. Values
  * for dimensions beyond the size set use the last divisions value.
  * @param valuesOut  Array to receive numbers of divisions.
  * @return  The actual number of minimum divisions values that have been
- * explicitly set using Cmiss_tessellation_set_minimum_divisions. This can be
+ * explicitly set using cmzn_tessellation_set_minimum_divisions. This can be
  * more than the number requested, so a second call may be needed with a
  * larger array. Returns 0 on error.
  */
-ZINC_API int Cmiss_tessellation_get_minimum_divisions(
-	Cmiss_tessellation_id tessellation, int valuesCount, int *valuesOut);
+ZINC_API int cmzn_tessellation_get_minimum_divisions(
+	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the minimum number of line segments used to approximate curves in each
@@ -283,25 +283,25 @@ ZINC_API int Cmiss_tessellation_get_minimum_divisions(
  * the last number in array applying to all higher dimensions.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_minimum_divisions(
-	Cmiss_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+ZINC_API int cmzn_tessellation_set_minimum_divisions(
+	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Gets the refinements to be used in product with the minimum divisions
  * to approximate curves in each element dimension for fine tessellation.
  *
- * @see Cmiss_tessellation_set_refinement_factors
+ * @see cmzn_tessellation_set_refinement_factors
  * @param tessellation  The tessellation to query.
  * @param valuesCount  The size of the refinement_factors array to fill. Values
  * for dimensions beyond the size set use the last refinement value.
  * @param valuesOut  Array to receive refinement factors.
  * @return  The actual number of refinement factor values that have been
- * explicitly set using Cmiss_tessellation_set_refinement_factors. This can be
+ * explicitly set using cmzn_tessellation_set_refinement_factors. This can be
  * more than the number requested, so a second call may be needed with a
  * larger array. Returns 0 on error.
  */
-ZINC_API int Cmiss_tessellation_get_refinement_factors(
-	Cmiss_tessellation_id tessellation, int valuesCount, int *valuesOut);
+ZINC_API int cmzn_tessellation_get_refinement_factors(
+	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the refinements to be used in product with the minimum divisions
@@ -313,7 +313,7 @@ ZINC_API int Cmiss_tessellation_get_refinement_factors(
  * The default refinement_factors value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
- * @see Cmiss_tessellation_set_minimum_divisions
+ * @see cmzn_tessellation_set_minimum_divisions
  * @param tessellation  The tessellation to modify.
  * @param valuesCount  The size of the refinement_factors array, >= 1.
  * @param valuesIn  Array of number of fine subdivisions (>=1) per
@@ -321,8 +321,8 @@ ZINC_API int Cmiss_tessellation_get_refinement_factors(
  * applying to all higher dimensions.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_tessellation_set_refinement_factors(
-	Cmiss_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+ZINC_API int cmzn_tessellation_set_refinement_factors(
+	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 #ifdef __cplusplus
 }

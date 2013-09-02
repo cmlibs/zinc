@@ -51,7 +51,7 @@ DESCRIPTION :
 class Computed_field_compose_package : public Computed_field_type_package
 {
 public:
-	struct Cmiss_region *root_region;
+	struct cmzn_region *root_region;
 };
 
 const char computed_field_compose_type_string[] = "compose";
@@ -59,15 +59,15 @@ const char computed_field_compose_type_string[] = "compose";
 class Computed_field_compose : public Computed_field_core
 {
 private:
-	Cmiss_mesh_id mesh;
+	cmzn_mesh_id mesh;
 	int find_nearest;
 	int use_point_five_when_out_of_bounds;
 
 public:
-	Computed_field_compose(Cmiss_mesh_id search_mesh,
+	Computed_field_compose(cmzn_mesh_id search_mesh,
 			int find_nearest, int use_point_five_when_out_of_bounds = 0) :
 		Computed_field_core(),
-		mesh(Cmiss_mesh_access(search_mesh)),
+		mesh(cmzn_mesh_access(search_mesh)),
 		find_nearest(find_nearest),
 		use_point_five_when_out_of_bounds(use_point_five_when_out_of_bounds)
 	{
@@ -90,7 +90,7 @@ public:
 		struct Computed_field **texture_coordinate_field_address,
 		struct Computed_field **find_element_xi_field_address,
 		struct Computed_field **calculate_values_field_address,
-		Cmiss_mesh_id *mesh_address, int *find_nearest_address,
+		cmzn_mesh_id *mesh_address, int *find_nearest_address,
 		int *use_point_five_when_out_of_bounds_address);
 
 private:
@@ -103,16 +103,16 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 

@@ -158,7 +158,7 @@ NULL.
 				DEALLOCATE(environment_map->name);
 				for (i=5;i>=0;i--)
 				{
-					Cmiss_graphics_material_destroy(&((environment_map->face_material)[i]));
+					cmzn_graphics_material_destroy(&((environment_map->face_material)[i]));
 				}
 				DEALLOCATE(*environment_map_address);
 				return_code=1;

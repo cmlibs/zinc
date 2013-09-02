@@ -47,8 +47,8 @@ Implements logical operations on computed fields.
 #include "zinc/field.h"
 #include "zinc/fieldlogicaloperators.h"
 
-#define Computed_field_create_greater_than Cmiss_field_module_create_greater_than
-#define Computed_field_create_less_than Cmiss_field_module_create_less_than
+#define Computed_field_create_greater_than cmzn_field_module_create_greater_than
+#define Computed_field_create_less_than cmzn_field_module_create_less_than
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -61,7 +61,7 @@ Implements logical operations on computed fields.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_less_than(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -76,7 +76,7 @@ struct Computed_field *Computed_field_create_less_than(
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_greater_than(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -89,7 +89,7 @@ struct Computed_field *Computed_field_create_greater_than(
  * @return Newly created field
  */
 Computed_field *Computed_field_create_is_defined(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field);
 
 #endif /* !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H) */

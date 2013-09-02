@@ -64,17 +64,17 @@ Module types
 class Computed_field_cad_geometry_package : public Computed_field_type_package
 {
 public:
-	Cmiss_region *root_region;
+	cmzn_region *root_region;
 
-	Computed_field_cad_geometry_package(Cmiss_region *root_region)
+	Computed_field_cad_geometry_package(cmzn_region *root_region)
 	  : root_region(root_region)
 	{
-		ACCESS(Cmiss_region)(root_region);
+		ACCESS(cmzn_region)(root_region);
 	}
 
 	~Computed_field_cad_geometry_package()
 	{
-		DEACCESS(Cmiss_region)(&root_region);
+		DEACCESS(cmzn_region)(&root_region);
 	}
 };
 */
@@ -105,7 +105,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -113,7 +113,7 @@ private:
 
 	char* get_command_string();
 
-	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
+	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
 	{
 		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return 1;
@@ -155,10 +155,10 @@ int Computed_field_cad_geometry::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_geometry::compare */
 
-int Computed_field_cad_geometry::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_cad_geometry::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	Cmiss_field_cad_topology_id cad_topology = reinterpret_cast<Cmiss_field_cad_topology_id>(getSourceField(0));
+	cmzn_field_cad_topology_id cad_topology = reinterpret_cast<cmzn_field_cad_topology_id>(getSourceField(0));
 	// @TODO: prescribe location directly in cad_topology field's value cache
 	Field_cad_geometry_surface_location *cad_surface_location;
 	Field_cad_geometry_curve_location *cad_curve_location;
@@ -166,7 +166,7 @@ int Computed_field_cad_geometry::evaluate(Cmiss_field_cache& cache, FieldValueCa
 	{
 		//printf("compare? 0x%x and 0x%x\n", cad_topology, cad_geometry_location->id());
 		double point[3], uDerivative[3], vDerivative[3];
-		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_surface_location->get_id()) &&
+		if ((cad_topology == (cmzn_field_cad_topology_id *)cad_surface_location->get_id()) &&
 			Computed_field_cad_topology_get_surface_point(cad_topology,
 				cad_surface_location->get_identifier(),
 				cad_surface_location->get_u(),
@@ -201,7 +201,7 @@ int Computed_field_cad_geometry::evaluate(Cmiss_field_cache& cache, FieldValueCa
 	else if (0 != (cad_curve_location = dynamic_cast<Field_cad_geometry_curve_location*>(cache.getLocation())))
 	{
 		double point[3];
-		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_curve_location->get_id()) &&
+		if ((cad_topology == (cmzn_field_cad_topology_id *)cad_curve_location->get_id()) &&
 			Computed_field_cad_topology_get_curve_point(cad_topology,
 				cad_curve_location->get_identifier(),
 				cad_curve_location->get_s(),
@@ -229,11 +229,11 @@ int Computed_field_cad_geometry::list()
 	ENTER(List_Computed_field_cad_geometry);
 	if (field)
 	{
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-		int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
-		int curve_count = Cmiss_field_cad_topology_get_curve_count(cad_topology);
+		cmzn_field_cad_topology_id cad_topology = cmzn_field_cast_cad_topology(field->source_fields[0]);
+		int surface_count = cmzn_field_cad_topology_get_surface_count(cad_topology);
+		int curve_count = cmzn_field_cad_topology_get_curve_count(cad_topology);
 		display_message(INFORMATION_MESSAGE, "    Cad geometry field : # of surfaces: %d, # of curves: %d", surface_count, curve_count);
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
+		cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(&cad_topology));
 		return_code = 1;
 	}
 	else
@@ -281,7 +281,7 @@ char *Computed_field_cad_geometry::get_command_string()
 
 } //namespace
 
-int Cmiss_field_is_cad_geometry( struct Computed_field *field, void *not_in_use )
+int cmzn_field_is_cad_geometry( struct Computed_field *field, void *not_in_use )
 {
 	int return_code = 0;
 	USE_PARAMETER(not_in_use);
@@ -304,11 +304,11 @@ int Cmiss_field_is_cad_geometry( struct Computed_field *field, void *not_in_use 
 	return return_code;
 }
 
-Cmiss_field_cad_geometry_id Cmiss_field_cad_geometry_cast(Cmiss_field_id field)
+cmzn_field_cad_geometry_id cmzn_field_cad_geometry_cast(cmzn_field_id field)
 {
 	if (dynamic_cast<Computed_field_cad_geometry*>(field->core))
 	{
-		return (reinterpret_cast<Cmiss_field_cad_geometry_id>(field));
+		return (reinterpret_cast<cmzn_field_cad_geometry_id>(field));
 	}
 	else
 	{
@@ -317,10 +317,10 @@ Cmiss_field_cad_geometry_id Cmiss_field_cad_geometry_cast(Cmiss_field_id field)
 }
 
 /**
- * @see Cmiss_field_create_cad_geometry
+ * @see cmzn_field_create_cad_geometry
  */
-Cmiss_field_id Computed_field_module_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
-//Cmiss_field_id Computed_field_create_cad_geometry( Cmiss_field_id source_field, GeometricShape *shape )
+cmzn_field_id Computed_field_module_create_cad_geometry(cmzn_field_module_id field_module, cmzn_field_id cad_topology_source_field)
+//cmzn_field_id Computed_field_create_cad_geometry( cmzn_field_id source_field, GeometricShape *shape )
 {
 	ENTER(Computed_field_create_cad_geometry);
 	struct Computed_field *field = NULL;

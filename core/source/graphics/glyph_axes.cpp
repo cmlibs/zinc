@@ -46,7 +46,7 @@
 #include "general/mystring.h"
 #include "graphics/glyph_axes.hpp"
 
-Cmiss_glyph_axes::Cmiss_glyph_axes(Cmiss_glyph *axisGlyphIn, double axisWidthIn) :
+cmzn_glyph_axes::cmzn_glyph_axes(cmzn_glyph *axisGlyphIn, double axisWidthIn) :
 	axisGlyph(axisGlyphIn->access()),
 	axisWidth(axisWidthIn),
 	graphicsObject(0)
@@ -58,24 +58,24 @@ Cmiss_glyph_axes::Cmiss_glyph_axes(Cmiss_glyph *axisGlyphIn, double axisWidthIn)
 	}
 }
 
-Cmiss_glyph_axes::~Cmiss_glyph_axes()
+cmzn_glyph_axes::~cmzn_glyph_axes()
 {
 	if (graphicsObject)
 	{
 		DEACCESS(GT_object)(&graphicsObject);
 	}
-	Cmiss_glyph_destroy(&axisGlyph);
+	cmzn_glyph_destroy(&axisGlyph);
 	for (int i = 0; i < 3; ++i)
 	{
 		if (axisLabels[i])
 		{
 			DEALLOCATE(axisLabels[i]);
 		}
-		Cmiss_graphics_material_destroy(&axisMaterials[i]);
+		cmzn_graphics_material_destroy(&axisMaterials[i]);
 	}
 }
 
-void Cmiss_glyph_axes::invalidate()
+void cmzn_glyph_axes::invalidate()
 {
 	if (this->graphicsObject)
 	{
@@ -89,8 +89,8 @@ namespace {
  * @param primaryAxis  0, 1 or 2.
  */
 GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
-	double axisWidth, const char *name, Cmiss_graphics_material *material, Cmiss_font *font,
-	int axisLabelsCount, char **axisLabels, enum Cmiss_glyph_repeat_mode repeat_mode)
+	double axisWidth, const char *name, cmzn_graphics_material *material, cmzn_font *font,
+	int axisLabelsCount, char **axisLabels, enum cmzn_glyph_repeat_mode repeat_mode)
 {
 	Triple *point_list, *axis1_list, *axis2_list, *axis3_list, *scale_list;
 	ALLOCATE(point_list, Triple, 1);
@@ -137,8 +137,8 @@ GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
 
 } // namespace
 
-GT_object *Cmiss_glyph_axes::getGraphicsObject(Cmiss_tessellation *tessellation,
-	Cmiss_graphics_material *material, Cmiss_font *font)
+GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
+	cmzn_graphics_material *material, cmzn_font *font)
 {
 	USE_PARAMETER(tessellation);
 	GT_object *axis_gt_object = this->axisGlyph->getGraphicsObject(tessellation, material, font);
@@ -157,7 +157,7 @@ GT_object *Cmiss_glyph_axes::getGraphicsObject(Cmiss_tessellation *tessellation,
 			GT_object *thisObject = this->graphicsObject;
 			for (int i = 0; i < 3; ++i)
 			{
-				Cmiss_graphics_material *useMaterial = this->axisMaterials[i] ? this->axisMaterials[i] : material;
+				cmzn_graphics_material *useMaterial = this->axisMaterials[i] ? this->axisMaterials[i] : material;
 				if (get_GT_object_default_material(thisObject) != useMaterial)
 				{
 					DEACCESS(GT_object)(&this->graphicsObject);
@@ -192,7 +192,7 @@ GT_object *Cmiss_glyph_axes::getGraphicsObject(Cmiss_tessellation *tessellation,
 		else
 		{
 			this->graphicsObject = createAxisGraphicsObject(/*primaryAxis*/0, axis_gt_object, this->axisWidth,
-				this->name, static_cast<Cmiss_graphics_material_id>(0),
+				this->name, static_cast<cmzn_graphics_material_id>(0),
 				font, 3, this->axisLabels, CMISS_GLYPH_REPEAT_AXES_3D);
 		}
 	}
@@ -200,7 +200,7 @@ GT_object *Cmiss_glyph_axes::getGraphicsObject(Cmiss_tessellation *tessellation,
 	return ACCESS(GT_object)(this->graphicsObject);
 }
 
-int Cmiss_glyph_axes::setAxisWidth(double axisWidthIn)
+int cmzn_glyph_axes::setAxisWidth(double axisWidthIn)
 {
 	if (axisWidthIn >= 0.0)
 	{
@@ -214,7 +214,7 @@ int Cmiss_glyph_axes::setAxisWidth(double axisWidthIn)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-char *Cmiss_glyph_axes::getAxisLabel(int axisNumber)
+char *cmzn_glyph_axes::getAxisLabel(int axisNumber)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3))
 	{
@@ -224,7 +224,7 @@ char *Cmiss_glyph_axes::getAxisLabel(int axisNumber)
 	return 0;
 }
 
-int Cmiss_glyph_axes::setAxisLabel(int axisNumber, const char *label)
+int cmzn_glyph_axes::setAxisLabel(int axisNumber, const char *label)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3))
 	{
@@ -243,16 +243,16 @@ int Cmiss_glyph_axes::setAxisLabel(int axisNumber, const char *label)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphics_material *Cmiss_glyph_axes::getAxisMaterial(int axisNumber)
+cmzn_graphics_material *cmzn_glyph_axes::getAxisMaterial(int axisNumber)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3) && (this->axisMaterials[axisNumber - 1]))
 	{
-		return Cmiss_graphics_material_access(this->axisMaterials[axisNumber - 1]);
+		return cmzn_graphics_material_access(this->axisMaterials[axisNumber - 1]);
 	}
 	return 0;
 }
 
-int Cmiss_glyph_axes::setAxisMaterial(int axisNumber, Cmiss_graphics_material *material)
+int cmzn_glyph_axes::setAxisMaterial(int axisNumber, cmzn_graphics_material *material)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3))
 	{
@@ -266,7 +266,7 @@ int Cmiss_glyph_axes::setAxisMaterial(int axisNumber, Cmiss_graphics_material *m
 	return CMISS_ERROR_ARGUMENT;
 }
 
-void Cmiss_glyph_axes::fontChange()
+void cmzn_glyph_axes::fontChange()
 {
 	if (this->usesFont())
 	{
@@ -274,7 +274,7 @@ void Cmiss_glyph_axes::fontChange()
 	}
 }
 
-void Cmiss_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+void cmzn_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
 {
 	for (int i = 0; i < 3; ++i)
 	{
@@ -290,13 +290,13 @@ void Cmiss_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material)
 	}
 }
 
-Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(
-	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id axis_glyph,
+cmzn_glyph_axes_id cmzn_glyph_module_create_axes(
+	cmzn_glyph_module_id glyph_module, cmzn_glyph_id axis_glyph,
 	double axis_width)
 {
 	if (glyph_module)
 	{
-		Cmiss_glyph_axes_id axes = Cmiss_glyph_axes::create(axis_glyph, axis_width);
+		cmzn_glyph_axes_id axes = cmzn_glyph_axes::create(axis_glyph, axis_width);
 		if (axes)
 		{
 			glyph_module->addGlyph(axes);
@@ -306,29 +306,29 @@ Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(
 	return 0;
 }
 
-Cmiss_glyph_axes_id Cmiss_glyph_cast_axes(Cmiss_glyph_id glyph)
+cmzn_glyph_axes_id cmzn_glyph_cast_axes(cmzn_glyph_id glyph)
 {
-	if (glyph && (dynamic_cast<Cmiss_glyph_axes*>(glyph)))
+	if (glyph && (dynamic_cast<cmzn_glyph_axes*>(glyph)))
 	{
 		glyph->access();
-		return (reinterpret_cast<Cmiss_glyph_axes_id>(glyph));
+		return (reinterpret_cast<cmzn_glyph_axes_id>(glyph));
 	}
 	return 0;
 }
 
-int Cmiss_glyph_axes_destroy(Cmiss_glyph_axes_id *axes_address)
+int cmzn_glyph_axes_destroy(cmzn_glyph_axes_id *axes_address)
 {
-	return Cmiss_glyph_destroy(reinterpret_cast<Cmiss_glyph_id *>(axes_address));
+	return cmzn_glyph_destroy(reinterpret_cast<cmzn_glyph_id *>(axes_address));
 }
 
-double Cmiss_glyph_axes_get_axis_width(Cmiss_glyph_axes_id axes)
+double cmzn_glyph_axes_get_axis_width(cmzn_glyph_axes_id axes)
 {
 	if (axes)
 		return axes->getAxisWidth();
 	return 0.0;
 }
 
-int Cmiss_glyph_axes_set_axis_width(Cmiss_glyph_axes_id axes,
+int cmzn_glyph_axes_set_axis_width(cmzn_glyph_axes_id axes,
 	double axis_width)
 {
 	if (axes)
@@ -336,14 +336,14 @@ int Cmiss_glyph_axes_set_axis_width(Cmiss_glyph_axes_id axes,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-char *Cmiss_glyph_axes_get_axis_label(Cmiss_glyph_axes_id axes, int axis_number)
+char *cmzn_glyph_axes_get_axis_label(cmzn_glyph_axes_id axes, int axis_number)
 {
 	if (axes)
 		return axes->getAxisLabel(axis_number);
 	return 0;
 }
 
-int Cmiss_glyph_axes_set_axis_label(Cmiss_glyph_axes_id axes,
+int cmzn_glyph_axes_set_axis_label(cmzn_glyph_axes_id axes,
 	int axis_number, const char *label)
 {
 	if (axes)
@@ -351,16 +351,16 @@ int Cmiss_glyph_axes_set_axis_label(Cmiss_glyph_axes_id axes,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphics_material_id Cmiss_glyph_axes_get_axis_material(
-	Cmiss_glyph_axes_id axes, int axis_number)
+cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
+	cmzn_glyph_axes_id axes, int axis_number)
 {
 	if (axes)
 		return axes->getAxisMaterial(axis_number);
 	return 0;
 }
 
-int Cmiss_glyph_axes_set_axis_material(Cmiss_glyph_axes_id axes,
-	int axis_number, Cmiss_graphics_material_id material)
+int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
+	int axis_number, cmzn_graphics_material_id material)
 {
 	if (axes)
 		return axes->setAxisMaterial(axis_number, material);

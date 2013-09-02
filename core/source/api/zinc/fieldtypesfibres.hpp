@@ -50,7 +50,7 @@ class FieldFibreAxes : public Field
 {
 private:
 	// takes ownership of C handle, and responsibility for destroying it
-	explicit FieldFibreAxes(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldFibreAxes(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField);
@@ -64,7 +64,7 @@ public:
 
 inline FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField)
 {
-	return FieldFibreAxes(Cmiss_field_module_create_fibre_axes(id,
+	return FieldFibreAxes(cmzn_field_module_create_fibre_axes(id,
 		fibreField.getId(), coordinateField.getId()));
 }
 

@@ -41,16 +41,16 @@
  * ***** END LICENSE BLOCK ***** */
 #include "computed_field/differential_operator.hpp"
 
-Cmiss_differential_operator_id Cmiss_differential_operator_access(
-	Cmiss_differential_operator_id differential_operator)
+cmzn_differential_operator_id cmzn_differential_operator_access(
+	cmzn_differential_operator_id differential_operator)
 {
 	return differential_operator->access();
 }
 
-int Cmiss_differential_operator_destroy(
-	Cmiss_differential_operator_id *differential_operator_address)
+int cmzn_differential_operator_destroy(
+	cmzn_differential_operator_id *differential_operator_address)
 {
 	if (differential_operator_address)
-		return Cmiss_differential_operator::deaccess(*differential_operator_address);
+		return cmzn_differential_operator::deaccess(*differential_operator_address);
 	return 0;
 }

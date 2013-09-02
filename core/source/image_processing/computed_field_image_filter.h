@@ -68,9 +68,9 @@ namespace CMISS {
 class computed_field_image_filter_Functor
 {
 public:
-   virtual int set_filter(Cmiss_field_cache& cache) = 0;
+   virtual int set_filter(cmzn_field_cache& cache) = 0;
 
-	virtual int update_and_evaluate_filter(Cmiss_field_cache& cache, RealFieldValueCache& valueCache) = 0;
+	virtual int update_and_evaluate_filter(cmzn_field_cache& cache, RealFieldValueCache& valueCache) = 0;
 
 	virtual ~computed_field_image_filter_Functor()
 	{
@@ -147,7 +147,7 @@ public:
 	template < class PixelType >
 	inline void setPixelValues( PixelType& pixel, ZnReal *values );
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 protected:
 
@@ -181,18 +181,18 @@ protected:
 
 public:
 	template <class ImageType >
-	int create_input_image(Cmiss_field_cache& cache,
+	int create_input_image(cmzn_field_cache& cache,
 		typename ImageType::Pointer &inputImage,
 		ImageType *dummytemplarg1);
 
 	template <class ImageType, class FilterType >
-	int update_output_image(Cmiss_field_cache& cache,
+	int update_output_image(cmzn_field_cache& cache,
 		typename FilterType::Pointer filter,
 		typename ImageType::Pointer &outputImage,
 		ImageType *dummytemplarg1, FilterType *dummytemplarg2);
 
 	template <class ImageType >
-	int evaluate_output_image(Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
+	int evaluate_output_image(cmzn_field_cache& cache, RealFieldValueCache& valueCache,
 		typename ImageType::Pointer &outputImage, ImageType *dummytemplarg);
 
 };
@@ -838,7 +838,7 @@ inline void computed_field_image_filter::assign_field_values( RealFieldValueCach
 
 template <class ImageType >
 int computed_field_image_filter::evaluate_output_image(
-	Cmiss_field_cache& cache, RealFieldValueCache& valueCache,
+	cmzn_field_cache& cache, RealFieldValueCache& valueCache,
 	typename ImageType::Pointer &outputImage, ImageType * /*dummytemplarg*/)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
@@ -907,7 +907,7 @@ public:
 		outputImage = NULL;
 	}
 
-	int update_and_evaluate_filter(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+	int update_and_evaluate_filter(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -979,7 +979,7 @@ inline void computed_field_image_filter::setPixelValues( itk::Vector< ZnReal, 4 
 }
 
 template <class ImageType >
-int computed_field_image_filter::create_input_image(Cmiss_field_cache& cache,
+int computed_field_image_filter::create_input_image(cmzn_field_cache& cache,
 	typename ImageType::Pointer &inputImage,
 	ImageType * /*dummytemplarg1*/)
 /*******************************************************************************
@@ -1007,7 +1007,7 @@ for subsequent operations.
 				dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
 		{
 			return_code = 1;
-			Cmiss_field_id sourceField = getSourceField(0);
+			cmzn_field_id sourceField = getSourceField(0);
 			// If the input contains an ImageFilter of the correct type then use that as
 			// the input field
 			if ((input_field_image_filter = dynamic_cast<computed_field_image_filter *>
@@ -1053,8 +1053,8 @@ for subsequent operations.
 				}
 
 				// work with a private field cache to avoid stomping current location
-				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
-				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+				cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+				cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
 				field_cache->setTime(cache.getTime());
 				if(element_xi_location)
 				{
@@ -1119,8 +1119,8 @@ for subsequent operations.
 						}
 					}
 				}
-				Cmiss_field_cache_destroy(&field_cache);
-				Cmiss_field_module_destroy(&field_module);
+				cmzn_field_cache_destroy(&field_cache);
+				cmzn_field_module_destroy(&field_module);
 #if defined (NEW_CODE)
 				typedef itk::ImportImageFilter<
 				   typename ImageType::PixelType, ImageType::ImageDimension >
@@ -1274,7 +1274,7 @@ for subsequent operations.
 } /* computed_field_image_filter::create_input_image */
 
 template <class ImageType, class FilterType >
-int computed_field_image_filter::update_output_image(Cmiss_field_cache& cache,
+int computed_field_image_filter::update_output_image(cmzn_field_cache& cache,
 	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
 	ImageType * dummytemplarg1, FilterType * /*dummytemplarg2*/)
 /*******************************************************************************

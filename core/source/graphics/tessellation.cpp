@@ -56,48 +56,48 @@ Module types
 */
 
 /* forward declaration */
-struct Cmiss_tessellation *Cmiss_tessellation_create_private();
+struct cmzn_tessellation *cmzn_tessellation_create_private();
 
-struct Cmiss_tessellation_module
+struct cmzn_tessellation_module
 {
 
 private:
 
-	struct MANAGER(Cmiss_tessellation) *tessellationManager;
-	Cmiss_tessellation *defaultTessellation;
-	Cmiss_tessellation *defaultPointsTessellation;
+	struct MANAGER(cmzn_tessellation) *tessellationManager;
+	cmzn_tessellation *defaultTessellation;
+	cmzn_tessellation *defaultPointsTessellation;
 	int access_count;
 
-	Cmiss_tessellation_module() :
-		tessellationManager(CREATE(MANAGER(Cmiss_tessellation))()),
+	cmzn_tessellation_module() :
+		tessellationManager(CREATE(MANAGER(cmzn_tessellation))()),
 		defaultTessellation(0),
 		defaultPointsTessellation(0),
 		access_count(1)
 	{
 	}
 
-	~Cmiss_tessellation_module()
+	~cmzn_tessellation_module()
 	{
-		Cmiss_tessellation_destroy(&this->defaultTessellation);
-		Cmiss_tessellation_destroy(&this->defaultPointsTessellation);
-		DESTROY(MANAGER(Cmiss_tessellation))(&(this->tessellationManager));
+		cmzn_tessellation_destroy(&this->defaultTessellation);
+		cmzn_tessellation_destroy(&this->defaultPointsTessellation);
+		DESTROY(MANAGER(cmzn_tessellation))(&(this->tessellationManager));
 	}
 
 public:
 
-	static Cmiss_tessellation_module *create()
+	static cmzn_tessellation_module *create()
 	{
-		return new Cmiss_tessellation_module();
+		return new cmzn_tessellation_module();
 	}
 
-	Cmiss_tessellation_module *access()
+	cmzn_tessellation_module *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_tessellation_module* &tessellation_module)
+	static int deaccess(cmzn_tessellation_module* &tessellation_module)
 	{
 		if (tessellation_module)
 		{
@@ -112,110 +112,110 @@ public:
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	struct MANAGER(Cmiss_tessellation) *getManager()
+	struct MANAGER(cmzn_tessellation) *getManager()
 	{
 		return this->tessellationManager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(Cmiss_tessellation)(this->tessellationManager);
+		return MANAGER_BEGIN_CACHE(cmzn_tessellation)(this->tessellationManager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(Cmiss_tessellation)(this->tessellationManager);
+		return MANAGER_END_CACHE(cmzn_tessellation)(this->tessellationManager);
 	}
 
-	Cmiss_tessellation_id createTessellation()
+	cmzn_tessellation_id createTessellation()
 	{
-		Cmiss_tessellation_id tessellation = NULL;
+		cmzn_tessellation_id tessellation = NULL;
 		char temp_name[20];
-		int i = NUMBER_IN_MANAGER(Cmiss_tessellation)(this->tessellationManager);
+		int i = NUMBER_IN_MANAGER(cmzn_tessellation)(this->tessellationManager);
 		do
 		{
 			i++;
 			sprintf(temp_name, "temp%d",i);
 		}
-		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(temp_name,
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_tessellation,name)(temp_name,
 			this->tessellationManager));
-		tessellation = Cmiss_tessellation_create_private();
-		Cmiss_tessellation_set_name(tessellation, temp_name);
-		if (!ADD_OBJECT_TO_MANAGER(Cmiss_tessellation)(tessellation, this->tessellationManager))
+		tessellation = cmzn_tessellation_create_private();
+		cmzn_tessellation_set_name(tessellation, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(cmzn_tessellation)(tessellation, this->tessellationManager))
 		{
-			DEACCESS(Cmiss_tessellation)(&tessellation);
+			DEACCESS(cmzn_tessellation)(&tessellation);
 		}
 		return tessellation;
 	}
 
-	Cmiss_tessellation *findTessellationByName(const char *name)
+	cmzn_tessellation *findTessellationByName(const char *name)
 	{
-		Cmiss_tessellation *tessellation = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(name,
+		cmzn_tessellation *tessellation = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_tessellation,name)(name,
 			this->tessellationManager);
 		if (tessellation)
 		{
-			return ACCESS(Cmiss_tessellation)(tessellation);
+			return ACCESS(cmzn_tessellation)(tessellation);
 		}
 		return 0;
 	}
 
-	Cmiss_tessellation *getDefaultTessellation()
+	cmzn_tessellation *getDefaultTessellation()
 	{
 		if (this->defaultTessellation)
 		{
-			ACCESS(Cmiss_tessellation)(this->defaultTessellation);
+			ACCESS(cmzn_tessellation)(this->defaultTessellation);
 		}
 		else
 		{
 			this->beginChange();
-			Cmiss_tessellation *tessellation = createTessellation();
-			Cmiss_tessellation_set_name(tessellation, "default");
+			cmzn_tessellation *tessellation = createTessellation();
+			cmzn_tessellation_set_name(tessellation, "default");
 			const int default_minimum_divisions = 1;
-			Cmiss_tessellation_set_minimum_divisions(tessellation,
+			cmzn_tessellation_set_minimum_divisions(tessellation,
 				/*dimensions*/1, &default_minimum_divisions);
 			const int default_refinement_factor = 4;
-			Cmiss_tessellation_set_refinement_factors(tessellation,
+			cmzn_tessellation_set_refinement_factors(tessellation,
 				/*dimensions*/1, &default_refinement_factor);
-			Cmiss_tessellation_set_circle_divisions(tessellation, 12);
+			cmzn_tessellation_set_circle_divisions(tessellation, 12);
 			this->setDefaultTessellation(tessellation);
 			this->endChange();
 		}
 		return this->defaultTessellation;
 	}
 
-	int setDefaultTessellation(Cmiss_tessellation *tessellation)
+	int setDefaultTessellation(cmzn_tessellation *tessellation)
 	{
-		REACCESS(Cmiss_tessellation)(&this->defaultTessellation, tessellation);
+		REACCESS(cmzn_tessellation)(&this->defaultTessellation, tessellation);
 		return CMISS_OK;
 	}
 
-	Cmiss_tessellation *getDefaultPointsTessellation()
+	cmzn_tessellation *getDefaultPointsTessellation()
 	{
 		if (this->defaultPointsTessellation)
 		{
-			ACCESS(Cmiss_tessellation)(this->defaultPointsTessellation);
+			ACCESS(cmzn_tessellation)(this->defaultPointsTessellation);
 		}
 		else
 		{
 			this->beginChange();
-			Cmiss_tessellation *tessellation = createTessellation();
-			Cmiss_tessellation_set_name(tessellation, "default_points");
+			cmzn_tessellation *tessellation = createTessellation();
+			cmzn_tessellation_set_name(tessellation, "default_points");
 			const int default_minimum_divisions = 1;
-			Cmiss_tessellation_set_minimum_divisions(tessellation,
+			cmzn_tessellation_set_minimum_divisions(tessellation,
 				/*dimensions*/1, &default_minimum_divisions);
 			const int default_refinement_factor = 1;
-			Cmiss_tessellation_set_refinement_factors(tessellation,
+			cmzn_tessellation_set_refinement_factors(tessellation,
 				/*dimensions*/1, &default_refinement_factor);
-			Cmiss_tessellation_set_circle_divisions(tessellation, 12);
+			cmzn_tessellation_set_circle_divisions(tessellation, 12);
 			this->setDefaultPointsTessellation(tessellation);
 			this->endChange();
 		}
 		return this->defaultPointsTessellation;
 	}
 
-	int setDefaultPointsTessellation(Cmiss_tessellation *tessellation)
+	int setDefaultPointsTessellation(cmzn_tessellation *tessellation)
 	{
-		REACCESS(Cmiss_tessellation)(&this->defaultPointsTessellation, tessellation);
+		REACCESS(cmzn_tessellation)(&this->defaultPointsTessellation, tessellation);
 		return CMISS_OK;
 	}
 
@@ -238,27 +238,27 @@ void list_divisions(int size, int *divisions)
  * Object describing how elements / continuous field domains are tessellated
  * or sampled into graphics.
  */
-struct Cmiss_tessellation
+struct cmzn_tessellation
 {
 	const char *name;
 	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Cmiss_tessellation) *manager;
+	struct MANAGER(cmzn_tessellation) *manager;
 	int manager_change_status;
 	int circleDivisions;
 	int minimum_divisions_size;
 	int *minimum_divisions;
 	int refinement_factors_size;
 	int *refinement_factors;
-	Cmiss_tessellation_change_detail changeDetail;
+	cmzn_tessellation_change_detail changeDetail;
 	bool is_managed_flag;
 	int access_count;
 
 protected:
 
-	Cmiss_tessellation() :
+	cmzn_tessellation() :
 		name(NULL),
 		manager(NULL),
-		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_tessellation)),
+		manager_change_status(MANAGER_CHANGE_NONE(cmzn_tessellation)),
 		circleDivisions(12),
 		minimum_divisions_size(1),
 		minimum_divisions(NULL),
@@ -273,7 +273,7 @@ protected:
 		refinement_factors[0] = 1;
 	}
 
-	~Cmiss_tessellation()
+	~cmzn_tessellation()
 	{
 		if (name)
 		{
@@ -292,12 +292,12 @@ protected:
 public:
 
 	/** must construct on the heap with this function */
-	static Cmiss_tessellation *create()
+	static cmzn_tessellation *create()
 	{
-		return new Cmiss_tessellation();
+		return new cmzn_tessellation();
 	}
 
-	Cmiss_tessellation& operator=(const Cmiss_tessellation& source)
+	cmzn_tessellation& operator=(const cmzn_tessellation& source)
 	{
 		this->set_minimum_divisions(source.minimum_divisions_size, source.minimum_divisions);
 		this->set_refinement_factors(source.refinement_factors_size, source.refinement_factors);
@@ -305,9 +305,9 @@ public:
 		return *this;
 	}
 
-	Cmiss_tessellation_change_detail *extractChangeDetail()
+	cmzn_tessellation_change_detail *extractChangeDetail()
 	{
-		Cmiss_tessellation_change_detail *change_detail = new Cmiss_tessellation_change_detail(this->changeDetail);
+		cmzn_tessellation_change_detail *change_detail = new cmzn_tessellation_change_detail(this->changeDetail);
 		this->changeDetail.clear();
 		return change_detail;
 	}
@@ -324,8 +324,8 @@ public:
 		{
 			this->circleDivisions = useCircleDivisions;
 			this->changeDetail.setCircleDivisionsChanged();
-			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_tessellation));
 		}
 		return (inCircleDivisions == this->circleDivisions) ? CMISS_OK : CMISS_ERROR_ARGUMENT;
 	}
@@ -385,8 +385,8 @@ public:
 			minimum_divisions[i] = in_minimum_divisions[i];
 		}
 		this->changeDetail.setElementDivisionsChanged();
-		MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+		MANAGED_OBJECT_CHANGE(cmzn_tessellation)(this,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_tessellation));
 		return 1;
 	}
 
@@ -417,8 +417,8 @@ public:
 			refinement_factors[i] =  in_refinement_factors[i];
 		}
 		this->changeDetail.setElementDivisionsChanged();
-		MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(this,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+		MANAGED_OBJECT_CHANGE(cmzn_tessellation)(this,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_tessellation));
 		return 1;
 	}
 
@@ -445,17 +445,17 @@ public:
 		display_message(INFORMATION_MESSAGE, "\" circle_divisions %d;\n", circleDivisions);
 	}
 
-	inline Cmiss_tessellation *access()
+	inline cmzn_tessellation *access()
 	{
 		++access_count;
 		return this;
 	}
 
 	/** deaccess handling is_managed_flag */
-	static inline int deaccess(Cmiss_tessellation **object_address)
+	static inline int deaccess(cmzn_tessellation **object_address)
 	{
 		int return_code = 1;
-		Cmiss_tessellation *object;
+		cmzn_tessellation *object;
 		if (object_address && (object = *object_address))
 		{
 			(object->access_count)--;
@@ -466,11 +466,11 @@ public:
 			}
 			else if ((!object->is_managed_flag) && (object->manager) &&
 				((1 == object->access_count) || ((2 == object->access_count) &&
-					(MANAGER_CHANGE_NONE(Cmiss_tessellation) != object->manager_change_status))))
+					(MANAGER_CHANGE_NONE(cmzn_tessellation) != object->manager_change_status))))
 			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(Cmiss_tessellation)(object, object->manager);
+				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_tessellation)(object, object->manager);
 			}
-			*object_address = static_cast<Cmiss_tessellation *>(0);
+			*object_address = static_cast<cmzn_tessellation *>(0);
 		}
 		else
 		{
@@ -479,43 +479,43 @@ public:
 		return (return_code);
 	}
 
-}; /* struct Cmiss_tessellation */
+}; /* struct cmzn_tessellation */
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
-class Cmiss_tessellation_identifier : private Cmiss_tessellation
+class cmzn_tessellation_identifier : private cmzn_tessellation
 {
 public:
-	Cmiss_tessellation_identifier(const char *name)
+	cmzn_tessellation_identifier(const char *name)
 	{
-		Cmiss_tessellation::name = name;
+		cmzn_tessellation::name = name;
 	}
 
-	~Cmiss_tessellation_identifier()
+	~cmzn_tessellation_identifier()
 	{
-		Cmiss_tessellation::name = NULL;
+		cmzn_tessellation::name = NULL;
 	}
 
-	Cmiss_tessellation *getPseudoObject()
+	cmzn_tessellation *getPseudoObject()
 	{
 		return this;
 	}
 };
 
-/** functor for ordering Cmiss_set<Cmiss_tessellation> by name */
-struct Cmiss_tessellation_compare_name
+/** functor for ordering cmzn_set<cmzn_tessellation> by name */
+struct cmzn_tessellation_compare_name
 {
-	bool operator() (const Cmiss_tessellation* tessellation1, const Cmiss_tessellation* tessellation2) const
+	bool operator() (const cmzn_tessellation* tessellation1, const cmzn_tessellation* tessellation2) const
 	{
 		return strcmp(tessellation1->name, tessellation2->name) < 0;
 	}
 };
 
-typedef Cmiss_set<Cmiss_tessellation *,Cmiss_tessellation_compare_name> Cmiss_set_Cmiss_tessellation;
+typedef cmzn_set<cmzn_tessellation *,cmzn_tessellation_compare_name> cmzn_set_cmzn_tessellation;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_tessellation_module, Cmiss_tessellation_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_tessellation, cmzn_tessellation_module, cmzn_tessellation_change_detail *);
 
 /*
 Module functions
@@ -524,25 +524,25 @@ Module functions
 
 namespace {
 
-DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(Cmiss_tessellation)
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_tessellation)
 
-static inline Cmiss_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Cmiss_tessellation)(
-	struct Cmiss_tessellation *tessellation)
+static inline cmzn_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_tessellation)(
+	struct cmzn_tessellation *tessellation)
 {
 	return tessellation->extractChangeDetail();
 }
 
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Cmiss_tessellation)(
-	Cmiss_tessellation_change_detail **change_detail_address)
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_tessellation)(
+	cmzn_tessellation_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
 }
 
-DECLARE_MANAGER_UPDATE_FUNCTION(Cmiss_tessellation)
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_tessellation)
 
-DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Cmiss_tessellation)
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_tessellation)
 
-DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Cmiss_tessellation)
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_tessellation)
 
 } /* anonymous namespace */
 
@@ -551,19 +551,19 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 {
 	if (object)
 		return object->access();
 	return 0;
 }
 
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 {
-	return Cmiss_tessellation::deaccess(object_address);
+	return cmzn_tessellation::deaccess(object_address);
 }
 
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 {
 	if (object_address)
 	{
@@ -573,7 +573,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 		}
 		if (*object_address)
 		{
-			Cmiss_tessellation::deaccess(object_address);
+			cmzn_tessellation::deaccess(object_address);
 		}
 		*object_address = new_object;
 		return 1;
@@ -581,30 +581,30 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 	return 0;
 }
 
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_tessellation)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_tessellation)
 
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(Cmiss_tessellation)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Cmiss_tessellation,name,const char *)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_tessellation)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_tessellation,name,const char *)
 
-DECLARE_MANAGER_FUNCTIONS(Cmiss_tessellation,manager)
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_tessellation,manager)
-DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_tessellation,name,const char *,manager)
-DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_tessellation, struct Cmiss_tessellation_module)
+DECLARE_MANAGER_FUNCTIONS(cmzn_tessellation,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_tessellation,manager)
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_tessellation,name,const char *,manager)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_tessellation, struct cmzn_tessellation_module)
 
-int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellation) *manager,
-	struct Cmiss_tessellation_module *tessellation_module)
+int cmzn_tessellation_manager_set_owner_private(struct MANAGER(cmzn_tessellation) *manager,
+	struct cmzn_tessellation_module *tessellation_module)
 {
-	return MANAGER_SET_OWNER(Cmiss_tessellation)(manager, tessellation_module);
+	return MANAGER_SET_OWNER(cmzn_tessellation)(manager, tessellation_module);
 }
 
-int Cmiss_tessellation_manager_message_get_object_change_and_detail(
-	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, Cmiss_tessellation *tessellation,
-	const Cmiss_tessellation_change_detail **change_detail_address)
+int cmzn_tessellation_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *message, cmzn_tessellation *tessellation,
+	const cmzn_tessellation_change_detail **change_detail_address)
 {
 	if (message && tessellation && change_detail_address)
 	{
 		int i;
-		struct MANAGER_MESSAGE_OBJECT_CHANGE(Cmiss_tessellation) *object_change;
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(cmzn_tessellation) *object_change;
 
 		object_change = message->object_changes;
 		for (i = message->number_of_changed_objects; 0 < i; i--)
@@ -621,119 +621,119 @@ int Cmiss_tessellation_manager_message_get_object_change_and_detail(
 	{
 		*change_detail_address = 0;
 	}
-	return (MANAGER_CHANGE_NONE(Cmiss_tessellation));
+	return (MANAGER_CHANGE_NONE(cmzn_tessellation));
 }
 
-Cmiss_tessellation_module_id Cmiss_tessellation_module_create()
+cmzn_tessellation_module_id cmzn_tessellation_module_create()
 {
-	return Cmiss_tessellation_module::create();
+	return cmzn_tessellation_module::create();
 }
 
-Cmiss_tessellation_module_id Cmiss_tessellation_module_access(
-	Cmiss_tessellation_module_id tessellation_module)
+cmzn_tessellation_module_id cmzn_tessellation_module_access(
+	cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->access();
 	return 0;
 }
 
-int Cmiss_tessellation_module_destroy(Cmiss_tessellation_module_id *tessellation_module_address)
+int cmzn_tessellation_module_destroy(cmzn_tessellation_module_id *tessellation_module_address)
 {
 	if (tessellation_module_address)
-		return Cmiss_tessellation_module::deaccess(*tessellation_module_address);
+		return cmzn_tessellation_module::deaccess(*tessellation_module_address);
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_module_create_tessellation(
-	Cmiss_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellation_module_create_tessellation(
+	cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->createTessellation();
 	return 0;
 }
 
-struct MANAGER(Cmiss_tessellation) *Cmiss_tessellation_module_get_manager(
-	Cmiss_tessellation_module_id tessellation_module)
+struct MANAGER(cmzn_tessellation) *cmzn_tessellation_module_get_manager(
+	cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->getManager();
 	return 0;
 }
 
-int Cmiss_tessellation_module_begin_change(Cmiss_tessellation_module_id tessellation_module)
+int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->beginChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_tessellation_module_end_change(Cmiss_tessellation_module_id tessellation_module)
+int cmzn_tessellation_module_end_change(cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->endChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_module_find_tessellation_by_name(
-	Cmiss_tessellation_module_id tessellation_module, const char *name)
+cmzn_tessellation_id cmzn_tessellation_module_find_tessellation_by_name(
+	cmzn_tessellation_module_id tessellation_module, const char *name)
 {
 	if (tessellation_module)
 		return tessellation_module->findTessellationByName(name);
    return 0;
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_module_get_default_tessellation(
-	Cmiss_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellation_module_get_default_tessellation(
+	cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->getDefaultTessellation();
 	return 0;
 }
 
-int Cmiss_tessellation_module_set_default_tessellation(
-	Cmiss_tessellation_module_id tessellation_module,
-	Cmiss_tessellation_id tessellation)
+int cmzn_tessellation_module_set_default_tessellation(
+	cmzn_tessellation_module_id tessellation_module,
+	cmzn_tessellation_id tessellation)
 {
 	if (tessellation_module)
 		return tessellation_module->setDefaultTessellation(tessellation);
 	return 0;
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_module_get_default_points_tessellation(
-	Cmiss_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellation_module_get_default_points_tessellation(
+	cmzn_tessellation_module_id tessellation_module)
 {
 	if (tessellation_module)
 		return tessellation_module->getDefaultPointsTessellation();
 	return 0;
 }
 
-int Cmiss_tessellation_module_set_default_points_tessellation(
-	Cmiss_tessellation_module_id tessellation_module,
-	Cmiss_tessellation_id tessellation)
+int cmzn_tessellation_module_set_default_points_tessellation(
+	cmzn_tessellation_module_id tessellation_module,
+	cmzn_tessellation_id tessellation)
 {
 	if (tessellation_module)
 		return tessellation_module->setDefaultPointsTessellation(tessellation);
 	return 0;
 }
 
-struct Cmiss_tessellation *Cmiss_tessellation_create_private()
+struct cmzn_tessellation *cmzn_tessellation_create_private()
 {
-	return Cmiss_tessellation::create();
+	return cmzn_tessellation::create();
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellation)
+cmzn_tessellation_id cmzn_tessellation_access(cmzn_tessellation_id tessellation)
 {
 	if (tessellation)
-		return ACCESS(Cmiss_tessellation)(tessellation);
+		return ACCESS(cmzn_tessellation)(tessellation);
 	return 0;
 }
 
-int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
+int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_address)
 {
-	return DEACCESS(Cmiss_tessellation)(tessellation_address);
+	return DEACCESS(cmzn_tessellation)(tessellation_address);
 }
 
-bool Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation)
+bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation)
 {
 	if (tessellation)
 	{
@@ -742,7 +742,7 @@ bool Cmiss_tessellation_is_managed(Cmiss_tessellation_id tessellation)
 	return 0;
 }
 
-int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
+int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 	bool value)
 {
 	if (tessellation)
@@ -751,15 +751,15 @@ int Cmiss_tessellation_set_managed(Cmiss_tessellation_id tessellation,
 		tessellation->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-				MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation));
+			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(tessellation,
+				MANAGER_CHANGE_NOT_RESULT(cmzn_tessellation));
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
+char *cmzn_tessellation_get_name(struct cmzn_tessellation *tessellation)
 {
 	char *name = NULL;
 	if (tessellation && tessellation->name)
@@ -769,36 +769,36 @@ char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
 	return name;
 }
 
-int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const char *name)
+int cmzn_tessellation_set_name(struct cmzn_tessellation *tessellation, const char *name)
 {
 	int return_code;
 
-	ENTER(Cmiss_tessellation_set_name);
+	ENTER(cmzn_tessellation_set_name);
 	if (tessellation && is_standard_object_name(name))
 	{
 		return_code = 1;
-		Cmiss_set_Cmiss_tessellation *manager_tessellation_list = 0;
+		cmzn_set_cmzn_tessellation *manager_tessellation_list = 0;
 		bool restore_changed_object_to_lists = false;
 		if (tessellation->manager)
 		{
-			Cmiss_tessellation *existing_tessellation =
-				FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation, name)(name, tessellation->manager);
+			cmzn_tessellation *existing_tessellation =
+				FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_tessellation, name)(name, tessellation->manager);
 			if (existing_tessellation && (existing_tessellation != tessellation))
 			{
-				display_message(ERROR_MESSAGE, "Cmiss_tessellation_set_name.  "
+				display_message(ERROR_MESSAGE, "cmzn_tessellation_set_name.  "
 					"tessellation named '%s' already exists.", name);
 				return_code = 0;
 			}
 			if (return_code)
 			{
-				manager_tessellation_list = reinterpret_cast<Cmiss_set_Cmiss_tessellation *>(
+				manager_tessellation_list = reinterpret_cast<cmzn_set_cmzn_tessellation *>(
 					tessellation->manager->object_list);
 				// this temporarily removes the object from all related lists
 				restore_changed_object_to_lists =
 					manager_tessellation_list->begin_identifier_change(tessellation);
 				if (!restore_changed_object_to_lists)
 				{
-					display_message(ERROR_MESSAGE, "Cmiss_tessellation_set_name.  "
+					display_message(ERROR_MESSAGE, "cmzn_tessellation_set_name.  "
 						"Could not safely change identifier in manager");
 					return_code = 0;
 				}
@@ -823,8 +823,8 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const c
 		}
 		if (tessellation->manager && return_code)
 		{
-			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-				MANAGER_CHANGE_IDENTIFIER(Cmiss_tessellation));
+			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(tessellation,
+				MANAGER_CHANGE_IDENTIFIER(cmzn_tessellation));
 		}
 	}
 	else
@@ -832,7 +832,7 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const c
 		if (tessellation)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_tessellation_set_name.  Invalid tessellation name '%s'", name);
+				"cmzn_tessellation_set_name.  Invalid tessellation name '%s'", name);
 		}
 		return_code=0;
 	}
@@ -840,23 +840,23 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const c
 	return (return_code);
 }
 
-int Cmiss_tessellation_get_circle_divisions(
-	Cmiss_tessellation_id tessellation)
+int cmzn_tessellation_get_circle_divisions(
+	cmzn_tessellation_id tessellation)
 {
 	if (tessellation)
 		return tessellation->getCircleDivisions();
 	return 0;
 }
 
-int Cmiss_tessellation_set_circle_divisions(
-	Cmiss_tessellation_id tessellation, int circleDivisions)
+int cmzn_tessellation_set_circle_divisions(
+	cmzn_tessellation_id tessellation, int circleDivisions)
 {
 	if (tessellation)
 		return tessellation->setCircleDivisions(circleDivisions);
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
+int cmzn_tessellation_get_minimum_divisions(cmzn_tessellation_id tessellation,
 	int valuesCount, int *valuesOut)
 {
 	if (tessellation && ((valuesCount == 0) || ((valuesCount > 0) && valuesOut)))
@@ -870,7 +870,7 @@ int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
 	return 0;
 }
 
-int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
+int cmzn_tessellation_set_minimum_divisions(cmzn_tessellation_id tessellation,
 	int valuesCount, const int *valuesIn)
 {
 	if (tessellation && (valuesCount > 0) && valuesIn)
@@ -888,7 +888,7 @@ int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
+int cmzn_tessellation_get_refinement_factors(cmzn_tessellation_id tessellation,
 	int valuesCount, int *valuesOut)
 {
 	if (tessellation && ((valuesCount == 0) || ((valuesCount > 0) && valuesOut)))
@@ -902,7 +902,7 @@ int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation
 	return 0;
 }
 
-int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
+int cmzn_tessellation_set_refinement_factors(cmzn_tessellation_id tessellation,
 	int valuesCount, const int *valuesIn)
 {
 	if (tessellation && (valuesCount > 0) && valuesIn)
@@ -920,21 +920,21 @@ int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_tessellation_id Cmiss_tessellation_module_find_or_create_fixed_tessellation(
-	Cmiss_tessellation_module_id tessellationModule,
+cmzn_tessellation_id cmzn_tessellation_module_find_or_create_fixed_tessellation(
+	cmzn_tessellation_module_id tessellationModule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
-	Cmiss_tessellation_id defaultTessellation)
+	cmzn_tessellation_id defaultTessellation)
 {
-	Cmiss_tessellation_id tessellation = 0;
+	cmzn_tessellation_id tessellation = 0;
 	if (tessellationModule && ((0 == elementDivisionsCount) ||
 		((0 < elementDivisionsCount && elementDivisions))) && defaultTessellation)
 	{
-		Cmiss_set_Cmiss_tessellation *all_tessellations =
-			reinterpret_cast<Cmiss_set_Cmiss_tessellation *>(tessellationModule->getManager()->object_list);
-		for (Cmiss_set_Cmiss_tessellation::iterator iter = all_tessellations->begin();
+		cmzn_set_cmzn_tessellation *all_tessellations =
+			reinterpret_cast<cmzn_set_cmzn_tessellation *>(tessellationModule->getManager()->object_list);
+		for (cmzn_set_cmzn_tessellation::iterator iter = all_tessellations->begin();
 			iter != all_tessellations->end(); ++iter)
 		{
-			Cmiss_tessellation_id tempTessellation = *iter;
+			cmzn_tessellation_id tempTessellation = *iter;
 			bool match = (0 == circleDivisions) || (tempTessellation->circleDivisions == circleDivisions);
 			if (match && (0 < elementDivisionsCount))
 			{
@@ -1036,7 +1036,7 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 	return return_code;
 }
 
-int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, void *dummy_void)
+int list_cmzn_tessellation_iterator(struct cmzn_tessellation *tessellation, void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
 	if (tessellation)

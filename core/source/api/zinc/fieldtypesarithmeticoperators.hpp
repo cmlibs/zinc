@@ -50,7 +50,7 @@ class FieldAdd : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAdd(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldAdd(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldAdd FieldModule::createAdd(Field& sourceField1, Field& sourceField2);
@@ -72,7 +72,7 @@ class FieldPower : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldPower(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldPower(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldPower FieldModule::createPower(Field& sourceField1, Field& sourceField2);
@@ -88,7 +88,7 @@ class FieldMultiply : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMultiply(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldMultiply(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldMultiply FieldModule::createMultiply(Field& sourceField1, Field& sourceField2);
@@ -110,7 +110,7 @@ class FieldDivide : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDivide(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldDivide(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldDivide FieldModule::createDivide(Field& sourceField1, Field& sourceField2);
@@ -132,7 +132,7 @@ class FieldSubtract : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSubtract(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldSubtract(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldSubtract FieldModule::createSubtract(Field& sourceField1, Field& sourceField2);
@@ -154,7 +154,7 @@ class FieldLog : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldLog(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldLog(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldLog FieldModule::createLog(Field& sourceField);
@@ -176,7 +176,7 @@ class FieldSqrt : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSqrt(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldSqrt(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldSqrt FieldModule::createSqrt(Field& sourceField);
@@ -198,7 +198,7 @@ class FieldExp : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldExp(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldExp(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldExp FieldModule::createExp(Field& sourceField);
@@ -220,7 +220,7 @@ class FieldAbs : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAbs(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldAbs(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldAbs FieldModule::createAbs(Field& sourceField);
@@ -242,52 +242,52 @@ inline FieldAbs abs(Field& sourceField)
 
 inline FieldAdd FieldModule::createAdd(Field& sourceField1, Field& sourceField2)
 {
-	return FieldAdd(Cmiss_field_module_create_add(id,
+	return FieldAdd(cmzn_field_module_create_add(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldPower FieldModule::createPower(Field& sourceField1, Field& sourceField2)
 {
-	return FieldPower(Cmiss_field_module_create_power(id,
+	return FieldPower(cmzn_field_module_create_power(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldMultiply FieldModule::createMultiply(Field& sourceField1, Field& sourceField2)
 {
-	return FieldMultiply(Cmiss_field_module_create_multiply(id,
+	return FieldMultiply(cmzn_field_module_create_multiply(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldDivide FieldModule::createDivide(Field& sourceField1, Field& sourceField2)
 {
-	return FieldDivide(Cmiss_field_module_create_divide(id,
+	return FieldDivide(cmzn_field_module_create_divide(id,
 			sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldSubtract FieldModule::createSubtract(Field& sourceField1, Field& sourceField2)
 {
-	return FieldSubtract(Cmiss_field_module_create_subtract(id,
+	return FieldSubtract(cmzn_field_module_create_subtract(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldLog FieldModule::createLog(Field& sourceField)
 {
-	return FieldLog(Cmiss_field_module_create_log(id, sourceField.getId()));
+	return FieldLog(cmzn_field_module_create_log(id, sourceField.getId()));
 }
 
 inline FieldSqrt FieldModule::createSqrt(Field& sourceField)
 {
-	return FieldSqrt(Cmiss_field_module_create_sqrt(id, sourceField.getId()));
+	return FieldSqrt(cmzn_field_module_create_sqrt(id, sourceField.getId()));
 }
 
 inline FieldExp FieldModule::createExp(Field& sourceField)
 {
-	return FieldExp(Cmiss_field_module_create_exp(id, sourceField.getId()));
+	return FieldExp(cmzn_field_module_create_exp(id, sourceField.getId()));
 }
 
 inline FieldAbs FieldModule::createAbs(Field& sourceField)
 {
-	return FieldAbs(Cmiss_field_module_create_abs(id, sourceField.getId()));
+	return FieldAbs(cmzn_field_module_create_abs(id, sourceField.getId()));
 }
 
 }  // namespace zinc

@@ -366,7 +366,7 @@ Used for copy operations and as part of the DESTROY function.
 		DEACCESS(FE_field)(&curve->parameter_field);
 		DEACCESS(FE_field)(&curve->value_field);
 		DEACCESS(FE_region)(&curve->fe_region);
-		DEACCESS(Cmiss_region)(&curve->region);
+		DEACCESS(cmzn_region)(&curve->region);
 
 		DEALLOCATE(curve->min_value);
 		DEALLOCATE(curve->max_value);
@@ -413,8 +413,8 @@ but it is at least destroyable when returned from this function.
 			curve->value_nodes_per_element=0;
 			curve->value_derivatives_per_node=0;
 
-			curve->region=Cmiss_region_create_internal();
-			curve->fe_region=ACCESS(FE_region)(Cmiss_region_get_FE_region(curve->region));
+			curve->region=cmzn_region_create_internal();
+			curve->fe_region=ACCESS(FE_region)(cmzn_region_get_FE_region(curve->region));
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
@@ -4406,7 +4406,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 				return_code=0;
 			}
 			sprintf(file_name,"%s.curve.exregion",curve->name);
-			if (!write_exregion_file_of_name(file_name, curve->region, (Cmiss_field_group_id)0, /*root*/curve->region,
+			if (!write_exregion_file_of_name(file_name, curve->region, (cmzn_field_group_id)0, /*root*/curve->region,
 				/*write_elements*/CMISS_FIELD_DOMAIN_MESH_1D|CMISS_FIELD_DOMAIN_MESH_2D|
 				CMISS_FIELD_DOMAIN_MESH_3D|CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION,
 				/*write_nodes*/1, /*write_data*/0,
@@ -4451,7 +4451,7 @@ appropriateness to curve usage.
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components = 0,return_code = 0;
-	struct Cmiss_region *child_region;
+	struct cmzn_region *child_region;
 	struct Curve *curve;
 	struct FE_basis *fe_basis;
 	struct IO_stream *element_file,*node_file, *region_file;
@@ -4510,10 +4510,10 @@ appropriateness to curve usage.
 				if (return_code)
 				{
 					/* remove child groups */
-					while (NULL != (child_region = Cmiss_region_get_first_child(curve->region)))
+					while (NULL != (child_region = cmzn_region_get_first_child(curve->region)))
 					{
-						Cmiss_region_remove_child(curve->region, child_region);
-						Cmiss_region_destroy(&child_region);
+						cmzn_region_remove_child(curve->region, child_region);
+						cmzn_region_destroy(&child_region);
 					}
 					/* now check mesh is appropriate for a Curve */
 					curve->template_element = FE_region_get_first_FE_element_that(curve->fe_region,

@@ -58,10 +58,10 @@ DESCRIPTION :
 #include "time/time_keeper.hpp"
 
 
-struct Cmiss_graphics_module;
+struct cmzn_graphics_module;
 
 /***************************************************************************//**
- * Create Cmiss_scene_graphics_module
+ * Create cmzn_scene_graphics_module
  *
  * @param glyph_list  List of glyphs
  * @param graphical_material_manager  Material manager
@@ -69,9 +69,9 @@ struct Cmiss_graphics_module;
  * @param light_manager  Light Manager
  * @param spectrum_manager  Spectrum manager
  * @param default_spectrum  Default spectrum
- * @return  If successfully constructed, return the Cmiss_scene
+ * @return  If successfully constructed, return the cmzn_scene
  */
-struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
+struct cmzn_graphics_module *cmzn_graphics_module_create(struct Context *context);
 
 /***************************************************************************//**
  * Return the light module in graphics module.
@@ -80,8 +80,8 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *conte
  * @return  the light module in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct Light_module *Cmiss_graphics_module_get_light_module(
-	struct Cmiss_graphics_module *graphics_module);
+struct Light_module *cmzn_graphics_module_get_light_module(
+	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
  * Return the specrtrum manager in graphics module.
@@ -90,8 +90,8 @@ struct Light_module *Cmiss_graphics_module_get_light_module(
  * @return  the spectrum manager in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
-	struct Cmiss_graphics_module *graphics_module);
+struct MANAGER(Spectrum) *cmzn_graphics_module_get_spectrum_manager(
+	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
  * Return the default font in graphics module.
@@ -99,8 +99,8 @@ struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
  * @param graphics_module  Pointer to a Graphics_module object.
  * @return  the default font if successfully called, otherwise NULL.
  */
-struct Cmiss_font *Cmiss_graphics_module_get_default_font(
-	struct Cmiss_graphics_module *graphics_module);
+struct cmzn_font *cmzn_graphics_module_get_default_font(
+	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
  * Return the light model module in graphics module.
@@ -109,11 +109,11 @@ struct Cmiss_font *Cmiss_graphics_module_get_default_font(
  * @return  the light model module in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct Light_model_module *Cmiss_graphics_module_get_light_model_module(
-	struct Cmiss_graphics_module *graphics_module);
+struct Light_model_module *cmzn_graphics_module_get_light_model_module(
+	struct cmzn_graphics_module *graphics_module);
 
-struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
-	struct Cmiss_graphics_module *module);
+struct cmzn_time_keeper *cmzn_graphics_module_get_time_keeper_internal(
+	struct cmzn_graphics_module *module);
 
 /***************************************************************************//**
  * Add a region with a scene created by this graphics module object
@@ -124,8 +124,8 @@ struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
  * @param region  Pointer to a region.
  * @return  1 if successfully add region into a list, otherwise 0.
  */
-int Cmiss_graphics_module_add_member_region(
-	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
+int cmzn_graphics_module_add_member_region(
+	struct cmzn_graphics_module *graphics_module, struct cmzn_region *region);
 
 /***************************************************************************//**
  * Remove a region which scene is created by this graphics module object
@@ -135,8 +135,8 @@ int Cmiss_graphics_module_add_member_region(
  * @param region  Pointer to a region.
  * @return  1 if successfully remove region from a list, otherwise 0.
  */
-int Cmiss_graphics_module_remove_member_region(
-		struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
+int cmzn_graphics_module_remove_member_region(
+		struct cmzn_graphics_module *graphics_module, struct cmzn_region *region);
 
 /***************************************************************************//**
  * Return the manager of graphics_filter objects in graphics module.
@@ -145,17 +145,17 @@ int Cmiss_graphics_module_remove_member_region(
  * @return  the manager of graphics_filter in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
-		struct Cmiss_graphics_module *graphics_module);
+struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_module_get_filter_manager(
+		struct cmzn_graphics_module *graphics_module);
 
-struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
-	struct Cmiss_graphics_module *graphics_module);
+struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
+	struct cmzn_graphics_module *graphics_module);
 
 /**
  * this function will remove most of the callbacks in scenes belong to this
  * module. This function should only be called when context is being destroyed.
  */
-void Cmiss_graphics_module_remove_external_callback_dependency(
-	struct Cmiss_graphics_module *graphics_module);
+void cmzn_graphics_module_remove_external_callback_dependency(
+	struct cmzn_graphics_module *graphics_module);
 
 #endif /* !defined (GRAPHICS_MODULE_H) */

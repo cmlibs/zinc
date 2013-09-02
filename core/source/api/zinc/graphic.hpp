@@ -60,7 +60,7 @@ class Graphic
 {
 
 protected:
-	Cmiss_graphic_id id;
+	cmzn_graphic_id id;
 
 public:
 
@@ -68,18 +68,18 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Graphic(Cmiss_graphic_id graphic_id) : id(graphic_id)
+	explicit Graphic(cmzn_graphic_id graphic_id) : id(graphic_id)
 	{  }
 
-	Graphic(const Graphic& graphic) : id(Cmiss_graphic_access(graphic.id))
+	Graphic(const Graphic& graphic) : id(cmzn_graphic_access(graphic.id))
 	{  }
 
 	Graphic& operator=(const Graphic& graphic)
 	{
-		Cmiss_graphic_id temp_id = Cmiss_graphic_access(graphic.id);
+		cmzn_graphic_id temp_id = cmzn_graphic_access(graphic.id);
 		if (0 != id)
 		{
-			Cmiss_graphic_destroy(&id);
+			cmzn_graphic_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -89,7 +89,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphic_destroy(&id);
+			cmzn_graphic_destroy(&id);
 		}
 	}
 
@@ -124,100 +124,100 @@ public:
 		STREAMLINES = CMISS_GRAPHIC_STREAMLINES
 	};
 
-	Cmiss_graphic_id getId()
+	cmzn_graphic_id getId()
 	{
 		return id;
 	}
 
 	Field getCoordinateField()
 	{
-		return Field(Cmiss_graphic_get_coordinate_field(id));
+		return Field(cmzn_graphic_get_coordinate_field(id));
 	}
 
 	int setCoordinateField(Field& coordinateField)
 	{
-		return Cmiss_graphic_set_coordinate_field(id, coordinateField.getId());
+		return cmzn_graphic_set_coordinate_field(id, coordinateField.getId());
 	}
 
 	Field getDataField()
 	{
-		return Field(Cmiss_graphic_get_data_field(id));
+		return Field(cmzn_graphic_get_data_field(id));
 	}
 
 	int setDataField(Field& dataField)
 	{
-		return Cmiss_graphic_set_data_field(id, dataField.getId());
+		return cmzn_graphic_set_data_field(id, dataField.getId());
 	}
 
 	double getRenderLineWidth()
 	{
-		return Cmiss_graphic_get_render_line_width(id);
+		return cmzn_graphic_get_render_line_width(id);
 	}
 
 	int setRenderLineWidth(double width)
 	{
-		return Cmiss_graphic_set_render_line_width(id, width);
+		return cmzn_graphic_set_render_line_width(id, width);
 	}
 
 	double getRenderPointSize()
 	{
-		return Cmiss_graphic_get_render_point_size(id);
+		return cmzn_graphic_get_render_point_size(id);
 	}
 
 	int setRenderPointSize(double size)
 	{
-		return Cmiss_graphic_set_render_point_size(id, size);
+		return cmzn_graphic_set_render_point_size(id, size);
 	}
 
 	enum RenderPolygonMode getRenderPolygonMode()
 	{
-		return static_cast<RenderPolygonMode>(Cmiss_graphic_get_render_polygon_mode(id));
+		return static_cast<RenderPolygonMode>(cmzn_graphic_get_render_polygon_mode(id));
 	}
 
 	int setRenderPolygonMode(RenderPolygonMode renderPolygonMode)
 	{
-		return Cmiss_graphic_set_render_polygon_mode(id,
-			static_cast<Cmiss_graphic_render_polygon_mode>(renderPolygonMode));
+		return cmzn_graphic_set_render_polygon_mode(id,
+			static_cast<cmzn_graphic_render_polygon_mode>(renderPolygonMode));
 	}
 
 	enum SelectMode getSelectMode()
 	{
-		return static_cast<SelectMode>(Cmiss_graphic_get_select_mode(id));
+		return static_cast<SelectMode>(cmzn_graphic_get_select_mode(id));
 	}
 
 	int setSelectMode(SelectMode selectMode)
 	{
-		return Cmiss_graphic_set_select_mode(id, static_cast<Cmiss_graphic_select_mode>(selectMode));
+		return cmzn_graphic_set_select_mode(id, static_cast<cmzn_graphic_select_mode>(selectMode));
 	}
 
 	Field getSubgroupField()
 	{
-		return Field(Cmiss_graphic_get_subgroup_field(id));
+		return Field(cmzn_graphic_get_subgroup_field(id));
 	}
 
 	int setSubgroupField(Field& subgroupField)
 	{
-		return Cmiss_graphic_set_subgroup_field(id, subgroupField.getId());
+		return cmzn_graphic_set_subgroup_field(id, subgroupField.getId());
 	}
 
 	Field getTextureCoordinateField()
 	{
-		return Field(Cmiss_graphic_get_texture_coordinate_field(id));
+		return Field(cmzn_graphic_get_texture_coordinate_field(id));
 	}
 
 	int setTextureCoordinateField(Field& textureCoordinateField)
 	{
-		return Cmiss_graphic_set_texture_coordinate_field(id, textureCoordinateField.getId());
+		return cmzn_graphic_set_texture_coordinate_field(id, textureCoordinateField.getId());
 	}
 
 	GraphicsMaterial getMaterial()
 	{
-		return GraphicsMaterial(Cmiss_graphic_get_material(id));
+		return GraphicsMaterial(cmzn_graphic_get_material(id));
 	}
 
 	int setMaterial(GraphicsMaterial& graphicsMaterial)
 	{
-		return Cmiss_graphic_set_material(id, graphicsMaterial.getId());
+		return cmzn_graphic_set_material(id, graphicsMaterial.getId());
 	}
 
 	GraphicLineAttributes getLineAttributes();
@@ -228,165 +228,165 @@ public:
 
 	GraphicsMaterial getSelectedMaterial()
 	{
-		return GraphicsMaterial(Cmiss_graphic_get_selected_material(id));
+		return GraphicsMaterial(cmzn_graphic_get_selected_material(id));
 	}
 
 	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
 	{
-		return Cmiss_graphic_set_selected_material(id, graphicsMaterial.getId());
+		return cmzn_graphic_set_selected_material(id, graphicsMaterial.getId());
 	}
 
 	Spectrum getSpectrum()
 	{
-		return Spectrum(Cmiss_graphic_get_spectrum(id));
+		return Spectrum(cmzn_graphic_get_spectrum(id));
 	}
 
 	int setSpectrum(Spectrum& spectrum)
 	{
-		return Cmiss_graphic_set_spectrum(id, spectrum.getId());
+		return cmzn_graphic_set_spectrum(id, spectrum.getId());
 	}
 
 	Tessellation getTessellation()
 	{
-		return Tessellation(Cmiss_graphic_get_tessellation(id));
+		return Tessellation(cmzn_graphic_get_tessellation(id));
 	}
 
 	int setTessellation(Tessellation& tessellation)
 	{
-		return Cmiss_graphic_set_tessellation(id, tessellation.getId());
+		return cmzn_graphic_set_tessellation(id, tessellation.getId());
 	}
 
 	Field getTessellationField()
 	{
-		return Field(Cmiss_graphic_get_tessellation_field(id));
+		return Field(cmzn_graphic_get_tessellation_field(id));
 	}
 
 	int setTessellationField(Field& tessellationField)
 	{
-		return Cmiss_graphic_set_tessellation_field(id, tessellationField.getId());
+		return cmzn_graphic_set_tessellation_field(id, tessellationField.getId());
 	}
 
 	bool getVisibilityFlag()
 	{
-		return Cmiss_graphic_get_visibility_flag(id);
+		return cmzn_graphic_get_visibility_flag(id);
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_graphic_set_visibility_flag(id, visibilityFlag);
+		return cmzn_graphic_set_visibility_flag(id, visibilityFlag);
 	}
 
 	enum SceneCoordinateSystem getCoordinateSystem()
 	{
-		return static_cast<SceneCoordinateSystem>(Cmiss_graphic_get_coordinate_system(id));
+		return static_cast<SceneCoordinateSystem>(cmzn_graphic_get_coordinate_system(id));
 	}
 
 	int setCoordinateSystem(SceneCoordinateSystem coordinateSystem)
 	{
-		return Cmiss_graphic_set_coordinate_system(id,
-			static_cast<Cmiss_scene_coordinate_system>(coordinateSystem));
+		return cmzn_graphic_set_coordinate_system(id,
+			static_cast<cmzn_scene_coordinate_system>(coordinateSystem));
 	}
 
 	Field::DomainType getDomainType()
 	{
-		return static_cast<Field::DomainType>(Cmiss_graphic_get_domain_type(id));
+		return static_cast<Field::DomainType>(cmzn_graphic_get_domain_type(id));
 	}
 
 	int setDomainType(Field::DomainType domainType)
 	{
-		return Cmiss_graphic_set_domain_type(id, static_cast<Cmiss_field_domain_type>(domainType));
+		return cmzn_graphic_set_domain_type(id, static_cast<cmzn_field_domain_type>(domainType));
 	}
 
 	char *getName()
 	{
-		return Cmiss_graphic_get_name(id);
+		return cmzn_graphic_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_graphic_set_name(id, name);
+		return cmzn_graphic_set_name(id, name);
 	}
 
 	int setFace(Element::FaceType face)
 	{
-		return Cmiss_graphic_set_face(id, static_cast<Cmiss_element_face_type>(face));
+		return cmzn_graphic_set_face(id, static_cast<cmzn_element_face_type>(face));
 	}
 
 	Element::FaceType getFace()
 	{
-		return static_cast<Element::FaceType>(Cmiss_graphic_get_face(id));
+		return static_cast<Element::FaceType>(cmzn_graphic_get_face(id));
 	}
 
 	bool isExterior()
 	{
-		return Cmiss_graphic_is_exterior(id);
+		return cmzn_graphic_is_exterior(id);
 	}
 
 	int setExterior(bool exterior)
 	{
-		return Cmiss_graphic_set_exterior(id, exterior);
+		return cmzn_graphic_set_exterior(id, exterior);
 	}
 };
 
 class GraphicContours : public Graphic
 {
 private:
-	explicit GraphicContours(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicContours(cmzn_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
 	GraphicContours() : Graphic(0) {}
 
-	explicit GraphicContours(Cmiss_graphic_contours_id graphic_contours_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_contours_id))
+	explicit GraphicContours(cmzn_graphic_contours_id graphic_contours_id)
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(graphic_contours_id))
 	{}
 
 	GraphicContours(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_contours(graphic.getId())))
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(cmzn_graphic_cast_contours(graphic.getId())))
 	{}
 
 	Field getIsoscalarField()
 	{
-		return Field(Cmiss_graphic_contours_get_isoscalar_field(reinterpret_cast<Cmiss_graphic_contours_id>(id)));
+		return Field(cmzn_graphic_contours_get_isoscalar_field(reinterpret_cast<cmzn_graphic_contours_id>(id)));
 	}
 
 	int setIsoscalarField(Field& field)
 	{
-		return Cmiss_graphic_contours_set_isoscalar_field(reinterpret_cast<Cmiss_graphic_contours_id>(id), field.getId());
+		return cmzn_graphic_contours_set_isoscalar_field(reinterpret_cast<cmzn_graphic_contours_id>(id), field.getId());
 	}
 
 	int getListIsovalues(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_contours_get_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
+		return cmzn_graphic_contours_get_list_isovalues(reinterpret_cast<cmzn_graphic_contours_id>(id),
 			valuesCount, valuesOut);
 	}
 
 	int setListIsovalues(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_contours_set_list_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
+		return cmzn_graphic_contours_set_list_isovalues(reinterpret_cast<cmzn_graphic_contours_id>(id),
 			valuesCount, valuesIn);
 	}
 
 	double getRangeFirstIsovalue()
 	{
-		return Cmiss_graphic_contours_get_range_first_isovalue(
-			reinterpret_cast<Cmiss_graphic_contours_id>(id));
+		return cmzn_graphic_contours_get_range_first_isovalue(
+			reinterpret_cast<cmzn_graphic_contours_id>(id));
 	}
 
 	double getRangeLastIsovalue()
 	{
-		return Cmiss_graphic_contours_get_range_last_isovalue(
-			reinterpret_cast<Cmiss_graphic_contours_id>(id));
+		return cmzn_graphic_contours_get_range_last_isovalue(
+			reinterpret_cast<cmzn_graphic_contours_id>(id));
 	}
 
 	int getRangeNumberOfIsovalues()
 	{
-		return Cmiss_graphic_contours_get_range_number_of_isovalues(
-			reinterpret_cast<Cmiss_graphic_contours_id>(id));
+		return cmzn_graphic_contours_get_range_number_of_isovalues(
+			reinterpret_cast<cmzn_graphic_contours_id>(id));
 	}
 
 	int setRangeIsovalues(int numberOfValues, double firstIsovalue, double lastIsovalue)
 	{
-		return Cmiss_graphic_contours_set_range_isovalues(reinterpret_cast<Cmiss_graphic_contours_id>(id),
+		return cmzn_graphic_contours_set_range_isovalues(reinterpret_cast<cmzn_graphic_contours_id>(id),
 			numberOfValues, firstIsovalue, lastIsovalue);
 	}
 
@@ -395,51 +395,51 @@ public:
 class GraphicLines : public Graphic
 {
 private:
-	explicit GraphicLines(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicLines(cmzn_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
 	GraphicLines() : Graphic(0) {}
 
-	explicit GraphicLines(Cmiss_graphic_lines_id graphic_lines_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_lines_id))
+	explicit GraphicLines(cmzn_graphic_lines_id graphic_lines_id)
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(graphic_lines_id))
 	{}
 
 	GraphicLines(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_lines(graphic.getId())))
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(cmzn_graphic_cast_lines(graphic.getId())))
 	{}
 };
 
 class GraphicPoints : public Graphic
 {
 private:
-	explicit GraphicPoints(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicPoints(cmzn_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
 	GraphicPoints() : Graphic(0) {}
 
-	explicit GraphicPoints(Cmiss_graphic_points_id graphic_points_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_points_id))
+	explicit GraphicPoints(cmzn_graphic_points_id graphic_points_id)
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(graphic_points_id))
 	{}
 
 	GraphicPoints(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_points(graphic.getId())))
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(cmzn_graphic_cast_points(graphic.getId())))
 	{}
 };
 
 class GraphicStreamlines : public Graphic
 {
 private:
-	explicit GraphicStreamlines(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicStreamlines(cmzn_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
 	GraphicStreamlines() : Graphic(0) {}
 
-	explicit GraphicStreamlines(Cmiss_graphic_streamlines_id graphic_streamlines_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_streamlines_id))
+	explicit GraphicStreamlines(cmzn_graphic_streamlines_id graphic_streamlines_id)
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(graphic_streamlines_id))
 	{}
 
 	GraphicStreamlines(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_streamlines(graphic.getId())))
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(cmzn_graphic_cast_streamlines(graphic.getId())))
 	{}
 
 	enum TrackDirection
@@ -451,34 +451,34 @@ public:
 
 	Field getStreamVectorField()
 	{
-		return Field(Cmiss_graphic_streamlines_get_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id)));
+		return Field(cmzn_graphic_streamlines_get_stream_vector_field(reinterpret_cast<cmzn_graphic_streamlines_id>(id)));
 	}
 
 	int setStreamVectorField(Field& field)
 	{
-		return Cmiss_graphic_streamlines_set_stream_vector_field(reinterpret_cast<Cmiss_graphic_streamlines_id>(id), field.getId());
+		return cmzn_graphic_streamlines_set_stream_vector_field(reinterpret_cast<cmzn_graphic_streamlines_id>(id), field.getId());
 	}
 
 	TrackDirection getTrackDirection()
 	{
 		return static_cast<TrackDirection>(
-			Cmiss_graphic_streamlines_get_track_direction(reinterpret_cast<Cmiss_graphic_streamlines_id>(id)));
+			cmzn_graphic_streamlines_get_track_direction(reinterpret_cast<cmzn_graphic_streamlines_id>(id)));
 	}
 
 	int setTrackDirection(TrackDirection trackDirection)
 	{
-		return Cmiss_graphic_streamlines_set_track_direction(reinterpret_cast<Cmiss_graphic_streamlines_id>(id),
-			static_cast<Cmiss_graphic_streamlines_track_direction>(trackDirection));
+		return cmzn_graphic_streamlines_set_track_direction(reinterpret_cast<cmzn_graphic_streamlines_id>(id),
+			static_cast<cmzn_graphic_streamlines_track_direction>(trackDirection));
 	}
 
 	double getTrackLength()
 	{
-		return Cmiss_graphic_streamlines_get_track_length(reinterpret_cast<Cmiss_graphic_streamlines_id>(id));
+		return cmzn_graphic_streamlines_get_track_length(reinterpret_cast<cmzn_graphic_streamlines_id>(id));
 	}
 
 	int setTrackLength(double length)
 	{
-		return Cmiss_graphic_streamlines_set_track_length(reinterpret_cast<Cmiss_graphic_streamlines_id>(id), length);
+		return cmzn_graphic_streamlines_set_track_length(reinterpret_cast<cmzn_graphic_streamlines_id>(id), length);
 	}
 
 };
@@ -486,39 +486,39 @@ public:
 class GraphicSurfaces : public Graphic
 {
 private:
-	explicit GraphicSurfaces(Cmiss_graphic_id graphic_id) : Graphic(graphic_id) {}
+	explicit GraphicSurfaces(cmzn_graphic_id graphic_id) : Graphic(graphic_id) {}
 
 public:
 	GraphicSurfaces() : Graphic(0) {}
 
-	explicit GraphicSurfaces(Cmiss_graphic_surfaces_id graphic_surfaces_id)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(graphic_surfaces_id))
+	explicit GraphicSurfaces(cmzn_graphic_surfaces_id graphic_surfaces_id)
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(graphic_surfaces_id))
 	{}
 
 	GraphicSurfaces(Graphic& graphic)
-		: Graphic(reinterpret_cast<Cmiss_graphic_id>(Cmiss_graphic_cast_surfaces(graphic.getId())))
+		: Graphic(reinterpret_cast<cmzn_graphic_id>(cmzn_graphic_cast_surfaces(graphic.getId())))
 	{}
 };
 
 class GraphicLineAttributes
 {
 protected:
-	Cmiss_graphic_line_attributes_id id;
+	cmzn_graphic_line_attributes_id id;
 
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicLineAttributes(Cmiss_graphic_line_attributes_id line_attributes_id) :
+	explicit GraphicLineAttributes(cmzn_graphic_line_attributes_id line_attributes_id) :
 		id(line_attributes_id)
 	{}
 
 	GraphicLineAttributes(const GraphicLineAttributes& lineAttributes) :
-		id(Cmiss_graphic_line_attributes_access(lineAttributes.id))
+		id(cmzn_graphic_line_attributes_access(lineAttributes.id))
 	{}
 
 	~GraphicLineAttributes()
 	{
-		Cmiss_graphic_line_attributes_destroy(&id);
+		cmzn_graphic_line_attributes_destroy(&id);
 	}
 
 	bool isValid()
@@ -537,70 +537,70 @@ public:
 
 	int getBaseSize(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_line_attributes_get_base_size(id, valuesCount, valuesOut);
+		return cmzn_graphic_line_attributes_get_base_size(id, valuesCount, valuesOut);
 	}
 
 	int setBaseSize(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_line_attributes_set_base_size(id, valuesCount, valuesIn);
+		return cmzn_graphic_line_attributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
 	Field getOrientationScaleField()
 	{
-		return Field(Cmiss_graphic_line_attributes_get_orientation_scale_field(id));
+		return Field(cmzn_graphic_line_attributes_get_orientation_scale_field(id));
 	}
 
 	int setOrientationScaleField(Field& orientationScaleField)
 	{
-		return Cmiss_graphic_line_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
+		return cmzn_graphic_line_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
 	int getScaleFactors(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_line_attributes_get_scale_factors(id, valuesCount, valuesOut);
+		return cmzn_graphic_line_attributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
 
 	int setScaleFactors(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_line_attributes_set_scale_factors(id, valuesCount, valuesIn);
+		return cmzn_graphic_line_attributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
 	Shape getShape()
 	{
-		return static_cast<Shape>(Cmiss_graphic_line_attributes_get_shape(id));
+		return static_cast<Shape>(cmzn_graphic_line_attributes_get_shape(id));
 	}
 
 	int setShape(Shape shape)
 	{
-		return Cmiss_graphic_line_attributes_set_shape(id, static_cast<Cmiss_graphic_line_attributes_shape>(shape));
+		return cmzn_graphic_line_attributes_set_shape(id, static_cast<cmzn_graphic_line_attributes_shape>(shape));
 	}
 
 };
 
 inline GraphicLineAttributes Graphic::getLineAttributes()
 {
-	return GraphicLineAttributes(Cmiss_graphic_get_line_attributes(id));
+	return GraphicLineAttributes(cmzn_graphic_get_line_attributes(id));
 }
 
 class GraphicPointAttributes
 {
 protected:
-	Cmiss_graphic_point_attributes_id id;
+	cmzn_graphic_point_attributes_id id;
 
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicPointAttributes(Cmiss_graphic_point_attributes_id point_attributes_id) :
+	explicit GraphicPointAttributes(cmzn_graphic_point_attributes_id point_attributes_id) :
 		id(point_attributes_id)
 	  {}
 
 	GraphicPointAttributes(const GraphicPointAttributes& pointAttributes) :
-		id(Cmiss_graphic_point_attributes_access(pointAttributes.id))
+		id(cmzn_graphic_point_attributes_access(pointAttributes.id))
 		{}
 
 	~GraphicPointAttributes()
 	{
-		Cmiss_graphic_point_attributes_destroy(&id);
+		cmzn_graphic_point_attributes_destroy(&id);
 	}
 
 	bool isValid()
@@ -610,152 +610,152 @@ public:
 
 	int getBaseSize(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_base_size(id, valuesCount, valuesOut);
+		return cmzn_graphic_point_attributes_get_base_size(id, valuesCount, valuesOut);
 	}
 
 	int setBaseSize(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_base_size(id, valuesCount, valuesIn);
+		return cmzn_graphic_point_attributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
 	Font getFont()
 	{
-		return Font(Cmiss_graphic_point_attributes_get_font(id));
+		return Font(cmzn_graphic_point_attributes_get_font(id));
 	}
 
 	int setFont(Font& font)
 	{
-		return Cmiss_graphic_point_attributes_set_font(id, font.getId());
+		return cmzn_graphic_point_attributes_set_font(id, font.getId());
 	}
 
 	Glyph getGlyph()
 	{
-		return Glyph(Cmiss_graphic_point_attributes_get_glyph(id));
+		return Glyph(cmzn_graphic_point_attributes_get_glyph(id));
 	}
 
 	int setGlyph(Glyph& glyph)
 	{
-		return Cmiss_graphic_point_attributes_set_glyph(id, glyph.getId());
+		return cmzn_graphic_point_attributes_set_glyph(id, glyph.getId());
 	}
 
 	int getGlyphOffset(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_glyph_offset(id, valuesCount, valuesOut);
+		return cmzn_graphic_point_attributes_get_glyph_offset(id, valuesCount, valuesOut);
 	}
 
 	int setGlyphOffset(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_glyph_offset(id, valuesCount, valuesIn);
+		return cmzn_graphic_point_attributes_set_glyph_offset(id, valuesCount, valuesIn);
 	}
 
 	Glyph::RepeatMode getGlyphRepeatMode()
 	{
-		return static_cast<Glyph::RepeatMode>(Cmiss_graphic_point_attributes_get_glyph_repeat_mode(id));
+		return static_cast<Glyph::RepeatMode>(cmzn_graphic_point_attributes_get_glyph_repeat_mode(id));
 	}
 
 	int setGlyphRepeatMode(Glyph::RepeatMode glyphRepeatMode)
 	{
-		return Cmiss_graphic_point_attributes_set_glyph_repeat_mode(id,
-			static_cast<enum Cmiss_glyph_repeat_mode>(glyphRepeatMode));
+		return cmzn_graphic_point_attributes_set_glyph_repeat_mode(id,
+			static_cast<enum cmzn_glyph_repeat_mode>(glyphRepeatMode));
 	}
 
 	Glyph::Type getGlyphType()
 	{
-		return static_cast<Glyph::Type>(Cmiss_graphic_point_attributes_get_glyph_type(id));
+		return static_cast<Glyph::Type>(cmzn_graphic_point_attributes_get_glyph_type(id));
 	}
 
 	int setGlyphType(Glyph::Type type)
 	{
-		return Cmiss_graphic_point_attributes_set_glyph_type(id,
-			static_cast<Cmiss_glyph_type>(type));
+		return cmzn_graphic_point_attributes_set_glyph_type(id,
+			static_cast<cmzn_glyph_type>(type));
 	}
 
 	Field getLabelField()
 	{
-		return Field(Cmiss_graphic_point_attributes_get_label_field(id));
+		return Field(cmzn_graphic_point_attributes_get_label_field(id));
 	}
 
 	int setLabelField(Field& labelField)
 	{
-		return Cmiss_graphic_point_attributes_set_label_field(id, labelField.getId());
+		return cmzn_graphic_point_attributes_set_label_field(id, labelField.getId());
 	}
 
 	int getLabelOffset(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_label_offset(id, valuesCount, valuesOut);
+		return cmzn_graphic_point_attributes_get_label_offset(id, valuesCount, valuesOut);
 	}
 
 	int setLabelOffset(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_label_offset(id, valuesCount, valuesIn);
+		return cmzn_graphic_point_attributes_set_label_offset(id, valuesCount, valuesIn);
 	}
 
 	char *getLabelText(int labelNumber)
 	{
-		return Cmiss_graphic_point_attributes_get_label_text(id, labelNumber);
+		return cmzn_graphic_point_attributes_get_label_text(id, labelNumber);
 	}
 
 	int setLabelText(int labelNumber, const char *labelText)
 	{
-		return Cmiss_graphic_point_attributes_set_label_text(id, labelNumber, labelText);
+		return cmzn_graphic_point_attributes_set_label_text(id, labelNumber, labelText);
 	}
 
 	Field getOrientationScaleField()
 	{
-		return Field(Cmiss_graphic_point_attributes_get_orientation_scale_field(id));
+		return Field(cmzn_graphic_point_attributes_get_orientation_scale_field(id));
 	}
 
 	int setOrientationScaleField(Field& orientationScaleField)
 	{
-		return Cmiss_graphic_point_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
+		return cmzn_graphic_point_attributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
 	int getScaleFactors(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_point_attributes_get_scale_factors(id, valuesCount, valuesOut);
+		return cmzn_graphic_point_attributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
 
 	int setScaleFactors(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_point_attributes_set_scale_factors(id, valuesCount, valuesIn);
+		return cmzn_graphic_point_attributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
 	Field getSignedScaleField()
 	{
-		return Field(Cmiss_graphic_point_attributes_get_signed_scale_field(id));
+		return Field(cmzn_graphic_point_attributes_get_signed_scale_field(id));
 	}
 
 	int setSignedScaleField(Field& signedScaleField)
 	{
-		return Cmiss_graphic_point_attributes_set_signed_scale_field(id, signedScaleField.getId());
+		return cmzn_graphic_point_attributes_set_signed_scale_field(id, signedScaleField.getId());
 	}
 
 };
 
 inline GraphicPointAttributes Graphic::getPointAttributes()
 {
-	return GraphicPointAttributes(Cmiss_graphic_get_point_attributes(id));
+	return GraphicPointAttributes(cmzn_graphic_get_point_attributes(id));
 }
 
 class GraphicSamplingAttributes
 {
 protected:
-	Cmiss_graphic_sampling_attributes_id id;
+	cmzn_graphic_sampling_attributes_id id;
 
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicSamplingAttributes(Cmiss_graphic_sampling_attributes_id sampling_attributes_id) :
+	explicit GraphicSamplingAttributes(cmzn_graphic_sampling_attributes_id sampling_attributes_id) :
 		id(sampling_attributes_id)
 	  {}
 
 	GraphicSamplingAttributes(const GraphicSamplingAttributes& samplingAttributes) :
-		id(Cmiss_graphic_sampling_attributes_access(samplingAttributes.id))
+		id(cmzn_graphic_sampling_attributes_access(samplingAttributes.id))
 		{}
 
 	~GraphicSamplingAttributes()
 	{
-		Cmiss_graphic_sampling_attributes_destroy(&id);
+		cmzn_graphic_sampling_attributes_destroy(&id);
 	}
 
 	bool isValid()
@@ -765,40 +765,40 @@ public:
 
 	Field getDensityField()
 	{
-		return Field(Cmiss_graphic_sampling_attributes_get_density_field(id));
+		return Field(cmzn_graphic_sampling_attributes_get_density_field(id));
 	}
 
 	int setDensityField(Field& densityField)
 	{
-		return Cmiss_graphic_sampling_attributes_set_density_field(id, densityField.getId());
+		return cmzn_graphic_sampling_attributes_set_density_field(id, densityField.getId());
 	}
 
 	int getLocation(int valuesCount, double *valuesOut)
 	{
-		return Cmiss_graphic_sampling_attributes_get_location(id, valuesCount, valuesOut);
+		return cmzn_graphic_sampling_attributes_get_location(id, valuesCount, valuesOut);
 	}
 
 	int setLocation(int valuesCount, const double *valuesIn)
 	{
-		return Cmiss_graphic_sampling_attributes_set_location(id, valuesCount, valuesIn);
+		return cmzn_graphic_sampling_attributes_set_location(id, valuesCount, valuesIn);
 	}
 
 	Element::PointSampleMode getMode()
 	{
-		return static_cast<Element::PointSampleMode>(Cmiss_graphic_sampling_attributes_get_mode(id));
+		return static_cast<Element::PointSampleMode>(cmzn_graphic_sampling_attributes_get_mode(id));
 	}
 
 	int setMode(Element::PointSampleMode sampleMode)
 	{
-		return Cmiss_graphic_sampling_attributes_set_mode(id,
-			static_cast<Cmiss_element_point_sample_mode>(sampleMode));
+		return cmzn_graphic_sampling_attributes_set_mode(id,
+			static_cast<cmzn_element_point_sample_mode>(sampleMode));
 	}
 
 };
 
 inline GraphicSamplingAttributes Graphic::getSamplingAttributes()
 {
-	return GraphicSamplingAttributes(Cmiss_graphic_get_sampling_attributes(id));
+	return GraphicSamplingAttributes(cmzn_graphic_get_sampling_attributes(id));
 }
 
 } // namespace zinc

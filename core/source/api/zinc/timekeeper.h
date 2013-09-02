@@ -4,7 +4,7 @@ FILE : cmiss_time_keeper.h
 LAST MODIFIED : 2 Mar 2009
 
 DESCRIPTION :
-The public interface of Cmiss_time_keeper which defines a relationship between
+The public interface of cmzn_time_keeper which defines a relationship between
 a bunch of time notifiers, keeps them in sync and allows control such as play,
 rewind and fast forward.
 ==============================================================================*/
@@ -53,7 +53,7 @@ rewind and fast forward.
 extern "C" {
 #endif
 
-enum Cmiss_time_keeper_attribute
+enum cmzn_time_keeper_attribute
 {
 	CMISS_TIME_KEEPER_ATTRIBUTE_INVALID = 0,
 	CMISS_TIME_KEEPER_ATTRIBUTE_TIME = 1,
@@ -78,18 +78,18 @@ enum Cmiss_time_keeper_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
+ZINC_API enum cmzn_time_keeper_attribute cmzn_time_keeper_attribute_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  attribute to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_time_keeper_attribute_enum_to_string(
-	enum Cmiss_time_keeper_attribute attribute);
+ZINC_API char *cmzn_time_keeper_attribute_enum_to_string(
+	enum cmzn_time_keeper_attribute attribute);
 
 /***************************************************************************//**
  * Access the time_keeper, increase the access count of the time keeper by one.
@@ -97,7 +97,7 @@ ZINC_API char *Cmiss_time_keeper_attribute_enum_to_string(
  * @param time_keeper  handle to the "to be access" cmiss time_keeper.
  * @return  handle to time_keeper if successfully access time_keeper.
  */
-ZINC_API Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
+ZINC_API cmzn_time_keeper_id cmzn_time_keeper_access(cmzn_time_keeper_id time_keeper);
 
 /***************************************************************************//**
  * Destroys this reference to the time keeper (and sets it to NULL).
@@ -107,7 +107,7 @@ ZINC_API Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time
  * @return  Status CMISS_OK if successfully destroy the time keeper,
  * any other value on failure.
  */
-ZINC_API int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
+ZINC_API int cmzn_time_keeper_destroy(cmzn_time_keeper_id *time_keeper_address);
 
 /***************************************************************************//**
  * Get a real value of an attribute of the time keeper.
@@ -116,8 +116,8 @@ ZINC_API int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-ZINC_API double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
-	enum Cmiss_time_keeper_attribute attribute);
+ZINC_API double cmzn_time_keeper_get_attribute_real(cmzn_time_keeper_id time_keeper,
+	enum cmzn_time_keeper_attribute attribute);
 
 /***************************************************************************//**
  * Set a real value for an attribute of the time_keeper.
@@ -128,8 +128,8 @@ ZINC_API double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_k
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this time_keeper object.
  */
-ZINC_API int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
-	enum Cmiss_time_keeper_attribute attribute, double value);
+ZINC_API int cmzn_time_keeper_set_attribute_real(cmzn_time_keeper_id time_keeper,
+	enum cmzn_time_keeper_attribute attribute, double value);
 
 /***************************************************************************//**
  * Create and returns a time notifier with regular update time in time keeper.
@@ -144,8 +144,8 @@ ZINC_API int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keep
  * @return  The time notifier if successfully create a time notifier otherwise
  *    NULL.
  */
-ZINC_API Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
-	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
+ZINC_API cmzn_time_notifier_id cmzn_time_keeper_create_notifier_regular(
+	cmzn_time_keeper_id time_keeper, double update_frequency, double time_offset);
 
 /***************************************************************************//**
  * Add a time notifier to the time keeper. The time keeper will keep track of the
@@ -159,8 +159,8 @@ ZINC_API Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-ZINC_API int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
-	Cmiss_time_notifier_id time_notifier);
+ZINC_API int cmzn_time_keeper_add_time_notifier(cmzn_time_keeper_id time_keeper,
+	cmzn_time_notifier_id time_notifier);
 
 /***************************************************************************//**
  * Remove the time notifier from the time keeper. This function will decrease the
@@ -170,8 +170,8 @@ ZINC_API int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keepe
  * @return  Status CMISS_OK if successfully set time notifier to time keeper,
  * any other value on failure.
  */
-ZINC_API int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper,
-	Cmiss_time_notifier_id time_notifier);
+ZINC_API int cmzn_time_keeper_remove_time_notifier(cmzn_time_keeper_id time_keeper,
+	cmzn_time_notifier_id time_notifier);
 
 #ifdef __cplusplus
 }

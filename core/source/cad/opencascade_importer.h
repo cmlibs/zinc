@@ -78,7 +78,7 @@ public:
 	 * @returns true if successful, false otherwise
 	 * @see #fileName(const char *name)
 	 */
-	bool import( Cmiss_region_id region );
+	bool import( cmzn_region_id region );
 
 private:
 	/**
@@ -91,7 +91,7 @@ private:
 	 * @param region the region to create cad defined regions and fields into
 	 * @returns true if successful, false otherwise
 	 */
-	bool convertDocToRegionsAndFields(Handle_TDocStd_Document xdeDoc, Cmiss_region_id region);
+	bool convertDocToRegionsAndFields(Handle_TDocStd_Document xdeDoc, cmzn_region_id region);
 
 	/**
 	 * Add a labels shape as cad topology computed field to the given region.  Here we also add the geometric representation
@@ -104,17 +104,17 @@ private:
 	 * @param parent the region to create cad defined regions and fields into
 	 * @returns true if successful, false otherwise
 	 */
-	bool addLabelsShapeToRegion(Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location , Cmiss_region_id parent);
+	bool addLabelsShapeToRegion(Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location , cmzn_region_id parent);
 
 	/**
 	 * Add a compound shape as a cad topology computed field to the given region.
 	 */
-	bool addCompoundShapeToRegion(Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopLoc_Location location, Cmiss_region_id parent);
+	bool addCompoundShapeToRegion(Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopLoc_Location location, cmzn_region_id parent);
 
 	/**
 	 * Add a shape as a cad topology computed field to the given region.
 	 */
-	bool addShapeToRegion(const TopoDS_Shape& shape, Cmiss_region_id parent, const char *name, const Cad_colour_map& colourMap);
+	bool addShapeToRegion(const TopoDS_Shape& shape, cmzn_region_id parent, const char *name, const Cad_colour_map& colourMap);
 	
 	/**
 	 * Traverse the labels in an XDE document.  This is necessary when dealing with assemblies, an assembly doesn't contain any shape 
@@ -126,7 +126,7 @@ private:
 	 * @param parent the region to create cad defined regions and fields into
 	 * @returns true if successful, false otherwise
 	 */
-	bool labelTraversal(Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location, Cmiss_region_id parent);
+	bool labelTraversal(Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location, cmzn_region_id parent);
 
 	/**
 	 * Get the label name if it exists, this may return an empty string ""

@@ -89,11 +89,11 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_or::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_or::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -112,8 +112,8 @@ int Computed_field_or::evaluate(Cmiss_field_cache& cache, FieldValueCache& inVal
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_or(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_or(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -143,7 +143,7 @@ Computed_field *Cmiss_field_module_create_or(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -216,11 +216,11 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_and::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_and::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -239,8 +239,8 @@ int Computed_field_and::evaluate(Cmiss_field_cache& cache, FieldValueCache& inVa
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_and(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_and(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -270,7 +270,7 @@ Computed_field *Cmiss_field_module_create_and(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -343,10 +343,10 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_xor::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_xor::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -372,8 +372,8 @@ int Computed_field_xor::evaluate(Cmiss_field_cache& cache, FieldValueCache& inVa
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_xor(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_xor(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -403,7 +403,7 @@ Computed_field *Cmiss_field_module_create_xor(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -476,13 +476,13 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_equal_to::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_equal_to::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	switch (Cmiss_field_get_value_type(getSourceField(0)))
+	switch (cmzn_field_get_value_type(getSourceField(0)))
 	{
 		case CMISS_FIELD_VALUE_TYPE_REAL:
 		{
@@ -523,8 +523,8 @@ int Computed_field_equal_to::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_equal_to(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_equal_to(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -535,7 +535,7 @@ Computed_field *Cmiss_field_module_create_equal_to(
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
 	if (field_module && source_field_one && source_field_two &&
-		(Cmiss_field_get_value_type(source_field_one) == Cmiss_field_get_value_type(source_field_two)) &&
+		(cmzn_field_get_value_type(source_field_one) == cmzn_field_get_value_type(source_field_two)) &&
 		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
@@ -554,7 +554,7 @@ Computed_field *Cmiss_field_module_create_equal_to(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -627,10 +627,10 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_less_than::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_less_than::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -650,7 +650,7 @@ int Computed_field_less_than::evaluate(Cmiss_field_cache& cache, FieldValueCache
 } //namespace
 
 Computed_field *Computed_field_create_less_than(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -680,7 +680,7 @@ Computed_field *Computed_field_create_less_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -753,10 +753,10 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_greater_than::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_greater_than::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -776,7 +776,7 @@ int Computed_field_greater_than::evaluate(Cmiss_field_cache& cache, FieldValueCa
 } //namespace
 
 Computed_field *Computed_field_create_greater_than(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -806,7 +806,7 @@ Computed_field *Computed_field_create_greater_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_or.  Invalid argument(s)");
+			"cmzn_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -879,15 +879,15 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
-	virtual bool is_defined_at_location(Cmiss_field_cache&)
+	virtual bool is_defined_at_location(cmzn_field_cache&)
 	{
 		return true;
 	}
 };
 
-int Computed_field_is_defined::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_is_defined::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	valueCache.values[0] = getSourceField(0)->core->is_defined_at_location(cache);
@@ -905,7 +905,7 @@ int Computed_field_is_defined::evaluate(Cmiss_field_cache& cache, FieldValueCach
  * @return Newly created field
  */
 Computed_field *Computed_field_create_is_defined(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	Computed_field *field = Computed_field_create_generic(field_module,
@@ -974,10 +974,10 @@ private:
 		return (0 != dynamic_cast<Computed_field_not*>(other_field));
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_not::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_not::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -994,10 +994,10 @@ int Computed_field_not::evaluate(Cmiss_field_cache& cache, FieldValueCache& inVa
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field)
+cmzn_field_id cmzn_field_module_create_not(cmzn_field_module_id field_module,
+	cmzn_field_id source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,

@@ -82,7 +82,7 @@ number_of_coordinate_components per node.
 Set node_number to zero before passing.
 ==============================================================================*/
 {
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	FE_value *fitting_field_values;
 	FE_value *weights;
 	/* Space to evaluate the coordinate field and keep the previous value */
@@ -172,10 +172,10 @@ Calculates the coordinates and length from the first node.
 			FE_field_evaluate_snake_position, accumulate_data_void,
 			accumulate_data->fe_field_list);
 
-		Cmiss_field_cache_set_node(accumulate_data->field_cache, node);
+		cmzn_field_cache_set_node(accumulate_data->field_cache, node);
 		if (return_code)
 		{
-			if (Cmiss_field_evaluate_real(coordinate_field, accumulate_data->field_cache, number_of_components, coordinates))
+			if (cmzn_field_evaluate_real(coordinate_field, accumulate_data->field_cache, number_of_components, coordinates))
 			{
 				if (0 == node_number)
 				{
@@ -207,7 +207,7 @@ Calculates the coordinates and length from the first node.
 		}
 		if (return_code && accumulate_data->weight_field)
 		{
-			if (!Cmiss_field_evaluate_real(accumulate_data->weight_field,
+			if (!cmzn_field_evaluate_real(accumulate_data->weight_field,
 				accumulate_data->field_cache, /*number_of_values*/1, &accumulate_data->weights[node_number]))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_accumulate_length.  "
@@ -571,7 +571,7 @@ int create_FE_element_snake_from_data_points(
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_mesh_group_id mesh_group)
+	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group)
 {
 	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors = NULL, phi[4], phi_m, *pos, *stiffness_matrix  = NULL,
@@ -590,8 +590,8 @@ int create_FE_element_snake_from_data_points(
  	struct FE_field_initialise_array_data initialise_array_data;
 	struct FE_field **fe_field_array;
 	struct LIST(FE_field) *fe_field_list;
-	Cmiss_field_module_id field_module;
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_module_id field_module;
+	cmzn_field_cache_id field_cache;
 
 	ENTER(create_FE_element_snake_from_data_points);
 	if (fe_region && coordinate_field && 
@@ -601,8 +601,8 @@ int create_FE_element_snake_from_data_points(
 		(0.0 <= (double_stiffness = (double)stiffness)))
 	{
 		return_code = 1;
-		field_module = Cmiss_field_get_field_module(coordinate_field);
-		field_cache = Cmiss_field_module_create_cache(field_module);
+		field_module = cmzn_field_get_field_module(coordinate_field);
+		field_cache = cmzn_field_module_create_cache(field_module);
 
 		fe_field_list = Computed_field_array_get_defining_FE_field_list(
 			number_of_fitting_fields, fitting_fields);
@@ -951,7 +951,7 @@ int create_FE_element_snake_from_data_points(
 							{
 								if (nodeset_group)
 								{
-									Cmiss_nodeset_group_add_node(nodeset_group, nodes[j]);
+									cmzn_nodeset_group_add_node(nodeset_group, nodes[j]);
 								}
 							}
 							else
@@ -999,7 +999,7 @@ int create_FE_element_snake_from_data_points(
 									{
 										if (mesh_group)
 										{
-											Cmiss_mesh_group_add_element(mesh_group, element);
+											cmzn_mesh_group_add_element(mesh_group, element);
 										}
 									}
 									else
@@ -1084,8 +1084,8 @@ int create_FE_element_snake_from_data_points(
 		{
 			DEALLOCATE(fe_field_array);
 		}
-		Cmiss_field_cache_destroy(&field_cache);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_field_cache_destroy(&field_cache);
+		cmzn_field_module_destroy(&field_module);
 	}
 	else
 	{

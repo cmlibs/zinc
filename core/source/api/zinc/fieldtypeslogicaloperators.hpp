@@ -50,7 +50,7 @@ class FieldAnd : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAnd(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldAnd(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldAnd FieldModule::createAnd(Field& sourceField1,
@@ -73,7 +73,7 @@ class FieldEqualTo : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEqualTo(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldEqualTo(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldEqualTo FieldModule::createEqualTo(Field& sourceField1,
@@ -90,7 +90,7 @@ class FieldGreaterThan : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGreaterThan(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldGreaterThan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldGreaterThan FieldModule::createGreaterThan(Field& sourceField1,
@@ -113,7 +113,7 @@ class FieldLessThan : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldLessThan(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldLessThan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldLessThan FieldModule::createLessThan(Field& sourceField1, Field& sourceField2);
@@ -135,7 +135,7 @@ class FieldOr : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldOr(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldOr(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldOr FieldModule::createOr(Field& sourceField1,
@@ -158,7 +158,7 @@ class FieldNot : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNot(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNot(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNot FieldModule::createNot(Field& sourceField);
@@ -180,7 +180,7 @@ class FieldXor : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldXor(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldXor(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldXor FieldModule::createXor(Field& sourceField1,
@@ -195,42 +195,42 @@ public:
 
 inline FieldAnd FieldModule::createAnd(Field& sourceField1, Field& sourceField2)
 {
-	return FieldAnd(Cmiss_field_module_create_and(id,
+	return FieldAnd(cmzn_field_module_create_and(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldEqualTo FieldModule::createEqualTo(Field& sourceField1, Field& sourceField2)
 {
-	return FieldEqualTo(Cmiss_field_module_create_equal_to(id,
+	return FieldEqualTo(cmzn_field_module_create_equal_to(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldGreaterThan FieldModule::createGreaterThan(Field& sourceField1, Field& sourceField2)
 {
-	return FieldGreaterThan(Cmiss_field_module_create_greater_than(id,
+	return FieldGreaterThan(cmzn_field_module_create_greater_than(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldLessThan FieldModule::createLessThan(Field& sourceField1, Field& sourceField2)
 {
-	return FieldLessThan(Cmiss_field_module_create_less_than(id,
+	return FieldLessThan(cmzn_field_module_create_less_than(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldOr FieldModule::createOr(Field& sourceField1, Field& sourceField2)
 {
-	return FieldOr(Cmiss_field_module_create_or(id,
+	return FieldOr(cmzn_field_module_create_or(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
 inline FieldNot FieldModule::createNot(Field& sourceField)
 {
-	return FieldNot(Cmiss_field_module_create_not(id, sourceField.getId()));
+	return FieldNot(cmzn_field_module_create_not(id, sourceField.getId()));
 }
 
 inline FieldXor FieldModule::createXor(Field& sourceField1, Field& sourceField2)
 {
-	return FieldXor(Cmiss_field_module_create_xor(id,
+	return FieldXor(cmzn_field_module_create_xor(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 

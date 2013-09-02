@@ -137,8 +137,8 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 				iterations = 0;
 				while ((!converged) && return_code)
 				{
-					if (Cmiss_field_cache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
-						Cmiss_field_evaluate_real_with_derivatives(data->field, data->field_cache,
+					if (cmzn_field_cache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
+						cmzn_field_evaluate_real_with_derivatives(data->field, data->field_cache,
 							data->number_of_values, values, number_of_xi, derivatives))
 					{
 						/* least-squares approach: make the derivatives / right hand side
@@ -293,10 +293,10 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 #undef MAX_FIND_XI_ITERATIONS
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	Cmiss_field_cache_id field_cache,
+	cmzn_field_cache_id field_cache,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
-	Cmiss_mesh_id search_mesh, int find_nearest)
+	cmzn_mesh_id search_mesh, int find_nearest)
 {
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	int i, number_of_xi = -1, return_code;
@@ -304,7 +304,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 
 	ENTER(Computed_field_perform_find_element_xi);
 	const int element_dimension = search_mesh ?
-		Cmiss_mesh_get_dimension(search_mesh) : Cmiss_element_get_dimension(*element_address);
+		cmzn_mesh_get_dimension(search_mesh) : cmzn_element_get_dimension(*element_address);
 	if (field && (0 != (valueCache = dynamic_cast<RealFieldValueCache*>(field->getValueCache(*field_cache)))) &&
 		values && (number_of_values == field->number_of_components) &&
 		element_address && xi && (search_mesh || *element_address) &&
@@ -336,7 +336,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 						cache->valid_values = 0;
 					}
 					if (cache->element &&
-						!Cmiss_mesh_contains_element(search_mesh, cache->element))
+						!cmzn_mesh_contains_element(search_mesh, cache->element))
 					{
 						cache->valid_values = 0;
 					}
@@ -441,7 +441,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 
 					/* Try the cached element first if it is in the mesh */
 					if (cache->element &&
-						Cmiss_mesh_contains_element(search_mesh, cache->element))
+						cmzn_mesh_contains_element(search_mesh, cache->element))
 					{
 						/* Start with the xi that worked before too */
 						number_of_xi = get_FE_element_dimension(cache->element);
@@ -460,19 +460,19 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 					/* Now try every element */
 					if (!*element_address)
 					{
-						Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(search_mesh);
-						Cmiss_element_id element = 0;
-						while (0 != (element = Cmiss_element_iterator_next(iterator)))
+						cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(search_mesh);
+						cmzn_element_id element = 0;
+						while (0 != (element = cmzn_element_iterator_next(iterator)))
 						{
 							if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
 							{
 								*element_address = element;
-								Cmiss_element_destroy(&element);
+								cmzn_element_destroy(&element);
 								break;
 							}
-							Cmiss_element_destroy(&element);
+							cmzn_element_destroy(&element);
 						}
-						Cmiss_element_iterator_destroy(&iterator);
+						cmzn_element_iterator_destroy(&iterator);
 					}
 				}
 				else

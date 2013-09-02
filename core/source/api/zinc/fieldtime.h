@@ -62,19 +62,19 @@ extern "C" {
  * @param time_field  Field providing time value to evaluate at.
  * @return  Handle to a new time lookup field on success, NULL on failure.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_time_lookup(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id time_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_time_lookup(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_field_id time_field);
 
 /***************************************************************************//**
  * Creates a field which returns the current time from the supplied time keeper.
  *
  * @param field_module  Region field module which will own new field.
- * @param time_keeper  Cmiss_time_keeper object.
+ * @param time_keeper  cmzn_time_keeper object.
  * @return  Handle to a new time value field on success, NULL on failure.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_time_value(
-	Cmiss_field_module_id field_module, Cmiss_time_keeper_id time_keeper);
+ZINC_API cmzn_field_id cmzn_field_module_create_time_value(
+	cmzn_field_module_id field_module, cmzn_time_keeper_id time_keeper);
 
 #ifdef __cplusplus
 }

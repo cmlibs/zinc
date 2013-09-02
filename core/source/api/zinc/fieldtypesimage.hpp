@@ -53,7 +53,7 @@ class FieldImage : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldImage(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldImage(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldImage FieldModule::createImage();
@@ -66,13 +66,13 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldImage(Cmiss_field_image_id field_image_id) :
-		Field(reinterpret_cast<Cmiss_field_id>(field_image_id))
+	explicit FieldImage(cmzn_field_image_id field_image_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_image_id))
 	{	}
 
 	// casting constructor: must check isValid()
 	FieldImage(Field& field) :
-		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_image(field.getId())))
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_image(field.getId())))
 	{	}
 
 	enum CombineMode
@@ -134,94 +134,94 @@ public:
 
 	int getAttributeInteger(ImageAttribute imageAttribute)
 	{
-		return Cmiss_field_image_get_attribute_integer(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_attribute>(imageAttribute));
+		return cmzn_field_image_get_attribute_integer(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_attribute>(imageAttribute));
 	}
 
 	double getAttributeReal(ImageAttribute imageAttribute)
 	{
-		return Cmiss_field_image_get_attribute_real(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_attribute>(imageAttribute));
+		return cmzn_field_image_get_attribute_real(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_attribute>(imageAttribute));
 	}
 
 	int setAttributeReal(ImageAttribute imageAttribute, double value)
 	{
-		return Cmiss_field_image_set_attribute_real(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_attribute>(imageAttribute), value);
+		return cmzn_field_image_set_attribute_real(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_attribute>(imageAttribute), value);
 	}
 
 	int read(StreamInformation& streamInformation)
 	{
-		return Cmiss_field_image_read(reinterpret_cast<Cmiss_field_image_id>(id),
+		return cmzn_field_image_read(reinterpret_cast<cmzn_field_image_id>(id),
 			streamInformation.getId());
 	}
 
 	int write(StreamInformation& streamInformation)
 	{
-		return Cmiss_field_image_write(reinterpret_cast<Cmiss_field_image_id>(id),
+		return cmzn_field_image_write(reinterpret_cast<cmzn_field_image_id>(id),
 			streamInformation.getId());
 	}
 
 	CombineMode getCombineMode()
 	{
-		return static_cast<CombineMode>(Cmiss_field_image_get_combine_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id)));
+		return static_cast<CombineMode>(cmzn_field_image_get_combine_mode(
+			reinterpret_cast<cmzn_field_image_id>(id)));
 	}
 
 	int setCombineMode(CombineMode combineMode)
 	{
-		return Cmiss_field_image_set_combine_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_combine_mode>(combineMode));
+		return cmzn_field_image_set_combine_mode(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_combine_mode>(combineMode));
 	}
 
 	HardwareCompressionMode getHardwareCompressionMode()
 	{
 		return static_cast<HardwareCompressionMode>(
-			Cmiss_field_image_get_hardware_compression_mode(
-				reinterpret_cast<Cmiss_field_image_id>(id)));
+			cmzn_field_image_get_hardware_compression_mode(
+				reinterpret_cast<cmzn_field_image_id>(id)));
 	}
 
 	int setHardwareCompressionMode(HardwareCompressionMode hardwareCompressionMode)
 	{
-		return Cmiss_field_image_set_hardware_compression_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_hardware_compression_mode>(hardwareCompressionMode));
+		return cmzn_field_image_set_hardware_compression_mode(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_hardware_compression_mode>(hardwareCompressionMode));
 	}
 
 	FilterMode getFilterMode()
 	{
-		return static_cast<FilterMode>(Cmiss_field_image_get_filter_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id)));
+		return static_cast<FilterMode>(cmzn_field_image_get_filter_mode(
+			reinterpret_cast<cmzn_field_image_id>(id)));
 	}
 
 	int setFilterMode(FilterMode filterMode)
 	{
-		return Cmiss_field_image_set_filter_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_filter_mode>(filterMode));
+		return cmzn_field_image_set_filter_mode(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_filter_mode>(filterMode));
 	}
 
 	WrapMode getWrapMode()
 	{
-		return static_cast<WrapMode>(Cmiss_field_image_get_wrap_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id)));
+		return static_cast<WrapMode>(cmzn_field_image_get_wrap_mode(
+			reinterpret_cast<cmzn_field_image_id>(id)));
 	}
 
 	int setWrapMode(WrapMode wrapMode)
 	{
-		return Cmiss_field_image_set_wrap_mode(
-			reinterpret_cast<Cmiss_field_image_id>(id),
-			static_cast<Cmiss_field_image_wrap_mode>(wrapMode));
+		return cmzn_field_image_set_wrap_mode(
+			reinterpret_cast<cmzn_field_image_id>(id),
+			static_cast<cmzn_field_image_wrap_mode>(wrapMode));
 	}
 
 	char *getProperty(const char* property)
 	{
-		return Cmiss_field_image_get_property(
-			reinterpret_cast<Cmiss_field_image_id>(id), property);
+		return cmzn_field_image_get_property(
+			reinterpret_cast<cmzn_field_image_id>(id), property);
 	}
 
 	StreamInformationImage createStreamInformation();
@@ -240,8 +240,8 @@ private:
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamInformationImage(Cmiss_stream_information_image_id stream_information_image_id) :
-		StreamInformation(reinterpret_cast<Cmiss_stream_information_id>(stream_information_image_id))
+	explicit StreamInformationImage(cmzn_stream_information_image_id stream_information_image_id) :
+		StreamInformation(reinterpret_cast<cmzn_stream_information_id>(stream_information_image_id))
 	{ }
 
 	enum ImageAttribute
@@ -277,30 +277,30 @@ public:
 
 	int setAttributeInteger(ImageAttribute imageAttribute, int value)
 	{
-		return Cmiss_stream_information_image_set_attribute_integer(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
+		return cmzn_stream_information_image_set_attribute_integer(
+			reinterpret_cast<cmzn_stream_information_image_id>(id),
+			static_cast<cmzn_stream_information_image_attribute>(imageAttribute), value);
 	}
 
 	int setAttributeReal(ImageAttribute imageAttribute, double value)
 	{
-		return Cmiss_stream_information_image_set_attribute_real(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_attribute>(imageAttribute), value);
+		return cmzn_stream_information_image_set_attribute_real(
+			reinterpret_cast<cmzn_stream_information_image_id>(id),
+			static_cast<cmzn_stream_information_image_attribute>(imageAttribute), value);
 	}
 
 	int setFileFormat(ImageFileFormat imageFileFormat)
 	{
-		return Cmiss_stream_information_image_set_file_format(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_file_format>(imageFileFormat));
+		return cmzn_stream_information_image_set_file_format(
+			reinterpret_cast<cmzn_stream_information_image_id>(id),
+			static_cast<cmzn_stream_information_image_file_format>(imageFileFormat));
 	}
 
 	int setPixelFormat(ImagePixelFormat imagePixelFormat)
 	{
-		return Cmiss_stream_information_image_set_pixel_format(
-			reinterpret_cast<Cmiss_stream_information_image_id>(id),
-			static_cast<Cmiss_stream_information_image_pixel_format>(imagePixelFormat));
+		return cmzn_stream_information_image_set_pixel_format(
+			reinterpret_cast<cmzn_stream_information_image_id>(id),
+			static_cast<cmzn_stream_information_image_pixel_format>(imagePixelFormat));
 	}
 
 };
@@ -308,29 +308,29 @@ public:
 inline StreamInformationImage FieldImage::createStreamInformation()
 {
 	return StreamInformationImage(
-		reinterpret_cast<Cmiss_stream_information_image_id>(
-			Cmiss_field_image_create_stream_information(
-				reinterpret_cast<Cmiss_field_image_id>(id))));
+		reinterpret_cast<cmzn_stream_information_image_id>(
+			cmzn_field_image_create_stream_information(
+				reinterpret_cast<cmzn_field_image_id>(id))));
 }
 
 inline FieldImage FieldModule::createImage()
 {
-	return FieldImage(Cmiss_field_module_create_image(id,
+	return FieldImage(cmzn_field_module_create_image(id,
 		0, 0));
 }
 
 inline FieldImage FieldModule::createImageWithDomain(Field& domain_field)
 {
-	return FieldImage(Cmiss_field_module_create_image(id,
+	return FieldImage(cmzn_field_module_create_image(id,
 		domain_field.getId(), 0));
 }
 
 inline FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field)
 {
-	return FieldImage(Cmiss_field_module_create_image(id,
+	return FieldImage(cmzn_field_module_create_image(id,
 		domain_field.getId(), source_field.getId()));
 }
 
-} // namespace Cmiss
+} // namespace cmzn
 
 #endif

@@ -46,7 +46,7 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-int Cmiss_field_get_type_sigmoid_image_filter(struct Computed_field *field,
+int cmzn_field_get_type_sigmoid_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *min, double *max, double *alpha, double *beta);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006

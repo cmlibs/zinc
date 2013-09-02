@@ -61,8 +61,8 @@ extern "C" {
  * @return  the material pacakage in graphics module if successfully called,
  *    otherwise NULL.
  */
-ZINC_API Cmiss_graphics_material_module_id Cmiss_graphics_module_get_material_module(
-	struct Cmiss_graphics_module *graphics_module);
+ZINC_API cmzn_graphics_material_module_id cmzn_graphics_module_get_material_module(
+	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
  * Return an additional handle to the graphics module. Increments the
@@ -71,8 +71,8 @@ ZINC_API Cmiss_graphics_material_module_id Cmiss_graphics_module_get_material_mo
  * @param graphics_module  Existing handle to the graphics module.
  * @return  Additional handle to graphics module.
  */
-ZINC_API Cmiss_graphics_module_id Cmiss_graphics_module_access(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_graphics_module_id cmzn_graphics_module_access(
+	cmzn_graphics_module_id graphics_module);
 
 /***************************************************************************//**
  * Destroy this handle to the graphics module. The graphics module itself will
@@ -82,8 +82,8 @@ ZINC_API Cmiss_graphics_module_id Cmiss_graphics_module_access(
  * destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_graphics_module_destroy(
-	Cmiss_graphics_module_id *graphics_module_address);
+ZINC_API int cmzn_graphics_module_destroy(
+	cmzn_graphics_module_id *graphics_module_address);
 
 /**
  * Returns a handle to a scene viewer module
@@ -93,8 +93,8 @@ ZINC_API int Cmiss_graphics_module_destroy(
  * @param graphics_module  The graphics module to request the module from.
  * @return The scene viewer module if successfully called otherwise NULL.
  */
-ZINC_API Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
+	cmzn_graphics_module_id graphics_module);
 
 /**
  * Get the glyph module which stores static graphics for visualising points,
@@ -104,12 +104,12 @@ ZINC_API Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_mod
  * @param graphics_module  The graphics module to request manager from.
  * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
  */
-ZINC_API Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_glyph_module_id cmzn_graphics_module_get_glyph_module(
+	cmzn_graphics_module_id graphics_module);
 
 /***************************************************************************//**
  * Get a scene of region from graphics module with an access_count incremented
- * by 1. Caller is responsible for calling Cmiss_scene_destroy to destroy the
+ * by 1. Caller is responsible for calling cmzn_scene_destroy to destroy the
  * reference to it.
  *
  * @param graphics_module  The module at which the scene will get its
@@ -117,8 +117,8 @@ ZINC_API Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
  * @param region  The region at which the scene is representing for.
  * @return  Reference to the scene.
  */
-ZINC_API Cmiss_scene_id Cmiss_graphics_module_get_scene(
-	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
+ZINC_API cmzn_scene_id cmzn_graphics_module_get_scene(
+	cmzn_graphics_module_id graphics_module, cmzn_region_id region);
 
 /**
 * Get the spectrum module which stores spectrum object.
@@ -126,8 +126,8 @@ ZINC_API Cmiss_scene_id Cmiss_graphics_module_get_scene(
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
+	cmzn_graphics_module_id graphics_module);
 
 /**
 * Get the tessellation module which stores tessellation object.
@@ -135,8 +135,8 @@ ZINC_API Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(
+	cmzn_graphics_module_id graphics_module);
 
 /**
 * Get the graphics filter module which stores graphics_filter object.
@@ -144,8 +144,8 @@ ZINC_API Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_mod
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the graphics filter module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_graphics_filter_module_id cmzn_graphics_module_get_filter_module(
+	cmzn_graphics_module_id graphics_module);
 
 /**
 * Get the font module which stores font object.
@@ -153,8 +153,8 @@ ZINC_API Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
-	Cmiss_graphics_module_id graphics_module);
+ZINC_API cmzn_font_module_id cmzn_graphics_module_get_font_module(
+	cmzn_graphics_module_id graphics_module);
 
 #ifdef __cplusplus
 }

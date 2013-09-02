@@ -55,7 +55,7 @@ extern "C" {
  * @param values The array of constant values
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_field_module_create_constant(cmzn_field_module_id field_module,
 	int number_of_values, const double *values);
 
 /*****************************************************************************//**
@@ -66,7 +66,7 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id
  * @param string_constant The constant char string.
  * @return Newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_string_constant(Cmiss_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_field_module_create_string_constant(cmzn_field_module_id field_module,
 	const char *string_constant);
 
 #ifdef __cplusplus

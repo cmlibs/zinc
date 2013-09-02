@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : indexed_list_btree_private.hpp
  *
- * Implementation of indexed lists using Cmiss_btree template.
+ * Implementation of indexed lists using cmzn_btree template.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -46,7 +46,7 @@ extern "C" {
 #include "general/list.h"
 }
 
-#define CMISS_BTREE( object_type )  Cmiss_set_ ## object_type
+#define CMISS_BTREE( object_type )  cmzn_set_ ## object_type
 
 #define FULL_DECLARE_INDEXED_LIST_BTREE_TYPE( object_type )
 

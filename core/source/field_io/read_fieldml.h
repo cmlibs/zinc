@@ -40,7 +40,7 @@
 #if !defined (READ_FIELDML_H)
 #define READ_FIELDML_H
 
-struct Cmiss_region;
+struct cmzn_region;
 
 /***************************************************************************//**
  * Determines whether the named file is FieldML 0.4 format by the quick and
@@ -52,6 +52,6 @@ int is_FieldML_file(const char *filename);
 /***************************************************************************//**
  * Reads subregions and fields from FieldML 0.4 format file into the region.
  */
-int parse_fieldml_file(struct Cmiss_region *region, const char *filename);
+int parse_fieldml_file(struct cmzn_region *region, const char *filename);
 
 #endif /* !defined (READ_FIELDML_H) */

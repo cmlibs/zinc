@@ -46,7 +46,7 @@ Data structures and prototype functions needed for all find xi implementations.
 
 class Computed_field_find_element_xi_base_cache
 {
-	Cmiss_mesh_id search_mesh;
+	cmzn_mesh_id search_mesh;
 public:
 	struct FE_element *element;
 	int valid_values;
@@ -74,7 +74,7 @@ public:
 	{
 		if (search_mesh)
 		{
-			Cmiss_mesh_destroy(&search_mesh);
+			cmzn_mesh_destroy(&search_mesh);
 		}
 		if (values)
 		{
@@ -86,20 +86,20 @@ public:
 		}
 	}
 
-	Cmiss_mesh_id get_search_mesh()
+	cmzn_mesh_id get_search_mesh()
 	{
 		return search_mesh;
 	};
 
-	void set_search_mesh(Cmiss_mesh_id new_search_mesh)
+	void set_search_mesh(cmzn_mesh_id new_search_mesh)
 	{
 		if (new_search_mesh)
 		{
-			Cmiss_mesh_access(new_search_mesh);
+			cmzn_mesh_access(new_search_mesh);
 		}
 		if (search_mesh)
 		{
-			Cmiss_mesh_destroy(&search_mesh);
+			cmzn_mesh_destroy(&search_mesh);
 		}
 		search_mesh = new_search_mesh;
 	};
@@ -135,7 +135,7 @@ matches the <field> in this structure or one of its source fields.
 ==============================================================================*/
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	struct Computed_field *field;
 	int number_of_values;
 	FE_value *values;

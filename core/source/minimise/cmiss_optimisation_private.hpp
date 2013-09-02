@@ -1,7 +1,7 @@
 /**
  * @file cmiss_optimisation_private.hpp
  *
- * The private methods for the Cmiss_optimisation object. Required to allow creation
+ * The private methods for the cmzn_optimisation object. Required to allow creation
  * of optimisation objects.
  *
  * @see-also api/zinc/optimisation.h
@@ -51,28 +51,28 @@
 #include "zinc/optimisation.h"
 #include "computed_field/field_module.hpp"
 
-typedef std::list<Cmiss_field_id> FieldList;
+typedef std::list<cmzn_field_id> FieldList;
 
-struct Cmiss_optimisation
+struct cmzn_optimisation
 {
 private:
-	~Cmiss_optimisation()
+	~cmzn_optimisation()
 	{
 		FieldList::iterator iter;
 		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
 		{
-			Cmiss_field_destroy(&(*iter));
+			cmzn_field_destroy(&(*iter));
 		}
 		for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
 		{
-			Cmiss_field_destroy(&(*iter));
+			cmzn_field_destroy(&(*iter));
 		}
-		Cmiss_field_module_destroy(&fieldModule);
+		cmzn_field_module_destroy(&fieldModule);
 	}
 
 public:
-	Cmiss_field_module_id fieldModule;
-	enum Cmiss_optimisation_method method;
+	cmzn_field_module_id fieldModule;
+	enum cmzn_optimisation_method method;
 	FieldList independentFields;
 	FieldList objectiveFields;
 	// Opt++ stopping tolerances
@@ -91,8 +91,8 @@ public:
 	std::stringbuf solution_report; // solution details output by Opt++ during and after solution
 	int access_count;
 
-	Cmiss_optimisation(Cmiss_field_module_id field_module) :
-		fieldModule(Cmiss_region_get_field_module(Cmiss_field_module_get_master_region_internal(field_module))),
+	cmzn_optimisation(cmzn_field_module_id field_module) :
+		fieldModule(cmzn_region_get_field_module(cmzn_field_module_get_master_region_internal(field_module))),
 		access_count(1)
 	{
 		// initialise to default values
@@ -109,13 +109,13 @@ public:
 		trustRegionSize = 0.1;
 	}
 
-	Cmiss_optimisation_id access()
+	cmzn_optimisation_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_optimisation_id &optimisation)
+	static int deaccess(cmzn_optimisation_id &optimisation)
 	{
 		if (!optimisation)
 			return 0;
@@ -126,20 +126,20 @@ public:
 		return 1;
 	}
 
-	Cmiss_field_id getFirstIndependentField() const
+	cmzn_field_id getFirstIndependentField() const
 	{
-		Cmiss_field_id field = 0;
+		cmzn_field_id field = 0;
 		FieldList::const_iterator iter = independentFields.begin();
 		if (iter != independentFields.end())
 		{
-			field = Cmiss_field_access(*iter);
+			field = cmzn_field_access(*iter);
 		}
 		return field;
 	}
 
-	Cmiss_field_id getNextIndependentField(Cmiss_field_id ref_field) const
+	cmzn_field_id getNextIndependentField(cmzn_field_id ref_field) const
 	{
-		Cmiss_field_id field = 0;
+		cmzn_field_id field = 0;
 		FieldList::const_iterator iter = independentFields.begin();
 		while (iter != independentFields.end())
 		{
@@ -148,7 +148,7 @@ public:
 				++iter;
 				if (iter != independentFields.end())
 				{
-					field = Cmiss_field_access(*iter);
+					field = cmzn_field_access(*iter);
 				}
 				break;
 			}
@@ -157,13 +157,13 @@ public:
 		return field;
 	}
 
-	int addIndependentField(Cmiss_field_id field)
+	int addIndependentField(cmzn_field_id field)
 	{
-		if (!Cmiss_field_module_contains_field(fieldModule, field))
+		if (!cmzn_field_module_contains_field(fieldModule, field))
 			return 0;
 		if (!(Computed_field_is_constant(field) || Computed_field_is_type_finite_element(field)))
 			return 0;
-		if (Cmiss_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
+		if (cmzn_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
 			return 0;
 		FieldList::const_iterator iter;
 		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
@@ -171,18 +171,18 @@ public:
 			if (*iter == field)
 				return 0;
 		}
-		independentFields.push_back(Cmiss_field_access(field));
+		independentFields.push_back(cmzn_field_access(field));
 		return 1;
 	}
 
-	int removeIndependentField(Cmiss_field_id field)
+	int removeIndependentField(cmzn_field_id field)
 	{
 		FieldList::iterator iter;
 		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
 		{
 			if (*iter == field)
 			{
-				Cmiss_field_destroy(&(*iter));
+				cmzn_field_destroy(&(*iter));
 				independentFields.erase(iter);
 				return 1;
 			}
@@ -190,20 +190,20 @@ public:
 		return 0;
 	}
 
-	Cmiss_field_id getFirstObjectiveField() const
+	cmzn_field_id getFirstObjectiveField() const
 	{
-		Cmiss_field_id field = 0;
+		cmzn_field_id field = 0;
 		FieldList::const_iterator iter = objectiveFields.begin();
 		if (iter != objectiveFields.end())
 		{
-			field = Cmiss_field_access(*iter);
+			field = cmzn_field_access(*iter);
 		}
 		return field;
 	}
 
-	Cmiss_field_id getNextObjectiveField(Cmiss_field_id ref_field) const
+	cmzn_field_id getNextObjectiveField(cmzn_field_id ref_field) const
 	{
-		Cmiss_field_id field = 0;
+		cmzn_field_id field = 0;
 		FieldList::const_iterator iter = objectiveFields.begin();
 		while (iter != objectiveFields.end())
 		{
@@ -212,7 +212,7 @@ public:
 				++iter;
 				if (iter != objectiveFields.end())
 				{
-					field = Cmiss_field_access(*iter);
+					field = cmzn_field_access(*iter);
 				}
 				break;
 			}
@@ -221,11 +221,11 @@ public:
 		return field;
 	}
 
-	int addObjectiveField(Cmiss_field_id field)
+	int addObjectiveField(cmzn_field_id field)
 	{
-		if (!Cmiss_field_module_contains_field(fieldModule, field))
+		if (!cmzn_field_module_contains_field(fieldModule, field))
 			return 0;
-		if (Cmiss_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
+		if (cmzn_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
 			return 0;
 		FieldList::const_iterator iter;
 		for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
@@ -233,18 +233,18 @@ public:
 			if (*iter == field)
 				return 0;
 		}
-		objectiveFields.push_back(Cmiss_field_access(field));
+		objectiveFields.push_back(cmzn_field_access(field));
 		return 1;
 	}
 
-	int removeObjectiveField(Cmiss_field_id field)
+	int removeObjectiveField(cmzn_field_id field)
 	{
 		FieldList::iterator iter;
 		for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
 		{
 			if (*iter == field)
 			{
-				Cmiss_field_destroy(&(*iter));
+				cmzn_field_destroy(&(*iter));
 				objectiveFields.erase(iter);
 				return 1;
 			}

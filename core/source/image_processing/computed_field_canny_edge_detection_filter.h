@@ -45,7 +45,7 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-int Cmiss_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
+int cmzn_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
       struct Computed_field **source_field, double *variance, double *maximumError,
       double *upperThreshold, double *lowerThreshold);
 /*******************************************************************************

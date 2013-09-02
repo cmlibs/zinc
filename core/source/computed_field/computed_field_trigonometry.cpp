@@ -88,14 +88,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_sin::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_sin::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -197,10 +197,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_sin(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -276,14 +276,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cos::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_cos::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -386,10 +386,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_cos(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -465,14 +465,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_tan::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_tan::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -576,10 +576,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_tan(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -655,14 +655,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_asin::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_asin::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -772,10 +772,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_asin(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -851,14 +851,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_acos::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_acos::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -968,10 +968,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_acos(
-		struct Cmiss_field_module *field_module,
+		struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1047,14 +1047,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_atan::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_atan::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1157,10 +1157,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_atan(
-		struct Cmiss_field_module *field_module,
+		struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1236,14 +1236,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_atan2::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_atan2::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1359,7 +1359,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_atan2(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {

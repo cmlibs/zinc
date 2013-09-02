@@ -68,8 +68,8 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct Cmiss_field_module *field_module, Cmiss_mesh_id mesh,
-	Cmiss_element_id seed_element, Computed_field *integrand,
+	struct cmzn_field_module *field_module, cmzn_mesh_id mesh,
+	cmzn_element_id seed_element, Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field);
 
 /***************************************************************************//**
@@ -79,7 +79,7 @@ struct Computed_field *Computed_field_create_integration(
  * return this will be an accessed handle to mesh.
  */
 int Computed_field_get_type_integration(struct Computed_field *field,
-	Cmiss_mesh_id *mesh_address, struct FE_element **seed_element,
+	cmzn_mesh_id *mesh_address, struct FE_element **seed_element,
 	struct Computed_field **integrand, int *magnitude_coordinates,
 	struct Computed_field **coordinate_field);
 

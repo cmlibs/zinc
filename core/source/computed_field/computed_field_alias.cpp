@@ -117,10 +117,10 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		Cmiss_region_id otherRegion = Computed_field_get_region(getSourceField(0));
+		cmzn_region_id otherRegion = Computed_field_get_region(getSourceField(0));
 		if (otherRegion != Computed_field_get_region(field))
 		{
 			// @TODO: share extraCache with other alias fields in cache referencing otherRegion
@@ -129,13 +129,13 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
 	void field_is_managed(void)
 	{
@@ -222,10 +222,10 @@ int Computed_field_alias::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_alias::compare */
 
-int Computed_field_alias::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_alias::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	Cmiss_field_cache *extraCache = valueCache.getExtraCache();
+	cmzn_field_cache *extraCache = valueCache.getExtraCache();
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
@@ -248,9 +248,9 @@ int Computed_field_alias::evaluate(Cmiss_field_cache& cache, FieldValueCache& in
 /***************************************************************************//**
  * Sets values of the original field at the supplied location.
  */
-enum FieldAssignmentResult Computed_field_alias::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_alias::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
-	Cmiss_field_cache *extraCache = valueCache.getExtraCache();
+	cmzn_field_cache *extraCache = valueCache.getExtraCache();
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
@@ -279,7 +279,7 @@ int Computed_field_alias::list()
 		display_message(INFORMATION_MESSAGE, "    Original field : ");
 		if (original_field()->manager != field->manager)
 		{
-			char *path = Cmiss_region_get_path(Computed_field_get_region(original_field()));
+			char *path = cmzn_region_get_path(Computed_field_get_region(original_field()));
 			display_message(INFORMATION_MESSAGE, "%s", path);
 			DEALLOCATE(path);
 		}
@@ -319,7 +319,7 @@ char *Computed_field_alias::get_command_string()
 		append_string(&command_string, " field ", &error);
 		if (original_field()->manager != field->manager)
 		{
-			char *path = Cmiss_region_get_path(Computed_field_get_region(original_field()));
+			char *path = cmzn_region_get_path(Computed_field_get_region(original_field()));
 			append_string(&command_string, path, &error);
 			DEALLOCATE(path);
 		}
@@ -342,10 +342,10 @@ char *Computed_field_alias::get_command_string()
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
+Computed_field *cmzn_field_module_create_alias(cmzn_field_module_id field_module,
 	Computed_field *original_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	// @TODO Generalise to non-numeric types by adding createValueCache and modifying evaluate methods
 	if (original_field && original_field->isNumerical())
 	{

@@ -83,7 +83,7 @@ be used when integrating over the element.
 
 struct Integrate_Computed_field_over_element_data
 {
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	FE_value *result, *values;
 	int error_code,number_of_components;
 	struct Computed_field *field;
@@ -179,8 +179,8 @@ value for each component of the field.
 		integrate_Computed_field_over_element_data_void)&&(field=data->field)&&
 		(scheme=data->scheme)&&(values=data->values)&&(result=data->result))
 	{
-		if (Cmiss_field_cache_set_element(data->field_cache, element) &&
-			Cmiss_field_is_defined_at_location(field, data->field_cache))
+		if (cmzn_field_cache_set_element(data->field_cache, element) &&
+			cmzn_field_is_defined_at_location(field, data->field_cache))
 		{
 			if (Integration_scheme_get_dimension(scheme,&dimension)&&
 				(dimension==get_FE_element_dimension(element))&&
@@ -191,8 +191,8 @@ value for each component of the field.
 				return_code=1;
 				while (return_code&&(i>0))
 				{
-					if (Cmiss_field_cache_set_mesh_location(data->field_cache, element, dimension, abscissa) &&
-						Cmiss_field_evaluate_real(field, data->field_cache, number_of_components, values))
+					if (cmzn_field_cache_set_mesh_location(data->field_cache, element, dimension, abscissa) &&
+						cmzn_field_evaluate_real(field, data->field_cache, number_of_components, values))
 					{
 						for (j=0;j<number_of_components;j++)
 						{
@@ -483,9 +483,9 @@ value for each component of the <field>.
 				ALLOCATE(integrate_Computed_field_over_element_data.values,FE_value,
 				number_of_components))
 			{
-				Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
-				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
-				Cmiss_field_cache_set_time(field_cache, time);
+				cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+				cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+				cmzn_field_cache_set_time(field_cache, time);
 				integrate_Computed_field_over_element_data.field_cache = field_cache;
 				integrate_Computed_field_over_element_data.field=field;
 				integrate_Computed_field_over_element_data.scheme=scheme;
@@ -506,8 +506,8 @@ value for each component of the <field>.
 						integrate_Computed_field_over_element_data.error_code);
 				}
 				DEALLOCATE(integrate_Computed_field_over_element_data.values);
-				Cmiss_field_cache_destroy(&field_cache);
-				Cmiss_field_module_destroy(&field_module);
+				cmzn_field_cache_destroy(&field_cache);
+				cmzn_field_module_destroy(&field_module);
 			}
 			else
 			{

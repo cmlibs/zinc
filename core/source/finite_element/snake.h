@@ -54,7 +54,7 @@ int create_FE_element_snake_from_data_points(
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_mesh_group_id mesh_group);
+	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2006
 

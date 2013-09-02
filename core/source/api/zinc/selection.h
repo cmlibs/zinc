@@ -45,10 +45,10 @@
 extern "C" {
 #endif
 
-typedef void (*Cmiss_selection_handler_callback_function)(
-	Cmiss_selection_event_id selection_event,	void *client_data);
+typedef void (*cmzn_selection_handler_callback_function)(
+	cmzn_selection_event_id selection_event,	void *client_data);
 
-enum Cmiss_selection_change_type
+enum cmzn_selection_change_type
 {
 	CMISS_SELECTION_NO_CHANGE = 0,
 	CMISS_SELECTION_CLEAR = 1,     /*!< selection is empty, but wasn't before */
@@ -59,12 +59,12 @@ enum Cmiss_selection_change_type
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_selection_event_type_enum_to_string(enum Cmiss_selection_change_type type);
+ZINC_API char *cmzn_selection_event_type_enum_to_string(enum cmzn_selection_change_type type);
 
 /***************************************************************************//**
 * Returns a new reference to the selection_handler with reference count incremented.
@@ -73,8 +73,8 @@ ZINC_API char *Cmiss_selection_event_type_enum_to_string(enum Cmiss_selection_ch
 * @param selection_handler  The selection_handler to obtain a new reference to.
 * @return  New selection_handler reference with incremented reference count.
 */
-ZINC_API Cmiss_selection_handler_id Cmiss_selection_handler_access(
-	Cmiss_selection_handler_id selection_handler);
+ZINC_API cmzn_selection_handler_id cmzn_selection_handler_access(
+	cmzn_selection_handler_id selection_handler);
 
 /***************************************************************************//**
  * Destroys this reference to the selection handler (and sets it to NULL).
@@ -83,7 +83,7 @@ ZINC_API Cmiss_selection_handler_id Cmiss_selection_handler_access(
  * @param selection_handler  Handle to the cmiss selection_handler.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler);
+ZINC_API int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection_handler);
 
 /***************************************************************************//**
  * Stop and clear selection callback. This will stop the callback and also
@@ -92,21 +92,21 @@ ZINC_API int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selecti
  * @param selection_handler  Handle to the cmiss selection_handler.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_handler);
+ZINC_API int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id selection_handler);
 
 /***************************************************************************//**
  * Assign the callback function and user_data for the selection handler.
  * This function also starts the callback.
  *
- * @see Cmiss_selection_handler_callback_function
+ * @see cmzn_selection_handler_callback_function
  * @param selection_handler  Handle to the cmiss_selection_handler.
  * @param function  function to be called when event is triggered.
  * @param user_data_in  Void pointer to an user object. User is responsible for
  *   the life time of such object.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id selection_handler,
-		Cmiss_selection_handler_callback_function function, void *user_data_in);
+ZINC_API int cmzn_selection_handler_set_callback(cmzn_selection_handler_id selection_handler,
+		cmzn_selection_handler_callback_function function, void *user_data_in);
 
 /***************************************************************************//**
 * Returns a new reference to the selection_event with reference count incremented.
@@ -115,33 +115,33 @@ ZINC_API int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id sel
 * @param selection_event  The selection_event to obtain a new reference to.
 * @return  New selection_handler reference with incremented reference count.
 */
-ZINC_API Cmiss_selection_event_id Cmiss_selection_event_access(
-	Cmiss_selection_event_id selection_event);
+ZINC_API cmzn_selection_event_id cmzn_selection_event_access(
+	cmzn_selection_event_id selection_event);
 
 /***************************************************************************//**
  * Destroys this reference to the selection event (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
- * Note: At the end of the Cmiss_selection_handler_callback_function, the caller
+ * Note: At the end of the cmzn_selection_handler_callback_function, the caller
  * will destroy the event argument so users do not need to call this destroy
  * function unless, an additional reference count has been added through
- * Cmiss_selection_event_access function.
+ * cmzn_selection_event_access function.
  *
  * @param selection_event  Handle to the cmiss selection_handler.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_selection_event_destroy(Cmiss_selection_event_id *selection_event_address);
+ZINC_API int cmzn_selection_event_destroy(cmzn_selection_event_id *selection_event_address);
 
 /***************************************************************************//**
  * Get the change type of the correct selection. This provides detail of the
  * selection changes.
- * @see Cmiss_selection_change_type
+ * @see cmzn_selection_change_type
  *
  * @param selection_event  Handle to the cmiss_selection_event.
- * @return  Cmiss_selection_change_type  The type of recent changes.
+ * @return  cmzn_selection_change_type  The type of recent changes.
  */
-ZINC_API enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
-	Cmiss_selection_event_id selection_event);
+ZINC_API enum cmzn_selection_change_type cmzn_selection_event_get_change_type(
+	cmzn_selection_event_id selection_event);
 
 /***************************************************************************//**
  * Inquire either the selection handler will trigger event when selection
@@ -151,7 +151,7 @@ ZINC_API enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
  * @param selection_event  Handle to the cmiss_selection_event.
  * @return  1 if selection handler triggers hierarchical changes, 0 otherwise.
  */
-ZINC_API int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id selection_handler);
+ZINC_API int cmzn_selection_handler_get_hierarchical(cmzn_selection_handler_id selection_handler);
 
 /***************************************************************************//**
  * Set either the selection handler will trigger event when selection
@@ -162,7 +162,7 @@ ZINC_API int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id
  * @param hierarchical_flag  flag to be set.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selection_handler,
+ZINC_API int cmzn_selection_handler_set_hierarchical(cmzn_selection_handler_id selection_handler,
 	int hierarchical_flag);
 
 /***************************************************************************//**
@@ -173,8 +173,8 @@ ZINC_API int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id
  * @param selection_event  Handle to the cmiss_selection_event.
  * @return  1 if scene is destroyed, 0 if not.
  */
-ZINC_API int Cmiss_selection_event_owning_scene_is_destroyed(
-	Cmiss_selection_event_id selection_event);
+ZINC_API int cmzn_selection_event_owning_scene_is_destroyed(
+	cmzn_selection_event_id selection_event);
 
 #ifdef __cplusplus
 }

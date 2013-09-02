@@ -61,27 +61,27 @@
 #include "general/message.h"
 #include <list>
 
-struct Cmiss_graphics_module
+struct cmzn_graphics_module
 {
 	/* attribute managers and defaults: */
-	struct Cmiss_glyph_module *glyph_module;
+	struct cmzn_glyph_module *glyph_module;
 	void *glyph_manager_callback_id;
-	struct Cmiss_graphics_material_module *material_module;
+	struct cmzn_graphics_material_module *material_module;
 	void *material_manager_callback_id;
 	Light_module *light_module;
-	Cmiss_spectrum_module_id spectrum_module;
+	cmzn_spectrum_module_id spectrum_module;
 	void *spectrum_manager_callback_id;
-	Cmiss_font_module_id font_module;
+	cmzn_font_module_id font_module;
 	void *font_manager_callback_id;
-	Cmiss_scene_viewer_module_id scene_viewer_module;
+	cmzn_scene_viewer_module_id scene_viewer_module;
 	Light_model_module *light_model_module;
-	struct Cmiss_time_keeper *default_time_keeper;
-	Cmiss_tessellation_module_id tessellation_module;
-	struct Cmiss_graphics_filter_module *graphics_filter_module;
+	struct cmzn_time_keeper *default_time_keeper;
+	cmzn_tessellation_module_id tessellation_module;
+	struct cmzn_graphics_filter_module *graphics_filter_module;
 	void *tessellation_manager_callback_id;
 	int access_count;
-	Cmiss_region_id root_region;
-	std::list<Cmiss_region*> *member_regions_list;
+	cmzn_region_id root_region;
+	std::list<cmzn_region*> *member_regions_list;
 };
 
 namespace {
@@ -90,24 +90,24 @@ namespace {
  * Callback for changes in the glyph manager.
  * Informs all renditions about the changes.
  */
-void Cmiss_graphics_module_glyph_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_glyph) *message, void *graphics_module_void)
+void cmzn_graphics_module_glyph_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_glyph) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_glyph)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_glyph))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_glyph)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_glyph))
 		{
-			std::list<Cmiss_region*>::iterator region_iter;
+			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
-				Cmiss_region *region = *region_iter;
-				if (Cmiss_region_is_root(region))
+				cmzn_region *region = *region_iter;
+				if (cmzn_region_is_root(region))
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-					Cmiss_scene_glyph_change(scene, message);
+					cmzn_scene *scene = cmzn_region_get_scene_private(region);
+					cmzn_scene_glyph_change(scene, message);
 				}
 			}
 		}
@@ -118,24 +118,24 @@ void Cmiss_graphics_module_glyph_manager_callback(
  * Callback for changes in the material manager.
  * Informs all scenes about the changes.
  */
-void Cmiss_graphics_module_material_manager_callback(
+void cmzn_graphics_module_material_manager_callback(
 	struct MANAGER_MESSAGE(Graphical_material) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Graphical_material)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Graphical_material))
 		{
-			std::list<Cmiss_region*>::iterator region_iter;
+			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
-				Cmiss_region *region = *region_iter;
-				if (Cmiss_region_is_root(region))
+				cmzn_region *region = *region_iter;
+				if (cmzn_region_is_root(region))
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-					Cmiss_scene_material_change(scene, message);
+					cmzn_scene *scene = cmzn_region_get_scene_private(region);
+					cmzn_scene_material_change(scene, message);
 				}
 			}
 		}
@@ -146,10 +146,10 @@ void Cmiss_graphics_module_material_manager_callback(
  * Callback for changes in the spectrum manager.
  * Informs all scenes about the changes.
  */
-void Cmiss_graphics_module_spectrum_manager_callback(
+void cmzn_graphics_module_spectrum_manager_callback(
 	struct MANAGER_MESSAGE(Spectrum) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Spectrum)(message);
@@ -157,22 +157,22 @@ void Cmiss_graphics_module_spectrum_manager_callback(
 		{
 			// update colour_bar glyphs, if any
 			graphics_module->glyph_module->beginChange();
-			Cmiss_set_Cmiss_glyph *glyphList = graphics_module->glyph_module->getGlyphListPrivate();
-			for (Cmiss_set_Cmiss_glyph::iterator iter = glyphList->begin(); iter != glyphList->end(); ++iter)
+			cmzn_set_cmzn_glyph *glyphList = graphics_module->glyph_module->getGlyphListPrivate();
+			for (cmzn_set_cmzn_glyph::iterator iter = glyphList->begin(); iter != glyphList->end(); ++iter)
 			{
-				Cmiss_glyph *glyph = *iter;
+				cmzn_glyph *glyph = *iter;
 				glyph->spectrumChange(message);
 			}
 			graphics_module->glyph_module->endChange();
-			std::list<Cmiss_region*>::iterator region_iter;
+			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
-				Cmiss_region *region = *region_iter;
-				if (Cmiss_region_is_root(region))
+				cmzn_region *region = *region_iter;
+				if (cmzn_region_is_root(region))
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-					Cmiss_scene_spectrum_change(scene, message);
+					cmzn_scene *scene = cmzn_region_get_scene_private(region);
+					cmzn_scene_spectrum_change(scene, message);
 				}
 			}
 		}
@@ -183,24 +183,24 @@ void Cmiss_graphics_module_spectrum_manager_callback(
  * Callback for changes in the tessellation manager.
  * Informs all scenes about the changes.
  */
-void Cmiss_graphics_module_tessellation_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, void *graphics_module_void)
+void cmzn_graphics_module_tessellation_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_tessellation)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_tessellation))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_tessellation)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_tessellation))
 		{
-			std::list<Cmiss_region*>::iterator region_iter;
+			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
-				Cmiss_region *region = *region_iter;
-				if (Cmiss_region_is_root(region))
+				cmzn_region *region = *region_iter;
+				if (cmzn_region_is_root(region))
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-					Cmiss_scene_tessellation_change(scene, message);
+					cmzn_scene *scene = cmzn_region_get_scene_private(region);
+					cmzn_scene_tessellation_change(scene, message);
 				}
 			}
 		}
@@ -211,24 +211,24 @@ void Cmiss_graphics_module_tessellation_manager_callback(
  * Callback for changes in the font manager.
  * Informs all renditions about the changes.
  */
-void Cmiss_graphics_module_font_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_font) *message, void *graphics_module_void)
+void cmzn_graphics_module_font_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_font) *message, void *graphics_module_void)
 {
-	Cmiss_graphics_module *graphics_module = reinterpret_cast<Cmiss_graphics_module *>(graphics_module_void);
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_font)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_font))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_font)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_font))
 		{
-			std::list<Cmiss_region*>::iterator region_iter;
+			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 			{
-				Cmiss_region *region = *region_iter;
-				if (Cmiss_region_is_root(region))
+				cmzn_region *region = *region_iter;
+				if (cmzn_region_is_root(region))
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-					Cmiss_scene_font_change(scene, message);
+					cmzn_scene *scene = cmzn_region_get_scene_private(region);
+					cmzn_scene_font_change(scene, message);
 				}
 			}
 		}
@@ -237,77 +237,77 @@ void Cmiss_graphics_module_font_manager_callback(
 
 }
 
-struct Cmiss_graphics_module *Cmiss_graphics_module_create(
+struct cmzn_graphics_module *cmzn_graphics_module_create(
 	struct Context *context)
 {
-	struct Cmiss_graphics_module *module;
+	struct cmzn_graphics_module *module;
 
-	ENTER(Cmiss_rendtion_graphics_module_create);
+	ENTER(cmzn_rendtion_graphics_module_create);
 	if (context)
 	{
-		if (ALLOCATE(module, struct Cmiss_graphics_module, 1))
+		if (ALLOCATE(module, struct cmzn_graphics_module, 1))
 		{
 			module->light_module = Light_module_create();
 			module->light_model_module = Light_model_module_create();
 			module->material_module = NULL;
 			module->scene_viewer_module = NULL;
-			module->spectrum_module=Cmiss_spectrum_module_create();
-			module->graphics_filter_module=Cmiss_graphics_filter_module_create();
-			module->font_module = Cmiss_font_module_create();
+			module->spectrum_module=cmzn_spectrum_module_create();
+			module->graphics_filter_module=cmzn_graphics_filter_module_create();
+			module->font_module = cmzn_font_module_create();
 			module->font_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_font)(Cmiss_graphics_module_font_manager_callback,
-					(void *)module, Cmiss_font_module_get_manager(module->font_module));
-			module->root_region = Cmiss_context_get_default_region(context);
-			module->material_module = Cmiss_graphics_material_module_create(
-					Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			module->glyph_module = Cmiss_glyph_module_create(module->material_module);
+				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
+					(void *)module, cmzn_font_module_get_manager(module->font_module));
+			module->root_region = cmzn_context_get_default_region(context);
+			module->material_module = cmzn_graphics_material_module_create(
+					cmzn_spectrum_module_get_manager(module->spectrum_module));
+			module->glyph_module = cmzn_glyph_module_create(module->material_module);
 			module->glyph_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_glyph)(Cmiss_graphics_module_glyph_manager_callback,
-					(void *)module, Cmiss_glyph_module_get_manager(module->glyph_module));
+				MANAGER_REGISTER(cmzn_glyph)(cmzn_graphics_module_glyph_manager_callback,
+					(void *)module, cmzn_glyph_module_get_manager(module->glyph_module));
 			module->material_manager_callback_id =
-				MANAGER_REGISTER(Graphical_material)(Cmiss_graphics_module_material_manager_callback,
-					(void *)module, Cmiss_graphics_material_module_get_manager(module->material_module));
+				MANAGER_REGISTER(Graphical_material)(cmzn_graphics_module_material_manager_callback,
+					(void *)module, cmzn_graphics_material_module_get_manager(module->material_module));
 			module->spectrum_manager_callback_id =
-				MANAGER_REGISTER(Spectrum)(Cmiss_graphics_module_spectrum_manager_callback,
-					(void *)module, Cmiss_spectrum_module_get_manager(module->spectrum_module));
-			module->default_time_keeper = Cmiss_context_get_default_time_keeper(context);
-			module->tessellation_module = Cmiss_tessellation_module_create();
-			module->member_regions_list = new std::list<Cmiss_region*>;
+				MANAGER_REGISTER(Spectrum)(cmzn_graphics_module_spectrum_manager_callback,
+					(void *)module, cmzn_spectrum_module_get_manager(module->spectrum_module));
+			module->default_time_keeper = cmzn_context_get_default_time_keeper(context);
+			module->tessellation_module = cmzn_tessellation_module_create();
+			module->member_regions_list = new std::list<cmzn_region*>;
 			module->tessellation_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_tessellation)(Cmiss_graphics_module_tessellation_manager_callback,
-					(void *)module, Cmiss_tessellation_module_get_manager(module->tessellation_module));
+				MANAGER_REGISTER(cmzn_tessellation)(cmzn_graphics_module_tessellation_manager_callback,
+					(void *)module, cmzn_tessellation_module_get_manager(module->tessellation_module));
 			module->access_count = 1;
 		}
 		else
 		{
-			module = (Cmiss_graphics_module *)NULL;
+			module = (cmzn_graphics_module *)NULL;
 			display_message(ERROR_MESSAGE,
-			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss scene graphics module");
+			"cmzn_rendtion_graphics_module_create. Not enough memory for cmzn scene graphics module");
 		}
 	}
 	else
 	{
-		module = (Cmiss_graphics_module *)NULL;
-		display_message(ERROR_MESSAGE,"Cmiss_rendtion_graphics_module_create.  Invalid argument(s)");
+		module = (cmzn_graphics_module *)NULL;
+		display_message(ERROR_MESSAGE,"cmzn_rendtion_graphics_module_create.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (module);
 }
 
-struct Cmiss_graphics_material_module *Cmiss_graphics_module_get_material_module(
-	struct Cmiss_graphics_module *graphics_module)
+struct cmzn_graphics_material_module *cmzn_graphics_module_get_material_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->material_module)
 	{
-		return Cmiss_graphics_material_module_access(graphics_module->material_module);
+		return cmzn_graphics_material_module_access(graphics_module->material_module);
 	}
 
 	return 0;
 }
 
-struct Cmiss_graphics_module *Cmiss_graphics_module_access(
-	struct Cmiss_graphics_module *graphics_module)
+struct cmzn_graphics_module *cmzn_graphics_module_access(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module)
 	{
@@ -316,22 +316,22 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_access(
 	return graphics_module;
 }
 
-int Cmiss_graphics_module_remove_member_regions_scene(
-	struct Cmiss_graphics_module *graphics_module)
+int cmzn_graphics_module_remove_member_regions_scene(
+	struct cmzn_graphics_module *graphics_module)
 {
 	int return_code = 0;
 
 	if (graphics_module && graphics_module->member_regions_list)
 	{
-		std::list<Cmiss_region*>::iterator pos;
+		std::list<cmzn_region*>::iterator pos;
 		for (pos = graphics_module->member_regions_list->begin();
 				pos != graphics_module->member_regions_list->end(); ++pos)
 		{
 			// clean up scene between begin/end change so fields and other objects
 			// destroyed when scene destroyed do not cause messages to be sent
-			Cmiss_region_begin_change(*pos);
-			Cmiss_region_deaccess_scene(*pos);
-			Cmiss_region_end_change(*pos);
+			cmzn_region_begin_change(*pos);
+			cmzn_region_deaccess_scene(*pos);
+			cmzn_region_end_change(*pos);
 		}
 		graphics_module->member_regions_list->clear();
 		return_code = 1;
@@ -339,62 +339,62 @@ int Cmiss_graphics_module_remove_member_regions_scene(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_remove_member_regions_scene.  "
+			"cmzn_graphics_module_remove_member_regions_scene.  "
 			"Invalid argument(s)");
 	}
 
 	return return_code;
 }
 
-int Cmiss_graphics_module_destroy(
-	struct Cmiss_graphics_module **graphics_module_address)
+int cmzn_graphics_module_destroy(
+	struct cmzn_graphics_module **graphics_module_address)
 {
 	int return_code = 0;
-	struct Cmiss_graphics_module *graphics_module = NULL;
+	struct cmzn_graphics_module *graphics_module = NULL;
 
 	if (NULL != (graphics_module = *graphics_module_address))
 	{
 		graphics_module->access_count--;
 		if (0 == graphics_module->access_count)
 		{
-			MANAGER_DEREGISTER(Cmiss_glyph)(
+			MANAGER_DEREGISTER(cmzn_glyph)(
 				graphics_module->glyph_manager_callback_id,
-				Cmiss_glyph_module_get_manager(graphics_module->glyph_module));
+				cmzn_glyph_module_get_manager(graphics_module->glyph_module));
 			if (graphics_module->root_region)
-				Cmiss_region_destroy(&graphics_module->root_region);
+				cmzn_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
-				Cmiss_graphics_material_module_get_manager(graphics_module->material_module));
+				cmzn_graphics_material_module_get_manager(graphics_module->material_module));
 			MANAGER_DEREGISTER(Spectrum)(
-				graphics_module->spectrum_manager_callback_id, Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module));
-			MANAGER_DEREGISTER(Cmiss_tessellation)(
+				graphics_module->spectrum_manager_callback_id, cmzn_spectrum_module_get_manager(graphics_module->spectrum_module));
+			MANAGER_DEREGISTER(cmzn_tessellation)(
 				graphics_module->tessellation_manager_callback_id,
-				Cmiss_tessellation_module_get_manager(graphics_module->tessellation_module));
-			MANAGER_DEREGISTER(Cmiss_font)(
+				cmzn_tessellation_module_get_manager(graphics_module->tessellation_module));
+			MANAGER_DEREGISTER(cmzn_font)(
 				graphics_module->font_manager_callback_id,
-				Cmiss_font_module_get_manager(graphics_module->font_module));
+				cmzn_font_module_get_manager(graphics_module->font_module));
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
-			Cmiss_glyph_module_destroy(&graphics_module->glyph_module);
+			cmzn_glyph_module_destroy(&graphics_module->glyph_module);
 			if (graphics_module->light_module)
 				Light_module_destroy(&graphics_module->light_module);
 			if (graphics_module->light_model_module)
 				Light_model_module_destroy(&graphics_module->light_model_module);
 			if (graphics_module->spectrum_module)
-				Cmiss_spectrum_module_destroy(&graphics_module->spectrum_module);
+				cmzn_spectrum_module_destroy(&graphics_module->spectrum_module);
 			if (graphics_module->font_module)
-				Cmiss_font_module_destroy(&graphics_module->font_module);
+				cmzn_font_module_destroy(&graphics_module->font_module);
 			if (graphics_module->material_module)
-				Cmiss_graphics_material_module_destroy(&graphics_module->material_module);
+				cmzn_graphics_material_module_destroy(&graphics_module->material_module);
 			if (graphics_module->graphics_filter_module)
-				Cmiss_graphics_filter_module_destroy(&graphics_module->graphics_filter_module);
+				cmzn_graphics_filter_module_destroy(&graphics_module->graphics_filter_module);
 			if (graphics_module->default_time_keeper)
-				Cmiss_time_keeper_destroy(&graphics_module->default_time_keeper);
+				cmzn_time_keeper_destroy(&graphics_module->default_time_keeper);
 			if (graphics_module->tessellation_module)
-				Cmiss_tessellation_module_destroy(&graphics_module->tessellation_module);
-			Cmiss_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
+				cmzn_tessellation_module_destroy(&graphics_module->tessellation_module);
+			cmzn_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
 			if (graphics_module->member_regions_list)
 			{
-				Cmiss_graphics_module_remove_member_regions_scene(graphics_module);
+				cmzn_graphics_module_remove_member_regions_scene(graphics_module);
 				delete graphics_module->member_regions_list;
 			}
 			DEALLOCATE(*graphics_module_address);
@@ -405,51 +405,51 @@ int Cmiss_graphics_module_destroy(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_destroy.  Missing graphics module");
+			"cmzn_graphics_module_destroy.  Missing graphics module");
 		return_code = 0;
 	}
 
 	return return_code;
 }
 
-int Cmiss_graphics_module_create_scene(
-	struct Cmiss_graphics_module *graphics_module,
-	struct Cmiss_region *cmiss_region)
+int cmzn_graphics_module_create_scene(
+	struct cmzn_graphics_module *graphics_module,
+	struct cmzn_region *cmiss_region)
 {
-	struct Cmiss_scene *scene;
+	struct cmzn_scene *scene;
 	int return_code;
 
-	ENTER(Cmiss_region_add_scene);
+	ENTER(cmzn_region_add_scene);
 	if (cmiss_region && graphics_module)
 	{
-		scene = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_scene))(
-			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_scene) *)NULL, (void *)NULL,
-			Cmiss_region_private_get_any_object_list(cmiss_region));
+		scene = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(cmzn_scene))(
+			(ANY_OBJECT_CONDITIONAL_FUNCTION(cmzn_scene) *)NULL, (void *)NULL,
+			cmzn_region_private_get_any_object_list(cmiss_region));
 		if (!(scene))
 		{
-			if (NULL != (scene = Cmiss_scene_create_internal(cmiss_region, graphics_module)))
+			if (NULL != (scene = cmzn_scene_create_internal(cmiss_region, graphics_module)))
 			{
-				Cmiss_scene_set_position(scene, 1);
+				cmzn_scene_set_position(scene, 1);
 				return_code = 1;
 			}
 			else
 			{
 				return_code = 0;
 				display_message(ERROR_MESSAGE,
-					"Cmiss_region_add_scene. Cannot create scene for region");
+					"cmzn_region_add_scene. Cannot create scene for region");
 			}
 		}
 		else
 		{
 			return_code = 1;
 			//ACCESS or not ?
-			//ACCESS(Cmiss_scene)(scene);
+			//ACCESS(cmzn_scene)(scene);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_scene. Invalid argument(s).");
+			"cmzn_region_add_scene. Invalid argument(s).");
 		return_code = 0;
 	}
 	LEAVE;
@@ -457,72 +457,72 @@ int Cmiss_graphics_module_create_scene(
 	return (return_code);
 }
 
-struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
-	struct Cmiss_graphics_module *graphics_module)
+struct MANAGER(Spectrum) *cmzn_graphics_module_get_spectrum_manager(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->spectrum_module)
 	{
-		return Cmiss_spectrum_module_get_manager(graphics_module->spectrum_module);
+		return cmzn_spectrum_module_get_manager(graphics_module->spectrum_module);
 	}
 
 	return NULL;
 }
 
-Cmiss_spectrum_module_id Cmiss_graphics_module_get_spectrum_module(
-	struct Cmiss_graphics_module *graphics_module)
+cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->spectrum_module)
 	{
-		return Cmiss_spectrum_module_access(graphics_module->spectrum_module);
+		return cmzn_spectrum_module_access(graphics_module->spectrum_module);
 	}
 	return 0;
 }
 
-struct Cmiss_font *Cmiss_graphics_module_get_default_font(
-	struct Cmiss_graphics_module *graphics_module)
+struct cmzn_font *cmzn_graphics_module_get_default_font(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->font_module)
 	{
-		return Cmiss_font_module_get_default_font(graphics_module->font_module);
+		return cmzn_font_module_get_default_font(graphics_module->font_module);
 	}
 	return 0;
 }
 
-Cmiss_font_module_id Cmiss_graphics_module_get_font_module(
-	struct Cmiss_graphics_module *graphics_module)
+cmzn_font_module_id cmzn_graphics_module_get_font_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->font_module)
 	{
-		return Cmiss_font_module_access(graphics_module->font_module);
+		return cmzn_font_module_access(graphics_module->font_module);
 	}
 	return 0;
 }
 
-struct MANAGER(Cmiss_font) *Cmiss_graphics_module_get_font_manager(
-	struct Cmiss_graphics_module *graphics_module)
+struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->font_module)
 	{
-		return Cmiss_font_module_get_manager(graphics_module->font_module);
+		return cmzn_font_module_get_manager(graphics_module->font_module);
 	}
 	return 0;
 }
 
-Cmiss_glyph_module_id Cmiss_graphics_module_get_glyph_module(
-	Cmiss_graphics_module_id graphics_module)
+cmzn_glyph_module_id cmzn_graphics_module_get_glyph_module(
+	cmzn_graphics_module_id graphics_module)
 {
 	if (graphics_module)
 	{
-		Cmiss_glyph_module_access(graphics_module->glyph_module);
+		cmzn_glyph_module_access(graphics_module->glyph_module);
 		return graphics_module->glyph_module;
 	}
 	return 0;
 }
 
-Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
-	Cmiss_graphics_module_id graphics_module)
+cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
+	cmzn_graphics_module_id graphics_module)
 {
-	Cmiss_scene_viewer_module *scene_viewer_module = NULL;
+	cmzn_scene_viewer_module *scene_viewer_module = NULL;
 	if (graphics_module)
 	{
 		if (!graphics_module->scene_viewer_module)
@@ -535,81 +535,81 @@ Cmiss_scene_viewer_module_id Cmiss_graphics_module_get_scene_viewer_module(
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
-			Cmiss_graphics_filter_module_id filterModule = Cmiss_graphics_module_get_filter_module(graphics_module);
-			graphics_module->scene_viewer_module = CREATE(Cmiss_scene_viewer_module)(
+			cmzn_graphics_filter_module_id filterModule = cmzn_graphics_module_get_filter_module(graphics_module);
+			graphics_module->scene_viewer_module = CREATE(cmzn_scene_viewer_module)(
 				&default_background_colour,
 				/* interactive_tool_manager */0,
 				graphics_module->light_module, default_light,
 				graphics_module->light_model_module, default_light_model,
 				filterModule);
-			Cmiss_graphics_filter_module_destroy(&filterModule);
+			cmzn_graphics_filter_module_destroy(&filterModule);
 			DEACCESS(Light_model)(&default_light_model);
 			DEACCESS(Light)(&default_light);
 		}
-		scene_viewer_module = Cmiss_scene_viewer_module_access(graphics_module->scene_viewer_module);
+		scene_viewer_module = cmzn_scene_viewer_module_access(graphics_module->scene_viewer_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_scene_viewer_module.  "
+			"cmzn_graphics_module_get_scene_viewer_module.  "
 			"Missing context");
 	}
 	return scene_viewer_module;
 }
 
-Cmiss_tessellation_module_id Cmiss_graphics_module_get_tessellation_module(
-	struct Cmiss_graphics_module *graphics_module)
+cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->tessellation_module)
 	{
-		return Cmiss_tessellation_module_access(graphics_module->tessellation_module);
+		return cmzn_tessellation_module_access(graphics_module->tessellation_module);
 	}
 	return 0;
 }
 
-struct Cmiss_time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
-	struct Cmiss_graphics_module *module)
+struct cmzn_time_keeper *cmzn_graphics_module_get_time_keeper_internal(
+	struct cmzn_graphics_module *module)
 {
-	struct Cmiss_time_keeper *time_keeper = NULL;
+	struct cmzn_time_keeper *time_keeper = NULL;
 
 	if (module && module->default_time_keeper)
 	{
-		time_keeper = Cmiss_time_keeper_access(module->default_time_keeper);
+		time_keeper = cmzn_time_keeper_access(module->default_time_keeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_time_keeper_internal.  Invalid argument(s)");
+			"cmzn_graphics_module_get_time_keeper_internal.  Invalid argument(s)");
 	}
 
 	return time_keeper;
 }
 
-int Cmiss_graphics_module_enable_scenes(
-	struct Cmiss_graphics_module *graphics_module,
-	struct Cmiss_region *cmiss_region)
+int cmzn_graphics_module_enable_scenes(
+	struct cmzn_graphics_module *graphics_module,
+	struct cmzn_region *cmiss_region)
 {
 	int return_code;
-	struct Cmiss_region *child_region;
+	struct cmzn_region *child_region;
 
 	if (cmiss_region && graphics_module)
 	{
-		return_code = Cmiss_graphics_module_create_scene(
+		return_code = cmzn_graphics_module_create_scene(
 			graphics_module, cmiss_region);
 		if (return_code)
 		{
-			child_region = Cmiss_region_get_first_child(cmiss_region);
+			child_region = cmzn_region_get_first_child(cmiss_region);
 			while (child_region)
 			{
-				return_code = Cmiss_graphics_module_enable_scenes(
+				return_code = cmzn_graphics_module_enable_scenes(
 					graphics_module, child_region);
-				Cmiss_region_reaccess_next_sibling(&child_region);
+				cmzn_region_reaccess_next_sibling(&child_region);
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene.  "
+		display_message(ERROR_MESSAGE,"cmzn_scene.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
@@ -617,26 +617,26 @@ int Cmiss_graphics_module_enable_scenes(
 	return (return_code);
 }
 
-Cmiss_scene_id Cmiss_graphics_module_get_scene(
-	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region)
+cmzn_scene_id cmzn_graphics_module_get_scene(
+	cmzn_graphics_module_id graphics_module, cmzn_region_id region)
 {
-	struct Cmiss_scene *scene = NULL;
+	struct cmzn_scene *scene = NULL;
 	if (graphics_module && region)
 	{
-		scene = Cmiss_region_get_scene_private(region);
+		scene = cmzn_region_get_scene_private(region);
 		if (!scene)
 		{
-			Cmiss_region_id top_region = Cmiss_region_get_root(region);
-			Cmiss_graphics_module_enable_scenes(graphics_module, top_region);
-			scene = Cmiss_region_get_scene_private(region);
-			Cmiss_region_destroy(&top_region);
+			cmzn_region_id top_region = cmzn_region_get_root(region);
+			cmzn_graphics_module_enable_scenes(graphics_module, top_region);
+			scene = cmzn_region_get_scene_private(region);
+			cmzn_region_destroy(&top_region);
 		}
 	}
-	return Cmiss_scene_access(scene);
+	return cmzn_scene_access(scene);
 }
 
-int Cmiss_graphics_module_add_member_region(
-	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region)
+int cmzn_graphics_module_add_member_region(
+	struct cmzn_graphics_module *graphics_module, struct cmzn_region *region)
 {
 	int return_code = 0;
 
@@ -651,18 +651,18 @@ int Cmiss_graphics_module_add_member_region(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_add_member_region.  Invalid argument(s)");
+			"cmzn_graphics_module_add_member_region.  Invalid argument(s)");
 	}
 
 	return return_code;
 }
 
-int Cmiss_graphics_module_remove_member_region(
-		struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region)
+int cmzn_graphics_module_remove_member_region(
+		struct cmzn_graphics_module *graphics_module, struct cmzn_region *region)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphics_module_remove_member_region);
+	ENTER(cmzn_graphics_module_remove_member_region);
 	if (graphics_module && graphics_module->member_regions_list && region)
 	{
 		graphics_module->member_regions_list->remove(region);
@@ -671,7 +671,7 @@ int Cmiss_graphics_module_remove_member_region(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_remove_member_region.  Invalid argument(s)");
+			"cmzn_graphics_module_remove_member_region.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -679,28 +679,28 @@ int Cmiss_graphics_module_remove_member_region(
 	return (return_code);
 }
 
-Cmiss_graphics_filter_module_id Cmiss_graphics_module_get_filter_module(
-	struct Cmiss_graphics_module *graphics_module)
+cmzn_graphics_filter_module_id cmzn_graphics_module_get_filter_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->graphics_filter_module)
 	{
-		return Cmiss_graphics_filter_module_access(graphics_module->graphics_filter_module);
+		return cmzn_graphics_filter_module_access(graphics_module->graphics_filter_module);
 	}
 	return 0;
 }
 
-struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
-		struct Cmiss_graphics_module *graphics_module)
+struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_module_get_filter_manager(
+		struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->graphics_filter_module)
 	{
-		return Cmiss_graphics_filter_module_get_manager(graphics_module->graphics_filter_module);
+		return cmzn_graphics_filter_module_get_manager(graphics_module->graphics_filter_module);
 	}
 	return 0;
 }
 
-Light_module *Cmiss_graphics_module_get_light_module(
-	struct Cmiss_graphics_module *graphics_module)
+Light_module *cmzn_graphics_module_get_light_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->light_module)
 	{
@@ -710,8 +710,8 @@ Light_module *Cmiss_graphics_module_get_light_module(
 	return 0;
 }
 
-Light_model_module *Cmiss_graphics_module_get_light_model_module(
-	struct Cmiss_graphics_module *graphics_module)
+Light_model_module *cmzn_graphics_module_get_light_model_module(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->light_model_module)
 	{
@@ -721,18 +721,18 @@ Light_model_module *Cmiss_graphics_module_get_light_model_module(
 	return 0;
 }
 
-void Cmiss_graphics_module_remove_external_callback_dependency(
-	struct Cmiss_graphics_module *graphics_module)
+void cmzn_graphics_module_remove_external_callback_dependency(
+	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module)
 	{
-		std::list<Cmiss_region*>::iterator region_iter;
+		std::list<cmzn_region*>::iterator region_iter;
 		for (region_iter = graphics_module->member_regions_list->begin();
 			region_iter != graphics_module->member_regions_list->end(); ++region_iter)
 		{
-			Cmiss_region *region = *region_iter;
-			Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-			Cmiss_scene_detach_from_owner(scene);
+			cmzn_region *region = *region_iter;
+			cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			cmzn_scene_detach_from_owner(scene);
 		}
 	}
 }

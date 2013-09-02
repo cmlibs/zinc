@@ -121,13 +121,13 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_select_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_select_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_render_polygon_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_render_polygon_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_line_attributes_shape);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_streamlines_track_direction);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_streamlines_track_direction);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
 

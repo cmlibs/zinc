@@ -40,9 +40,9 @@
 
 #ifndef CMZN_FIELDALIASID_H__
 /*****************************************************************************//**
- * The image field specific handle to a image Cmiss_field.
+ * The image field specific handle to a image cmzn_field.
  */
-	struct Cmiss_field_alias;
-	typedef struct Cmiss_field_alias *Cmiss_field_alias_id;
+	struct cmzn_field_alias;
+	typedef struct cmzn_field_alias *cmzn_field_alias_id;
 	#define CMZN_FIELDALIASID_H__
 #endif /* CMISS_FIELD_ALIAS_ID_H */

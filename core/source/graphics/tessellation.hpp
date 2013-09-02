@@ -48,16 +48,16 @@
 #include "general/manager.h"
 #include "general/object.h"
 
-struct Cmiss_graphics_module;
+struct cmzn_graphics_module;
 
-class Cmiss_tessellation_change_detail
+class cmzn_tessellation_change_detail
 {
 	bool circleDivisionsChanged;
 	bool elementDivisionsChanged;
 
 public:
 
-	Cmiss_tessellation_change_detail() :
+	cmzn_tessellation_change_detail() :
 		circleDivisionsChanged(false),
 		elementDivisionsChanged(false)
 	{ }
@@ -93,19 +93,19 @@ public:
  * Object describing how elements / continuous field domains are  tessellated
  * or sampled into graphics.
  */
-struct Cmiss_tessellation;
+struct cmzn_tessellation;
 
-DECLARE_LIST_TYPES(Cmiss_tessellation);
-DECLARE_MANAGER_TYPES(Cmiss_tessellation);
+DECLARE_LIST_TYPES(cmzn_tessellation);
+DECLARE_MANAGER_TYPES(cmzn_tessellation);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_tessellation);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_tessellation);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_tessellation);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_tessellation);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_tessellation);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_tessellation,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_tessellation);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_tessellation,name,const char *);
 
-PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_tessellation);
-PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_tessellation,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_tessellation);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_tessellation,name,const char *);
 
 
 /**
@@ -115,19 +115,19 @@ PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_tessellation,name,co
  * @return  Handle to the newly created tessellation module if successful,
  * otherwise NULL.
  */
-Cmiss_tessellation_module_id Cmiss_tessellation_module_create();
+cmzn_tessellation_module_id cmzn_tessellation_module_create();
 
-struct MANAGER(Cmiss_tessellation) *Cmiss_tessellation_module_get_manager(
-	Cmiss_tessellation_module_id tessellation_module);
+struct MANAGER(cmzn_tessellation) *cmzn_tessellation_module_get_manager(
+	cmzn_tessellation_module_id tessellation_module);
 
 /***************************************************************************//**
  * Private; only to be called from graphics_module.
  */
-int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellation) *manager,
-	struct Cmiss_tessellation_module *tessellation_module);
+int cmzn_tessellation_manager_set_owner_private(struct MANAGER(cmzn_tessellation) *manager,
+	struct cmzn_tessellation_module *tessellation_module);
 
 /**
- * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_tessellation) but also returns
+ * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_tessellation) but also returns
  * change_detail for tessellation, if any.
  *
  * @param message  The tessellation manager change message.
@@ -135,9 +135,9 @@ int Cmiss_tessellation_manager_set_owner_private(struct MANAGER(Cmiss_tessellati
  * @param change_detail_address  Address to put const change detail in.
  * @return  manager change flags for the object.
  */
-int Cmiss_tessellation_manager_message_get_object_change_and_detail(
-	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, Cmiss_tessellation *tessellation,
-	const Cmiss_tessellation_change_detail **change_detail_address);
+int cmzn_tessellation_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *message, cmzn_tessellation *tessellation,
+	const cmzn_tessellation_change_detail **change_detail_address);
 
 /**
  * Internal function finding or creating a tessellation with coarse and fine
@@ -152,10 +152,10 @@ int Cmiss_tessellation_manager_message_get_object_change_and_detail(
  * or circle divisions are omitted.
  * @return  Handle to tessellation or 0 if error. Up to caller to destroy.
  */
-Cmiss_tessellation_id Cmiss_tessellation_module_find_or_create_fixed_tessellation(
-	Cmiss_tessellation_module_id tessellationModule,
+cmzn_tessellation_id cmzn_tessellation_module_find_or_create_fixed_tessellation(
+	cmzn_tessellation_module_id tessellationModule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
-	Cmiss_tessellation_id defaultTessellation);
+	cmzn_tessellation_id defaultTessellation);
 
 /***************************************************************************//**
  * Function to process the string to be passed into an tessellation object.
@@ -169,6 +169,6 @@ int string_to_divisions(const char *input, int **values_in, int *size_in);
 
 void list_divisions(int size, int *divisions);
 
-int list_Cmiss_tessellation_iterator(struct Cmiss_tessellation *tessellation, void *dummy_void);
+int list_cmzn_tessellation_iterator(struct cmzn_tessellation *tessellation, void *dummy_void);
 
 #endif

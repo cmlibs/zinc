@@ -58,7 +58,7 @@ Essentially it is used to embed one mesh in the elements of another.
 
 Computed_field_compose::~Computed_field_compose()
 {
-	Cmiss_mesh_destroy(&mesh);
+	cmzn_mesh_destroy(&mesh);
 }
 
 Computed_field_core *Computed_field_compose::copy()
@@ -74,7 +74,7 @@ int Computed_field_compose::compare(Computed_field_core *other_core)
 	ENTER(Computed_field_compose::type_specific_contents_match);
 	if (field && (0 != (other = dynamic_cast<Computed_field_compose*>(other_core))))
 	{
-		if (Cmiss_mesh_match(mesh, other->mesh) &&
+		if (cmzn_mesh_match(mesh, other->mesh) &&
 			(find_nearest == other->find_nearest) &&
 			(use_point_five_when_out_of_bounds ==
 				other->use_point_five_when_out_of_bounds))
@@ -95,24 +95,24 @@ int Computed_field_compose::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_compose::compare */
 
-bool Computed_field_compose::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_compose::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return (0 != field->evaluate(cache));
 }
 
-int Computed_field_compose::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_compose::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
 	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (coordinateValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
 		/* The values from the first source field are inverted in the
 			second source field to get element_xi which is evaluated with
 			the third source field */
-		Cmiss_element_id compose_element =0;
+		cmzn_element_id compose_element =0;
 		FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		if (Computed_field_find_element_xi(getSourceField(1), &extraCache,
 			coordinateValueCache->values,
@@ -174,7 +174,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE, "    mesh : ");
-		char *mesh_name = Cmiss_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(mesh);
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
 		display_message(INFORMATION_MESSAGE,"    calculate values field :");
@@ -192,7 +192,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    use point five when out of bounds\n");
 		}
-		display_message(INFORMATION_MESSAGE,"    element dimension %d\n", Cmiss_mesh_get_dimension(mesh));
+		display_message(INFORMATION_MESSAGE,"    element dimension %d\n", cmzn_mesh_get_dimension(mesh));
 	}
 	else
 	{
@@ -238,7 +238,7 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " mesh ", &error);
-		char *mesh_name = Cmiss_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(mesh);
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 		append_string(&command_string, " calculate_values_field ", &error);
@@ -256,7 +256,7 @@ Returns allocated command string for reproducing field. Includes type.
 		{
 			append_string(&command_string, " use_point_five_when_out_of_bounds", &error);
 		}
-		sprintf(temp_string, " element_dimension %d", Cmiss_mesh_get_dimension(mesh));
+		sprintf(temp_string, " element_dimension %d", cmzn_mesh_get_dimension(mesh));
 		append_string(&command_string, temp_string, &error);
 	}
 	else
@@ -283,11 +283,11 @@ Returns allocated command string for reproducing field. Includes type.
  * NOTE: this field type has been superceded by find_mesh_location combined with
  * embedded field. DO NOT add to external API.
  */
-Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_compose(cmzn_field_module *field_module,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	Cmiss_mesh_id search_mesh,
+	cmzn_mesh_id search_mesh,
 	int find_nearest, int use_point_five_when_out_of_bounds)
 {
 	Computed_field *field = NULL;
@@ -297,8 +297,8 @@ Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 		find_element_xi_field && find_element_xi_field->isNumerical() &&
 		calculate_values_field && calculate_values_field->isNumerical() &&
 		search_mesh &&
-		(Cmiss_mesh_get_master_region_internal(search_mesh) ==
-			Cmiss_field_module_get_master_region_internal(field_module)))
+		(cmzn_mesh_get_master_region_internal(search_mesh) ==
+			cmzn_field_module_get_master_region_internal(field_module)))
 	{
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)
@@ -353,7 +353,7 @@ int Computed_field_compose::get_type(
 	struct Computed_field **texture_coordinate_field_address,
 	struct Computed_field **find_element_xi_field_address,
 	struct Computed_field **calculate_values_field_address,
-	Cmiss_mesh_id *mesh_address, int *find_nearest_address,
+	cmzn_mesh_id *mesh_address, int *find_nearest_address,
 	int *use_point_five_when_out_of_bounds_address)
 {
 	int return_code;

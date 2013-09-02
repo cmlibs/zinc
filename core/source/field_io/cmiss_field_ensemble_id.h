@@ -42,36 +42,36 @@
 #define CMISS_FIELD_ENSEMBLE_ID_H
 
 /***************************************************************************//**
- * The ensemble type specific handle to an ensemble Cmiss_field.
+ * The ensemble type specific handle to an ensemble cmzn_field.
  * This is a domain comprising a set of entries with unique identifiers.
  */
-struct Cmiss_field_ensemble;
-typedef struct Cmiss_field_ensemble *Cmiss_field_ensemble_id;
+struct cmzn_field_ensemble;
+typedef struct cmzn_field_ensemble *cmzn_field_ensemble_id;
 
 /***************************************************************************//**
- * The ensemble type specific handle to a ensemble group Cmiss_field.
+ * The ensemble type specific handle to a ensemble group cmzn_field.
  * This field stores a subset of entries from an ensemble.
  * When evaluated, returns 1 for entries in the group, 0 otherwise.
  */
-struct Cmiss_field_ensemble_group;
-typedef struct Cmiss_field_ensemble_group *Cmiss_field_ensemble_group_id;
+struct cmzn_field_ensemble_group;
+typedef struct cmzn_field_ensemble_group *cmzn_field_ensemble_group_id;
 
 /***************************************************************************//**
  * The numeric type of the unique identifier for each entry in an ensemble.
  */
-typedef int Cmiss_ensemble_identifier;
+typedef int cmzn_ensemble_identifier;
 
 /***************************************************************************//**
- * Iterator-handle for referencing an entry in a Cmiss_field_ensemble.
+ * Iterator-handle for referencing an entry in a cmzn_field_ensemble.
  */
-struct Cmiss_ensemble_iterator;
-typedef struct Cmiss_ensemble_iterator *Cmiss_ensemble_iterator_id;
+struct cmzn_ensemble_iterator;
+typedef struct cmzn_ensemble_iterator *cmzn_ensemble_iterator_id;
 
 /***************************************************************************//**
  * Index to a selection of entries from N ensembles.
  * Used for getting/setting parameters.
  */
-struct Cmiss_ensemble_index;
-typedef struct Cmiss_ensemble_index *Cmiss_ensemble_index_id;
+struct cmzn_ensemble_index;
+typedef struct cmzn_ensemble_index *cmzn_ensemble_index_id;
 
 #endif

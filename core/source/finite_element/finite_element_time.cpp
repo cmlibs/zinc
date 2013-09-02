@@ -1211,20 +1211,20 @@ int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
 	return (fe_time_sequence->access_count <= 2);
 }
 
-Cmiss_time_sequence_id Cmiss_time_sequence_access(
-	Cmiss_time_sequence_id time_sequence)
+cmzn_time_sequence_id cmzn_time_sequence_access(
+	cmzn_time_sequence_id time_sequence)
 {
-	return (Cmiss_time_sequence_id)(ACCESS(FE_time_sequence)(
+	return (cmzn_time_sequence_id)(ACCESS(FE_time_sequence)(
 		(struct FE_time_sequence *)time_sequence));
 }
 
-int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address)
+int cmzn_time_sequence_destroy(cmzn_time_sequence_id *time_sequence_address)
 {
 	return DESTROY(FE_time_sequence)(
 		(struct FE_time_sequence **)time_sequence_address);
 }
 
-int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+int cmzn_time_sequence_set_value(cmzn_time_sequence_id time_sequence,
 	int time_index, double time)
 {
 	struct FE_time_sequence *fe_time_sequence;
@@ -1232,7 +1232,7 @@ int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
 	fe_time_sequence = (struct FE_time_sequence *)time_sequence;
 	if (FE_time_sequence_is_in_use(fe_time_sequence))
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_time_sequence_set_value.  "
+		display_message(ERROR_MESSAGE, "cmzn_time_sequence_set_value.  "
 			"Cannot modify time sequence while in use");
 		return 0;
 	}

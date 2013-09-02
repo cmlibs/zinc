@@ -137,7 +137,7 @@ static int compare_FE_element_values_number_values(
 
 struct FE_element_and_values_to_array_data
 {
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	struct FE_element_values_number *element_values;
 	struct Computed_field *sort_by_field;
 }; /* FE_element_and_values_to_array_data */
@@ -179,9 +179,9 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 						&number_of_xi_points, &xi_points))
 			{
 				if (!(array_data->element_values->values &&
-					Cmiss_field_cache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points) &&
-					Cmiss_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
-						Cmiss_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values)))
+					cmzn_field_cache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points) &&
+					cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+						cmzn_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values)))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_element_and_values_to_array.  "
@@ -212,7 +212,7 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int dimension, int element_offset,
 	struct Computed_field *sort_by_field, FE_value time,
-	Cmiss_field_element_group_id element_group)
+	cmzn_field_element_group_id element_group)
 /*******************************************************************************
  LAST MODIFIED : 18 February 2003
 
@@ -276,9 +276,9 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 				{
 					/* make a linear array of elements in the group in current order */
 					struct FE_element_and_values_to_array_data array_data;
-					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(FE_region_get_Cmiss_region(fe_region));
-					Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
-					Cmiss_field_cache_set_time(field_cache, time);
+					cmzn_field_module_id field_module = cmzn_region_get_field_module(FE_region_get_cmzn_region(fe_region));
+					cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+					cmzn_field_cache_set_time(field_cache, time);
 					array_data.field_cache = field_cache;
 					array_data.element_values = element_values;
 					array_data.sort_by_field = sort_by_field;
@@ -291,8 +291,8 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							"Could not build element/field values array");
 						return_code = 0;
 					}
-					Cmiss_field_cache_destroy(&field_cache);
-					Cmiss_field_module_destroy(&field_module);
+					cmzn_field_cache_destroy(&field_cache);
+					cmzn_field_module_destroy(&field_module);
 				}
 				if (return_code)
 				{
@@ -369,7 +369,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					 group which already have the same number as the new_number */
 					int next_spare_element_number =
 						element_values[number_of_elements - 1].new_number + 1;
-					Cmiss_mesh_group_id mesh = Cmiss_field_element_group_get_mesh(element_group);
+					cmzn_mesh_group_id mesh = cmzn_field_element_group_get_mesh(element_group);
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						element_with_identifier = FE_region_get_FE_element_from_identifier(
@@ -379,9 +379,9 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							!= element_values[i].element)
 						{
 							if ((mesh == NULL) || (((element_with_identifier == NULL) ||
-								Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(mesh),
+								cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(mesh),
 									element_with_identifier)) &&
-								(Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(mesh),
+								(cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(mesh),
 									element_values[i].element))))
 							{
 								if (element_with_identifier)
@@ -412,7 +412,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							}
 						}
 					}
-					Cmiss_mesh_group_destroy(&mesh);
+					cmzn_mesh_group_destroy(&mesh);
 				}
 				for (i = 0; i < number_of_elements; i++)
 				{
@@ -452,23 +452,23 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
  * @param time  Time to evaluate the conditional_field at.
  * @return  The element list, or NULL on failure.
  */
-struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh,
+struct LIST(FE_element) *cmzn_mesh_get_selected_element_list(cmzn_mesh_id mesh,
 	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
 	FE_value time)
 {
 	if (!mesh)
 		return 0;
-	struct LIST(FE_element) *element_list = Cmiss_mesh_create_element_list_internal(mesh);
-	Cmiss_element_id element = 0;
-	Cmiss_field_cache_id field_cache = 0;
+	struct LIST(FE_element) *element_list = cmzn_mesh_create_element_list_internal(mesh);
+	cmzn_element_id element = 0;
+	cmzn_field_cache_id field_cache = 0;
 	if (conditional_field)
 	{
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(conditional_field);
-		field_cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_field_cache_set_time(field_cache, (double)time);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_field_module_id field_module = cmzn_field_get_field_module(conditional_field);
+		field_cache = cmzn_field_module_create_cache(field_module);
+		cmzn_field_cache_set_time(field_cache, (double)time);
+		cmzn_field_module_destroy(&field_module);
 	}
-	if (element_ranges && (2*Multi_range_get_total_number_in_ranges(element_ranges) < Cmiss_mesh_get_size(mesh)))
+	if (element_ranges && (2*Multi_range_get_total_number_in_ranges(element_ranges) < cmzn_mesh_get_size(mesh)))
 	{
 		const int number_of_ranges = Multi_range_get_number_of_ranges(element_ranges);
 		for (int i = 0; (i < number_of_ranges) && element_list; ++i)
@@ -477,87 +477,87 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
 			Multi_range_get_range(element_ranges, i, &start, &stop);
 			for (int identifier = start; (identifier <= stop) && element_list; ++identifier)
 			{
-				element = Cmiss_mesh_find_element_by_identifier(mesh, identifier);
+				element = cmzn_mesh_find_element_by_identifier(mesh, identifier);
 				if (element)
 				{
 					bool add = true;
 					if (conditional_field)
 					{
-						Cmiss_field_cache_set_element(field_cache, element);
-						add = Cmiss_field_evaluate_boolean(conditional_field, field_cache) == 1;
+						cmzn_field_cache_set_element(field_cache, element);
+						add = cmzn_field_evaluate_boolean(conditional_field, field_cache) == 1;
 					}
 					if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
 					{
 						DESTROY(LIST(FE_element))(&element_list);
 					}
-					Cmiss_element_destroy(&element);
+					cmzn_element_destroy(&element);
 				}
 			}
 		}
 	}
 	else
 	{
-		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
-		while (element_list && (0 != (element = Cmiss_element_iterator_next(iterator))))
+		cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(mesh);
+		while (element_list && (0 != (element = cmzn_element_iterator_next(iterator))))
 		{
 			bool add = true;
 			if (element_ranges)
 			{
-				add = Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element)) == 1;
+				add = Multi_range_is_value_in_range(element_ranges, cmzn_element_get_identifier(element)) == 1;
 			}
 			if (add && conditional_field)
 			{
-				Cmiss_field_cache_set_element(field_cache, element);
-				add = Cmiss_field_evaluate_boolean(conditional_field, field_cache) == 1;
+				cmzn_field_cache_set_element(field_cache, element);
+				add = cmzn_field_evaluate_boolean(conditional_field, field_cache) == 1;
 			}
 			if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
 			{
 				DESTROY(LIST(FE_element))(&element_list);
 			}
-			Cmiss_element_destroy(&element);
+			cmzn_element_destroy(&element);
 		}
-		Cmiss_element_iterator_destroy(&iterator);
+		cmzn_element_iterator_destroy(&iterator);
 	}
-	Cmiss_field_cache_destroy(&field_cache);
+	cmzn_field_cache_destroy(&field_cache);
 	return element_list;
 }
 
 struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
-	struct Cmiss_region *region, int dimension,
+	struct cmzn_region *region, int dimension,
 	struct Multi_range *element_ranges, struct Computed_field *group_field,
 	struct Computed_field *conditional_field, FE_value time)
 {
-	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-	Cmiss_field_module_begin_change(field_module);
-	Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
-	Cmiss_field_id use_conditional_field = 0;
+	cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+	cmzn_field_module_begin_change(field_module);
+	cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
+	cmzn_field_id use_conditional_field = 0;
 	if (group_field && conditional_field)
-		use_conditional_field = Cmiss_field_module_create_or(field_module, group_field, conditional_field);
+		use_conditional_field = cmzn_field_module_create_or(field_module, group_field, conditional_field);
 	else if (group_field)
-		use_conditional_field = Cmiss_field_access(group_field);
+		use_conditional_field = cmzn_field_access(group_field);
 	else if (conditional_field)
-		use_conditional_field = Cmiss_field_access(conditional_field);
+		use_conditional_field = cmzn_field_access(conditional_field);
 	struct LIST(FE_element) *element_list = 0;
 	if (((!group_field) && (!conditional_field)) || use_conditional_field)
 	{
 		// code assumes no ranges = ranges not specified.
 		struct Multi_range *use_element_ranges = (Multi_range_get_number_of_ranges(element_ranges) > 0) ? element_ranges : 0;
-		element_list = Cmiss_mesh_get_selected_element_list(mesh, use_element_ranges, use_conditional_field, time);
+		element_list = cmzn_mesh_get_selected_element_list(mesh, use_element_ranges, use_conditional_field, time);
 	}
 	if (use_conditional_field)
 	{
-		Cmiss_field_destroy(&use_conditional_field);
+		cmzn_field_destroy(&use_conditional_field);
 	}
-	Cmiss_mesh_destroy(&mesh);
-	Cmiss_field_module_end_change(field_module);
-	Cmiss_field_module_destroy(&field_module);
+	cmzn_mesh_destroy(&mesh);
+	cmzn_field_module_end_change(field_module);
+	cmzn_field_module_destroy(&field_module);
 	return element_list;
 }
 
-int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
-	Cmiss_nodeset_id gauss_points_nodeset, int first_identifier,
-	Cmiss_field_stored_mesh_location_id gauss_location_field,
-	Cmiss_field_finite_element_id gauss_weight_field)
+int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
+	cmzn_nodeset_id gauss_points_nodeset, int first_identifier,
+	cmzn_field_stored_mesh_location_id gauss_location_field,
+	cmzn_field_finite_element_id gauss_weight_field)
 {
 	const struct
 	{
@@ -643,16 +643,16 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 	const int tetrahedronCount[] = { 1, 4, 5, 11 };
 
 	int return_code = 0;
-	Cmiss_region_id nodeset_region = Cmiss_nodeset_get_region_internal(gauss_points_nodeset);
-	Cmiss_region_id master_region = Cmiss_mesh_get_master_region_internal(mesh);
-	Cmiss_field_id gauss_location_field_base = Cmiss_field_stored_mesh_location_base_cast(gauss_location_field);
-	Cmiss_field_id gauss_weight_field_base = Cmiss_field_finite_element_base_cast(gauss_weight_field);
+	cmzn_region_id nodeset_region = cmzn_nodeset_get_region_internal(gauss_points_nodeset);
+	cmzn_region_id master_region = cmzn_mesh_get_master_region_internal(mesh);
+	cmzn_field_id gauss_location_field_base = cmzn_field_stored_mesh_location_base_cast(gauss_location_field);
+	cmzn_field_id gauss_weight_field_base = cmzn_field_finite_element_base_cast(gauss_weight_field);
 	if (mesh && (1 <= order) && (order <= 4) && gauss_points_nodeset && (first_identifier >= 0) &&
-		(Cmiss_nodeset_get_master_region_internal(gauss_points_nodeset) == master_region) &&
+		(cmzn_nodeset_get_master_region_internal(gauss_points_nodeset) == master_region) &&
 		gauss_location_field && gauss_weight_field &&
-		(Cmiss_field_get_number_of_components(gauss_location_field_base) == 1))
+		(cmzn_field_get_number_of_components(gauss_location_field_base) == 1))
 	{
-		int dimension = Cmiss_mesh_get_dimension(mesh);
+		int dimension = cmzn_mesh_get_dimension(mesh);
 		const int order_offset = offset[order - 1];
 		int number_of_gauss_points = 1;
 		for (int i = 0; i < dimension; i++)
@@ -674,22 +674,22 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 			}
 		}
 		return_code = 1;
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(nodeset_region);
-		Cmiss_field_module_begin_change(field_module);
-		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(gauss_points_nodeset);
-		if (!Cmiss_node_template_define_field(node_template, gauss_location_field_base))
+		cmzn_field_module_id field_module = cmzn_region_get_field_module(nodeset_region);
+		cmzn_field_module_begin_change(field_module);
+		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+		cmzn_node_template_id node_template = cmzn_nodeset_create_node_template(gauss_points_nodeset);
+		if (!cmzn_node_template_define_field(node_template, gauss_location_field_base))
 			return_code = 0;
-		if (!Cmiss_node_template_define_field(node_template, gauss_weight_field_base))
+		if (!cmzn_node_template_define_field(node_template, gauss_weight_field_base))
 			return_code = 0;
-		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
-		Cmiss_element_id element = 0;
+		cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(mesh);
+		cmzn_element_id element = 0;
 		int id = first_identifier;
 		bool first_unknown_shape = true;
-		Cmiss_nodeset_id master_gauss_points_nodeset = Cmiss_nodeset_get_master(gauss_points_nodeset);
-		while ((0 != (element = Cmiss_element_iterator_next_non_access(iterator))) && return_code)
+		cmzn_nodeset_id master_gauss_points_nodeset = cmzn_nodeset_get_master(gauss_points_nodeset);
+		while ((0 != (element = cmzn_element_iterator_next_non_access(iterator))) && return_code)
 		{
-			Cmiss_element_shape_type shape_type = Cmiss_element_get_shape_type(element);
+			cmzn_element_shape_type shape_type = cmzn_element_get_shape_type(element);
 			switch (shape_type)
 			{
 			case CMISS_ELEMENT_SHAPE_LINE:
@@ -698,17 +698,17 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 				{
 					for (int g = 0; g < number_of_gauss_points; g++)
 					{
-						Cmiss_node_id node = 0;
-						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						cmzn_node_id node = 0;
+						while ((0 != (node = cmzn_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
 						{
-							Cmiss_node_destroy(&node);
+							cmzn_node_destroy(&node);
 							++id;
 						}
-						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
-						Cmiss_field_cache_set_node(field_cache, node);
-						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, gauss_locations + g*dimension);
-						Cmiss_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, gauss_weights + g);
-						Cmiss_node_destroy(&node);
+						node = cmzn_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						cmzn_field_cache_set_node(field_cache, node);
+						cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, gauss_locations + g*dimension);
+						cmzn_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, gauss_weights + g);
+						cmzn_node_destroy(&node);
 						id++;
 					}
 				} break;
@@ -718,19 +718,19 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 					const int tri_offset = triangleOffset[order - 1];
 					for (int g = 0; g < tri_count; g++)
 					{
-						Cmiss_node_id node = 0;
-						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						cmzn_node_id node = 0;
+						while ((0 != (node = cmzn_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
 						{
-							Cmiss_node_destroy(&node);
+							cmzn_node_destroy(&node);
 							++id;
 						}
-						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
-						Cmiss_field_cache_set_node(field_cache, node);
-						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+						node = cmzn_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						cmzn_field_cache_set_node(field_cache, node);
+						cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
 							dimension, TriangleGaussPt[g + tri_offset].location);
-						Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+						cmzn_field_assign_real(gauss_weight_field_base, field_cache,
 							/*number_of_values*/1, &(TriangleGaussPt[g + tri_offset].weight));
-						Cmiss_node_destroy(&node);
+						cmzn_node_destroy(&node);
 						id++;
 					}
 				} break;
@@ -740,19 +740,19 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 					const int tet_offset = tetrahedronOffset[order - 1];
 					for (int g = 0; g < tet_count; g++)
 					{
-						Cmiss_node_id node = 0;
-						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						cmzn_node_id node = 0;
+						while ((0 != (node = cmzn_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
 						{
-							Cmiss_node_destroy(&node);
+							cmzn_node_destroy(&node);
 							++id;
 						}
-						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
-						Cmiss_field_cache_set_node(field_cache, node);
-						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+						node = cmzn_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						cmzn_field_cache_set_node(field_cache, node);
+						cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
 							dimension, TetrahedronGaussPt[g + tet_offset].location);
-						Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+						cmzn_field_assign_real(gauss_weight_field_base, field_cache,
 							/*number_of_values*/1, &(TetrahedronGaussPt[g + tet_offset].weight));
-						Cmiss_node_destroy(&node);
+						cmzn_node_destroy(&node);
 						id++;
 					}
 				} break;
@@ -788,22 +788,22 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 						FE_value line_weight = GaussPt[order_offset + h].weight;
 						for (int g = 0; g < tri_count; g++)
 						{
-							Cmiss_node_id node = 0;
-							while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+							cmzn_node_id node = 0;
+							while ((0 != (node = cmzn_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
 							{
-								Cmiss_node_destroy(&node);
+								cmzn_node_destroy(&node);
 								++id;
 							}
-							node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
-							Cmiss_field_cache_set_node(field_cache, node);
+							node = cmzn_nodeset_create_node(gauss_points_nodeset, id, node_template);
+							cmzn_field_cache_set_node(field_cache, node);
 							xi_location[tri_axis1] = TriangleGaussPt[g + tri_offset].location[0];
 							xi_location[tri_axis2] = TriangleGaussPt[g + tri_offset].location[1];
-							Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+							cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
 								dimension, xi_location);
 							FE_value total_weight = line_weight*TriangleGaussPt[g + tri_offset].weight;
-							Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+							cmzn_field_assign_real(gauss_weight_field_base, field_cache,
 								/*number_of_values*/1, &total_weight);
-							Cmiss_node_destroy(&node);
+							cmzn_node_destroy(&node);
 							id++;
 						}
 					}
@@ -814,18 +814,18 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 					{
 						display_message(INFORMATION_MESSAGE, "gfx create gauss_points:  "
 							"Unknown shape type %d encountered first for element %d. Ignoring.",
-							shape_type, Cmiss_element_get_identifier(element));
+							shape_type, cmzn_element_get_identifier(element));
 						first_unknown_shape = 0;
 					}
 				} break;
 			}
 		}
-		Cmiss_nodeset_destroy(&master_gauss_points_nodeset);
-		Cmiss_element_iterator_destroy(&iterator);
-		Cmiss_node_template_destroy(&node_template);
-		Cmiss_field_cache_destroy(&field_cache);
-		Cmiss_field_module_end_change(field_module);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_nodeset_destroy(&master_gauss_points_nodeset);
+		cmzn_element_iterator_destroy(&iterator);
+		cmzn_node_template_destroy(&node_template);
+		cmzn_field_cache_destroy(&field_cache);
+		cmzn_field_module_end_change(field_module);
+		cmzn_field_module_destroy(&field_module);
 		delete[] gauss_locations;
 		delete[] gauss_weights;
 	}

@@ -53,49 +53,49 @@
 #include "graphics/graphics_filter.hpp"
 #include "general/cmiss_set.hpp"
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_graphics_filter, Cmiss_graphics_filter_module, struct Cmiss_graphics_filter_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_graphics_filter, cmzn_graphics_filter_module, struct cmzn_graphics_filter_change_detail *);
 
-static inline void MANAGER_UPDATE_DEPENDENCIES(Cmiss_graphics_filter)(
-	struct MANAGER(Cmiss_graphics_filter) *manager)
+static inline void MANAGER_UPDATE_DEPENDENCIES(cmzn_graphics_filter)(
+	struct MANAGER(cmzn_graphics_filter) *manager)
 {
-	Cmiss_set_Cmiss_graphics_filter *all_filters = reinterpret_cast<Cmiss_set_Cmiss_graphics_filter *>(manager->object_list);
-	for (Cmiss_set_Cmiss_graphics_filter::iterator iter = all_filters->begin(); iter != all_filters->end(); iter++)
+	cmzn_set_cmzn_graphics_filter *all_filters = reinterpret_cast<cmzn_set_cmzn_graphics_filter *>(manager->object_list);
+	for (cmzn_set_cmzn_graphics_filter::iterator iter = all_filters->begin(); iter != all_filters->end(); iter++)
 	{
-		Cmiss_graphics_filter_id filter = *iter;
+		cmzn_graphics_filter_id filter = *iter;
 		filter->check_dependency();
 	}
 }
 
-static inline struct Cmiss_graphics_filter_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Cmiss_graphics_filter)(
-	Cmiss_graphics_filter *filter)
+static inline struct cmzn_graphics_filter_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_graphics_filter)(
+	cmzn_graphics_filter *filter)
 {
 	return filter->extract_change_detail();
 }
 
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Cmiss_graphics_filter)(
-	Cmiss_graphics_filter_change_detail **change_detail_address)
+static inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_graphics_filter)(
+	cmzn_graphics_filter_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
 }
 
-struct Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
+struct cmzn_graphics_filter_operator : public cmzn_graphics_filter
 {
 protected:
 
 	struct Graphics_filter_operand
 	{
-		Cmiss_graphics_filter *filter;
+		cmzn_graphics_filter *filter;
 		bool isActive;
 
-		Graphics_filter_operand(Cmiss_graphics_filter *filter) :
-			filter(Cmiss_graphics_filter_access(filter)),
+		Graphics_filter_operand(cmzn_graphics_filter *filter) :
+			filter(cmzn_graphics_filter_access(filter)),
 			isActive(true)
 		{
 		}
 
 		~Graphics_filter_operand()
 		{
-			Cmiss_graphics_filter_destroy(&filter);
+			cmzn_graphics_filter_destroy(&filter);
 		}
 	};
 
@@ -103,7 +103,7 @@ protected:
 
 	OperandList operands;
 
-	OperandList::iterator find_operand(Cmiss_graphics_filter *operand)
+	OperandList::iterator find_operand(cmzn_graphics_filter *operand)
 	{
 		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
@@ -114,12 +114,12 @@ protected:
 	}
 
 public:
-	Cmiss_graphics_filter_operator()
+	cmzn_graphics_filter_operator()
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR;
 	}
 
-	virtual ~Cmiss_graphics_filter_operator()
+	virtual ~cmzn_graphics_filter_operator()
 	{
 		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
@@ -129,7 +129,7 @@ public:
 
 	virtual int check_dependency()
 	{
-		if (manager_change_status & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		if (manager_change_status & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
 		{
 			return 1;
 		}
@@ -137,14 +137,14 @@ public:
 		{
 			if ((*pos)->filter->check_dependency())
 			{
-				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+				changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 				return 1;
 			}
 		}
 		return 0;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic) = 0;
+	virtual bool match(struct cmzn_graphic *graphic) = 0;
 
 	void list_operands() const
 	{
@@ -162,7 +162,7 @@ public:
 	 * Check for circular dependencies / infinite loops.
 	 * @return  true if this filter depends on other_filter, false if not.
 	 */
-	virtual bool depends_on_filter(const Cmiss_graphics_filter *other_filter) const
+	virtual bool depends_on_filter(const cmzn_graphics_filter *other_filter) const
 	{
 		if (other_filter == this)
 			return true;
@@ -174,7 +174,7 @@ public:
 		return false;
 	}
 
-	int append_operand(Cmiss_graphics_filter *operand)
+	int append_operand(cmzn_graphics_filter *operand)
 	{
 		int return_code = 1;
 		OperandList::iterator pos = find_operand(operand);
@@ -190,7 +190,7 @@ public:
 			if (!this->depends_on_filter(operand))
 			{
 				operands.push_back(new Graphics_filter_operand(operand));
-				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+				changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 			}
 			else
 			{
@@ -200,7 +200,7 @@ public:
 		return return_code;
 	}
 
-	int remove_operand(Cmiss_graphics_filter *operand)
+	int remove_operand(cmzn_graphics_filter *operand)
 	{
 		int return_code = 1;
 		OperandList::iterator pos = find_operand(operand);
@@ -208,7 +208,7 @@ public:
 		{
 			delete *pos;
 			operands.erase(pos);
-			changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+			changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 		}
 		else
 		{
@@ -217,9 +217,9 @@ public:
 		return return_code;
 	}
 
-	Cmiss_graphics_filter_id getFirstOperand()
+	cmzn_graphics_filter_id getFirstOperand()
 	{
-		Cmiss_graphics_filter_id operand = NULL;
+		cmzn_graphics_filter_id operand = NULL;
 		OperandList::iterator pos = operands.begin();
 		if (pos != operands.end())
 		{
@@ -228,9 +228,9 @@ public:
 		return operand;
 	}
 
-	Cmiss_graphics_filter_id getNextOperand(Cmiss_graphics_filter_id ref_operand)
+	cmzn_graphics_filter_id getNextOperand(cmzn_graphics_filter_id ref_operand)
 	{
-		Cmiss_graphics_filter_id operand = NULL;
+		cmzn_graphics_filter_id operand = NULL;
 		OperandList::iterator pos = find_operand(ref_operand);
 		pos++;
 		if (pos != operands.end())
@@ -240,7 +240,7 @@ public:
 		return operand;
 	}
 
-	int getOperandIsActive(Cmiss_graphics_filter_id operand)
+	int getOperandIsActive(cmzn_graphics_filter_id operand)
 	{
 		int return_code = 0;
 		OperandList::iterator pos = find_operand(operand);
@@ -251,7 +251,7 @@ public:
 		return return_code;
 	}
 
-	int setOperandIsActive(Cmiss_graphics_filter_id operand, int is_active)
+	int setOperandIsActive(cmzn_graphics_filter_id operand, int is_active)
 	{
 		int return_code = 0;
 		OperandList::iterator pos = find_operand(operand);
@@ -260,14 +260,14 @@ public:
 			if (((*pos)->isActive != (is_active != 0)))
 			{
 				(*pos)->isActive = (is_active != 0);
-				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+				changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 			}
 			return_code = 1;
 		}
 		return return_code;
 	}
 
-	int insertOperandBefore(Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand)
+	int insertOperandBefore(cmzn_graphics_filter_id operand, cmzn_graphics_filter_id ref_operand)
 	{
 		int return_code = 0;
 		OperandList::iterator refpos = find_operand(ref_operand);
@@ -283,7 +283,7 @@ public:
 			else
 			{
 				operands.insert(refpos, new Graphics_filter_operand(operand));
-				changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+				changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 			}
 			return_code = 1;
 		}
@@ -291,15 +291,15 @@ public:
 	}
 };
 
-class Cmiss_graphics_filter_operator_and : public Cmiss_graphics_filter_operator
+class cmzn_graphics_filter_operator_and : public cmzn_graphics_filter_operator
 {
 public:
-	Cmiss_graphics_filter_operator_and()
+	cmzn_graphics_filter_operator_and()
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
 		int return_code = 1;
 		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
@@ -320,15 +320,15 @@ public:
 	}
 };
 
-class Cmiss_graphics_filter_operator_or : public Cmiss_graphics_filter_operator
+class cmzn_graphics_filter_operator_or : public cmzn_graphics_filter_operator
 {
 public:
-	Cmiss_graphics_filter_operator_or()
+	cmzn_graphics_filter_operator_or()
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
 		int return_code = 1;
 		if (operands.size() > 0)
@@ -356,25 +356,25 @@ public:
 
 namespace {
 
-class Cmiss_graphics_filter_graphic_name : public Cmiss_graphics_filter
+class cmzn_graphics_filter_graphic_name : public cmzn_graphics_filter
 {
 	const char *matchName;
 
 public:
-	Cmiss_graphics_filter_graphic_name(const char *inMatchName) :
+	cmzn_graphics_filter_graphic_name(const char *inMatchName) :
 		matchName(duplicate_string(inMatchName))
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME;
 	}
 
-	virtual ~Cmiss_graphics_filter_graphic_name()
+	virtual ~cmzn_graphics_filter_graphic_name()
 	{
 		DEALLOCATE(matchName);
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
-		return (::Cmiss_graphic_has_name(graphic, (void *)matchName) == !isInverse());
+		return (::cmzn_graphic_has_name(graphic, (void *)matchName) == !isInverse());
 	}
 
 	virtual void list_type_specific() const
@@ -384,17 +384,17 @@ public:
 
 };
 
-class Cmiss_graphics_filter_visibility_flags : public Cmiss_graphics_filter
+class cmzn_graphics_filter_visibility_flags : public cmzn_graphics_filter
 {
 public:
-	Cmiss_graphics_filter_visibility_flags()
+	cmzn_graphics_filter_visibility_flags()
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
-		return (!isInverse() == Cmiss_graphic_and_scene_visibility_flags_is_set(graphic));
+		return (!isInverse() == cmzn_graphic_and_scene_visibility_flags_is_set(graphic));
 	}
 
 	virtual void list_type_specific() const
@@ -403,87 +403,87 @@ public:
 	}
 };
 
-class Cmiss_graphics_filter_region : public Cmiss_graphics_filter
+class cmzn_graphics_filter_region : public cmzn_graphics_filter
 {
-	Cmiss_region *matchRegion;
+	cmzn_region *matchRegion;
 
 public:
-	Cmiss_graphics_filter_region(Cmiss_region *inRegion) :
+	cmzn_graphics_filter_region(cmzn_region *inRegion) :
 		matchRegion(inRegion)
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_REGION;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
-		return (!isInverse() == Cmiss_graphic_is_from_region_hierarchical(graphic, matchRegion));
+		return (!isInverse() == cmzn_graphic_is_from_region_hierarchical(graphic, matchRegion));
 	}
 
 	virtual void list_type_specific() const
 	{
-		char *region_name = Cmiss_region_get_path(matchRegion);
+		char *region_name = cmzn_region_get_path(matchRegion);
 		display_message(INFORMATION_MESSAGE, "match_region_path %s", region_name);
 		DEALLOCATE(region_name);
 	}
 };
 
-class Cmiss_graphics_filter_domain_type : public Cmiss_graphics_filter
+class cmzn_graphics_filter_domain_type : public cmzn_graphics_filter
 {
-	enum Cmiss_field_domain_type domain_type;
+	enum cmzn_field_domain_type domain_type;
 
 public:
-	Cmiss_graphics_filter_domain_type(enum Cmiss_field_domain_type inDomainType) :
+	cmzn_graphics_filter_domain_type(enum cmzn_field_domain_type inDomainType) :
 		domain_type(inDomainType)
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_DOMAIN_TYPE;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
-		return (!isInverse() == (domain_type == Cmiss_graphic_get_domain_type(graphic)));
+		return (!isInverse() == (domain_type == cmzn_graphic_get_domain_type(graphic)));
 	}
 
 	virtual void list_type_specific() const
 	{
-		display_message(INFORMATION_MESSAGE, "%s", ENUMERATOR_STRING(Cmiss_field_domain_type)(domain_type));
+		display_message(INFORMATION_MESSAGE, "%s", ENUMERATOR_STRING(cmzn_field_domain_type)(domain_type));
 	}
 };
 
-class Cmiss_graphics_filter_graphic_type : public Cmiss_graphics_filter
+class cmzn_graphics_filter_graphic_type : public cmzn_graphics_filter
 {
-	enum Cmiss_graphic_type graphic_type;
+	enum cmzn_graphic_type graphic_type;
 
 public:
-	Cmiss_graphics_filter_graphic_type(enum Cmiss_graphic_type inGraphicType) :
+	cmzn_graphics_filter_graphic_type(enum cmzn_graphic_type inGraphicType) :
 		graphic_type(inGraphicType)
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_TYPE;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
-		return (!isInverse() == (graphic_type == Cmiss_graphic_get_graphic_type(graphic)));
+		return (!isInverse() == (graphic_type == cmzn_graphic_get_graphic_type(graphic)));
 	}
 
 	virtual void list_type_specific() const
 	{
-		char *filter_type_name = Cmiss_graphic_type_enum_to_string(graphic_type);
+		char *filter_type_name = cmzn_graphic_type_enum_to_string(graphic_type);
 		display_message(INFORMATION_MESSAGE, "%s", filter_type_name);
 		DEALLOCATE(filter_type_name);
 	}
 };
 }
 
-Cmiss_graphics_filter *Cmiss_graphics_filter_access(Cmiss_graphics_filter *filter)
+cmzn_graphics_filter *cmzn_graphics_filter_access(cmzn_graphics_filter *filter)
 {
 	if (filter)
 		filter->access();
 	return filter;
 }
 
-int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter **filter_address)
+int cmzn_graphics_filter_destroy(cmzn_graphics_filter **filter_address)
 {
-	return DEACCESS(Cmiss_graphics_filter)(filter_address);
+	return DEACCESS(cmzn_graphics_filter)(filter_address);
 }
 
 namespace {
@@ -492,11 +492,11 @@ namespace {
  * Frees the memory for the graphics_filter of <*graphics_filter_address>.
  * Sets *graphics_filter_address to NULL.
  */
-int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filter_address)
+int DESTROY(cmzn_graphics_filter)(struct cmzn_graphics_filter **graphics_filter_address)
 {
 	int return_code;
 
-	ENTER(DESTROY(Cmiss_graphics_filter));
+	ENTER(DESTROY(cmzn_graphics_filter));
 	if (graphics_filter_address && (*graphics_filter_address))
 	{
 		delete *graphics_filter_address;
@@ -505,7 +505,7 @@ int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filte
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_graphics_filter).  Invalid argument");
+		display_message(ERROR_MESSAGE,"DESTROY(cmzn_graphics_filter).  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
@@ -513,23 +513,23 @@ int DESTROY(Cmiss_graphics_filter)(struct Cmiss_graphics_filter **graphics_filte
 	return (return_code);
 }
 
-DECLARE_MANAGER_UPDATE_FUNCTION(Cmiss_graphics_filter)
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_graphics_filter)
 
-DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Cmiss_graphics_filter)
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_graphics_filter)
 
 } /* anonymous namespace */
 
-DECLARE_ACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
+DECLARE_ACCESS_OBJECT_FUNCTION(cmzn_graphics_filter)
 
 /***************************************************************************//**
  * Custom version handling is_managed_flag.
  */
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_graphics_filter)
 {
 	int return_code;
-	Cmiss_graphics_filter *object;
+	cmzn_graphics_filter *object;
 
-	ENTER(DEACCESS(Cmiss_graphics_filter));
+	ENTER(DEACCESS(cmzn_graphics_filter));
 	if (object_address && (object = *object_address))
 	{
 		(object->access_count)--;
@@ -540,16 +540,16 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
 		}
 		else if ((!object->is_managed_flag) && (object->manager) &&
 			((1 == object->access_count) || ((2 == object->access_count) &&
-				(MANAGER_CHANGE_NONE(Cmiss_graphics_filter) != object->manager_change_status))))
+				(MANAGER_CHANGE_NONE(cmzn_graphics_filter) != object->manager_change_status))))
 		{
 			return_code =
-				REMOVE_OBJECT_FROM_MANAGER(Cmiss_graphics_filter)(object, object->manager);
+				REMOVE_OBJECT_FROM_MANAGER(cmzn_graphics_filter)(object, object->manager);
 		}
 		else
 		{
 			return_code = 1;
 		}
-		*object_address = (struct Cmiss_graphics_filter *)NULL;
+		*object_address = (struct cmzn_graphics_filter *)NULL;
 	}
 	else
 	{
@@ -558,13 +558,13 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
 	LEAVE;
 
 	return (return_code);
-} /* DEACCESS(Cmiss_graphics_filter) */
+} /* DEACCESS(cmzn_graphics_filter) */
 
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_graphics_filter)
 {
 	int return_code;
 
-	ENTER(REACCESS(Cmiss_graphics_filter));
+	ENTER(REACCESS(cmzn_graphics_filter));
 	if (object_address)
 	{
 		return_code = 1;
@@ -576,7 +576,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
 		if (*object_address)
 		{
 			/* deaccess the current object */
-			DEACCESS(Cmiss_graphics_filter)(object_address);
+			DEACCESS(cmzn_graphics_filter)(object_address);
 		}
 		/* point to the new object */
 		*object_address = new_object;
@@ -584,71 +584,71 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_graphics_filter)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"REACCESS(Cmiss_graphics_filter).  Invalid argument");
+			"REACCESS(cmzn_graphics_filter).  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* REACCESS(Cmiss_graphics_filter) */
+} /* REACCESS(cmzn_graphics_filter) */
 
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_graphics_filter)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_graphics_filter)
 
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(Cmiss_graphics_filter)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Cmiss_graphics_filter,name,const char *)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_graphics_filter)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_graphics_filter,name,const char *)
 
-DECLARE_MANAGER_FUNCTIONS(Cmiss_graphics_filter,manager)
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_graphics_filter,manager)
-DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Cmiss_graphics_filter,name,const char *,manager)
-DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_graphics_filter, struct Cmiss_graphics_filter_module)
+DECLARE_MANAGER_FUNCTIONS(cmzn_graphics_filter,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_graphics_filter,manager)
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_graphics_filter,name,const char *,manager)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_graphics_filter, struct cmzn_graphics_filter_module)
 
-int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
-	struct Cmiss_graphics_filter_module *graphics_filter_module)
+int cmzn_graphics_filter_manager_set_owner_private(struct MANAGER(cmzn_graphics_filter) *manager,
+	struct cmzn_graphics_filter_module *graphics_filter_module)
 {
-	return MANAGER_SET_OWNER(Cmiss_graphics_filter)(manager, graphics_filter_module);
+	return MANAGER_SET_OWNER(cmzn_graphics_filter)(manager, graphics_filter_module);
 }
 
 
-struct Cmiss_graphics_filter_module
+struct cmzn_graphics_filter_module
 {
 
 private:
 
-	struct MANAGER(Cmiss_graphics_filter) *graphicsFilterManager;
-	Cmiss_graphics_filter *defaultGraphicsFilter;
+	struct MANAGER(cmzn_graphics_filter) *graphicsFilterManager;
+	cmzn_graphics_filter *defaultGraphicsFilter;
 	int access_count;
 
-	Cmiss_graphics_filter_module() :
-		graphicsFilterManager(CREATE(MANAGER(Cmiss_graphics_filter))()),
+	cmzn_graphics_filter_module() :
+		graphicsFilterManager(CREATE(MANAGER(cmzn_graphics_filter))()),
 		defaultGraphicsFilter(0),
 		access_count(1)
 	{
 	}
 
-	~Cmiss_graphics_filter_module()
+	~cmzn_graphics_filter_module()
 	{
 		if (defaultGraphicsFilter)
 		{
-			DEACCESS(Cmiss_graphics_filter)(&(this->defaultGraphicsFilter));
+			DEACCESS(cmzn_graphics_filter)(&(this->defaultGraphicsFilter));
 		}
-		DESTROY(MANAGER(Cmiss_graphics_filter))(&(this->graphicsFilterManager));
+		DESTROY(MANAGER(cmzn_graphics_filter))(&(this->graphicsFilterManager));
 	}
 
 public:
 
-	static Cmiss_graphics_filter_module *create()
+	static cmzn_graphics_filter_module *create()
 	{
-		return new Cmiss_graphics_filter_module();
+		return new cmzn_graphics_filter_module();
 	}
 
-	Cmiss_graphics_filter_module *access()
+	cmzn_graphics_filter_module *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_graphics_filter_module* &graphics_filter_module)
+	static int deaccess(cmzn_graphics_filter_module* &graphics_filter_module)
 	{
 		if (graphics_filter_module)
 		{
@@ -663,19 +663,19 @@ public:
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	struct MANAGER(Cmiss_graphics_filter) *getManager()
+	struct MANAGER(cmzn_graphics_filter) *getManager()
 	{
 		return this->graphicsFilterManager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(Cmiss_graphics_filter)(this->graphicsFilterManager);
+		return MANAGER_BEGIN_CACHE(cmzn_graphics_filter)(this->graphicsFilterManager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(Cmiss_graphics_filter)(this->graphicsFilterManager);
+		return MANAGER_END_CACHE(cmzn_graphics_filter)(this->graphicsFilterManager);
 	}
 
 	char *getValidTemporaryNameForGraphicsFilter()
@@ -684,173 +684,173 @@ public:
 		if (graphicsFilterManager)
 		{
 			char temp_name[20];
-			int i = NUMBER_IN_MANAGER(Cmiss_graphics_filter)(graphicsFilterManager);
+			int i = NUMBER_IN_MANAGER(cmzn_graphics_filter)(graphicsFilterManager);
 			do
 			{
 				i++;
 				sprintf(temp_name, "temp%d",i);
 			}
-			while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_filter,name)(temp_name,
+			while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_graphics_filter,name)(temp_name,
 				graphicsFilterManager));
 			name = duplicate_string(temp_name);
 		}
 		return name;
 	}
 
-	Cmiss_graphics_filter *createFilterVisibilityFlags()
+	cmzn_graphics_filter *createFilterVisibilityFlags()
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter = new Cmiss_graphics_filter_visibility_flags();
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter = new cmzn_graphics_filter_visibility_flags();
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter_id createFilterDomainType(
-		enum Cmiss_field_domain_type domain_type)
+	cmzn_graphics_filter_id createFilterDomainType(
+		enum cmzn_field_domain_type domain_type)
 	{
-		Cmiss_graphics_filter_id graphics_filter = 0;
+		cmzn_graphics_filter_id graphics_filter = 0;
 		if (graphicsFilterManager)
 		{
-			graphics_filter = new Cmiss_graphics_filter_domain_type(domain_type);
+			graphics_filter = new cmzn_graphics_filter_domain_type(domain_type);
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
+			cmzn_graphics_filter_set_name(graphics_filter, name);
 			DEALLOCATE(name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter *createFilterGraphicName(const char *match_name)
+	cmzn_graphics_filter *createFilterGraphicName(const char *match_name)
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager && match_name)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter = new Cmiss_graphics_filter_graphic_name(match_name);
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter = new cmzn_graphics_filter_graphic_name(match_name);
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter_id createFilterGraphicType(
-		enum Cmiss_graphic_type graphic_type)
+	cmzn_graphics_filter_id createFilterGraphicType(
+		enum cmzn_graphic_type graphic_type)
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter = new Cmiss_graphics_filter_graphic_type(graphic_type);
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter = new cmzn_graphics_filter_graphic_type(graphic_type);
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter_id createFilterRegion(
-		Cmiss_region_id match_region)
+	cmzn_graphics_filter_id createFilterRegion(
+		cmzn_region_id match_region)
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager && match_region)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter =  new Cmiss_graphics_filter_region(match_region);
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter =  new cmzn_graphics_filter_region(match_region);
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter_id createFilterOperatorAnd()
+	cmzn_graphics_filter_id createFilterOperatorAnd()
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter = new Cmiss_graphics_filter_operator_and();
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter = new cmzn_graphics_filter_operator_and();
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter_id createFilterOperatorOr()
+	cmzn_graphics_filter_id createFilterOperatorOr()
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
+		cmzn_graphics_filter_id graphics_filter = NULL;
 		if (graphicsFilterManager)
 		{
 			char *name = getValidTemporaryNameForGraphicsFilter();
-			graphics_filter = new Cmiss_graphics_filter_operator_or();
-			Cmiss_graphics_filter_set_name(graphics_filter, name);
-			if (!ADD_OBJECT_TO_MANAGER(Cmiss_graphics_filter)(graphics_filter, graphicsFilterManager))
+			graphics_filter = new cmzn_graphics_filter_operator_or();
+			cmzn_graphics_filter_set_name(graphics_filter, name);
+			if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_filter)(graphics_filter, graphicsFilterManager))
 			{
-				DEACCESS(Cmiss_graphics_filter)(&graphics_filter);
+				DEACCESS(cmzn_graphics_filter)(&graphics_filter);
 			}
 			DEALLOCATE(name);
 		}
 		return graphics_filter;
 	}
 
-	Cmiss_graphics_filter *findFilterByName(const char *name)
+	cmzn_graphics_filter *findFilterByName(const char *name)
 	{
-		Cmiss_graphics_filter *graphicsFilter = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_filter,name)(name,
+		cmzn_graphics_filter *graphicsFilter = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_graphics_filter,name)(name,
 			this->graphicsFilterManager);
 		if (graphicsFilter)
 		{
-			return ACCESS(Cmiss_graphics_filter)(graphicsFilter);
+			return ACCESS(cmzn_graphics_filter)(graphicsFilter);
 		}
 		return 0;
 	}
 
-	Cmiss_graphics_filter *getDefaultFilter()
+	cmzn_graphics_filter *getDefaultFilter()
 	{
 		if (this->defaultGraphicsFilter)
 		{
-			ACCESS(Cmiss_graphics_filter)(this->defaultGraphicsFilter);
+			ACCESS(cmzn_graphics_filter)(this->defaultGraphicsFilter);
 			return this->defaultGraphicsFilter;
 		}
 		else
 		{
 			const char *default_graphics_filter_name = "default";
-			struct Cmiss_graphics_filter *graphicsFilter = findFilterByName(default_graphics_filter_name);
+			struct cmzn_graphics_filter *graphicsFilter = findFilterByName(default_graphics_filter_name);
 			if (NULL == graphicsFilter)
 			{
 				graphicsFilter = createFilterVisibilityFlags();
-				Cmiss_graphics_filter_set_name(graphicsFilter, default_graphics_filter_name);
-				Cmiss_graphics_filter_set_managed(graphicsFilter, true);
+				cmzn_graphics_filter_set_name(graphicsFilter, default_graphics_filter_name);
+				cmzn_graphics_filter_set_managed(graphicsFilter, true);
 			}
 			if (graphicsFilter)
 			{
 				setDefaultFilter(graphicsFilter);
-				Cmiss_graphics_filter_set_managed(graphicsFilter, true);
+				cmzn_graphics_filter_set_managed(graphicsFilter, true);
 			}
 			return graphicsFilter;
 		}
@@ -858,16 +858,16 @@ public:
 		return 0;
 	}
 
-	int setDefaultFilter(Cmiss_graphics_filter *graphicsFilter)
+	int setDefaultFilter(cmzn_graphics_filter *graphicsFilter)
 	{
-		REACCESS(Cmiss_graphics_filter)(&this->defaultGraphicsFilter, graphicsFilter);
+		REACCESS(cmzn_graphics_filter)(&this->defaultGraphicsFilter, graphicsFilter);
 		return CMISS_OK;
 	}
 
 };
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_visibility_flags(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_visibility_flags(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 	{
@@ -876,9 +876,9 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_visibility_f
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_domain_type(
-	Cmiss_graphics_filter_module_id graphics_filter_module,
-	enum Cmiss_field_domain_type domain_type)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_domain_type(
+	cmzn_graphics_filter_module_id graphics_filter_module,
+	enum cmzn_field_domain_type domain_type)
 {
 	if (graphics_filter_module)
 	{
@@ -888,8 +888,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_domain_type(
 
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_name(
-	Cmiss_graphics_filter_module_id graphics_filter_module, const char *match_name)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_graphic_name(
+	cmzn_graphics_filter_module_id graphics_filter_module, const char *match_name)
 {
 	if (graphics_filter_module)
 	{
@@ -898,8 +898,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_name
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_type(
-	Cmiss_graphics_filter_module_id graphics_filter_module, enum Cmiss_graphic_type graphic_type)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_graphic_type(
+	cmzn_graphics_filter_module_id graphics_filter_module, enum cmzn_graphic_type graphic_type)
 {
 	if (graphics_filter_module)
 	{
@@ -908,8 +908,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_graphic_type
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_region(
-	Cmiss_graphics_filter_module_id graphics_filter_module, Cmiss_region_id match_region)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_region(
+	cmzn_graphics_filter_module_id graphics_filter_module, cmzn_region_id match_region)
 {
 	if (graphics_filter_module)
 	{
@@ -918,8 +918,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_region(
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_and(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_operator_and(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 	{
@@ -928,8 +928,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_and
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_or(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_operator_or(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 	{
@@ -938,74 +938,74 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_module_create_filter_operator_or(
 	return 0;
 }
 
-Cmiss_graphics_filter_module_id Cmiss_graphics_filter_module_create()
+cmzn_graphics_filter_module_id cmzn_graphics_filter_module_create()
 {
-	return Cmiss_graphics_filter_module::create();
+	return cmzn_graphics_filter_module::create();
 }
 
-Cmiss_graphics_filter_module_id Cmiss_graphics_filter_module_access(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+cmzn_graphics_filter_module_id cmzn_graphics_filter_module_access(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->access();
 	return 0;
 }
 
-int Cmiss_graphics_filter_module_destroy(Cmiss_graphics_filter_module_id *graphics_filter_module_address)
+int cmzn_graphics_filter_module_destroy(cmzn_graphics_filter_module_id *graphics_filter_module_address)
 {
 	if (graphics_filter_module_address)
-		return Cmiss_graphics_filter_module::deaccess(*graphics_filter_module_address);
+		return cmzn_graphics_filter_module::deaccess(*graphics_filter_module_address);
 	return CMISS_ERROR_ARGUMENT;
 }
 
-struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_filter_module_get_manager(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_filter_module_get_manager(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->getManager();
 	return 0;
 }
 
-int Cmiss_graphics_filter_module_begin_change(Cmiss_graphics_filter_module_id graphics_filter_module)
+int cmzn_graphics_filter_module_begin_change(cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->beginChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_graphics_filter_module_end_change(Cmiss_graphics_filter_module_id graphics_filter_module)
+int cmzn_graphics_filter_module_end_change(cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->endChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_find_filter_by_name(
-	Cmiss_graphics_filter_module_id graphics_filter_module, const char *name)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_find_filter_by_name(
+	cmzn_graphics_filter_module_id graphics_filter_module, const char *name)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->findFilterByName(name);
    return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_module_get_default_filter(
-	Cmiss_graphics_filter_module_id graphics_filter_module)
+cmzn_graphics_filter_id cmzn_graphics_filter_module_get_default_filter(
+	cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->getDefaultFilter();
 	return 0;
 }
 
-int Cmiss_graphics_filter_module_set_default_filter(
-	Cmiss_graphics_filter_module_id graphics_filter_module,
-	Cmiss_graphics_filter_id graphics_filter)
+int cmzn_graphics_filter_module_set_default_filter(
+	cmzn_graphics_filter_module_id graphics_filter_module,
+	cmzn_graphics_filter_id graphics_filter)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->setDefaultFilter(graphics_filter);
 	return 0;
 }
 
-char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id graphics_filter)
+char *cmzn_graphics_filter_get_name(cmzn_graphics_filter_id graphics_filter)
 {
 	char *name = NULL;
 
@@ -1016,35 +1016,35 @@ char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id graphics_filter)
 	return name;
 }
 
-int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id graphics_filter, const char *name)
+int cmzn_graphics_filter_set_name(cmzn_graphics_filter_id graphics_filter, const char *name)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphics_filter_set_name);
+	ENTER(cmzn_graphics_filter_set_name);
 	if (graphics_filter && is_standard_object_name(name))
 	{
 		return_code = 1;
-		Cmiss_set_Cmiss_graphics_filter *manager_graphics_filter_list = 0;
+		cmzn_set_cmzn_graphics_filter *manager_graphics_filter_list = 0;
 		bool restore_changed_object_to_lists = false;
 		if (graphics_filter->manager)
 		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_filter, name)(
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_graphics_filter, name)(
 				name, graphics_filter->manager))
 			{
-				display_message(ERROR_MESSAGE, "Cmiss_graphics_filter_set_name.  "
+				display_message(ERROR_MESSAGE, "cmzn_graphics_filter_set_name.  "
 					"graphics_filter named '%s' already exists.", name);
 				return_code = 0;
 			}
 			if (return_code)
 			{
-				manager_graphics_filter_list = reinterpret_cast<Cmiss_set_Cmiss_graphics_filter *>(
+				manager_graphics_filter_list = reinterpret_cast<cmzn_set_cmzn_graphics_filter *>(
 					graphics_filter->manager->object_list);
 				// this temporarily removes the object from all related lists
 				restore_changed_object_to_lists =
 					manager_graphics_filter_list->begin_identifier_change(graphics_filter);
 				if (!restore_changed_object_to_lists)
 				{
-					display_message(ERROR_MESSAGE, "Cmiss_graphics_filter_set_name.  "
+					display_message(ERROR_MESSAGE, "cmzn_graphics_filter_set_name.  "
 						"Could not safely change identifier in manager");
 					return_code = 0;
 				}
@@ -1067,8 +1067,8 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id graphics_filter, con
 		}
 		if (graphics_filter->manager && return_code)
 		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(graphics_filter,
-				MANAGER_CHANGE_IDENTIFIER(Cmiss_graphics_filter));
+			MANAGED_OBJECT_CHANGE(cmzn_graphics_filter)(graphics_filter,
+				MANAGER_CHANGE_IDENTIFIER(cmzn_graphics_filter));
 		}
 	}
 	else
@@ -1076,7 +1076,7 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id graphics_filter, con
 		if (graphics_filter)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_graphics_filter_set_name.  Invalid graphics_filter name '%s'", name);
+				"cmzn_graphics_filter_set_name.  Invalid graphics_filter name '%s'", name);
 		}
 		return_code=0;
 	}
@@ -1084,8 +1084,8 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id graphics_filter, con
 	return (return_code);
 }
 
-int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
-	Cmiss_graphic_id graphic)
+int cmzn_graphics_filter_evaluate_graphic(cmzn_graphics_filter_id filter,
+	cmzn_graphic_id graphic)
 {
 	int return_code = 0;
 	if (filter && graphic)
@@ -1096,7 +1096,7 @@ int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
 	return return_code;
 }
 
-bool Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter)
+bool cmzn_graphics_filter_is_managed(cmzn_graphics_filter_id filter)
 {
 	if (filter)
 	{
@@ -1105,7 +1105,7 @@ bool Cmiss_graphics_filter_is_managed(Cmiss_graphics_filter_id filter)
 	return 0;
 }
 
-int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
+int cmzn_graphics_filter_set_managed(cmzn_graphics_filter_id filter,
 	bool value)
 {
 	if (filter)
@@ -1114,22 +1114,22 @@ int Cmiss_graphics_filter_set_managed(Cmiss_graphics_filter_id filter,
 		filter->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(filter,
-				MANAGER_CHANGE_NOT_RESULT(Cmiss_graphics_filter));
+			MANAGED_OBJECT_CHANGE(cmzn_graphics_filter)(filter,
+				MANAGER_CHANGE_NOT_RESULT(cmzn_graphics_filter));
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_graphics_filter_is_inverse(Cmiss_graphics_filter_id filter)
+bool cmzn_graphics_filter_is_inverse(cmzn_graphics_filter_id filter)
 {
 	if (filter)
 		return filter->isInverse();
 	return false;
 }
 
-int Cmiss_graphics_filter_set_inverse(Cmiss_graphics_filter_id filter,
+int cmzn_graphics_filter_set_inverse(cmzn_graphics_filter_id filter,
 	bool value)
 {
 	if (filter)
@@ -1140,12 +1140,12 @@ int Cmiss_graphics_filter_set_inverse(Cmiss_graphics_filter_id filter,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(Cmiss_graphics_filter_id graphics_filter)
+cmzn_graphics_filter_operator_id cmzn_graphics_filter_cast_operator(cmzn_graphics_filter_id graphics_filter)
 {
-	if (dynamic_cast<Cmiss_graphics_filter_operator*>(graphics_filter))
+	if (dynamic_cast<cmzn_graphics_filter_operator*>(graphics_filter))
 	{
-		Cmiss_graphics_filter_access(graphics_filter);
-		return (reinterpret_cast<Cmiss_graphics_filter_operator_id>(graphics_filter));
+		cmzn_graphics_filter_access(graphics_filter);
+		return (reinterpret_cast<cmzn_graphics_filter_operator_id>(graphics_filter));
 	}
 	else
 	{
@@ -1153,14 +1153,14 @@ Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(Cmiss_grap
 	}
 }
 
-int Cmiss_graphics_filter_operator_destroy(Cmiss_graphics_filter_operator_id *operator_filter_address)
+int cmzn_graphics_filter_operator_destroy(cmzn_graphics_filter_operator_id *operator_filter_address)
 {
-	return Cmiss_graphics_filter_destroy(reinterpret_cast<Cmiss_graphics_filter_id *>(operator_filter_address));
+	return cmzn_graphics_filter_destroy(reinterpret_cast<cmzn_graphics_filter_id *>(operator_filter_address));
 }
 
-int Cmiss_graphics_filter_operator_append_operand(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id operand)
+int cmzn_graphics_filter_operator_append_operand(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id operand)
 {
 	if (operator_filter && operand)
 	{
@@ -1169,10 +1169,10 @@ int Cmiss_graphics_filter_operator_append_operand(
 	return 0;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
-	Cmiss_graphics_filter_operator_id operator_filter)
+cmzn_graphics_filter_id cmzn_graphics_filter_operator_get_first_operand(
+	cmzn_graphics_filter_operator_id operator_filter)
 {
-	Cmiss_graphics_filter_id operand = NULL;
+	cmzn_graphics_filter_id operand = NULL;
 	if (operator_filter)
 	{
 		operand = operator_filter->getFirstOperand();
@@ -1180,11 +1180,11 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
 	return operand;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id ref_operand)
+cmzn_graphics_filter_id cmzn_graphics_filter_operator_get_next_operand(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id ref_operand)
 {
-	Cmiss_graphics_filter_id operand = NULL;
+	cmzn_graphics_filter_id operand = NULL;
 	if (operator_filter && ref_operand)
 	{
 		operand = operator_filter->getNextOperand(ref_operand);
@@ -1192,9 +1192,9 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
 	return operand;
 }
 
-int Cmiss_graphics_filter_operator_get_operand_is_active(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id operand)
+int cmzn_graphics_filter_operator_get_operand_is_active(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id operand)
 {
 	int return_code = 0;
 	if (operator_filter && operand)
@@ -1204,9 +1204,9 @@ int Cmiss_graphics_filter_operator_get_operand_is_active(
 	return return_code;
 }
 
-int Cmiss_graphics_filter_operator_set_operand_is_active(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id operand, int is_active)
+int cmzn_graphics_filter_operator_set_operand_is_active(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id operand, int is_active)
 {
 	int return_code = 0;
 	if (operator_filter && operand)
@@ -1216,9 +1216,9 @@ int Cmiss_graphics_filter_operator_set_operand_is_active(
 	return return_code;
 }
 
-int Cmiss_graphics_filter_operator_insert_operand_before(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand)
+int cmzn_graphics_filter_operator_insert_operand_before(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id operand, cmzn_graphics_filter_id ref_operand)
 {
 	int return_code = 0;
 	if (operator_filter && operand && ref_operand)
@@ -1228,9 +1228,9 @@ int Cmiss_graphics_filter_operator_insert_operand_before(
 	return return_code;
 }
 
-int Cmiss_graphics_filter_operator_remove_operand(
-	Cmiss_graphics_filter_operator_id operator_filter,
-	Cmiss_graphics_filter_id operand)
+int cmzn_graphics_filter_operator_remove_operand(
+	cmzn_graphics_filter_operator_id operator_filter,
+	cmzn_graphics_filter_id operand)
 {
 	if (operator_filter && operand)
 	{

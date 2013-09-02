@@ -50,7 +50,7 @@ class FieldConstant : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConstant(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldConstant(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn);
@@ -66,7 +66,7 @@ class FieldStringConstant : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStringConstant(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldStringConstant(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldStringConstant FieldModule::createStringConstant(const char *stringConstant);
@@ -80,13 +80,13 @@ public:
 
 inline FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn)
 {
-	return FieldConstant(Cmiss_field_module_create_constant(id,
+	return FieldConstant(cmzn_field_module_create_constant(id,
 		valuesCount, valuesIn));
 }
 
 inline FieldStringConstant FieldModule::createStringConstant(const char *stringConstant)
 {
-	return FieldStringConstant(Cmiss_field_module_create_string_constant(id,
+	return FieldStringConstant(cmzn_field_module_create_string_constant(id,
 		stringConstant));
 }
 

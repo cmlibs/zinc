@@ -41,7 +41,7 @@
 #ifndef CMZN_GRAPHICSMODULEID_H__
 #define CMZN_GRAPHICSMODULEID_H__
 
-struct Cmiss_graphics_module;
-typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
+struct cmzn_graphics_module;
+typedef struct cmzn_graphics_module * cmzn_graphics_module_id;
 
 #endif

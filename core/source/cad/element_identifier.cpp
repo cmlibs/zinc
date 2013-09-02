@@ -8,36 +8,36 @@ extern "C"
 #include "cad/computed_field_cad_topology.h"
 
 
-Cmiss_cad_identifier::Cmiss_cad_identifier(Cmiss_field_cad_topology_id cad_topology, Cad_primitive_identifier cad_identifier)
+cmzn_cad_identifier::cmzn_cad_identifier(cmzn_field_cad_topology_id cad_topology, Cad_primitive_identifier cad_identifier)
 	: cad_topology(cad_topology)
 	, identifier(cad_identifier)
 {
-	Cmiss_field_cad_topology_access(this->cad_topology);
-	//DEBUG_PRINT("Constructor %p %d\n", this, Cmiss_field_get_access_count(reinterpret_cast<Cmiss_field_id>(this->cad_topology)));
+	cmzn_field_cad_topology_access(this->cad_topology);
+	//DEBUG_PRINT("Constructor %p %d\n", this, cmzn_field_get_access_count(reinterpret_cast<cmzn_field_id>(this->cad_topology)));
 }
 
-Cmiss_cad_identifier::~Cmiss_cad_identifier()
+cmzn_cad_identifier::~cmzn_cad_identifier()
 {
-	//DEBUG_PRINT("Destructor %p %d\n", this, Cmiss_field_get_access_count(reinterpret_cast<Cmiss_field_id>(this->cad_topology))-1);
-	Cmiss_field_cad_topology_destroy(&(this->cad_topology));
+	//DEBUG_PRINT("Destructor %p %d\n", this, cmzn_field_get_access_count(reinterpret_cast<cmzn_field_id>(this->cad_topology))-1);
+	cmzn_field_cad_topology_destroy(&(this->cad_topology));
 }
 
-Cmiss_cad_identifier::Cmiss_cad_identifier(const Cmiss_cad_identifier& cad_identifier)
+cmzn_cad_identifier::cmzn_cad_identifier(const cmzn_cad_identifier& cad_identifier)
 {
 	this->cad_topology = cad_identifier.cad_topology;
-	Cmiss_field_cad_topology_access(this->cad_topology);
-	//DEBUG_PRINT("Copy constructor %d\n", Cmiss_field_get_access_count(reinterpret_cast<Cmiss_field_id>(this->cad_topology)));
+	cmzn_field_cad_topology_access(this->cad_topology);
+	//DEBUG_PRINT("Copy constructor %d\n", cmzn_field_get_access_count(reinterpret_cast<cmzn_field_id>(this->cad_topology)));
 	this->identifier = cad_identifier.identifier;
 }
 
-Cmiss_cad_identifier& Cmiss_cad_identifier::operator=(const Cmiss_cad_identifier& source)
+cmzn_cad_identifier& cmzn_cad_identifier::operator=(const cmzn_cad_identifier& source)
 {
 	//DEBUG_PRINT("Assignment operator\n");
-	Cmiss_cad_identifier_id result = new Cmiss_cad_identifier(source);
+	cmzn_cad_identifier_id result = new cmzn_cad_identifier(source);
 	return (*result);
 }
 
-bool Cmiss_cad_identifier::operator==(const Cmiss_cad_identifier& other) const
+bool cmzn_cad_identifier::operator==(const cmzn_cad_identifier& other) const
 {
 	bool result = false;
 	//DEBUG_PRINT("Comparison operator\n");
@@ -49,7 +49,7 @@ bool Cmiss_cad_identifier::operator==(const Cmiss_cad_identifier& other) const
 	return result;
 }
 
-bool Cmiss_cad_identifier::operator!=(const Cmiss_cad_identifier& other) const
+bool cmzn_cad_identifier::operator!=(const cmzn_cad_identifier& other) const
 {
 	return !(*this == other);
 }

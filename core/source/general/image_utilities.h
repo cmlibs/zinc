@@ -412,7 +412,7 @@ int Cmgui_image_information_set_write_to_memory_block(
  * @param storage_information  The storage information object.
  * @param memory_block_reference  Will be set to point to the allocated
  * memory block.  When no longer required the memory block should be
- * released with #Cmiss_deallocate.
+ * released with #cmzn_deallocate.
  * @param memory_block_length_reference  Will be set to the length of
  * the returned memory block.
  * @return Returns 1 if the operation is successful, 0 if it is not.

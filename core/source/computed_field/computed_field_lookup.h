@@ -58,7 +58,7 @@ Implements computed fields for lookups.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_nodal_lookup(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, struct FE_node *lookup_node);
 
 /***************************************************************************//**
@@ -70,7 +70,7 @@ int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **source_field, struct FE_node **lookup_node);
 
 struct Computed_field *Computed_field_create_quaternion_SLERP(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_node_id quaternion_SLERP_node);
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_node_id quaternion_SLERP_node);
 
 #endif /* !defined (COMPUTED_FIELD_LOOKUP_H) */

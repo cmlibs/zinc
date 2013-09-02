@@ -100,12 +100,12 @@ private:
 			return 0;
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		return new StringFieldValueCache();
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -119,14 +119,14 @@ private:
 		return 0;
 	}
 
-	virtual Cmiss_field_value_type get_value_type() const
+	virtual cmzn_field_value_type get_value_type() const
 	{
 		return CMISS_FIELD_VALUE_TYPE_STRING;
 	}
 
 };
 
-int Computed_field_format_output::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_format_output::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -234,10 +234,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_format_output(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, char *format_string)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && format_string)
 	{
 		if (source_field->number_of_components <= 4)

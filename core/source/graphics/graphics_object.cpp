@@ -2315,9 +2315,9 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	Triple base_size, Triple scale_factors, Triple offset,
-	struct Cmiss_font *font, char **labels, Triple label_offset,
+	struct cmzn_font *font, char **labels, Triple label_offset,
 	char *static_label_text[3], int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names)
@@ -2351,9 +2351,9 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 					(static_label_text && static_label_text[i]) ? duplicate_string(static_label_text[i]) : 0;
 			}
 			if (font)
-				glyph_set->font = ACCESS(Cmiss_font)(font);
+				glyph_set->font = ACCESS(cmzn_font)(font);
 			else
-				glyph_set->font = (Cmiss_font *)NULL;
+				glyph_set->font = (cmzn_font *)NULL;
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
 			glyph_set->data = data;
@@ -2413,7 +2413,7 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		}
 		if (glyph_set->font)
 		{
-			DEACCESS(Cmiss_font)(&(glyph_set->font));
+			DEACCESS(cmzn_font)(&(glyph_set->font));
 		}
 		labels = glyph_set->labels;
 		if (labels)
@@ -2847,7 +2847,7 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
-	int object_name, GLfloat *data, struct Cmiss_font *font)
+	int object_name, GLfloat *data, struct cmzn_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -2874,11 +2874,11 @@ derivative in that xi direction.
 			point->data=data;
 			if (font)
 			{
-				point->font = ACCESS(Cmiss_font)(font);
+				point->font = ACCESS(cmzn_font)(font);
 			}
 			else
 			{
-				point->font = (struct Cmiss_font *)NULL;
+				point->font = (struct cmzn_font *)NULL;
 			}
 			point->object_name = object_name;
 			point->ptrnext=(struct GT_point *)NULL;
@@ -2922,7 +2922,7 @@ Frees the frees the memory for <**point> and sets <*point> to NULL.
 			{
 				DEALLOCATE((*point)->data);
 			}
-			DEACCESS(Cmiss_font)(&((*point)->font));
+			DEACCESS(cmzn_font)(&((*point)->font));
 			DEALLOCATE(*point);
 		}
 		return_code=1;
@@ -2966,7 +2966,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
-	int *names, struct Cmiss_font *font)
+	int *names, struct cmzn_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -2994,11 +2994,11 @@ point it is assumed that there isn't a derivative in that xi direction.
 			point_set->data=data;
 			if (font)
 			{
-				point_set->font = ACCESS(Cmiss_font)(font);
+				point_set->font = ACCESS(cmzn_font)(font);
 			}
 			else
 			{
-				point_set->font = (struct Cmiss_font *)NULL;
+				point_set->font = (struct cmzn_font *)NULL;
 			}
 			point_set->ptrnext=(struct GT_pointset *)NULL;
 			point_set->object_name = 0;
@@ -3054,7 +3054,7 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 			}
 			if ((*pointset)->font)
 			{
-				DEACCESS(Cmiss_font)(&((*pointset)->font));
+				DEACCESS(cmzn_font)(&((*pointset)->font));
 			}
 			DEALLOCATE(*pointset);
 		}
@@ -3307,7 +3307,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data)
@@ -3781,7 +3781,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 				object->object_type=object_type;
 				if (default_material)
 				{
-					object->default_material=Cmiss_graphics_material_access(default_material);
+					object->default_material=cmzn_graphics_material_access(default_material);
 				}
 				else
 				{
@@ -3859,15 +3859,15 @@ static int DESTROY(GT_object)(struct GT_object **object_ptr)
 			DEALLOCATE(object->name);
 			if (object->default_material)
 			{
-				Cmiss_graphics_material_destroy(&(object->default_material));
+				cmzn_graphics_material_destroy(&(object->default_material));
 			}
 			if (object->selected_material)
 			{
-				Cmiss_graphics_material_destroy(&(object->selected_material));
+				cmzn_graphics_material_destroy(&(object->selected_material));
 			}
 			if (object->secondary_material)
 			{
-				Cmiss_graphics_material_destroy(&(object->secondary_material));
+				cmzn_graphics_material_destroy(&(object->secondary_material));
 			}
 			if (object->spectrum)
 			{
@@ -6158,7 +6158,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 					index++;
 				}
 			}
-			Cmiss_graphic_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
+			cmzn_graphic_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
 					CMISS_GRAPHIC_RENDER_POLYGON_SHADED : CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME;
 			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
@@ -6253,7 +6253,7 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 	return (return_code);
 } /* GT_object_decimate_GT_surface */
 
-enum Cmiss_graphic_select_mode GT_object_get_select_mode(
+enum cmzn_graphic_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
 {
 	if (graphics_object)
@@ -6262,9 +6262,9 @@ enum Cmiss_graphic_select_mode GT_object_get_select_mode(
 }
 
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum Cmiss_graphic_select_mode select_mode)
+	enum cmzn_graphic_select_mode select_mode)
 {
-	if (graphics_object && (0 != ENUMERATOR_STRING(Cmiss_graphic_select_mode)(select_mode)))
+	if (graphics_object && (0 != ENUMERATOR_STRING(cmzn_graphic_select_mode)(select_mode)))
 	{
 		if (select_mode != graphics_object->select_mode)
 		{
@@ -6620,7 +6620,7 @@ struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
 	return (spectrum);
 }
 
-struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object)
+struct cmzn_font *get_GT_object_font(struct GT_object *graphics_object)
 {
 	if (graphics_object)
 	{
@@ -6642,7 +6642,7 @@ struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object)
 }
 
 int set_GT_object_font(struct GT_object *graphics_object,
-	struct Cmiss_font *font)
+	struct cmzn_font *font)
 {
 	int return_code = 0;
 	if (graphics_object)
@@ -6655,7 +6655,7 @@ int set_GT_object_font(struct GT_object *graphics_object,
 			{
 				while (glyph_set)
 				{
-					REACCESS(Cmiss_font)(&glyph_set->font, font);
+					REACCESS(cmzn_font)(&glyph_set->font, font);
 					glyph_set = glyph_set->ptrnext;
 				}
 				GT_object_changed(graphics_object);
@@ -6706,7 +6706,7 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
 }
 
 int set_GT_object_glyph_repeat_mode(struct GT_object *graphics_object,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode)
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode)
 {
 	int return_code = 0;
 	if (graphics_object)
@@ -6898,7 +6898,7 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
 }
 
 int set_GT_object_render_polygon_mode(struct GT_object *graphics_object,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode)
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode)
 {
 	int return_code = 0;
 	if (graphics_object)
@@ -7435,7 +7435,7 @@ Graphics_vertex_array::~Graphics_vertex_array()
 	delete internal;
 }
 
-enum Cmiss_glyph_type GT_object_get_glyph_type(
+enum cmzn_glyph_type GT_object_get_glyph_type(
 	struct GT_object *gt_object)
 {
 	if (gt_object)
@@ -7444,7 +7444,7 @@ enum Cmiss_glyph_type GT_object_get_glyph_type(
 }
 
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum Cmiss_glyph_type glyph_type)
+	enum cmzn_glyph_type glyph_type)
 {
 	if (gt_object)
 	{

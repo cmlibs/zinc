@@ -57,7 +57,7 @@ extern "C" {
 #endif
 
 /***************************************************************************//**
- * Creates a node group field which packages a Cmiss_nodeset_group i.e. a subset
+ * Creates a node group field which packages a cmzn_nodeset_group i.e. a subset
  * of nodes from a master nodeset. As a field it evaluates to 1 for nodes in
  * the nodeset group and 0 elsewhere, i.e. it is the predicate for the sub-
  * domain, and this Boolean value can be combined in logical operations with
@@ -69,18 +69,18 @@ extern "C" {
  * Nodeset must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_node_group(
-	Cmiss_field_module_id field_module, Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_node_group(
+	cmzn_field_module_id field_module, cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
- * If field can be cast to a Cmiss_field_node_group_id do so
+ * If field can be cast to a cmzn_field_node_group_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new reference.
  *
  * @param field  handle to the field to cast
  * @return  handle of the cast field, or NULL
 */
-ZINC_API Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
+ZINC_API cmzn_field_node_group_id cmzn_field_cast_node_group(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast node group field back to its base field and return the field.  Otherwise
@@ -89,9 +89,9 @@ ZINC_API Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id fi
  * @param group  handle to the node group field to cast
  * @return  handle of the field, or NULL
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_group_id group)
+ZINC_C_INLINE cmzn_field_id cmzn_field_node_group_base_cast(cmzn_field_node_group_id group)
 {
-	return (Cmiss_field_id)(group);
+	return (cmzn_field_id)(group);
 }
 
 /***************************************************************************//**
@@ -101,7 +101,7 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_g
  * @return  Status CMISS_OK if successfully destroy the node group,
  * any other value on failure.
  */
-ZINC_API int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
+ZINC_API int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_address);
 
 /***************************************************************************//**
  * Get a handle to the 'dual' nodeset group of this node group, which provides
@@ -110,11 +110,11 @@ ZINC_API int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_grou
  * @param node_group  Handle to node group field.
  * @return  Handle to nodeset group. Caller is responsible for destroying this.
  */
-ZINC_API Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
-	Cmiss_field_node_group_id node_group);
+ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
+	cmzn_field_node_group_id node_group);
 
 /***************************************************************************//**
- * Creates an element group field which packages a Cmiss_mesh_group i.e. a
+ * Creates an element group field which packages a cmzn_mesh_group i.e. a
  * subset of elements from a master mesh. As a field it evaluates to 1 for
  * elements in the mesh group and 0 elsewhere, i.e. it is the predicate for the
  * sub-domain, and this Boolean value can be combined in logical operations with
@@ -126,18 +126,18 @@ ZINC_API Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
  * Mesh must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_element_group(
-	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh);
+ZINC_API cmzn_field_id cmzn_field_module_create_element_group(
+	cmzn_field_module_id field_module, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
- * If field can be cast to a Cmiss_field_element_group_id do so
+ * If field can be cast to a cmzn_field_element_group_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new reference.
  *
  * @param field  handle to the field to cast
  * @return  handle of the cast field, or NULL
 */
-ZINC_API Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field);
+ZINC_API cmzn_field_element_group_id cmzn_field_cast_element_group(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast element group field back to its base field and return the field.  Otherwise
@@ -146,9 +146,9 @@ ZINC_API Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field
  * @param group  handle to the element group field to cast
  * @return  handle of the field, or NULL
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_element_group_id group)
+ZINC_C_INLINE cmzn_field_id cmzn_field_element_group_base_cast(cmzn_field_element_group_id group)
 {
-	return (Cmiss_field_id)(group);
+	return (cmzn_field_id)(group);
 }
 
 /***************************************************************************//**
@@ -158,7 +158,7 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_ele
  * @return  Status CMISS_OK if successfully destroy the element group,
  * any other value on failure.
  */
-ZINC_API int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
+ZINC_API int cmzn_field_element_group_destroy(cmzn_field_element_group_id *element_group_address);
 
 /***************************************************************************//**
  * Get a handle to the 'dual' mesh group of this element group, which provides
@@ -167,8 +167,8 @@ ZINC_API int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *ele
  * @param element_group  Handle to element group field.
  * @return  Handle to mesh group. Caller is responsible for destroying this.
  */
-ZINC_API Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
-	Cmiss_field_element_group_id element_group);
+ZINC_API cmzn_mesh_group_id cmzn_field_element_group_get_mesh(
+	cmzn_field_element_group_id element_group);
 
 #ifdef __cplusplus
 }

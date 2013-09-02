@@ -4,7 +4,7 @@ FILE : cmiss_field_logical_operators.h
 LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
-The public interface to the Cmiss_fields that perform logical operations.
+The public interface to the cmzn_fields that perform logical operations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -64,8 +64,8 @@ extern "C" {
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_and(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -77,9 +77,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id fiel
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_equal_to(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_equal_to(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -91,9 +91,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_equal_to(
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_greater_than(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_greater_than(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -105,9 +105,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_greater_than(
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_less_than(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_less_than(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -119,8 +119,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_less_than(
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_or(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of the
@@ -131,8 +131,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field
  * @param source_field  The source field.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_not(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -144,8 +144,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id fiel
  * @param source_field_two  Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_xor(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_xor(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 #ifdef __cplusplus
 }

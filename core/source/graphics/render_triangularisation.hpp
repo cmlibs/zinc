@@ -81,19 +81,19 @@ public:
 		return 1;
 	}
 
-	virtual int Cmiss_scene_execute(Cmiss_scene *scene)
+	virtual int cmzn_scene_execute(cmzn_scene *scene)
 	{
 		USE_PARAMETER(scene);
 		return 1;
 	}
 
-	virtual int Cmiss_scene_execute_graphics(Cmiss_scene *scene)
+	virtual int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	{
 		USE_PARAMETER(scene);
 		return 1;
 	}
 	
-	virtual int Cmiss_scene_execute_child_scene(Cmiss_scene *scene)
+	virtual int cmzn_scene_execute_child_scene(cmzn_scene *scene)
 	{
 		USE_PARAMETER(scene);
 		return 1;
@@ -155,16 +155,16 @@ public:
 		return 1;
 	}
 
-	virtual int Scene_tree_execute(Cmiss_scene *scene);
+	virtual int Scene_tree_execute(cmzn_scene *scene);
 
 	/** Only draw graphics in world and local coordinates. Not fully implemented */
-	virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
+	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
 	{
-		return !Cmiss_scene_coordinate_system_is_window_relative(coordinate_system);
+		return !cmzn_scene_coordinate_system_is_window_relative(coordinate_system);
 	}
 
 	/** Not fully implemented */
-	virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/)
+	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
 	{
 	}
 
@@ -172,7 +172,7 @@ public:
 	
 }; /* class Render_graphics */
 
-int render_scene_triangularisation(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter, Triangle_mesh *trimesh);
+int render_scene_triangularisation(cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter, Triangle_mesh *trimesh);
 
 #endif /* !defined (RENDER_TRIANGULARISATION_HPP) */

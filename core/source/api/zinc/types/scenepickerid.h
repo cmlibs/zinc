@@ -41,7 +41,7 @@
 #ifndef CMZN_SCENEPICKERID_H__
 #define CMZN_SCENEPICKERID_H__
 
-	struct Cmiss_scene_picker;
-	typedef struct Cmiss_scene_picker * Cmiss_scene_picker_id;
+	struct cmzn_scene_picker;
+	typedef struct cmzn_scene_picker * cmzn_scene_picker_id;
 
 #endif

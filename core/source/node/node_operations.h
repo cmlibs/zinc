@@ -56,7 +56,7 @@ Global functions
 */
 int FE_region_change_node_identifiers(struct FE_region *fe_region,
 	int node_offset, struct Computed_field *sort_by_field, FE_value time,
-	Cmiss_field_node_group_id node_group);
+	cmzn_field_node_group_id node_group);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2003
 
@@ -87,7 +87,7 @@ allowed during identifier changes.
  */
 struct LIST(FE_node) *
 	FE_node_list_from_region_and_selection_group(
-		struct Cmiss_region *region, struct Multi_range *node_ranges,
+		struct cmzn_region *region, struct Multi_range *node_ranges,
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data);
 

@@ -59,7 +59,7 @@ DESCRIPTION :
 The different basis types available.
 NOTE: Must keep this up to date with functions
 FE_basis_type_string
-NOTE: External API uses different enum Cmiss_element_basis_type
+NOTE: External API uses different enum cmzn_element_basis_type
 ==============================================================================*/
 {
 	FE_BASIS_TYPE_INVALID=-1,

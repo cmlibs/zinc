@@ -42,9 +42,9 @@
 #ifndef COMPUTED_FIELD_CAD_TOPOLOGY_PRIVATE_H_
 #define COMPUTED_FIELD_CAD_TOPOLOGY_PRIVATE_H_
 
-int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative);
-int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier, double s, double *point);
-int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier, double u, double v, double *colour);
+int Computed_field_cad_topology_get_surface_point(cmzn_field_cad_topology_id field, cmzn_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative);
+int Computed_field_cad_topology_get_curve_point(cmzn_field_cad_topology_id field, cmzn_cad_curve_identifier identifier, double s, double *point);
+int Computed_field_cad_topology_get_surface_colour(cmzn_field_cad_topology_id field, cmzn_cad_surface_identifier identifier, double u, double v, double *colour);
 
 #endif /* COMPUTED_FIELD_CAD_TOPOLOGY_PRIVATE_H_ */
 

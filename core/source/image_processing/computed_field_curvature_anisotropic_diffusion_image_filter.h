@@ -46,7 +46,7 @@ DESCRIPTION :
 
 #include "zinc/field.h"
 
-int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+int cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006

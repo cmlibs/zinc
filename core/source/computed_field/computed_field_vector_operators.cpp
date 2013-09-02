@@ -87,14 +87,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_normalise::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_normalise::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -200,11 +200,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_normalise(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_normalise(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field)
 	{
 		field = Computed_field_create_generic(field_module,
@@ -281,14 +281,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cross_product::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_cross_product::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache[3];
@@ -523,8 +523,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_cross_product(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_cross_product(
+	struct cmzn_field_module *field_module,
 	int number_of_source_fields, struct Computed_field **source_fields)
 {
 	Computed_field *field = NULL;
@@ -538,7 +538,7 @@ struct Computed_field *Cmiss_field_module_create_cross_product(
 				(source_fields[i]->number_of_components != dimension))
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_field_module_create_cross_product.  "
+					"cmzn_field_module_create_cross_product.  "
 					"Source field %d missing or has wrong number of components", i + 1);
 				return_code = 0;
 			}
@@ -556,14 +556,14 @@ struct Computed_field *Cmiss_field_module_create_cross_product(
 	return (field);
 }
 
-Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two)
+cmzn_field_id cmzn_field_module_create_cross_product_3d(
+	cmzn_field_module_id field_module, cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two)
 {
-	Cmiss_field_id source_fields[2];
+	cmzn_field_id source_fields[2];
 	source_fields[0] = source_field_one;
 	source_fields[1] = source_field_two;
-	return Cmiss_field_module_create_cross_product(field_module, 2, source_fields);
+	return cmzn_field_module_create_cross_product(field_module, 2, source_fields);
 }
 
 int Computed_field_get_type_cross_product(struct Computed_field *field,
@@ -644,14 +644,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_dot_product::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_dot_product::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -777,8 +777,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_dot_product(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_dot_product(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -866,17 +866,17 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
 };
 
-int Computed_field_magnitude::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_magnitude::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -915,7 +915,7 @@ int Computed_field_magnitude::evaluate(Cmiss_field_cache& cache, FieldValueCache
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_magnitude::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_magnitude::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (!sourceCache)
@@ -1005,8 +1005,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_magnitude(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_magnitude(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	Computed_field *field = Computed_field_create_generic(field_module,
@@ -1083,14 +1083,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_sum_components::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_sum_components::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1196,10 +1196,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_sum_components(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field)
+cmzn_field_id cmzn_field_module_create_sum_components(
+	cmzn_field_module_id field_module, cmzn_field_id source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1246,14 +1246,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cubic_texture_coordinates::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_cubic_texture_coordinates::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1362,10 +1362,10 @@ Returns allocated command string for reproducing field. Includes type.
  * ???GRC Someone needs to explain what this field does.
  */
 struct Computed_field *Computed_field_create_cubic_texture_coordinates(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field)
 	{
 		field = Computed_field_create_generic(field_module,

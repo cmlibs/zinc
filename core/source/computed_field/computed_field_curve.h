@@ -57,7 +57,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_curve_lookup(
-	Cmiss_field_module *field_module, struct Computed_field *source_field,
+	cmzn_field_module *field_module, struct Computed_field *source_field,
 	struct Curve *curve, struct MANAGER(Curve) *curve_manager);
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,

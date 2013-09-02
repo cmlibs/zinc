@@ -51,11 +51,11 @@ extern "C" {
  * NOTE: This function may be removed in the future once more API functions are
  * made available to the users.
  *
- * @param interactive_tool  Handle to a Cmiss_interactive_tool object.
+ * @param interactive_tool  Handle to a cmzn_interactive_tool object.
  * @param command  Command to be executed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive_tool,
+int cmzn_interactive_tool_execute_command(cmzn_interactive_tool_id interactive_tool,
 	const char *command);
 
 /*******************************************************************************
@@ -65,8 +65,8 @@ int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive
  * @param mesh  The interactive tool to obtain a new reference to.
  * @return  New interactive tool handle with incremented reference count.
  */
-Cmiss_interactive_tool_id Cmiss_interactive_tool_access(
-	Cmiss_interactive_tool_id interactive_tool);
+cmzn_interactive_tool_id cmzn_interactive_tool_access(
+	cmzn_interactive_tool_id interactive_tool);
 
 /***************************************************************************//**
  * Destroy the interactive_tool.
@@ -75,7 +75,7 @@ Cmiss_interactive_tool_id Cmiss_interactive_tool_access(
  *   cmiss interactive_tool.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_interactive_tool_destroy(Cmiss_interactive_tool_id *interactive_tool);
+int cmzn_interactive_tool_destroy(cmzn_interactive_tool_id *interactive_tool);
 
 #ifdef __cplusplus
 }

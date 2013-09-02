@@ -63,65 +63,65 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/light_model.h"
 
 struct Graphics_buffer;
-#define Graphics_buffer_input Cmiss_scene_viewer_input
-#define Graphics_buffer_input_event_type Cmiss_scene_viewer_input_event_type
+#define Graphics_buffer_input cmzn_scene_viewer_input
+#define Graphics_buffer_input_event_type cmzn_scene_viewer_input_event_type
 
 /*
 struct Scene;
 struct MANAGER(Scene);
 */
-struct Cmiss_scene_viewer_module;
+struct cmzn_scene_viewer_module;
 
 /*
-The Cmiss_scene_viewer which is Public is currently the same object as the
+The cmzn_scene_viewer which is Public is currently the same object as the
 cmgui internal Scene_viewer.  The Public interface is contained in
 zinc/sceneviewer.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
-struct Scene_viewer is declared to be the same as Cmiss_scene_viewer here
+struct Scene_viewer is declared to be the same as cmzn_scene_viewer here
 and the functions given their public names.
 */
 /* Convert the type */
-#define Scene_viewer Cmiss_scene_viewer
+#define Scene_viewer cmzn_scene_viewer
 
 /* Convert the enumerators */
-#define Scene_viewer_interact_mode Cmiss_scene_viewer_interact_mode
+#define Scene_viewer_interact_mode cmzn_scene_viewer_interact_mode
 #define SCENE_VIEWER_INTERACT_STANDARD CMISS_SCENE_VIEWER_INTERACT_STANDARD
 #define SCENE_VIEWER_INTERACT_2D CMISS_SCENE_VIEWER_INTERACT_2D
 
 /* Convert the functions that have identical interfaces */
-#define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
-#define Scene_viewer_set_interact_mode Cmiss_scene_viewer_set_interact_mode
-#define Scene_viewer_get_view_angle Cmiss_scene_viewer_get_view_angle
-#define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
-#define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
-#define Scene_viewer_set_antialias_mode Cmiss_scene_viewer_set_antialias_mode
-#define Scene_viewer_get_depth_of_field Cmiss_scene_viewer_get_depth_of_field
-#define Scene_viewer_set_depth_of_field Cmiss_scene_viewer_set_depth_of_field
-#define Scene_viewer_get_perturb_lines Cmiss_scene_viewer_get_perturb_lines
-#define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
-#define Scene_viewer_view_all Cmiss_scene_viewer_view_all
-#define Scene_viewer_render_scene Cmiss_scene_viewer_render_scene
-#define Scene_viewer_get_freespin_tumble_angle Cmiss_scene_viewer_get_freespin_tumble_angle
-#define Scene_viewer_set_freespin_tumble_angle Cmiss_scene_viewer_set_freespin_tumble_angle
-#define Scene_viewer_get_freespin_tumble_axis Cmiss_scene_viewer_get_freespin_tumble_axis
-#define Scene_viewer_start_freespin Cmiss_scene_viewer_start_freespin
-#define Scene_viewer_stop_animations Cmiss_scene_viewer_stop_animations
-#define Scene_viewer_get_translation_rate Cmiss_scene_viewer_get_translation_rate
-#define Scene_viewer_set_translation_rate Cmiss_scene_viewer_set_translation_rate
-#define Scene_viewer_get_tumble_rate Cmiss_scene_viewer_get_tumble_rate
-#define Scene_viewer_set_tumble_rate Cmiss_scene_viewer_set_tumble_rate
-#define Scene_viewer_get_zoom_rate Cmiss_scene_viewer_get_zoom_rate
-#define Scene_viewer_set_zoom_rate Cmiss_scene_viewer_set_zoom_rate
-#define Scene_viewer_get_viewing_volume Cmiss_scene_viewer_get_viewing_volume
-#define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
-#define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
-#define Scene_viewer_add_transform_callback Cmiss_scene_viewer_add_transform_callback
-#define Scene_viewer_remove_transform_callback Cmiss_scene_viewer_remove_transform_callback
-#define Scene_viewer_add_input_callback Cmiss_scene_viewer_add_input_callback
-#define Scene_viewer_remove_input_callback Cmiss_scene_viewer_remove_input_callback
-#define Scene_viewer_add_repaint_required_callback Cmiss_scene_viewer_add_repaint_required_callback
-#define Scene_viewer_remove_repaint_required_callback Cmiss_scene_viewer_remove_repaint_required_callback
-#define Scene_viewer_get_frame_count Cmiss_scene_viewer_get_frame_count
+#define Scene_viewer_get_interact_mode cmzn_scene_viewer_get_interact_mode
+#define Scene_viewer_set_interact_mode cmzn_scene_viewer_set_interact_mode
+#define Scene_viewer_get_view_angle cmzn_scene_viewer_get_view_angle
+#define Scene_viewer_set_view_angle cmzn_scene_viewer_set_view_angle
+#define Scene_viewer_get_antialias_mode cmzn_scene_viewer_get_antialias_mode
+#define Scene_viewer_set_antialias_mode cmzn_scene_viewer_set_antialias_mode
+#define Scene_viewer_get_depth_of_field cmzn_scene_viewer_get_depth_of_field
+#define Scene_viewer_set_depth_of_field cmzn_scene_viewer_set_depth_of_field
+#define Scene_viewer_get_perturb_lines cmzn_scene_viewer_get_perturb_lines
+#define Scene_viewer_set_perturb_lines cmzn_scene_viewer_set_perturb_lines
+#define Scene_viewer_view_all cmzn_scene_viewer_view_all
+#define Scene_viewer_render_scene cmzn_scene_viewer_render_scene
+#define Scene_viewer_get_freespin_tumble_angle cmzn_scene_viewer_get_freespin_tumble_angle
+#define Scene_viewer_set_freespin_tumble_angle cmzn_scene_viewer_set_freespin_tumble_angle
+#define Scene_viewer_get_freespin_tumble_axis cmzn_scene_viewer_get_freespin_tumble_axis
+#define Scene_viewer_start_freespin cmzn_scene_viewer_start_freespin
+#define Scene_viewer_stop_animations cmzn_scene_viewer_stop_animations
+#define Scene_viewer_get_translation_rate cmzn_scene_viewer_get_translation_rate
+#define Scene_viewer_set_translation_rate cmzn_scene_viewer_set_translation_rate
+#define Scene_viewer_get_tumble_rate cmzn_scene_viewer_get_tumble_rate
+#define Scene_viewer_set_tumble_rate cmzn_scene_viewer_set_tumble_rate
+#define Scene_viewer_get_zoom_rate cmzn_scene_viewer_get_zoom_rate
+#define Scene_viewer_set_zoom_rate cmzn_scene_viewer_set_zoom_rate
+#define Scene_viewer_get_viewing_volume cmzn_scene_viewer_get_viewing_volume
+#define Scene_viewer_set_viewing_volume cmzn_scene_viewer_set_viewing_volume
+#define Scene_viewer_set_background_texture_info cmzn_scene_viewer_set_background_texture_info
+#define Scene_viewer_add_transform_callback cmzn_scene_viewer_add_transform_callback
+#define Scene_viewer_remove_transform_callback cmzn_scene_viewer_remove_transform_callback
+#define Scene_viewer_add_input_callback cmzn_scene_viewer_add_input_callback
+#define Scene_viewer_remove_input_callback cmzn_scene_viewer_remove_input_callback
+#define Scene_viewer_add_repaint_required_callback cmzn_scene_viewer_add_repaint_required_callback
+#define Scene_viewer_remove_repaint_required_callback cmzn_scene_viewer_remove_repaint_required_callback
+#define Scene_viewer_get_frame_count cmzn_scene_viewer_get_frame_count
 
 /*
 Global types
@@ -235,12 +235,12 @@ enum Scene_viewer_drag_mode
 	SV_DRAG_FLY
 };
 
-struct Cmiss_scene_viewer_module
+struct cmzn_scene_viewer_module
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION:
-The default data used to create Cmiss_scene_viewers.
+The default data used to create cmzn_scene_viewers.
 ==============================================================================*/
 {
 	int access_count;
@@ -251,12 +251,12 @@ The default data used to create Cmiss_scene_viewers.
 	struct Light *default_light;
 	Light_model_module *lightModelModule;
 	struct Light_model *default_light_model;
-	Cmiss_graphics_filter_module_id filterModule;
+	cmzn_graphics_filter_module_id filterModule;
 	//-- struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback))
+	struct LIST(CMISS_CALLBACK_ITEM(cmzn_scene_viewer_module_callback))
 		*destroy_callback_list;
 	void *graphics_filter_manager_callback_id;
 	void *light_manager_callback_id;
@@ -267,22 +267,22 @@ struct Scene_viewer_image_texture
 {
 	struct Texture *texture;
 	struct MANAGER(Computed_field) *manager;
-	Cmiss_field_image_id field;
+	cmzn_field_image_id field;
 	void *callback_id;
 	struct Scene_viewer *scene_viewer;
 };
 
-struct Cmiss_scene_viewer_input
+struct cmzn_scene_viewer_input
 {
 	int access_count;
-	enum Cmiss_scene_viewer_input_event_type type;
+	enum cmzn_scene_viewer_input_event_type type;
 	int button_number;
 	int key_code;
 	int position_x;
 	int position_y;
 	/* flags indicating the state of the shift, control and alt keys - use
 	 * logical OR with CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
-	Cmiss_scene_viewer_input_modifier input_modifier;
+	cmzn_scene_viewer_input_modifier input_modifier;
 };
 
 struct Scene_viewer
@@ -347,7 +347,7 @@ DESCRIPTION :
 	double user_viewport_left,user_viewport_top,user_viewport_pixels_per_unit_x,
 		user_viewport_pixels_per_unit_y;
 	/* specifies the quality of transparency rendering */
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode;
+	enum cmzn_scene_viewer_transparency_mode transparency_mode;
 	/* number of layers used in layered transparency mode */
 	int transparency_layers;
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
@@ -396,7 +396,7 @@ DESCRIPTION :
 	/* The distance between the two stereo views in world space */
 	double stereo_eye_spacing;
 	/* Special persistent data for order independent transparency */
-	struct Cmiss_scene_viewer_transparency_order_independent_data
+	struct cmzn_scene_viewer_transparency_order_independent_data
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	//-- struct User_interface *user_interface;
@@ -414,12 +414,12 @@ DESCRIPTION :
 	/* list of callbacks requested by other objects when scene viewer destroyed */
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
-	Cmiss_graphics_filter_id filter;
-	Cmiss_scene_id scene;
+	cmzn_graphics_filter_id filter;
+	cmzn_scene_id scene;
 }; /* struct Scene_viewer */
 
-DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_module_callback, \
-	struct Cmiss_scene_viewer_module *, void *, void);
+DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_viewer_module_callback, \
+	struct cmzn_scene_viewer_module *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *, void);
@@ -431,12 +431,12 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 Global functions
 ----------------
 */
-struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
+struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	Light_module *lightModule ,struct Light *default_light,
 	Light_model_module *lightModelModule, struct Light_model *default_light_model,
-	Cmiss_graphics_filter_module_id filterModule);
+	cmzn_graphics_filter_module_id filterModule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -444,8 +444,8 @@ DESCRIPTION :
 Creates a Scene_viewer_module.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_module_add_destroy_callback(struct Cmiss_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,void *user_data);
+int cmzn_scene_viewer_module_add_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
@@ -454,8 +454,8 @@ Adds a callback to the <scene_viewer_module> that is called back before the scen
 viewer is destroyed.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_module_remove_destroy_callback(struct Cmiss_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,void *user_data);
+int cmzn_scene_viewer_module_remove_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
@@ -464,8 +464,8 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer_module>.
 ==============================================================================*/
 
-struct Graphics_buffer_package *Cmiss_scene_viewer_module_get_graphics_buffer_package(
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
+struct Graphics_buffer_package *cmzn_scene_viewer_module_get_graphics_buffer_package(
+	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -476,7 +476,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct Colour *background_colour,
 	struct Light *default_light,
 	struct Light_model *default_light_model,
-	Cmiss_graphics_filter_id filter);
+	cmzn_graphics_filter_id filter);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -898,7 +898,7 @@ are used to position the intended viewing volume in user coordinates.
  * coordinates which reverse z so are left-handed.
  */
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum Cmiss_scene_coordinate_system coordinate_system,
+	enum cmzn_scene_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection);
 
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
@@ -1165,7 +1165,7 @@ pixels per unit enables zooming to be achieved.
 ???RC How to handle y axis pointing down?
 ==============================================================================*/
 
-struct Graphics_buffer *Cmiss_scene_viewer_get_graphics_buffer(Cmiss_scene_viewer_id scene_viewer);
+struct Graphics_buffer *cmzn_scene_viewer_get_graphics_buffer(cmzn_scene_viewer_id scene_viewer);
 
 enum Scene_viewer_viewport_mode Scene_viewer_get_viewport_mode(
 	struct Scene_viewer *scene_viewer);
@@ -1423,8 +1423,8 @@ Returns a string label for the <projection_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-const char *Cmiss_scene_viewer_transparency_mode_string(
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
+const char *cmzn_scene_viewer_transparency_mode_string(
+	enum cmzn_scene_viewer_transparency_mode transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 23 November 1998
 
@@ -1486,11 +1486,11 @@ DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
 
-Cmiss_field_image_id Scene_viewer_get_background_image_field(
+cmzn_field_image_id Scene_viewer_get_background_image_field(
 	struct Scene_viewer *scene_viewer);
 
 int Scene_viewer_set_background_image_field(
-	struct Scene_viewer *scene_viewer, Cmiss_field_image_id image_field);
+	struct Scene_viewer *scene_viewer, cmzn_field_image_id image_field);
 
 Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 	Scene_viewer_rendering_data *rendering_data);
@@ -1501,10 +1501,10 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
-int Scene_viewer_scene_change(Cmiss_scene_viewer_id scene_viewer);
+int Scene_viewer_scene_change(cmzn_scene_viewer_id scene_viewer);
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module);
+	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module);
 
 #endif /* !defined (SCENE_VIEWER_H) */

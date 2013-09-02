@@ -1,7 +1,7 @@
 /**
  * @file cmiss_optimisation_private.cpp
  *
- * The Cmiss_optimisation object.
+ * The cmzn_optimisation object.
  *
  * @see-also api/zinc/optimisation.h
  *
@@ -54,30 +54,30 @@
 #include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"
 
-char *Cmiss_optimisation::getSolutionReport()
+char *cmzn_optimisation::getSolutionReport()
 {
 	std::string temp = solution_report.str();
 	return duplicate_string(temp.c_str());
 }
 
-int Cmiss_optimisation::runOptimisation()
+int cmzn_optimisation::runOptimisation()
 {
 	int return_code = 1;
 	solution_report.str("");
 	// check required attributes are set
 	if (method == CMISS_OPTIMISATION_METHOD_INVALID)
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Optimisation method invalid or not set.");
+		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Optimisation method invalid or not set.");
 		return_code = 0;
 	}
 	if (independentFields.size() < 1)
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Must set at least one independent field.");
+		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one independent field.");
 		return_code = 0;
 	}
 	if (objectiveFields.size() < 1)
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Must set at least one objective field.");
+		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one objective field.");
 		return_code = 0;
 	}
 	if (return_code)
@@ -89,14 +89,14 @@ int Cmiss_optimisation::runOptimisation()
 	return return_code;
 }
 
-Cmiss_optimisation_id Cmiss_field_module_create_optimisation(Cmiss_field_module_id field_module)
+cmzn_optimisation_id cmzn_field_module_create_optimisation(cmzn_field_module_id field_module)
 {
 	if (field_module)
-		return new Cmiss_optimisation(field_module);
+		return new cmzn_optimisation(field_module);
 	return 0;
 }
 
-Cmiss_optimisation_id Cmiss_optimisation_access(Cmiss_optimisation_id optimisation)
+cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->access();
@@ -104,22 +104,22 @@ Cmiss_optimisation_id Cmiss_optimisation_access(Cmiss_optimisation_id optimisati
 	return 0;
 }
 
-int Cmiss_optimisation_destroy(Cmiss_optimisation_id *optimisation_address)
+int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address)
 {
 	if (optimisation_address)
-		return Cmiss_optimisation::deaccess(*optimisation_address);
+		return cmzn_optimisation::deaccess(*optimisation_address);
 	return 0;
 }
 
-enum Cmiss_optimisation_method Cmiss_optimisation_get_method(Cmiss_optimisation_id optimisation)
+enum cmzn_optimisation_method cmzn_optimisation_get_method(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->method;
 	return CMISS_OPTIMISATION_METHOD_INVALID;
 }
 
-int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_method method)
+int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
+		enum cmzn_optimisation_method method)
 {
 	if (optimisation && (
 		(method == CMISS_OPTIMISATION_METHOD_QUASI_NEWTON) ||
@@ -131,10 +131,10 @@ int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 	return 0;
 }
 
-class Cmiss_optimisation_method_conversion
+class cmzn_optimisation_method_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_optimisation_method method)
+	static const char *to_string(enum cmzn_optimisation_method method)
 	{
 		const char *enum_string = 0;
 		switch (method)
@@ -152,22 +152,22 @@ public:
 	}
 };
 
-enum Cmiss_optimisation_method
-	Cmiss_optimisation_method_enum_from_string(const char *string)
+enum cmzn_optimisation_method
+	cmzn_optimisation_method_enum_from_string(const char *string)
 {
-	return string_to_enum<enum Cmiss_optimisation_method,
-	Cmiss_optimisation_method_conversion>(string);
+	return string_to_enum<enum cmzn_optimisation_method,
+	cmzn_optimisation_method_conversion>(string);
 }
 
-char *Cmiss_optimisation_method_enum_to_string(
-	enum Cmiss_optimisation_method method)
+char *cmzn_optimisation_method_enum_to_string(
+	enum cmzn_optimisation_method method)
 {
-	const char *method_string = Cmiss_optimisation_method_conversion::to_string(method);
+	const char *method_string = cmzn_optimisation_method_conversion::to_string(method);
 	return (method_string ? duplicate_string(method_string) : 0);
 }
 
-int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute)
+int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimisation,
+		enum cmzn_optimisation_attribute attribute)
 {
 	if (optimisation)
 	{
@@ -189,8 +189,8 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 	return 0;
 }
 
-int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute, int value)
+int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
+		enum cmzn_optimisation_attribute attribute, int value)
 {
 	int return_code = 1;
 	if (optimisation)
@@ -214,8 +214,8 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 	return return_code;
 }
 
-double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute)
+double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimisation,
+		enum cmzn_optimisation_attribute attribute)
 {
 	if (optimisation)
 	{
@@ -249,8 +249,8 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 	return 0.0;
 }
 
-int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute, double value)
+int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
+		enum cmzn_optimisation_attribute attribute, double value)
 {
 	int return_code = 1;
 	if (optimisation)
@@ -286,10 +286,10 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	return return_code;
 }
 
-class Cmiss_optimisation_attribute_conversion
+class cmzn_optimisation_attribute_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_optimisation_attribute attribute)
+	static const char *to_string(enum cmzn_optimisation_attribute attribute)
 	{
 		const char *enum_string = 0;
 		switch (attribute)
@@ -331,92 +331,92 @@ public:
 	}
 };
 
-enum Cmiss_optimisation_attribute Cmiss_optimisation_attribute_enum_from_string(
+enum cmzn_optimisation_attribute cmzn_optimisation_attribute_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_optimisation_attribute,
-	Cmiss_optimisation_attribute_conversion>(string);
+	return string_to_enum<enum cmzn_optimisation_attribute,
+	cmzn_optimisation_attribute_conversion>(string);
 }
 
-char *Cmiss_optimisation_attribute_enum_to_string(
-	enum Cmiss_optimisation_attribute attribute)
+char *cmzn_optimisation_attribute_enum_to_string(
+	enum cmzn_optimisation_attribute attribute)
 {
-	const char *attribute_string = Cmiss_optimisation_attribute_conversion::to_string(attribute);
+	const char *attribute_string = cmzn_optimisation_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
 
-Cmiss_field_id Cmiss_optimisation_get_first_independent_field(
-	Cmiss_optimisation_id optimisation)
+cmzn_field_id cmzn_optimisation_get_first_independent_field(
+	cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->getFirstIndependentField();
 	return 0;
 }
 
-Cmiss_field_id Cmiss_optimisation_get_next_independent_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field)
+cmzn_field_id cmzn_optimisation_get_next_independent_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id ref_field)
 {
 	if (optimisation && ref_field)
 		return optimisation->getNextIndependentField(ref_field);
 	return 0;
 }
 
-int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
-	Cmiss_field_id field)
+int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
+	cmzn_field_id field)
 {
 	if (optimisation && field)
 		return optimisation->addIndependentField(field);
 	return 0;
 }
 
-int Cmiss_optimisation_remove_independent_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id field)
+int cmzn_optimisation_remove_independent_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id field)
 {
 	if (optimisation && field)
 		return optimisation->removeIndependentField(field);
 	return 0;
 }
 
-Cmiss_field_id Cmiss_optimisation_get_first_objective_field(
-	Cmiss_optimisation_id optimisation)
+cmzn_field_id cmzn_optimisation_get_first_objective_field(
+	cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->getFirstObjectiveField();
 	return 0;
 }
 
-Cmiss_field_id Cmiss_optimisation_get_next_objective_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field)
+cmzn_field_id cmzn_optimisation_get_next_objective_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id ref_field)
 {
 	if (optimisation && ref_field)
 		return optimisation->getNextObjectiveField(ref_field);
 	return 0;
 }
 
-int Cmiss_optimisation_add_objective_field(Cmiss_optimisation_id optimisation,
-	Cmiss_field_id field)
+int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisation,
+	cmzn_field_id field)
 {
 	if (optimisation && field)
 		return optimisation->addObjectiveField(field);
 	return 0;
 }
 
-int Cmiss_optimisation_remove_objective_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id field)
+int cmzn_optimisation_remove_objective_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id field)
 {
 	if (optimisation && field)
 		return optimisation->removeObjectiveField(field);
 	return 0;
 }
 
-char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation)
+char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->getSolutionReport();
 	return 0;
 }
 
-int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation)
+int cmzn_optimisation_optimise(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->runOptimisation();

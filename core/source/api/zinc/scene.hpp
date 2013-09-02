@@ -54,7 +54,7 @@ class Scene
 {
 
 protected:
-	Cmiss_scene_id id;
+	cmzn_scene_id id;
 
 public:
 
@@ -62,18 +62,18 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Scene(Cmiss_scene_id scene_id) : id(scene_id)
+	explicit Scene(cmzn_scene_id scene_id) : id(scene_id)
 	{  }
 
-	Scene(const Scene& scene) : id(Cmiss_scene_access(scene.id))
+	Scene(const Scene& scene) : id(cmzn_scene_access(scene.id))
 	{  }
 
 	Scene& operator=(const Scene& scene)
 	{
-		Cmiss_scene_id temp_id = Cmiss_scene_access(scene.id);
+		cmzn_scene_id temp_id = cmzn_scene_access(scene.id);
 		if (0 != id)
 		{
-			Cmiss_scene_destroy(&id);
+			cmzn_scene_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -83,7 +83,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_scene_destroy(&id);
+			cmzn_scene_destroy(&id);
 		}
 	}
 
@@ -93,26 +93,26 @@ public:
 	}
 
 	// needed for casting constructors: see SceneImage(Scene&)
-	Cmiss_scene_id getId()
+	cmzn_scene_id getId()
 	{
 		return id;
 	}
 
 	int beginChange()
 	{
-		return Cmiss_scene_begin_change(id);
+		return cmzn_scene_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_scene_end_change(id);
+		return cmzn_scene_end_change(id);
 	}
 
 	int convertToPointCloud(GraphicsFilter& filter, Nodeset& nodeset,
 		Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
 		double surfaceDensity, double surfaceDensityScaleFactor)
 	{
-		return Cmiss_scene_convert_to_point_cloud(id, filter.getId(),
+		return cmzn_scene_convert_to_point_cloud(id, filter.getId(),
 			nodeset.getId(), coordinateField.getId(),
 			lineDensity, lineDensityScaleFactor,
 			surfaceDensity, surfaceDensityScaleFactor);
@@ -120,38 +120,38 @@ public:
 
 	Graphic createGraphic(Graphic::Type graphicType)
 	{
-		return Graphic(Cmiss_scene_create_graphic(id,
-			static_cast<Cmiss_graphic_type>(graphicType)));
+		return Graphic(cmzn_scene_create_graphic(id,
+			static_cast<cmzn_graphic_type>(graphicType)));
 	}
 
 	GraphicContours createGraphicContours()
 	{
-		return GraphicContours(Cmiss_scene_create_graphic_contours(id));
+		return GraphicContours(cmzn_scene_create_graphic_contours(id));
 	}
 
 	GraphicLines createGraphicLines()
 	{
-		return GraphicLines(Cmiss_scene_create_graphic_lines(id));
+		return GraphicLines(cmzn_scene_create_graphic_lines(id));
 	}
 
 	GraphicPoints createGraphicPoints()
 	{
-		return GraphicPoints(Cmiss_scene_create_graphic_points(id));
+		return GraphicPoints(cmzn_scene_create_graphic_points(id));
 	}
 
 	GraphicStreamlines createGraphicStreamlines()
 	{
-		return GraphicStreamlines(Cmiss_scene_create_graphic_streamlines(id));
+		return GraphicStreamlines(cmzn_scene_create_graphic_streamlines(id));
 	}
 
 	GraphicSurfaces createGraphicSurfaces()
 	{
-		return GraphicSurfaces(Cmiss_scene_create_graphic_surfaces(id));
+		return GraphicSurfaces(cmzn_scene_create_graphic_surfaces(id));
 	}
 
 	SelectionHandler createSelectionHandler()
 	{
-		return SelectionHandler(Cmiss_scene_create_selection_handler(id));
+		return SelectionHandler(cmzn_scene_create_selection_handler(id));
 	}
 
 	/**
@@ -165,70 +165,70 @@ public:
 	 */
 	Graphic findGraphicByName(const char *graphicName)
 	{
-		return Graphic(Cmiss_scene_find_graphic_by_name(id, graphicName));
+		return Graphic(cmzn_scene_find_graphic_by_name(id, graphicName));
 	}
 
 	Graphic getFirstGraphic()
 	{
-		return Graphic(Cmiss_scene_get_first_graphic(id));
+		return Graphic(cmzn_scene_get_first_graphic(id));
 	}
 
 	Graphic getNextGraphic(Graphic& refGraphic)
 	{
-		return Graphic(Cmiss_scene_get_next_graphic(id, refGraphic.getId()));
+		return Graphic(cmzn_scene_get_next_graphic(id, refGraphic.getId()));
 	}
 
 	Graphic getPreviousGraphic(Graphic& refGraphic)
 	{
-		return Graphic(Cmiss_scene_get_previous_graphic(id, refGraphic.getId()));
+		return Graphic(cmzn_scene_get_previous_graphic(id, refGraphic.getId()));
 	}
 
 	int getNumberOfGraphics()
 	{
-		return Cmiss_scene_get_number_of_graphics(id);
+		return cmzn_scene_get_number_of_graphics(id);
 	}
 
 	FieldGroup getSelectionGroup()
 	{
-		return FieldGroup(Cmiss_scene_get_selection_group(id));
+		return FieldGroup(cmzn_scene_get_selection_group(id));
 	}
 
 	int setSelectionGroup(FieldGroup& fieldGroup)
 	{
-		return Cmiss_scene_set_selection_group(id,
-			(Cmiss_field_group_id)(fieldGroup.getId()));
+		return cmzn_scene_set_selection_group(id,
+			(cmzn_field_group_id)(fieldGroup.getId()));
 	}
 
 	int getSpectrumDataRange(GraphicsFilter& filter, Spectrum& spectrum,
 		int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
 	{
-		return Cmiss_scene_get_spectrum_data_range(id, filter.getId(),
+		return cmzn_scene_get_spectrum_data_range(id, filter.getId(),
 			spectrum.getId(), valuesCount, minimumValuesOut, maximumValuesOut);
 	}
 
 	bool getVisibilityFlag()
 	{
-		return Cmiss_scene_get_visibility_flag(id);
+		return cmzn_scene_get_visibility_flag(id);
 	}
 
 	int setVisibilityFlag(bool visibilityFlag)
 	{
-		return Cmiss_scene_set_visibility_flag(id, visibilityFlag);
+		return cmzn_scene_set_visibility_flag(id, visibilityFlag);
 	}
 
 	int moveGraphicBefore(Graphic& graphic, Graphic& refGraphic)
 	{
-		return Cmiss_scene_move_graphic_before(id, graphic.getId(), refGraphic.getId());
+		return cmzn_scene_move_graphic_before(id, graphic.getId(), refGraphic.getId());
 	}
 
 	int removeAllGraphics()
 	{
-		return Cmiss_scene_remove_all_graphics(id);
+		return cmzn_scene_remove_all_graphics(id);
 	}
 
 	int removeGraphic(Graphic& graphic)
 	{
-		return Cmiss_scene_remove_graphic(id, graphic.getId());
+		return cmzn_scene_remove_graphic(id, graphic.getId());
 	}
 
 	ScenePicker createPicker();

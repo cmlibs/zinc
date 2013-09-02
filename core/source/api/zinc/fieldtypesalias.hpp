@@ -47,7 +47,7 @@ class FieldAlias : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldAlias(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldAlias(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldAlias FieldModule::createAlias(Field &sourceField);
@@ -61,7 +61,7 @@ public:
 
 inline FieldAlias FieldModule::createAlias(Field &sourceField)
 {
-	return FieldAlias(Cmiss_field_module_create_alias(id, sourceField.getId()));
+	return FieldAlias(cmzn_field_module_create_alias(id, sourceField.getId()));
 }
 
 }  // namespace zinc

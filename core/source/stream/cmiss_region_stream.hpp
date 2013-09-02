@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_region_stream.hpp
  *
- * The private interface to Cmiss_region_stream.
+ * The private interface to cmzn_region_stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -48,17 +48,17 @@
 #include "zinc/status.h"
 #include "stream/cmiss_stream_private.hpp"
 
-struct Cmiss_region_resource_properties : Cmiss_resource_properties
+struct cmzn_region_resource_properties : cmzn_resource_properties
 {
 public:
 
-	Cmiss_region_resource_properties(Cmiss_stream_resource_id resource_in) :
-		Cmiss_resource_properties(resource_in), time_enabled(false),
+	cmzn_region_resource_properties(cmzn_stream_resource_id resource_in) :
+		cmzn_resource_properties(resource_in), time_enabled(false),
 		time(0.0), domain_type((int)CMISS_FIELD_DOMAIN_TYPE_INVALID)
 	{
 	}
 
-	~Cmiss_region_resource_properties()
+	~cmzn_region_resource_properties()
 	{
 	}
 
@@ -96,31 +96,31 @@ private:
 	int domain_type;
 };
 
-struct Cmiss_stream_information_region : Cmiss_stream_information
+struct cmzn_stream_information_region : cmzn_stream_information
 {
 public:
 
-	Cmiss_stream_information_region(struct Cmiss_region *region_in) :
-		region(Cmiss_region_access(region_in)), root_region(Cmiss_region_access(region_in))
+	cmzn_stream_information_region(struct cmzn_region *region_in) :
+		region(cmzn_region_access(region_in)), root_region(cmzn_region_access(region_in))
 	{
 		time_enabled = false;
 		time = 0.0;
 	}
 
-	virtual ~Cmiss_stream_information_region()
+	virtual ~cmzn_stream_information_region()
 	{
 		if (root_region)
-			Cmiss_region_destroy(&root_region);
+			cmzn_region_destroy(&root_region);
 		if (region)
-			Cmiss_region_destroy(&region);
+			cmzn_region_destroy(&region);
 	}
 
-	virtual int addResource(Cmiss_stream_resource_id resourec_in)
+	virtual int addResource(cmzn_stream_resource_id resourec_in)
 	{
 		if (resourec_in && !findResourceInList(resourec_in))
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				new Cmiss_region_resource_properties(resourec_in);
+			cmzn_region_resource_properties *resource_properties =
+				new cmzn_region_resource_properties(resourec_in);
 			appendResourceProperties(resource_properties);
 			return 1;
 		}
@@ -130,10 +130,10 @@ public:
 		}
 	}
 
-	virtual Cmiss_resource_properties *createResourceProperties(Cmiss_stream_resource_id resource)
+	virtual cmzn_resource_properties *createResourceProperties(cmzn_stream_resource_id resource)
 	{
 		if (resource)
-			return new Cmiss_region_resource_properties(resource);
+			return new cmzn_region_resource_properties(resource);
 		return NULL;
 	}
 
@@ -153,12 +153,12 @@ public:
 		return 1;
 	}
 
-	double getResourceTime(Cmiss_stream_resource_id resource)
+	double getResourceTime(cmzn_stream_resource_id resource)
 	{
 		if (resource)
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
 				if (resource_properties->isTimeEnabled())
@@ -170,12 +170,12 @@ public:
 		return 0.0;
 	}
 
-	bool isResourceTimeEnabled(Cmiss_stream_resource_id resource)
+	bool isResourceTimeEnabled(cmzn_stream_resource_id resource)
 	{
 		if (resource)
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
 				return resource_properties->isTimeEnabled();
@@ -184,12 +184,12 @@ public:
 		return false;
 	}
 
-	int setResourceTime(Cmiss_stream_resource_id resource, double time_in)
+	int setResourceTime(cmzn_stream_resource_id resource, double time_in)
 	{
 		if (resource)
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
 				resource_properties->setTime(time_in);
@@ -199,12 +199,12 @@ public:
 		return 0;
 	}
 
-	int getResourceDomainType(Cmiss_stream_resource_id resource)
+	int getResourceDomainType(cmzn_stream_resource_id resource)
 	{
 		if (resource)
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
 				return resource_properties->getDomainType();
@@ -213,12 +213,12 @@ public:
 		return CMISS_FIELD_DOMAIN_TYPE_INVALID;
 	}
 
-	int setResourceDomainType(Cmiss_stream_resource_id resource, int domain_type_in)
+	int setResourceDomainType(cmzn_stream_resource_id resource, int domain_type_in)
 	{
 		if (resource)
 		{
-			Cmiss_region_resource_properties *resource_properties =
-				(Cmiss_region_resource_properties *)findResourceInList(resource);
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
 				return resource_properties->setDomainType(domain_type_in);
@@ -227,25 +227,25 @@ public:
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	Cmiss_region_id getRegion()
+	cmzn_region_id getRegion()
 	{
 		return region;
 	}
 
-	Cmiss_region_id getRootRegion()
+	cmzn_region_id getRootRegion()
 	{
 		return root_region;
 	}
 
-	int setRootRegion(Cmiss_region_id root_region_in)
+	int setRootRegion(cmzn_region_id root_region_in)
 	{
 		if (root_region != root_region_in)
 		{
 			if (root_region)
 			{
-				Cmiss_region_destroy(&root_region);
+				cmzn_region_destroy(&root_region);
 			}
-			root_region = Cmiss_region_access(root_region_in);
+			root_region = cmzn_region_access(root_region_in);
 		}
 		return 1;
 	}
@@ -254,13 +254,13 @@ public:
 private:
 	double time;
 	bool time_enabled;
-	struct Cmiss_region *region, *root_region;
+	struct cmzn_region *region, *root_region;
 };
 
-Cmiss_region_id Cmiss_stream_information_region_get_region_private(
-	Cmiss_stream_information_region_id stream_information);
+cmzn_region_id cmzn_stream_information_region_get_region_private(
+	cmzn_stream_information_region_id stream_information);
 
-Cmiss_region_id Cmiss_stream_information_region_get_root_region(
-	Cmiss_stream_information_region_id stream_information);
+cmzn_region_id cmzn_stream_information_region_get_root_region(
+	cmzn_stream_information_region_id stream_information);
 
 #endif /* CMISS_REGION_STREAM_HPP */

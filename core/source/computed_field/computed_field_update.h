@@ -67,9 +67,9 @@ Global types
  * @param time  The time to assign values at
  * @return  1 on success, 0 on error.
  */
-int Cmiss_nodeset_assign_field_from_source(
-	Cmiss_nodeset_id nodeset, Cmiss_field_id destination_field,
-	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+int cmzn_nodeset_assign_field_from_source(
+	cmzn_nodeset_id nodeset, cmzn_field_id destination_field,
+	cmzn_field_id source_field, cmzn_field_id conditional_field,
 	FE_value time);
 
 /*******************************************************************************
@@ -87,9 +87,9 @@ int Cmiss_nodeset_assign_field_from_source(
  * @param time  The time to assign values at
  * @return  1 on success, 0 on error.
  */
-int Cmiss_mesh_assign_grid_field_from_source(
-	Cmiss_mesh_id mesh, Cmiss_field_id destination_field,
-	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+int cmzn_mesh_assign_grid_field_from_source(
+	cmzn_mesh_id mesh, cmzn_field_id destination_field,
+	cmzn_field_id source_field, cmzn_field_id conditional_field,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	FE_value time);
 

@@ -147,7 +147,7 @@ public:
 	  {
 	  }
 
-	  int Scene_tree_execute(Cmiss_scene *scene)
+	  int Scene_tree_execute(cmzn_scene *scene)
 	  {
 		  set_Scene(scene);
 		  return Scene_render_opengl(scene, this);
@@ -165,19 +165,19 @@ public:
 			  GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	  }
 
-	  int Cmiss_scene_execute(Cmiss_scene *cmiss_scene)
+	  int cmzn_scene_execute(cmzn_scene *cmiss_scene)
 	  {
-		  return execute_Cmiss_scene(cmiss_scene, this);
+		  return execute_cmzn_scene(cmiss_scene, this);
 	  }
 
-	  int Cmiss_scene_execute_graphics(Cmiss_scene *cmiss_scene)
+	  int cmzn_scene_execute_graphics(cmzn_scene *cmiss_scene)
 	  {
-		  return Cmiss_scene_graphics_render_opengl(cmiss_scene, this);
+		  return cmzn_scene_graphics_render_opengl(cmiss_scene, this);
 	  }
 
-	  int Cmiss_scene_execute_child_scene(Cmiss_scene *cmiss_scene)
+	  int cmzn_scene_execute_child_scene(cmzn_scene *cmiss_scene)
 	  {
-		  return Cmiss_scene_render_child_scene(cmiss_scene, this);
+		  return cmzn_scene_render_child_scene(cmiss_scene, this);
 	  }
 
 	  int Material_execute(Graphical_material *material)
@@ -205,7 +205,7 @@ public:
 		  return Light_model_render_opengl(light_model, this);
 	  }
 
-	  virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
+	  virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
 	  {
 		  int return_code = 1;
 		  switch (coordinate_system)
@@ -242,7 +242,7 @@ public:
 					  glPushMatrix();
 					  glLoadIdentity();
 					  double left, right, bottom, top;
-					  if (Cmiss_scene_coordinate_system_get_viewport(coordinate_system,
+					  if (cmzn_scene_coordinate_system_get_viewport(coordinate_system,
 						  viewport_width, viewport_height, &left, &right, &bottom, &top))
 					  {
 						  /* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
@@ -269,7 +269,7 @@ public:
 		  return return_code;
 	  }
 
-	  virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system coordinate_system)
+	  virtual void end_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
 	  {
 		  switch (coordinate_system)
 		  {
@@ -429,14 +429,14 @@ public:
 	  {
 	  }
 
-	  int Cmiss_scene_execute_graphics(Cmiss_scene *cmiss_scene)
+	  int cmzn_scene_execute_graphics(cmzn_scene *cmiss_scene)
 	  {
-		  return Cmiss_scene_graphics_render_opengl(cmiss_scene, this);
+		  return cmzn_scene_graphics_render_opengl(cmiss_scene, this);
 	  }
 
-	  int Cmiss_scene_execute_child_scene(Cmiss_scene *cmiss_scene)
+	  int cmzn_scene_execute_child_scene(cmzn_scene *cmiss_scene)
 	  {
-		  return Cmiss_scene_render_child_scene(cmiss_scene, this);
+		  return cmzn_scene_render_child_scene(cmiss_scene, this);
 	  }
 
 	  int Graphics_object_execute_parent(GT_object *graphics_object)
@@ -655,17 +655,17 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 				}
 				// try to draw points and lines faster
 				GT_object *glyph = glyph_set->glyph;
-				Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+				cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 				int object_name = glyph_set->object_name;
-				Cmiss_glyph_type glyph_type = glyph ?
+				cmzn_glyph_type glyph_type = glyph ?
 					GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
 				// output static labels at each point, if supplied
 				const int number_of_glyphs =
-					Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+					cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
 				char **static_labels = 0;
 				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
 				{
-					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+					if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
 						(0 != glyph_set->static_label_text[glyph_number]))
 					{
 						static_labels = glyph_set->static_label_text;
@@ -735,7 +735,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 								}
 								bool allocatedText = false;
 								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
 								if (allocatedText)
 								{
 									delete[] text;
@@ -835,7 +835,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 								}
 								bool allocatedText = false;
 								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
 								if (allocatedText)
 								{
 									delete[] text;
@@ -953,7 +953,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 								}
 								bool allocatedText = false;
 								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								Cmiss_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
 								if (allocatedText)
 								{
 									delete[] text;
@@ -1127,7 +1127,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 								}
 								for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
 								{
-									if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+									if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
 										((labels && (glyph_number == 0) && (*label)) || (static_labels && static_labels[glyph_number])))
 									{
 										resolve_glyph_axes(glyph_repeat_mode, glyph_number,
@@ -1158,7 +1158,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 										char *text = concatenateLabels(
 											static_labels ? static_labels[glyph_number] : 0,
 											(label && (glyph_number == 0)) ? *label : 0, allocatedText);
-										Cmiss_font_rendergl_text(glyph_set->font, text, temp_point[0], temp_point[1], temp_point[2]);
+										cmzn_font_rendergl_text(glyph_set->font, text, temp_point[0], temp_point[1], temp_point[2]);
 										if (allocatedText)
 										{
 											delete[] text;
@@ -1221,7 +1221,7 @@ static int draw_pointsetGL(int n_pts,Triple *point_list,char **text,
 	gtMarkerType marker_type,GLfloat marker_size,int *names,
 	int number_of_data_components, GLfloat *data,
 struct Graphical_material *material, struct Spectrum *spectrum,
-struct Cmiss_font *font)
+struct cmzn_font *font)
 	/*******************************************************************************
 	LAST MODIFIED : 18 November 2005
 
@@ -1390,7 +1390,7 @@ struct Cmiss_font *font)
 					}
 					if (*text_string)
 					{
-						Cmiss_font_rendergl_text(font, *text_string, x, y, z);
+						cmzn_font_rendergl_text(font, *text_string, x, y, z);
 					}
 					text_string++;
 				}
@@ -2271,7 +2271,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			GLfloat *colour_vertex;
 			unsigned int i;
 
-			if (!Cmiss_spectrum_is_material_overwrite(spectrum))
+			if (!cmzn_spectrum_is_material_overwrite(spectrum))
 			{
 				Colour diffuse_colour;
 				Graphical_material_get_diffuse(material, &diffuse_colour);
@@ -4267,7 +4267,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 									if (glyph_set->glyph)
 										renderer->Graphics_object_compile(glyph_set->glyph);
 									if (glyph_set->font)
-										Cmiss_font_compile(glyph_set->font);
+										cmzn_font_compile(glyph_set->font);
 								}
 							}
 						}
@@ -4285,7 +4285,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point->font)
 									{
-										Cmiss_font_compile(point->font);
+										cmzn_font_compile(point->font);
 									}
 								}
 							}
@@ -4304,7 +4304,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								{
 									if (point_set->font)
 									{
-										Cmiss_font_compile(point_set->font);
+										cmzn_font_compile(point_set->font);
 									}
 								}
 							}

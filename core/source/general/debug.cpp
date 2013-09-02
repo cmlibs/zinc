@@ -697,7 +697,7 @@ actual object type and then the appropriate list function is called.
 		list_memory_data.show_structures = show_structures;
 		list_memory_data.total = 0;
 
-		printf("Cmiss Memory Dump\n");
+		printf("cmzn Memory Dump\n");
 
 		if (memory_block_list)
 		{
@@ -772,7 +772,7 @@ prevented).
 	return (return_code);
 } /* set_check_memory_output */
 
-void *Cmiss_allocate(int bytes)
+void *cmzn_allocate(int bytes)
 /*******************************************************************************
 LAST MODIFIED : 12 August 2003
 
@@ -781,7 +781,7 @@ DESCRIPTION :
 {
 	void *return_ptr;
 
-	ENTER(Cmiss_allocate);
+	ENTER(cmzn_allocate);
 	if (bytes)
 	{
 		ALLOCATE(return_ptr, char, bytes);
@@ -793,9 +793,9 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_ptr);
-} /* Cmiss_allocate */
+} /* cmzn_allocate */
 
-int Cmiss_deallocate(void *ptr)
+int cmzn_deallocate(void *ptr)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2002
 
@@ -806,7 +806,7 @@ return buffers allocated internally to cmiss.
 {
 	int return_code;
 
-	ENTER(Cmiss_deallocate);
+	ENTER(cmzn_deallocate);
 	if (ptr)
 	{
 		DEALLOCATE(ptr);
@@ -819,7 +819,7 @@ return buffers allocated internally to cmiss.
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_deallocate */
+} /* cmzn_deallocate */
 
 #  if defined (UNIX)
 #include <execinfo.h>

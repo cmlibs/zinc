@@ -643,9 +643,9 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		int i, j, number_of_skew_glyph_axes, skewed_axes;
 		struct Graphical_material *material_copy;
 		GT_object *glyph = glyph_set->glyph;
-		Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 		/* try to draw points and lines faster */
-		Cmiss_glyph_type glyph_type = glyph ?
+		cmzn_glyph_type glyph_type = glyph ?
 			GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
 		if ((glyph_type == CMISS_GLYPH_POINT) && (
 			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
@@ -841,8 +841,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		{
 			if (data_spectrum)
 			{
-				material_copy=Cmiss_graphics_material_create_private();
-				Cmiss_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_graphics_material_create_private();
+				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
@@ -850,7 +850,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 			number_of_skew_glyph_axes=0;
 			const int number_of_glyphs =
-				Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+				cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
 			for (i = 0; i < number_of_points; i++)
 			{
 				for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
@@ -1138,7 +1138,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 			if (material_copy)
 			{
-				Cmiss_graphics_material_destroy(&material_copy);
+				cmzn_graphics_material_destroy(&material_copy);
 			}
 		}
 		/* output label at each point, if supplied */
@@ -1157,20 +1157,20 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			point=glyph_set->point_list;
 			if (data_spectrum)
 			{
-				material_copy=Cmiss_graphics_material_create_private();
-				Cmiss_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_graphics_material_create_private();
+				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
 				material_copy = (struct Graphical_material *)NULL;
 			}
 			const int number_of_glyphs =
-				Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+				cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
 			for (i = 0; i < number_of_points; i++)
 			{
 				for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
 				{
-					if (Cmiss_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+					if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
 						((label && (glyph_number == 0) && (*label)) || (static_labels && static_labels[glyph_number])))
 					{
 						resolve_glyph_axes(glyph_repeat_mode, glyph_number,
@@ -1278,7 +1278,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 			if (material_copy)
 			{
-				Cmiss_graphics_material_destroy(&material_copy);
+				cmzn_graphics_material_destroy(&material_copy);
 			}
 		}
 	}
@@ -1501,8 +1501,8 @@ Writes VRML code to the file handle which represents the given pointset.
 			point=point_list;
 			if (number_of_data_components && data && material && spectrum)
 			{
-				material_copy=Cmiss_graphics_material_create_private();
-				Cmiss_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_graphics_material_create_private();
+				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
@@ -1563,7 +1563,7 @@ Writes VRML code to the file handle which represents the given pointset.
 			}
 			if (material_copy)
 			{
-				Cmiss_graphics_material_destroy(&material_copy);
+				cmzn_graphics_material_destroy(&material_copy);
 			}
 		}
 		return_code = 1;
@@ -1715,7 +1715,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,enum Cmiss_graphic_render_polygon_mode render_polygon_mode,
+	int npts2,enum GT_surface_type surface_type,enum cmzn_graphic_render_polygon_mode render_polygon_mode,
 	gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -2724,8 +2724,8 @@ DESCRIPTION :
 struct Export_to_vrml_data
 {
 	FILE *vrml_file;
-	Cmiss_scene_id scene;
-	Cmiss_graphics_filter_id filter;
+	cmzn_scene_id scene;
+	cmzn_graphics_filter_id filter;
 	/* store materials, glyphs and gt_objects that have been DEFined already so
 		 we can USE them again */
 	struct LIST(VRML_prototype) *vrml_prototype_list;
@@ -2789,8 +2789,8 @@ graphics_object_tree_iterator_function
 Global functions
 ----------------
 */
-int export_to_vrml(char *file_name, Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter)
+int export_to_vrml(char *file_name, cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter)
 /******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -2824,7 +2824,7 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"Group {\n");
 			fprintf(vrml_file,"  children [\n");
 
-			if (Cmiss_scene_get_global_graphics_range(scene, filter,
+			if (cmzn_scene_get_global_graphics_range(scene, filter,
 				&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z) &&
 				(radius = sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
 			{

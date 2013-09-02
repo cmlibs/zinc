@@ -42,24 +42,24 @@
 #ifndef CMZN_ELEMENTID_H__
 #define CMZN_ELEMENTID_H__
 
-	struct Cmiss_mesh;
-	typedef struct Cmiss_mesh *Cmiss_mesh_id;
+	struct cmzn_mesh;
+	typedef struct cmzn_mesh *cmzn_mesh_id;
 
-	struct Cmiss_mesh_group;
-	typedef struct Cmiss_mesh_group *Cmiss_mesh_group_id;
+	struct cmzn_mesh_group;
+	typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
 
 /** Handle to a template for creating or defining fields over an element. */
-	struct Cmiss_element_template;
-	typedef struct Cmiss_element_template *Cmiss_element_template_id;
+	struct cmzn_element_template;
+	typedef struct cmzn_element_template *cmzn_element_template_id;
 
-	struct Cmiss_element;
+	struct cmzn_element;
 	/** Handle to a single finite element object from a mesh */
-	typedef struct Cmiss_element *Cmiss_element_id;
+	typedef struct cmzn_element *cmzn_element_id;
 
 /**
  * An enum for selecting the faces of elements.
  */
-enum Cmiss_element_face_type
+enum cmzn_element_face_type
 {
 	CMISS_ELEMENT_FACE_INVALID = -1,
 	CMISS_ELEMENT_FACE_ALL,   /*!< include all faces */
@@ -71,17 +71,17 @@ enum Cmiss_element_face_type
 	CMISS_ELEMENT_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
 };
 
-	struct Cmiss_element_iterator;
-	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
+	struct cmzn_element_iterator;
+	typedef struct cmzn_element_iterator * cmzn_element_iterator_id;
 
-	struct Cmiss_element_basis;
+	struct cmzn_element_basis;
 	/** Handle to an element basis function definition */
-	typedef struct Cmiss_element_basis *Cmiss_element_basis_id;
+	typedef struct cmzn_element_basis *cmzn_element_basis_id;
 
 /**
  * Mode controlling how points are sampled from elements.
  */
-enum Cmiss_element_point_sample_mode
+enum cmzn_element_point_sample_mode
 {
 	CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID = 0,
 	CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES = 1,

@@ -43,7 +43,7 @@
 
 #include "zinc/optimisation.h"
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_optimisation_method);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_optimisation_method);
 
 #endif /* !defined (CMISS_MINIMISE_INTERNAL_H) */
 

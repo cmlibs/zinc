@@ -9,18 +9,18 @@
 #include "api/cmiss_field_cad.h"
 #include "cad/cad_element.h"
 
-struct Cmiss_cad_identifier
+struct cmzn_cad_identifier
 {
-	Cmiss_field_cad_topology_id cad_topology;
+	cmzn_field_cad_topology_id cad_topology;
 	Cad_primitive_identifier identifier;
 
-	Cmiss_cad_identifier(Cmiss_field_cad_topology_id cad_topology, Cad_primitive_identifier identifier);
-	~Cmiss_cad_identifier();
+	cmzn_cad_identifier(cmzn_field_cad_topology_id cad_topology, Cad_primitive_identifier identifier);
+	~cmzn_cad_identifier();
 
-	Cmiss_cad_identifier(const Cmiss_cad_identifier& cad_identifier);
-	Cmiss_cad_identifier& operator=(const Cmiss_cad_identifier& source);
-	bool operator==(const Cmiss_cad_identifier& other) const;
-	bool operator!=(const Cmiss_cad_identifier& other) const;
+	cmzn_cad_identifier(const cmzn_cad_identifier& cad_identifier);
+	cmzn_cad_identifier& operator=(const cmzn_cad_identifier& source);
+	bool operator==(const cmzn_cad_identifier& other) const;
+	bool operator!=(const cmzn_cad_identifier& other) const;
 };
 
 struct Cad_topology_primitive_identifier
@@ -70,9 +70,9 @@ public:
 
 
 
-struct Cmiss_cad_colour
+struct cmzn_cad_colour
 {
-	enum Cmiss_cad_colour_type {
+	enum cmzn_cad_colour_type {
 		CMISS_CAD_COLOUR_NOT_DEFINED = -1,
 		CMISS_CAD_COLOUR_GENERIC = 0,
 		CMISS_CAD_COLOUR_SURFACE = 1,
@@ -80,24 +80,24 @@ struct Cmiss_cad_colour
 	};
 
 private:
-	Cmiss_cad_colour_type colour_type;
+	cmzn_cad_colour_type colour_type;
 	Quantity_Color colour;
 
 public:
-	Cmiss_cad_colour(Cmiss_cad_colour_type colour_type = CMISS_CAD_COLOUR_NOT_DEFINED
+	cmzn_cad_colour(cmzn_cad_colour_type colour_type = CMISS_CAD_COLOUR_NOT_DEFINED
 		, Quantity_Color colour = Quantity_NOC_WHITE)
 		: colour_type(colour_type)
 		, colour(colour)
 	{
 	}
 
-	Cmiss_cad_colour_type getColourType() const {return colour_type;}
+	cmzn_cad_colour_type getColourType() const {return colour_type;}
 	Quantity_Color getColour() const {return colour;}
 };
 
-typedef std::map<Cad_topology_primitive_identifier,Cmiss_cad_colour, Cad_topology_primitive_identifier_compare> Cad_colour_map;
-typedef std::map<Cad_topology_primitive_identifier,Cmiss_cad_colour, Cad_topology_primitive_identifier_compare>::iterator Cad_colour_map_iterator;
-typedef std::map<Cad_topology_primitive_identifier,Cmiss_cad_colour, Cad_topology_primitive_identifier_compare>::const_iterator Cad_colour_map_const_iterator;
+typedef std::map<Cad_topology_primitive_identifier,cmzn_cad_colour, Cad_topology_primitive_identifier_compare> Cad_colour_map;
+typedef std::map<Cad_topology_primitive_identifier,cmzn_cad_colour, Cad_topology_primitive_identifier_compare>::iterator Cad_colour_map_iterator;
+typedef std::map<Cad_topology_primitive_identifier,cmzn_cad_colour, Cad_topology_primitive_identifier_compare>::const_iterator Cad_colour_map_const_iterator;
 
 
 #endif

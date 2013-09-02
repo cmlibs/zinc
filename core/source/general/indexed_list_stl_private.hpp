@@ -43,7 +43,7 @@
 
 #include "general/list.h"
 
-#define CMISS_SET( object_type )  Cmiss_set_ ## object_type
+#define CMISS_SET( object_type )  cmzn_set_ ## object_type
 
 #define FULL_DECLARE_INDEXED_LIST_STL_TYPE( object_type )
 

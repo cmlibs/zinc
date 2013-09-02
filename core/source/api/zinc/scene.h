@@ -66,7 +66,7 @@ extern "C" {
  * @param scene  The scene to obtain a new reference to.
  * @return  New scene reference with incremented reference count.
  */
-ZINC_API Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
+ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
 
 /*******************************************************************************
  * Destroys this reference to the scene (and sets it to NULL).
@@ -76,21 +76,21 @@ ZINC_API Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
  * @return  status CMISS_OK if successfully remove scene, any other value on
  * failure.
  */
-ZINC_API int Cmiss_scene_destroy(Cmiss_scene_id * scene);
+ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene);
 
 /***************************************************************************//**
- * Use this function with Cmiss_scene_end_change.
+ * Use this function with cmzn_scene_end_change.
  *
  * Use this function before making multiple changes on the scene, this
  * will stop scene from executing any immediate changes made in
  * scene. After multiple changes have been made, use
- * Cmiss_scene_end_change to execute all changes made previously in scene
+ * cmzn_scene_end_change to execute all changes made previously in scene
  * at once.
  *
  * @param scene  The handle to the scene.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_begin_change(Cmiss_scene_id scene);
+ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
 
 /**
  * Creates a cloud of points (nodes) in the supplied nodeset sampled at random
@@ -118,9 +118,9 @@ ZINC_API int Cmiss_scene_begin_change(Cmiss_scene_id scene);
  * @return  Status CMISS_OK on success, otherwise some other error code
  * including CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_scene_convert_to_point_cloud(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter, Cmiss_nodeset_id nodeset,
-	Cmiss_field_id coordinate_field,
+ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter, cmzn_nodeset_id nodeset,
+	cmzn_field_id coordinate_field,
 	double line_density, double line_density_scale_factor,
 	double surface_density, double surface_density_scale_factor);
 
@@ -131,8 +131,8 @@ ZINC_API int Cmiss_scene_convert_to_point_cloud(Cmiss_scene_id scene,
  * @param graphic_type  Enumerator for a specific graphic type.
  * @return  Handle to the new graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_id Cmiss_scene_create_graphic(Cmiss_scene_id scene,
-	enum Cmiss_graphic_type graphic_type);
+ZINC_API cmzn_graphic_id cmzn_scene_create_graphic(cmzn_scene_id scene,
+	enum cmzn_graphic_type graphic_type);
 
 /**
  * Create a contours graphic in the scene. Contours create graphics showing
@@ -142,8 +142,8 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_create_graphic(Cmiss_scene_id scene,
  * @param scene  Handle to scene the graphic is created in.
  * @return  Handle to the new contours graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_contours_id Cmiss_scene_create_graphic_contours(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_contours_id cmzn_scene_create_graphic_contours(
+	cmzn_scene_id scene);
 
 /**
  * Create a lines graphic in the scene. Used to visualise 1-D elements and
@@ -152,20 +152,20 @@ ZINC_API Cmiss_graphic_contours_id Cmiss_scene_create_graphic_contours(
  * @param scene  Handle to scene the graphic is created in.
  * @return  Handle to the new lines graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_lines_id Cmiss_scene_create_graphic_lines(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_lines_id cmzn_scene_create_graphic_lines(
+	cmzn_scene_id scene);
 
 /**
  * Create a points graphic in the scene. Used to visualise static points,
  * nodes, data and sampled element points. Must set the domain type after
  * creation.
- * @see Cmiss_graphic_set_domain_type
+ * @see cmzn_graphic_set_domain_type
  *
  * @param scene  Handle to scene the graphic is created in.
  * @return  Handle to the new points graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_points_id Cmiss_scene_create_graphic_points(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_points_id cmzn_scene_create_graphic_points(
+	cmzn_scene_id scene);
 
 /**
  * Create a streamlines graphic in the scene.
@@ -173,8 +173,8 @@ ZINC_API Cmiss_graphic_points_id Cmiss_scene_create_graphic_points(
  * @param scene  Handle to scene the graphic is created in.
  * @return  Handle to the new steamlines graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_streamlines_id Cmiss_scene_create_graphic_streamlines(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_streamlines_id cmzn_scene_create_graphic_streamlines(
+	cmzn_scene_id scene);
 
 /**
  * Create a surfaces graphic in the scene. Used to visualise 2-D elements
@@ -183,8 +183,8 @@ ZINC_API Cmiss_graphic_streamlines_id Cmiss_scene_create_graphic_streamlines(
  * @param scene  Handle to scene the graphic is created in.
  * @return  Handle to the new surfaces graphic on success, otherwise 0.
  */
-ZINC_API Cmiss_graphic_surfaces_id Cmiss_scene_create_graphic_surfaces(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_surfaces_id cmzn_scene_create_graphic_surfaces(
+	cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Return a handle to selection handler for this scene. User can add and
@@ -195,13 +195,13 @@ ZINC_API Cmiss_graphic_surfaces_id Cmiss_scene_create_graphic_surfaces(
  * @param scene  Handle to a cmiss_scene object.
  * @return  selection handler of this scene if successful, otherwise NULL.
  */
-ZINC_API Cmiss_selection_handler_id Cmiss_scene_create_selection_handler(
-	Cmiss_scene_id scene);
+ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
+	cmzn_scene_id scene);
 
 /***************************************************************************//**
- * Use this function with Cmiss_scene_begin_change.
+ * Use this function with cmzn_scene_begin_change.
  *
- * Use Cmiss_scene_begin_change before making multiple changes on the
+ * Use cmzn_scene_begin_change before making multiple changes on the
  * scene, it will stop scene from executing any immediate changes made in
  * scene. After multiple changes have been made, use
  * this function to execute all changes made previously in scene
@@ -210,7 +210,7 @@ ZINC_API Cmiss_selection_handler_id Cmiss_scene_create_selection_handler(
  * @param scene  The handle to the scene.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_end_change(Cmiss_scene_id scene);
+ZINC_API int cmzn_scene_end_change(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Returns the graphic of the specified name from the scene. Beware that
@@ -221,7 +221,7 @@ ZINC_API int Cmiss_scene_end_change(Cmiss_scene_id scene);
  * @param graphic_name  The name of the graphic to find.
  * @return  New reference to graphic of specified name, or NULL if not found.
  */
-ZINC_API Cmiss_graphic_id Cmiss_scene_find_graphic_by_name(Cmiss_scene_id scene,
+ZINC_API cmzn_graphic_id cmzn_scene_find_graphic_by_name(cmzn_scene_id scene,
 	const char *graphic_name);
 
 /***************************************************************************//**
@@ -230,7 +230,7 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_find_graphic_by_name(Cmiss_scene_id scene,
  * @param scene  Handle to a cmiss_scene object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-ZINC_API Cmiss_graphic_id Cmiss_scene_get_first_graphic(Cmiss_scene_id scene);
+ZINC_API cmzn_graphic_id cmzn_scene_get_first_graphic(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Get the next graphic after <ref_graphic> on the graphics list of <scene>.
@@ -239,8 +239,8 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_get_first_graphic(Cmiss_scene_id scene);
  * @param ref_graphic  Handle to a cmiss_graphic object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-ZINC_API Cmiss_graphic_id Cmiss_scene_get_next_graphic(Cmiss_scene_id scene,
-	Cmiss_graphic_id ref_graphic);
+ZINC_API cmzn_graphic_id cmzn_scene_get_next_graphic(cmzn_scene_id scene,
+	cmzn_graphic_id ref_graphic);
 
 /***************************************************************************//**
  * Get the graphic before <ref_graphic> on the graphics list of <scene>.
@@ -249,8 +249,8 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_get_next_graphic(Cmiss_scene_id scene,
  * @param ref_grpahic  Handle to a cmiss_graphic object.
  * @return  Handle to a cmiss_graphic object if successful, otherwise NULL;
  */
-ZINC_API Cmiss_graphic_id Cmiss_scene_get_previous_graphic(Cmiss_scene_id scene,
-	Cmiss_graphic_id ref_graphic);
+ZINC_API cmzn_graphic_id cmzn_scene_get_previous_graphic(cmzn_scene_id scene,
+	cmzn_graphic_id ref_graphic);
 
 /***************************************************************************//**
  * Returns the number of graphics in <scene>.
@@ -258,7 +258,7 @@ ZINC_API Cmiss_graphic_id Cmiss_scene_get_previous_graphic(Cmiss_scene_id scene,
  * @param scene  The handle to the scene
  * @return  Returns the number of graphic in scene.
  */
-ZINC_API int Cmiss_scene_get_number_of_graphics(Cmiss_scene_id scene);
+ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Get and return an accessed handle to the selection group of scene.
@@ -269,7 +269,7 @@ ZINC_API int Cmiss_scene_get_number_of_graphics(Cmiss_scene_id scene);
  *
  * @return Return selection group if successfully otherwise null.
  */
-ZINC_API Cmiss_field_group_id Cmiss_scene_get_selection_group(Cmiss_scene_id scene);
+ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Set the specified selection field to be the highlighting and selection group
@@ -284,8 +284,8 @@ ZINC_API Cmiss_field_group_id Cmiss_scene_get_selection_group(Cmiss_scene_id sce
  * @param selection_field  selection field to be set for this group.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_set_selection_group(Cmiss_scene_id scene,
-	Cmiss_field_group_id selection_field);
+ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
+	cmzn_field_group_id selection_field);
 
 /**
  * Get the range of graphic data field values rendered with the spectrum.
@@ -308,8 +308,8 @@ ZINC_API int Cmiss_scene_set_selection_group(Cmiss_scene_id scene,
  * one component range requested. Returns 0 on any other error including bad
  * arguments.
  */
-ZINC_API int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter, Cmiss_spectrum_id spectrum,
+ZINC_API int cmzn_scene_get_spectrum_data_range(cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter, cmzn_spectrum_id spectrum,
 	int valuesCount, double *minimumValuesOut, double *maximumValuesOut);
 
 /**
@@ -318,7 +318,7 @@ ZINC_API int Cmiss_scene_get_spectrum_data_range(Cmiss_scene_id scene,
  * @param scene  The handle to the scene.
  * @return  Boolean value true if visibility flag is set, false if not.
  */
-ZINC_API bool Cmiss_scene_get_visibility_flag(Cmiss_scene_id scene);
+ZINC_API bool cmzn_scene_get_visibility_flag(cmzn_scene_id scene);
 
 /**
  * Set the state of the scene's visibility flag. Note this only affects
@@ -328,7 +328,7 @@ ZINC_API bool Cmiss_scene_get_visibility_flag(Cmiss_scene_id scene);
  * @param visibility_flag  Boolean true to set, false to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_scene_set_visibility_flag(Cmiss_scene_id scene,
+ZINC_API int cmzn_scene_set_visibility_flag(cmzn_scene_id scene,
 	bool visibility_flag);
 
 /**
@@ -343,8 +343,8 @@ ZINC_API int Cmiss_scene_set_visibility_flag(Cmiss_scene_id scene,
  * NULL to move graphic to last position in list.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_move_graphic_before(Cmiss_scene_id scene,
-	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic);
+ZINC_API int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
+	cmzn_graphic_id graphic, cmzn_graphic_id ref_graphic);
 
 /**
  * Removes all graphics from the scene.
@@ -352,7 +352,7 @@ ZINC_API int Cmiss_scene_move_graphic_before(Cmiss_scene_id scene,
  * @param scene  The scene to modify.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_remove_all_graphics(Cmiss_scene_id scene);
+ZINC_API int cmzn_scene_remove_all_graphics(cmzn_scene_id scene);
 
 /**
  * Removes a graphic from scene and decrements the position of all subsequent graphics.
@@ -361,8 +361,8 @@ ZINC_API int Cmiss_scene_remove_all_graphics(Cmiss_scene_id scene);
  * @param graphic  The graphic to be removed.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_scene_remove_graphic(Cmiss_scene_id scene,
-	Cmiss_graphic_id graphic);
+ZINC_API int cmzn_scene_remove_graphic(cmzn_scene_id scene,
+	cmzn_graphic_id graphic);
 
 /***************************************************************************//**
  * Create a scene picker which user can use to define a picking volume and
@@ -371,7 +371,7 @@ ZINC_API int Cmiss_scene_remove_graphic(Cmiss_scene_id scene,
  * @param scene  Scene to create the scene picker for.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API Cmiss_scene_picker_id Cmiss_scene_create_picker(Cmiss_scene_id scene);
+ZINC_API cmzn_scene_picker_id cmzn_scene_create_picker(cmzn_scene_id scene);
 
 #ifdef __cplusplus
 }

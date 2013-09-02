@@ -69,8 +69,8 @@ Module types
 
 struct Convert_finite_elements_data
 {
-	Cmiss_field_module_id source_field_module;
-	Cmiss_field_cache_id source_field_cache;
+	cmzn_field_module_id source_field_module;
+	cmzn_field_cache_id source_field_cache;
 	enum Convert_finite_elements_mode mode;
 	Element_refinement refinement;
 	FE_value tolerance;
@@ -91,11 +91,11 @@ struct Convert_finite_elements_data
 	int node_number; /* Do not to search from beginning for a valid node number each time */
 	int element_number; /* Do not to search from beginning for a valid element number each time */
 
-	Convert_finite_elements_data(Cmiss_region_id source_region,
+	Convert_finite_elements_data(cmzn_region_id source_region,
 			Convert_finite_elements_mode mode,
 			Element_refinement refinement, FE_value tolerance) :
-		source_field_module(Cmiss_region_get_field_module(source_region)),
-		source_field_cache(Cmiss_field_module_create_cache(source_field_module)),
+		source_field_module(cmzn_region_get_field_module(source_region)),
+		source_field_cache(cmzn_field_module_create_cache(source_field_module)),
 		mode(mode),
 		refinement(refinement),
 		tolerance(tolerance),
@@ -150,8 +150,8 @@ struct Convert_finite_elements_data
 			}
 			DEALLOCATE(destination_fe_fields);
 		}
-		Cmiss_field_cache_destroy(&source_field_cache);
-		Cmiss_field_module_destroy(&source_field_module);
+		cmzn_field_cache_destroy(&source_field_cache);
+		cmzn_field_module_destroy(&source_field_module);
 	}
 
 	FE_node *getNearestNode(FE_value *coordinates)
@@ -246,8 +246,8 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (Cmiss_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
-						Cmiss_field_evaluate_real_with_derivatives(cfield, source_field_cache, number_of_components, values,
+					if (cmzn_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
+						cmzn_field_evaluate_real_with_derivatives(cfield, source_field_cache, number_of_components, values,
 							mode_dimension, derivatives))
 					{
 						/* Reorder the separate lists of values and derivatives into
@@ -352,8 +352,8 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (Cmiss_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
-						Cmiss_field_evaluate_real(cfield, source_field_cache, number_of_components, values))
+					if (cmzn_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
+						cmzn_field_evaluate_real(cfield, source_field_cache, number_of_components, values))
 					{
 						if (j==0)
 						{
@@ -534,8 +534,8 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode)
 
-int finite_element_conversion(struct Cmiss_region *source_region,
-	struct Cmiss_region *destination_region,
+int finite_element_conversion(struct cmzn_region *source_region,
+	struct cmzn_region *destination_region,
 	enum Convert_finite_elements_mode mode, int number_of_fields, 
 	struct Computed_field **field_array,
 	struct Element_refinement refinement, FE_value tolerance)
@@ -547,12 +547,12 @@ int finite_element_conversion(struct Cmiss_region *source_region,
 	ENTER(finite_element_conversion);
 	return_code=0;
 	if (source_region && destination_region &&
-		(Cmiss_region_get_Computed_field_manager(destination_region) !=
-			Cmiss_region_get_Computed_field_manager(source_region))
+		(cmzn_region_get_Computed_field_manager(destination_region) !=
+			cmzn_region_get_Computed_field_manager(source_region))
 		&& (0 < number_of_fields) && (field_array) && (*field_array) && (tolerance >= 0.0))
 	{
-		struct FE_region *destination_fe_region = Cmiss_region_get_FE_region(destination_region);
-		struct FE_region *source_fe_region = Cmiss_region_get_FE_region(source_region);
+		struct FE_region *destination_fe_region = cmzn_region_get_FE_region(destination_region);
+		struct FE_region *source_fe_region = cmzn_region_get_FE_region(source_region);
 
 		struct Convert_finite_elements_data data(source_region, mode, refinement, tolerance);
 		data.maximum_number_of_components = 0; /* Initialised by iterator */
@@ -566,7 +566,7 @@ int finite_element_conversion(struct Cmiss_region *source_region,
 		for (int fi = 0; fi < number_of_fields; fi++)
 		{
 			Computed_field *field = field_array[fi];
-			char *name = Cmiss_field_get_name(field);
+			char *name = cmzn_field_get_name(field);
 			int number_of_components = Computed_field_get_number_of_components(field);
 			if (number_of_components > data.maximum_number_of_components)
 			{

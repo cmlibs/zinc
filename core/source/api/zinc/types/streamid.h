@@ -51,65 +51,65 @@
  * and associate specific data/settings for reading and writing.
  * There are two derived types of this objects.
  *
- * #see Cmiss_stream_resource_id
- * #see Cmiss_stream_information_image_id
- * #see Cmiss_stream_information_region_id
- * #see Cmiss_field_image_create_stream_information
- * #see Cmiss_region_create_stream_information
- * #see Cmiss_stream_information_cast_image
- * #see Cmiss_stream_information_cast_region
+ * #see cmzn_stream_resource_id
+ * #see cmzn_stream_information_image_id
+ * #see cmzn_stream_information_region_id
+ * #see cmzn_field_image_create_stream_information
+ * #see cmzn_region_create_stream_information
+ * #see cmzn_stream_information_cast_image
+ * #see cmzn_stream_information_cast_region
  */
-	struct Cmiss_stream_information;
-	typedef struct Cmiss_stream_information *Cmiss_stream_information_id;
+	struct cmzn_stream_information;
+	typedef struct cmzn_stream_information *cmzn_stream_information_id;
 
 /***************************************************************************//**
  * A handle to cmiss stream resource. Stream resource give description of the
  * file or memory for read/write.
- * User can get a handle to stream resource through Cmiss_stream_information.
+ * User can get a handle to stream resource through cmzn_stream_information.
  * The stream is then add into the stream information and user can associate
  * type specific data to the resource for reading/writing.
  * There are two derived types of this object.
  *
- * #see Cmiss_stream_information_id
- * #see Cmiss_stream_resource_file_id
- * #see Cmiss_stream_resource_memory_id
- * #see Cmiss_stream_information_create_resource_file
- * #see Cmiss_stream_information_create_resource_memory
- * #see Cmiss_stream_information_create_resource_memory_buffer
- * #see Cmiss_stream_resource_cast_file
- * #see Cmiss_stream_resource_cast_memory
+ * #see cmzn_stream_information_id
+ * #see cmzn_stream_resource_file_id
+ * #see cmzn_stream_resource_memory_id
+ * #see cmzn_stream_information_create_resource_file
+ * #see cmzn_stream_information_create_resource_memory
+ * #see cmzn_stream_information_create_resource_memory_buffer
+ * #see cmzn_stream_resource_cast_file
+ * #see cmzn_stream_resource_cast_memory
  */
-	struct Cmiss_stream_resource;
-	typedef struct Cmiss_stream_resource *Cmiss_stream_resource_id;
+	struct cmzn_stream_resource;
+	typedef struct cmzn_stream_resource *cmzn_stream_resource_id;
 
 	/***************************************************************************//**
 	 * A handle to cmiss stream resource file. Stream resource file give description
 	 * of the file for reading/writing.
-	 * User can get a handle to stream resource through Cmiss_stream_information.
+	 * User can get a handle to stream resource through cmzn_stream_information.
 	 * The stream is then add into the stream information and user can associate
 	 * type specific data to the resource for reading/writing.
-	 * This object is a derived object of Cmiss_stream_resource_id.
+	 * This object is a derived object of cmzn_stream_resource_id.
 	 *
-	 * #see Cmiss_stream_resource_id
-   * #see Cmiss_stream_information_create_resource_file
-   * #see Cmiss_stream_resource_cast_file
+	 * #see cmzn_stream_resource_id
+   * #see cmzn_stream_information_create_resource_file
+   * #see cmzn_stream_resource_cast_file
 	 */
-	struct Cmiss_stream_resource_file;
-	typedef struct Cmiss_stream_resource_file *Cmiss_stream_resource_file_id;
+	struct cmzn_stream_resource_file;
+	typedef struct cmzn_stream_resource_file *cmzn_stream_resource_file_id;
 
 	/***************************************************************************//**
 	 * A handle to cmiss stream resource memory. Stream resource memory give
 	 * description of the memory for reading/writing.
-	 * User can get a handle to stream resource through Cmiss_stream_information.
+	 * User can get a handle to stream resource through cmzn_stream_information.
 	 * The stream is then add into the stream information and user can associate
 	 * type specific data to the resource for reading/writing.
-	 * This object is a derived object of Cmiss_stream_resource_id.
+	 * This object is a derived object of cmzn_stream_resource_id.
 	 *
-	 * #see Cmiss_stream_resource_id
-   * #see Cmiss_stream_information_create_resource_memory
-   * #see Cmiss_stream_resource_cast_memory
+	 * #see cmzn_stream_resource_id
+   * #see cmzn_stream_information_create_resource_memory
+   * #see cmzn_stream_resource_cast_memory
 	 */
-	struct Cmiss_stream_resource_memory;
-	typedef struct Cmiss_stream_resource_memory *Cmiss_stream_resource_memory_id;
+	struct cmzn_stream_resource_memory;
+	typedef struct cmzn_stream_resource_memory *cmzn_stream_resource_memory_id;
 
 #endif

@@ -57,18 +57,18 @@ The data structures used for representing textures.
    this one works like scene_viewer, where exported functions are
    typedef and #defined to be the exported version. */
 
-#define Texture Cmiss_texture
+#define Texture cmzn_texture
 
 #define Texture_get_original_texel_sizes \
-	Cmiss_texture_get_original_texel_sizes
+	cmzn_texture_get_original_texel_sizes
 #define Texture_get_number_of_components \
-	Cmiss_texture_get_number_of_components
+	cmzn_texture_get_number_of_components
 #define Texture_get_number_of_bytes_per_component \
-	Cmiss_texture_get_number_of_bytes_per_component
-#define Texture_get_property Cmiss_texture_get_property
-#define Texture_set_property Cmiss_texture_set_property
+	cmzn_texture_get_number_of_bytes_per_component
+#define Texture_get_property cmzn_texture_get_property
+#define Texture_set_property cmzn_texture_set_property
 
-typedef struct Cmiss_texture *Cmiss_texture_id;
+typedef struct cmzn_texture *cmzn_texture_id;
 
 
 /*
@@ -581,7 +581,7 @@ DESCRIPTION :
 Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 ==============================================================================*/
 
-int Cmiss_texture_get_graphics_storage_size(Cmiss_texture_id texture);
+int cmzn_texture_get_graphics_storage_size(cmzn_texture_id texture);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -615,7 +615,7 @@ subsequently modified by cmgui such as to support platforms which require
 each size to be a power of two.
 ==============================================================================*/
 
-int Cmiss_texture_get_rendered_texel_sizes(Cmiss_texture_id texture,
+int cmzn_texture_get_rendered_texel_sizes(cmzn_texture_id texture,
 	unsigned int *dimension, unsigned int **sizes);
 /*******************************************************************************
 LAST MODIFIED : 29 June 2007
@@ -645,7 +645,7 @@ default is 1.0, so that texture coordinates in the range from 0 to 1 represent
 real image data and not padding to make image sizes up to powers of 2.
 ==============================================================================*/
 
-int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture, 
+int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture, 
    unsigned int *dimension, ZnReal **texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
@@ -659,7 +659,7 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
-int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture, 
+int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture, 
    unsigned int dimension, ZnReal *texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
@@ -727,7 +727,7 @@ DESCRIPTION :
 Sets how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 
-int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+int cmzn_texture_write_to_file(cmzn_texture_id texture, 
 	const char *filename);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2007

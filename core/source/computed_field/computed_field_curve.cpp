@@ -110,7 +110,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -194,7 +194,7 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_curve_lookup::compare */
 
-int Computed_field_curve_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_curve_lookup::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *parameterValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -347,10 +347,10 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 } //namespace
 
 struct Computed_field *Computed_field_create_curve_lookup(
-	Cmiss_field_module *field_module, struct Computed_field *source_field,
+	cmzn_field_module *field_module, struct Computed_field *source_field,
 	struct Curve *curve, struct MANAGER(Curve) *curve_manager)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,

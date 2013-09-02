@@ -65,10 +65,10 @@ extern "C" {
  * @param source_field_three  FALSE = zero conditional component results.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two,
-	Cmiss_field_id source_field_three);
+ZINC_API cmzn_field_id cmzn_field_module_create_if(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two,
+	cmzn_field_id source_field_three);
 
 #ifdef __cplusplus
 }

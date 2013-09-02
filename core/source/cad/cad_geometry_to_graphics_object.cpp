@@ -49,9 +49,9 @@ extern "C" {
 #include "cad/field_location.hpp"
 #include "cad/element_identifier.h"
 
-struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field, Cmiss_graphics_render_type render_type, Cmiss_cad_surface_identifier surface_index)
+struct GT_surface *create_surface_from_cad_shape(cmzn_field_cad_topology_id cad_topology,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field, cmzn_graphics_render_type render_type, cmzn_cad_surface_identifier surface_index)
 {
 	struct GT_surface *surface = 0;
 
@@ -62,15 +62,15 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 	FE_value *data_values = 0;
 	ALLOCATE(values, FE_value, number_of_components);
 	ALLOCATE(derivatives, FE_value, number_of_derivatives * number_of_components);
-	//int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
+	//int surface_count = cmzn_field_cad_topology_get_surface_count(cad_topology);
 	//int surface_point_count_total = 0;
 	//for (int i = 0; i < surface_count; i++)
 	//{
-	//	Cmiss_cad_surface_identifier identifier = i;
+	//	cmzn_cad_surface_identifier identifier = i;
 	//	printf( "Surface index for surface count %d\n", identifier);
-	//	surface_point_count_total += Cmiss_field_cad_topology_get_surface_point_count(cad_topology, identifier);
+	//	surface_point_count_total += cmzn_field_cad_topology_get_surface_point_count(cad_topology, identifier);
 	//}
-	int surface_point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
+	int surface_point_count = cmzn_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
 
 	Triple *points = 0;
 	Triple *normals = 0;
@@ -97,15 +97,15 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 		//DEBUG_PRINT("creating %d surfaces\n", surface_index);
 		//for ( int i = 0; i < surface_count && return_code; i++ )
 		//{
-			//Cmiss_cad_surface_identifier identifier = i;
-			int point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
+			//cmzn_cad_surface_identifier identifier = i;
+			int point_count = cmzn_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
 			//DEBUG_PRINT("  setting id: %d (surface point count %d)\n", surface_index, point_count);
 			//DEBUG_PRINT( "  surface %d has %d points\n", surface_index+1, point_count );
 			for ( int j = 0; j < point_count && return_code; j++ )
 			{
 				double u = 0.0, v = 0.0;
-				Cmiss_cad_surface_point_identifier point_identifier = j;
-				return_code = Cmiss_field_cad_topology_get_surface_point_uv_coordinates(cad_topology, surface_index, point_identifier, u, v);
+				cmzn_cad_surface_point_identifier point_identifier = j;
+				return_code = cmzn_field_cad_topology_get_surface_point_uv_coordinates(cad_topology, surface_index, point_identifier, u, v);
 				if (return_code)
 				{
 					// don't set number of derivatives in location, set it when evaluating otherwise all
@@ -113,13 +113,13 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 					Field_cad_geometry_surface_location *loc = new Field_cad_geometry_surface_location(
 						cad_topology, surface_index, u, v, 0.0, /*number_of_derivatives*/0);
 					field_cache->setLocation(loc);
-					return_code = Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+					return_code = cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 						number_of_components, values, number_of_derivatives, derivatives);
 					if (return_code)
 					{
 						if (data_field && num_data_field_components)
 						{
-							return_code = Cmiss_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
+							return_code = cmzn_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
 							data[num_data_field_components * points_index + 0] = static_cast<GTDATA>(data_values[0]);
 							data[num_data_field_components * points_index + 1] = static_cast<GTDATA>(data_values[1]);
 							data[num_data_field_components * points_index + 2] = static_cast<GTDATA>(data_values[2]);
@@ -173,8 +173,8 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 	return surface;
 }
 
-struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(cmzn_field_cad_topology_id cad_topology,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, struct GT_object *graphics_object)
 {
 	GT_polyline_vertex_buffers *curves = 0;
@@ -197,15 +197,15 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_
 			num_data_field_components = 3;
 			ALLOCATE(data_values, double, num_data_field_components);
 		}
-		int curve_count = Cmiss_field_cad_topology_get_curve_count(cad_topology);
+		int curve_count = cmzn_field_cad_topology_get_curve_count(cad_topology);
 		unsigned int number_of_points = 0;
 		unsigned int vertex_start = 0;
 		int return_code = 1;
 		for ( int i = 0; i < curve_count && return_code; i++ )
 		{
 			vertex_start = array->get_number_of_vertices(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-			Cmiss_cad_curve_identifier identifier = i;
-			number_of_points = Cmiss_field_cad_topology_get_curve_point_count(cad_topology, identifier);
+			cmzn_cad_curve_identifier identifier = i;
+			number_of_points = cmzn_field_cad_topology_get_curve_point_count(cad_topology, identifier);
 			float *data = 0;
 			float *points = 0;
 			ALLOCATE(points, float, number_of_points * number_of_components);
@@ -217,15 +217,15 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_
 			{
 				//printf("number of points %d\n", number_of_points);
 				double s = 0.0;
-				return_code = Cmiss_field_cad_topology_get_curve_point_s_coordinate(cad_topology, identifier, j, s);
+				return_code = cmzn_field_cad_topology_get_curve_point_s_coordinate(cad_topology, identifier, j, s);
 				if (return_code)
 				{
 					Field_cad_geometry_curve_location *loc = new Field_cad_geometry_curve_location(cad_topology, identifier, s);
 					field_cache->setLocation(loc);
-					return_code = Cmiss_field_evaluate_real(coordinate_field, field_cache, number_of_components, values);
+					return_code = cmzn_field_evaluate_real(coordinate_field, field_cache, number_of_components, values);
 					if (data && num_data_field_components && return_code)
 					{
-						return_code = Cmiss_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
+						return_code = cmzn_field_evaluate_real(data_field, field_cache, num_data_field_components, data_values);
 						data[num_data_field_components * j + 0] = static_cast<float>(data_values[0]);
 						data[num_data_field_components * j + 1] = static_cast<float>(data_values[1]);
 						data[num_data_field_components * j + 2] = static_cast<float>(data_values[2]);

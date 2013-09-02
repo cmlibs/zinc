@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_region_stream.cpp
  *
- * The definition to Cmiss_region_stream.
+ * The definition to cmzn_region_stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -52,7 +52,7 @@
 
 namespace {
 
-int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
+int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_buffer,
 	const unsigned int memory_buffer_size, struct FE_import_time_index *time_index, int useData)
 {
 	const char block_name[] = "dataBlock";
@@ -61,7 +61,7 @@ int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memor
 	struct IO_stream_package *io_stream_package;
 	struct IO_stream *input_stream;
 
-	ENTER(Cmiss_region_read_file);
+	ENTER(cmzn_region_read_file);
 	return_code = 0;
 	if (region && memory_buffer && memory_buffer_size && (io_stream_package=CREATE(IO_stream_package)()))
 	{
@@ -90,7 +90,7 @@ int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memor
 }
 
 /** attempts to determine type of file: EX or FieldML */
-int Cmiss_region_read_field_file_of_name(struct Cmiss_region *region, const char *file_name,
+int cmzn_region_read_field_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index, int useData)
 {
@@ -99,7 +99,7 @@ int Cmiss_region_read_field_file_of_name(struct Cmiss_region *region, const char
 	{
 		if (time_index)
 		{
-			display_message(WARNING_MESSAGE, "Cmiss_region_read. Time not supported by FieldML reader");
+			display_message(WARNING_MESSAGE, "cmzn_region_read. Time not supported by FieldML reader");
 		}
 		return_code = parse_fieldml_file(region, file_name);
 	}
@@ -113,33 +113,33 @@ int Cmiss_region_read_field_file_of_name(struct Cmiss_region *region, const char
 
 }
 
-int Cmiss_region_read(Cmiss_region_id region,
-	Cmiss_stream_information_id stream_information)
+int cmzn_region_read(cmzn_region_id region,
+	cmzn_stream_information_id stream_information)
 {
 	struct FE_import_time_index time_index_value, *time_index = NULL,
 		stream_time_index_value, *stream_time_index = NULL;
 	int return_code = 0;
-	Cmiss_stream_information_region_id region_stream_information = NULL;
+	cmzn_stream_information_region_id region_stream_information = NULL;
 	if (stream_information)
 	{
-		region_stream_information = dynamic_cast<Cmiss_stream_information_region *>(stream_information);
+		region_stream_information = dynamic_cast<cmzn_stream_information_region *>(stream_information);
 	}
 	if (region && region_stream_information &&
-		(Cmiss_stream_information_region_get_region_private(region_stream_information) == region))
+		(cmzn_stream_information_region_get_region_private(region_stream_information) == region))
 	{
-		const Cmiss_stream_properties_list streams_list = region_stream_information->getResourcesList();
+		const cmzn_stream_properties_list streams_list = region_stream_information->getResourcesList();
 		struct IO_stream_package *io_stream_package = CREATE(IO_stream_package)();
-		struct Cmiss_region *temp_region = Cmiss_region_create_region(region);
+		struct cmzn_region *temp_region = cmzn_region_create_region(region);
 		if (!(streams_list.empty()) && io_stream_package && temp_region)
 		{
-			Cmiss_stream_properties_list_const_iterator iter;
-			Cmiss_resource_properties *stream_properties = NULL;
-			Cmiss_stream_resource_id stream = NULL;
+			cmzn_stream_properties_list_const_iterator iter;
+			cmzn_resource_properties *stream_properties = NULL;
+			cmzn_stream_resource_id stream = NULL;
 			return_code = 1;
-			if (Cmiss_stream_information_region_has_attribute(region_stream_information,
+			if (cmzn_stream_information_region_has_attribute(region_stream_information,
 				CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 			{
-				time_index_value.time = Cmiss_stream_information_region_get_attribute_real(
+				time_index_value.time = cmzn_stream_information_region_get_attribute_real(
 					region_stream_information, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 				time_index = &time_index_value;
 			}
@@ -147,10 +147,10 @@ int Cmiss_region_read(Cmiss_region_id region,
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
-				if (Cmiss_stream_information_region_has_resource_attribute(
+				if (cmzn_stream_information_region_has_resource_attribute(
 					region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 				{
-					stream_time_index_value.time = Cmiss_stream_information_region_get_resource_attribute_real(
+					stream_time_index_value.time = cmzn_stream_information_region_get_resource_attribute_real(
 						region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 					stream_time_index = &stream_time_index_value;
 				}
@@ -158,12 +158,12 @@ int Cmiss_region_read(Cmiss_region_id region,
 				{
 					stream_time_index = time_index;
 				}
-				Cmiss_stream_resource_file_id file_resource = Cmiss_stream_resource_cast_file(stream);
-				Cmiss_stream_resource_memory_id memory_resource = NULL;
+				cmzn_stream_resource_file_id file_resource = cmzn_stream_resource_cast_file(stream);
+				cmzn_stream_resource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int readData = 0;
-				int domain_type = Cmiss_stream_information_region_get_resource_domain_type(
+				int domain_type = cmzn_stream_information_region_get_resource_domain_type(
 					region_stream_information, stream);
 				if ((domain_type & CMISS_FIELD_DOMAIN_DATA) && (!(domain_type & CMISS_FIELD_DOMAIN_NODES)))
 				{
@@ -174,113 +174,113 @@ int Cmiss_region_read(Cmiss_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!Cmiss_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index,
+						if (!cmzn_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index,
 							readData))
 						{
 							return_code = 0;
-							display_message(ERROR_MESSAGE, "Cmiss_region_read. Cannot read file %s", file_name);
+							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read file %s", file_name);
 						}
 						DEALLOCATE(file_name);
 					}
-					Cmiss_stream_resource_file_destroy(&file_resource);
+					cmzn_stream_resource_file_destroy(&file_resource);
 				}
-				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
+				else if (NULL != (memory_resource = cmzn_stream_resource_cast_memory(stream)))
 				{
 					memory_resource->getBuffer(&memory_block, &buffer_size);
 					if (memory_block)
 					{
-						if (!Cmiss_region_read_from_memory(temp_region, memory_block, buffer_size, stream_time_index,
+						if (!cmzn_region_read_from_memory(temp_region, memory_block, buffer_size, stream_time_index,
 							readData))
 						{
 							return_code = 0;
-							display_message(ERROR_MESSAGE, "Cmiss_region_read. Cannot read memory");
+							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read memory");
 						}
 					}
-					Cmiss_stream_resource_memory_destroy(&memory_resource);
+					cmzn_stream_resource_memory_destroy(&memory_resource);
 				}
 				else
 				{
 					return_code = 0;
-					display_message(ERROR_MESSAGE, "Cmiss_region_read. Stream error");
+					display_message(ERROR_MESSAGE, "cmzn_region_read. Stream error");
 				}
 				if (!return_code)
 				{
 					break;
 				}
 			}
-			if (return_code && Cmiss_region_can_merge(region,temp_region))
+			if (return_code && cmzn_region_can_merge(region,temp_region))
 			{
-				return_code = Cmiss_region_merge(region, temp_region);
+				return_code = cmzn_region_merge(region, temp_region);
 			}
-			DEACCESS(Cmiss_region)(&temp_region);
+			DEACCESS(cmzn_region)(&temp_region);
 			DESTROY(IO_stream_package)(&io_stream_package);
 		}
 	}
 	return return_code;
 }
 
-int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name)
+int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
 {
 	int return_code = 0;
 	if (region && file_name)
 	{
-		Cmiss_stream_information_id stream_information =
-			Cmiss_region_create_stream_information(region);
-		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+		cmzn_stream_information_id stream_information =
+			cmzn_region_create_stream_information(region);
+		cmzn_stream_resource_id resource = cmzn_stream_information_create_resource_file(
 			stream_information, file_name);
-		return_code = Cmiss_region_read(region, stream_information);
-		Cmiss_stream_resource_destroy(&resource);
-		Cmiss_stream_information_destroy(&stream_information);
+		return_code = cmzn_region_read(region, stream_information);
+		cmzn_stream_resource_destroy(&resource);
+		cmzn_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
 
-int Cmiss_region_write(Cmiss_region_id region,
-	Cmiss_stream_information_id stream_information)
+int cmzn_region_write(cmzn_region_id region,
+	cmzn_stream_information_id stream_information)
 {
 	int return_code = 0;
 	double time = 0.0, stream_time = 0.0;
-	Cmiss_stream_information_region_id region_stream_information = NULL;
+	cmzn_stream_information_region_id region_stream_information = NULL;
 	if (stream_information)
 	{
-		region_stream_information = dynamic_cast<Cmiss_stream_information_region *>(stream_information);
+		region_stream_information = dynamic_cast<cmzn_stream_information_region *>(stream_information);
 	}
 	if (region && region_stream_information &&
-		(Cmiss_stream_information_region_get_region_private(region_stream_information) == region))
+		(cmzn_stream_information_region_get_region_private(region_stream_information) == region))
 	{
-		const Cmiss_stream_properties_list streams_list = region_stream_information->getResourcesList();
+		const cmzn_stream_properties_list streams_list = region_stream_information->getResourcesList();
 		if (!(streams_list.empty()))
 		{
-			Cmiss_stream_properties_list_const_iterator iter;
-			Cmiss_resource_properties *stream_properties = NULL;
-			Cmiss_stream_resource_id stream = NULL;
+			cmzn_stream_properties_list_const_iterator iter;
+			cmzn_resource_properties *stream_properties = NULL;
+			cmzn_stream_resource_id stream = NULL;
 			return_code = 1;
-			if (Cmiss_stream_information_region_has_attribute(region_stream_information,
+			if (cmzn_stream_information_region_has_attribute(region_stream_information,
 				CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 			{
-				time = Cmiss_stream_information_region_get_attribute_real(
+				time = cmzn_stream_information_region_get_attribute_real(
 					region_stream_information, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
-				if (Cmiss_stream_information_region_has_resource_attribute(
+				if (cmzn_stream_information_region_has_resource_attribute(
 					region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 				{
-					stream_time = Cmiss_stream_information_region_get_resource_attribute_real(
+					stream_time = cmzn_stream_information_region_get_resource_attribute_real(
 						region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 				}
 				else
 				{
 					stream_time = time;
 				}
-				Cmiss_stream_resource_file_id file_resource = Cmiss_stream_resource_cast_file(stream);
-				Cmiss_stream_resource_memory_id memory_resource = NULL;
+				cmzn_stream_resource_file_id file_resource = cmzn_stream_resource_cast_file(stream);
+				cmzn_stream_resource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int writeElements = 0, writeData = 0, writeNodes = 0;
-				int domain_type =	Cmiss_stream_information_region_get_resource_domain_type(
+				int domain_type =	cmzn_stream_information_region_get_resource_domain_type(
 					region_stream_information, stream);
 				if (domain_type == CMISS_FIELD_DOMAIN_TYPE_INVALID)
 				{
@@ -321,40 +321,40 @@ int Cmiss_region_write(Cmiss_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!write_exregion_file_of_name(file_name, region, (Cmiss_field_group_id)0,
-							Cmiss_stream_information_region_get_root_region(region_stream_information),
+						if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
+							cmzn_stream_information_region_get_root_region(region_stream_information),
 							writeElements,	writeNodes, writeData,
 							FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
 							stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
 						{
 							return_code = 0;
-							display_message(ERROR_MESSAGE, "Cmiss_region_write. Cannot write file %s", file_name);
+							display_message(ERROR_MESSAGE, "cmzn_region_write. Cannot write file %s", file_name);
 						}
 						DEALLOCATE(file_name);
 					}
-					Cmiss_stream_resource_file_destroy(&file_resource);
+					cmzn_stream_resource_file_destroy(&file_resource);
 				}
-				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
+				else if (NULL != (memory_resource = cmzn_stream_resource_cast_memory(stream)))
 				{
-					if (!write_exregion_file_to_memory_block(region, (Cmiss_field_group_id)0,
-						Cmiss_stream_information_region_get_root_region(region_stream_information),
+					if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
+						cmzn_stream_information_region_get_root_region(region_stream_information),
 						writeElements,	writeNodes, writeData,
 						FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
 						stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
 					{
 						return_code = 0;
-						display_message(ERROR_MESSAGE, "Cmiss_region_write. Cannot write to memory block");
+						display_message(ERROR_MESSAGE, "cmzn_region_write. Cannot write to memory block");
 					}
 					else
 					{
 						memory_resource->setBuffer(memory_block, buffer_size);
 					}
-					Cmiss_stream_resource_memory_destroy(&memory_resource);
+					cmzn_stream_resource_memory_destroy(&memory_resource);
 				}
 				else
 				{
 					return_code = 0;
-					display_message(ERROR_MESSAGE, "Cmiss_region_write. Stream error");
+					display_message(ERROR_MESSAGE, "cmzn_region_write. Stream error");
 				}
 				if (!return_code)
 				{
@@ -366,39 +366,39 @@ int Cmiss_region_write(Cmiss_region_id region,
 	return return_code;
 }
 
-int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name)
+int cmzn_region_write_file(cmzn_region_id region, const char *file_name)
 {
 	int return_code = 0;
 	if (region && file_name)
 	{
-		Cmiss_stream_information_id stream_information =
-			Cmiss_region_create_stream_information(region);
-		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+		cmzn_stream_information_id stream_information =
+			cmzn_region_create_stream_information(region);
+		cmzn_stream_resource_id resource = cmzn_stream_information_create_resource_file(
 			stream_information, file_name);
-		return_code = Cmiss_region_write(region, stream_information);
-		Cmiss_stream_resource_destroy(&resource);
-		Cmiss_stream_information_destroy(&stream_information);
+		return_code = cmzn_region_write(region, stream_information);
+		cmzn_stream_resource_destroy(&resource);
+		cmzn_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
 
-Cmiss_stream_information_id Cmiss_region_create_stream_information(struct Cmiss_region *region)
+cmzn_stream_information_id cmzn_region_create_stream_information(struct cmzn_region *region)
 {
 	if (region)
 	{
-		return new Cmiss_stream_information_region(region);
+		return new cmzn_stream_information_region(region);
 	}
 	return NULL;
 }
 
-Cmiss_stream_information_region_id Cmiss_stream_information_cast_region(
-	Cmiss_stream_information_id stream_information)
+cmzn_stream_information_region_id cmzn_stream_information_cast_region(
+	cmzn_stream_information_id stream_information)
 {
 	if (stream_information &&
-		(dynamic_cast<Cmiss_stream_information_region *>(stream_information)))
+		(dynamic_cast<cmzn_stream_information_region *>(stream_information)))
 	{
 		stream_information->access();
-		return (reinterpret_cast<Cmiss_stream_information_region *>(stream_information));
+		return (reinterpret_cast<cmzn_stream_information_region *>(stream_information));
 	}
 	else
 	{
@@ -406,7 +406,7 @@ Cmiss_stream_information_region_id Cmiss_stream_information_cast_region(
 	}
 }
 
-int Cmiss_stream_information_region_destroy(Cmiss_stream_information_region_id *stream_information_address)
+int cmzn_stream_information_region_destroy(cmzn_stream_information_region_id *stream_information_address)
 {
 	if (stream_information_address && *stream_information_address)
 	{
@@ -418,9 +418,9 @@ int Cmiss_stream_information_region_destroy(Cmiss_stream_information_region_id *
 }
 
 
-bool Cmiss_stream_information_region_has_attribute(
-	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute attribute)
+bool cmzn_stream_information_region_has_attribute(
+	cmzn_stream_information_region_id stream_information,
+	enum cmzn_stream_information_region_attribute attribute)
 {
 	if (stream_information)
 	{
@@ -438,9 +438,9 @@ bool Cmiss_stream_information_region_has_attribute(
 	return false;
 }
 
-double Cmiss_stream_information_region_get_attribute_real(
-	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute attribute)
+double cmzn_stream_information_region_get_attribute_real(
+	cmzn_stream_information_region_id stream_information,
+	enum cmzn_stream_information_region_attribute attribute)
 {
 	double return_value = 0.0;
 	if (stream_information)
@@ -454,16 +454,16 @@ double Cmiss_stream_information_region_get_attribute_real(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_region_get_attribute_real.  Invalid attribute");
+					"cmzn_stream_information_region_get_attribute_real.  Invalid attribute");
 			} break;
 		}
 	}
 	return return_value;
 }
 
-int Cmiss_stream_information_region_set_attribute_real(
-	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute attribute,
+int cmzn_stream_information_region_set_attribute_real(
+	cmzn_stream_information_region_id stream_information,
+	enum cmzn_stream_information_region_attribute attribute,
 	double value)
 {
 	int return_code = 0;
@@ -478,17 +478,17 @@ int Cmiss_stream_information_region_set_attribute_real(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_region_set_attribute_real.  Invalid attribute");
+					"cmzn_stream_information_region_set_attribute_real.  Invalid attribute");
 			} break;
 		}
 	}
 	return return_code;
 }
 
-bool Cmiss_stream_information_region_has_resource_attribute(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute attribute)
+bool cmzn_stream_information_region_has_resource_attribute(
+	cmzn_stream_information_region_id stream_information,
+	cmzn_stream_resource_id resource,
+	enum cmzn_stream_information_region_attribute attribute)
 {
 	if (stream_information && resource)
 	{
@@ -506,10 +506,10 @@ bool Cmiss_stream_information_region_has_resource_attribute(
 	return false;
 }
 
-double Cmiss_stream_information_region_get_resource_attribute_real(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute attribute)
+double cmzn_stream_information_region_get_resource_attribute_real(
+	cmzn_stream_information_region_id stream_information,
+	cmzn_stream_resource_id resource,
+	enum cmzn_stream_information_region_attribute attribute)
 {
 	double return_value = 0.0;
 	if (stream_information && resource)
@@ -523,17 +523,17 @@ double Cmiss_stream_information_region_get_resource_attribute_real(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_region_get_resource_attribute_real.  Invalid attribute");
+					"cmzn_stream_information_region_get_resource_attribute_real.  Invalid attribute");
 			} break;
 		}
 	}
 	return return_value;
 }
 
-int Cmiss_stream_information_region_set_resource_attribute_real(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute attribute,
+int cmzn_stream_information_region_set_resource_attribute_real(
+	cmzn_stream_information_region_id stream_information,
+	cmzn_stream_resource_id resource,
+	enum cmzn_stream_information_region_attribute attribute,
 	double value)
 {
 	int return_code = 0;
@@ -548,16 +548,16 @@ int Cmiss_stream_information_region_set_resource_attribute_real(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_region_set_resource_attribute_real.  Invalid attribute");
+					"cmzn_stream_information_region_set_resource_attribute_real.  Invalid attribute");
 			} break;
 		}
 	}
 	return return_code;
 }
 
-int Cmiss_stream_information_region_get_resource_domain_type(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource)
+int cmzn_stream_information_region_get_resource_domain_type(
+	cmzn_stream_information_region_id stream_information,
+	cmzn_stream_resource_id resource)
 {
 	if (stream_information && resource)
 	{
@@ -566,9 +566,9 @@ int Cmiss_stream_information_region_get_resource_domain_type(
 	return (int)CMISS_FIELD_DOMAIN_TYPE_INVALID;
 }
 
-int Cmiss_stream_information_region_set_resource_domain_type(
-	Cmiss_stream_information_region_id stream_information,
-	Cmiss_stream_resource_id resource,
+int cmzn_stream_information_region_set_resource_domain_type(
+	cmzn_stream_information_region_id stream_information,
+	cmzn_stream_resource_id resource,
 	int domain_type)
 {
 	if (stream_information && resource)
@@ -578,14 +578,14 @@ int Cmiss_stream_information_region_set_resource_domain_type(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_region_id Cmiss_stream_information_region_get_region_private(
-	Cmiss_stream_information_region_id stream_information)
+cmzn_region_id cmzn_stream_information_region_get_region_private(
+	cmzn_stream_information_region_id stream_information)
 {
 	return stream_information->getRegion();
 }
 
-Cmiss_region_id Cmiss_stream_information_region_get_root_region(
-	Cmiss_stream_information_region_id stream_information)
+cmzn_region_id cmzn_stream_information_region_get_root_region(
+	cmzn_stream_information_region_id stream_information)
 {
 	if (stream_information)
 	{
@@ -594,11 +594,11 @@ Cmiss_region_id Cmiss_stream_information_region_get_root_region(
 	return NULL;
 }
 
-enum Cmiss_stream_information_region_attribute
-	Cmiss_stream_information_region_attribute_enum_from_string(const char *string)
+enum cmzn_stream_information_region_attribute
+	cmzn_stream_information_region_attribute_enum_from_string(const char *string)
 {
-	enum Cmiss_stream_information_region_attribute attribute =
-		(Cmiss_stream_information_region_attribute)0;
+	enum cmzn_stream_information_region_attribute attribute =
+		(cmzn_stream_information_region_attribute)0;
 	if (string)
 	{
 		const char *str[] = {"TIME"};
@@ -606,7 +606,7 @@ enum Cmiss_stream_information_region_attribute
 		{
 			if (!strcmp(str[i], string))
 			{
-				attribute = (Cmiss_stream_information_region_attribute)(i + 1);
+				attribute = (cmzn_stream_information_region_attribute)(i + 1);
 				break;
 			}
 		}
@@ -614,8 +614,8 @@ enum Cmiss_stream_information_region_attribute
 	return attribute;
 }
 
-char *Cmiss_stream_information_region_attribute_enum_to_string(
-	enum Cmiss_stream_information_region_attribute attribute)
+char *cmzn_stream_information_region_attribute_enum_to_string(
+	enum cmzn_stream_information_region_attribute attribute)
 {
 	char *string = NULL;
 	if (0 < attribute && attribute <= 1)

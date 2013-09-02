@@ -40,7 +40,7 @@
 
 #ifndef CMZN_FIELDGROUPID_H__
 #define CMZN_FIELDGROUPID_H__
-/** Handle to a finite_element type Cmiss_field */
-	struct Cmiss_field_group;
-	typedef struct Cmiss_field_group *Cmiss_field_group_id;
+/** Handle to a finite_element type cmzn_field */
+	struct cmzn_field_group;
+	typedef struct cmzn_field_group *cmzn_field_group_id;
 #endif

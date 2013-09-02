@@ -190,8 +190,8 @@ Global functions
 
 int file_read_graphics_objects(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct Cmiss_graphics_material_module *material_module,
-	struct Cmiss_glyph_module *glyph_module)
+	struct cmzn_graphics_material_module *material_module,
+	struct cmzn_glyph_module *glyph_module)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -229,7 +229,7 @@ DESCRIPTION :
 	double time;
 
 	ENTER(file_read_graphics_objects);
-	Cmiss_glyph_module_begin_change(glyph_module);
+	cmzn_glyph_module_begin_change(glyph_module);
 #if defined (DEBUG_CODE)
 	/*???debug*/
 	printf("ENTER(file_read_graphics_objects)\n");
@@ -300,7 +300,7 @@ DESCRIPTION :
 							IO_stream_scan(stream,"%lf", &time);
 						}
 						file_read_Graphical_material_name(stream,&object_material,
-							Cmiss_graphics_material_module_get_manager(material_module));
+							cmzn_graphics_material_module_get_manager(material_module));
 						if (version<2)
 						{
 							transtype=g_ID;
@@ -333,9 +333,9 @@ DESCRIPTION :
 									transform[3][3]);
 							}
 						}
-						Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, objname);
+						cmzn_glyph_id glyph = cmzn_glyph_module_find_glyph_by_name(glyph_module, objname);
 						obj = 0;
-						Cmiss_glyph_static *glyphStatic = dynamic_cast<Cmiss_glyph_static*>(glyph);
+						cmzn_glyph_static *glyphStatic = dynamic_cast<cmzn_glyph_static*>(glyph);
 						if (glyphStatic)
 						{
 							obj = glyphStatic->getGraphicsObject();
@@ -343,7 +343,7 @@ DESCRIPTION :
 						else if (glyph)
 						{
 							display_message(ERROR_MESSAGE, "Read graphics object file: Cannot modify non-static glyph '%s'", objname);
-							Cmiss_glyph_destroy(&glyph);
+							cmzn_glyph_destroy(&glyph);
 							return_code = 0;
 						}
 						if (obj)
@@ -361,7 +361,7 @@ DESCRIPTION :
 						else if (return_code)
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
-							glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+							glyph = cmzn_glyph_module_create_glyph_static(glyph_module, obj);
 							if (glyph)
 							{
 								glyph->setName(objname);
@@ -393,7 +393,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
 									g_PLUS_MARKER, 1.0, g_NO_DATA,
-									/*object_name*/0,(GLfloat *)NULL, (struct Cmiss_font *)NULL);
+									/*object_name*/0,(GLfloat *)NULL, (struct cmzn_font *)NULL);
 								GT_OBJECT_ADD(GT_point)(obj,time,point);
 							} break;
 							case g_POINTSET:
@@ -415,7 +415,7 @@ DESCRIPTION :
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								pointset = CREATE(GT_pointset)(npts1,pointlist,
 									(char **)NULL,g_PLUS_MARKER,/*marker_size*/1.0,g_NO_DATA,
-									(GLfloat *)NULL,(int *)NULL, (struct Cmiss_font *)NULL);
+									(GLfloat *)NULL,(int *)NULL, (struct cmzn_font *)NULL);
 								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
 #if defined (DEBUG_CODE)
 								/*???debug */
@@ -782,7 +782,7 @@ DESCRIPTION :
 						{
 							DEACCESS(GT_object)(&obj);
 						}
-						Cmiss_glyph_destroy(&glyph);
+						cmzn_glyph_destroy(&glyph);
 					}
 					else
 					{
@@ -808,7 +808,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_graphics_objects.  Invalid argument(s)");
 	}
-	Cmiss_glyph_module_end_change(glyph_module);
+	cmzn_glyph_module_end_change(glyph_module);
 #if defined (DEBUG_CODE)
 	/*???debug */
 	printf("LEAVE(file_read_graphics_objects)\n");
@@ -822,9 +822,9 @@ DESCRIPTION :
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	char *graphics_object_name, enum Cmiss_graphic_render_polygon_mode render_polygon_mode,
-	ZnReal time, struct Cmiss_graphics_material_module *material_module,
-	struct Cmiss_glyph_module *glyph_module)
+	char *graphics_object_name, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
+	ZnReal time, struct cmzn_graphics_material_module *material_module,
+	struct cmzn_glyph_module *glyph_module)
 {
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
 	enum GT_voltex_type voltex_type;
@@ -844,7 +844,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct VT_iso_triangle *triangle, **triangle_list;
 
 	ENTER(file_read_voltex_graphics_objects_from_obj);
-	Cmiss_glyph_module_begin_change(glyph_module);
+	cmzn_glyph_module_begin_change(glyph_module);
 	return_code = 1;
 	if (file_name && material_module)
 	{
@@ -859,9 +859,9 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			{
 				sprintf(objname, "%s", file_name);
 			}
-			Cmiss_glyph_id glyph = Cmiss_glyph_module_find_glyph_by_name(glyph_module, objname);
+			cmzn_glyph_id glyph = cmzn_glyph_module_find_glyph_by_name(glyph_module, objname);
 			obj = 0;
-			Cmiss_glyph_static *glyphStatic = dynamic_cast<Cmiss_glyph_static*>(glyph);
+			cmzn_glyph_static *glyphStatic = dynamic_cast<cmzn_glyph_static*>(glyph);
 			if (glyphStatic)
 			{
 				obj = glyphStatic->getGraphicsObject();
@@ -869,7 +869,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			else if (glyph)
 			{
 				display_message(ERROR_MESSAGE, "Read wavefront obj file: Cannot modify non-static glyph '%s'", objname);
-				Cmiss_glyph_destroy(&glyph);
+				cmzn_glyph_destroy(&glyph);
 				return_code = 0;
 			}
 			if (obj)
@@ -902,7 +902,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			else if (return_code)
 			{
 				obj = CREATE(GT_object)(objname, g_VOLTEX, NULL);
-				glyph = Cmiss_glyph_module_create_glyph_static(glyph_module, obj);
+				glyph = cmzn_glyph_module_create_glyph_static(glyph_module, obj);
 				if (glyph)
 				{
 					glyph->setName(objname);
@@ -1024,19 +1024,19 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								matname[strlen(word)] = 0;
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									Graphical_material,name)(matname,
-										Cmiss_graphics_material_module_get_manager(material_module));
+										cmzn_graphics_material_module_get_manager(material_module));
 								if (scanned_material)
 									ACCESS(Graphical_material)(scanned_material);
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{
-									scanned_material = Cmiss_graphics_material_create_private();
-									Cmiss_graphics_material_set_name(scanned_material, matname);
+									scanned_material = cmzn_graphics_material_create_private();
+									cmzn_graphics_material_set_name(scanned_material, matname);
 									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
-											(scanned_material, Cmiss_graphics_material_module_get_manager(material_module))))
+											(scanned_material, cmzn_graphics_material_module_get_manager(material_module))))
 									{
-										Cmiss_graphics_material_set_managed(scanned_material, true);
+										cmzn_graphics_material_set_managed(scanned_material, true);
 									}
 									else
 									{
@@ -1060,7 +1060,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								DEACCESS(GT_object)(&new_obj);
 								if (scanned_material)
 								{
-									Cmiss_graphics_material_destroy(&scanned_material);
+									cmzn_graphics_material_destroy(&scanned_material);
 								}
 							}
 							else
@@ -1473,7 +1473,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 				}
 			}
 			DEACCESS(GT_object)(&obj);
-			Cmiss_glyph_destroy(&glyph);
+			cmzn_glyph_destroy(&glyph);
 			IO_stream_close(file);
 			DESTROY(IO_stream)(&file);
 		}
@@ -1490,7 +1490,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 		display_message(ERROR_MESSAGE,
 			"file_read_voltex_graphics_object_from_obj.  Invalid argument(s)");
 	}
-	Cmiss_glyph_module_end_change(glyph_module);
+	cmzn_glyph_module_end_change(glyph_module);
 	LEAVE;
 
 	return (return_code);

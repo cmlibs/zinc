@@ -54,15 +54,15 @@ extern "C" {
  * Creates a field which performs a coordinate transformation from the source
  * field values in their coordinate system type into the coordinate system type
  * of this field. Returned field has 3 components.
- * @see Cmiss_field_set_coordinate_system_type
+ * @see cmzn_field_set_coordinate_system_type
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field with values in its own coordinate system.
  * Must have 1 to 3 components.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_coordinate_transformation(
+	cmzn_field_module_id field_module, cmzn_field_id source_field);
 
 /***************************************************************************//**
  * Create a field which performs a coordinate transformation of vectors from
@@ -77,9 +77,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_coordinate_transformation(
  * @param coordinate_field  Field giving location where vector value is from.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_vector_coordinate_transformation(
-	Cmiss_field_module_id field_module, Cmiss_field_id vector_field,
-	Cmiss_field_id coordinate_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_vector_coordinate_transformation(
+	cmzn_field_module_id field_module, cmzn_field_id vector_field,
+	cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus
 }

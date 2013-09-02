@@ -88,51 +88,51 @@ Global functions
 ----------------
 */
 
-const char **Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges(
+const char **cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
-Cmiss_element_point_sample_modes that can be used for Element_point_ranges, obtained
+cmzn_element_point_sample_modes that can be used for Element_point_ranges, obtained
 from function ENUMERATOR_STRING.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	const char **valid_strings;
 
-	ENTER(Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges);
+	ENTER(cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=3;
 		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
-			valid_strings[0] = ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(
+			valid_strings[0] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
 				CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES);
-			valid_strings[1] = ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(
+			valid_strings[1] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
 				CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS);
-			valid_strings[2] = ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(
+			valid_strings[2] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
 				CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
+				"cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
 				"Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
+			"cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
 			"Invalid argument(s)");
 		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
 	return (valid_strings);
-} /* Cmiss_element_point_sample_mode_get_valid_strings_for_Element_point_ranges */
+} /* cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges */
 
 int compare_Element_point_ranges_identifier(
 	struct Element_point_ranges_identifier *identifier1,
@@ -143,7 +143,7 @@ LAST MODIFIED : 8 June 2000
 DESCRIPTION :
 Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
 indexing lists of Element_point_ranges.
-First the elements are compared, then the Cmiss_element_point_sample_mode, then the
+First the elements are compared, then the cmzn_element_point_sample_mode, then the
 identifying values depending on this mode.
 ==============================================================================*/
 {
@@ -227,7 +227,7 @@ identifying values depending on this mode.
 						{
 							display_message(ERROR_MESSAGE,
 								"compare_Element_point_ranges_identifier.  "
-								"Invalid Cmiss_element_point_sample_mode");
+								"Invalid cmzn_element_point_sample_mode");
 							/* error defaults to the same? */
 							return_code=0;
 						} break;
@@ -254,7 +254,7 @@ int Element_point_ranges_identifier_is_valid(
 LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
-Returns true if <identifier> has a valid element, Cmiss_element_point_sample_mode and
+Returns true if <identifier> has a valid element, cmzn_element_point_sample_mode and
 number_in_xi for being used in an Element_point_ranges structure.
 Writes what is invalid about the identifier.
 ==============================================================================*/
@@ -307,8 +307,8 @@ Writes what is invalid about the identifier.
 				{
 					display_message(ERROR_MESSAGE,
 						"Element_point_ranges_identifier_is_valid.  "
-						"Invalid Cmiss_element_point_sample_mode: %s",
-						ENUMERATOR_STRING(Cmiss_element_point_sample_mode)(
+						"Invalid cmzn_element_point_sample_mode: %s",
+						ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
 							identifier->sample_mode));
 					return_code=0;
 				} break;
@@ -352,7 +352,7 @@ Element_point_ranges_identifier_is_valid.
 			FE_element_get_xi_points(identifier->element,
 				identifier->sample_mode,
 				identifier->number_in_xi, identifier->exact_xi,
-				(Cmiss_field_cache_id)0,
+				(cmzn_field_cache_id)0,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
 				&number_of_xi_points, /*xi_points_address*/(FE_value_triple **)NULL) &&
@@ -437,7 +437,7 @@ top_level. Assumes <identifier> has been validated.
 				FE_element_get_numbered_xi_point(identifier->element,
 					identifier->sample_mode,
 					identifier->number_in_xi, identifier->exact_xi,
-					(Cmiss_field_cache_id)0,
+					(cmzn_field_cache_id)0,
 					/*coordinate_field*/(struct Computed_field *)NULL,
 					/*density_field*/(struct Computed_field *)NULL,
 					*element_point_number, face_xi) &&
@@ -496,7 +496,7 @@ LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
-element:Cmiss_element_point_sample_mode of the <identifier>.
+element:cmzn_element_point_sample_mode of the <identifier>.
 ==============================================================================*/
 {
 	struct Element_point_ranges *element_point_ranges;
@@ -632,7 +632,7 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 			element_point_ranges->id.sample_mode,
 			element_point_ranges->id.number_in_xi,
 			element_point_ranges->id.exact_xi,
-			(Cmiss_field_cache_id)0,
+			(cmzn_field_cache_id)0,
 			/*coordinate_field*/(struct Computed_field *)NULL,
 			/*density_field*/(struct Computed_field *)NULL,
 			&maximum_element_point_number, /*xi_points_address*/(FE_value_triple **)NULL);
@@ -1403,18 +1403,18 @@ If field and element_point_ranges not identically grid-based, clear
 		(destination_element=set_grid_values_data->element)&&
 		set_grid_values_data->destination_element_point_numbers)
 	{
-		int number_of_components = Cmiss_field_get_number_of_components(field);
+		int number_of_components = cmzn_field_get_number_of_components(field);
 		if (FE_element_get_numbered_xi_point(
 				 source_element, source_identifier->sample_mode,
 				 source_identifier->number_in_xi, source_identifier->exact_xi,
-				 (Cmiss_field_cache_id)0,
+				 (cmzn_field_cache_id)0,
 				 /*coordinate_field*/(struct Computed_field *)NULL,
 				 /*density_field*/(struct Computed_field *)NULL,
 				 set_grid_values_data->source_element_point_number, xi)
 			&& ALLOCATE(values, FE_value, number_of_components)
-			&& Cmiss_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+			&& cmzn_field_cache_set_mesh_location(set_grid_values_data->field_cache,
 				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)
-			&& Cmiss_field_evaluate_real(field, set_grid_values_data->field_cache,
+			&& cmzn_field_evaluate_real(field, set_grid_values_data->field_cache,
 				number_of_components, values))
 		{
 			start = 0;
@@ -1430,13 +1430,13 @@ If field and element_point_ranges not identically grid-based, clear
 					if (FE_element_get_numbered_xi_point(
 							 destination_element, destination_identifier->sample_mode,
 							 destination_identifier->number_in_xi, destination_identifier->exact_xi,
-							 (Cmiss_field_cache_id)0,
+							 (cmzn_field_cache_id)0,
 							 /*coordinate_field*/(struct Computed_field *)NULL,
 							 /*density_field*/(struct Computed_field *)NULL,
 							 grid_point_number, xi) &&
-						Cmiss_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+						cmzn_field_cache_set_mesh_location(set_grid_values_data->field_cache,
 							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
-						Cmiss_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values))
+						cmzn_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values))
 					{
 						set_grid_values_data->number_of_points_set++;
 					}

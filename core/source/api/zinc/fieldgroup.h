@@ -67,7 +67,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_group(Cmiss_field_module_id field_module);
+ZINC_API cmzn_field_id cmzn_field_module_create_group(cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * If the field is of group type, then this function returns the group specific
@@ -78,22 +78,22 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_group(Cmiss_field_module_id fi
  * @return  Group specific representation if the input field is of this type,
  * otherwise NULL.
  */
-ZINC_API Cmiss_field_group_id Cmiss_field_cast_group(Cmiss_field_id field);
+ZINC_API cmzn_field_group_id cmzn_field_cast_group(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast group field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the group argument.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_group_base_cast(group_field), "bob");
+ * cmzn_field_set_name(cmzn_field_group_base_cast(group_field), "bob");
  *
  * @param group  Handle to the group field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id group)
+ZINC_C_INLINE cmzn_field_id cmzn_field_group_base_cast(cmzn_field_group_id group)
 {
-	return (Cmiss_field_id)(group);
+	return (cmzn_field_id)(group);
 }
 
 /***************************************************************************//**
@@ -104,7 +104,7 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id gr
  * @return  Status CMISS_OK if successfully destroyed the group handle,
  * 		any other value on failure.
  */
-ZINC_API int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
+ZINC_API int cmzn_field_group_destroy(cmzn_field_group_id *group_address);
 
 /***************************************************************************//**
  * Query if this group and all its subregion and sub-object groups are empty.
@@ -112,7 +112,7 @@ ZINC_API int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
  * @param group  Handle to group field to query.
  * @return  1 if group and all its subgroups are empty, otherwise 0.
  */
-ZINC_API int Cmiss_field_group_is_empty(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_is_empty(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Query if this group contains no objects from the local region.
@@ -120,7 +120,7 @@ ZINC_API int Cmiss_field_group_is_empty(Cmiss_field_group_id group);
  * @param group  Handle to group field to query.
  * @return  1 if group is empty locally, otherwise 0.
  */
-ZINC_API int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_is_empty_local(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Remove all objects from this group, clear all its subgroups, and remove &
@@ -130,7 +130,7 @@ ZINC_API int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group);
  * @return  Status CMISS_OK if group and its child groups cleared successfully,
  * 		any other value on failure.
  */
-ZINC_API int Cmiss_field_group_clear(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_clear(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Remove all local objects from group, but leave subregion subgroups intact.
@@ -139,7 +139,7 @@ ZINC_API int Cmiss_field_group_clear(Cmiss_field_group_id group);
  * @return  Status CMISS_OK if group is successfully cleared locally,
  * 		any other value on failure.
  */
-ZINC_API int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_clear_local(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Remove and destroy all empty subregion and subobject groups of this group.
@@ -148,7 +148,7 @@ ZINC_API int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
  * @param group  Handle to group field to modify.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Add the local/owning region of this group field to the group, i.e. all local
@@ -158,7 +158,7 @@ ZINC_API int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group
  * @param group  Handle to group field to modify.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_group_add_local_region(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_add_local_region(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Query if group contains its local/owning region, i.e. all local objects/
@@ -168,7 +168,7 @@ ZINC_API int Cmiss_field_group_add_local_region(Cmiss_field_group_id group);
  * @param group  Handle to group field to query.
  * @return  1 if this region is in the group, otherwise 0.
  */
-ZINC_API int Cmiss_field_group_contains_local_region(Cmiss_field_group_id group);
+ZINC_API int cmzn_field_group_contains_local_region(cmzn_field_group_id group);
 
 /***************************************************************************//**
  * Add the specified region to the group i.e. all its objects/domains.
@@ -181,7 +181,7 @@ ZINC_API int Cmiss_field_group_contains_local_region(Cmiss_field_group_id group)
  * @return  Status CMISS_OK if successfully add region into group, any other
  * 		value on failure.
  */
-ZINC_API int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id region);
+ZINC_API int cmzn_field_group_add_region(cmzn_field_group_id group, cmzn_region_id region);
 
 /***************************************************************************//**
  * Remove specified region from group if currently in it.
@@ -193,7 +193,7 @@ ZINC_API int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_regi
  * @return  Status CMISS_OK if region successfully removed from group, any other
  * 		value on failure.
  */
-ZINC_API int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_region_id region);
+ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id region);
 
 /***************************************************************************//**
  * Query if specified region is in the group i.e. all its objects/domains.
@@ -204,7 +204,7 @@ ZINC_API int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_r
  * @param region  Handle to region to check.
  * @return  1 if group contains region, otherwise 0.
  */
-ZINC_API int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss_region_id region);
+ZINC_API int cmzn_field_group_contains_region(cmzn_field_group_id group, cmzn_region_id region);
 
 /***************************************************************************//**
  * Create a group field for the specified subregion, include it in the specified
@@ -217,8 +217,8 @@ ZINC_API int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss
  * @param subregion  Handle to region to create a subgroup for.
  * @return  Handle to new, empty sub-group field on success, NULL on failure.
  */
-ZINC_API Cmiss_field_group_id Cmiss_field_group_create_subregion_group(
-	Cmiss_field_group_id group, Cmiss_region_id subregion);
+ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_group(
+	cmzn_field_group_id group, cmzn_region_id subregion);
 
 /***************************************************************************//**
  * Get the group field for subregion in the specified group if it exists.
@@ -229,8 +229,8 @@ ZINC_API Cmiss_field_group_id Cmiss_field_group_create_subregion_group(
  * @param subregion  Handle to region to get the subgroup for.
  * @return  Handle to sub-group field or NULL if none.
  */
-ZINC_API Cmiss_field_group_id Cmiss_field_group_get_subregion_group(Cmiss_field_group_id group,
-	Cmiss_region_id subregion);
+ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_group(cmzn_field_group_id group,
+	cmzn_region_id subregion);
 
 /***************************************************************************//**
  * Create and return a handle to a node group field compatible with the supplied
@@ -244,8 +244,8 @@ ZINC_API Cmiss_field_group_id Cmiss_field_group_get_subregion_group(Cmiss_field_
  * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to new node group field, or NULL on failure.
  */
-ZINC_API Cmiss_field_node_group_id Cmiss_field_group_create_node_group(
-	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_node_group_id cmzn_field_group_create_node_group(
+	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Find and return handle to the sub-object node group compatible with the
@@ -257,8 +257,8 @@ ZINC_API Cmiss_field_node_group_id Cmiss_field_group_create_node_group(
  * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to node group field, or NULL if none.
  */
-ZINC_API Cmiss_field_node_group_id Cmiss_field_group_get_node_group(
-	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_node_group_id cmzn_field_group_get_node_group(
+	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Create and return a handle to an element group field compatible with the
@@ -272,8 +272,8 @@ ZINC_API Cmiss_field_node_group_id Cmiss_field_group_get_node_group(
  * If not already a master mesh, the master is obtained from it.
  * @return  Handle to new element group field, or NULL on failure.
  */
-ZINC_API Cmiss_field_element_group_id Cmiss_field_group_create_element_group(
-	Cmiss_field_group_id group, Cmiss_mesh_id mesh);
+ZINC_API cmzn_field_element_group_id cmzn_field_group_create_element_group(
+	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * Find and return handle to the sub-object element group compatible with the
@@ -285,8 +285,8 @@ ZINC_API Cmiss_field_element_group_id Cmiss_field_group_create_element_group(
  * If not already a master mesh, the master is obtained from it.
  * @return  Handle to element group field, or NULL if none.
  */
-ZINC_API Cmiss_field_element_group_id Cmiss_field_group_get_element_group(
-	Cmiss_field_group_id group, Cmiss_mesh_id mesh);
+ZINC_API cmzn_field_element_group_id cmzn_field_group_get_element_group(
+	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * Get a subgroup of the given group for the specified domain.
@@ -295,7 +295,7 @@ ZINC_API Cmiss_field_element_group_id Cmiss_field_group_get_element_group(
  * @param domain the domain field
  * @returns the subgroup field for the specified domain, NULL otherwise
  */
-ZINC_API Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
+ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_for_domain(cmzn_field_group_id group, cmzn_field_id domain);
 
 /***************************************************************************//**
  * Return the first non-empty subregion group in the group tree including itself.
@@ -303,8 +303,8 @@ ZINC_API Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_f
  * @param group  the group field
  * @returns  the first non-empty subregion group field, NULL otherwise.
  */
-ZINC_API Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
-	Cmiss_field_group_id group);
+ZINC_API cmzn_field_group_id cmzn_field_group_get_first_non_empty_group(
+	cmzn_field_group_id group);
 
 #ifdef __cplusplus
 }

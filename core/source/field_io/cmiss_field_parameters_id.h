@@ -42,11 +42,11 @@
 #define CMISS_FIELD_PARAMETERS_ID_H
 
 /***************************************************************************//**
- * The ensemble type specific handle to a real parameters Cmiss_field.
+ * The ensemble type specific handle to a real parameters cmzn_field.
  * This parameters field stores double precision real numbers.
  */
-	struct Cmiss_field_real_parameters;
-	typedef struct Cmiss_field_real_parameters *Cmiss_field_real_parameters_id;
+	struct cmzn_field_real_parameters;
+	typedef struct cmzn_field_real_parameters *cmzn_field_real_parameters_id;
 	#define CMISS_FIELD_PARAMETERS_ID_H
 
 #endif /* CMISS_FIELD_PARAMETERS_ID_H */

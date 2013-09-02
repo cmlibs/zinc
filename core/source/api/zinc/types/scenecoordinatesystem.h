@@ -47,15 +47,15 @@
 
 /***************************************************************************//**
  * Enumerated type for identifying scene and window coordinate systems.
- * Cmiss_graphic objects are given in one of these coordinate systems.
+ * cmzn_graphic objects are given in one of these coordinate systems.
  */
-enum Cmiss_scene_coordinate_system
+enum cmzn_scene_coordinate_system
 {
 	CMISS_SCENE_COORDINATE_SYSTEM_INVALID = 0,
 	CMISS_SCENE_COORDINATE_SYSTEM_LOCAL = 1,
 	/*!< The local coordinate system of a scene, subject to its own
 	 * transformation matrix and those of all parent scenes up to the root
-	 * region of the Cmiss_scene in use, which are world coordinates.*/
+	 * region of the cmzn_scene in use, which are world coordinates.*/
 	CMISS_SCENE_COORDINATE_SYSTEM_WORLD = 2,
 	/*!< The world coordinate system which scene_viewer viewing parameters
 	 * are specified in, and which scene transformations (giving local
@@ -104,18 +104,18 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_scene_coordinate_system
-	Cmiss_scene_coordinate_system_enum_from_string(const char *string);
+ZINC_API enum cmzn_scene_coordinate_system
+	cmzn_scene_coordinate_system_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_scene_coordinate_system_enum_to_string(
-	enum Cmiss_scene_coordinate_system system);
+ZINC_API char *cmzn_scene_coordinate_system_enum_to_string(
+	enum cmzn_scene_coordinate_system system);
 
 #ifdef __cplusplus
 }

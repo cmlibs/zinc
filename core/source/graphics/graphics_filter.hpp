@@ -50,10 +50,10 @@
 #include "general/debug.h"
 #include "general/cmiss_set.hpp"
 
-struct Cmiss_scene;
-struct Cmiss_graphic;
+struct cmzn_scene;
+struct cmzn_graphic;
 
-enum Cmiss_graphics_filter_type
+enum cmzn_graphics_filter_type
 {
 	CMISS_GRAPHICS_FILTER_TYPE_INVALID,
 	CMISS_GRAPHICS_FILTER_TYPE_BASE,
@@ -68,57 +68,57 @@ enum Cmiss_graphics_filter_type
 	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR
 };
 
-DECLARE_LIST_TYPES(Cmiss_graphics_filter);
+DECLARE_LIST_TYPES(cmzn_graphics_filter);
 
-DECLARE_MANAGER_TYPES(Cmiss_graphics_filter);
+DECLARE_MANAGER_TYPES(cmzn_graphics_filter);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphics_filter);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_graphics_filter);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_graphics_filter);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_graphics_filter);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphics_filter);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphics_filter,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_graphics_filter);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_graphics_filter,name,const char *);
 
-PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_filter);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_filter,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_graphics_filter);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_graphics_filter,name,const char *);
 
-struct Cmiss_graphics_filter_change_detail
+struct cmzn_graphics_filter_change_detail
 {
-	virtual ~Cmiss_graphics_filter_change_detail()
+	virtual ~cmzn_graphics_filter_change_detail()
 	{
 	}
 };
 
-struct Cmiss_graphics_filter
+struct cmzn_graphics_filter
 {
 private:
 	bool inverse;
 
 public:
-	enum Cmiss_graphics_filter_type filter_type;
+	enum cmzn_graphics_filter_type filter_type;
 	const char *name;
 	int access_count;
-	struct MANAGER(Cmiss_graphics_filter) *manager;
+	struct MANAGER(cmzn_graphics_filter) *manager;
 	int manager_change_status;
 	bool is_managed_flag;
 
 
-	Cmiss_graphics_filter() :
+	cmzn_graphics_filter() :
 		inverse(false),
 		filter_type(CMISS_GRAPHICS_FILTER_TYPE_BASE),
 		name(NULL),
 		access_count(1),
 		manager(NULL),
-		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_graphics_filter)),
+		manager_change_status(MANAGER_CHANGE_NONE(cmzn_graphics_filter)),
 		is_managed_flag(false)
 	{
 	}
 
-	virtual ~Cmiss_graphics_filter()
+	virtual ~cmzn_graphics_filter()
 	{
 		DEALLOCATE(name);
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic) = 0;
+	virtual bool match(struct cmzn_graphic *graphic) = 0;
 
 	bool setName(const char *name_in)
 	{
@@ -142,9 +142,9 @@ public:
 		return name_out;
 	}
 
-	int changed(enum MANAGER_CHANGE(Cmiss_graphics_filter) change)
+	int changed(enum MANAGER_CHANGE(cmzn_graphics_filter) change)
 	{
-		return MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(this,
+		return MANAGED_OBJECT_CHANGE(cmzn_graphics_filter)(this,
 			change);
 	}
 
@@ -158,18 +158,18 @@ public:
 		if (newInverse != inverse)
 		{
 			inverse = newInverse;
-			changed(MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+			changed(MANAGER_CHANGE_RESULT(cmzn_graphics_filter));
 		}
 		return true;
 	}
 
-	inline Cmiss_graphics_filter *access()
+	inline cmzn_graphics_filter *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	enum Cmiss_graphics_filter_type getType()
+	enum cmzn_graphics_filter_type getType()
 	{
 		return filter_type;
 	};
@@ -185,7 +185,7 @@ public:
 
 	virtual int check_dependency()
 	{
-		if (manager_change_status & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		if (manager_change_status & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
 		{
 			return 1;
 		}
@@ -196,7 +196,7 @@ public:
 	 * override for classes with type-specific change detail
 	 * @return  change detail prior to clearing, or NULL if none.
 	 */
-	virtual Cmiss_graphics_filter_change_detail *extract_change_detail()
+	virtual cmzn_graphics_filter_change_detail *extract_change_detail()
 	{
 		return NULL;
 	}
@@ -206,37 +206,37 @@ public:
 	 * prevent circular dependencies / infinite loops.
 	 * @return  true if this filter depends on other_filter, false if not.
 	 */
-	virtual bool depends_on_filter(const Cmiss_graphics_filter *other_filter) const
+	virtual bool depends_on_filter(const cmzn_graphics_filter *other_filter) const
 	{
 		return (other_filter == this);
 	}
 
-	static inline int deaccess(Cmiss_graphics_filter **graphics_filter_address)
+	static inline int deaccess(cmzn_graphics_filter **graphics_filter_address)
 	{
-		return DEACCESS(Cmiss_graphics_filter)(graphics_filter_address);
+		return DEACCESS(cmzn_graphics_filter)(graphics_filter_address);
 	}
 };
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
-class Cmiss_graphics_filter_identifier : private Cmiss_graphics_filter
+class cmzn_graphics_filter_identifier : private cmzn_graphics_filter
 {
 public:
-	Cmiss_graphics_filter_identifier(const char *name)
+	cmzn_graphics_filter_identifier(const char *name)
 	{
 		// const_cast OK as must never be modified & cleared in destructor
-		Cmiss_graphics_filter::name = name;
+		cmzn_graphics_filter::name = name;
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER;
 	}
 
-	virtual ~Cmiss_graphics_filter_identifier()
+	virtual ~cmzn_graphics_filter_identifier()
 	{
-		Cmiss_graphics_filter::name = NULL;
+		cmzn_graphics_filter::name = NULL;
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual bool match(struct cmzn_graphic *graphic)
 	{
 		USE_PARAMETER(graphic);
 		return false;
@@ -246,29 +246,29 @@ public:
 	{
 	}
 
-	Cmiss_graphics_filter *getPseudoObject()
+	cmzn_graphics_filter *getPseudoObject()
 	{
 		return this;
 	}
 };
 
-/** functor for ordering Cmiss_set<Cmiss_graphics_filter> by name */
-struct Cmiss_graphics_filter_compare_name
+/** functor for ordering cmzn_set<cmzn_graphics_filter> by name */
+struct cmzn_graphics_filter_compare_name
 {
-	bool operator() (const Cmiss_graphics_filter * graphics_filter1, const Cmiss_graphics_filter * graphics_filter2) const
+	bool operator() (const cmzn_graphics_filter * graphics_filter1, const cmzn_graphics_filter * graphics_filter2) const
 	{
 		return strcmp(graphics_filter1->name, graphics_filter2->name) < 0;
 	}
 };
 
-typedef Cmiss_set<Cmiss_graphics_filter *,Cmiss_graphics_filter_compare_name> Cmiss_set_Cmiss_graphics_filter;
+typedef cmzn_set<cmzn_graphics_filter *,cmzn_graphics_filter_compare_name> cmzn_set_cmzn_graphics_filter;
 
-int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
-	struct Cmiss_graphics_filter_module *graphics_filter_module);
+int cmzn_graphics_filter_manager_set_owner_private(struct MANAGER(cmzn_graphics_filter) *manager,
+	struct cmzn_graphics_filter_module *graphics_filter_module);
 
-struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_filter_module_get_manager(
-	struct Cmiss_graphics_filter_module *graphics_filter_module);
+struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_filter_module_get_manager(
+	struct cmzn_graphics_filter_module *graphics_filter_module);
 
-Cmiss_graphics_filter_module_id Cmiss_graphics_filter_module_create();
+cmzn_graphics_filter_module_id cmzn_graphics_filter_module_create();
 
 #endif /* GRAPHICS_FILTER_HPP_ */

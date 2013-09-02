@@ -277,9 +277,9 @@ static int draw_glyph_set_stl(Stl_context& stl_context,
 		Triple *scale = glyph_set->scale_list;
 		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
 		GT_object *glyph = glyph_set->glyph;
-		Cmiss_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 		const int number_of_glyphs =
-			Cmiss_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+			cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
 		const int number_of_points = glyph_set->number_of_points;
 		for (int i = 0; i < number_of_points; i++)
 		{
@@ -801,8 +801,8 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 	return (return_code);
 } /* makestl */
 
-int write_scene_stl(Stl_context& stl_context, Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter);
+int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter);
 
 /**************************************************************************//**
  * Renders the visible parts of a scene object to STL.
@@ -864,8 +864,8 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
  * @param filter the filter to filter scenes
  * @return 1 on success, 0 on failure
  */
-int write_scene_stl(Stl_context& stl_context, Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter)
+int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter)
 {
 	int return_code;
 	
@@ -891,14 +891,14 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
+int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_graphics_filter_id filter)
 {
 	int return_code;
 
 	if (file_name && scene)
 	{
 		build_Scene(scene, filter);
-		char *solid_name = Cmiss_region_get_name(Cmiss_scene_get_region(scene));
+		char *solid_name = cmzn_region_get_name(cmzn_scene_get_region(scene));
 		Stl_context stl_context(file_name, solid_name);
 		if (stl_context.is_valid())
 		{

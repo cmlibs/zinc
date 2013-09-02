@@ -4,7 +4,7 @@ FILE : api/cmiss_io.h
 LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
-The public interface to the Cmiss_IO object.
+The public interface to the cmzn_IO object.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -57,14 +57,14 @@ extern "C" {
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
-typedef SOCKET Cmiss_native_socket_t;
+typedef SOCKET cmzn_native_socket_t;
 #define INVALID_NATIVE_SOCKET INVALID_SOCKET
 #else
-typedef int Cmiss_native_socket_t;
-#define INVALID_NATIVE_SOCKET ((Cmiss_native_socket_t)-1)
+typedef int cmzn_native_socket_t;
+#define INVALID_NATIVE_SOCKET ((cmzn_native_socket_t)-1)
 #endif
 
-typedef struct Cmiss_fdio_package * Cmiss_fdio_package_id;
+typedef struct cmzn_fdio_package * cmzn_fdio_package_id;
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -72,7 +72,7 @@ DESCRIPTION :
 An identifier for an fdio package object.
 ==============================================================================*/
 
-typedef struct Cmiss_fdio * Cmiss_fdio_id;
+typedef struct cmzn_fdio * cmzn_fdio_id;
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -80,7 +80,7 @@ DESCRIPTION :
 An identifier for an fdio object.
 ==============================================================================*/
 
-int Cmiss_fdio_package_destroy(Cmiss_fdio_package_id *pkg);
+int cmzn_fdio_package_destroy(cmzn_fdio_package_id *pkg);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -90,17 +90,17 @@ but the descriptor itself must still be closed. This should be called as soon as
 the application is notified by the operating system of a closure event.
 ==============================================================================*/
 
-Cmiss_fdio_id Cmiss_fdio_package_create_Cmiss_fdio(Cmiss_fdio_package_id package,
-	Cmiss_native_socket_t descriptor);
+cmzn_fdio_id cmzn_fdio_package_create_cmzn_fdio(cmzn_fdio_package_id package,
+	cmzn_native_socket_t descriptor);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
 DESCRIPTION :
-Creates and Cmiss_fdio object which can be used to add callbacks to the 
+Creates and cmzn_fdio object which can be used to add callbacks to the 
 <descriptor>.
 ==============================================================================*/
 
-int Cmiss_fdio_destroy(Cmiss_fdio_id* handle);
+int cmzn_fdio_destroy(cmzn_fdio_id* handle);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -110,7 +110,7 @@ descriptor itself must still be closed. This should be called as soon as the
 application is notified by the operating system of a closure event.
 ==============================================================================*/
 
-typedef int (*Cmiss_fdio_callback)(Cmiss_fdio_id handle, void *user_data);
+typedef int (*cmzn_fdio_callback)(cmzn_fdio_id handle, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 26 May 2005
 
@@ -118,7 +118,7 @@ DESCRIPTION :
 The type used for all I/O callbacks.
 ==============================================================================*/
 
-int Cmiss_fdio_set_read_callback(Cmiss_fdio_id handle, Cmiss_fdio_callback callback,
+int cmzn_fdio_set_read_callback(cmzn_fdio_id handle, cmzn_fdio_callback callback,
 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 14 February 2005
@@ -127,7 +127,7 @@ DESCRIPTION :
 Sets a read callback on the specified IO handle. This callback is called at
 least once after a read function indicates it would block. An application
 should not rely upon it being called more than once without attempting a
-read between the calls. This read should occur after Cmiss_fdio_set_read_callback
+read between the calls. This read should occur after cmzn_fdio_set_read_callback
 is called. The callback will also be called if the underlying descriptor is
 closed by the peer. The callback is not one-shot, and the callback remains in
 effect until it is explicitly cancelled.
@@ -137,7 +137,7 @@ this function is passed NULL as the callback parameter, the read callback
 previously set will be cancelled.
 ==============================================================================*/
 
-int Cmiss_fdio_set_write_callback(Cmiss_fdio_id handle, Cmiss_fdio_callback callback,
+int cmzn_fdio_set_write_callback(cmzn_fdio_id handle, cmzn_fdio_callback callback,
 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 14 February 2005
@@ -146,7 +146,7 @@ DESCRIPTION :
 Sets a write callback on the specified IO handle. This callback is called at
 least once after a write function indicates it would block. An application
 should not rely upon it being called more than once without attempting a
-write between the calls. This write should occur after Cmiss_fdio_set_write_callback
+write between the calls. This write should occur after cmzn_fdio_set_write_callback
 is called. The callback is not one-shot, and the callback remains in
 effect until it is explicitly cancelled.
 

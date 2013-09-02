@@ -47,7 +47,7 @@ namespace zinc
 class Tessellation
 {
 protected:
-	Cmiss_tessellation_id id;
+	cmzn_tessellation_id id;
 
 public:
 
@@ -55,20 +55,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Tessellation(Cmiss_tessellation_id in_tessellation_id) :
+	explicit Tessellation(cmzn_tessellation_id in_tessellation_id) :
 		id(in_tessellation_id)
 	{  }
 
 	Tessellation(const Tessellation& tessellation) :
-		id(Cmiss_tessellation_access(tessellation.id))
+		id(cmzn_tessellation_access(tessellation.id))
 	{  }
 
 	Tessellation& operator=(const Tessellation& tessellation)
 	{
-		Cmiss_tessellation_id temp_id = Cmiss_tessellation_access(tessellation.id);
+		cmzn_tessellation_id temp_id = cmzn_tessellation_access(tessellation.id);
 		if (0 != id)
 		{
-			Cmiss_tessellation_destroy(&id);
+			cmzn_tessellation_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -78,7 +78,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_tessellation_destroy(&id);
+			cmzn_tessellation_destroy(&id);
 		}
 	}
 
@@ -87,59 +87,59 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_tessellation_id getId()
+	cmzn_tessellation_id getId()
 	{
 		return id;
 	}
 
 	bool isManaged()
 	{
-		return Cmiss_tessellation_is_managed(id);
+		return cmzn_tessellation_is_managed(id);
 	}
 
 	int setManaged(bool value)
 	{
-		return Cmiss_tessellation_set_managed(id, value);
+		return cmzn_tessellation_set_managed(id, value);
 	}
 
 	int getCircleDivisions()
 	{
-		return Cmiss_tessellation_get_circle_divisions(id);
+		return cmzn_tessellation_get_circle_divisions(id);
 	}
 
 	int setCircleDivisions(int circleDivisions)
 	{
-		return Cmiss_tessellation_set_circle_divisions(id, circleDivisions);
+		return cmzn_tessellation_set_circle_divisions(id, circleDivisions);
 	}
 
 	char *getName()
 	{
-		return Cmiss_tessellation_get_name(id);
+		return cmzn_tessellation_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_tessellation_set_name(id, name);
+		return cmzn_tessellation_set_name(id, name);
 	}
 
 	int getMinimumDivisions(int valuesCount, int *valuesOut)
 	{
-		return Cmiss_tessellation_get_minimum_divisions(id, valuesCount, valuesOut);
+		return cmzn_tessellation_get_minimum_divisions(id, valuesCount, valuesOut);
 	}
 
 	int setMinimumDivisions(int valuesCount, const int *valuesIn)
 	{
-		return Cmiss_tessellation_set_minimum_divisions(id, valuesCount, valuesIn);
+		return cmzn_tessellation_set_minimum_divisions(id, valuesCount, valuesIn);
 	}
 
 	int getRefinementFactors(int valuesCount, int *valuesOut)
 	{
-		return Cmiss_tessellation_get_refinement_factors(id, valuesCount, valuesOut);
+		return cmzn_tessellation_get_refinement_factors(id, valuesCount, valuesOut);
 	}
 
 	int setRefinementFactors(int valuesCount, const int *valuesIn)
 	{
-		return Cmiss_tessellation_set_refinement_factors(id, valuesCount, valuesIn);
+		return cmzn_tessellation_set_refinement_factors(id, valuesCount, valuesIn);
 	}
 
 };
@@ -147,7 +147,7 @@ public:
 class TessellationModule
 {
 protected:
-	Cmiss_tessellation_module_id id;
+	cmzn_tessellation_module_id id;
 
 public:
 
@@ -155,21 +155,21 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TessellationModule(Cmiss_tessellation_module_id in_tessellation_module_id) :
+	explicit TessellationModule(cmzn_tessellation_module_id in_tessellation_module_id) :
 		id(in_tessellation_module_id)
 	{  }
 
 	TessellationModule(const TessellationModule& tessellationModule) :
-		id(Cmiss_tessellation_module_access(tessellationModule.id))
+		id(cmzn_tessellation_module_access(tessellationModule.id))
 	{  }
 
 	TessellationModule& operator=(const TessellationModule& tessellationModule)
 	{
-		Cmiss_tessellation_module_id temp_id = Cmiss_tessellation_module_access(
+		cmzn_tessellation_module_id temp_id = cmzn_tessellation_module_access(
 			tessellationModule.id);
 		if (0 != id)
 		{
-			Cmiss_tessellation_module_destroy(&id);
+			cmzn_tessellation_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -179,7 +179,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_tessellation_module_destroy(&id);
+			cmzn_tessellation_module_destroy(&id);
 		}
 	}
 
@@ -188,49 +188,49 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_tessellation_module_id getId()
+	cmzn_tessellation_module_id getId()
 	{
 		return id;
 	}
 
 	Tessellation createTessellation()
 	{
-		return Tessellation(Cmiss_tessellation_module_create_tessellation(id));
+		return Tessellation(cmzn_tessellation_module_create_tessellation(id));
 	}
 
 	Tessellation findTessellationByName(const char *name)
 	{
-		return Tessellation(Cmiss_tessellation_module_find_tessellation_by_name(id, name));
+		return Tessellation(cmzn_tessellation_module_find_tessellation_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return Cmiss_tessellation_module_begin_change(id);
+		return cmzn_tessellation_module_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_tessellation_module_end_change(id);
+		return cmzn_tessellation_module_end_change(id);
 	}
 
 	Tessellation getDefaultTessellation()
 	{
-		return Tessellation(Cmiss_tessellation_module_get_default_tessellation(id));
+		return Tessellation(cmzn_tessellation_module_get_default_tessellation(id));
 	}
 
 	int setDefaultTessellation(Tessellation &tessellation)
 	{
-		return Cmiss_tessellation_module_set_default_tessellation(id, tessellation.getId());
+		return cmzn_tessellation_module_set_default_tessellation(id, tessellation.getId());
 	}
 
 	Tessellation getDefaultPointsTessellation()
 	{
-		return Tessellation(Cmiss_tessellation_module_get_default_points_tessellation(id));
+		return Tessellation(cmzn_tessellation_module_get_default_points_tessellation(id));
 	}
 
 	int setDefaultPointsTessellation(Tessellation &tessellation)
 	{
-		return Cmiss_tessellation_module_set_default_points_tessellation(id, tessellation.getId());
+		return cmzn_tessellation_module_set_default_points_tessellation(id, tessellation.getId());
 	}
 };
 

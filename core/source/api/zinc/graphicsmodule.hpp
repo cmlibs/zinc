@@ -58,7 +58,7 @@ class GraphicsModule
 {
 
 protected:
-	Cmiss_graphics_module_id id;
+	cmzn_graphics_module_id id;
 
 public:
 
@@ -66,20 +66,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsModule(Cmiss_graphics_module_id graphics_module_id) :
+	explicit GraphicsModule(cmzn_graphics_module_id graphics_module_id) :
 		id(graphics_module_id)
 	{ }
 
 	GraphicsModule(const GraphicsModule& graphicsModule) :
-		id(Cmiss_graphics_module_access(graphicsModule.id))
+		id(cmzn_graphics_module_access(graphicsModule.id))
 	{ }
 
 	GraphicsModule& operator=(const GraphicsModule& graphicsModule)
 	{
-		Cmiss_graphics_module_id temp_id = Cmiss_graphics_module_access(graphicsModule.id);
+		cmzn_graphics_module_id temp_id = cmzn_graphics_module_access(graphicsModule.id);
 		if (0 != id)
 		{
-			Cmiss_graphics_module_destroy(&id);
+			cmzn_graphics_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -89,7 +89,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphics_module_destroy(&id);
+			cmzn_graphics_module_destroy(&id);
 		}
 	}
 
@@ -98,49 +98,49 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_module_id getId()
+	cmzn_graphics_module_id getId()
 	{
 		return id;
 	}
 	
 	Scene getScene(Region& region)
 	{
-		return Scene(Cmiss_graphics_module_get_scene(id, region.getId()));
+		return Scene(cmzn_graphics_module_get_scene(id, region.getId()));
 	}
 
 	GlyphModule getGlyphModule()
 	{
-		return GlyphModule(Cmiss_graphics_module_get_glyph_module(id));
+		return GlyphModule(cmzn_graphics_module_get_glyph_module(id));
 	}
 
 	GraphicsMaterialModule getMaterialModule()
 	{
-		return GraphicsMaterialModule(Cmiss_graphics_module_get_material_module(id));
+		return GraphicsMaterialModule(cmzn_graphics_module_get_material_module(id));
 	}
 
 	GraphicsFilterModule getFilterModule()
 	{
-		return GraphicsFilterModule(Cmiss_graphics_module_get_filter_module(id));
+		return GraphicsFilterModule(cmzn_graphics_module_get_filter_module(id));
 	}
 
 	SceneViewerModule getSceneViewerModule()
 	{
-		return SceneViewerModule(Cmiss_graphics_module_get_scene_viewer_module(id));
+		return SceneViewerModule(cmzn_graphics_module_get_scene_viewer_module(id));
 	}
 
 	SpectrumModule getSpectrumModule()
 	{
-		return SpectrumModule(Cmiss_graphics_module_get_spectrum_module(id));
+		return SpectrumModule(cmzn_graphics_module_get_spectrum_module(id));
 	}
 
 	FontModule getFontModule()
 	{
-		return FontModule(Cmiss_graphics_module_get_font_module(id));
+		return FontModule(cmzn_graphics_module_get_font_module(id));
 	}
 
 	TessellationModule getTessellationModule()
 	{
-		return TessellationModule(Cmiss_graphics_module_get_tessellation_module(id));
+		return TessellationModule(cmzn_graphics_module_get_tessellation_module(id));
 	}
 
 

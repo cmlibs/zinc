@@ -49,33 +49,33 @@
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_glyph);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_glyph);
 
-DECLARE_LIST_TYPES(Cmiss_glyph);
+DECLARE_LIST_TYPES(cmzn_glyph);
 
-DECLARE_MANAGER_TYPES(Cmiss_glyph);
+DECLARE_MANAGER_TYPES(cmzn_glyph);
 
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_glyph);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_glyph);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_glyph);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_glyph,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_glyph);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_glyph,name,const char *);
 
-PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_glyph);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_glyph,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_glyph);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_glyph,name,const char *);
 
-struct Cmiss_glyph
+struct cmzn_glyph
 {
 	const char *name;
-	struct MANAGER(Cmiss_glyph) *manager;
+	struct MANAGER(cmzn_glyph) *manager;
 	int manager_change_status;
 	bool isManagedFlag;
 	int access_count;
 private:
-	Cmiss_glyph_type type;
+	cmzn_glyph_type type;
 
 protected:
 
-	Cmiss_glyph() :
+	cmzn_glyph() :
 		name(0),
 		manager(0),
 		manager_change_status(0),
@@ -85,20 +85,20 @@ protected:
 	{
 	}
 
-	virtual ~Cmiss_glyph();
+	virtual ~cmzn_glyph();
 
 public:
 
-	inline Cmiss_glyph *access()
+	inline cmzn_glyph *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(Cmiss_glyph **glyphAddress)
+	static inline int deaccess(cmzn_glyph **glyphAddress)
 	{
 		int return_code;
-		struct Cmiss_glyph *glyph;
+		struct cmzn_glyph *glyph;
 		if (glyphAddress && (glyph = *glyphAddress))
 		{
 			--(glyph->access_count);
@@ -109,9 +109,9 @@ public:
 			}
 			else if ((!glyph->isManagedFlag) && (glyph->manager) &&
 			((1 == glyph->access_count) || ((2 == glyph->access_count) &&
-				(MANAGER_CHANGE_NONE(Cmiss_glyph) != glyph->manager_change_status))))
+				(MANAGER_CHANGE_NONE(cmzn_glyph) != glyph->manager_change_status))))
 			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(Cmiss_glyph)(glyph, glyph->manager);
+				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_glyph)(glyph, glyph->manager);
 			}
 			else
 			{
@@ -136,7 +136,7 @@ public:
 		if (isManagedFlagIn != this->isManagedFlag)
 		{
 			this->isManagedFlag = isManagedFlagIn;
-			MANAGED_OBJECT_CHANGE(Cmiss_glyph)(this, MANAGER_CHANGE_NOT_RESULT(Cmiss_glyph));
+			MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_NOT_RESULT(cmzn_glyph));
 		}
 	}
 
@@ -177,11 +177,11 @@ public:
 
 	void changed()
 	{
-		MANAGED_OBJECT_CHANGE(Cmiss_glyph)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_glyph));
+		MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_glyph));
 	}
 
 	/** return ACCESSed pointer to graphics object */
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *, Cmiss_graphics_material *, Cmiss_font *) = 0;
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *) = 0;
 
 	const char *getName() const
 	{
@@ -190,14 +190,14 @@ public:
 
 	int setName(const char *newName);
 
-	Cmiss_glyph_type getType() const
+	cmzn_glyph_type getType() const
 	{
 		return this->type;
 	}
 
 	/** Set type metadata as alternative means to identify glyph.
 	 * Should ensure no two glyphs have the same type. */
-	void setType(Cmiss_glyph_type typeIn)
+	void setType(cmzn_glyph_type typeIn)
 	{
 		this->type = typeIn;
 	}
@@ -205,64 +205,64 @@ public:
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
-class Cmiss_glyph_identifier : private Cmiss_glyph
+class cmzn_glyph_identifier : private cmzn_glyph
 {
 public:
-	Cmiss_glyph_identifier(const char *nameIn)
+	cmzn_glyph_identifier(const char *nameIn)
 	{
 		this->name = nameIn;
 	}
 
-	~Cmiss_glyph_identifier()
+	~cmzn_glyph_identifier()
 	{
 		this->name = 0;
 	}
 
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *, Cmiss_graphics_material *, Cmiss_font *)
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *)
 	{
 		return 0;
 	}
 
-	Cmiss_glyph *getPseudoObject()
+	cmzn_glyph *getPseudoObject()
 	{
 		return this;
 	}
 };
 
-/** functor for ordering Cmiss_set<Cmiss_glyph> by name */
-struct Cmiss_glyph_compare_name_functor
+/** functor for ordering cmzn_set<cmzn_glyph> by name */
+struct cmzn_glyph_compare_name_functor
 {
-	bool operator() (const Cmiss_glyph* glyph1, const Cmiss_glyph* glyph2) const
+	bool operator() (const cmzn_glyph* glyph1, const cmzn_glyph* glyph2) const
 	{
 		return strcmp(glyph1->name, glyph2->name) < 0;
 	}
 };
 
-typedef Cmiss_set<Cmiss_glyph *,Cmiss_glyph_compare_name_functor> Cmiss_set_Cmiss_glyph;
+typedef cmzn_set<cmzn_glyph *,cmzn_glyph_compare_name_functor> cmzn_set_cmzn_glyph;
 
-struct Cmiss_glyph_static : public Cmiss_glyph
+struct cmzn_glyph_static : public cmzn_glyph
 {
 private:
 	GT_object *graphicsObject;
 
-	Cmiss_glyph_static(GT_object *graphicsObjectIn) :
+	cmzn_glyph_static(GT_object *graphicsObjectIn) :
 		graphicsObject(ACCESS(GT_object)(graphicsObjectIn))
 	{
 	}
 
-	virtual ~Cmiss_glyph_static()
+	virtual ~cmzn_glyph_static()
 	{
 		DEACCESS(GT_object)(&graphicsObject);
 	}
 
 public:
 
-	static Cmiss_glyph_static* create(GT_object *graphicsObjectIn)
+	static cmzn_glyph_static* create(GT_object *graphicsObjectIn)
 	{
 		if (graphicsObjectIn)
-			return new Cmiss_glyph_static(graphicsObjectIn);
+			return new cmzn_glyph_static(graphicsObjectIn);
 		return 0;
 	}
 
@@ -276,7 +276,7 @@ public:
 		GT_object_time_change(graphicsObject);
 	}
 
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *, Cmiss_graphics_material *, Cmiss_font *)
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *)
 	{
 		return ACCESS(GT_object)(graphicsObject);
 	}
@@ -289,35 +289,35 @@ public:
 	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
 };
 
-struct Cmiss_glyph_module
+struct cmzn_glyph_module
 {
 private:
-	Cmiss_graphics_material_module *materialModule;
-	struct MANAGER(Cmiss_glyph) *manager;
-	Cmiss_glyph *defaultPointGlyph;
+	cmzn_graphics_material_module *materialModule;
+	struct MANAGER(cmzn_glyph) *manager;
+	cmzn_glyph *defaultPointGlyph;
 	int access_count;
 
-	Cmiss_glyph_module(Cmiss_graphics_material_module *materialModuleIn);
-	~Cmiss_glyph_module();
+	cmzn_glyph_module(cmzn_graphics_material_module *materialModuleIn);
+	~cmzn_glyph_module();
 
-	void defineGlyph(const char *name, Cmiss_glyph *glyph, Cmiss_glyph_type type);
+	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type);
 
-	bool defineGlyphStatic(GT_object*& graphicsObject, Cmiss_glyph_type type);
+	bool defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_type type);
 
 public:
 
-	static Cmiss_glyph_module *create(Cmiss_graphics_material_module *materialModuleIn)
+	static cmzn_glyph_module *create(cmzn_graphics_material_module *materialModuleIn)
 	{
-		return new Cmiss_glyph_module(materialModuleIn);
+		return new cmzn_glyph_module(materialModuleIn);
 	}
 
-	Cmiss_glyph_module *access()
+	cmzn_glyph_module *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static void deaccess(Cmiss_glyph_module* &glyph_module)
+	static void deaccess(cmzn_glyph_module* &glyph_module)
 	{
 		if (glyph_module)
 		{
@@ -330,60 +330,60 @@ public:
 		}
 	}
 
-	struct MANAGER(Cmiss_glyph) *getManager()
+	struct MANAGER(cmzn_glyph) *getManager()
 	{
 		return manager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(Cmiss_glyph)(this->manager);
+		return MANAGER_BEGIN_CACHE(cmzn_glyph)(this->manager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(Cmiss_glyph)(this->manager);
+		return MANAGER_END_CACHE(cmzn_glyph)(this->manager);
 	}
 
 	int defineStandardGlyphs();
 
 	int defineStandardCmguiGlyphs();
 
-	Cmiss_set_Cmiss_glyph *getGlyphListPrivate();
+	cmzn_set_cmzn_glyph *getGlyphListPrivate();
 
 	/** @return non-ACCESSed pointer to glyph, or 0 if no match */
-	Cmiss_glyph *findGlyphByName(const char *name)
+	cmzn_glyph *findGlyphByName(const char *name)
 	{
-		return FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_glyph,name)(name, this->manager);
+		return FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(name, this->manager);
 	}
 
 	/** @return non-ACCESSed pointer to glyph, or 0 if no match */
-	Cmiss_glyph *findGlyphByType(enum Cmiss_glyph_type glyph_type);
+	cmzn_glyph *findGlyphByType(enum cmzn_glyph_type glyph_type);
 
 	/** adds glyph to manager, ensuring it has a unique name */
-	void addGlyph(Cmiss_glyph *glyph);
+	void addGlyph(cmzn_glyph *glyph);
 
-	Cmiss_glyph *getDefaultPointGlyph()
+	cmzn_glyph *getDefaultPointGlyph()
 	{
 		if (this->defaultPointGlyph)
 			return this->defaultPointGlyph->access();
 		return 0;
 	}
 
-	void setDefaultPointGlyph(Cmiss_glyph *glyph)
+	void setDefaultPointGlyph(cmzn_glyph *glyph)
 	{
-		REACCESS(Cmiss_glyph)(&this->defaultPointGlyph, glyph);
+		REACCESS(cmzn_glyph)(&this->defaultPointGlyph, glyph);
 	}
 
 };
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_glyph_repeat_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_glyph_repeat_mode);
 
-int Cmiss_glyph_repeat_mode_get_number_of_glyphs(
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
+int cmzn_glyph_repeat_mode_get_number_of_glyphs(
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode);
 
-bool Cmiss_glyph_repeat_mode_glyph_number_has_label(
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode, int glyph_number);
+bool cmzn_glyph_repeat_mode_glyph_number_has_label(
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode, int glyph_number);
 
 /**
  * @param glyph_repeat_mode  NONE|MIRROR|AXES_2D|AXES_3D
@@ -395,29 +395,29 @@ bool Cmiss_glyph_repeat_mode_glyph_number_has_label(
  * <final_axis3> if necessary to produce a right handed coordinate system.
  */
 void resolve_glyph_axes(
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode, int glyph_number,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode, int glyph_number,
 	Triple base_size, Triple scale_factors, Triple offset,
 	Triple point, Triple axis1, Triple axis2, Triple axis3, Triple scale,
 	Triple final_point, Triple final_axis1, Triple final_axis2, Triple final_axis3);
 
 /** internal only */
-Cmiss_glyph_module_id Cmiss_glyph_module_create(Cmiss_graphics_material_module *materialModule);
+cmzn_glyph_module_id cmzn_glyph_module_create(cmzn_graphics_material_module *materialModule);
 
 /* internal only */
-struct MANAGER(Cmiss_glyph) *Cmiss_glyph_module_get_manager(
-	Cmiss_glyph_module_id glyph_module);
+struct MANAGER(cmzn_glyph) *cmzn_glyph_module_get_manager(
+	cmzn_glyph_module_id glyph_module);
 
 /**
  * Create extra glyphs such as line_ticks, diamond, only used in cmgui
  */
-int Cmiss_glyph_module_define_standard_cmgui_glyphs(
-	Cmiss_glyph_module_id glyph_module);
+int cmzn_glyph_module_define_standard_cmgui_glyphs(
+	cmzn_glyph_module_id glyph_module);
 
 /**
  * Internal only.
  * @return  Handle to new glyph wrapping graphics object. Up to caller to destroy.
  */
-Cmiss_glyph *Cmiss_glyph_module_create_glyph_static(
-	Cmiss_glyph_module_id glyphModule, GT_object *graphicsObject);
+cmzn_glyph *cmzn_glyph_module_create_glyph_static(
+	cmzn_glyph_module_id glyphModule, GT_object *graphicsObject);
 
 #endif /* !defined (GLYPH_HPP) */

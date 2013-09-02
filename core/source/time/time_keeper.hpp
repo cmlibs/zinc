@@ -46,9 +46,9 @@
 #include "general/object.h"
 #include "general/debug.h"
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_time_keeper);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_time_keeper);
 
-#define Time_object Cmiss_time_notifier
+#define Time_object cmzn_time_notifier
 
 struct Time_object;
 
@@ -59,7 +59,7 @@ struct Time_object_info
 	struct Time_object_info *next;
 };
 
-struct Cmiss_time_keeper
+struct cmzn_time_keeper
 {
 private:
 	const char *name;
@@ -71,19 +71,19 @@ public:
 
 	int access_count;
 
-	Cmiss_time_keeper();
+	cmzn_time_keeper();
 
-	virtual ~Cmiss_time_keeper();
+	virtual ~cmzn_time_keeper();
 
-	inline Cmiss_time_keeper *access()
+	inline cmzn_time_keeper *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(Cmiss_time_keeper **time_keeper_address)
+	static inline int deaccess(cmzn_time_keeper **time_keeper_address)
 	{
-		return DEACCESS(Cmiss_time_keeper)(time_keeper_address);
+		return DEACCESS(cmzn_time_keeper)(time_keeper_address);
 	}
 
 	bool setName(const char *name_in);

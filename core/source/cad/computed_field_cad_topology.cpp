@@ -89,11 +89,11 @@ public:
 	inline void topological_shape(TopologicalShape *shape) { m_shape = shape; }
 	inline void geometric_shape(GeometricShape *shape) {m_geometric_shape = shape;}
 	int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
-	int surface_point(Cmiss_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative);
-	int curve_point(Cmiss_cad_curve_identifier identifier, double s, double *point);
-	int surface_colour(Cmiss_cad_surface_identifier identifier, double u, double v, double *colour);
-	int surface_uv_point(Cmiss_cad_surface_identifier identifier, Cmiss_cad_surface_point_identifier point_identifier, double &u, double &v);
-	int curve_s_parameter(Cmiss_cad_curve_identifier identifier, Cmiss_cad_curve_point_identifier s_identifier, double &s);
+	int surface_point(cmzn_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative);
+	int curve_point(cmzn_cad_curve_identifier identifier, double s, double *point);
+	int surface_colour(cmzn_cad_surface_identifier identifier, double u, double v, double *colour);
+	int surface_uv_point(cmzn_cad_surface_identifier identifier, cmzn_cad_surface_point_identifier point_identifier, double &u, double &v);
+	int curve_s_parameter(cmzn_cad_curve_identifier identifier, cmzn_cad_curve_point_identifier s_identifier, double &s);
 	int surface_count() const;
 	int curve_count() const;
 	int surface_point_count(int i) const;
@@ -111,7 +111,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -154,7 +154,7 @@ int Computed_field_cad_topology::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_topology::compare */
 
-int Computed_field_cad_topology::evaluate(Cmiss_field_cache&, FieldValueCache& /*inValueCache*/)
+int Computed_field_cad_topology::evaluate(cmzn_field_cache&, FieldValueCache& /*inValueCache*/)
 {
 	// @TODO: prescribe location directly in cad_topology field's value cache
 	// This means cad_topology field is evaluated if location prescribed, otherwise it fails
@@ -326,7 +326,7 @@ int Computed_field_cad_topology::curve_point_count(int i) const
 	return point_count;
 }
 
-int Computed_field_cad_topology::surface_uv_point(Cmiss_cad_surface_identifier identifier, Cmiss_cad_surface_point_identifier point_identifier, double &u, double &v)
+int Computed_field_cad_topology::surface_uv_point(cmzn_cad_surface_identifier identifier, cmzn_cad_surface_point_identifier point_identifier, double &u, double &v)
 {
 	int return_code = 0;
 	if (field)
@@ -339,7 +339,7 @@ int Computed_field_cad_topology::surface_uv_point(Cmiss_cad_surface_identifier i
 	return return_code;
 }
 
-int Computed_field_cad_topology::curve_s_parameter(Cmiss_cad_curve_identifier identifier, Cmiss_cad_curve_point_identifier s_identifier, double &s)
+int Computed_field_cad_topology::curve_s_parameter(cmzn_cad_curve_identifier identifier, cmzn_cad_curve_point_identifier s_identifier, double &s)
 {
 	int return_code = 0;
 	if (field)
@@ -352,7 +352,7 @@ int Computed_field_cad_topology::curve_s_parameter(Cmiss_cad_curve_identifier id
 	return return_code;
 }
 
-int Computed_field_cad_topology::surface_point(Cmiss_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative)
+int Computed_field_cad_topology::surface_point(cmzn_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative)
 {
 	int return_code = 0;
 	if (field)
@@ -368,7 +368,7 @@ int Computed_field_cad_topology::surface_point(Cmiss_cad_surface_identifier iden
 	return return_code;
 }
 
-int Computed_field_cad_topology::curve_point(Cmiss_cad_curve_identifier identifier, double s, double *point)
+int Computed_field_cad_topology::curve_point(cmzn_cad_curve_identifier identifier, double s, double *point)
 {
 	int return_code = 0;
 	if (field)
@@ -384,7 +384,7 @@ int Computed_field_cad_topology::curve_point(Cmiss_cad_curve_identifier identifi
 	return return_code;
 }
 
-int Computed_field_cad_topology::surface_colour(Cmiss_cad_surface_identifier identifier, double u, double v, double *colour)
+int Computed_field_cad_topology::surface_colour(cmzn_cad_surface_identifier identifier, double u, double v, double *colour)
 {
 	USE_PARAMETER(u);
 	USE_PARAMETER(v);
@@ -417,7 +417,7 @@ void Computed_field_cad_topology::information(Cad_primitive_identifier id) const
 	TopoDS_Edge edge;
 	TopoDS_Face face;
 	display_message(INFORMATION_MESSAGE,
-		"Computed_field_cad_topology %s.  Information:\n", Cmiss_field_get_name(field));
+		"Computed_field_cad_topology %s.  Information:\n", cmzn_field_get_name(field));
 	switch (id.type)
 	{
 	case Cad_primitive_CURVE:
@@ -508,7 +508,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -548,7 +548,7 @@ int Field_cad_element_group::compare(Computed_field_core *other_core)
 } /* Field_cad_element_group::compare */
 
 
-int Field_cad_element_group::evaluate(Cmiss_field_cache& /*cache*/, FieldValueCache& /*inValueCache*/)
+int Field_cad_element_group::evaluate(cmzn_field_cache& /*cache*/, FieldValueCache& /*inValueCache*/)
 {
 	printf("Hi from Field_cad_element_group::evaluate ...  doing nothing\n");
 	return 0;
@@ -608,7 +608,7 @@ char *Field_cad_element_group::get_command_string()
 
 } //namespace
 
-int Cmiss_field_is_type_cad_topology(Cmiss_field_id field, void *not_in_use)
+int cmzn_field_is_type_cad_topology(cmzn_field_id field, void *not_in_use)
 {
 	int return_code = 0;
 	USE_PARAMETER(not_in_use);
@@ -625,44 +625,44 @@ int Cmiss_field_is_type_cad_topology(Cmiss_field_id field, void *not_in_use)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_is_type_cad_topology.  Invalid argument(s)");
+			"cmzn_field_is_type_cad_topology.  Invalid argument(s)");
 	}
 
 	return return_code;
 }
 
-Cmiss_field_cad_topology_id Cmiss_field_cast_cad_topology(Cmiss_field_id field)
+cmzn_field_cad_topology_id cmzn_field_cast_cad_topology(cmzn_field_id field)
 {
-	Cmiss_field_cad_topology_id cad_topology = NULL;
+	cmzn_field_cad_topology_id cad_topology = NULL;
 	if (dynamic_cast<Computed_field_cad_topology*>(field->core))
 	{
-		Cmiss_field_access(field);
-		cad_topology = (reinterpret_cast<Cmiss_field_cad_topology_id>(field));
+		cmzn_field_access(field);
+		cad_topology = (reinterpret_cast<cmzn_field_cad_topology_id>(field));
 	}
 
 	return cad_topology;
 }
 
-int Cmiss_field_cad_topology_destroy(Cmiss_field_cad_topology_id *cad_topology_field_address)
+int cmzn_field_cad_topology_destroy(cmzn_field_cad_topology_id *cad_topology_field_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(cad_topology_field_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(cad_topology_field_address));
 }
 
-Cmiss_field_cad_topology_id Cmiss_field_cad_topology_access(Cmiss_field_cad_topology_id cad_topology_field)
+cmzn_field_cad_topology_id cmzn_field_cad_topology_access(cmzn_field_cad_topology_id cad_topology_field)
 {
 	if (cad_topology_field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(cad_topology_field);
-		Cmiss_field_access(computed_field);
+		cmzn_field_access(computed_field);
 	}
 
 	return cad_topology_field;
 }
 
 /**
- * @see Cmiss_field_module_create_cad_topology
+ * @see cmzn_field_module_create_cad_topology
  */
-Computed_field *Cmiss_field_module_create_cad_topology( Cmiss_field_module *field_module, TopologicalShape *shape )
+Computed_field *cmzn_field_module_create_cad_topology( cmzn_field_module *field_module, TopologicalShape *shape )
 {
 	Computed_field *field = (Computed_field *)NULL;
 
@@ -684,9 +684,9 @@ Computed_field *Cmiss_field_module_create_cad_topology( Cmiss_field_module *fiel
 	}
 
 	return (field);
-} /* Cmiss_field_module_create_cad_topology */
+} /* cmzn_field_module_create_cad_topology */
 
-void Cmiss_field_cad_topology_set_geometric_shape(Cmiss_field_cad_topology_id field, GeometricShape *shape)
+void cmzn_field_cad_topology_set_geometric_shape(cmzn_field_cad_topology_id field, GeometricShape *shape)
 {
 	if (field && shape)
 	{
@@ -701,7 +701,7 @@ void Cmiss_field_cad_topology_set_geometric_shape(Cmiss_field_cad_topology_id fi
 	}
 }
 
-int Cmiss_field_cad_topology_get_surface_count( Cmiss_field_cad_topology_id field )
+int cmzn_field_cad_topology_get_surface_count( cmzn_field_cad_topology_id field )
 {
 	int surface_count = -1;
 
@@ -714,13 +714,13 @@ int Cmiss_field_cad_topology_get_surface_count( Cmiss_field_cad_topology_id fiel
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_surface_count.  Invalid field");
+			"cmzn_field_surface_count.  Invalid field");
 	}
 
 	return surface_count;
 }
 
-int Cmiss_field_cad_topology_get_curve_count(Cmiss_field_cad_topology_id field)
+int cmzn_field_cad_topology_get_curve_count(cmzn_field_cad_topology_id field)
 {
 	int curve_count = -1;
 
@@ -733,14 +733,14 @@ int Cmiss_field_cad_topology_get_curve_count(Cmiss_field_cad_topology_id field)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_curve_count.  Invalid field");
+			"cmzn_field_curve_count.  Invalid field");
 	}
 
 	return curve_count;
 }
 
 
-int Cmiss_field_cad_topology_get_surface_point_count( Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier )
+int cmzn_field_cad_topology_get_surface_point_count( cmzn_field_cad_topology_id field, cmzn_cad_surface_identifier identifier )
 {
 	int point_count = -1;
 	if (field)
@@ -752,13 +752,13 @@ int Cmiss_field_cad_topology_get_surface_point_count( Cmiss_field_cad_topology_i
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_surface_point_count.  Invalid field");
+			"cmzn_field_surface_point_count.  Invalid field");
 	}
 
 	return point_count;
 }
 
-int Cmiss_field_cad_topology_get_curve_point_count( Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier )
+int cmzn_field_cad_topology_get_curve_point_count( cmzn_field_cad_topology_id field, cmzn_cad_curve_identifier identifier )
 {
 	int point_count = -1;
 	if (field)
@@ -770,15 +770,15 @@ int Cmiss_field_cad_topology_get_curve_point_count( Cmiss_field_cad_topology_id 
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_curve_point_count.  Invalid field");
+			"cmzn_field_curve_point_count.  Invalid field");
 	}
 
 	return point_count;
 }
 
-int Cmiss_field_cad_topology_get_surface_point_uv_coordinates( Cmiss_field_cad_topology_id field,
-	Cmiss_cad_surface_identifier identifier,
-	Cmiss_cad_surface_point_identifier uv_identifier,
+int cmzn_field_cad_topology_get_surface_point_uv_coordinates( cmzn_field_cad_topology_id field,
+	cmzn_cad_surface_identifier identifier,
+	cmzn_cad_surface_point_identifier uv_identifier,
 	double &u, double &v)
 {
 	int return_code = 0;
@@ -793,8 +793,8 @@ int Cmiss_field_cad_topology_get_surface_point_uv_coordinates( Cmiss_field_cad_t
 	return return_code;
 }
 
-int Cmiss_field_cad_topology_get_curve_point_s_coordinate( Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier,
-	Cmiss_cad_curve_point_identifier s_identifier, double &s)
+int cmzn_field_cad_topology_get_curve_point_s_coordinate( cmzn_field_cad_topology_id field, cmzn_cad_curve_identifier identifier,
+	cmzn_cad_curve_point_identifier s_identifier, double &s)
 {
 	int return_code = 0;
 	s = 0.0;
@@ -807,8 +807,8 @@ int Cmiss_field_cad_topology_get_curve_point_s_coordinate( Cmiss_field_cad_topol
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id field,
-	Cmiss_cad_surface_identifier identifier,
+int Computed_field_cad_topology_get_surface_point(cmzn_field_cad_topology_id field,
+	cmzn_cad_surface_identifier identifier,
 	double u, double v, double *point, double *uDerivative, double *vDerivative)
 {
 	int return_code = 0;
@@ -821,13 +821,13 @@ int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id fi
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_surface_point.  Invalid field");
+			"cmzn_field_surface_point.  Invalid field");
 	}
 
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier, double s, double *point)
+int Computed_field_cad_topology_get_curve_point(cmzn_field_cad_topology_id field, cmzn_cad_curve_identifier identifier, double s, double *point)
 {
 	int return_code = 0;
 	if (field)
@@ -839,13 +839,13 @@ int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id fiel
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_surface_point.  Invalid field");
+			"cmzn_field_surface_point.  Invalid field");
 	}
 
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier, double u, double v, double *colour)
+int Computed_field_cad_topology_get_surface_colour(cmzn_field_cad_topology_id field, cmzn_cad_surface_identifier identifier, double u, double v, double *colour)
 {
 	int return_code = 0;
 	if (field)
@@ -858,7 +858,7 @@ int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id f
 	return return_code;
 }
 
-void Cad_topology_information( Cmiss_field_cad_topology_id cad_topology_field, Cad_primitive_identifier id )
+void Cad_topology_information( cmzn_field_cad_topology_id cad_topology_field, Cad_primitive_identifier id )
 {
 	if (cad_topology_field)
 	{
@@ -873,10 +873,10 @@ int gfx_list_cad_entity(struct Parse_state *state,
 {
 	int return_code = 0, path_length;//, cad_element_type = 0;
 	int identifier_number = -1;
-	struct Cmiss_region *root_region = NULL;//, *region = NULL;
+	struct cmzn_region *root_region = NULL;//, *region = NULL;
 	char selected_flag, shape_flag = 0x00, surface_flag = 0x00,
 		curve_flag = 0x00, point_flag = 0x00;
-	struct Cmiss_region_path_and_name region_path_and_name;
+	struct cmzn_region_path_and_name region_path_and_name;
 	struct Computed_field *field = NULL;
 	//struct LIST(Computed_field) *list_of_fields = NULL;
 	struct Option_table *option_table, *identifier_type_option_table;
@@ -884,11 +884,11 @@ int gfx_list_cad_entity(struct Parse_state *state,
 	ENTER(execute_command_gfx_import);
 	USE_PARAMETER(cad_element_type_void);
 
-	if (state && (root_region = (struct Cmiss_region *)root_region_void))
+	if (state && (root_region = (struct cmzn_region *)root_region_void))
 	{
 		selected_flag = 0;
 		//cad_element_type = *((int *)cad_element_type_void);
-		region_path_and_name.region = (struct Cmiss_region *)NULL;
+		region_path_and_name.region = (struct cmzn_region *)NULL;
 		region_path_and_name.region_path = (char *)NULL;
 		region_path_and_name.name = (char *)NULL;
 		
@@ -920,7 +920,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 			if (region_path_and_name.name)
 			{
 				/* following accesses the field, if any */
-				field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+				field = cmzn_region_find_field_by_name(region_path_and_name.region,
 					region_path_and_name.name);
 				if (!field)
 				{
@@ -943,7 +943,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 				}
 				else
 				{
-					region_path_and_name.region = ACCESS(Cmiss_region)(root_region);
+					region_path_and_name.region = ACCESS(cmzn_region)(root_region);
 				}
 				Cad_primitive_identifier cad_identifier;
 				cad_identifier.number = identifier_number;
@@ -962,37 +962,37 @@ int gfx_list_cad_entity(struct Parse_state *state,
 				//DEBUG_PRINT("gfx_list_cad_entity:  id type '%d'\n", cad_identifier.type);
 				if (selected_flag)
 				{
-					Cmiss_scene *scene = Cmiss_region_get_scene_internal(region_path_and_name.region);
-					Cmiss_field_group_id selection_group = Cmiss_scene_get_selection_group(scene);
+					cmzn_scene *scene = cmzn_region_get_scene_internal(region_path_and_name.region);
+					cmzn_field_group_id selection_group = cmzn_scene_get_selection_group(scene);
 
-					struct MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(
+					struct MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(
 						region_path_and_name.region);
-					const Cmiss_set_Cmiss_field& field_set = Computed_field_manager_get_fields(manager);
-					Cmiss_set_Cmiss_field::const_iterator it = field_set.begin();
+					const cmzn_set_cmzn_field& field_set = Computed_field_manager_get_fields(manager);
+					cmzn_set_cmzn_field::const_iterator it = field_set.begin();
 					for (;it != field_set.end(); it++)
 					{
 						struct Computed_field *field = *it;
-						Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field);
+						cmzn_field_cad_topology_id cad_topology = cmzn_field_cast_cad_topology(field);
 						if (cad_topology)
 						{
-							char *name = Cmiss_field_get_name(field);
+							char *name = cmzn_field_get_name(field);
 							//display_message(INFORMATION_MESSAGE, "cad topology field: %s\n", name);
 							free(name);
-							Cmiss_field_cad_primitive_group_template_id cad_primitive_group = 
-								Cmiss_field_group_get_cad_primitive_group(selection_group, cad_topology);
+							cmzn_field_cad_primitive_group_template_id cad_primitive_group = 
+								cmzn_field_group_get_cad_primitive_group(selection_group, cad_topology);
 							if (cad_primitive_group)
 							{
-								Cmiss_cad_identifier_id cad_identifier = Cmiss_field_cad_primitive_group_template_get_first_cad_primitive(cad_primitive_group);
+								cmzn_cad_identifier_id cad_identifier = cmzn_field_cad_primitive_group_template_get_first_cad_primitive(cad_primitive_group);
 								while (cad_identifier != NULL)
 								{
 									//display_message(INFORMATION_MESSAGE, "cad id %p %d %d\n", cad_identifier->cad_topology, cad_identifier->identifier.type, cad_identifier->identifier.number);
 									Cad_topology_information(cad_identifier->cad_topology, cad_identifier->identifier);
 									delete cad_identifier;
-									cad_identifier = Cmiss_field_cad_primitive_group_template_get_next_cad_primitive(cad_primitive_group);
+									cad_identifier = cmzn_field_cad_primitive_group_template_get_next_cad_primitive(cad_primitive_group);
 								}
-								Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
+								cmzn_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 							}
-							Cmiss_field_destroy(&field);
+							cmzn_field_destroy(&field);
 						}
 					}
 					//DEBUG_PRINT("gfx_list_cad_entity:  Use selection\n");
@@ -1000,7 +1000,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 				else
 				{
 					/* following accesses the field, if any */
-					field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+					field = cmzn_region_find_field_by_name(region_path_and_name.region,
 						region_path_and_name.name);
 					if (!field)
 					{
@@ -1016,13 +1016,13 @@ int gfx_list_cad_entity(struct Parse_state *state,
 						if ( return_code )
 						{
 							struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-								( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+								( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
 							if ( cad_topology_field )
 							{
 								// if topology domain then draw item at location
-								Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+								cmzn_field_cad_topology_id cad_topology = cmzn_field_cast_cad_topology(cad_topology_field);
 								Cad_topology_information( cad_topology, cad_identifier );
-								Cmiss_field_cad_topology_destroy(&cad_topology);
+								cmzn_field_cad_topology_destroy(&cad_topology);
 							}
 						}
 						DESTROY_LIST(Computed_field)(&domain_field_list);
@@ -1039,7 +1039,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 		DESTROY(Option_table)(&option_table);
 		if (region_path_and_name.region)
 		{
-			DEACCESS(Cmiss_region)(&region_path_and_name.region);
+			DEACCESS(cmzn_region)(&region_path_and_name.region);
 		}
 		if (region_path_and_name.region_path)
 		{

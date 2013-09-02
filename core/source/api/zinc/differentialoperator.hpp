@@ -47,7 +47,7 @@ namespace zinc
 class DifferentialOperator
 {
 private:
-	Cmiss_differential_operator_id id;
+	cmzn_differential_operator_id id;
 
 public:
 
@@ -55,20 +55,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit DifferentialOperator(Cmiss_differential_operator_id in_differential_operator_id) :
+	explicit DifferentialOperator(cmzn_differential_operator_id in_differential_operator_id) :
 		id(in_differential_operator_id)
 	{  }
 
 	DifferentialOperator(const DifferentialOperator& differentialOperator) :
-		id(Cmiss_differential_operator_access(differentialOperator.id))
+		id(cmzn_differential_operator_access(differentialOperator.id))
 	{	}
 
 	DifferentialOperator& operator=(const DifferentialOperator& differentialOperator)
 	{
-		Cmiss_differential_operator_id temp_id = Cmiss_differential_operator_access(differentialOperator.id);
+		cmzn_differential_operator_id temp_id = cmzn_differential_operator_access(differentialOperator.id);
 		if (0 != id)
 		{
-			Cmiss_differential_operator_destroy(&id);
+			cmzn_differential_operator_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -78,11 +78,11 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_differential_operator_destroy(&id);
+			cmzn_differential_operator_destroy(&id);
 		}
 	}
 
-	Cmiss_differential_operator_id getId()
+	cmzn_differential_operator_id getId()
 	{
 		return id;
 	}

@@ -57,19 +57,19 @@
 
 /****************** Render_graphics_compile_members **********************/
 
-int Render_graphics_compile_members::Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter_id graphics_filter)
+int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_graphics_filter_id graphics_filter)
 {
 	set_Scene(scene);
 	setGraphicsFilter(graphics_filter);
-	return Cmiss_scene_compile_tree(scene, this);
+	return cmzn_scene_compile_tree(scene, this);
 }
 
-int Render_graphics_compile_members::Cmiss_scene_compile(Cmiss_scene *cmiss_scene)
+int Render_graphics_compile_members::cmzn_scene_compile(cmzn_scene *cmiss_scene)
 {
-	return Cmiss_scene_compile_scene(cmiss_scene, this);
+	return cmzn_scene_compile_scene(cmiss_scene, this);
 }
 
-int Render_graphics_compile_members::Cmiss_scene_compile_members(Cmiss_scene *cmiss_scene)
+int Render_graphics_compile_members::cmzn_scene_compile_members(cmzn_scene *cmiss_scene)
 {
-	return Cmiss_scene_compile_graphics(cmiss_scene, this);
+	return cmzn_scene_compile_graphics(cmiss_scene, this);
 }

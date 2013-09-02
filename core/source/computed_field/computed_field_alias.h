@@ -54,6 +54,6 @@
  */
 int Computed_field_register_type_alias(
 	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region);
+	struct cmzn_region *root_region);
 
 #endif /* !defined (COMPUTED_FIELD_ALIAS_H) */

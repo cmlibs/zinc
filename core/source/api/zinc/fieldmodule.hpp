@@ -135,7 +135,7 @@ class FieldModule
 {
 private:
 
-	Cmiss_field_module_id id;
+	cmzn_field_module_id id;
 
 public:
 
@@ -143,24 +143,24 @@ public:
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldModule(Cmiss_field_module_id field_module_id) :
+	explicit FieldModule(cmzn_field_module_id field_module_id) :
 		id(field_module_id)
 	{ }
 
 	FieldModule(const FieldModule& fieldModule) :
-		id(Cmiss_field_module_access(fieldModule.id))
+		id(cmzn_field_module_access(fieldModule.id))
 	{ }
 
 	FieldModule(Field& field) :
-		id(Cmiss_field_get_field_module(field.getId()))
+		id(cmzn_field_get_field_module(field.getId()))
 	{ }
 
 	FieldModule& operator=(const FieldModule& fieldModule)
 	{
-		Cmiss_field_module_id temp_id = Cmiss_field_module_access(fieldModule.id);
+		cmzn_field_module_id temp_id = cmzn_field_module_access(fieldModule.id);
 		if (0 != id)
 		{
-			Cmiss_field_module_destroy(&id);
+			cmzn_field_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -170,7 +170,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_field_module_destroy(&id);
+			cmzn_field_module_destroy(&id);
 		}
 	}
 
@@ -179,73 +179,73 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_field_module_id getId()
+	cmzn_field_module_id getId()
 	{
 		return id;
 	}
 
 	int beginChange()
 	{
-		return Cmiss_field_module_begin_change(id);
+		return cmzn_field_module_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_field_module_end_change(id);
+		return cmzn_field_module_end_change(id);
 	}
 
 	int defineAllFaces()
 	{
-		return Cmiss_field_module_define_all_faces(id);
+		return cmzn_field_module_define_all_faces(id);
 	}
 
 	Field findFieldByName(const char *fieldName)
 	{
-		return Field(Cmiss_field_module_find_field_by_name(id, fieldName));
+		return Field(cmzn_field_module_find_field_by_name(id, fieldName));
 	}
 
 	FieldCache createCache()
 	{
-		return FieldCache(Cmiss_field_module_create_cache(id));
+		return FieldCache(cmzn_field_module_create_cache(id));
 	}
 
 	ElementBasis createElementBasis(int dimension, enum ElementBasis::FunctionType functionType)
 	{
-		return ElementBasis(Cmiss_field_module_create_element_basis(
-			id, dimension, static_cast<Cmiss_basis_function_type>(functionType)));
+		return ElementBasis(cmzn_field_module_create_element_basis(
+			id, dimension, static_cast<cmzn_basis_function_type>(functionType)));
 	}
 
 	Nodeset findNodesetByDomainType(Field::DomainType domainType)
 	{
-		return Nodeset(Cmiss_field_module_find_nodeset_by_domain_type(id,
-			static_cast<Cmiss_field_domain_type>(domainType)));
+		return Nodeset(cmzn_field_module_find_nodeset_by_domain_type(id,
+			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
 	Nodeset findNodesetByName(const char *nodeset_name)
 	{
-		return Nodeset(Cmiss_field_module_find_nodeset_by_name(id,
+		return Nodeset(cmzn_field_module_find_nodeset_by_name(id,
 			nodeset_name));
 	}
 
 	Mesh findMeshByDimension(int dimension)
 	{
-		return Mesh(Cmiss_field_module_find_mesh_by_dimension(id, dimension));
+		return Mesh(cmzn_field_module_find_mesh_by_dimension(id, dimension));
 	}
 
 	Mesh findMeshByName(const char *meshName)
 	{
-		return Mesh(Cmiss_field_module_find_mesh_by_name(id, meshName));
+		return Mesh(cmzn_field_module_find_mesh_by_name(id, meshName));
 	}
 
 	TimeSequence getMatchingTimeSequence(int timesCount, const double *timesIn)
 	{
-		return TimeSequence(Cmiss_field_module_get_matching_time_sequence(
+		return TimeSequence(cmzn_field_module_get_matching_time_sequence(
 			id, timesCount, timesIn));
 	}
 
 	Optimisation createOptimisation()
 	{
-		return Optimisation(Cmiss_field_module_create_optimisation(id));
+		return Optimisation(cmzn_field_module_create_optimisation(id));
 	}
 
 	FieldAlias createAlias(Field& sourceField);

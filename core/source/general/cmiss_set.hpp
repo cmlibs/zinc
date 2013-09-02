@@ -50,17 +50,17 @@ Local types
 -----------
 */
 
-template<class Key, class Compare > class Cmiss_set :
+template<class Key, class Compare > class cmzn_set :
 	private std::set<Key,Compare>
 {
 private:
 	typedef std::set<Key,Compare> Base_class;
 
-	mutable Cmiss_set *next, *prev; // linked list of related sets
+	mutable cmzn_set *next, *prev; // linked list of related sets
 	Key temp_removed_object; // removed while changing identifier
 	int access_count;
 
-	Cmiss_set() :
+	cmzn_set() :
 		next(0),
 		prev(0),
 		temp_removed_object(0),
@@ -71,7 +71,7 @@ private:
 	}
 
 	/** copy constructor */
-	Cmiss_set(const Cmiss_set& source) :
+	cmzn_set(const cmzn_set& source) :
 		Base_class(source),
 		next(source.next),
 		prev(&source),
@@ -87,10 +87,10 @@ private:
 	}
 
 	/** creates a set with the same manager, not a copy constructor */
-	Cmiss_set(const Cmiss_set *source) :
+	cmzn_set(const cmzn_set *source) :
 		Base_class(),
 		next(source->next),
-		prev(const_cast<Cmiss_set *>(source)),
+		prev(const_cast<cmzn_set *>(source)),
 		temp_removed_object(0),
 		access_count(1)
 	{
@@ -100,7 +100,7 @@ private:
 
 public:
 
-	~Cmiss_set()
+	~cmzn_set()
 	{
 		clear();
 		prev->next = next;
@@ -111,26 +111,26 @@ public:
 	typedef typename Base_class::const_iterator const_iterator;
 	typedef typename Base_class::size_type size_type;
 
-	static Cmiss_set *create_independent()
+	static cmzn_set *create_independent()
 	{
-		return new Cmiss_set();
+		return new cmzn_set();
 	}
 
-	Cmiss_set *create_related() const
+	cmzn_set *create_related() const
 	{
-		return new Cmiss_set(this);
+		return new cmzn_set(this);
 	}
 
-	Cmiss_set *create_copy()
+	cmzn_set *create_copy()
 	{
-		return new Cmiss_set(*this);
+		return new cmzn_set(*this);
 	}
 
-	Cmiss_set& operator=(const Cmiss_set& source)
+	cmzn_set& operator=(const cmzn_set& source)
 	{
 		if (&source == this)
 			return *this;
-		const Cmiss_set *related_set = this->next;
+		const cmzn_set *related_set = this->next;
 		while (related_set != this)
 		{
 			if (related_set == &source)
@@ -154,7 +154,7 @@ public:
 			// copy from unrelated set: switch linked-lists
 			this->next->prev = this->prev;
 			this->prev->next = this->next;
-			this->prev = const_cast<Cmiss_set *>(&source);
+			this->prev = const_cast<cmzn_set *>(&source);
 			this->next = source.next;
 			source.next->prev = this;
 			source.next = this;
@@ -162,13 +162,13 @@ public:
 		return *this;
 	}
 
-	inline Cmiss_set *access()
+	inline cmzn_set *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(Cmiss_set **set_address)
+	static inline int deaccess(cmzn_set **set_address)
 	{
 		if (set_address && *set_address)
 		{
@@ -254,7 +254,7 @@ public:
 
 	bool begin_identifier_change(Key object)
 	{
-		Cmiss_set *related_set = this;
+		cmzn_set *related_set = this;
 		do
 		{
 			iterator iter = related_set->find(object);
@@ -275,7 +275,7 @@ public:
 
 	void end_identifier_change()
 	{
-		Cmiss_set *related_set = this;
+		cmzn_set *related_set = this;
 		do
 		{
 			if (related_set->temp_removed_object)
@@ -295,10 +295,10 @@ public:
 	 */
 	struct ext_iterator
 	{
-		Cmiss_set *container;
+		cmzn_set *container;
 		iterator iter;
 
-		ext_iterator(Cmiss_set *container) :
+		ext_iterator(cmzn_set *container) :
 			container(container->access()),
 			iter(container->begin())
 		{

@@ -96,7 +96,7 @@ Global functions
  * value -1 for the whole field, or the component number from 0 to count - 1.
  * @return  Non-accessed field on success, or NULL on failure.
  */
-Cmiss_field_id Computed_field_manager_get_field_or_component(
+cmzn_field_id Computed_field_manager_get_field_or_component(
 	struct MANAGER(Computed_field) *computed_field_manager, const char *name,
 	int *component_number_address);
 

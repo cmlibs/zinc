@@ -1,7 +1,7 @@
 /**
  * glyph.h
  *
- * Public interface to Cmiss_glyph static graphics objects used to visualise
+ * Public interface to cmzn_glyph static graphics objects used to visualise
  * points in the scene.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -60,8 +60,8 @@ extern "C" {
  * @param glyph_module  The glyph module to obtain a new reference to.
  * @return  Glyph module with incremented reference count.
  */
-ZINC_API Cmiss_glyph_module_id Cmiss_glyph_module_access(
-	Cmiss_glyph_module_id glyph_module);
+ZINC_API cmzn_glyph_module_id cmzn_glyph_module_access(
+	cmzn_glyph_module_id glyph_module);
 
 /**
  * Destroys this reference to the glyph module (and sets it to NULL).
@@ -70,30 +70,30 @@ ZINC_API Cmiss_glyph_module_id Cmiss_glyph_module_access(
  * @param glyph_module_address  Address of handle to glyph module to destroy.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_module_destroy(
-	Cmiss_glyph_module_id *glyph_module_address);
+ZINC_API int cmzn_glyph_module_destroy(
+	cmzn_glyph_module_id *glyph_module_address);
 
 /**
  * Begin caching or increment cache level for this glyph module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
- * @see Cmiss_glyph_module_end_change
+ * @see cmzn_glyph_module_end_change
  *
  * @param glyph_module  The glyph module to begin change cache on.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_module_begin_change(Cmiss_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyph_module_begin_change(cmzn_glyph_module_id glyph_module);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for the glyph module.
- * Call Cmiss_glyph_module_begin_change before making multiple changes
+ * Call cmzn_glyph_module_begin_change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
  * @param glyph_module  The glyph module to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyph_module_end_change(cmzn_glyph_module_id glyph_module);
 
 /**
  * Defines a selection of standard glyphs for visualising points, vectors etc.
@@ -126,9 +126,9 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * - using glyph "arrow_solid" and axis width 0.25. 
  * Note that the colour axes find standard materials "red", "green" and "blue"
  * for the 3 axes but are not created if those materials are not defined.
- * @see Cmiss_graphics_material_module_define_standard_materials
+ * @see cmzn_graphics_material_module_define_standard_materials
  * All the above standard glyphs also have unique types enumeration.
- * @see Cmiss_glyph_type
+ * @see cmzn_glyph_type
  * Note if any glyphs of the predefined name already exist prior to calling this
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
@@ -139,8 +139,8 @@ ZINC_API int Cmiss_glyph_module_end_change(Cmiss_glyph_module_id glyph_module);
  * @param glyph_module  The glyph module to create the glyph in.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_module_define_standard_glyphs(
-	Cmiss_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyph_module_define_standard_glyphs(
+	cmzn_glyph_module_id glyph_module);
 
 /**
  * Find the glyph with the specified name, if any.
@@ -150,8 +150,8 @@ ZINC_API int Cmiss_glyph_module_define_standard_glyphs(
  * @return  Handle to the glyph of that name, or 0 if not found.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
-	Cmiss_glyph_module_id glyph_module, const char *name);
+ZINC_API cmzn_glyph_id cmzn_glyph_module_find_glyph_by_name(
+	cmzn_glyph_module_id glyph_module, const char *name);
 
 /**
  * Find the glyph with the specified type, if any.
@@ -161,8 +161,8 @@ ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_name(
  * @return  Handle to a glyph with that type, or 0 if not found.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_type(
-	Cmiss_glyph_module_id glyph_module, enum Cmiss_glyph_type glyph_type);
+ZINC_API cmzn_glyph_id cmzn_glyph_module_find_glyph_by_type(
+	cmzn_glyph_module_id glyph_module, enum cmzn_glyph_type glyph_type);
 
 /**
  * Get the default glyph used for new point graphics, if any.
@@ -171,8 +171,8 @@ ZINC_API Cmiss_glyph_id Cmiss_glyph_module_find_glyph_by_type(
  * @return  Handle to the default point glyph, or 0 if none.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_glyph_id Cmiss_glyph_module_get_default_point_glyph(
-	Cmiss_glyph_module_id glyph_module);
+ZINC_API cmzn_glyph_id cmzn_glyph_module_get_default_point_glyph(
+	cmzn_glyph_module_id glyph_module);
 
 /**
  * Set the default glyph used for new point graphics.
@@ -181,8 +181,8 @@ ZINC_API Cmiss_glyph_id Cmiss_glyph_module_get_default_point_glyph(
  * @param glyph  The glyph to set as default.
  * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_module_set_default_point_glyph(
-	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id glyph);
+ZINC_API int cmzn_glyph_module_set_default_point_glyph(
+	cmzn_glyph_module_id glyph_module, cmzn_glyph_id glyph);
 
 /**
  * Returns a new reference to the glyph with reference count incremented.
@@ -191,7 +191,7 @@ ZINC_API int Cmiss_glyph_module_set_default_point_glyph(
  * @param glyph  The glyph to obtain a new reference to.
  * @return  New glyph reference with incremented reference count.
  */
-ZINC_API Cmiss_glyph_id Cmiss_glyph_access(Cmiss_glyph_id glyph);
+ZINC_API cmzn_glyph_id cmzn_glyph_access(cmzn_glyph_id glyph);
 
 /**
  * Destroys this reference to the glyph (and sets it to NULL).
@@ -200,16 +200,16 @@ ZINC_API Cmiss_glyph_id Cmiss_glyph_access(Cmiss_glyph_id glyph);
  * @param glyph_address  The address to the handle of the glyph to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_glyph_destroy(Cmiss_glyph_id *glyph_address);
+ZINC_API int cmzn_glyph_destroy(cmzn_glyph_id *glyph_address);
 
 /**
  * Get managed status of glyph in its owning glyph_module.
- * @see Cmiss_glyph_set_managed
+ * @see cmzn_glyph_set_managed
  *
  * @param glyph  The glyph to query.
  * @return  true if glyph is managed, otherwise 0 false.
  */
-ZINC_API bool Cmiss_glyph_is_managed(Cmiss_glyph_id glyph);
+ZINC_API bool cmzn_glyph_is_managed(cmzn_glyph_id glyph);
 
 /**
  * Set managed status of glyph in its owning glyph module.
@@ -224,16 +224,16 @@ ZINC_API bool Cmiss_glyph_is_managed(Cmiss_glyph_id glyph);
  * @param value  The new value for the managed flag: true or false.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_set_managed(Cmiss_glyph_id glyph, bool value);
+ZINC_API int cmzn_glyph_set_managed(cmzn_glyph_id glyph, bool value);
 
 /**
  * Return an allocated string containing glyph name.
  *
  * @param glyph  The glyph to query.
  * @return  Allocated string containing glyph name, or NULL on failure.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph);
+ZINC_API char *cmzn_glyph_get_name(cmzn_glyph_id glyph);
 
 /**
  * Set name of the glyph.
@@ -242,7 +242,7 @@ ZINC_API char *Cmiss_glyph_get_name(Cmiss_glyph_id glyph);
  * @param name  Name to be set for the glyph.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name);
+ZINC_API int cmzn_glyph_set_name(cmzn_glyph_id glyph, const char *name);
 
 /**
  * Create a glyph which drawing 3-D axes repeating the supplied axis glyph
@@ -255,8 +255,8 @@ ZINC_API int Cmiss_glyph_set_name(Cmiss_glyph_id glyph, const char *name);
  * glyph 'axis', 0.25 for glyph 'arrow_solid'. Must be non-negative.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(
-	Cmiss_glyph_module_id glyph_module, Cmiss_glyph_id axis_glyph,
+ZINC_API cmzn_glyph_axes_id cmzn_glyph_module_create_axes(
+	cmzn_glyph_module_id glyph_module, cmzn_glyph_id axis_glyph,
 	double axis_width);
 
 /**
@@ -266,20 +266,20 @@ ZINC_API Cmiss_glyph_axes_id Cmiss_glyph_module_create_axes(
  * @return  Axes glyph specific representation if the input is the correct
  * glyph type, otherwise returns NULL.
  */
-ZINC_API Cmiss_glyph_axes_id Cmiss_glyph_cast_axes(Cmiss_glyph_id glyph);
+ZINC_API cmzn_glyph_axes_id cmzn_glyph_cast_axes(cmzn_glyph_id glyph);
 
 /**
  * Cast axes glyph back to the base glyph type and return it.
  * IMPORTANT NOTE: Returned glyph does not have incremented reference count and
- * must not be destroyed. Use Cmiss_glyph_access() to add a reference if
+ * must not be destroyed. Use cmzn_glyph_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the axes glyph argument.
  *
  * @param axes  Handle to the axes glyph to cast.
  * @return  Non-accessed handle to the base glyph or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_axes_base_cast(Cmiss_glyph_axes_id axes)
+ZINC_C_INLINE cmzn_glyph_id cmzn_glyph_axes_base_cast(cmzn_glyph_axes_id axes)
 {
-	return (Cmiss_glyph_id)(axes);
+	return (cmzn_glyph_id)(axes);
 }
 
 /**
@@ -290,7 +290,7 @@ ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_axes_base_cast(Cmiss_glyph_axes_id axes
  * @return  Status CMISS_OK if successfully destroyed the axes glyph handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_glyph_axes_destroy(Cmiss_glyph_axes_id *axes_address);
+ZINC_API int cmzn_glyph_axes_destroy(cmzn_glyph_axes_id *axes_address);
 
 /**
  * Gets the width of each axis relative to unit length.
@@ -298,7 +298,7 @@ ZINC_API int Cmiss_glyph_axes_destroy(Cmiss_glyph_axes_id *axes_address);
  * @param axes  The axes glyph to query.
  * @return  The axis width, or 0.0 if error.
  */
-ZINC_API double Cmiss_glyph_axes_get_axis_width(Cmiss_glyph_axes_id axes);
+ZINC_API double cmzn_glyph_axes_get_axis_width(cmzn_glyph_axes_id axes);
 
 /**
  * Sets the width of each axis relative to unit length.
@@ -309,7 +309,7 @@ ZINC_API double Cmiss_glyph_axes_get_axis_width(Cmiss_glyph_axes_id axes);
  * @param axis_width  The new axis width. Must be non-negative.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_axes_set_axis_width(Cmiss_glyph_axes_id axes,
+ZINC_API int cmzn_glyph_axes_set_axis_width(cmzn_glyph_axes_id axes,
 	double axis_width);
 
 /**
@@ -318,9 +318,9 @@ ZINC_API int Cmiss_glyph_axes_set_axis_width(Cmiss_glyph_axes_id axes,
  * @param axes  The axes glyph to query.
  * @param axis_number  The axis number from 1 to 3.
  * @return  Allocated string containing label, or NULL if none or error.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_glyph_axes_get_axis_label(Cmiss_glyph_axes_id axes,
+ZINC_API char *cmzn_glyph_axes_get_axis_label(cmzn_glyph_axes_id axes,
 	int axis_number);
 
 /**
@@ -331,7 +331,7 @@ ZINC_API char *Cmiss_glyph_axes_get_axis_label(Cmiss_glyph_axes_id axes,
  * @param label  The label, or NULL for none.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_axes_set_axis_label(Cmiss_glyph_axes_id axes,
+ZINC_API int cmzn_glyph_axes_set_axis_label(cmzn_glyph_axes_id axes,
 	int axis_number, const char *label);
 
 /**
@@ -341,8 +341,8 @@ ZINC_API int Cmiss_glyph_axes_set_axis_label(Cmiss_glyph_axes_id axes,
  * @param axis_number  The axis number from 1 to 3.
  * @return  Handle to material or NULL if none or error. Up to caller to destroy.
  */
-ZINC_API Cmiss_graphics_material_id Cmiss_glyph_axes_get_axis_material(
-	Cmiss_glyph_axes_id axes, int axis_number);
+ZINC_API cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
+	cmzn_glyph_axes_id axes, int axis_number);
 
 /**
  * Set the material an axis is drawn with. Note if the material is NULL for
@@ -354,8 +354,8 @@ ZINC_API Cmiss_graphics_material_id Cmiss_glyph_axes_get_axis_material(
  * graphic.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_axes_set_axis_material(Cmiss_glyph_axes_id axes,
-	int axis_number, Cmiss_graphics_material_id material);
+ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
+	int axis_number, cmzn_graphics_material_id material);
 
 /**
  * Create a glyph which draws a colour bar for the spectrum with ticks and
@@ -366,8 +366,8 @@ ZINC_API int Cmiss_glyph_axes_set_axis_material(Cmiss_glyph_axes_id axes,
  * @param spectrum  The spectrum to be displayed on the colour bar.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_module_create_colour_bar(
-	Cmiss_glyph_module_id glyph_module, Cmiss_spectrum_id spectrum);
+ZINC_API cmzn_glyph_colour_bar_id cmzn_glyph_module_create_colour_bar(
+	cmzn_glyph_module_id glyph_module, cmzn_spectrum_id spectrum);
 
 /**
  * If the glyph is type colour bar, returns the type-specific handle.
@@ -376,20 +376,20 @@ ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_module_create_colour_bar(
  * @return  Colour bar glyph specific representation if the input is the correct
  * glyph type, otherwise returns NULL.
  */
-ZINC_API Cmiss_glyph_colour_bar_id Cmiss_glyph_cast_colour_bar(Cmiss_glyph_id glyph);
+ZINC_API cmzn_glyph_colour_bar_id cmzn_glyph_cast_colour_bar(cmzn_glyph_id glyph);
 
 /**
  * Cast colour bar glyph back to the base glyph type and return it.
  * IMPORTANT NOTE: Returned glyph does not have incremented reference count and
- * must not be destroyed. Use Cmiss_glyph_access() to add a reference if
+ * must not be destroyed. Use cmzn_glyph_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the colour_bar glyph argument.
  *
  * @param colour_bar  Handle to the colour_bar glyph to cast.
  * @return  Non-accessed handle to the base glyph or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_colour_bar_base_cast(Cmiss_glyph_colour_bar_id colour_bar)
+ZINC_C_INLINE cmzn_glyph_id cmzn_glyph_colour_bar_base_cast(cmzn_glyph_colour_bar_id colour_bar)
 {
-	return (Cmiss_glyph_id)(colour_bar);
+	return (cmzn_glyph_id)(colour_bar);
 }
 
 /**
@@ -400,7 +400,7 @@ ZINC_C_INLINE Cmiss_glyph_id Cmiss_glyph_colour_bar_base_cast(Cmiss_glyph_colour
  * @return  Status CMISS_OK if successfully destroyed the colour_bar glyph handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_glyph_colour_bar_destroy(Cmiss_glyph_colour_bar_id *colour_bar_address);
+ZINC_API int cmzn_glyph_colour_bar_destroy(cmzn_glyph_colour_bar_id *colour_bar_address);
 
 /**
  * Gets the vector defining the main axis of the colour bar.
@@ -410,8 +410,8 @@ ZINC_API int Cmiss_glyph_colour_bar_destroy(Cmiss_glyph_colour_bar_id *colour_ba
  * @param valuesOut  Array to receive axis vector.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_get_axis(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+ZINC_API int cmzn_glyph_colour_bar_get_axis(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
 
 /**
  * Sets the vector defining the main axis of the colour bar. The magnitude of
@@ -424,8 +424,8 @@ ZINC_API int Cmiss_glyph_colour_bar_get_axis(
  * assumes zero for remaining components.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_axis(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+ZINC_API int cmzn_glyph_colour_bar_set_axis(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
 
 /**
  * Gets the centre position of the colour bar.
@@ -435,14 +435,14 @@ ZINC_API int Cmiss_glyph_colour_bar_set_axis(
  * @param valuesOut  Array to receive centre position.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_get_centre(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+ZINC_API int cmzn_glyph_colour_bar_get_centre(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
 
 /**
  * Sets the centre position of the colour bar.
  * The default centre is (0,0,0). It is recommended that this not be changed
  * and instead use the graphic point attributes glyph offset.
- * @see Cmiss_graphic_point_attributes_set_glyph_offset
+ * @see cmzn_graphic_point_attributes_set_glyph_offset
  *
  * @param colour_bar  The colour bar glyph to modify.
  * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.
@@ -450,8 +450,8 @@ ZINC_API int Cmiss_glyph_colour_bar_get_centre(
  * then assumes zero for remaining components.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_centre(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+ZINC_API int cmzn_glyph_colour_bar_set_centre(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
 
 /**
  * Gets the extend length used at each end of the colour bar to show values
@@ -460,8 +460,8 @@ ZINC_API int Cmiss_glyph_colour_bar_set_centre(
  * @param colour_bar  The colour bar glyph to query.
  * @return  The extend length, or 0.0 if error.
  */
-ZINC_API double Cmiss_glyph_colour_bar_get_extend_length(
-	Cmiss_glyph_colour_bar_id colour_bar);
+ZINC_API double cmzn_glyph_colour_bar_get_extend_length(
+	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
  * Sets the extend length used at each end of the colour bar to show values
@@ -472,8 +472,8 @@ ZINC_API double Cmiss_glyph_colour_bar_get_extend_length(
  * @param extendLength  The new extend length. Must be non-negative.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_extend_length(
-	Cmiss_glyph_colour_bar_id colour_bar, double extendLength);
+ZINC_API int cmzn_glyph_colour_bar_set_extend_length(
+	cmzn_glyph_colour_bar_id colour_bar, double extendLength);
 
 /**
  * Gets the number of divisions between labels.
@@ -481,8 +481,8 @@ ZINC_API int Cmiss_glyph_colour_bar_set_extend_length(
  * @param colour_bar  The colour bar glyph to query.
  * @return  The number of label divisions, or 0 if error.
  */
-ZINC_API int Cmiss_glyph_colour_bar_get_label_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar);
+ZINC_API int cmzn_glyph_colour_bar_get_label_divisions(
+	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
  * Sets the number of divisions between labels. This is one less than the
@@ -493,8 +493,8 @@ ZINC_API int Cmiss_glyph_colour_bar_get_label_divisions(
  * @param labelDivisions  The new number of divisions, at least 1.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_label_divisions(
-	Cmiss_glyph_colour_bar_id colour_bar, int labelDivisions);
+ZINC_API int cmzn_glyph_colour_bar_set_label_divisions(
+	cmzn_glyph_colour_bar_id colour_bar, int labelDivisions);
 
 /**
  * Gets the material used for colour bar labels and ticks. Can be NULL.
@@ -503,8 +503,8 @@ ZINC_API int Cmiss_glyph_colour_bar_set_label_divisions(
  * @return  Handle to label material, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_label_material(
-	Cmiss_glyph_colour_bar_id colour_bar);
+ZINC_API cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
+	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
  * Sets the material used for colour bar labels and ticks. Can be NULL.
@@ -515,18 +515,18 @@ ZINC_API Cmiss_graphics_material_id Cmiss_glyph_colour_bar_get_label_material(
  * @param material  The new label material; can be NULL to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_label_material(
-	Cmiss_glyph_colour_bar_id colour_bar, Cmiss_graphics_material_id material);
+ZINC_API int cmzn_glyph_colour_bar_set_label_material(
+	cmzn_glyph_colour_bar_id colour_bar, cmzn_graphics_material_id material);
 
 /**
  * Get the number format used to write value labels on the colour bar.
  *
  * @param colour_bar  The colour bar glyph to query.
  * @return  Allocated string containing number format, or NULL on failure.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_glyph_colour_bar_get_number_format(
-	Cmiss_glyph_colour_bar_id colour_bar);
+ZINC_API char *cmzn_glyph_colour_bar_get_number_format(
+	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
  * Set the number format used to write value labels on the colour bar.
@@ -540,8 +540,8 @@ ZINC_API char *Cmiss_glyph_colour_bar_get_number_format(
  * @param numberFormat  The printf number format used for value labels.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_number_format(
-	Cmiss_glyph_colour_bar_id colour_bar, const char *numberFormat);
+ZINC_API int cmzn_glyph_colour_bar_set_number_format(
+	cmzn_glyph_colour_bar_id colour_bar, const char *numberFormat);
 
 /**
  * Gets the vector defining the side/tick axis of the colour bar.
@@ -551,8 +551,8 @@ ZINC_API int Cmiss_glyph_colour_bar_set_number_format(
  * @param valuesOut  Array to receive side axis vector.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_get_side_axis(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
+ZINC_API int cmzn_glyph_colour_bar_get_side_axis(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
 
 /**
  * Sets the vector defining the side/tick axis of the colour bar. The magnitude
@@ -566,8 +566,8 @@ ZINC_API int Cmiss_glyph_colour_bar_get_side_axis(
  * then assumes zero for remaining components.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_side_axis(
-	Cmiss_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
+ZINC_API int cmzn_glyph_colour_bar_set_side_axis(
+	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, const double *valuesIn);
 
 /**
  * Gets the tick length.
@@ -575,8 +575,8 @@ ZINC_API int Cmiss_glyph_colour_bar_set_side_axis(
  * @param colour_bar  The colour bar glyph to query.
  * @return  The tick length, or 0.0 if error.
  */
-ZINC_API double Cmiss_glyph_colour_bar_get_tick_length(
-	Cmiss_glyph_colour_bar_id colour_bar);
+ZINC_API double cmzn_glyph_colour_bar_get_tick_length(
+	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
  * Sets the tick length measured from outside radius of the colour bar, in the
@@ -587,8 +587,8 @@ ZINC_API double Cmiss_glyph_colour_bar_get_tick_length(
  * @param tickLength  The new tick length. Must be non-negative.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_glyph_colour_bar_set_tick_length(
-	Cmiss_glyph_colour_bar_id colour_bar, double tickLength);
+ZINC_API int cmzn_glyph_colour_bar_set_tick_length(
+	cmzn_glyph_colour_bar_id colour_bar, double tickLength);
 
 #ifdef __cplusplus
 }

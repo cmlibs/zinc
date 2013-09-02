@@ -53,43 +53,43 @@ extern "C" {
 #include "cad/cad_element.h"
 
 
-//#define Computed_field_module_create_cad_topology Cmiss_field_create_cad_topology
-//#define Cmiss_field_cad_topology Computed_field_cad_topology
+//#define Computed_field_module_create_cad_topology cmzn_field_create_cad_topology
+//#define cmzn_field_cad_topology Computed_field_cad_topology
 
-//class Cmiss_field_cad_topology;
+//class cmzn_field_cad_topology;
 
 
-Cmiss_field_id Cmiss_field_module_create_cad_topology(Cmiss_field_module *field_module, TopologicalShape *shape );
+cmzn_field_id cmzn_field_module_create_cad_topology(cmzn_field_module *field_module, TopologicalShape *shape );
 
-Cmiss_field_cad_topology_id Cmiss_field_cast_cad_topology(Cmiss_field_id cad_topology_field );
+cmzn_field_cad_topology_id cmzn_field_cast_cad_topology(cmzn_field_id cad_topology_field );
 
-int Cmiss_field_cad_topology_destroy(Cmiss_field_cad_topology_id *cad_topology_field_address);
+int cmzn_field_cad_topology_destroy(cmzn_field_cad_topology_id *cad_topology_field_address);
 
-Cmiss_field_cad_topology_id Cmiss_field_cad_topology_access(Cmiss_field_cad_topology_id cad_topology_field);
+cmzn_field_cad_topology_id cmzn_field_cad_topology_access(cmzn_field_cad_topology_id cad_topology_field);
 
-int Cmiss_field_cad_topology_get_surface_count(Cmiss_field_cad_topology_id cad_topology_field);
+int cmzn_field_cad_topology_get_surface_count(cmzn_field_cad_topology_id cad_topology_field);
 
-int Cmiss_field_cad_topology_get_curve_count(Cmiss_field_cad_topology_id cad_topology_field);
+int cmzn_field_cad_topology_get_curve_count(cmzn_field_cad_topology_id cad_topology_field);
 
-int Cmiss_field_cad_topology_get_surface_point_count(Cmiss_field_cad_topology_id cad_topology_field, Cmiss_cad_surface_identifier identifier);
+int cmzn_field_cad_topology_get_surface_point_count(cmzn_field_cad_topology_id cad_topology_field, cmzn_cad_surface_identifier identifier);
 
-int Cmiss_field_cad_topology_get_curve_point_count(Cmiss_field_cad_topology_id cad_topology_field, Cmiss_cad_curve_identifier identifier);
+int cmzn_field_cad_topology_get_curve_point_count(cmzn_field_cad_topology_id cad_topology_field, cmzn_cad_curve_identifier identifier);
 
-int Cmiss_field_cad_topology_get_surface_point_uv_coordinates(Cmiss_field_cad_topology_id cad_topology_field,
-	Cmiss_cad_surface_identifier identifier,
-	Cmiss_cad_surface_point_identifier uv_identifier,
+int cmzn_field_cad_topology_get_surface_point_uv_coordinates(cmzn_field_cad_topology_id cad_topology_field,
+	cmzn_cad_surface_identifier identifier,
+	cmzn_cad_surface_point_identifier uv_identifier,
 	double &u, double &v);
 
-int Cmiss_field_cad_topology_get_curve_point_s_coordinate(Cmiss_field_cad_topology_id cad_topology_field,
-	Cmiss_cad_curve_identifier identifier,
-	Cmiss_cad_curve_point_identifier s_identifier,
+int cmzn_field_cad_topology_get_curve_point_s_coordinate(cmzn_field_cad_topology_id cad_topology_field,
+	cmzn_cad_curve_identifier identifier,
+	cmzn_cad_curve_point_identifier s_identifier,
 	double &s);
 
-void Cmiss_field_cad_topology_set_geometric_shape(Cmiss_field_cad_topology_id cad_topology_field, GeometricShape *shape);
+void cmzn_field_cad_topology_set_geometric_shape(cmzn_field_cad_topology_id cad_topology_field, GeometricShape *shape);
 
-int Cmiss_field_is_type_cad_topology(Cmiss_field_id field, void *not_in_use);
+int cmzn_field_is_type_cad_topology(cmzn_field_id field, void *not_in_use);
 
-void Cad_topology_information( Cmiss_field_cad_topology_id cad_topology_field, Cad_primitive_identifier information );
+void Cad_topology_information( cmzn_field_cad_topology_id cad_topology_field, Cad_primitive_identifier information );
 
 int gfx_list_cad_entity(struct Parse_state *state, void *cad_element_type_void, void *root_region_void);
 

@@ -52,7 +52,7 @@ class FieldElementGroup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldElementGroup(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldElementGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldElementGroup FieldModule::createElementGroup(Mesh& mesh);
@@ -63,18 +63,18 @@ public:
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldElementGroup(Cmiss_field_element_group_id field_element_group_id) :
-		Field(reinterpret_cast<Cmiss_field_id>(field_element_group_id))
+	explicit FieldElementGroup(cmzn_field_element_group_id field_element_group_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_element_group_id))
 	{ }
 
 	FieldElementGroup(Field& field) :
-		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_element_group(field.getId())))
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_element_group(field.getId())))
 	{	}
 
 	MeshGroup getMesh()
 	{
-		return MeshGroup(Cmiss_field_element_group_get_mesh(
-			reinterpret_cast<Cmiss_field_element_group_id>(id)));
+		return MeshGroup(cmzn_field_element_group_get_mesh(
+			reinterpret_cast<cmzn_field_element_group_id>(id)));
 	}
 };
 
@@ -82,7 +82,7 @@ class FieldNodeGroup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeGroup(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodeGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset);
@@ -93,29 +93,29 @@ public:
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeGroup(Cmiss_field_node_group_id field_node_group_id) :
-		Field(reinterpret_cast<Cmiss_field_id>(field_node_group_id))
+	explicit FieldNodeGroup(cmzn_field_node_group_id field_node_group_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_node_group_id))
 	{ }
 
 	FieldNodeGroup(Field& field) :
-		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_node_group(field.getId())))
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_node_group(field.getId())))
 	{	}
 
 	NodesetGroup getNodeset()
 	{
-		return NodesetGroup(Cmiss_field_node_group_get_nodeset(
-			reinterpret_cast<Cmiss_field_node_group_id>(id)));
+		return NodesetGroup(cmzn_field_node_group_get_nodeset(
+			reinterpret_cast<cmzn_field_node_group_id>(id)));
 	}
 };
 
 inline FieldElementGroup FieldModule::createElementGroup(Mesh& mesh)
 {
-	return FieldElementGroup(Cmiss_field_module_create_element_group(id, mesh.getId()));
+	return FieldElementGroup(cmzn_field_module_create_element_group(id, mesh.getId()));
 }
 
 inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
 {
-	return FieldNodeGroup(Cmiss_field_module_create_node_group(id, nodeset.getId()));
+	return FieldNodeGroup(cmzn_field_module_create_node_group(id, nodeset.getId()));
 }
 
 }  // namespace zinc

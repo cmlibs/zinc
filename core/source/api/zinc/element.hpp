@@ -54,7 +54,7 @@ class Element
 {
 private:
 
-	Cmiss_element_id id;
+	cmzn_element_id id;
 
 public:
 
@@ -62,19 +62,19 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Element(Cmiss_element_id element_id) :
+	explicit Element(cmzn_element_id element_id) :
 		id(element_id)
 	{ }
 
 	Element(const Element& element) :
-		id(Cmiss_element_access(element.id))
+		id(cmzn_element_access(element.id))
 	{ }
 
 	~Element()
 	{
 		if (0 != id)
 		{
-			Cmiss_element_destroy(&id);
+			cmzn_element_destroy(&id);
 		}
 	}
 
@@ -97,10 +97,10 @@ public:
 
 	Element& operator=(const Element& element)
 	{
-		Cmiss_element_id temp_id = Cmiss_element_access(element.id);
+		cmzn_element_id temp_id = cmzn_element_access(element.id);
 		if (0 != id)
 		{
-			Cmiss_element_destroy(&id);
+			cmzn_element_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -128,29 +128,29 @@ public:
 		POINT_SAMPLE_SET_LOCATION = CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION
 	};
 
-	Cmiss_element_id getId()
+	cmzn_element_id getId()
 	{
 		return id;
 	}
 
 	int getDimension()
 	{
-		return Cmiss_element_get_dimension(id);
+		return cmzn_element_get_dimension(id);
 	}
 
 	int getIdentifier()
 	{
-		return Cmiss_element_get_identifier(id);
+		return cmzn_element_get_identifier(id);
 	}
 
 	int setIdentifier(int identifier)
 	{
-		return Cmiss_element_set_identifier(id, identifier);
+		return cmzn_element_set_identifier(id, identifier);
 	}
 
 	enum ShapeType getShapeType()
 	{
-		return static_cast<ShapeType>(Cmiss_element_get_shape_type(id));
+		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));
 	}
 
 	int merge(ElementTemplate& elementTemplate);
@@ -161,7 +161,7 @@ class ElementBasis
 {
 private:
 
-	Cmiss_element_basis_id id;
+	cmzn_element_basis_id id;
 
 public:
 
@@ -169,20 +169,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit ElementBasis(Cmiss_element_basis_id element_basis_id) :
+	explicit ElementBasis(cmzn_element_basis_id element_basis_id) :
 		id(element_basis_id)
 	{ }
 
 	ElementBasis(const ElementBasis& elementBasis) :
-		id(Cmiss_element_basis_access(elementBasis.id))
+		id(cmzn_element_basis_access(elementBasis.id))
 	{ }
 
 	ElementBasis& operator=(const ElementBasis& elementBasis)
 	{
-		Cmiss_element_basis_id temp_id = Cmiss_element_basis_access(elementBasis.id);
+		cmzn_element_basis_id temp_id = cmzn_element_basis_access(elementBasis.id);
 		if (0 != id)
 		{
-			Cmiss_element_basis_destroy(&id);
+			cmzn_element_basis_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -192,7 +192,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_element_basis_destroy(&id);
+			cmzn_element_basis_destroy(&id);
 		}
 	}
 
@@ -212,30 +212,30 @@ public:
 		FUNCTION_QUADRATIC_SIMPLEX = CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX /**< linked on 2 or more dimensions */
 	};
 
-	Cmiss_element_basis_id getId()
+	cmzn_element_basis_id getId()
 	{
 		return id;
 	}
 
 	int getDimension()
 	{
-		return Cmiss_element_basis_get_dimension(id);
+		return cmzn_element_basis_get_dimension(id);
 	}
 
 	enum FunctionType getFunctionType(int chartComponent)
 	{
-		return static_cast<FunctionType>(Cmiss_element_basis_get_function_type(id, chartComponent));
+		return static_cast<FunctionType>(cmzn_element_basis_get_function_type(id, chartComponent));
 	}
 
 	int setFunctionType(int chartComponent, FunctionType functionType)
 	{
-		return Cmiss_element_basis_set_function_type(id, chartComponent,
-			static_cast<Cmiss_basis_function_type>(functionType));
+		return cmzn_element_basis_set_function_type(id, chartComponent,
+			static_cast<cmzn_basis_function_type>(functionType));
 	}
 
 	int getNumberOfNodes()
 	{
-		return Cmiss_element_basis_get_number_of_nodes(id);
+		return cmzn_element_basis_get_number_of_nodes(id);
 	}
 
 };
@@ -244,7 +244,7 @@ class ElementTemplate
 {
 private:
 
-	Cmiss_element_template_id id;
+	cmzn_element_template_id id;
 
 public:
 
@@ -252,20 +252,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit ElementTemplate(Cmiss_element_template_id element_template_id) :
+	explicit ElementTemplate(cmzn_element_template_id element_template_id) :
 		id(element_template_id)
 	{ }
 
 	ElementTemplate(const ElementTemplate& elementTemplate) :
-		id(Cmiss_element_template_access(elementTemplate.id))
+		id(cmzn_element_template_access(elementTemplate.id))
 	{ }
 
 	ElementTemplate& operator=(const ElementTemplate& elementTemplate)
 	{
-		Cmiss_element_template_id temp_id = Cmiss_element_template_access(elementTemplate.id);
+		cmzn_element_template_id temp_id = cmzn_element_template_access(elementTemplate.id);
 		if (0 != id)
 		{
-			Cmiss_element_template_destroy(&id);
+			cmzn_element_template_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -275,7 +275,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_element_template_destroy(&id);
+			cmzn_element_template_destroy(&id);
 		}
 	}
 
@@ -284,48 +284,48 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_element_template_id getId()
+	cmzn_element_template_id getId()
 	{
 		return id;
 	}
 
 	enum Element::ShapeType getShapeType()
 	{
-		return static_cast<Element::ShapeType>(Cmiss_element_template_get_shape_type(id));
+		return static_cast<Element::ShapeType>(cmzn_element_template_get_shape_type(id));
 	}
 
 	int setShapeType(enum Element::ShapeType shapeType)
 	{
-		return Cmiss_element_template_set_shape_type(id,
-			static_cast<Cmiss_element_shape_type>(shapeType));
+		return cmzn_element_template_set_shape_type(id,
+			static_cast<cmzn_element_shape_type>(shapeType));
 	}
 
 	int getNumberOfNodes()
 	{
-		return Cmiss_element_template_get_number_of_nodes(id);
+		return cmzn_element_template_get_number_of_nodes(id);
 	}
 
 	int setNumberOfNodes(int numberOfNodes)
 	{
-		return Cmiss_element_template_set_number_of_nodes(id, numberOfNodes);
+		return cmzn_element_template_set_number_of_nodes(id, numberOfNodes);
 	}
 
 	int defineFieldSimpleNodal(Field& field, int componentNumber,
 		ElementBasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
 	{
-		return Cmiss_element_template_define_field_simple_nodal(
+		return cmzn_element_template_define_field_simple_nodal(
 			id, field.getId(),  componentNumber, basis.getId(),
 			nodeIndexesCount, nodeIndexesIn);
 	}
 
 	Node getNode(int localNodeIndex)
 	{
-		return Node(Cmiss_element_template_get_node(id, localNodeIndex));
+		return Node(cmzn_element_template_get_node(id, localNodeIndex));
 	}
 
 	int setNode(int localNodeIndex, Node& node)
 	{
-		return Cmiss_element_template_set_node(id, localNodeIndex, node.getId());
+		return cmzn_element_template_set_node(id, localNodeIndex, node.getId());
 	}
 };
 
@@ -333,7 +333,7 @@ class ElementIterator
 {
 private:
 
-	Cmiss_element_iterator_id id;
+	cmzn_element_iterator_id id;
 
 public:
 
@@ -341,20 +341,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit ElementIterator(Cmiss_element_iterator_id element_iterator_id) :
+	explicit ElementIterator(cmzn_element_iterator_id element_iterator_id) :
 		id(element_iterator_id)
 	{ }
 
 	ElementIterator(const ElementIterator& elementIterator) :
-		id(Cmiss_element_iterator_access(elementIterator.id))
+		id(cmzn_element_iterator_access(elementIterator.id))
 	{ }
 
 	ElementIterator& operator=(const ElementIterator& elementIterator)
 	{
-		Cmiss_element_iterator_id temp_id = Cmiss_element_iterator_access(elementIterator.id);
+		cmzn_element_iterator_id temp_id = cmzn_element_iterator_access(elementIterator.id);
 		if (0 != id)
 		{
-			Cmiss_element_iterator_destroy(&id);
+			cmzn_element_iterator_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -364,7 +364,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_element_iterator_destroy(&id);
+			cmzn_element_iterator_destroy(&id);
 		}
 	}
 
@@ -375,7 +375,7 @@ public:
 
 	Element next()
 	{
-		return Element(Cmiss_element_iterator_next(id));
+		return Element(cmzn_element_iterator_next(id));
 	}
 };
 
@@ -383,7 +383,7 @@ class Mesh
 {
 
 protected:
-	Cmiss_mesh_id id;
+	cmzn_mesh_id id;
 
 public:
 
@@ -391,18 +391,18 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Mesh(Cmiss_mesh_id mesh_id) :	id(mesh_id)
+	explicit Mesh(cmzn_mesh_id mesh_id) :	id(mesh_id)
 	{ }
 
 	Mesh(const Mesh& mesh) :
-		id(Cmiss_mesh_access(mesh.id))
+		id(cmzn_mesh_access(mesh.id))
 	{ }
 
 	~Mesh()
 	{
 		if (0 != id)
 		{
-			Cmiss_mesh_destroy(&id);
+			cmzn_mesh_destroy(&id);
 		}
 	}
 
@@ -413,95 +413,95 @@ public:
 
 	Mesh& operator=(const Mesh& mesh)
 	{
-		Cmiss_mesh_id temp_id = Cmiss_mesh_access(mesh.id);
+		cmzn_mesh_id temp_id = cmzn_mesh_access(mesh.id);
 		if (0 != id)
 		{
-			Cmiss_mesh_destroy(&id);
+			cmzn_mesh_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	Cmiss_mesh_id getId()
+	cmzn_mesh_id getId()
 	{
 		return id;
 	}
 
 	bool containsElement(Element& element)
 	{
-		return (0 != Cmiss_mesh_contains_element(id, element.getId()));
+		return (0 != cmzn_mesh_contains_element(id, element.getId()));
 	}
 
 	ElementTemplate createElementTemplate()
 	{
-		return ElementTemplate(Cmiss_mesh_create_element_template(id));
+		return ElementTemplate(cmzn_mesh_create_element_template(id));
 	}
 
 	Element createElement(int identifier, ElementTemplate& elementTemplate)
 	{
-		return Element(Cmiss_mesh_create_element(id, identifier, elementTemplate.getId()));
+		return Element(cmzn_mesh_create_element(id, identifier, elementTemplate.getId()));
 	}
 
 	ElementIterator createElementIterator()
 	{
-		return ElementIterator(Cmiss_mesh_create_element_iterator(id));
+		return ElementIterator(cmzn_mesh_create_element_iterator(id));
 	}
 
 	int defineElement(int identifier, ElementTemplate& elementTemplate)
 	{
-		return Cmiss_mesh_define_element(id, identifier, elementTemplate.getId());
+		return cmzn_mesh_define_element(id, identifier, elementTemplate.getId());
 	}
 
 	int destroyAllElements()
 	{
-		return Cmiss_mesh_destroy_all_elements(id);
+		return cmzn_mesh_destroy_all_elements(id);
 	}
 
 	int destroyElement(Element& element)
 	{
-		 return Cmiss_mesh_destroy_element(id, element.getId());
+		 return cmzn_mesh_destroy_element(id, element.getId());
 	}
 
 	int destroyElementsConditional(Field& conditionalField)
 	{
-		return Cmiss_mesh_destroy_elements_conditional(id,
+		return cmzn_mesh_destroy_elements_conditional(id,
 			conditionalField.getId());
 	}
 
 	Element findElementByIdentifier(int identifier)
 	{
-		return Element(Cmiss_mesh_find_element_by_identifier(id, identifier));
+		return Element(cmzn_mesh_find_element_by_identifier(id, identifier));
 	}
 
 	DifferentialOperator getChartDifferentialOperator(int order, int term)
 	{
-		return DifferentialOperator(Cmiss_mesh_get_chart_differential_operator(
+		return DifferentialOperator(cmzn_mesh_get_chart_differential_operator(
 			id, order, term));
 	}
 
 	int getDimension()
 	{
-		return Cmiss_mesh_get_dimension(id);
+		return cmzn_mesh_get_dimension(id);
 	}
 
 	Mesh getMaster()
 	{
-		return Mesh(Cmiss_mesh_get_master(id));
+		return Mesh(cmzn_mesh_get_master(id));
 	}
 
 	char *getName()
 	{
-		return Cmiss_mesh_get_name(id);
+		return cmzn_mesh_get_name(id);
 	}
 
 	int getSize()
 	{
-		return Cmiss_mesh_get_size(id);
+		return cmzn_mesh_get_size(id);
 	}
 
 	int match(Mesh& mesh)
 	{
-		return Cmiss_mesh_match(id, mesh.id);
+		return cmzn_mesh_match(id, mesh.id);
 	}
 
 };
@@ -512,42 +512,42 @@ class MeshGroup  : public Mesh
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit MeshGroup(Cmiss_mesh_group_id mesh_id) : Mesh(reinterpret_cast<Cmiss_mesh_id>(mesh_id))
+	explicit MeshGroup(cmzn_mesh_group_id mesh_id) : Mesh(reinterpret_cast<cmzn_mesh_id>(mesh_id))
 	{ }
 
-	Cmiss_mesh_group_id getId()
+	cmzn_mesh_group_id getId()
 	{
-		return (Cmiss_mesh_group_id)(id);
+		return (cmzn_mesh_group_id)(id);
 	}
 
 	int addElement(Element& element)
 	{
-		return Cmiss_mesh_group_add_element(
-			reinterpret_cast<Cmiss_mesh_group_id>(id), element.getId());
+		return cmzn_mesh_group_add_element(
+			reinterpret_cast<cmzn_mesh_group_id>(id), element.getId());
 	}
 
 	int removeAllElements()
 	{
-		return Cmiss_mesh_group_remove_all_elements(reinterpret_cast<Cmiss_mesh_group_id>(id));
+		return cmzn_mesh_group_remove_all_elements(reinterpret_cast<cmzn_mesh_group_id>(id));
 	}
 
 	int removeElement(Element& element)
 	{
-		return Cmiss_mesh_group_remove_element(reinterpret_cast<Cmiss_mesh_group_id>(id),
+		return cmzn_mesh_group_remove_element(reinterpret_cast<cmzn_mesh_group_id>(id),
 			element.getId());
 	}
 
 	int removeElementsConditional(Field& conditionalField)
 	{
-		return Cmiss_mesh_group_remove_elements_conditional(
-			reinterpret_cast<Cmiss_mesh_group_id>(id), conditionalField.getId());
+		return cmzn_mesh_group_remove_elements_conditional(
+			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
 	}
 
 };
 
 inline int Element::merge(ElementTemplate& elementTemplate)
 {
-	return Cmiss_element_merge(id, elementTemplate.getId());
+	return cmzn_element_merge(id, elementTemplate.getId());
 }
 
 }  // namespace zinc

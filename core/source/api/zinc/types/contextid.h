@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #ifndef CMZN_CONTEXTID_H__
-	struct Cmiss_context;
-  typedef struct Cmiss_context * Cmiss_context_id;
+	struct cmzn_context;
+  typedef struct cmzn_context * cmzn_context_id;
   #define CMZN_CONTEXTID_H__
 #endif

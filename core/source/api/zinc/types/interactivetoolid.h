@@ -42,6 +42,6 @@
 #define CMZN_INTERACTIVETOOLID_H__
 
 	struct Interactive_tool;
-	typedef struct Interactive_tool * Cmiss_interactive_tool_id;
+	typedef struct Interactive_tool * cmzn_interactive_tool_id;
 
 #endif

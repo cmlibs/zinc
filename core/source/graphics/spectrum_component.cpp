@@ -6,7 +6,7 @@ Largely pillaged from graphics/element_group_component.c
 LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
-Cmiss_spectrum_component structure and routines for describing and manipulating the
+cmzn_spectrum_component structure and routines for describing and manipulating the
 appearance of spectrums.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -77,24 +77,24 @@ Module types
 ------------
 */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_spectrum_component);
+FULL_DECLARE_INDEXED_LIST_TYPE(cmzn_spectrum_component);
 
 /*
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cmiss_spectrum_component,position,int,compare_int)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(cmzn_spectrum_component,position,int,compare_int)
 
-void Cmiss_spectrum_component_changed(Cmiss_spectrum_component_id component)
+void cmzn_spectrum_component_changed(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
 		component->changed=1;
-		Cmiss_spectrum_changed(component->spectrum);
+		cmzn_spectrum_changed(component->spectrum);
 	}
 }
 
-int Cmiss_spectrum_component_set_active(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_active(cmzn_spectrum_component_id component,
 	bool active)
 {
 	if (component)
@@ -102,7 +102,7 @@ int Cmiss_spectrum_component_set_active(Cmiss_spectrum_component_id component,
 		if (component->active != active)
 		{
 			component->active = active;
-			Cmiss_spectrum_changed(component->spectrum);
+			cmzn_spectrum_changed(component->spectrum);
 		}
 		return CMISS_OK;
 	}
@@ -110,7 +110,7 @@ int Cmiss_spectrum_component_set_active(Cmiss_spectrum_component_id component,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_is_active(Cmiss_spectrum_component_id component)
+bool cmzn_spectrum_component_is_active(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -121,10 +121,10 @@ bool Cmiss_spectrum_component_is_active(Cmiss_spectrum_component_id component)
 }
 
 
-class Cmiss_spectrum_component_colour_mapping_conversion
+class cmzn_spectrum_component_colour_mapping_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_spectrum_component_colour_mapping colour)
+    static const char *to_string(enum cmzn_spectrum_component_colour_mapping colour)
     {
         const char *enum_string = 0;
         switch (colour)
@@ -169,17 +169,17 @@ public:
     }
 };
 
-enum Cmiss_spectrum_component_colour_mapping Cmiss_spectrum_component_colour_mapping_enum_from_string(
+enum cmzn_spectrum_component_colour_mapping cmzn_spectrum_component_colour_mapping_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_spectrum_component_colour_mapping,
-		Cmiss_spectrum_component_colour_mapping_conversion>(string);
+	return string_to_enum<enum cmzn_spectrum_component_colour_mapping,
+		cmzn_spectrum_component_colour_mapping_conversion>(string);
 }
 
-char *Cmiss_spectrum_component_colour_mapping_enum_to_string(
-	enum Cmiss_spectrum_component_colour_mapping component_colour)
+char *cmzn_spectrum_component_colour_mapping_enum_to_string(
+	enum cmzn_spectrum_component_colour_mapping component_colour)
 {
-	const char *colour_string = Cmiss_spectrum_component_colour_mapping_conversion::to_string(component_colour);
+	const char *colour_string = cmzn_spectrum_component_colour_mapping_conversion::to_string(component_colour);
 	return (colour_string ? duplicate_string(colour_string) : 0);
 }
 
@@ -187,11 +187,11 @@ char *Cmiss_spectrum_component_colour_mapping_enum_to_string(
 Global functions
 ----------------
 */
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_spectrum_component_colour_mapping)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_spectrum_component_colour_mapping)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Cmiss_spectrum_component_colour_mapping));
+	ENTER(ENUMERATOR_STRING(cmzn_spectrum_component_colour_mapping));
 	switch (enumerator_value)
 	{
 		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
@@ -246,22 +246,22 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_spectrum_component_colour_mapping)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Cmiss_spectrum_component_colour_mapping) */
+} /* ENUMERATOR_STRING(cmzn_spectrum_component_colour_mapping) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_spectrum_component_colour_mapping)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_spectrum_component_colour_mapping)
 
-struct Cmiss_spectrum_component *CREATE(Cmiss_spectrum_component)(void)
+struct cmzn_spectrum_component *CREATE(cmzn_spectrum_component)(void)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
-Allocates memory and assigns fields for a struct Cmiss_spectrum_component.
+Allocates memory and assigns fields for a struct cmzn_spectrum_component.
 ==============================================================================*/
 {
-	struct Cmiss_spectrum_component *component;
+	struct cmzn_spectrum_component *component;
 
-	ENTER(CREATE(Cmiss_spectrum_component));
-	if (ALLOCATE(component,struct Cmiss_spectrum_component,1))
+	ENTER(CREATE(cmzn_spectrum_component));
+	if (ALLOCATE(component,struct cmzn_spectrum_component,1))
 	{
 		component->spectrum = 0;
 		component->component_number = 0;
@@ -293,15 +293,15 @@ Allocates memory and assigns fields for a struct Cmiss_spectrum_component.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Cmiss_spectrum_component).  "
+		display_message(ERROR_MESSAGE,"CREATE(cmzn_spectrum_component).  "
 			"Insufficient memory");
 	}
 	LEAVE;
 
 	return (component);
-} /* CREATE(Cmiss_spectrum_component) */
+} /* CREATE(cmzn_spectrum_component) */
 
-int DESTROY(Cmiss_spectrum_component)(struct Cmiss_spectrum_component **component_ptr)
+int DESTROY(cmzn_spectrum_component)(struct cmzn_spectrum_component **component_ptr)
 /*******************************************************************************
 LAST MODIFIED : 10 March 1998
 
@@ -310,10 +310,10 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 <**component_ptr> and sets <*component_ptr> to NULL.
 ==============================================================================*/
 {
-	struct Cmiss_spectrum_component *component;
+	struct cmzn_spectrum_component *component;
 	int return_code;
 
-	ENTER(DESTROY(Cmiss_spectrum_component));
+	ENTER(DESTROY(cmzn_spectrum_component));
 	if (component_ptr)
 	{
 		component= *component_ptr;
@@ -348,7 +348,7 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 			if (0!=component->access_count)
 			{
 				display_message(ERROR_MESSAGE,
-					"DESTROY(Cmiss_spectrum_component).  Non-zero access_count");
+					"DESTROY(cmzn_spectrum_component).  Non-zero access_count");
 			}
 			DEALLOCATE(*component_ptr);
 		}
@@ -356,33 +356,33 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_spectrum_component).  "
+		display_message(ERROR_MESSAGE,"DESTROY(cmzn_spectrum_component).  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Cmiss_spectrum_component) */
+} /* DESTROY(cmzn_spectrum_component) */
 
-DECLARE_OBJECT_FUNCTIONS(Cmiss_spectrum_component)
-DECLARE_INDEXED_LIST_FUNCTIONS(Cmiss_spectrum_component)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_spectrum_component, \
+DECLARE_OBJECT_FUNCTIONS(cmzn_spectrum_component)
+DECLARE_INDEXED_LIST_FUNCTIONS(cmzn_spectrum_component)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(cmzn_spectrum_component, \
 	position,int,compare_int)
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(Cmiss_spectrum_component)
+PROTOTYPE_COPY_OBJECT_FUNCTION(cmzn_spectrum_component)
 /*******************************************************************************
 LAST MODIFIED : 10 March 1998
 
 DESCRIPTION :
-syntax: COPY(Cmiss_spectrum_component)(destination,source)
+syntax: COPY(cmzn_spectrum_component)(destination,source)
 Copies the Spectrum contents from source to destination.
 Note: destination->access_count is not changed by COPY.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(COPY(Cmiss_spectrum_component));
+	ENTER(COPY(cmzn_spectrum_component));
 	if (source&&destination)
 	{
 		destination->changed = 1;
@@ -414,68 +414,68 @@ Note: destination->access_count is not changed by COPY.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"COPY(Cmiss_spectrum_component).  "
+		display_message(ERROR_MESSAGE,"COPY(cmzn_spectrum_component).  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* COPY(Cmiss_spectrum_component) */
+} /* COPY(cmzn_spectrum_component) */
 
-int Cmiss_spectrum_component_copy_and_put_in_list(
-	struct Cmiss_spectrum_component *component,void *list_of_components_void)
+int cmzn_spectrum_component_copy_and_put_in_list(
+	struct cmzn_spectrum_component *component,void *list_of_components_void)
 /*******************************************************************************
 LAST MODIFIED : 27 July 1998
 
 DESCRIPTION :
-Cmiss_spectrum_component iterator function for copying a list_of_components.
+cmzn_spectrum_component iterator function for copying a list_of_components.
 Makes a copy of the component and puts it in the list_of_components.
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_spectrum_component *copy_component;
-	struct LIST(Cmiss_spectrum_component) *list_of_components;
+	struct cmzn_spectrum_component *copy_component;
+	struct LIST(cmzn_spectrum_component) *list_of_components;
 
-	ENTER(Cmiss_spectrum_component_copy_and_put_in_list);
+	ENTER(cmzn_spectrum_component_copy_and_put_in_list);
 	if (component&&(NULL != (list_of_components=
-		(struct LIST(Cmiss_spectrum_component) *)list_of_components_void)))
+		(struct LIST(cmzn_spectrum_component) *)list_of_components_void)))
 	{
 		/* create new component to take the copy */
-		copy_component=CREATE(Cmiss_spectrum_component)();
+		copy_component=CREATE(cmzn_spectrum_component)();
 		if (copy_component)
 		{
 			/* copy and insert in list */
-			if (!(return_code=COPY(Cmiss_spectrum_component)(copy_component,component)&&
-				ADD_OBJECT_TO_LIST(Cmiss_spectrum_component)(copy_component,
+			if (!(return_code=COPY(cmzn_spectrum_component)(copy_component,component)&&
+				ADD_OBJECT_TO_LIST(cmzn_spectrum_component)(copy_component,
 					list_of_components)))
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_spectrum_component_copy_and_put_in_list.  "
+					"cmzn_spectrum_component_copy_and_put_in_list.  "
 					"Could not put copy in list");
 			}
-			DEACCESS(Cmiss_spectrum_component)(&copy_component);
+			DEACCESS(cmzn_spectrum_component)(&copy_component);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_spectrum_component_copy_and_put_in_list.  Could not create copy");
+				"cmzn_spectrum_component_copy_and_put_in_list.  Could not create copy");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_spectrum_component_copy_and_put_in_list.  Invalid argument(s)");
+			"cmzn_spectrum_component_copy_and_put_in_list.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_copy_and_put_in_list */
+} /* cmzn_spectrum_component_copy_and_put_in_list */
 
-enum Cmiss_spectrum_component_scale_type Cmiss_spectrum_component_get_scale_type(
-	Cmiss_spectrum_component_id component)
+enum cmzn_spectrum_component_scale_type cmzn_spectrum_component_get_scale_type(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -485,24 +485,24 @@ enum Cmiss_spectrum_component_scale_type Cmiss_spectrum_component_get_scale_type
 	return CMISS_SPECTRUM_COMPONENT_SCALE_INVALID;
 }
 
-int Cmiss_spectrum_component_set_scale_type(
-	Cmiss_spectrum_component_id component,
-	enum Cmiss_spectrum_component_scale_type scale_type)
+int cmzn_spectrum_component_set_scale_type(
+	cmzn_spectrum_component_id component,
+	enum cmzn_spectrum_component_scale_type scale_type)
 {
 	if (component)
 	{
 		if (scale_type != component->component_scale)
 		{
 			component->component_scale = scale_type;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_get_field_component(
-	Cmiss_spectrum_component_id component)
+int cmzn_spectrum_component_get_field_component(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -512,22 +512,22 @@ int Cmiss_spectrum_component_get_field_component(
 	return 0;
 }
 
-int Cmiss_spectrum_component_set_field_component(
-	Cmiss_spectrum_component_id component, int component_number)
+int cmzn_spectrum_component_set_field_component(
+	cmzn_spectrum_component_id component, int component_number)
 {
 	if (component)
 	{
 		if (component->component_number != (component_number - 1))
 		{
 			component->component_number = component_number - 1;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_is_colour_reverse(Cmiss_spectrum_component_id component)
+bool cmzn_spectrum_component_is_colour_reverse(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -536,7 +536,7 @@ bool Cmiss_spectrum_component_is_colour_reverse(Cmiss_spectrum_component_id comp
 	return false;
 }
 
-int Cmiss_spectrum_component_set_colour_reverse(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_colour_reverse(cmzn_spectrum_component_id component,
 	bool reverse)
 {
 	if (component)
@@ -544,7 +544,7 @@ int Cmiss_spectrum_component_set_colour_reverse(Cmiss_spectrum_component_id comp
 		if (component->reverse != reverse)
 		{
 			component->reverse = reverse;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -552,18 +552,18 @@ int Cmiss_spectrum_component_set_colour_reverse(Cmiss_spectrum_component_id comp
 	return CMISS_ERROR_ARGUMENT;
 }
 
-enum Cmiss_spectrum_component_colour_mapping Cmiss_spectrum_component_get_colour_mapping(
-	struct Cmiss_spectrum_component *component)
+enum cmzn_spectrum_component_colour_mapping cmzn_spectrum_component_get_colour_mapping(
+	struct cmzn_spectrum_component *component)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
-Returns the colour mapping of the Cmiss_spectrum_component <spectrum>.
+Returns the colour mapping of the cmzn_spectrum_component <spectrum>.
 ==============================================================================*/
 {
-	enum Cmiss_spectrum_component_colour_mapping type;
+	enum cmzn_spectrum_component_colour_mapping type;
 
-	ENTER(Cmiss_spectrum_component_get_colour_mapping);
+	ENTER(cmzn_spectrum_component_get_colour_mapping);
 
 	if (component)
 	{
@@ -571,46 +571,46 @@ Returns the colour mapping of the Cmiss_spectrum_component <spectrum>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_get_colour_mapping.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_get_colour_mapping.  "
 			"Invalid argument(s)");
 		type = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW;
 	}
 	LEAVE;
 
 	return (type);
-} /* Cmiss_spectrum_component_get_colour_mapping */
+} /* cmzn_spectrum_component_get_colour_mapping */
 
-int Cmiss_spectrum_component_set_colour_mapping(struct Cmiss_spectrum_component *component,
-	enum Cmiss_spectrum_component_colour_mapping type)
+int cmzn_spectrum_component_set_colour_mapping(struct cmzn_spectrum_component *component,
+	enum cmzn_spectrum_component_colour_mapping type)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
 DESCRIPTION :
-Sets the colour mapping of the Cmiss_spectrum_component <component>.
+Sets the colour mapping of the cmzn_spectrum_component <component>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_set_colour_mapping);
+	ENTER(cmzn_spectrum_component_set_colour_mapping);
 
 	if (component)
 	{
 		component->colour_mapping = type;
-		Cmiss_spectrum_component_changed(component);
+		cmzn_spectrum_component_changed(component);
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_set_colour_mapping.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_set_colour_mapping.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_set_colour_mapping */
+} /* cmzn_spectrum_component_set_colour_mapping */
 
-double Cmiss_spectrum_component_get_exaggeration(Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_exaggeration(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -620,7 +620,7 @@ double Cmiss_spectrum_component_get_exaggeration(Cmiss_spectrum_component_id com
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_exaggeration(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_set_exaggeration(struct cmzn_spectrum_component *component,
 	double value)
 {
 	if (component)
@@ -628,14 +628,14 @@ int Cmiss_spectrum_component_set_exaggeration(struct Cmiss_spectrum_component *c
 		if (component->exaggeration != value)
 		{
 			component->exaggeration = value;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_get_number_of_bands(Cmiss_spectrum_component_id component)
+int cmzn_spectrum_component_get_number_of_bands(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -644,7 +644,7 @@ int Cmiss_spectrum_component_get_number_of_bands(Cmiss_spectrum_component_id com
 	return 0;
 }
 
-int Cmiss_spectrum_component_set_number_of_bands(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_number_of_bands(cmzn_spectrum_component_id component,
 	int number_of_bands)
 {
 	if (component)
@@ -652,7 +652,7 @@ int Cmiss_spectrum_component_set_number_of_bands(Cmiss_spectrum_component_id com
 		if (component->number_of_bands != number_of_bands)
 		{
 			component->number_of_bands = number_of_bands;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -660,7 +660,7 @@ int Cmiss_spectrum_component_set_number_of_bands(Cmiss_spectrum_component_id com
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_get_black_band_proportion(struct Cmiss_spectrum_component *component)
+int cmzn_spectrum_component_get_black_band_proportion(struct cmzn_spectrum_component *component)
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
 
@@ -669,7 +669,7 @@ DESCRIPTION :
 {
 	int proportion;
 
-	ENTER(Cmiss_spectrum_component_get_black_band_proportion);
+	ENTER(cmzn_spectrum_component_get_black_band_proportion);
 
 	if (component)
 	{
@@ -677,16 +677,16 @@ DESCRIPTION :
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_get_black_band_proportion.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_get_black_band_proportion.  "
 			"Invalid argument(s)");
 		proportion = 0;
 	}
 	LEAVE;
 
 	return (proportion);
-} /* Cmiss_spectrum_component_get_black_band_proportion */
+} /* cmzn_spectrum_component_get_black_band_proportion */
 
-int Cmiss_spectrum_component_set_black_band_proportion(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_set_black_band_proportion(struct cmzn_spectrum_component *component,
 	int proportion)
 /*******************************************************************************
 LAST MODIFIED : 31 July 1998
@@ -696,26 +696,26 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_set_black_band_proportion);
+	ENTER(cmzn_spectrum_component_set_black_band_proportion);
 
 	if (component)
 	{
 		component->black_band_proportion = proportion;
-		Cmiss_spectrum_component_changed(component);
+		cmzn_spectrum_component_changed(component);
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_set_black_band_proportion.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_set_black_band_proportion.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_set_black_band_proportion */
+} /* cmzn_spectrum_component_set_black_band_proportion */
 
-double Cmiss_spectrum_component_get_step_value(Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_step_value(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -724,7 +724,7 @@ double Cmiss_spectrum_component_get_step_value(Cmiss_spectrum_component_id compo
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_step_value(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_set_step_value(struct cmzn_spectrum_component *component,
 	double param1)
 {
 	if (component)
@@ -737,7 +737,7 @@ int Cmiss_spectrum_component_set_step_value(struct Cmiss_spectrum_component *com
 			{
 				component->step_value = 0.5 * (component->maximum + component->minimum );
 			}
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -745,8 +745,8 @@ int Cmiss_spectrum_component_set_step_value(struct Cmiss_spectrum_component *com
 	return CMISS_ERROR_ARGUMENT;
 }
 
-double Cmiss_spectrum_component_get_range_minimum(
-	Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_range_minimum(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -756,7 +756,7 @@ double Cmiss_spectrum_component_get_range_minimum(
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_range_minimum(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_range_minimum(cmzn_spectrum_component_id component,
 	double value)
 {
 	if (component)
@@ -769,16 +769,16 @@ int Cmiss_spectrum_component_set_range_minimum(Cmiss_spectrum_component_id compo
 			{
 				component->step_value = 0.5 * (component->maximum + component->minimum );
 			}
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 
 	return CMISS_ERROR_ARGUMENT;
-} /* Cmiss_spectrum_component_set_range_minimum */
+} /* cmzn_spectrum_component_set_range_minimum */
 
-double Cmiss_spectrum_component_get_range_maximum(
-	Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_range_maximum(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -788,7 +788,7 @@ double Cmiss_spectrum_component_get_range_maximum(
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_range_maximum(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_range_maximum(cmzn_spectrum_component_id component,
 	double value)
 {
 	if (component)
@@ -801,7 +801,7 @@ int Cmiss_spectrum_component_set_range_maximum(Cmiss_spectrum_component_id compo
 			{
 				component->step_value = 0.5 * (component->maximum + component->minimum );
 			}
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -809,7 +809,7 @@ int Cmiss_spectrum_component_set_range_maximum(Cmiss_spectrum_component_id compo
 	return CMISS_ERROR_ARGUMENT;
 }
 
-bool Cmiss_spectrum_component_is_extend_above(Cmiss_spectrum_component_id component)
+bool cmzn_spectrum_component_is_extend_above(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -819,13 +819,13 @@ bool Cmiss_spectrum_component_is_extend_above(Cmiss_spectrum_component_id compon
 	return false;
 }
 
-int Cmiss_spectrum_component_set_extend_above(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_extend_above(cmzn_spectrum_component_id component,
 	bool extend_above)
 /*******************************************************************************
 LAST MODIFIED : 5 August 1998
 
 DESCRIPTION :
-Sets the extend_above flag of the Cmiss_spectrum_component <component>.
+Sets the extend_above flag of the cmzn_spectrum_component <component>.
 ==============================================================================*/
 {
 	if (component)
@@ -833,7 +833,7 @@ Sets the extend_above flag of the Cmiss_spectrum_component <component>.
 		if (component->extend_above != extend_above)
 		{
 			component->extend_above = extend_above;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -841,7 +841,7 @@ Sets the extend_above flag of the Cmiss_spectrum_component <component>.
 }
 
 
-bool Cmiss_spectrum_component_is_extend_below(Cmiss_spectrum_component_id component)
+bool cmzn_spectrum_component_is_extend_below(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -851,7 +851,7 @@ bool Cmiss_spectrum_component_is_extend_below(Cmiss_spectrum_component_id compon
 	return false;
 }
 
-int Cmiss_spectrum_component_set_extend_below(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_extend_below(cmzn_spectrum_component_id component,
 	bool extend_below)
 {
 	if (component)
@@ -859,24 +859,24 @@ int Cmiss_spectrum_component_set_extend_below(Cmiss_spectrum_component_id compon
 		if (component->extend_below != extend_below)
 		{
 			component->extend_below = extend_below;
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_get_fix_minimum_flag(struct Cmiss_spectrum_component *component)
+int cmzn_spectrum_component_get_fix_minimum_flag(struct cmzn_spectrum_component *component)
 /*******************************************************************************
 LAST MODIFIED : 11 January 2001
 
 DESCRIPTION :
-Returns the fix_minimum flag of the Cmiss_spectrum_component <spectrum>.
+Returns the fix_minimum flag of the cmzn_spectrum_component <spectrum>.
 ==============================================================================*/
 {
 	int fix_minimum;
 
-	ENTER(Cmiss_spectrum_component_get_colour_mapping);
+	ENTER(cmzn_spectrum_component_get_colour_mapping);
 
 	if (component)
 	{
@@ -884,27 +884,27 @@ Returns the fix_minimum flag of the Cmiss_spectrum_component <spectrum>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_get_fix_minimum_flag.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_get_fix_minimum_flag.  "
 			"Invalid argument(s)");
 		fix_minimum = 0;
 	}
 	LEAVE;
 
 	return (fix_minimum);
-} /* Cmiss_spectrum_component_get_fix_minimum_flag */
+} /* cmzn_spectrum_component_get_fix_minimum_flag */
 
-int Cmiss_spectrum_component_set_fix_minimum_flag(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_set_fix_minimum_flag(struct cmzn_spectrum_component *component,
 	int fix_minimum)
 /*******************************************************************************
 LAST MODIFIED : 11 January 2001
 
 DESCRIPTION :
-Sets the fix_minimum flag of the Cmiss_spectrum_component <component>.
+Sets the fix_minimum flag of the cmzn_spectrum_component <component>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_set_fix_minimum_flag);
+	ENTER(cmzn_spectrum_component_set_fix_minimum_flag);
 
 	if (component)
 	{
@@ -914,26 +914,26 @@ Sets the fix_minimum flag of the Cmiss_spectrum_component <component>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_set_fix_minimum_flag.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_set_fix_minimum_flag.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_set_fix_minimum_flag */
+} /* cmzn_spectrum_component_set_fix_minimum_flag */
 
-int Cmiss_spectrum_component_get_fix_maximum_flag(struct Cmiss_spectrum_component *component)
+int cmzn_spectrum_component_get_fix_maximum_flag(struct cmzn_spectrum_component *component)
 /*******************************************************************************
 LAST MODIFIED : 11 January 2001
 
 DESCRIPTION :
-Returns the fix_maximum flag of the Cmiss_spectrum_component <spectrum>.
+Returns the fix_maximum flag of the cmzn_spectrum_component <spectrum>.
 ==============================================================================*/
 {
 	int fix_maximum;
 
-	ENTER(Cmiss_spectrum_component_get_colour_mapping);
+	ENTER(cmzn_spectrum_component_get_colour_mapping);
 
 	if (component)
 	{
@@ -941,27 +941,27 @@ Returns the fix_maximum flag of the Cmiss_spectrum_component <spectrum>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_get_fix_maximum_flag.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_get_fix_maximum_flag.  "
 			"Invalid argument(s)");
 		fix_maximum = 0;
 	}
 	LEAVE;
 
 	return (fix_maximum);
-} /* Cmiss_spectrum_component_get_fix_maximum_flag */
+} /* cmzn_spectrum_component_get_fix_maximum_flag */
 
-int Cmiss_spectrum_component_set_fix_maximum_flag(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_set_fix_maximum_flag(struct cmzn_spectrum_component *component,
 	int fix_maximum)
 /*******************************************************************************
 LAST MODIFIED : 11 January 2001
 
 DESCRIPTION :
-Sets the fix_maximum flag of the Cmiss_spectrum_component <component>.
+Sets the fix_maximum flag of the cmzn_spectrum_component <component>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_set_fix_maximum_flag);
+	ENTER(cmzn_spectrum_component_set_fix_maximum_flag);
 
 	if (component)
 	{
@@ -971,16 +971,16 @@ Sets the fix_maximum flag of the Cmiss_spectrum_component <component>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_set_fix_maximum_flag.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_set_fix_maximum_flag.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_set_fix_maximum_flag */
+} /* cmzn_spectrum_component_set_fix_maximum_flag */
 
-double Cmiss_spectrum_component_get_colour_minimum(Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_colour_minimum(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -990,8 +990,8 @@ double Cmiss_spectrum_component_get_colour_minimum(Cmiss_spectrum_component_id c
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_colour_minimum(
-	Cmiss_spectrum_component_id component, double value)
+int cmzn_spectrum_component_set_colour_minimum(
+	cmzn_spectrum_component_id component, double value)
 {
 	if (component && value <= 1.0 && value >= 0.0)
 	{
@@ -1002,7 +1002,7 @@ int Cmiss_spectrum_component_set_colour_minimum(
 			{
 				component->max_value = value;
 			}
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
@@ -1010,8 +1010,8 @@ int Cmiss_spectrum_component_set_colour_minimum(
 	return CMISS_ERROR_ARGUMENT;
 }
 
-double Cmiss_spectrum_component_get_colour_maximum(
-	Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_colour_maximum(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
@@ -1021,8 +1021,8 @@ double Cmiss_spectrum_component_get_colour_maximum(
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_colour_maximum(
-	Cmiss_spectrum_component_id component,	double value)
+int cmzn_spectrum_component_set_colour_maximum(
+	cmzn_spectrum_component_id component,	double value)
 {
 	if (component && value <= 1.0 && value >= 0.0)
 	{
@@ -1033,15 +1033,15 @@ int Cmiss_spectrum_component_set_colour_maximum(
 			{
 				component->min_value = value;
 			}
-			Cmiss_spectrum_component_changed(component);
+			cmzn_spectrum_component_changed(component);
 		}
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_spectrum_component_clear_changed(
-	struct Cmiss_spectrum_component *component,void *dummy_void)
+int cmzn_spectrum_component_clear_changed(
+	struct cmzn_spectrum_component *component,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 10 March 1998
 
@@ -1051,7 +1051,7 @@ Iterator function to set component->changed to 0 (unchanged).
 {
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_clear_changed);
+	ENTER(cmzn_spectrum_component_clear_changed);
 	USE_PARAMETER(dummy_void);
 	if (component)
 	{
@@ -1061,16 +1061,16 @@ Iterator function to set component->changed to 0 (unchanged).
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_spectrum_component_clear_changed.  Invalid argument(s)");
+			"cmzn_spectrum_component_clear_changed.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_clear_changed */
+} /* cmzn_spectrum_component_clear_changed */
 
-int Cmiss_spectrum_component_expand_maximum_component_index(
-	struct Cmiss_spectrum_component *component,void *component_index_void)
+int cmzn_spectrum_component_expand_maximum_component_index(
+	struct cmzn_spectrum_component *component,void *component_index_void)
 /*******************************************************************************
 LAST MODIFIED : 27 September 2006
 
@@ -1082,7 +1082,7 @@ component number used.  The first component_index is 0, so this means 1 componen
 {
 	int *component_index, return_code;
 
-	ENTER(Cmiss_spectrum_component_expand_maximum_component_index);
+	ENTER(cmzn_spectrum_component_expand_maximum_component_index);
 	if (component && (component_index = (int *)component_index_void))
 	{
 		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
@@ -1108,16 +1108,16 @@ component number used.  The first component_index is 0, so this means 1 componen
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_spectrum_component_expand_maximum_component_index.  Invalid argument(s)");
+			"cmzn_spectrum_component_expand_maximum_component_index.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_expand_maximum_component_index */
+} /* cmzn_spectrum_component_expand_maximum_component_index */
 
-int Cmiss_spectrum_component_get_colour_components(
-	struct Cmiss_spectrum_component *component, void *colour_components_void)
+int cmzn_spectrum_component_get_colour_components(
+	struct cmzn_spectrum_component *component, void *colour_components_void)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -1221,7 +1221,7 @@ in the value pointed to by <colour_components_void>.
 	return (return_code);
 }
 
-int Cmiss_spectrum_component_enable(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_enable(struct cmzn_spectrum_component *component,
 	void *render_data_void)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -1238,7 +1238,7 @@ DESCRIPTION :
 #endif /* defined (DEBUG_CODE) */
 	int return_code;
 
-	ENTER(Cmiss_spectrum_component_enable);
+	ENTER(cmzn_spectrum_component_enable);
 	if (component&&render_data_void)
 	{
 		return_code=1;
@@ -1368,13 +1368,13 @@ DESCRIPTION :
 						if (!component->number_of_bands)
 						{
 							display_message(ERROR_MESSAGE,
-								"Cmiss_spectrum_component_enable.  Invalid number_of_bands");
+								"cmzn_spectrum_component_enable.  Invalid number_of_bands");
 							return_code=0;
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Cmiss_spectrum_component_enable.  Invalid band_proportion");
+								"cmzn_spectrum_component_enable.  Invalid band_proportion");
 							return_code=0;
 						}
 					}
@@ -1425,7 +1425,7 @@ DESCRIPTION :
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_spectrum_component_enable.  Unknown colour mapping");
+						"cmzn_spectrum_component_enable.  Unknown colour mapping");
 					return_code=0;
 				} break;
 			}
@@ -1434,16 +1434,16 @@ DESCRIPTION :
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_enable.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_enable.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_enable */
+} /* cmzn_spectrum_component_enable */
 
-int Cmiss_spectrum_component_activate(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_activate(struct cmzn_spectrum_component *component,
 	void *render_data_void)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -1459,7 +1459,7 @@ passed in render data.
 	ZnReal data_component,step_xi,total_texels;
 	struct Spectrum_render_data *render_data;
 
-	ENTER(Cmiss_spectrum_component_activate);
+	ENTER(cmzn_spectrum_component_activate);
 	if (component&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		data_component = 0.0;
@@ -1469,11 +1469,11 @@ passed in render data.
 		{
 			if (component->active)
 			{
-				Cmiss_field_module_id field_module;
-				Cmiss_field_cache_id field_cache;
+				cmzn_field_module_id field_module;
+				cmzn_field_cache_id field_cache;
 				// GRC probably inefficient to create and destroy cache here; keep it through render pass?
-				field_module = Cmiss_field_get_field_module(component->output_field);
-				field_cache = Cmiss_field_module_create_cache(field_module);
+				field_module = cmzn_field_get_field_module(component->output_field);
+				field_cache = cmzn_field_module_create_cache(field_module);
 				number_of_components = Computed_field_get_number_of_components
 					(component->output_field);
 				ALLOCATE(values, FE_value, number_of_components);
@@ -1483,7 +1483,7 @@ passed in render data.
 					GLfloat* tmpPointer;
 					tmpPointer = render_data->data + component->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
-					Cmiss_field_cache_set_field_real(field_cache, component->input_field, /*number_of_values*/1, dataValue);
+					cmzn_field_cache_set_field_real(field_cache, component->input_field, /*number_of_values*/1, dataValue);
 				}
 				else
 				{
@@ -1491,12 +1491,12 @@ passed in render data.
 					ALLOCATE(feData, FE_value,render_data->number_of_data_components);
 					CAST_TO_FE_VALUE_C(feData,render_data->data,
 						render_data->number_of_data_components);
-					Cmiss_field_cache_set_field_real(field_cache, component->input_field, render_data->number_of_data_components, feData);
+					cmzn_field_cache_set_field_real(field_cache, component->input_field, render_data->number_of_data_components, feData);
 					DEALLOCATE(feData);
 				}
-				Cmiss_field_evaluate_real(component->output_field, field_cache, number_of_components, values);
-				Cmiss_field_cache_destroy(&field_cache);
-				Cmiss_field_module_destroy(&field_module);
+				cmzn_field_evaluate_real(component->output_field, field_cache, number_of_components, values);
+				cmzn_field_cache_destroy(&field_cache);
+				cmzn_field_module_destroy(&field_module);
 				for (i = 0 ; i < number_of_components ; i++)
 				{
 					/* ensure 0 - 1 */
@@ -1670,7 +1670,7 @@ passed in render data.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Cmiss_spectrum_component_activate.  Unknown type");
+									"cmzn_spectrum_component_activate.  Unknown type");
 								return_code=0;
 							} break;
 						}
@@ -1861,16 +1861,16 @@ passed in render data.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_activate.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_activate.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_activate */
+} /* cmzn_spectrum_component_activate */
 
-int Cmiss_spectrum_component_disable(struct Cmiss_spectrum_component *component,
+int cmzn_spectrum_component_disable(struct cmzn_spectrum_component *component,
 	void *render_data_void)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -1881,7 +1881,7 @@ DESCRIPTION :
 	int return_code;
 	struct Spectrum_render_data *render_data;
 
-	ENTER(Cmiss_spectrum_component_disable);
+	ENTER(cmzn_spectrum_component_disable);
 	if (component&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		USE_PARAMETER(render_data);
@@ -1912,7 +1912,7 @@ DESCRIPTION :
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_spectrum_component_disable.  Unknown type");
+						"cmzn_spectrum_component_disable.  Unknown type");
 					return_code = 0;
 				} break;
 			}
@@ -1920,51 +1920,51 @@ DESCRIPTION :
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_spectrum_component_disable.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_disable.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_spectrum_component_disable */
+} /* cmzn_spectrum_component_disable */
 
-Cmiss_spectrum_component_id Cmiss_spectrum_component_access(
-	Cmiss_spectrum_component_id component)
+cmzn_spectrum_component_id cmzn_spectrum_component_access(
+	cmzn_spectrum_component_id component)
 {
 	if (component)
-		return (ACCESS(Cmiss_spectrum_component)(component));
+		return (ACCESS(cmzn_spectrum_component)(component));
 	return 0;
 }
 
-int Cmiss_spectrum_component_destroy(Cmiss_spectrum_component_id *component_address)
+int cmzn_spectrum_component_destroy(cmzn_spectrum_component_id *component_address)
 {
 	if (component_address)
 	{
-		DEACCESS(Cmiss_spectrum_component)(component_address);
+		DEACCESS(cmzn_spectrum_component)(component_address);
 		return CMISS_OK;
 	}
 	return CMISS_ERROR_ARGUMENT;
 }
 
-double Cmiss_spectrum_component_get_banded_ratio(Cmiss_spectrum_component_id component)
+double cmzn_spectrum_component_get_banded_ratio(cmzn_spectrum_component_id component)
 {
 	if (component)
 	{
-		int proportion = Cmiss_spectrum_component_get_black_band_proportion(component);
+		int proportion = cmzn_spectrum_component_get_black_band_proportion(component);
 		return ((double) proportion / (double)1021.0);
 	}
 	return 0.0;
 }
 
-int Cmiss_spectrum_component_set_banded_ratio(Cmiss_spectrum_component_id component,
+int cmzn_spectrum_component_set_banded_ratio(cmzn_spectrum_component_id component,
 	double value)
 {
 	if (component)
 	{
 		if (((value > 0.0) || (value <= 1.0)))
 		{
-			return Cmiss_spectrum_component_set_black_band_proportion(component,
+			return cmzn_spectrum_component_set_black_band_proportion(component,
 				(int)(value * 1021.0));
 		}
 	}

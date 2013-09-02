@@ -50,23 +50,23 @@
  * @param region  The owning region.
  * @return  Field module for the supplied region.
  */
-struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region);
+struct cmzn_field_module *cmzn_field_module_create(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Candidate for external API.
  * @return  1 if field is from this field_module, otherwise 0.
  */
-int Cmiss_field_module_contains_field(Cmiss_field_module_id field_module,
-	Cmiss_field_id field);
+int cmzn_field_module_contains_field(cmzn_field_module_id field_module,
+	cmzn_field_id field);
 
 /***************************************************************************//**
- * Internal, non-accessing version of Cmiss_field_module_get_region.
+ * Internal, non-accessing version of cmzn_field_module_get_region.
  *
  * @param field_module  The field module to query.
  * @return  Non-accessed handle to owning region for field_module.
  */
-struct Cmiss_region *Cmiss_field_module_get_region_internal(
-	struct Cmiss_field_module *field_module);
+struct cmzn_region *cmzn_field_module_get_region_internal(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Get non-accessed pointer to master region for this field_module.
@@ -74,8 +74,8 @@ struct Cmiss_region *Cmiss_field_module_get_region_internal(
  * @param field_module  The field module to query.
  * @return  Non-accessed handle to master region for field_module.
  */
-struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
-	struct Cmiss_field_module *field_module);
+struct cmzn_region *cmzn_field_module_get_master_region_internal(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the name (or name stem if non-unique) of the next field to be created
@@ -85,7 +85,7 @@ struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
  * @param field_name  Field name or name stem.
  * @return  Non-zero on success, 0 on failure.
  */
-int Cmiss_field_module_set_field_name(struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_field_name(struct cmzn_field_module *field_module,
 	const char *field_name);
 
 /***************************************************************************//**
@@ -95,8 +95,8 @@ int Cmiss_field_module_set_field_name(struct Cmiss_field_module *field_module,
  * @param field_module  The field module to create fields in.
  * @return  Allocated copy of the name, or NULL if none.
  */
-char *Cmiss_field_module_get_field_name(
-	struct Cmiss_field_module *field_module);
+char *cmzn_field_module_get_field_name(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the coordinate system to be used for subsequent fields created with
@@ -106,8 +106,8 @@ char *Cmiss_field_module_get_field_name(
  * @param coordinate_system  The coordinate system to set.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_module_set_coordinate_system(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_coordinate_system(
+	struct cmzn_field_module *field_module,
 	struct Coordinate_system coordinate_system);
 
 /***************************************************************************//**
@@ -116,8 +116,8 @@ int Cmiss_field_module_set_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  Copy of default coordinate system.
  */
-struct Coordinate_system Cmiss_field_module_get_coordinate_system(
-	struct Cmiss_field_module *field_module);
+struct Coordinate_system cmzn_field_module_get_coordinate_system(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Returns true if the default coordinate system has been explicitly set. 
@@ -125,8 +125,8 @@ struct Coordinate_system Cmiss_field_module_get_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  1 if coordinate system set, 0 if never set.
  */
-int Cmiss_field_module_coordinate_system_is_set(
-	struct Cmiss_field_module *field_module);
+int cmzn_field_module_coordinate_system_is_set(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the replace_field that will be redefined by the next field
@@ -138,8 +138,8 @@ int Cmiss_field_module_coordinate_system_is_set(
  * be NULL to clear.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_module_set_replace_field(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_replace_field(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *replace_field);
 
 /***************************************************************************//**
@@ -150,7 +150,7 @@ int Cmiss_field_module_set_replace_field(
  * @return  Existing field to be replaced which caller must deaccess, or NULL
  * if none.
  */
-struct Computed_field *Cmiss_field_module_get_replace_field(
-	struct Cmiss_field_module *field_module);
+struct Computed_field *cmzn_field_module_get_replace_field(
+	struct cmzn_field_module *field_module);
 
 #endif /* !defined (FIELD_MODULE_H) */

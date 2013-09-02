@@ -63,8 +63,8 @@ extern "C" {
  * be from a different region.
  * @return  Newly created alias field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
-	Cmiss_field_id original_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_alias(cmzn_field_module_id field_module,
+	cmzn_field_id original_field);
 
 #ifdef __cplusplus
 }

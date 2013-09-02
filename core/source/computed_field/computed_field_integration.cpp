@@ -69,7 +69,7 @@ namespace {
 class Computed_field_integration_package : public Computed_field_type_package
 {
 public:
-	Cmiss_region *root_region;
+	cmzn_region *root_region;
 };
 
 struct Computed_field_element_integration_mapping
@@ -323,8 +323,8 @@ class Computed_field_integration : public Computed_field_core
 {
 public:
 	FE_value cached_time;
-	Cmiss_mesh_id mesh;
-	Cmiss_element_id seed_element;
+	cmzn_mesh_id mesh;
+	cmzn_element_id seed_element;
 	/* Whether to integrate wrt to each coordinate separately or wrt the
 		magnitude of the coordinate field */
 	int magnitude_coordinates;
@@ -334,11 +334,11 @@ public:
 		that it can first try this element again */
 	Computed_field_element_integration_mapping *find_element_xi_mapping;
 
-	Computed_field_integration(Cmiss_mesh_id mesh, Cmiss_element_id seed_element,
+	Computed_field_integration(cmzn_mesh_id mesh, cmzn_element_id seed_element,
 		int magnitude_coordinates) :
 		Computed_field_core(),
-		mesh(Cmiss_mesh_access(mesh)),
-		seed_element(Cmiss_element_access(seed_element)),
+		mesh(cmzn_mesh_access(mesh)),
+		seed_element(cmzn_element_access(seed_element)),
 		magnitude_coordinates(magnitude_coordinates)
 	{
 		cached_time = 0;
@@ -368,11 +368,11 @@ private:
 
 	int integrate_path(FE_element *element,
 		FE_value *initial_values, FE_value *initial_xi, FE_value *final_xi,
-		int number_of_gauss_points, Cmiss_field_cache& workingCache, Computed_field *integrand,
+		int number_of_gauss_points, cmzn_field_cache& workingCache, Computed_field *integrand,
 		int magnitude_coordinates, Computed_field *coordinate_field,
 		FE_value *values);
 
-	int add_neighbours(Cmiss_field_cache& workingCache,
+	int add_neighbours(cmzn_field_cache& workingCache,
 		Computed_field_element_integration_mapping *mapping_item,
 		LIST(Computed_field_element_integration_mapping) *texture_mapping,
 		Computed_field_element_integration_mapping_fifo **last_to_be_checked,
@@ -387,15 +387,15 @@ private:
 
 	int clear_cache();
 
-	bool is_defined_at_location(Cmiss_field_cache& cache);
+	bool is_defined_at_location(cmzn_field_cache& cache);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 };
 
 int Computed_field_integration::integrate_path(FE_element *element,
 	FE_value *initial_values, FE_value *initial_xi, FE_value *final_xi,
-	int number_of_gauss_points, Cmiss_field_cache& workingCache, Computed_field *integrand,
+	int number_of_gauss_points, cmzn_field_cache& workingCache, Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field,
 	FE_value *values)
 /*******************************************************************************
@@ -514,7 +514,7 @@ time is supplied in the workingCache
 	return(return_code);
 } /* Computed_field_integration_integrate_path */
 
-int Computed_field_integration::add_neighbours(Cmiss_field_cache& workingCache,
+int Computed_field_integration::add_neighbours(cmzn_field_cache& workingCache,
 	Computed_field_element_integration_mapping *mapping_item,
 	LIST(Computed_field_element_integration_mapping) *texture_mapping,
 	Computed_field_element_integration_mapping_fifo **last_to_be_checked,
@@ -801,8 +801,8 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		&& (coordinate_field = field->source_fields[1]))
 	{
 		// use a temporary working cache
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
-		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
 		field_cache->setTime(time);
 		return_code = 1;
 		first_to_be_checked=last_to_be_checked=
@@ -898,8 +898,8 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 				"Unable to create mapping list.");
 			return_code=0;
 		}
-		Cmiss_field_cache_destroy(&field_cache);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_field_cache_destroy(&field_cache);
+		cmzn_field_module_destroy(&field_module);
 	}
 	else
 	{
@@ -960,7 +960,7 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_integration::~Computed_field_integration);
 	if (field)
 	{
-		Cmiss_mesh_destroy(&mesh);
+		cmzn_mesh_destroy(&mesh);
 		if (seed_element)
 		{
 			DEACCESS(FE_element)(&(seed_element));
@@ -1067,7 +1067,7 @@ Compare the type specific data
  * @return  true if the all the source fields are defined in the supplied
  * <element> and the mapping is defined for this element.
  */
-bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_integration::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return (0 != field->evaluate(cache));
 #if defined (TODO_CODE)
@@ -1188,7 +1188,7 @@ bool Computed_field_integration::is_defined_at_location(Cmiss_field_cache& cache
 #endif // defined (TODO_CODE)
 }
 
-int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_integration::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	FE_value time = cache.getTime();
@@ -1292,7 +1292,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 				(top_level_element, texture_mapping);
 			if (mapping != 0)
 			{
-				Cmiss_field_cache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
+				cmzn_field_cache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
 				workingCache.setTime(time);
 				/* Integrate to the specified top_level_xi location */
 				for (i = 0 ; i < top_level_element_dimension ; i++)
@@ -1308,7 +1308,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 				{
 					// Evaluate the fields at this location
 					// use the normal cache if already on a top level element, otherwise use extra cache
-					Cmiss_field_cache *useCache = &cache;
+					cmzn_field_cache *useCache = &cache;
 					if (top_level_element != element)
 					{
 						useCache = &workingCache;
@@ -1434,7 +1434,7 @@ int Computed_field_integration::evaluate(Cmiss_field_cache& cache, FieldValueCac
 #if defined (FUTURE_CODE)
 int Computed_field_integration::propagate_find_element_xi(
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, Cmiss_mesh_id search_mesh)
+	FE_value *xi, FE_value time, cmzn_mesh_id search_mesh)
 {
 	FE_value floor_values[3];
 	int i, return_code;
@@ -1446,7 +1446,7 @@ int Computed_field_integration::propagate_find_element_xi(
 	if (field && values && (number_of_values==field->number_of_components) && search_mesh)
 	{
 		const int element_dimension = search_mesh ?
-			Cmiss_mesh_get_dimension(search_mesh) : get_FE_element_dimension(*element_address);
+			cmzn_mesh_get_dimension(search_mesh) : get_FE_element_dimension(*element_address);
 		if (!texture_mapping)
 		{
 			calculate_mapping(/*time*/0);
@@ -1504,7 +1504,7 @@ int Computed_field_integration::propagate_find_element_xi(
 					{
 						xi[i] = values[i] - floor_values[i];
 					}
-					if (!Cmiss_mesh_contains_element(mesh, *element_address))
+					if (!cmzn_mesh_contains_element(mesh, *element_address))
 					{
 						*element_address = (FE_element *)NULL;
 						display_message(ERROR_MESSAGE,
@@ -1631,7 +1631,7 @@ Returns allocated command string for reproducing field. Includes type.
 		if (!xi_texture_coordinates)
 		{
 			append_string(&command_string, " integrand ", &error);
-			field_name = Cmiss_field_get_name(field->source_fields[0]);
+			field_name = cmzn_field_get_name(field->source_fields[0]);
 			if (NULL != field_name)
 			{
 				make_valid_token(&field_name);
@@ -1639,7 +1639,7 @@ Returns allocated command string for reproducing field. Includes type.
 				DEALLOCATE(field_name);
 			}
 			append_string(&command_string, " coordinate ", &error);
-			field_name = Cmiss_field_get_name(field->source_fields[1]);
+			field_name = cmzn_field_get_name(field->source_fields[1]);
 			if (NULL != field_name)
 			{
 				make_valid_token(&field_name);
@@ -1716,12 +1716,12 @@ Returns true if <field> has the appropriate static type string.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct Cmiss_field_module *field_module, Cmiss_mesh_id mesh,
-	Cmiss_element_id seed_element, Computed_field *integrand,
+	struct cmzn_field_module *field_module, cmzn_mesh_id mesh,
+	cmzn_element_id seed_element, Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field)
 {
 	Computed_field *field = NULL;
-	if (mesh && seed_element && Cmiss_mesh_contains_element(mesh, seed_element) &&
+	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
 		integrand && coordinate_field &&
 		(1 == Computed_field_get_number_of_components(integrand)))
 	{
@@ -1762,7 +1762,7 @@ struct Computed_field *Computed_field_create_integration(
 }
 
 int Computed_field_get_type_integration(Computed_field *field,
-	Cmiss_mesh_id *mesh_address, FE_element **seed_element,
+	cmzn_mesh_id *mesh_address, FE_element **seed_element,
 	Computed_field **integrand, int *magnitude_coordinates,
 	Computed_field **coordinate_field)
 {
@@ -1772,7 +1772,7 @@ int Computed_field_get_type_integration(Computed_field *field,
 	ENTER(Computed_field_get_type_integration);
 	if (field && (core = dynamic_cast<Computed_field_integration*>(field->core)))
 	{
-		*mesh_address = Cmiss_mesh_access(core->mesh);
+		*mesh_address = cmzn_mesh_access(core->mesh);
 		*seed_element=core->seed_element;
 		*integrand=field->source_fields[0];
 		*magnitude_coordinates=core->magnitude_coordinates;

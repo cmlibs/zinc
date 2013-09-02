@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #ifndef CMZN_FIELDMODULEID_H__
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	struct cmzn_field_module;
+	typedef struct cmzn_field_module *cmzn_field_module_id;
 	#define CMZN_FIELDMODULEID_H__
 #endif /* CMISS_FIELD_MODULE_ID_H */

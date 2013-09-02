@@ -50,7 +50,7 @@ class FieldNodesetSum : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSum(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetSum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetSum FieldModule::createNodesetSum(Field& sourceField, Nodeset& nodeset);
@@ -66,7 +66,7 @@ class FieldNodesetMean : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMean(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMean(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetMean FieldModule::createNodesetMean(Field& sourceField,
@@ -83,7 +83,7 @@ class FieldNodesetSumSquares : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSumSquares(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetSumSquares(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetSumSquares FieldModule::createNodesetSumSquares(
@@ -100,7 +100,7 @@ class FieldNodesetMeanSquares : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMeanSquares(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMeanSquares(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
@@ -117,7 +117,7 @@ class FieldNodesetMinimum : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMinimum(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMinimum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetMinimum FieldModule::createNodesetMinimum(
@@ -134,7 +134,7 @@ class FieldNodesetMaximum : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMaximum(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMaximum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNodesetMaximum FieldModule::createNodesetMaximum(
@@ -149,41 +149,41 @@ public:
 
 inline FieldNodesetSum FieldModule::createNodesetSum(Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetSum(Cmiss_field_module_create_nodeset_sum(id,
+	return FieldNodesetSum(cmzn_field_module_create_nodeset_sum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMean FieldModule::createNodesetMean(Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMean(Cmiss_field_module_create_nodeset_mean(id,
+	return FieldNodesetMean(cmzn_field_module_create_nodeset_mean(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetSumSquares FieldModule::createNodesetSumSquares(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetSumSquares(Cmiss_field_module_create_nodeset_sum_squares(id,
+	return FieldNodesetSumSquares(cmzn_field_module_create_nodeset_sum_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMeanSquares(Cmiss_field_module_create_nodeset_mean_squares(id,
+	return FieldNodesetMeanSquares(cmzn_field_module_create_nodeset_mean_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMinimum FieldModule::createNodesetMinimum(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMinimum(Cmiss_field_module_create_nodeset_minimum(id,
+	return FieldNodesetMinimum(cmzn_field_module_create_nodeset_minimum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMaximum FieldModule::createNodesetMaximum(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMaximum(Cmiss_field_module_create_nodeset_maximum(id,
+	return FieldNodesetMaximum(cmzn_field_module_create_nodeset_maximum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 

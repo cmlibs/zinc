@@ -41,21 +41,21 @@
 #ifndef CMZN_FIELDFINITEELEMENTID_H__
 #define CMZN_FIELDFINITEELEMENTID_H__
 
-/** Handle to a finite_element type Cmiss_field */
-struct Cmiss_field_finite_element;
-typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
+/** Handle to a finite_element type cmzn_field */
+struct cmzn_field_finite_element;
+typedef struct cmzn_field_finite_element *cmzn_field_finite_element_id;
 #define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
 
-/** Handle to a find_mesh_location type Cmiss_field */
-struct Cmiss_field_find_mesh_location;
-typedef struct Cmiss_field_find_mesh_location *Cmiss_field_find_mesh_location_id;
+/** Handle to a find_mesh_location type cmzn_field */
+struct cmzn_field_find_mesh_location;
+typedef struct cmzn_field_find_mesh_location *cmzn_field_find_mesh_location_id;
 
-/** Handle to a stored_mesh_location type Cmiss_field */
-struct Cmiss_field_stored_mesh_location;
-typedef struct Cmiss_field_stored_mesh_location *Cmiss_field_stored_mesh_location_id;
+/** Handle to a stored_mesh_location type cmzn_field */
+struct cmzn_field_stored_mesh_location;
+typedef struct cmzn_field_stored_mesh_location *cmzn_field_stored_mesh_location_id;
 
-/** Handle to a stored_string type Cmiss_field */
-struct Cmiss_field_stored_string_location;
-typedef struct Cmiss_field_stored_string *Cmiss_field_stored_string_id;
+/** Handle to a stored_string type cmzn_field */
+struct cmzn_field_stored_string_location;
+typedef struct cmzn_field_stored_string *cmzn_field_stored_string_id;
 
 #endif

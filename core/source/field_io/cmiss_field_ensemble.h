@@ -46,77 +46,77 @@
 #include "field_io/cmiss_field_ensemble_id.h"
 #include "zinc/types/fieldmoduleid.h"
 
-Cmiss_field_id Cmiss_field_module_create_ensemble(Cmiss_field_module_id field_module);
+cmzn_field_id cmzn_field_module_create_ensemble(cmzn_field_module_id field_module);
 
-Cmiss_field_ensemble_id Cmiss_field_cast_ensemble(Cmiss_field_id field);
+cmzn_field_ensemble_id cmzn_field_cast_ensemble(cmzn_field_id field);
 
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_ensemble_base_cast(Cmiss_field_ensemble_id ensemble)
+ZINC_C_INLINE cmzn_field_id cmzn_field_ensemble_base_cast(cmzn_field_ensemble_id ensemble)
 {
-	return (Cmiss_field_id)(ensemble);
+	return (cmzn_field_id)(ensemble);
 }
 
-int Cmiss_field_ensemble_destroy(Cmiss_field_ensemble_id *ensemble_address);
+int cmzn_field_ensemble_destroy(cmzn_field_ensemble_id *ensemble_address);
 
 /***************************************************************************//**
  * Create new entry in ensemble, unique identifier automatically generated
  * @param  ensemble_field  The ensemble to add the entry in.
  * @return  Iterator-handle to new entry in ensemble.
  */
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_create_entry(
-	Cmiss_field_ensemble_id ensemble_field);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_create_entry(
+	cmzn_field_ensemble_id ensemble_field);
 
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_create_entry_with_identifier(
-	Cmiss_field_ensemble_id ensemble_field, Cmiss_ensemble_identifier identifier);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_create_entry_with_identifier(
+	cmzn_field_ensemble_id ensemble_field, cmzn_ensemble_identifier identifier);
 
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_find_entry_by_identifier(
-	Cmiss_field_ensemble_id ensemble_field, Cmiss_ensemble_identifier identifier);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_find_entry_by_identifier(
+	cmzn_field_ensemble_id ensemble_field, cmzn_ensemble_identifier identifier);
 
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_find_or_create_entry(
-	Cmiss_field_ensemble_id ensemble_field, Cmiss_ensemble_identifier identifier);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_find_or_create_entry(
+	cmzn_field_ensemble_id ensemble_field, cmzn_ensemble_identifier identifier);
 
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_get_first_entry(
-	Cmiss_field_ensemble_id ensemble_field);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_get_first_entry(
+	cmzn_field_ensemble_id ensemble_field);
 
-unsigned int Cmiss_field_ensemble_get_size(Cmiss_field_ensemble_id ensemble_field);
+unsigned int cmzn_field_ensemble_get_size(cmzn_field_ensemble_id ensemble_field);
 
 
 
-int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator_id *entry_address);
+int cmzn_ensemble_iterator_destroy(cmzn_ensemble_iterator_id *entry_address);
 
-Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(
-	Cmiss_ensemble_iterator_id iterator);
+cmzn_ensemble_identifier cmzn_ensemble_iterator_get_identifier(
+	cmzn_ensemble_iterator_id iterator);
 
 /***************************************************************************//**
  * Iterate to next entry in same ensemble.
  * @param iterator  Iterator to be incremented. Invalidated if past last entry.
  * @return  1 on success, 0 if no more entries or iterator invalid.
  */
-int Cmiss_ensemble_iterator_increment(Cmiss_ensemble_iterator_id iterator);
+int cmzn_ensemble_iterator_increment(cmzn_ensemble_iterator_id iterator);
 
 
 
-Cmiss_field_id Cmiss_field_module_create_ensemble_group(Cmiss_field_module_id field_module,
-	Cmiss_field_ensemble_id ensemble_field);
+cmzn_field_id cmzn_field_module_create_ensemble_group(cmzn_field_module_id field_module,
+	cmzn_field_ensemble_id ensemble_field);
 
-Cmiss_field_ensemble_group_id Cmiss_field_cast_ensemble_group(Cmiss_field_id field);
+cmzn_field_ensemble_group_id cmzn_field_cast_ensemble_group(cmzn_field_id field);
 
 /***************************************************************************//**
  * Remove all entries from group.
  */
-int Cmiss_field_ensemble_group_clear(
-	Cmiss_field_ensemble_group_id ensemble_group_field);
+int cmzn_field_ensemble_group_clear(
+	cmzn_field_ensemble_group_id ensemble_group_field);
 
-int Cmiss_field_ensemble_group_has_entry(
-	Cmiss_field_ensemble_group_id ensemble_group_field, Cmiss_ensemble_iterator_id iterator);
+int cmzn_field_ensemble_group_has_entry(
+	cmzn_field_ensemble_group_id ensemble_group_field, cmzn_ensemble_iterator_id iterator);
 
-int Cmiss_field_ensemble_group_add_entry(
-	Cmiss_field_ensemble_group_id ensemble_group_field, Cmiss_ensemble_iterator_id iterator);
+int cmzn_field_ensemble_group_add_entry(
+	cmzn_field_ensemble_group_id ensemble_group_field, cmzn_ensemble_iterator_id iterator);
 
-int Cmiss_field_ensemble_group_remove_entry(
-		Cmiss_field_ensemble_group_id ensemble_group_field, Cmiss_ensemble_iterator_id iterator);
+int cmzn_field_ensemble_group_remove_entry(
+		cmzn_field_ensemble_group_id ensemble_group_field, cmzn_ensemble_iterator_id iterator);
 
-Cmiss_ensemble_iterator_id Cmiss_field_ensemble_group_get_first_entry(
-	Cmiss_field_ensemble_group_id ensemble_group_field);
+cmzn_ensemble_iterator_id cmzn_field_ensemble_group_get_first_entry(
+	cmzn_field_ensemble_group_id ensemble_group_field);
 
 /***************************************************************************//**
  * Iterate to next entry in this group.
@@ -125,41 +125,41 @@ Cmiss_ensemble_iterator_id Cmiss_field_ensemble_group_get_first_entry(
  * @return  1 on success, 0 if no more entries or iterator invalid, including if
  * not from the same ensemble as this group.
  */
-int Cmiss_field_ensemble_group_increment_entry(Cmiss_field_ensemble_group_id ensemble_group_field,
-	Cmiss_ensemble_iterator_id iterator);
+int cmzn_field_ensemble_group_increment_entry(cmzn_field_ensemble_group_id ensemble_group_field,
+	cmzn_ensemble_iterator_id iterator);
 
-int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index_id *index_address);
+int cmzn_ensemble_index_destroy(cmzn_ensemble_index_id *index_address);
 
 /***************************************************************************//**
  * Determine if the index indexes its field using exactly the supplied ensembles
  * in the supplied order.
  * @return  1 if true, 0 if indexing ensembles are different.
  */
-int Cmiss_ensemble_index_has_index_ensembles(Cmiss_ensemble_index_id index,
-	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
+int cmzn_ensemble_index_has_index_ensembles(cmzn_ensemble_index_id index,
+	int number_of_index_ensembles, cmzn_field_ensemble_id *index_ensemble_fields);
 
 /***************************************************************************//**
  * Set index to span all entries in this ensemble, in order of increasing
  * identifier.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index_id index,
-	Cmiss_field_ensemble_id ensemble_field);
+int cmzn_ensemble_index_set_all_ensemble(cmzn_ensemble_index_id index,
+	cmzn_field_ensemble_id ensemble_field);
 
 /***************************************************************************//**
  * Set index to span a single entry for the iterator's ensemble.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_index_id index,
-	Cmiss_ensemble_iterator_id iterator);
+int cmzn_ensemble_index_set_entry(cmzn_ensemble_index_id index,
+	cmzn_ensemble_iterator_id iterator);
 
 /***************************************************************************//**
  * Set index to span all entries in this group for its ensemble, in order of
  * increasting identifier.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_group(Cmiss_ensemble_index_id index,
-	Cmiss_field_ensemble_group_id ensemble_group_field);
+int cmzn_ensemble_index_set_group(cmzn_ensemble_index_id index,
+	cmzn_field_ensemble_group_id ensemble_group_field);
 
 
 #endif /* !defined (CMISS_FIELD_ENSEMBLE_H) */

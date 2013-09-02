@@ -120,7 +120,7 @@ Field_coordinate_location::~Field_coordinate_location()
 	delete [] derivatives;
 }
 
-int Field_coordinate_location::set_field_values(Cmiss_field_id reference_field_in,
+int Field_coordinate_location::set_field_values(cmzn_field_id reference_field_in,
 	int number_of_values_in, const FE_value *values_in)
 {
 	if ((!reference_field_in) || (number_of_values_in < 1) || (!values_in))

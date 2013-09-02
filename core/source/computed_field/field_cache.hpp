@@ -66,12 +66,12 @@ struct Computed_field_find_element_xi_cache;
 class FieldValueCache
 {
 private:
-	Cmiss_field_cache *extraCache; // optional extra cache for working evaluations at different locations
+	cmzn_field_cache *extraCache; // optional extra cache for working evaluations at different locations
 
 	void operator=(const FieldValueCache&); // private to prohibit
 
 public:
-	int evaluationCounter; // set to Cmiss_field_cache::locationCounter when field evaluated
+	int evaluationCounter; // set to cmzn_field_cache::locationCounter when field evaluated
 	int derivatives_valid; // only relevant to real caches, but having here saves a virtual function call
 
 	FieldValueCache() :
@@ -91,14 +91,14 @@ public:
 	/** override to clear type-specific buffer information & call this */
 	virtual void clear();
 
-	void createExtraCache(Cmiss_field_cache& parentCache, Cmiss_region *region);
+	void createExtraCache(cmzn_field_cache& parentCache, cmzn_region *region);
 
-	Cmiss_field_cache *getExtraCache()
+	cmzn_field_cache *getExtraCache()
 	{
 		return extraCache;
 	}
 
-	Cmiss_field_cache *getOrCreateExtraCache(Cmiss_field_cache& parentCache);
+	cmzn_field_cache *getOrCreateExtraCache(cmzn_field_cache& parentCache);
 
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
@@ -114,10 +114,10 @@ public:
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;
 
-struct Cmiss_field_cache
+struct cmzn_field_cache
 {
 private:
-	Cmiss_region_id region;
+	cmzn_region_id region;
 	int locationCounter; // incremented whenever domain location changes
 	Field_location *location;
 	int requestedDerivatives;
@@ -144,27 +144,27 @@ private:
 
 public:
 
-	Cmiss_field_cache(Cmiss_region_id region) :
-		region(Cmiss_region_access(region)),
+	cmzn_field_cache(cmzn_region_id region) :
+		region(cmzn_region_access(region)),
 		locationCounter(0),
 		location(new Field_time_location()),
 		requestedDerivatives(0),
-		valueCaches(Cmiss_region_get_field_cache_size(region), (FieldValueCache*)0),
+		valueCaches(cmzn_region_get_field_cache_size(region), (FieldValueCache*)0),
 		assignInCache(false),
 		access_count(1)
 	{
-		Cmiss_region_add_field_cache(region, this);
+		cmzn_region_add_field_cache(region, this);
 	}
 
-	~Cmiss_field_cache();
+	~cmzn_field_cache();
 
-	Cmiss_field_cache_id access()
+	cmzn_field_cache_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_field_cache_id &cache)
+	static int deaccess(cmzn_field_cache_id &cache)
 	{
 		if (!cache)
 			return 0;
@@ -200,7 +200,7 @@ public:
 		return locationCounter;
 	}
 
-	Cmiss_region_id getRegion()
+	cmzn_region_id getRegion()
 	{
 		return region;
 	}
@@ -234,8 +234,8 @@ public:
 	}
 
 	/** @param topLevelElement  Optional top-level element to inherit fields from */
-	int setMeshLocation(Cmiss_element_id element, const double *chart_coordinates,
-		Cmiss_element_id top_level_element = 0)
+	int setMeshLocation(cmzn_element_id element, const double *chart_coordinates,
+		cmzn_element_id top_level_element = 0)
 	{
 		FE_value time = location->get_time();
 		delete location;
@@ -244,7 +244,7 @@ public:
 		return 1;
 	}
 
-	int setNode(Cmiss_node_id node)
+	int setNode(cmzn_node_id node)
 	{
 		FE_value time = location->get_time();
 		delete location;
@@ -253,9 +253,9 @@ public:
 		return 1;
 	}
 
-	int setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values);
+	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);
 
-	int setFieldRealWithDerivatives(Cmiss_field_id field, int numberOfValues, const double *values,
+	int setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
 		int numberOfDerivatives, const double *derivatives);
 
 	FieldValueCache* getValueCache(int cacheIndex)
@@ -295,18 +295,18 @@ public:
 };
 
 /** use this function with getExtraCache() when creating FieldValueCache for fields that must use an extraCache */
-inline void FieldValueCache::createExtraCache(Cmiss_field_cache& /*parentCache*/, Cmiss_region *region)
+inline void FieldValueCache::createExtraCache(cmzn_field_cache& /*parentCache*/, cmzn_region *region)
 {
 	if (extraCache)
-		Cmiss_field_cache::deaccess(extraCache);
-	extraCache = new Cmiss_field_cache(region);
+		cmzn_field_cache::deaccess(extraCache);
+	extraCache = new cmzn_field_cache(region);
 }
 
 /** use this function for fields that may use an extraCache, e.g. derivatives propagating to top-level-element */
-inline Cmiss_field_cache *FieldValueCache::getOrCreateExtraCache(Cmiss_field_cache& parentCache)
+inline cmzn_field_cache *FieldValueCache::getOrCreateExtraCache(cmzn_field_cache& parentCache)
 {
 	if (!extraCache)
-		extraCache = new Cmiss_field_cache(parentCache.getRegion());
+		extraCache = new cmzn_field_cache(parentCache.getRegion());
 	return extraCache;
 }
 
@@ -425,7 +425,7 @@ public:
 class MeshLocationFieldValueCache : public FieldValueCache
 {
 public:
-	Cmiss_element_id element;
+	cmzn_element_id element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 	MeshLocationFieldValueCache() :
@@ -436,12 +436,12 @@ public:
 
 	virtual ~MeshLocationFieldValueCache()
 	{
-		Cmiss_element_destroy(&element);
+		cmzn_element_destroy(&element);
 	}
 
 	virtual void clear()
 	{
-		Cmiss_element_destroy(&element);
+		cmzn_element_destroy(&element);
 	}
 
 	static MeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
@@ -454,10 +454,10 @@ public:
 		return FIELD_VALUE_CACHE_CAST<MeshLocationFieldValueCache&>(valueCache);
    }
 
-	void setMeshLocation(Cmiss_element_id element_in, const FE_value *xi_in)
+	void setMeshLocation(cmzn_element_id element_in, const FE_value *xi_in)
 	{
 		REACCESS(FE_element)(&element, element_in);
-		int dimension = Cmiss_element_get_dimension(element_in);
+		int dimension = cmzn_element_get_dimension(element_in);
 		for (int i = 0; i < dimension; ++i)
 		{
 			xi[i] = xi_in[i];

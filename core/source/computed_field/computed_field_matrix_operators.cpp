@@ -150,14 +150,14 @@ private:
 		return (0 != dynamic_cast<Computed_field_determinant*>(other_field));
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_determinant::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_determinant::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -215,13 +215,13 @@ char *Computed_field_determinant::get_command_string()
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_determinant(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field)
+cmzn_field_id cmzn_field_module_create_determinant(
+	cmzn_field_module_id field_module, cmzn_field_id source_field)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (field_module && source_field &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL) &&
-		(Cmiss_field_get_number_of_components(source_field) <= 9))
+		(cmzn_field_get_number_of_components(source_field) <= 9))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -298,19 +298,19 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		return new EigenvalueFieldValueCache(field->number_of_components);
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_eigenvalues::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_eigenvalues::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	EigenvalueFieldValueCache &valueCache = EigenvalueFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -318,7 +318,7 @@ int Computed_field_eigenvalues::evaluate(Cmiss_field_cache& cache, FieldValueCac
 	{
 		const int n = field->number_of_components;
 		const int matrix_size = n * n;
-		Cmiss_field_id source_field = getSourceField(0);
+		cmzn_field_id source_field = getSourceField(0);
 		for (int i = 0; i < matrix_size; i++)
 		{
 			valueCache.a[i] = (double)(sourceCache->values[i]);
@@ -460,8 +460,8 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues_conditional */
 
-Computed_field *Cmiss_field_module_create_eigenvalues(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_eigenvalues(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
@@ -542,14 +542,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_eigenvectors::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_eigenvectors::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	EigenvalueFieldValueCache *eigenvalueCache = EigenvalueFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -636,8 +636,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_eigenvectors(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_eigenvectors(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *eigenvalues_field)
 {
 	struct Computed_field *field = NULL;
@@ -757,19 +757,19 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		return new MatrixInvertFieldValueCache(field->number_of_components, Computed_field_get_square_matrix_size(getSourceField(0)));
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_matrix_invert::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_matrix_invert::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	MatrixInvertFieldValueCache &valueCache = MatrixInvertFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -886,8 +886,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_matrix_invert(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_matrix_invert(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
@@ -965,7 +965,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1004,7 +1004,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_matrix_multiply::compare */
 
-int Computed_field_matrix_multiply::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_matrix_multiply::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1139,8 +1139,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_matrix_multiply(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_matrix_multiply(
+	struct cmzn_field_module *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2)
 {
@@ -1170,7 +1170,7 @@ Computed_field *Cmiss_field_module_create_matrix_multiply(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_create_matrix_multiply.  "
+				"cmzn_field_module_create_matrix_multiply.  "
 				"Fields are of invalid size for multiplication");
 		}
 	}
@@ -1250,16 +1250,16 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_projection::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_projection::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1420,12 +1420,12 @@ Returns allocated command string for reproducing field. Includes type.
 } /* Computed_field_projection::get_command_string */
 
 /** inverts the common 4x4 homogeneous transformation only */
-enum FieldAssignmentResult Computed_field_projection::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_projection::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	if ((field->number_of_components == 3) && (matrix_rows == 4) && (matrix_columns == 4))
 	{
-		Cmiss_field_id coordinateField = getSourceField(0);
-		Cmiss_field_id projectionField = getSourceField(1);
+		cmzn_field_id coordinateField = getSourceField(0);
+		cmzn_field_id projectionField = getSourceField(1);
 		RealFieldValueCache *projectionCache = RealFieldValueCache::cast(projectionField->evaluate(cache));
 		if (projectionCache)
 		{
@@ -1460,9 +1460,9 @@ enum FieldAssignmentResult Computed_field_projection::assign(Cmiss_field_cache& 
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_projection(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field)
+cmzn_field_id cmzn_field_module_create_projection(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field, cmzn_field_id projection_matrix_field)
 {
 	Computed_field *field = NULL;
 	if (field_module && source_field && source_field->isNumerical() &&
@@ -1488,7 +1488,7 @@ Cmiss_field_id Cmiss_field_module_create_projection(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_create_projection.  Projection matrix field %s has invalid number of components",
+				"cmzn_field_module_create_projection.  Projection matrix field %s has invalid number of components",
 				projection_matrix_field->name);
 		}
 	}
@@ -1551,7 +1551,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1590,7 +1590,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_transpose::compare */
 
-int Computed_field_transpose::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_transpose::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1707,8 +1707,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_transpose(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_transpose(
+	struct cmzn_field_module *field_module,
 	int source_number_of_rows, struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
@@ -1797,14 +1797,14 @@ private:
 			}
 	 }
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_quaternion_to_matrix::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_quaternion_to_matrix::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1895,7 +1895,7 @@ Returns allocated command string for reproducing field. Includes type.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_quaternion_to_matrix(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
@@ -1987,14 +1987,14 @@ private:
 			}
 	 }
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_matrix_to_quaternion::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_matrix_to_quaternion::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2082,7 +2082,7 @@ Returns allocated command string for reproducing field. Includes type.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_matrix_to_quaternion(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;

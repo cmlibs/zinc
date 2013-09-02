@@ -2,7 +2,7 @@
 FILE : cmiss_field_trigonometry.h
 
 DESCRIPTION :
-The public interface to the Cmiss_fields that perform trigonometry.
+The public interface to the cmzn_fields that perform trigonometry.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -60,9 +60,9 @@ extern "C" {
  * @param source_field Input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_sin(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_sin(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the cosine value (using radians) of the
@@ -72,9 +72,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_sin(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_cos(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_cos(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the trigonometric tangent value
@@ -84,9 +84,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_cos(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_tan(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_tan(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arcsine value (using radians) of the
@@ -96,9 +96,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_tan(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_asin(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_asin(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arccosine value (using radians) of the
@@ -108,9 +108,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_asin(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_acos(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_acos(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arctangent value (using radians) of the
@@ -120,9 +120,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_acos(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_atan(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_atan(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are calculated using the atan2 c function,
@@ -135,10 +135,10 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_atan(
  * @param source_field_two Second input field
  * @return Newly created field (components in radians)
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_atan2(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_atan2(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 #ifdef __cplusplus
 }

@@ -82,7 +82,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
@@ -123,17 +123,17 @@ int Computed_field_cad_colour::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_cad_colour::compare */
 
-int Computed_field_cad_colour::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_cad_colour::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	Cmiss_field_cad_topology_id cad_topology = reinterpret_cast<Cmiss_field_cad_topology_id>(getSourceField(0));
+	cmzn_field_cad_topology_id cad_topology = reinterpret_cast<cmzn_field_cad_topology_id>(getSourceField(0));
 	// @TODO: prescribe location directly in cad_topology field's value cache
 	Field_cad_geometry_surface_location *cad_surface_location;
 	if (0 != (cad_surface_location = dynamic_cast<Field_cad_geometry_surface_location*>(cache.getLocation())))
 	{
 		//printf("need to populate some values here\n");
 		double colour[3];
-		if ((cad_topology == (Cmiss_field_cad_topology_id *)cad_surface_location->get_id()) &&
+		if ((cad_topology == (cmzn_field_cad_topology_id *)cad_surface_location->get_id()) &&
 			Computed_field_cad_topology_get_surface_colour(cad_topology,
 				cad_surface_location->get_identifier(),
 				cad_surface_location->get_u(),
@@ -168,8 +168,8 @@ int Computed_field_cad_colour::list()
 	if (field)
 	{
 		double colour[3];
-		Cmiss_cad_surface_identifier surface_identifier = 0;
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
+		cmzn_cad_surface_identifier surface_identifier = 0;
+		cmzn_field_cad_topology_id cad_topology = cmzn_field_cast_cad_topology(field->source_fields[0]);
 		if (Computed_field_cad_topology_get_surface_colour(cad_topology,
 				surface_identifier,
 				0.0,
@@ -178,7 +178,7 @@ int Computed_field_cad_colour::list()
 		{
 			display_message(INFORMATION_MESSAGE, "    Cad colour field : [%.3f, %.3f. %.3f] ", colour[0], colour[1], colour[2]);
 		}
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
+		cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(&cad_topology));
 		return_code = 1;
 	}
 	else
@@ -226,7 +226,7 @@ char *Computed_field_cad_colour::get_command_string()
 
 } //namespace
 
-int Cmiss_field_is_cad_colour( struct Computed_field *field, void *not_in_use )
+int cmzn_field_is_cad_colour( struct Computed_field *field, void *not_in_use )
 {
 	int return_code = 0;
 	USE_PARAMETER(not_in_use);
@@ -246,12 +246,12 @@ int Cmiss_field_is_cad_colour( struct Computed_field *field, void *not_in_use )
 	return return_code;
 }
 
-Cmiss_field_cad_colour_id Cmiss_field_cad_colour_cast(Cmiss_field_id field)
+cmzn_field_cad_colour_id cmzn_field_cad_colour_cast(cmzn_field_id field)
 {
 	if (dynamic_cast<Computed_field_cad_colour*>(field->core))
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_cad_colour_id>(field));
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_cad_colour_id>(field));
 	}
 	else
 	{
@@ -260,9 +260,9 @@ Cmiss_field_cad_colour_id Cmiss_field_cad_colour_cast(Cmiss_field_id field)
 }
 
 /**
- * @see Cmiss_field_create_cad_colour
+ * @see cmzn_field_create_cad_colour
  */
-Cmiss_field_id Computed_field_module_create_cad_colour(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
+cmzn_field_id Computed_field_module_create_cad_colour(cmzn_field_module_id field_module, cmzn_field_id cad_topology_source_field)
 {
 	struct Computed_field *field = NULL;
 	Computed_field *source_fields[1];

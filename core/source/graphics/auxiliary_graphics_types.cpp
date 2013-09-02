@@ -61,11 +61,11 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_select_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_select_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Cmiss_graphic_select_mode));
+	ENTER(ENUMERATOR_STRING(cmzn_graphic_select_mode));
 	switch (enumerator_value)
 	{
 		case CMISS_GRAPHIC_SELECT_ON:
@@ -92,9 +92,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_select_mode)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Cmiss_graphic_select_mode) */
+} /* ENUMERATOR_STRING(cmzn_graphic_select_mode) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_select_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_select_mode)
 
 int check_Element_discretization(struct Element_discretization
 	*element_discretization)
@@ -158,7 +158,7 @@ read_Element_discretization_defaults().
 	return return_code;
 } /* check_Element_discretization */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_line_attributes_shape)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_line_attributes_shape)
 {
 	switch (enumerator_value)
 	{
@@ -186,9 +186,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_line_attributes_shape)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_line_attributes_shape)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_line_attributes_shape)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_streamlines_track_direction)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_streamlines_track_direction)
 {
 	switch (enumerator_value)
 	{
@@ -208,7 +208,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_streamlines_track_direction)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_streamlines_track_direction)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_streamlines_track_direction)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 {
@@ -245,11 +245,11 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_render_polygon_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_render_polygon_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Cmiss_graphic_render_polygon_mode));
+	ENTER(ENUMERATOR_STRING(cmzn_graphic_render_polygon_mode));
 	switch (enumerator_value)
 	{
 		case CMISS_GRAPHIC_RENDER_POLYGON_SHADED:
@@ -270,4 +270,4 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_render_polygon_mode)
 	return (enumerator_string);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_render_polygon_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_render_polygon_mode)

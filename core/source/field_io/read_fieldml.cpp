@@ -66,7 +66,7 @@ struct ShapeType
 {
 	const char *fieldmlName;
 	const int dimension;
-	enum Cmiss_element_shape_type shape_type;
+	enum cmzn_element_shape_type shape_type;
 };
 
 const ShapeType libraryShapes[] =
@@ -100,7 +100,7 @@ struct BasisType
 	int dimension;
 	const char *fieldmlBasisEvaluatorName;
 	bool homogeneous;
-	enum Cmiss_basis_function_type functionType[3];
+	enum cmzn_basis_function_type functionType[3];
 	const int *swizzle;
 };
 
@@ -134,23 +134,23 @@ struct ConnectivityData
 	int firstLocalNode;
 	FmlObjectHandle fmlConnectivityDomain;
 	FmlObjectHandle fmlConnectivitySource;
-	Cmiss_field_ensemble_id localNodeEnsemble;
+	cmzn_field_ensemble_id localNodeEnsemble;
 };
 
 struct ElementFieldComponent
 {
-	Cmiss_element_basis_id element_basis;
-	Cmiss_field_integer_parameters_id local_point_to_node;
-	Cmiss_ensemble_index_id index;
+	cmzn_element_basis_id element_basis;
+	cmzn_field_integer_parameters_id local_point_to_node;
+	cmzn_ensemble_index_id index;
 	int local_point_count;
 	const int *swizzle;
 	int *local_point_indexes;
 	int *swizzled_local_point_indexes;
 	int *node_identifiers;
 
-	ElementFieldComponent(Cmiss_element_basis_id element_basis,
-			Cmiss_field_integer_parameters_id local_point_to_node,
-			Cmiss_ensemble_index_id index, int local_point_count,
+	ElementFieldComponent(cmzn_element_basis_id element_basis,
+			cmzn_field_integer_parameters_id local_point_to_node,
+			cmzn_ensemble_index_id index, int local_point_count,
 			const int *swizzle) :
 		element_basis(element_basis),
 		local_point_to_node(local_point_to_node),
@@ -165,9 +165,9 @@ struct ElementFieldComponent
 
 	~ElementFieldComponent()
 	{
-		Cmiss_element_basis_destroy(&element_basis);
-		Cmiss_field_integer_parameters_destroy(&local_point_to_node);
-		Cmiss_ensemble_index_destroy(&index);
+		cmzn_element_basis_destroy(&element_basis);
+		cmzn_field_integer_parameters_destroy(&local_point_to_node);
+		cmzn_ensemble_index_destroy(&index);
 		delete[] local_point_indexes;
 		delete[] swizzled_local_point_indexes;
 		delete[] node_identifiers;
@@ -178,8 +178,8 @@ typedef std::map<FmlObjectHandle,ElementFieldComponent*> EvaluatorElementFieldCo
 
 class FieldMLReader
 {
-	Cmiss_region *region;
-	Cmiss_field_module_id field_module;
+	cmzn_region *region;
+	cmzn_field_module_id field_module;
 	const char *filename;
 	FmlSessionHandle fmlSession;
 	int meshDimension;
@@ -192,9 +192,9 @@ class FieldMLReader
 	std::set<FmlObjectHandle> processedObjects;
 
 public:
-	FieldMLReader(struct Cmiss_region *region, const char *filename) :
-		region(Cmiss_region_access(region)),
-		field_module(Cmiss_region_get_field_module(region)),
+	FieldMLReader(struct cmzn_region *region, const char *filename) :
+		region(cmzn_region_access(region)),
+		field_module(cmzn_region_get_field_module(region)),
 		filename(filename),
 		fmlSession(Fieldml_CreateFromFile(filename)),
 		meshDimension(0),
@@ -214,8 +214,8 @@ public:
 			delete (iter->second);
 		}
 		Fieldml_Destroy(fmlSession);
-		Cmiss_field_module_destroy(&field_module);
-		Cmiss_region_destroy(&region);
+		cmzn_field_module_destroy(&field_module);
+		cmzn_region_destroy(&region);
 		delete[] nameBuffer;
 	}
 
@@ -253,18 +253,18 @@ private:
 		}
 		return std::string(nameBuffer);
 	}
-	Cmiss_field_ensemble_id getEnsemble(FmlObjectHandle fmlEnsemble);
+	cmzn_field_ensemble_id getEnsemble(FmlObjectHandle fmlEnsemble);
 
 	int readParametersArray(FmlObjectHandle fmlParameters,
-		Cmiss_field_id parameters, const char *name);
+		cmzn_field_id parameters, const char *name);
 
-	Cmiss_field_id getParameters(FmlObjectHandle fmlParameters);
+	cmzn_field_id getParameters(FmlObjectHandle fmlParameters);
 
-	enum Cmiss_element_shape_type getElementShapeFromName(const char *shapeName);
+	enum cmzn_element_shape_type getElementShapeFromName(const char *shapeName);
 
 	int readMeshes();
 
-	ElementFieldComponent *getElementFieldComponent(Cmiss_mesh_id mesh,
+	ElementFieldComponent *getElementFieldComponent(cmzn_mesh_id mesh,
 		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
 		FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument);
 
@@ -291,19 +291,19 @@ private:
 };
 
 // GRC This should be in ensemble class & made more efficient
-int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
+int cmzn_field_ensemble_add_identifier_range(cmzn_field_ensemble_id ensemble,
 	int min, int max, int stride)
 {
 #ifdef DEBUG_CODE
 	{
-		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
-		display_message(INFORMATION_MESSAGE, "Cmiss_field_ensemble_add_identifier_range: Ensemble %s min %d max %d (stride %d)\n", name, min, max, stride);
+		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
+		display_message(INFORMATION_MESSAGE, "cmzn_field_ensemble_add_identifier_range: Ensemble %s min %d max %d (stride %d)\n", name, min, max, stride);
 		DEALLOCATE(name);
 	}
 #endif // DEBUG_CODE
 	if ((!ensemble) || (max < min) || (stride < 1))
 	{
-		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
 		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid range min=%d max=%d stride=%d for ensemble type %s",
 			min, max, stride, name);
 		DEALLOCATE(name);
@@ -312,21 +312,21 @@ int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
 	for (FmlEnsembleValue identifier = min; identifier <= max; identifier += stride)
 	{
 #ifdef DEBUG_CODE
-		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
 		display_message(INFORMATION_MESSAGE, "Read FieldML:  Ensemble %s identifier %d (%d:%d)\n", name, identifier, min, max);
 		DEALLOCATE(name);
 #endif // DEBUG_CODE
-		Cmiss_ensemble_iterator_id iterator =
-			Cmiss_field_ensemble_find_or_create_entry(ensemble, identifier);
+		cmzn_ensemble_iterator_id iterator =
+			cmzn_field_ensemble_find_or_create_entry(ensemble, identifier);
 		if (!iterator)
 		{
-			char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+			char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
 			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to create member %d for ensemble type %s",
 				identifier, name);
 			DEALLOCATE(name);
 			return 0;
 		}
-		Cmiss_ensemble_iterator_destroy(&iterator);
+		cmzn_ensemble_iterator_destroy(&iterator);
 	}
 	return 1;
 }
@@ -338,7 +338,7 @@ int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
  *
  * @param fmlEnsembleType  Handle of type FHT_ENSEMBLE_TYPE.
  * @return  Accessed handle to ensemble field, or 0 on failure */
-Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleType)
+cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleType)
 {
 	std::string name = getName(fmlEnsembleType);
 	if (name.length()==0)
@@ -352,11 +352,11 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 		display_message(ERROR_MESSAGE, "Read FieldML:  Argument %s is not ensemble type", name.c_str());
 		return 0;
 	}
-	Cmiss_field_id ensemble_field = Cmiss_field_module_find_field_by_name(field_module, name.c_str());
+	cmzn_field_id ensemble_field = cmzn_field_module_find_field_by_name(field_module, name.c_str());
 	if (isProcessed(fmlEnsembleType))
 	{
-		Cmiss_field_ensemble_id ensemble = Cmiss_field_cast_ensemble(ensemble_field);
-		Cmiss_field_destroy(&ensemble_field);
+		cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
+		cmzn_field_destroy(&ensemble_field);
 		return ensemble;
 	}
 	if (ensemble_field)
@@ -364,7 +364,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 		// current code is not able to merge into existing ensemble because parameters
 		// may be densely indexed by ensemble as it is in FieldML document
 		display_message(ERROR_MESSAGE, "Read FieldML:  Cannot merge ensemble type %s", name.c_str());
-		Cmiss_field_destroy(&ensemble_field);
+		cmzn_field_destroy(&ensemble_field);
 		return 0;
 	}
 
@@ -394,11 +394,11 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 	{
 		display_message(INFORMATION_MESSAGE, "Reading ensemble type %s\n", name.c_str());
 	}
-	ensemble_field = Cmiss_field_module_create_ensemble(field_module);
-	Cmiss_field_set_name(ensemble_field, name.c_str());
-	Cmiss_field_set_managed(ensemble_field, true);
-	Cmiss_field_ensemble_id ensemble = Cmiss_field_cast_ensemble(ensemble_field);
-	Cmiss_field_destroy(&ensemble_field);
+	ensemble_field = cmzn_field_module_create_ensemble(field_module);
+	cmzn_field_set_name(ensemble_field, name.c_str());
+	cmzn_field_set_managed(ensemble_field, true);
+	cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
+	cmzn_field_destroy(&ensemble_field);
 	if (!ensemble)
 	{
 		return 0;
@@ -409,7 +409,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 		FmlEnsembleValue min = Fieldml_GetEnsembleMembersMin(fmlSession, fmlEnsembleType);
 		FmlEnsembleValue max = Fieldml_GetEnsembleMembersMax(fmlSession, fmlEnsembleType);
 		int stride = Fieldml_GetEnsembleMembersStride(fmlSession, fmlEnsembleType);
-		return_code = Cmiss_field_ensemble_add_identifier_range(ensemble, min, max, stride);
+		return_code = cmzn_field_ensemble_add_identifier_range(ensemble, min, max, stride);
 	}
 	else
 	{
@@ -463,15 +463,15 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 					switch (fmlEnsembleMembersType)
 					{
 					case FML_ENSEMBLE_MEMBER_LIST_DATA:
-						return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
 							/*min*/rangeData[i], /*max*/rangeData[i], /*stride*/1);
 						break;
 					case FML_ENSEMBLE_MEMBER_RANGE_DATA:
-						return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
 							/*min*/rangeData[i*2], /*max*/rangeData[i*2 + 1], /*stride*/1);
 						break;
 					case FML_ENSEMBLE_MEMBER_STRIDE_RANGE_DATA:
-						return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
 							/*min*/rangeData[i*3], /*max*/rangeData[i*3 + 1], /*stride*/rangeData[i*3 + 2]);
 						break;
 					default:
@@ -485,7 +485,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 						break;
 					}
 				}
-				int ensembleSize = Cmiss_field_ensemble_get_size(ensemble);
+				int ensembleSize = cmzn_field_ensemble_get_size(ensemble);
 				if (return_code && (ensembleSize != memberCount))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Ensemble type %s lists member count %d, actual number in data source is %d",
@@ -503,7 +503,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 	}
 	else
 	{
-		Cmiss_field_ensemble_destroy(&ensemble);
+		cmzn_field_ensemble_destroy(&ensemble);
 	}
 	return ensemble;
 }
@@ -511,7 +511,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 // TODO : Support order
 // ???GRC can order cover subset of ensemble?
 int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
-	Cmiss_field_id parameters, const char *name)
+	cmzn_field_id parameters, const char *name)
 {
 	FieldmlDataDescriptionType dataDescription = Fieldml_GetParameterDataDescription(fmlSession, fmlParameters);
 	if ((dataDescription != FML_DATA_DESCRIPTION_DENSE_ARRAY) &&
@@ -520,8 +520,8 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		display_message(ERROR_MESSAGE, "Read FieldML:  Unknown data description for parameters %s; must be dense array or DOK array", name);
 		return 0;
 	}
-	Cmiss_field_real_parameters_id realParameters = Cmiss_field_cast_real_parameters(parameters);
-	Cmiss_field_integer_parameters_id integerParameters = Cmiss_field_cast_integer_parameters(parameters);
+	cmzn_field_real_parameters_id realParameters = cmzn_field_cast_real_parameters(parameters);
+	cmzn_field_integer_parameters_id integerParameters = cmzn_field_cast_integer_parameters(parameters);
 	if ((!realParameters) && (!integerParameters))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid parameters field type");
@@ -532,8 +532,8 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	const int recordIndexCount = (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY) ? 1 : 0;
 
 	const int denseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/0);
-	Cmiss_field_ensemble_id *denseIndexEnsembles = new Cmiss_field_ensemble_id[denseIndexCount];
-	Cmiss_ensemble_iterator_id *denseIterators = new Cmiss_ensemble_iterator_id[denseIndexCount];
+	cmzn_field_ensemble_id *denseIndexEnsembles = new cmzn_field_ensemble_id[denseIndexCount];
+	cmzn_ensemble_iterator_id *denseIterators = new cmzn_ensemble_iterator_id[denseIndexCount];
 	for (int i = 0; i < denseIndexCount; i++)
 	{
 		denseIndexEnsembles[i] = 0;
@@ -598,7 +598,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 				return_code = 0;
 				break;
 			}
-			denseIterators[i] = Cmiss_field_ensemble_get_first_entry(denseIndexEnsembles[i]);
+			denseIterators[i] = cmzn_field_ensemble_get_first_entry(denseIndexEnsembles[i]);
 			FmlObjectHandle fmlOrderDataSource = Fieldml_GetParameterIndexOrder(fmlSession, fmlParameters, i + 1);
 			if (fmlOrderDataSource != FML_INVALID_HANDLE)
 			{
@@ -609,14 +609,14 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	}
 
 	int sparseIndexCount = 0;
-	Cmiss_field_ensemble_id *sparseIndexEnsembles = 0;
+	cmzn_field_ensemble_id *sparseIndexEnsembles = 0;
 	FmlObjectHandle fmlKeyDataSource = FML_INVALID_HANDLE;
 	int keyArraySizes[2] = { 1, 0 };
 	int keyArrayOffsets[2] = { 0, 0 };
 	if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
 	{
 		sparseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/1);
-		sparseIndexEnsembles = new Cmiss_field_ensemble_id[sparseIndexCount];
+		sparseIndexEnsembles = new cmzn_field_ensemble_id[sparseIndexCount];
 		for (int i = 0; i < sparseIndexCount; i++)
 		{
 			sparseIndexEnsembles[i] = 0;
@@ -661,9 +661,9 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		}
 	}
 
-	Cmiss_ensemble_index_id index = realParameters ?
-		Cmiss_field_real_parameters_create_index(realParameters) :
-		Cmiss_field_integer_parameters_create_index(integerParameters);
+	cmzn_ensemble_index_id index = realParameters ?
+		cmzn_field_real_parameters_create_index(realParameters) :
+		cmzn_field_integer_parameters_create_index(integerParameters);
 	if (!index)
 	{
 		return_code = 0;
@@ -770,20 +770,20 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 				for (int i = 0; i < sparseIndexCount; i++)
 				{
 					// should make convenience function for these three calls
-					Cmiss_ensemble_iterator_id entry =
-						Cmiss_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], keyBuffer[record*sparseIndexCount + i]);
-					Cmiss_ensemble_index_set_entry(index, entry);
-					Cmiss_ensemble_iterator_destroy(&entry);
+					cmzn_ensemble_iterator_id entry =
+						cmzn_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], keyBuffer[record*sparseIndexCount + i]);
+					cmzn_ensemble_index_set_entry(index, entry);
+					cmzn_ensemble_iterator_destroy(&entry);
 				}
 			}
 			if (realParameters)
 			{
-				return_code = Cmiss_field_real_parameters_set_values(realParameters,
+				return_code = cmzn_field_real_parameters_set_values(realParameters,
 					index, valueBufferSize, realValueBuffer + record*totalDenseSize);
 			}
 			else
 			{
-				return_code = Cmiss_field_integer_parameters_set_values(integerParameters,
+				return_code = cmzn_field_integer_parameters_set_values(integerParameters,
 					index, valueBufferSize, integerValueBuffer + record*totalDenseSize);
 			}
 		}
@@ -798,7 +798,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	{
 		for (int i = 0; i < sparseIndexCount; i++)
 		{
-			Cmiss_field_ensemble_destroy(&(sparseIndexEnsembles[i]));
+			cmzn_field_ensemble_destroy(&(sparseIndexEnsembles[i]));
 		}
 		delete[] sparseIndexEnsembles;
 	}
@@ -806,7 +806,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	{
 		for (int i = 0; i < denseIndexCount; i++)
 		{
-			Cmiss_field_ensemble_destroy(&(denseIndexEnsembles[i]));
+			cmzn_field_ensemble_destroy(&(denseIndexEnsembles[i]));
 		}
 		delete[] denseIndexEnsembles;
 	}
@@ -814,11 +814,11 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	{
 		for (int i = 0; i < denseIndexCount; i++)
 		{
-			Cmiss_ensemble_iterator_destroy(&(denseIterators[i]));
+			cmzn_ensemble_iterator_destroy(&(denseIterators[i]));
 		}
 		delete[] denseIterators;
 	}
-	Cmiss_ensemble_index_destroy(&index);
+	cmzn_ensemble_index_destroy(&index);
 
 	delete[] realValueBuffer;
 	delete[] integerValueBuffer;
@@ -828,21 +828,21 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	delete[] arrayRawSizes;
 
 	if (realParameters)
-		Cmiss_field_real_parameters_destroy(&realParameters);
+		cmzn_field_real_parameters_destroy(&realParameters);
 	if (integerParameters)
-		Cmiss_field_integer_parameters_destroy(&integerParameters);
+		cmzn_field_integer_parameters_destroy(&integerParameters);
 
 	return return_code;
 }
 
 /***************************************************************************//**
- * Gets Cmiss_real_parameters or Cmiss_integer_parameters (for ensemble) with
+ * Gets cmzn_real_parameters or cmzn_integer_parameters (for ensemble) with
  * data read from fmlParameters object supplied. Data is read from FieldML only
  * when first requested.
  *
  * @param fmlParameters  Handle of type FHT_PARAMETER_EVALUATOR.
  * @return  Accessed handle to parameters field, or 0 on failure */
-Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
+cmzn_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 {
 	if (Fieldml_GetObjectType(fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
 	{
@@ -869,7 +869,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		}
 	}
 
-	Cmiss_field_id parameters = Cmiss_field_module_find_field_by_name(field_module, name.c_str());
+	cmzn_field_id parameters = cmzn_field_module_find_field_by_name(field_module, name.c_str());
 	if (isProcessed(fmlParameters))
 	{
 		return parameters;
@@ -879,20 +879,20 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		bool invalidType = false;
 		if (isReal)
 		{
-			Cmiss_field_real_parameters_id realParameters = Cmiss_field_cast_real_parameters(parameters);
+			cmzn_field_real_parameters_id realParameters = cmzn_field_cast_real_parameters(parameters);
 			invalidType = (realParameters == 0);
-			Cmiss_field_real_parameters_destroy(&realParameters);
+			cmzn_field_real_parameters_destroy(&realParameters);
 		}
 		else
 		{
-			Cmiss_field_integer_parameters_id integerParameters = Cmiss_field_cast_integer_parameters(parameters);
+			cmzn_field_integer_parameters_id integerParameters = cmzn_field_cast_integer_parameters(parameters);
 			invalidType = (integerParameters == 0);
-			Cmiss_field_integer_parameters_destroy(&integerParameters);
+			cmzn_field_integer_parameters_destroy(&integerParameters);
 		}
 		if (invalidType)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Cannot merge real parameters into existing field %s of different type", name.c_str());
-			Cmiss_field_destroy(&parameters);
+			cmzn_field_destroy(&parameters);
 			return 0;
 		}
 		// should check matching indexes too
@@ -904,7 +904,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 	}
 
 	int indexEnsembleCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlParameters);
-	Cmiss_field_ensemble_id *indexEnsembles = new Cmiss_field_ensemble_id[indexEnsembleCount];
+	cmzn_field_ensemble_id *indexEnsembles = new cmzn_field_ensemble_id[indexEnsembleCount];
 	for (int i = 0; i < indexEnsembleCount; i++)
 	{
 		indexEnsembles[i] = 0;
@@ -934,16 +934,16 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		if (!parameters)
 		{
 			parameters = isReal ?
-				Cmiss_field_module_create_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
-				Cmiss_field_module_create_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
-			Cmiss_field_set_name(parameters, name.c_str());
-			Cmiss_field_set_managed(parameters, true);
+				cmzn_field_module_create_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
+				cmzn_field_module_create_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
+			cmzn_field_set_name(parameters, name.c_str());
+			cmzn_field_set_managed(parameters, true);
 		}
 		return_code = readParametersArray(fmlParameters, parameters, name.c_str());
 	}
 	for (int i = 0; i < indexEnsembleCount; i++)
 	{
-		Cmiss_field_ensemble_destroy(&indexEnsembles[i]);
+		cmzn_field_ensemble_destroy(&indexEnsembles[i]);
 	}
 	delete[] indexEnsembles;
 	if (return_code)
@@ -952,12 +952,12 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 	}
 	else
 	{
-		Cmiss_field_destroy(&parameters);
+		cmzn_field_destroy(&parameters);
 	}
 	return parameters;
 }
 
-enum Cmiss_element_shape_type FieldMLReader::getElementShapeFromName(const char *shapeName)
+enum cmzn_element_shape_type FieldMLReader::getElementShapeFromName(const char *shapeName)
 {
 	for (int i = 0; i < numLibraryShapes; i++)
 	{
@@ -1000,18 +1000,18 @@ int FieldMLReader::readMeshes()
 		}
 
 		fmlElementsType = Fieldml_GetMeshElementsType(fmlSession, fmlMeshType);
-		Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
+		cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 		if (verbose)
 		{
 			display_message(INFORMATION_MESSAGE, "Defining %d elements from %s\n",
-				Cmiss_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
+				cmzn_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
 		}
 
 		// determine element shape mapping
 
 		FmlObjectHandle fmlShapeEvaluator = Fieldml_GetMeshShapes(fmlSession, fmlMeshType);
-		Cmiss_element_shape_type const_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
-		Cmiss_field_integer_parameters_id elementShapeParameters = 0; // used only if shape evaluator uses indirect map
+		cmzn_element_shape_type const_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+		cmzn_field_integer_parameters_id elementShapeParameters = 0; // used only if shape evaluator uses indirect map
 		if (fmlShapeEvaluator == FML_INVALID_OBJECT_HANDLE)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Missing shape evaluator for mesh type %s", name.c_str());
@@ -1101,14 +1101,14 @@ int FieldMLReader::readMeshes()
 						else
 						{
 							// Case 3. piecewise over 'shape ensemble', indirectly mapping from parameters mapping from element
-							Cmiss_field_id field = getParameters(fmlElementToShapeParameter);
-							elementShapeParameters = Cmiss_field_cast_integer_parameters(field);
+							cmzn_field_id field = getParameters(fmlElementToShapeParameter);
+							elementShapeParameters = cmzn_field_cast_integer_parameters(field);
 							if (!elementShapeParameters)
 							{
 								display_message(ERROR_MESSAGE, "Read FieldML:  Invalid element to shape parameters %s for shape evaluator %s of mesh type %s.",
 									getName(fmlElementToShapeParameter).c_str(), getName(fmlShapeEvaluator).c_str(), name.c_str());
 							}
-							Cmiss_field_destroy(&field);
+							cmzn_field_destroy(&field);
 						}
 					} break;
 				default:
@@ -1122,28 +1122,28 @@ int FieldMLReader::readMeshes()
 
 		// create elements in the mesh of given dimension
 
-		Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, meshDimension);
-		Cmiss_element_template_id element_template = Cmiss_mesh_create_element_template(mesh);
+		cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, meshDimension);
+		cmzn_element_template_id element_template = cmzn_mesh_create_element_template(mesh);
 
-		Cmiss_ensemble_iterator *elementsIterator = Cmiss_field_ensemble_get_first_entry(elementsEnsemble);
+		cmzn_ensemble_iterator *elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 		if (!elementsIterator)
 		{
 			return_code = 0;
 		}
 		FmlObjectHandle fmlLastElementShapeEvaluator = FML_INVALID_OBJECT_HANDLE;
-		Cmiss_element_shape_type last_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
-		Cmiss_ensemble_index_id elementIndex = elementShapeParameters ?
-			Cmiss_field_integer_parameters_create_index(elementShapeParameters) : 0;
+		cmzn_element_shape_type last_shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+		cmzn_ensemble_index_id elementIndex = elementShapeParameters ?
+			cmzn_field_integer_parameters_create_index(elementShapeParameters) : 0;
 		while (return_code)
 		{
-			int elementIdentifier = Cmiss_ensemble_iterator_get_identifier(elementsIterator);
-			Cmiss_element_shape_type shape_type = const_shape_type;
+			int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
+			cmzn_element_shape_type shape_type = const_shape_type;
 			if (const_shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 			{
 				int shapeIdentifier = elementIdentifier;
 				if (elementShapeParameters &&
-					((CMISS_OK != Cmiss_ensemble_index_set_entry(elementIndex, elementsIterator)) ||
-					 (CMISS_OK != Cmiss_field_integer_parameters_get_values(elementShapeParameters, elementIndex, 1, &shapeIdentifier))))
+					((CMISS_OK != cmzn_ensemble_index_set_entry(elementIndex, elementsIterator)) ||
+					 (CMISS_OK != cmzn_field_integer_parameters_get_values(elementShapeParameters, elementIndex, 1, &shapeIdentifier))))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Failed to map shape of element %d in mesh type %s.",
 						elementIdentifier, name.c_str());
@@ -1174,35 +1174,35 @@ int FieldMLReader::readMeshes()
 			}
 			if (shape_type != last_shape_type)
 			{
-				if (!(Cmiss_element_template_set_shape_type(element_template, shape_type)))
+				if (!(cmzn_element_template_set_shape_type(element_template, shape_type)))
 				{
 					return_code = 0;
 					break;
 				}
 				last_shape_type = shape_type;
 			}
-			if (!Cmiss_mesh_define_element(mesh, elementIdentifier, element_template))
+			if (!cmzn_mesh_define_element(mesh, elementIdentifier, element_template))
 			{
 				return_code = 0;
 				break;
 			}
-			if (!Cmiss_ensemble_iterator_increment(elementsIterator))
+			if (!cmzn_ensemble_iterator_increment(elementsIterator))
 				break;
 		}
 
 		if (elementShapeParameters)
-			Cmiss_field_integer_parameters_destroy(&elementShapeParameters);
+			cmzn_field_integer_parameters_destroy(&elementShapeParameters);
 
-		Cmiss_ensemble_iterator_destroy(&elementsIterator);
-		Cmiss_field_ensemble_destroy(&elementsEnsemble);
+		cmzn_ensemble_iterator_destroy(&elementsIterator);
+		cmzn_field_ensemble_destroy(&elementsEnsemble);
 
-		Cmiss_element_template_destroy(&element_template);
-		Cmiss_mesh_destroy(&mesh);
+		cmzn_element_template_destroy(&element_template);
+		cmzn_mesh_destroy(&mesh);
 	}
 	return return_code;
 }
 
-ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mesh,
+ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh,
 	FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
 	FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument)
 {
@@ -1395,24 +1395,24 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mes
 			evaluatorName.c_str(), interpolator_name);
 	}
 
-	Cmiss_field_id local_point_to_node_field = getParameters(fmlLocalPointToNode);
-	Cmiss_field_integer_parameters_id local_point_to_node = Cmiss_field_cast_integer_parameters(local_point_to_node_field);
-	Cmiss_field_destroy(&local_point_to_node_field);
-	Cmiss_ensemble_index_id index = Cmiss_field_integer_parameters_create_index(local_point_to_node);
+	cmzn_field_id local_point_to_node_field = getParameters(fmlLocalPointToNode);
+	cmzn_field_integer_parameters_id local_point_to_node = cmzn_field_cast_integer_parameters(local_point_to_node_field);
+	cmzn_field_destroy(&local_point_to_node_field);
+	cmzn_ensemble_index_id index = cmzn_field_integer_parameters_create_index(local_point_to_node);
 
 	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
 	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
 
-	Cmiss_element_basis_id element_basis = Cmiss_field_module_create_element_basis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
+	cmzn_element_basis_id element_basis = cmzn_field_module_create_element_basis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
 	{
 		for (int dimension = 2; dimension <= meshDimension; dimension++)
 		{
-			Cmiss_element_basis_set_function_type(element_basis, dimension,
+			cmzn_element_basis_set_function_type(element_basis, dimension,
 				libraryBases[basis_index].functionType[dimension - 1]);
 		}
 	}
-	int basis_number_of_nodes = Cmiss_element_basis_get_number_of_nodes(element_basis);
+	int basis_number_of_nodes = cmzn_element_basis_get_number_of_nodes(element_basis);
 	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, index, local_point_count, libraryBases[basis_index].swizzle);
 	if (local_point_to_node && index && local_point_count && (local_point_count == basis_number_of_nodes))
 	{
@@ -1448,40 +1448,40 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			fieldName.c_str(), componentCount);
 	}
 
-	Cmiss_field_id field = Cmiss_field_module_create_finite_element(field_module, componentCount);
-	Cmiss_field_set_name(field, fieldName.c_str());
-	Cmiss_field_set_managed(field, true);
+	cmzn_field_id field = cmzn_field_module_create_finite_element(field_module, componentCount);
+	cmzn_field_set_name(field, fieldName.c_str());
+	cmzn_field_set_managed(field, true);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
 	{
 		// overzealous to help ensure there is at least one 'coordinate' field to define faces
-		Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
+		cmzn_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
 	}
 
 	// create nodes and set node parameters
 
-	Cmiss_nodeset_id nodes = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
-	Cmiss_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
+	cmzn_nodeset_id nodes = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
 		fmlNodesType = fmlNodeEnsembleType;
 		// create the nodes
-		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(nodes);
-		Cmiss_ensemble_iterator_id nodesIterator = Cmiss_field_ensemble_get_first_entry(nodesEnsemble);
+		cmzn_node_template_id node_template = cmzn_nodeset_create_node_template(nodes);
+		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
 		while (return_code)
 		{
-			Cmiss_ensemble_identifier nodeIdentifier = Cmiss_ensemble_iterator_get_identifier(nodesIterator);
-			Cmiss_node_id node = Cmiss_nodeset_create_node(nodes, nodeIdentifier, node_template);
-			Cmiss_node_destroy(&node);
-			if (!Cmiss_ensemble_iterator_increment(nodesIterator))
+			cmzn_ensemble_identifier nodeIdentifier = cmzn_ensemble_iterator_get_identifier(nodesIterator);
+			cmzn_node_id node = cmzn_nodeset_create_node(nodes, nodeIdentifier, node_template);
+			cmzn_node_destroy(&node);
+			if (!cmzn_ensemble_iterator_increment(nodesIterator))
 				break;
 		}
-		Cmiss_ensemble_iterator_destroy(&nodesIterator);
-		Cmiss_node_template_destroy(&node_template);
+		cmzn_ensemble_iterator_destroy(&nodesIterator);
+		cmzn_node_template_destroy(&node_template);
 	}
 
-	Cmiss_field_id node_parameters_field = getParameters(fmlNodeParameters);
-	Cmiss_field_real_parameters_id node_parameters = Cmiss_field_cast_real_parameters(node_parameters_field);
-	Cmiss_field_destroy(&node_parameters_field);
+	cmzn_field_id node_parameters_field = getParameters(fmlNodeParameters);
+	cmzn_field_real_parameters_id node_parameters = cmzn_field_cast_real_parameters(node_parameters_field);
+	cmzn_field_destroy(&node_parameters_field);
 	if (!node_parameters)
 	{
 		display_message(ERROR_MESSAGE,
@@ -1491,22 +1491,22 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	}
 	else
 	{
-		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(nodes);
-		Cmiss_node_template_define_field(node_template, field);
+		cmzn_node_template_id node_template = cmzn_nodeset_create_node_template(nodes);
+		cmzn_node_template_define_field(node_template, field);
 		return_code = 1;
-		Cmiss_ensemble_index_id index = Cmiss_field_real_parameters_create_index(node_parameters);
+		cmzn_ensemble_index_id index = cmzn_field_real_parameters_create_index(node_parameters);
 		// GRC inefficient to iterate over sparse parameters this way
-		Cmiss_ensemble_iterator_id nodesIterator = Cmiss_field_ensemble_get_first_entry(nodesEnsemble);
+		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
 		double *values = new double[componentCount];
 		int *valueExists = new int[componentCount];
-		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
 		while (return_code)
 		{
-			Cmiss_ensemble_identifier nodeIdentifier = Cmiss_ensemble_iterator_get_identifier(nodesIterator);
-			Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
-			Cmiss_ensemble_index_set_entry(index, nodesIterator);
+			cmzn_ensemble_identifier nodeIdentifier = cmzn_ensemble_iterator_get_identifier(nodesIterator);
+			cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
+			cmzn_ensemble_index_set_entry(index, nodesIterator);
 			int valuesRead = 0;
-			if (Cmiss_field_real_parameters_get_values_sparse(
+			if (cmzn_field_real_parameters_get_values_sparse(
 				node_parameters, index, componentCount, values, valueExists, &valuesRead))
 			{
 				if (0 < valuesRead)
@@ -1521,35 +1521,35 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 								values[i] = 0.0;
 						}
 					}
-					Cmiss_node_merge(node, node_template);
-					Cmiss_field_cache_set_node(field_cache, node);
-					Cmiss_field_assign_real(field, field_cache, componentCount, values);
+					cmzn_node_merge(node, node_template);
+					cmzn_field_cache_set_node(field_cache, node);
+					cmzn_field_assign_real(field, field_cache, componentCount, values);
 				}
 			}
 			else
 			{
 				return_code = 0;
 			}
-			Cmiss_node_destroy(&node);
-			if (!Cmiss_ensemble_iterator_increment(nodesIterator))
+			cmzn_node_destroy(&node);
+			if (!cmzn_ensemble_iterator_increment(nodesIterator))
 				break;
 		}
-		Cmiss_field_cache_destroy(&field_cache);
+		cmzn_field_cache_destroy(&field_cache);
 		delete[] valueExists;
 		delete[] values;
-		Cmiss_ensemble_iterator_destroy(&nodesIterator);
-		Cmiss_field_real_parameters_destroy(&node_parameters);
-		Cmiss_ensemble_index_destroy(&index);
-		Cmiss_node_template_destroy(&node_template);
+		cmzn_ensemble_iterator_destroy(&nodesIterator);
+		cmzn_field_real_parameters_destroy(&node_parameters);
+		cmzn_ensemble_index_destroy(&index);
+		cmzn_node_template_destroy(&node_template);
 	}
 
 	// define element fields
 
-	Cmiss_mesh_id mesh =
-		Cmiss_field_module_find_mesh_by_dimension(field_module, meshDimension);
-	Cmiss_element_template_id element_template = 0;
-	Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
-	Cmiss_ensemble_iterator_id elementsIterator = Cmiss_field_ensemble_get_first_entry(elementsEnsemble);
+	cmzn_mesh_id mesh =
+		cmzn_field_module_find_mesh_by_dimension(field_module, meshDimension);
+	cmzn_element_template_id element_template = 0;
+	cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
+	cmzn_ensemble_iterator_id elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 	if (!elementsIterator)
 	{
 		return_code = 0;
@@ -1558,7 +1558,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	std::vector<ElementFieldComponent*> components(componentCount, (ElementFieldComponent*)0);
 	while (return_code)
 	{
-		int elementIdentifier = Cmiss_ensemble_iterator_get_identifier(elementsIterator);
+		int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
 		bool newElementTemplate = (element_template != 0);
 		bool definedOnAllComponents = true;
 		for (int ic = 0; ic < componentCount; ic++)
@@ -1578,17 +1578,17 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		}
 		if (!definedOnAllComponents)
 		{
-			if (!Cmiss_ensemble_iterator_increment(elementsIterator))
+			if (!cmzn_ensemble_iterator_increment(elementsIterator))
 				break;
 			continue;
 		}
 		if (newElementTemplate)
 		{
 			if (element_template)
-				Cmiss_element_template_destroy(&element_template);
-			element_template = Cmiss_mesh_create_element_template(mesh);
+				cmzn_element_template_destroy(&element_template);
+			element_template = cmzn_mesh_create_element_template(mesh);
 			// do not want to override shape of existing elements:
-			Cmiss_element_template_set_shape_type(element_template, CMISS_ELEMENT_SHAPE_TYPE_INVALID);
+			cmzn_element_template_set_shape_type(element_template, CMISS_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
 			for (int ic = 0; ic < componentCount; ic++)
 			{
@@ -1626,9 +1626,9 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						}
 					}
 					total_local_point_count += components[ic]->local_point_count;
-					Cmiss_element_template_set_number_of_nodes(element_template, total_local_point_count);
+					cmzn_element_template_set_number_of_nodes(element_template, total_local_point_count);
 				}
-				if (!Cmiss_element_template_define_field_simple_nodal(element_template, field,
+				if (!cmzn_element_template_define_field_simple_nodal(element_template, field,
 					/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
 					components[ic]->local_point_indexes))
 				{
@@ -1647,8 +1647,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			if ((total_local_point_count + 1) == component->local_point_indexes[0])
 			{
 				total_local_point_count += component->local_point_count;
-				Cmiss_ensemble_index_set_entry(component->index, elementsIterator);
-				if (!Cmiss_field_integer_parameters_get_values(component->local_point_to_node, component->index,
+				cmzn_ensemble_index_set_entry(component->index, elementsIterator);
+				if (!cmzn_field_integer_parameters_get_values(component->local_point_to_node, component->index,
 					component->local_point_count, component->node_identifiers))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Incomplete local to global map for field %s", fieldName.c_str());
@@ -1657,43 +1657,43 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				}
 				for (int i = 0; i < component->local_point_count; i++)
 				{
-					Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
+					cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
 					if (!node)
 					{
-						char *local_point_to_node_name = Cmiss_field_get_name(
-							Cmiss_field_integer_parameters_base_cast(component->local_point_to_node));
+						char *local_point_to_node_name = cmzn_field_get_name(
+							cmzn_field_integer_parameters_base_cast(component->local_point_to_node));
 						display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
 							component->node_identifiers[i], elementIdentifier, i + 1, local_point_to_node_name);
 						DEALLOCATE(local_point_to_node_name);
 						return_code = 0;
 						break;
 					}
-					Cmiss_element_template_set_node(element_template, component->swizzled_local_point_indexes[i], node);
-					Cmiss_node_destroy(&node);
+					cmzn_element_template_set_node(element_template, component->swizzled_local_point_indexes[i], node);
+					cmzn_node_destroy(&node);
 				}
 			}
 		}
 		if (return_code)
 		{
-			Cmiss_element_id element = Cmiss_mesh_find_element_by_identifier(mesh, elementIdentifier);
-			if (!Cmiss_element_merge(element, element_template))
+			cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
+			if (!cmzn_element_merge(element, element_template))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
 				return_code = 0;
 			}
-			Cmiss_element_destroy(&element);
+			cmzn_element_destroy(&element);
 		}
-		if (!Cmiss_ensemble_iterator_increment(elementsIterator))
+		if (!cmzn_ensemble_iterator_increment(elementsIterator))
 			break;
 	}
-	Cmiss_ensemble_iterator_destroy(&elementsIterator);
-	Cmiss_field_ensemble_destroy(&elementsEnsemble);
-	Cmiss_field_ensemble_destroy(&nodesEnsemble);
+	cmzn_ensemble_iterator_destroy(&elementsIterator);
+	cmzn_field_ensemble_destroy(&elementsEnsemble);
+	cmzn_field_ensemble_destroy(&nodesEnsemble);
 	if (element_template)
-		Cmiss_element_template_destroy(&element_template);
-	Cmiss_mesh_destroy(&mesh);
-	Cmiss_nodeset_destroy(&nodes);
-	Cmiss_field_destroy(&field);
+		cmzn_element_template_destroy(&element_template);
+	cmzn_mesh_destroy(&mesh);
+	cmzn_nodeset_destroy(&nodes);
+	cmzn_field_destroy(&field);
 
 	return return_code;
 }
@@ -1996,11 +1996,11 @@ int FieldMLReader::parse()
 	}
 	if (!return_code)
 		return 0;
-	Cmiss_region_begin_change(region);
+	cmzn_region_begin_change(region);
 	return_code = return_code && readMeshes();
 	return_code = return_code && readAggregateFields();
 	return_code = return_code && readReferenceFields();
-	Cmiss_region_end_change(region);
+	cmzn_region_end_change(region);
 	return return_code;
 }
 
@@ -2027,7 +2027,7 @@ int is_FieldML_file(const char *filename)
 	return return_code;
 }
 
-int parse_fieldml_file(struct Cmiss_region *region, const char *filename)
+int parse_fieldml_file(struct cmzn_region *region, const char *filename)
 {
 	FieldMLReader fmlReader(region, filename);
 	return fmlReader.parse();

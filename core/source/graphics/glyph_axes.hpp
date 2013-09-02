@@ -45,29 +45,29 @@
 #include "zinc/graphicsmaterial.h"
 #include "graphics/glyph.hpp"
 
-struct Cmiss_glyph_axes : public Cmiss_glyph
+struct cmzn_glyph_axes : public cmzn_glyph
 {
 private:
-	Cmiss_glyph *axisGlyph;
+	cmzn_glyph *axisGlyph;
 	double axisWidth;
 	char *axisLabels[3];
-	Cmiss_graphics_material *axisMaterials[3];
+	cmzn_graphics_material *axisMaterials[3];
 	GT_object *graphicsObject;
 
-	Cmiss_glyph_axes(Cmiss_glyph *axisGlyphIn, double axisWidthIn);
-	virtual ~Cmiss_glyph_axes();
+	cmzn_glyph_axes(cmzn_glyph *axisGlyphIn, double axisWidthIn);
+	virtual ~cmzn_glyph_axes();
 	void invalidate();
 
 public:
-	static Cmiss_glyph_axes *create(Cmiss_glyph *axisGlyphIn, double axisWidthIn)
+	static cmzn_glyph_axes *create(cmzn_glyph *axisGlyphIn, double axisWidthIn)
 	{
 		if (axisGlyphIn && (axisWidthIn >= 0.0))
-			return new Cmiss_glyph_axes(axisGlyphIn, axisWidthIn);
+			return new cmzn_glyph_axes(axisGlyphIn, axisWidthIn);
 		return 0;
 	}
 
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *tessellation,
-		Cmiss_graphics_material *material, Cmiss_font *font);
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *tessellation,
+		cmzn_graphics_material *material, cmzn_font *font);
 
 	virtual bool usesFont()
 	{
@@ -92,9 +92,9 @@ public:
 	int setAxisLabel(int axisNumber, const char *label);
 
 	/** @return  ACCESSed material or 0 */
-	Cmiss_graphics_material *getAxisMaterial(int axisNumber);
+	cmzn_graphics_material *getAxisMaterial(int axisNumber);
 
-	int setAxisMaterial(int axisNumber, Cmiss_graphics_material *material);
+	int setAxisMaterial(int axisNumber, cmzn_graphics_material *material);
 
 	virtual void fontChange();
 

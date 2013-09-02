@@ -47,7 +47,7 @@ namespace zinc
 class SpectrumComponent
 {
 protected:
-	Cmiss_spectrum_component_id id;
+	cmzn_spectrum_component_id id;
 
 public:
 
@@ -58,23 +58,23 @@ public:
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit SpectrumComponent(
-		Cmiss_spectrum_component_id in_spectrum_component_id) :
+		cmzn_spectrum_component_id in_spectrum_component_id) :
 		id(in_spectrum_component_id)
 	{
 	}
 
 	SpectrumComponent(const SpectrumComponent& spectrumComponent) :
-		id(Cmiss_spectrum_component_access(spectrumComponent.id))
+		id(cmzn_spectrum_component_access(spectrumComponent.id))
 	{
 	}
 
 	SpectrumComponent& operator=(const SpectrumComponent& spectrumComponent)
 	{
-		Cmiss_spectrum_component_id temp_id = Cmiss_spectrum_component_access(
+		cmzn_spectrum_component_id temp_id = cmzn_spectrum_component_access(
 			spectrumComponent.id);
 		if (0 != id)
 		{
-			Cmiss_spectrum_component_destroy(&id);
+			cmzn_spectrum_component_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -84,7 +84,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_spectrum_component_destroy(&id);
+			cmzn_spectrum_component_destroy(&id);
 		}
 	}
 
@@ -116,164 +116,164 @@ public:
 		COLOUR_MAPPING_WHITE_TO_GREEN = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN
 	};
 
-	Cmiss_spectrum_component_id getId()
+	cmzn_spectrum_component_id getId()
 	{
 		return id;
 	}
 
 	double getRangeMinumum()
 	{
-		return Cmiss_spectrum_component_get_range_minimum(id);
+		return cmzn_spectrum_component_get_range_minimum(id);
 	}
 
 	int setRangeMinimum(double value)
 	{
-		return Cmiss_spectrum_component_set_range_minimum(id, value);
+		return cmzn_spectrum_component_set_range_minimum(id, value);
 	}
 
 	double getRangeMaximum()
 	{
-		return Cmiss_spectrum_component_get_range_maximum(id);
+		return cmzn_spectrum_component_get_range_maximum(id);
 	}
 
 	int setRangeMaximum(double value)
 	{
-		return Cmiss_spectrum_component_set_range_maximum(id, value);
+		return cmzn_spectrum_component_set_range_maximum(id, value);
 	}
 
 	double getColourMinumum()
 	{
-		return Cmiss_spectrum_component_get_colour_minimum(id);
+		return cmzn_spectrum_component_get_colour_minimum(id);
 	}
 
 	int setColourMinimum(double value)
 	{
-		return Cmiss_spectrum_component_set_colour_minimum(id,value);
+		return cmzn_spectrum_component_set_colour_minimum(id,value);
 	}
 
 	double getColourMaxumum()
 	{
-		return Cmiss_spectrum_component_get_colour_maximum(id);
+		return cmzn_spectrum_component_get_colour_maximum(id);
 	}
 
 	int setColourMaximum(double value)
 	{
-		return Cmiss_spectrum_component_set_colour_maximum(id, value);
+		return cmzn_spectrum_component_set_colour_maximum(id, value);
 	}
 
 	double getStepValue()
 	{
-		return Cmiss_spectrum_component_get_step_value(id);
+		return cmzn_spectrum_component_get_step_value(id);
 	}
 
 	int setStepValue(double value)
 	{
-		return Cmiss_spectrum_component_set_step_value(id, value);
+		return cmzn_spectrum_component_set_step_value(id, value);
 	}
 
 	double getExaggeration()
 	{
-		return Cmiss_spectrum_component_get_exaggeration(id);
+		return cmzn_spectrum_component_get_exaggeration(id);
 	}
 
 	int setExaggeration(double value)
 	{
-		return Cmiss_spectrum_component_set_exaggeration(id, value);
+		return cmzn_spectrum_component_set_exaggeration(id, value);
 	}
 
 	double getBandedRatio()
 	{
-		return Cmiss_spectrum_component_get_banded_ratio(id);
+		return cmzn_spectrum_component_get_banded_ratio(id);
 	}
 
 	int setBandedRatio(double value)
 	{
-		return Cmiss_spectrum_component_set_banded_ratio(id, value);
+		return cmzn_spectrum_component_set_banded_ratio(id, value);
 	}
 
 	bool isActive()
 	{
-		return Cmiss_spectrum_component_is_active(id);
+		return cmzn_spectrum_component_is_active(id);
 	}
 
 	int setActive(bool active)
 	{
-		return Cmiss_spectrum_component_set_active(id, active);
+		return cmzn_spectrum_component_set_active(id, active);
 	}
 
 	bool isColourReverse()
 	{
-		return Cmiss_spectrum_component_is_colour_reverse(id);
+		return cmzn_spectrum_component_is_colour_reverse(id);
 	}
 
 	int setColourReverse(bool reverse)
 	{
-		return Cmiss_spectrum_component_set_colour_reverse(id, reverse);
+		return cmzn_spectrum_component_set_colour_reverse(id, reverse);
 	}
 
 	bool isExtendAbove()
 	{
-		return Cmiss_spectrum_component_is_extend_above(id);
+		return cmzn_spectrum_component_is_extend_above(id);
 	}
 
 	int setExtendAbove(bool extend_above)
 	{
-		return Cmiss_spectrum_component_set_extend_above(id, extend_above);
+		return cmzn_spectrum_component_set_extend_above(id, extend_above);
 	}
 
 	bool isExtendBelow()
 	{
-		return Cmiss_spectrum_component_is_extend_below(id);
+		return cmzn_spectrum_component_is_extend_below(id);
 	}
 
 	int setExtendBelow(bool extend_below)
 	{
-		return Cmiss_spectrum_component_set_extend_below(id, extend_below);
+		return cmzn_spectrum_component_set_extend_below(id, extend_below);
 	}
 
 	int getFieldComponent()
 	{
-		return Cmiss_spectrum_component_get_field_component(id);
+		return cmzn_spectrum_component_get_field_component(id);
 	}
 
 	int setFieldComponent(int componentNumber)
 	{
-		return Cmiss_spectrum_component_set_field_component(id,
+		return cmzn_spectrum_component_set_field_component(id,
 			componentNumber);
 	}
 
 	int getNumberOfBands()
 	{
-		return Cmiss_spectrum_component_get_number_of_bands(id);
+		return cmzn_spectrum_component_get_number_of_bands(id);
 	}
 
 	int setNumberOfBands(int numberOfBands)
 	{
-		return Cmiss_spectrum_component_set_number_of_bands(id, numberOfBands);
+		return cmzn_spectrum_component_set_number_of_bands(id, numberOfBands);
 	}
 
 	ScaleType getScaleType()
 	{
-		return static_cast<ScaleType>(Cmiss_spectrum_component_get_scale_type(
+		return static_cast<ScaleType>(cmzn_spectrum_component_get_scale_type(
 			id));
 	}
 
 	int setScaleType(ScaleType scaleType)
 	{
-		return Cmiss_spectrum_component_set_scale_type(id,
-			static_cast<Cmiss_spectrum_component_scale_type>(scaleType));
+		return cmzn_spectrum_component_set_scale_type(id,
+			static_cast<cmzn_spectrum_component_scale_type>(scaleType));
 	}
 
 	ColourMapping getColourMapping()
 	{
-		return static_cast<ColourMapping>(Cmiss_spectrum_component_get_colour_mapping(
+		return static_cast<ColourMapping>(cmzn_spectrum_component_get_colour_mapping(
 			id));
 	}
 
 	int setColourMapping(ColourMapping colourMapping)
 	{
-		return Cmiss_spectrum_component_set_colour_mapping(id,
-			static_cast<Cmiss_spectrum_component_colour_mapping>(colourMapping));
+		return cmzn_spectrum_component_set_colour_mapping(id,
+			static_cast<cmzn_spectrum_component_colour_mapping>(colourMapping));
 	}
 
 };
@@ -281,7 +281,7 @@ public:
 class Spectrum
 {
 protected:
-	Cmiss_spectrum_id id;
+	cmzn_spectrum_id id;
 
 public:
 
@@ -291,22 +291,22 @@ public:
 	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Spectrum(Cmiss_spectrum_id in_spectrum_id) :
+	explicit Spectrum(cmzn_spectrum_id in_spectrum_id) :
 		id(in_spectrum_id)
 	{
 	}
 
 	Spectrum(const Spectrum& spectrum) :
-		id(Cmiss_spectrum_access(spectrum.id))
+		id(cmzn_spectrum_access(spectrum.id))
 	{
 	}
 
 	Spectrum& operator=(const Spectrum& spectrum)
 	{
-		Cmiss_spectrum_id temp_id = Cmiss_spectrum_access(spectrum.id);
+		cmzn_spectrum_id temp_id = cmzn_spectrum_access(spectrum.id);
 		if (0 != id)
 		{
-			Cmiss_spectrum_destroy(&id);
+			cmzn_spectrum_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -316,7 +316,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_spectrum_destroy(&id);
+			cmzn_spectrum_destroy(&id);
 		}
 	}
 
@@ -325,93 +325,93 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_spectrum_id getId()
+	cmzn_spectrum_id getId()
 	{
 		return id;
 	}
 
 	bool isManaged()
 	{
-		return Cmiss_spectrum_is_managed(id);
+		return cmzn_spectrum_is_managed(id);
 	}
 
 	int setManaged(bool value)
 	{
-		return Cmiss_spectrum_set_managed(id, value);
+		return cmzn_spectrum_set_managed(id, value);
 	}
 
 	int beginChange()
 	{
-		return Cmiss_spectrum_begin_change(id);
+		return cmzn_spectrum_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_spectrum_end_change(id);
+		return cmzn_spectrum_end_change(id);
 	}
 
 	char *getName()
 	{
-		return Cmiss_spectrum_get_name(id);
+		return cmzn_spectrum_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_spectrum_set_name(id, name);
+		return cmzn_spectrum_set_name(id, name);
 	}
 
 	int getNumberOfComponents()
 	{
-		return Cmiss_spectrum_get_number_of_components(id);
+		return cmzn_spectrum_get_number_of_components(id);
 	}
 
 	SpectrumComponent createComponent()
 	{
-		return SpectrumComponent(Cmiss_spectrum_create_component(id));
+		return SpectrumComponent(cmzn_spectrum_create_component(id));
 	}
 
 	SpectrumComponent getFirstComponent()
 	{
-		return SpectrumComponent(Cmiss_spectrum_get_first_component(id));
+		return SpectrumComponent(cmzn_spectrum_get_first_component(id));
 	}
 
 	SpectrumComponent getNextComponent(SpectrumComponent& refComponent)
 	{
 		return SpectrumComponent(
-			Cmiss_spectrum_get_next_component(id, refComponent.getId()));
+			cmzn_spectrum_get_next_component(id, refComponent.getId()));
 	}
 
 	SpectrumComponent getPreviousComponent(SpectrumComponent& refComponent)
 	{
 		return SpectrumComponent(
-			Cmiss_spectrum_get_previous_component(id, refComponent.getId()));
+			cmzn_spectrum_get_previous_component(id, refComponent.getId()));
 	}
 
 	int moveComponentBefore(SpectrumComponent& component,
 		SpectrumComponent& refComponent)
 	{
-		return Cmiss_spectrum_move_component_before(id, component.getId(),
+		return cmzn_spectrum_move_component_before(id, component.getId(),
 			refComponent.getId());
 	}
 
 	int removeComponent(SpectrumComponent component)
 	{
-		return Cmiss_spectrum_remove_component(id, component.getId());
+		return cmzn_spectrum_remove_component(id, component.getId());
 	}
 
 	int removeAllComponents()
 	{
-		return Cmiss_spectrum_remove_all_components(id);
+		return cmzn_spectrum_remove_all_components(id);
 	}
 
 	bool isMaterialOverwrite()
 	{
-		return Cmiss_spectrum_is_material_overwrite(id);
+		return cmzn_spectrum_is_material_overwrite(id);
 	}
 
 	int setMaterialOverwrite(bool overwrite)
 	{
-		return Cmiss_spectrum_set_material_overwrite(id, overwrite);
+		return cmzn_spectrum_set_material_overwrite(id, overwrite);
 	}
 
 };
@@ -419,7 +419,7 @@ public:
 class SpectrumModule
 {
 protected:
-	Cmiss_spectrum_module_id id;
+	cmzn_spectrum_module_id id;
 
 public:
 
@@ -429,23 +429,23 @@ public:
 	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit SpectrumModule(Cmiss_spectrum_module_id in_spectrum_module_id) :
+	explicit SpectrumModule(cmzn_spectrum_module_id in_spectrum_module_id) :
 		id(in_spectrum_module_id)
 	{
 	}
 
 	SpectrumModule(const SpectrumModule& spectrumModule) :
-		id(Cmiss_spectrum_module_access(spectrumModule.id))
+		id(cmzn_spectrum_module_access(spectrumModule.id))
 	{
 	}
 
 	SpectrumModule& operator=(const SpectrumModule& spectrumModule)
 	{
-		Cmiss_spectrum_module_id temp_id = Cmiss_spectrum_module_access(
+		cmzn_spectrum_module_id temp_id = cmzn_spectrum_module_access(
 			spectrumModule.id);
 		if (0 != id)
 		{
-			Cmiss_spectrum_module_destroy(&id);
+			cmzn_spectrum_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -455,7 +455,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_spectrum_module_destroy(&id);
+			cmzn_spectrum_module_destroy(&id);
 		}
 	}
 
@@ -464,39 +464,39 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_spectrum_module_id getId()
+	cmzn_spectrum_module_id getId()
 	{
 		return id;
 	}
 
 	Spectrum createSpectrum()
 	{
-		return Spectrum(Cmiss_spectrum_module_create_spectrum(id));
+		return Spectrum(cmzn_spectrum_module_create_spectrum(id));
 	}
 
 	Spectrum findSpectrumByName(const char *name)
 	{
-		return Spectrum(Cmiss_spectrum_module_find_spectrum_by_name(id, name));
+		return Spectrum(cmzn_spectrum_module_find_spectrum_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return Cmiss_spectrum_module_begin_change(id);
+		return cmzn_spectrum_module_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_spectrum_module_end_change(id);
+		return cmzn_spectrum_module_end_change(id);
 	}
 
 	Spectrum getDefaultSpectrum()
 	{
-		return Spectrum(Cmiss_spectrum_module_get_default_spectrum(id));
+		return Spectrum(cmzn_spectrum_module_get_default_spectrum(id));
 	}
 
 	int setDefaultSpectrum(Spectrum &spectrum)
 	{
-		return Cmiss_spectrum_module_set_default_spectrum(id, spectrum.getId());
+		return cmzn_spectrum_module_set_default_spectrum(id, spectrum.getId());
 	}
 };
 

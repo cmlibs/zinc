@@ -113,7 +113,7 @@ enum Texture_compile_state
 typedef enum
 {
 	CMISS_TEXTURE_LUMINANCE_SIZE = 1
-} Cmiss_texture_graphics_parameter_id;
+} cmzn_texture_graphics_parameter_id;
 
 DECLARE_LIST_TYPES(Texture_property);
 
@@ -5721,7 +5721,7 @@ Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 	return (return_code);
 } /* Texture_get_number_of_components */
 
-int Cmiss_texture_get_graphics_storage_size(Cmiss_texture_id texture)
+int cmzn_texture_get_graphics_storage_size(cmzn_texture_id texture)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
 
@@ -5780,8 +5780,8 @@ parameters.
 	return (size);
 } /* Texture_get_graphics_storage_size */
 
-int Cmiss_texture_get_graphics_parameter(Cmiss_texture_id texture,
-	Cmiss_texture_graphics_parameter_id graphics_parameter)
+int cmzn_texture_get_graphics_parameter(cmzn_texture_id texture,
+	cmzn_texture_graphics_parameter_id graphics_parameter)
 /*******************************************************************************
 LAST MODIFIED : 12 October 2009
 
@@ -5795,7 +5795,7 @@ These will only be defined if they have been rendered.
 	GLenum texture_target;
 #endif
 
-	ENTER(Cmiss_texture_get_graphics_parameter);
+	ENTER(cmzn_texture_get_graphics_parameter);
 	if (texture)
 	{
 #if defined (OPENGL_API)
@@ -5952,7 +5952,7 @@ real image data and not padding to make image sizes up to powers of 2.
 	return (return_code);
 } /* Texture_set_physical_size */
 
-int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture,
+int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture,
    unsigned int *dimension, ZnReal **sizes)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
@@ -6004,7 +6004,7 @@ the top right of the texture.
 	return (return_code);
 } /* Texture_get_texture_coordinate_sizes */
 
-int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture,
+int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture,
    unsigned int dimension, ZnReal *sizes)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
@@ -6237,7 +6237,7 @@ each size to be a power of two.
 	return (return_code);
 } /* Texture_get_original_texel_sizes */
 
-int Cmiss_texture_get_rendered_texel_sizes(struct Texture *texture,
+int cmzn_texture_get_rendered_texel_sizes(struct Texture *texture,
 	unsigned int *dimension, unsigned int **sizes)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2007
@@ -6376,7 +6376,7 @@ Sets how textures coordinates outside [0,1] are handled.
 	return (return_code);
 } /* Texture_set_wrap_mode */
 
-int Cmiss_texture_write_to_file(Cmiss_texture_id texture,
+int cmzn_texture_write_to_file(cmzn_texture_id texture,
    const char *filename)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2007
@@ -6391,7 +6391,7 @@ I think it is best to write a separate function if you want to write a
 	struct Cmgui_image_information *cmgui_image_information;
 	int return_code;
 
-	ENTER(Cmiss_texture_write_to_file);
+	ENTER(cmzn_texture_write_to_file);
 	if (texture)
 	{
 		cmgui_image_information = CREATE(Cmgui_image_information)();
@@ -6407,7 +6407,7 @@ I think it is best to write a separate function if you want to write a
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_texture_write_to_file:  "
+					"cmzn_texture_write_to_file:  "
 					"Error writing image %s", filename);
 				return_code = 0;
 			}
@@ -6416,7 +6416,7 @@ I think it is best to write a separate function if you want to write a
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_texture_write_to_file:  "
+				"cmzn_texture_write_to_file:  "
 				"Could not get image from texture");
 			return_code = 0;
 		}
@@ -6425,14 +6425,14 @@ I think it is best to write a separate function if you want to write a
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_texture_write_to_file:  "
+			"cmzn_texture_write_to_file:  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_texture_write_to_file */
+} /* cmzn_texture_write_to_file */
 
 static int list_Texture_property(struct Texture_property *texture_property,
 	void *dummy)
@@ -6579,7 +6579,7 @@ Writes the properties of the <texture> to the command window.
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
 
 		display_message(INFORMATION_MESSAGE,"  storage used in graphics : %d\n",
-			 Cmiss_texture_get_graphics_storage_size(texture));
+			 cmzn_texture_get_graphics_storage_size(texture));
 		/* write the rendered image size */
 		display_message(INFORMATION_MESSAGE,
 			"  rendered width (texels) = %d, rendered height (texels) = %d, "
@@ -6590,7 +6590,7 @@ Writes the properties of the <texture> to the command window.
 		{
 		case TEXTURE_LUMINANCE:
 		{
-			int red_size = Cmiss_texture_get_graphics_parameter(texture,
+			int red_size = cmzn_texture_get_graphics_parameter(texture,
 				CMISS_TEXTURE_LUMINANCE_SIZE);
 			display_message(INFORMATION_MESSAGE,"  pixel_storage_size %d\n",
 				red_size);

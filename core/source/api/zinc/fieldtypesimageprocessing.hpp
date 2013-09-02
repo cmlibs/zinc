@@ -50,7 +50,7 @@ class FieldBinaryDilateImageFilter : public Field
 {
 
 private:
-	explicit FieldBinaryDilateImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldBinaryDilateImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldBinaryDilateImageFilter
@@ -68,7 +68,7 @@ class FieldBinaryErodeImageFilter : public Field
 {
 
 private:
-	explicit FieldBinaryErodeImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldBinaryErodeImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldBinaryErodeImageFilter
@@ -86,7 +86,7 @@ class FieldBinaryThresholdImageFilter : public Field
 {
 
 private:
-	explicit FieldBinaryThresholdImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldBinaryThresholdImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldBinaryThresholdImageFilter
@@ -104,7 +104,7 @@ class FieldCannyEdgeDetectionImageFilter : public Field
 {
 
 private:
-	explicit FieldCannyEdgeDetectionImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldCannyEdgeDetectionImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldCannyEdgeDetectionImageFilter
@@ -123,7 +123,7 @@ class FieldConnectedThresholdImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConnectedThresholdImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldConnectedThresholdImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldConnectedThresholdImageFilter
@@ -143,7 +143,7 @@ class FieldCurvatureAnisotropicDiffusionImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCurvatureAnisotropicDiffusionImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldCurvatureAnisotropicDiffusionImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldCurvatureAnisotropicDiffusionImageFilter
@@ -162,7 +162,7 @@ class FieldDiscreteGaussianImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDiscreteGaussianImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldDiscreteGaussianImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldDiscreteGaussianImageFilter
@@ -181,7 +181,7 @@ class FieldGradientMagnitudeRecursiveGaussianImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGradientMagnitudeRecursiveGaussianImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldGradientMagnitudeRecursiveGaussianImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldGradientMagnitudeRecursiveGaussianImageFilter
@@ -200,7 +200,7 @@ class FieldRescaleIntensityImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldRescaleIntensityImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldRescaleIntensityImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldRescaleIntensityImageFilter
@@ -219,7 +219,7 @@ class FieldSigmoidImageFilter : public Field
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSigmoidImageFilter(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldSigmoidImageFilter(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldSigmoidImageFilter
@@ -238,7 +238,7 @@ inline FieldBinaryDilateImageFilter
 		int radius, double erode_value)
 {
 	return FieldBinaryDilateImageFilter(
-		Cmiss_field_module_create_binary_dilate_image_filter(id, sourceField.getId(),
+		cmzn_field_module_create_binary_dilate_image_filter(id, sourceField.getId(),
 			radius, erode_value));
 }
 
@@ -247,7 +247,7 @@ inline FieldBinaryErodeImageFilter
 		int radius, double dilate_value)
 {
 	return FieldBinaryErodeImageFilter(
-		Cmiss_field_module_create_binary_erode_image_filter(id, sourceField.getId(),
+		cmzn_field_module_create_binary_erode_image_filter(id, sourceField.getId(),
 			radius, dilate_value));
 }
 
@@ -256,7 +256,7 @@ inline FieldBinaryThresholdImageFilter
 		double lower_threshold, double upper_threshold)
 {
 	return FieldBinaryThresholdImageFilter(
-		Cmiss_field_module_create_binary_threshold_image_filter(
+		cmzn_field_module_create_binary_threshold_image_filter(
 			id, sourceField.getId(), lower_threshold, upper_threshold));
 }
 
@@ -265,7 +265,7 @@ inline FieldCannyEdgeDetectionImageFilter
 		double variance, double maximumError, double upperThreshold, double lowerThreshold)
 {
 	return FieldCannyEdgeDetectionImageFilter(
-		Cmiss_field_module_create_canny_edge_detection_image_filter(
+		cmzn_field_module_create_canny_edge_detection_image_filter(
 			id, sourceField.getId(),
 			variance, maximumError, upperThreshold, lowerThreshold));
 }
@@ -276,7 +276,7 @@ inline FieldConnectedThresholdImageFilter
 		  int dimension, int seedPointsCount, const double *seedPoints)
 {
 	return FieldConnectedThresholdImageFilter(
-		Cmiss_field_module_create_connected_threshold_image_filter(id, sourceField.getId(),
+		cmzn_field_module_create_connected_threshold_image_filter(id, sourceField.getId(),
 		lowerThreshold, upperThreshold, replaceValue, seedPointsCount, dimension, seedPoints));
 }
 
@@ -285,7 +285,7 @@ inline FieldCurvatureAnisotropicDiffusionImageFilter
 		double timeStep, double conductance, int numIterations)
 {
 	return FieldCurvatureAnisotropicDiffusionImageFilter(
-		Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(id, sourceField.getId(),
+		cmzn_field_module_create_curvature_anisotropic_diffusion_image_filter(id, sourceField.getId(),
 			timeStep, conductance, numIterations));
 }
 
@@ -294,7 +294,7 @@ inline FieldDiscreteGaussianImageFilter
 		double variance, int maxKernelWidth)
 {
 	return FieldDiscreteGaussianImageFilter(
-		Cmiss_field_module_create_discrete_gaussian_image_filter(id, sourceField.getId(),
+		cmzn_field_module_create_discrete_gaussian_image_filter(id, sourceField.getId(),
 			variance, maxKernelWidth));
 }
 
@@ -303,7 +303,7 @@ inline FieldGradientMagnitudeRecursiveGaussianImageFilter
 		double sigma)
 {
 	return FieldGradientMagnitudeRecursiveGaussianImageFilter(
-		Cmiss_field_module_create_gradient_magnitude_recursive_gaussian_image_filter(id,
+		cmzn_field_module_create_gradient_magnitude_recursive_gaussian_image_filter(id,
 			sourceField.getId(), sigma));
 }
 
@@ -312,7 +312,7 @@ inline FieldRescaleIntensityImageFilter
 		double outputMin, double outputMax)
 {
 	return FieldRescaleIntensityImageFilter(
-		Cmiss_field_module_create_rescale_intensity_image_filter(id,
+		cmzn_field_module_create_rescale_intensity_image_filter(id,
 			sourceField.getId(), outputMin, outputMax));
 }
 
@@ -321,7 +321,7 @@ inline FieldSigmoidImageFilter
 		double min, double max,	double alpha, double beta)
 {
 	return FieldSigmoidImageFilter(
-		Cmiss_field_module_create_sigmoid_image_filter(id,
+		cmzn_field_module_create_sigmoid_image_filter(id,
 			sourceField.getId(), min, max, alpha, beta));
 }
 

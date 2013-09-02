@@ -40,11 +40,11 @@
 
 #ifndef CMZN_FIELDSUBOBJECTGROUPID_H__
 
-	struct Cmiss_field_node_group;
-	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
+	struct cmzn_field_node_group;
+	typedef struct cmzn_field_node_group *cmzn_field_node_group_id;
 
-	struct Cmiss_field_element_group;
-	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
+	struct cmzn_field_element_group;
+	typedef struct cmzn_field_element_group *cmzn_field_element_group_id;
 
 	#define CMZN_FIELDSUBOBJECTGROUPID_H__
 #endif

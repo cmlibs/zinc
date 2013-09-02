@@ -54,7 +54,7 @@ class FieldGroup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGroup(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldGroup FieldModule::createGroup();
@@ -65,123 +65,123 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGroup(Cmiss_field_group_id field_group_id) :
-		Field(reinterpret_cast<Cmiss_field_id>(field_group_id))
+	explicit FieldGroup(cmzn_field_group_id field_group_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_group_id))
 	{	}
 
 	FieldGroup(Field& field) :
-		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_group(field.getId())))
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_group(field.getId())))
 	{	}
 
 	int isEmpty()
 	{
-		return Cmiss_field_group_is_empty(reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_is_empty(reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int isEmptyLocal()
 	{
-		return Cmiss_field_group_is_empty_local(reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_is_empty_local(reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int clear()
 	{
-		return Cmiss_field_group_clear(reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_clear(reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int clearLocal()
 	{
-		return Cmiss_field_group_clear_local(reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_clear_local(reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int removeEmptySubgroups()
 	{
-		return Cmiss_field_group_remove_empty_subgroups(
-			reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_remove_empty_subgroups(
+			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int addLocalRegion()
 	{
-		return Cmiss_field_group_add_local_region(
-			reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_add_local_region(
+			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int containsLocalRegion()
 	{
-		return Cmiss_field_group_contains_local_region(
-			reinterpret_cast<Cmiss_field_group_id>(id));
+		return cmzn_field_group_contains_local_region(
+			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
 	int addRegion(Region& region)
 	{
-		return Cmiss_field_group_add_region(reinterpret_cast<Cmiss_field_group_id>(id),
+		return cmzn_field_group_add_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
 	int removeRegion(Region& region)
 	{
-		return Cmiss_field_group_remove_region(reinterpret_cast<Cmiss_field_group_id>(id),
+		return cmzn_field_group_remove_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
 	int containsRegion(Region& region)
 	{
-		return Cmiss_field_group_contains_region(reinterpret_cast<Cmiss_field_group_id>(id),
+		return cmzn_field_group_contains_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
 	FieldGroup createSubregionGroup(Region& region)
 	{
-		return FieldGroup(Cmiss_field_group_create_subregion_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), region.getId()));
+		return FieldGroup(cmzn_field_group_create_subregion_group(
+			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
 	FieldGroup getSubregionGroup(Region& region)
 	{
-		return FieldGroup(Cmiss_field_group_get_subregion_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), region.getId()));
+		return FieldGroup(cmzn_field_group_get_subregion_group(
+			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
 	FieldNodeGroup createNodeGroup(Nodeset& nodeset)
 	{
-		return FieldNodeGroup(Cmiss_field_group_create_node_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), nodeset.getId()));
+		return FieldNodeGroup(cmzn_field_group_create_node_group(
+			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
 	FieldNodeGroup getNodeGroup(Nodeset& nodeset)
 	{
-		return FieldNodeGroup(Cmiss_field_group_get_node_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), nodeset.getId()));
+		return FieldNodeGroup(cmzn_field_group_get_node_group(
+			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
 	FieldElementGroup createElementGroup(Mesh& mesh)
 	{
-		return FieldElementGroup(Cmiss_field_group_create_element_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), mesh.getId()));
+		return FieldElementGroup(cmzn_field_group_create_element_group(
+			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
 	FieldElementGroup getElementGroup(Mesh& mesh)
 	{
-		return FieldElementGroup(Cmiss_field_group_get_element_group(
-			reinterpret_cast<Cmiss_field_group_id>(id), mesh.getId()));
+		return FieldElementGroup(cmzn_field_group_get_element_group(
+			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
 	Field getSubobjectGroupforDomain(Field& domainField)
 	{
-		return Field(Cmiss_field_group_get_subobject_group_for_domain(
-			reinterpret_cast<Cmiss_field_group_id>(id), domainField.getId()));
+		return Field(cmzn_field_group_get_subobject_group_for_domain(
+			reinterpret_cast<cmzn_field_group_id>(id), domainField.getId()));
 	}
 
 	FieldGroup getFirstNonEmptyGroup()
 	{
-		return FieldGroup(Cmiss_field_group_get_first_non_empty_group(
-			reinterpret_cast<Cmiss_field_group_id>(id)));
+		return FieldGroup(cmzn_field_group_get_first_non_empty_group(
+			reinterpret_cast<cmzn_field_group_id>(id)));
 	}
 
 };
 
 inline FieldGroup FieldModule::createGroup()
 {
-	return FieldGroup(Cmiss_field_module_create_group(id));
+	return FieldGroup(cmzn_field_module_create_group(id));
 }
 
 }  // namespace zinc

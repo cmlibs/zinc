@@ -53,10 +53,10 @@
 #include "region/cmiss_region.h"
 #include "time/time_keeper.hpp"
 //-- #include "user_interface/event_dispatcher.h"
-/* following is temporary until circular references are removed for Cmiss_region  */
+/* following is temporary until circular references are removed for cmzn_region  */
 #include "region/cmiss_region_private.h"
 
-struct Context *Cmiss_context_create(const char *id)
+struct Context *cmzn_context_create(const char *id)
 {
 	struct Context *context = NULL;
 	if (ALLOCATE(context, struct Context, 1))
@@ -75,7 +75,7 @@ struct Context *Cmiss_context_create(const char *id)
 	return context;
 }
 
-int Cmiss_context_destroy(struct Context **context_address)
+int cmzn_context_destroy(struct Context **context_address)
 {
 	int return_code = 0;
 	struct Context *context = NULL;
@@ -89,17 +89,17 @@ int Cmiss_context_destroy(struct Context **context_address)
 				DEALLOCATE(context->id);
 			if (context->graphics_module)
 			{
-				Cmiss_graphics_module_remove_external_callback_dependency(
+				cmzn_graphics_module_remove_external_callback_dependency(
 					context->graphics_module);
-				Cmiss_graphics_module_destroy(&context->graphics_module);
+				cmzn_graphics_module_destroy(&context->graphics_module);
 			}
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;
 				 * when following removed also remove #include "region/cmiss_region_private.h". Also scene
 				 * has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
-				Cmiss_region_detach_fields_hierarchical(context->root_region);
-				DEACCESS(Cmiss_region)(&context->root_region);
+				cmzn_region_detach_fields_hierarchical(context->root_region);
+				DEACCESS(cmzn_region)(&context->root_region);
 			}
 			if (context->any_object_selection)
 			{
@@ -119,7 +119,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 			}
 			if (context->time_keeper)
 			{
-				Cmiss_time_keeper_destroy(&(context->time_keeper));
+				cmzn_time_keeper_destroy(&(context->time_keeper));
 			}
 			DEALLOCATE(*context_address);
 		}
@@ -129,7 +129,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_destroy.  Missing context address");
+			"cmzn_context_destroy.  Missing context address");
 		return_code = 0;
 	}
 
@@ -141,7 +141,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 	return return_code;
 }
 
-struct Context *Cmiss_context_access(struct Context *context)
+struct Context *cmzn_context_access(struct Context *context)
 {
 	if (context)
 	{
@@ -150,76 +150,76 @@ struct Context *Cmiss_context_access(struct Context *context)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_access.  Missing context");
+			"cmzn_context_access.  Missing context");
 	}
 	return context;
 }
 
-struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
+struct cmzn_region *cmzn_context_get_default_region(struct Context *context)
 {
-	struct Cmiss_region *root_region = 0;
+	struct cmzn_region *root_region = 0;
 
 	if (context)
 	{
 		if (!context->root_region)
 		{
-			context->root_region = Cmiss_region_create_internal();
+			context->root_region = cmzn_region_create_internal();
 		}
-		root_region = ACCESS(Cmiss_region)(context->root_region);
+		root_region = ACCESS(cmzn_region)(context->root_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_region.  Missing context");
+			"cmzn_context_get_default_region.  Missing context");
 	}
 
 	return root_region;
 }
 
-struct Cmiss_graphics_module *Cmiss_context_get_graphics_module(struct Context *context)
+struct cmzn_graphics_module *cmzn_context_get_graphics_module(struct Context *context)
 {
-	struct Cmiss_graphics_module *graphics_module = 0;
+	struct cmzn_graphics_module *graphics_module = 0;
 
 	if (context)
 	{
 		if (!context->graphics_module)
 		{
-			context->graphics_module = Cmiss_graphics_module_create(context);
+			context->graphics_module = cmzn_graphics_module_create(context);
 		}
-		graphics_module = Cmiss_graphics_module_access(context->graphics_module);
+		graphics_module = cmzn_graphics_module_access(context->graphics_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_graphics_module.  Missing context");
+			"cmzn_context_get_default_graphics_module.  Missing context");
 	}
 
 	return graphics_module;
 }
 
-struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
+struct cmzn_region *cmzn_context_create_region(struct Context *context)
 {
-	Cmiss_region *region = NULL;
+	cmzn_region *region = NULL;
 
 	if (context)
 	{
 		// all regions share the element shapes and bases from the default_region
 		if (!context->root_region)
 		{
-			Cmiss_region *default_region = Cmiss_context_get_default_region(context);
-			Cmiss_region_destroy(&default_region);
+			cmzn_region *default_region = cmzn_context_get_default_region(context);
+			cmzn_region_destroy(&default_region);
 		}
-		region = Cmiss_region_create_region(context->root_region);
+		region = cmzn_region_create_region(context->root_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_create_region.  Missing context");
+			"cmzn_context_create_region.  Missing context");
 	}
 	return region;
 }
 
-struct Any_object_selection *Cmiss_context_get_any_object_selection(
+struct Any_object_selection *cmzn_context_get_any_object_selection(
 	struct Context *context)
 {
 	struct Any_object_selection *any_object_selection = NULL;
@@ -234,12 +234,12 @@ struct Any_object_selection *Cmiss_context_get_any_object_selection(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_any_object_selection.  Missing context.");
+			"cmzn_context_get_any_object_selection.  Missing context.");
 	}
 	return any_object_selection;
 }
 
-struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_selection(
+struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_selection(
 	struct Context *context)
 {
 	struct Element_point_ranges_selection *element_point_ranges_selection = NULL;
@@ -254,12 +254,12 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_element_point_ranges_selection.  Missing context.");
+			"cmzn_context_get_element_point_ranges_selection.  Missing context.");
 	}
 	return element_point_ranges_selection;
 }
 
-struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
+struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 	struct Context *context)
 {
 	struct IO_stream_package *io_stream_package = NULL;
@@ -274,33 +274,33 @@ struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_IO_stream_package.  Missing context.");
+			"cmzn_context_get_default_IO_stream_package.  Missing context.");
 	}
 
 	return io_stream_package;
 }
 
-struct Cmiss_time_keeper *Cmiss_context_get_default_time_keeper(struct Context *context)
+struct cmzn_time_keeper *cmzn_context_get_default_time_keeper(struct Context *context)
 {
-	Cmiss_time_keeper *time_keeper = 0;
+	cmzn_time_keeper *time_keeper = 0;
 	if (context)
 	{
 		if (!context->time_keeper)
 		{
-			context->time_keeper = new Cmiss_time_keeper();
+			context->time_keeper = new cmzn_time_keeper();
 		}
-		time_keeper = Cmiss_time_keeper_access(context->time_keeper);
+		time_keeper = cmzn_time_keeper_access(context->time_keeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_time_keeper.  Missing context");
+			"cmzn_context_get_default_time_keeper.  Missing context");
 	}
 	return time_keeper;
 }
 
-struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
-	Cmiss_context_id context)
+struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(
+	cmzn_context_id context)
 {
 	MANAGER(Curve) *curve_manager = NULL;
 	if (context)
@@ -314,7 +314,7 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_default_curve_manager.  "
+			"cmzn_context_get_default_curve_manager.  "
 			"Missing context");
 	}
 	return curve_manager;

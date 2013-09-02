@@ -41,13 +41,13 @@
 #ifndef CMZN_SPECTRUMID_H__
 #define CMZN_SPECTRUMID_H__
 
-struct Cmiss_spectrum_component;
-typedef struct Cmiss_spectrum_component *Cmiss_spectrum_component_id;
+struct cmzn_spectrum_component;
+typedef struct cmzn_spectrum_component *cmzn_spectrum_component_id;
 
-struct Cmiss_spectrum;
-typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
+struct cmzn_spectrum;
+typedef struct cmzn_spectrum *cmzn_spectrum_id;
 
-struct Cmiss_spectrum_module;
-typedef struct Cmiss_spectrum_module *Cmiss_spectrum_module_id;
+struct cmzn_spectrum_module;
+typedef struct cmzn_spectrum_module *cmzn_spectrum_module_id;
 
 #endif

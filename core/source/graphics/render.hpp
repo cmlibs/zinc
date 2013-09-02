@@ -41,11 +41,11 @@
 #ifndef RENDER_HPP
 #define RENDER_HPP
 
-struct Cmiss_scene;
-struct Cmiss_graphics_filter;
-#define Scene Cmiss_scene // GRC temp
-struct Cmiss_graphic;
-struct Cmiss_scene;
+struct cmzn_scene;
+struct cmzn_graphics_filter;
+#define Scene cmzn_scene // GRC temp
+struct cmzn_graphic;
+struct cmzn_scene;
 struct GT_element_group;
 struct Texture;
 struct Graphical_material;
@@ -64,8 +64,8 @@ class SubObjectGroupHighlightFunctor;
 class Render_graphics
 {
 private:
-	Cmiss_scene *current_scene;
-	Cmiss_graphics_filter *graphics_filter;
+	cmzn_scene *current_scene;
+	cmzn_graphics_filter *graphics_filter;
 
 public:
 	Render_graphics() :
@@ -78,10 +78,10 @@ public:
 	{
 	}
 	
-	virtual int Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter *graphics_filter) = 0;
+	virtual int Scene_compile(cmzn_scene *scene, cmzn_graphics_filter *graphics_filter) = 0;
 
 
-	virtual int Scene_tree_execute(Cmiss_scene *scene) = 0;
+	virtual int Scene_tree_execute(cmzn_scene *scene) = 0;
 
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
@@ -101,25 +101,25 @@ public:
 	virtual int Graphics_object_render_immediate(GT_object *graphics_object) = 0;
 
 	/***************************************************************************//**
-	 * Execute the Cmiss scene.
+	 * Execute the cmzn scene.
 	 */
-	virtual int Cmiss_scene_execute(
-		Cmiss_scene *cmiss_scene) = 0;
+	virtual int cmzn_scene_execute(
+		cmzn_scene *cmiss_scene) = 0;
 
 	/***************************************************************************//**
-	 * Compile the Cmiss scene.
+	 * Compile the cmzn scene.
 	 */
-	virtual int Cmiss_scene_compile(
-	  Cmiss_scene *cmiss_scene) = 0;
+	virtual int cmzn_scene_compile(
+	  cmzn_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_scene_execute_graphics(
-		Cmiss_scene *cmiss_scene) = 0;
+	virtual int cmzn_scene_execute_graphics(
+		cmzn_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_scene_execute_child_scene(
-		Cmiss_scene *cmiss_scene) = 0;
+	virtual int cmzn_scene_execute_child_scene(
+		cmzn_scene *cmiss_scene) = 0;
 
-	virtual int Cmiss_scene_compile_members(
-		Cmiss_scene *cmiss_scene) = 0;
+	virtual int cmzn_scene_compile_members(
+		cmzn_scene *cmiss_scene) = 0;
 	
 	/***************************************************************************//**
 	 * Compile the Material.
@@ -161,32 +161,32 @@ public:
 	 */
 	virtual int Light_model_execute(Light_model *light_model) = 0;
 
-	Cmiss_scene *get_Scene()
+	cmzn_scene *get_Scene()
 	{
 		return current_scene;
 	}
 
-	Cmiss_graphics_filter *getGraphicsFilter()
+	cmzn_graphics_filter *getGraphicsFilter()
 	{
 		return graphics_filter;
 	}
 
-	void set_Scene(Cmiss_scene *new_scene)
+	void set_Scene(cmzn_scene *new_scene)
 	{
 		current_scene = new_scene;
 	}
 
-	void setGraphicsFilter(Cmiss_graphics_filter *new_graphics_filter)
+	void setGraphicsFilter(cmzn_graphics_filter *new_graphics_filter)
 	{
 		graphics_filter = new_graphics_filter;
 	}
 
 	/** Prepare coordinate system for executing graphics object.
 	 * @return 1 on success, 0 if renderer should not display objects in coordinate system */
-	virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/) = 0;
+	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/) = 0;
 
 	/** Must be called after executing graphics object after successful call to begin_coordinate_system. */
-	virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/) = 0;
+	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/) = 0;
 
 	/** Ensure this returns true for each graphic's layer before rendering.
 	 * Override if renderer renders in layers to return true only when the
@@ -237,16 +237,16 @@ public:
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
 	double world_view_matrix[16];
 	
-	virtual int Scene_compile(Cmiss_scene *scene, Cmiss_graphics_filter *graphics_filter);
+	virtual int Scene_compile(cmzn_scene *scene, cmzn_graphics_filter *graphics_filter);
 
 	/***************************************************************************//**
-	 * Compile the Cmiss scene.
+	 * Compile the cmzn scene.
 	 */
-	virtual int Cmiss_scene_compile(
-	  Cmiss_scene *cmiss_scene);
+	virtual int cmzn_scene_compile(
+	  cmzn_scene *cmiss_scene);
 
-	virtual int Cmiss_scene_compile_members(
-		Cmiss_scene *cmiss_scene);
+	virtual int cmzn_scene_compile_members(
+		cmzn_scene *cmiss_scene);
 
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
@@ -299,7 +299,7 @@ public:
 	{
 	}
 	
-	virtual int Scene_tree_execute(Cmiss_scene *)
+	virtual int Scene_tree_execute(cmzn_scene *)
 	{
 		return 1;
 	}
@@ -325,17 +325,17 @@ public:
 		return 1;
 	}
 	
-	virtual int Cmiss_scene_execute(Cmiss_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute(cmzn_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}
 
-	virtual int Cmiss_scene_execute_graphics(Cmiss_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute_graphics(cmzn_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}
 	
-	virtual int Cmiss_scene_execute_child_scene(Cmiss_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute_child_scene(cmzn_scene * /*cmiss_scene*/)
 	{
 		return 1;
 	}
@@ -370,12 +370,12 @@ public:
 		return 1;
 	}
 
-	virtual int begin_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/)
+	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
 	{
 		return 1;
 	}
 
-	virtual void end_coordinate_system(enum Cmiss_scene_coordinate_system /*coordinate_system*/)
+	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
 	{
 	}
 

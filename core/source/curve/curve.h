@@ -138,7 +138,7 @@ It is designed to be flexible rather than fast.
 	int value_nodes_per_element,value_derivatives_per_node;
 
 	/* each Curve is represented by fields in a private region */
-	struct Cmiss_region *region;
+	struct cmzn_region *region;
 	struct FE_region *fe_region;
 	struct FE_field *parameter_field,*value_field;
 	struct FE_node *template_node;

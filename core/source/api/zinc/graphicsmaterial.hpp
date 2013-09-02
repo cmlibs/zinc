@@ -50,7 +50,7 @@ class GraphicsMaterial
 {
 
 protected:
-	Cmiss_graphics_material_id id;
+	cmzn_graphics_material_id id;
 
 public:
 
@@ -58,20 +58,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsMaterial(Cmiss_graphics_material_id graphics_material_id) :
+	explicit GraphicsMaterial(cmzn_graphics_material_id graphics_material_id) :
 		id(graphics_material_id)
 	{ }
 
 	GraphicsMaterial(const GraphicsMaterial& graphicsMaterial) :
-		id(Cmiss_graphics_material_access(graphicsMaterial.id))
+		id(cmzn_graphics_material_access(graphicsMaterial.id))
 	{ }
 
 	GraphicsMaterial& operator=(const GraphicsMaterial& graphicsMaterial)
 	{
-		Cmiss_graphics_material_id temp_id = Cmiss_graphics_material_access(graphicsMaterial.id);
+		cmzn_graphics_material_id temp_id = cmzn_graphics_material_access(graphicsMaterial.id);
 		if (0 != id)
 		{
-			Cmiss_graphics_material_destroy(&id);
+			cmzn_graphics_material_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -81,7 +81,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphics_material_destroy(&id);
+			cmzn_graphics_material_destroy(&id);
 		}
 	}
 
@@ -90,7 +90,7 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_material_id getId()
+	cmzn_graphics_material_id getId()
 	{
 		return id;
 	}
@@ -108,53 +108,53 @@ public:
 
 	bool isManaged()
 	{
-		return Cmiss_graphics_material_is_managed(id);
+		return cmzn_graphics_material_is_managed(id);
 	}
 
 	int setManaged(bool value)
 	{
-		return Cmiss_graphics_material_set_managed(id, value);
+		return cmzn_graphics_material_set_managed(id, value);
 	}
 
 	double getAttributeReal(Attribute attribute)
 	{
-		return Cmiss_graphics_material_get_attribute_real(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute));
+		return cmzn_graphics_material_get_attribute_real(id,
+			static_cast<cmzn_graphics_material_attribute>(attribute));
 	}
 
 	int setAttributeReal(Attribute attribute, double value)
 	{
-		return Cmiss_graphics_material_set_attribute_real(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), value);
+		return cmzn_graphics_material_set_attribute_real(id,
+			static_cast<cmzn_graphics_material_attribute>(attribute), value);
 	}
 
 	int getAttributeReal3(Attribute attribute, double *valuesOut3)
 	{
-		return Cmiss_graphics_material_get_attribute_real3(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), valuesOut3);
+		return cmzn_graphics_material_get_attribute_real3(id,
+			static_cast<cmzn_graphics_material_attribute>(attribute), valuesOut3);
 	}
 
 	int setAttributeReal3(Attribute attribute, const double *valuesIn3)
 	{
-		return Cmiss_graphics_material_set_attribute_real3(id,
-			static_cast<Cmiss_graphics_material_attribute>(attribute), valuesIn3);
+		return cmzn_graphics_material_set_attribute_real3(id,
+			static_cast<cmzn_graphics_material_attribute>(attribute), valuesIn3);
 	}
 
 	char *getName()
 	{
-		return Cmiss_graphics_material_get_name(id);
+		return cmzn_graphics_material_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_graphics_material_set_name(id, name);
+		return cmzn_graphics_material_set_name(id, name);
 	}
 
 	int setImageField(int imageNumber, Field &imageField)
 	{
-		Cmiss_field_image_id field_image = Cmiss_field_cast_image(imageField.getId());
-		int result = Cmiss_graphics_material_set_image_field(id, imageNumber, field_image);
-		Cmiss_field_image_destroy(&field_image);
+		cmzn_field_image_id field_image = cmzn_field_cast_image(imageField.getId());
+		int result = cmzn_graphics_material_set_image_field(id, imageNumber, field_image);
+		cmzn_field_image_destroy(&field_image);
 
 		return result;
 	}
@@ -164,7 +164,7 @@ public:
 class GraphicsMaterialModule
 {
 protected:
-	Cmiss_graphics_material_module_id id;
+	cmzn_graphics_material_module_id id;
 
 public:
 
@@ -172,21 +172,21 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsMaterialModule(Cmiss_graphics_material_module_id in_graphics_material_module_id) :
+	explicit GraphicsMaterialModule(cmzn_graphics_material_module_id in_graphics_material_module_id) :
 		id(in_graphics_material_module_id)
 	{  }
 
 	GraphicsMaterialModule(const GraphicsMaterialModule& graphicsMaterialModule) :
-		id(Cmiss_graphics_material_module_access(graphicsMaterialModule.id))
+		id(cmzn_graphics_material_module_access(graphicsMaterialModule.id))
 	{  }
 
 	GraphicsMaterialModule& operator=(const GraphicsMaterialModule& graphicsMaterialModule)
 	{
-		Cmiss_graphics_material_module_id temp_id = Cmiss_graphics_material_module_access(
+		cmzn_graphics_material_module_id temp_id = cmzn_graphics_material_module_access(
 			graphicsMaterialModule.id);
 		if (0 != id)
 		{
-			Cmiss_graphics_material_module_destroy(&id);
+			cmzn_graphics_material_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -196,7 +196,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphics_material_module_destroy(&id);
+			cmzn_graphics_material_module_destroy(&id);
 		}
 	}
 
@@ -205,57 +205,57 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_material_module_id getId()
+	cmzn_graphics_material_module_id getId()
 	{
 		return id;
 	}
 
 	GraphicsMaterial createMaterial()
 	{
-		return GraphicsMaterial(Cmiss_graphics_material_module_create_material(id));
+		return GraphicsMaterial(cmzn_graphics_material_module_create_material(id));
 	}
 
 	GraphicsMaterial findMaterialByName(const char *name)
 	{
-		return GraphicsMaterial(Cmiss_graphics_material_module_find_material_by_name(id, name));
+		return GraphicsMaterial(cmzn_graphics_material_module_find_material_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return Cmiss_graphics_material_module_begin_change(id);
+		return cmzn_graphics_material_module_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_graphics_material_module_end_change(id);
+		return cmzn_graphics_material_module_end_change(id);
 	}
 
 	int defineStandardMaterials()
 	{
-		return Cmiss_graphics_material_module_define_standard_materials(id);
+		return cmzn_graphics_material_module_define_standard_materials(id);
 	}
 
 	GraphicsMaterial getDefaultMaterial()
 	{
-		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_material(id));
+		return GraphicsMaterial(cmzn_graphics_material_module_get_default_material(id));
 	}
 
 	int setDefaultMaterial(GraphicsMaterial &graphicsMaterial)
 	{
-		return Cmiss_graphics_material_module_set_default_material(id, graphicsMaterial.getId());
+		return cmzn_graphics_material_module_set_default_material(id, graphicsMaterial.getId());
 	}
 
 	GraphicsMaterial getDefaultSelectedMaterial()
 	{
-		return GraphicsMaterial(Cmiss_graphics_material_module_get_default_selected_material(id));
+		return GraphicsMaterial(cmzn_graphics_material_module_get_default_selected_material(id));
 	}
 
 	int setDefaultSelectedMaterial(GraphicsMaterial &graphicsMaterial)
 	{
-		return Cmiss_graphics_material_module_set_default_selected_material(id, graphicsMaterial.getId());
+		return cmzn_graphics_material_module_set_default_selected_material(id, graphicsMaterial.getId());
 	}
 };
 
-} // namespace Cmiss
+} // namespace cmzn
 
 #endif

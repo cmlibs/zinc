@@ -118,13 +118,13 @@ the glyph_set to be identified in picking for node position/vector editing.
 	char **labels;
 	char *static_label_text[3];
 	struct GT_object *glyph;
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode;
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode;
 	Triple base_size, scale_factors, offset, label_offset;
 	int n_data_components;
 	GLfloat *data;
 	int label_bounds_dimension, label_bounds_components;
 	ZnReal *label_bounds;
-	struct Cmiss_font *font;
+	struct cmzn_font *font;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
@@ -191,7 +191,7 @@ DESCRIPTION :
 	ZnReal marker_size;
 	int n_data_components;
 	GLfloat *data;
-	struct Cmiss_font *font;
+	struct cmzn_font *font;
 
 	/* store integer object_name eg. node number from which this object came */
 	int object_name;
@@ -214,7 +214,7 @@ DESCRIPTION :
 	ZnReal marker_size;
 	int n_data_components;
 	GLfloat *data;
-	struct Cmiss_font *font;
+	struct cmzn_font *font;
 
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
@@ -260,7 +260,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	enum GT_surface_type surface_type;
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode;
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode;
 	gtPolygonType polygon;
 	int n_data_components;
 	int n_pts1;
@@ -386,7 +386,7 @@ Graphical object data structure.
 	/* for inheritance */
 	struct GT_object *parentobject;
 	/* for selected primitives and subobjects */
-	enum Cmiss_graphic_select_mode select_mode;
+	enum cmzn_graphic_select_mode select_mode;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
@@ -440,7 +440,7 @@ Graphical object data structure.
 	/* Custom per compile code for graphics_objects used as glyphs. */
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	/* identifier for quickly matching standard point, line, cross glyphs */
-	enum Cmiss_glyph_type glyph_type;
+	enum cmzn_glyph_type glyph_type;
 
 	int access_count;
 };

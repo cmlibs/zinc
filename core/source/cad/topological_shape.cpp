@@ -185,7 +185,7 @@ int TopologicalShape::surfaceColour(double *colour) const
 	return 1;
 }
 
-int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identifier, double *colour) const
+int TopologicalShape::surfaceColour(cmzn_cad_surface_identifier surface_identifier, double *colour) const
 {
 	//printf("Getting  TopologicalShape::surfaceColour(%d,) size %d\n", surface_index, colourMap.size());
 	static int local_count = 0;
@@ -195,9 +195,9 @@ int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identif
 	Cad_colour_map_const_iterator iter = colourMap.find(topology_surface_identifier);
 	if ( iter != colourMap.end() )
 	{
-		Cmiss_cad_colour cad_colour = iter->second;
-		if (cad_colour.getColourType() == Cmiss_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
-			cad_colour.getColourType() == Cmiss_cad_colour::CMISS_CAD_COLOUR_GENERIC )
+		cmzn_cad_colour cad_colour = iter->second;
+		if (cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
+			cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_GENERIC )
 		{
 			Quantity_Color surfaceColour = cad_colour.getColour();
 			colour[0] = surfaceColour.Red();
@@ -211,9 +211,9 @@ int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identif
 	iter = colourMap.find(topology_identifier);
 	if ( iter != colourMap.end() )
 	{
-		Cmiss_cad_colour cad_colour = iter->second;
-		if (cad_colour.getColourType() == Cmiss_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
-			cad_colour.getColourType() == Cmiss_cad_colour::CMISS_CAD_COLOUR_GENERIC )
+		cmzn_cad_colour cad_colour = iter->second;
+		if (cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
+			cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_GENERIC )
 		{
 			Quantity_Color surfaceColour = cad_colour.getColour();
 			colour[0] = surfaceColour.Red();

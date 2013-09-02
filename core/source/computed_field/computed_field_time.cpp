@@ -55,7 +55,7 @@ Implements a number of basic component wise operations on computed fields.
 class Computed_field_time_package : public Computed_field_type_package
 {
 public:
-	struct Cmiss_time_keeper *time_keeper;
+	struct cmzn_time_keeper *time_keeper;
 };
 
 namespace {
@@ -92,14 +92,14 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -108,13 +108,13 @@ private:
 	int has_multiple_times();
 };
 
-int Computed_field_time_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_time_lookup::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluateNoDerivatives(cache));
 	if (timeValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
 		Field_location *location = cache.cloneLocation();
 		location->set_time(timeValueCache->values[0]);
 		extraCache.setLocation(location);
@@ -239,8 +239,8 @@ global time do not matter.
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_time_lookup(
-	struct Cmiss_field_module *field_module,
+cmzn_field_id cmzn_field_module_create_time_lookup(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *time_field)
 {
 	struct Computed_field *field = NULL;
@@ -260,7 +260,7 @@ Cmiss_field_id Cmiss_field_module_create_time_lookup(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_time_lookup.  Invalid argument(s)");
+			"cmzn_field_module_create_time_lookup.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -306,7 +306,7 @@ public:
 
 	Time_object *time_object;
 
-	Computed_field_time_value(Cmiss_time_keeper* time_keeper) :
+	Computed_field_time_value(cmzn_time_keeper* time_keeper) :
 		Computed_field_core(),
 		time_object(NULL)
 	{
@@ -349,7 +349,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache&, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -390,7 +390,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_time_value::compare */
 
-int Computed_field_time_value::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
+int Computed_field_time_value::evaluate(cmzn_field_cache&, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	valueCache.values[0] = Time_object_get_current_time(time_object);
@@ -481,8 +481,8 @@ Always has multiple times.
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_time_value(
-	struct Cmiss_field_module *field_module, struct Cmiss_time_keeper *time_keeper)
+cmzn_field_id cmzn_field_module_create_time_value(
+	struct cmzn_field_module *field_module, struct cmzn_time_keeper *time_keeper)
 {
 	struct Computed_field *field = NULL;
 	if (field_module && time_keeper)
@@ -497,7 +497,7 @@ Cmiss_field_id Cmiss_field_module_create_time_value(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_time_value.  Invalid argument(s)");
+			"cmzn_field_module_create_time_value.  Invalid argument(s)");
 	}
 
 	return (field);

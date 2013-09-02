@@ -47,7 +47,7 @@
 /***************************************************************************//**
  * Summary of changes to a group.
  */
-enum Cmiss_field_group_change_type
+enum cmzn_field_group_change_type
 {
 	CMISS_FIELD_GROUP_NO_CHANGE,
 	CMISS_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
@@ -59,11 +59,11 @@ enum Cmiss_field_group_change_type
 /***************************************************************************//**
  * Base class for all group field change details.
  */
-struct Cmiss_field_group_base_change_detail : public Cmiss_field_change_detail
+struct cmzn_field_group_base_change_detail : public cmzn_field_change_detail
 {
-	virtual Cmiss_field_group_change_type getChange() const = 0;
+	virtual cmzn_field_group_change_type getChange() const = 0;
 
-	virtual Cmiss_field_group_change_type getLocalChange() const = 0;
+	virtual cmzn_field_group_change_type getLocalChange() const = 0;
 };
 
 /***************************************************************************//**

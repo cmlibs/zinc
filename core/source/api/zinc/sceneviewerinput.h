@@ -47,56 +47,56 @@ extern "C" {
  * Create a scene viewer input object for manually setting mouse or other input
  * event data.
  *
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
- * @return  Handle to Cmiss_scene_viewer_input on success, or 0 on failure.
+ * @param scene_viewer  Handle to cmzn_scene_viewer object.
+ * @return  Handle to cmzn_scene_viewer_input on success, or 0 on failure.
  */
-ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API cmzn_scene_viewer_input_id cmzn_scene_viewer_get_input(cmzn_scene_viewer_id scene_viewer);
 
 /**
- * Returns a new reference to the Cmiss_scene_viewer_input with reference count incremented.
+ * Returns a new reference to the cmzn_scene_viewer_input with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
- * @return  Accessed handle to Cmiss_scene_viewer_input.
+ * @param input  Handle to cmzn_scene_viewer_input object.
+ * @return  Accessed handle to cmzn_scene_viewer_input.
  */
-ZINC_API Cmiss_scene_viewer_input_id Cmiss_scene_viewer_input_access(Cmiss_scene_viewer_input_id input);
+ZINC_API cmzn_scene_viewer_input_id cmzn_scene_viewer_input_access(cmzn_scene_viewer_input_id input);
 
 /**
- * Destroys this reference to the Cmiss_scene_viewer_input (and sets it to 0).
+ * Destroys this reference to the cmzn_scene_viewer_input (and sets it to 0).
  * Internally this just decrements the reference count.
  *
- * @param address_input  Address of handle to Cmiss_scene_viewer_input object.
- * @return  CMISS_OK if successfully deaccess Cmiss_scene_viewer_input, any other value on
+ * @param address_input  Address of handle to cmzn_scene_viewer_input object.
+ * @return  CMISS_OK if successfully deaccess cmzn_scene_viewer_input, any other value on
  * failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input);
+ZINC_API int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *address_input);
 
 /**
  * Set the position of the input
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
+ * @param input  Handle to cmzn_scene_viewer_input object.
  * @param x The x-coordinate of the input position.
  * @param y The y-coordinate of the input position.
  * @return  CMISS_OK if successful, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, int x, int y);
+ZINC_API int cmzn_scene_viewer_input_set_position(cmzn_scene_viewer_input_id input, int x, int y);
 
 /**
  * Set modifier for the input.
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
+ * @param input  Handle to cmzn_scene_viewer_input object.
  * @param modifier  Enumerator for the modifier to set.
- * @return  Handle to Cmiss_scene_viewer_input on success, or 0 on failure.
+ * @return  Handle to cmzn_scene_viewer_input on success, or 0 on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier);
+ZINC_API int cmzn_scene_viewer_input_set_modifier(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_modifier modifier);
 
 /**
  * Get the modifier set for the given input.
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
+ * @param input  Handle to cmzn_scene_viewer_input object.
  * @return  Enumerator for the input modifier.
  */
-ZINC_API Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_scene_viewer_input_id input);
+ZINC_API cmzn_scene_viewer_input_modifier cmzn_scene_viewer_input_get_modifier(cmzn_scene_viewer_input_id input);
 
 /**
  * Set the button number for the input.
@@ -104,32 +104,32 @@ ZINC_API Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier
  *   2 ==> middle mouse button.
  *   3 ==> right mouse button.
  *
- * @deprecated see Cmiss_scene_viewer_input_set_button
+ * @deprecated see cmzn_scene_viewer_input_set_button
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
+ * @param input  Handle to cmzn_scene_viewer_input object.
  * @param number  The numeric value of the button.
  * @return  CMISS_OK if successful, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number);
+ZINC_API int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_id input, int number);
 
 /**
  * Set the button for the scene viewer input.
  *
- * @param input Cmiss scene viewer input.
- * @param button Cmiss scene viewer input button enumeration value.
+ * @param input cmzn scene viewer input.
+ * @param button cmzn scene viewer input button enumeration value.
  * @return CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_button_type button);
+ZINC_API int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_button_type button);
 
 /**
  * Create a scene viewer input object for manually setting mouse or other input
  * event data.
  *
- * @param input  Handle to Cmiss_scene_viewer_input object.
+ * @param input  Handle to cmzn_scene_viewer_input object.
  * @param type  Enumerator for the input event type.
  * @return  CMISS_OK if successful, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type);
+ZINC_API int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_event_type type);
 
 #ifdef __cplusplus
 }

@@ -195,7 +195,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 	return (return_code);
 } /* calculate_delta_xi */
 
-static int update_adaptive_imp_euler(Cmiss_field_cache_id field_cache,
+static int update_adaptive_imp_euler(cmzn_field_cache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	struct FE_region *fe_region,struct FE_element **element,FE_value *xi,
@@ -249,10 +249,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	coordinate_tolerance = 1.0e-2;  /* We are tolerating a greater error in the coordinate
 											  positions so long as the tracking is valid */
 	local_step_size = *step_size;
-	return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xi) &&
-		Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+	return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xi) &&
+		cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 			vector_dimension, point1, /*number_of_derivatives*/element_dimension, dxdxi) &&
-		Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+		cmzn_field_evaluate_real(stream_vector_field, field_cache,
 			MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS, vector);
 
 	/* Get a length scale estimate */
@@ -301,10 +301,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			leave the step size alone and adjust the stepsize after xiB */
 		if (return_code)
 		{
-			return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiA) &&
-				Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+			return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiA) &&
+				cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					vector_dimension, point3, /*number_of_derivatives*/element_dimension, dxdxi) &&
-				Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+				cmzn_field_evaluate_real(stream_vector_field, field_cache,
 					MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS, vector);
 			if (reverse_track)
 			{
@@ -373,10 +373,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			increment_xi, &fraction, &face_number, xi_face);
 		if (return_code)
 		{
-			return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiC) &&
-				Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+			return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiC) &&
+				cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					vector_dimension, point2, /*number_of_derivatives*/element_dimension, dxdxi) &&
-				Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+				cmzn_field_evaluate_real(stream_vector_field, field_cache,
 					MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS, vector);
 			if (reverse_track)
 			{
@@ -430,10 +430,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		{
 			if (return_code)
 			{
-				return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiD) &&
-					Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+				return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiD) &&
+					cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 						vector_dimension, point2, /*number_of_derivatives*/element_dimension, dxdxi) &&
-					Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+					cmzn_field_evaluate_real(stream_vector_field, field_cache,
 						MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS, vector);
 				if (reverse_track)
 				{
@@ -460,10 +460,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			}
 			if (return_code)
 			{
-				return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiE) &&
-					Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+				return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiE) &&
+					cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 						vector_dimension, point3, /*number_of_derivatives*/element_dimension, dxdxi) &&
-					Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+					cmzn_field_evaluate_real(stream_vector_field, field_cache,
 						MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS, vector);
 				if (reverse_track)
 				{
@@ -562,8 +562,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 					/* Check the new xi coordinates are correct for our
 					coordinate field and if not try rotating them */
 
-					return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiF) &&
-						Cmiss_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1);
+					return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiF) &&
+						cmzn_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1);
 					coordinate_point_error = 0.0;
 					for (i = 0 ; i < vector_dimension ; i++)
 					{
@@ -587,8 +587,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 						return_code = FE_element_change_to_adjacent_element(element,
 							xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
 							permutation);
-						return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiF) &&
-							Cmiss_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1);
+						return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xiF) &&
+							cmzn_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1);
 						coordinate_point_error = 0.0;
 						for (i = 0 ; i < vector_dimension ; i++)
 						{
@@ -635,7 +635,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 } /* update_adaptive_imp_euler */
 
 static int update_interactive_streampoint(FE_value *point_coordinates,
-	struct FE_element **element, Cmiss_field_cache_id field_cache,
+	struct FE_element **element, cmzn_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, FE_value *xi, FE_value *translate)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
@@ -663,8 +663,8 @@ accurate if small), also ensuring that the element is updated.
 		point[2]=0.0;
 		if ( translate )
 		{
-			if (Cmiss_field_cache_set_mesh_location(field_cache, *element, 3, xi) &&
-				Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+			if (cmzn_field_cache_set_mesh_location(field_cache, *element, 3, xi) &&
+				cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					/*number_of_values*/3, point, /*number_of_derivatives*/3, dxdxi))
 			{
 				if (!(calculate_delta_xi(/*vector_dimension*/3,translate,
@@ -691,8 +691,8 @@ accurate if small), also ensuring that the element is updated.
 		}
 		if ( return_code )
 		{
-			if (!(Cmiss_field_cache_set_mesh_location(field_cache, *element, 3, xi) &&
-				Cmiss_field_evaluate_real(coordinate_field, field_cache,
+			if (!(cmzn_field_cache_set_mesh_location(field_cache, *element, 3, xi) &&
+				cmzn_field_evaluate_real(coordinate_field, field_cache,
 					/*number_of_values*/3, point_coordinates)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -714,7 +714,7 @@ accurate if small), also ensuring that the element is updated.
 } /* update_interactive_streampoint */
 
 static int track_streamline_from_FE_element(struct FE_element **element,
-	FE_value *xi, Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	FE_value *xi, cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field,int *number_of_points,
@@ -822,7 +822,7 @@ in that region.
 				while (return_code && add_point && (i<allocated_number_of_points))
 				{
 					/* evaluate the coordinate and stream_vector fields */
-					return_code = Cmiss_field_cache_set_mesh_location(field_cache, *element, element_dimension, xi);
+					return_code = cmzn_field_cache_set_mesh_location(field_cache, *element, element_dimension, xi);
 					switch (number_of_stream_vector_components)
 					{
 						case 2:
@@ -835,16 +835,16 @@ in that region.
 								for calculation of curl. Calculate coordinates first, since
 								may be required for evaluating the stream_vector_field. */
 							return_code = return_code &&
-								Cmiss_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
+								cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 									number_of_coordinate_components, coordinates, element_dimension, dx_dxi);
 							if (return_code)
 							{
 								if (calculate_curl)
 								{
-									if (!Cmiss_field_evaluate_real_with_derivatives(stream_vector_field, field_cache,
+									if (!cmzn_field_evaluate_real_with_derivatives(stream_vector_field, field_cache,
 										number_of_stream_vector_components, stream_vector_values, element_dimension, dv_dxi))
 									{
-										return_code = Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+										return_code = cmzn_field_evaluate_real(stream_vector_field, field_cache,
 											number_of_stream_vector_components, stream_vector_values);
 										calculate_curl = 0;
 										display_message(WARNING_MESSAGE,
@@ -854,7 +854,7 @@ in that region.
 								}
 								else
 								{
-									return_code = Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+									return_code = cmzn_field_evaluate_real(stream_vector_field, field_cache,
 										number_of_stream_vector_components, stream_vector_values);
 								}
 							}
@@ -869,9 +869,9 @@ in that region.
 								force a calculation of the coordinate field with derivatives,
 								thus saving the coordinates from being recalculated */
 							return_code =
-								Cmiss_field_evaluate_real(stream_vector_field, field_cache,
+								cmzn_field_evaluate_real(stream_vector_field, field_cache,
 									number_of_stream_vector_components, stream_vector_values) &&
-								Cmiss_field_evaluate_real(coordinate_field, field_cache,
+								cmzn_field_evaluate_real(coordinate_field, field_cache,
 									number_of_coordinate_components, coordinates);
 						} break;
 					}
@@ -1185,7 +1185,7 @@ in that region.
 							case STREAM_FIELD_SCALAR:
 							{
 								// cache location should be unchanged from earlier
-								if (!Cmiss_field_evaluate_real(data_field, field_cache, /*number_of_values*/1, &data_value))
+								if (!cmzn_field_evaluate_real(data_field, field_cache, /*number_of_values*/1, &data_value))
 								{
 									display_message(ERROR_MESSAGE,
 										"track_streamline_from_FE_element.  "
@@ -1389,7 +1389,7 @@ Global functions
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region)
@@ -1481,13 +1481,13 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
-	enum Cmiss_graphic_line_attributes_shape line_shape, int circleDivisions,
+	enum cmzn_graphic_line_attributes_shape line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region, enum Cmiss_graphic_render_polygon_mode render_polygon_mode)
+	struct FE_region *fe_region, enum cmzn_graphic_render_polygon_mode render_polygon_mode)
 {
 	double cosw,magnitude,sinw;
 	ZnRealType gt_data_type;
@@ -1870,7 +1870,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	gtObject *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -1920,7 +1920,7 @@ Adds a new flow particle structure to the start of the Streampoint list
 } /* add_flow_particle */
 
 int update_flow_particle_list(struct Streampoint *point,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,FE_value step, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
@@ -1960,7 +1960,7 @@ created with the given timestamp.
 		{
 			if ((pointset=CREATE(GT_pointset)(number_of_points,particle_positions,
 				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GLfloat *)NULL,(int *)NULL,
-				(struct Cmiss_font *)NULL))&&
+				(struct cmzn_font *)NULL))&&
 				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,ZnReal(time),pointset))
 			{
 				/* copy point positions and then point to new position space */
