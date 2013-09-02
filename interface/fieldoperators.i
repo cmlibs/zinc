@@ -39,41 +39,41 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
-%extend zinc::Field
+%extend OpenCMISS::Zinc::Field
 {
-	zinc::FieldAdd operator+(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldAdd operator+(OpenCMISS::Zinc::Field& operand)
 	{
-    	zinc::FieldModule fieldModule(*($self));
+    	OpenCMISS::Zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createAdd(*($self), operand);
 	}
 	
-	zinc::FieldSubtract operator-(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldSubtract operator-(OpenCMISS::Zinc::Field& operand)
 	{
-    	zinc::FieldModule fieldModule(*($self));
+    	OpenCMISS::Zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createSubtract(*($self), operand);
 	}
 	
-	zinc::FieldMultiply operator*(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldMultiply operator*(OpenCMISS::Zinc::Field& operand)
 	{
-	    zinc::FieldModule fieldModule(*($self));
+	    OpenCMISS::Zinc::FieldModule fieldModule(*($self));
  		return fieldModule.createMultiply(*($self), operand);
 	}
 	
-	zinc::FieldDivide operator/(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldDivide operator/(OpenCMISS::Zinc::Field& operand)
 	{
-	    zinc::FieldModule fieldModule(*($self));
+	    OpenCMISS::Zinc::FieldModule fieldModule(*($self));
  		return fieldModule.createDivide(*($self), operand);
 	}
 
-	zinc::FieldGreaterThan operator>(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldGreaterThan operator>(OpenCMISS::Zinc::Field& operand)
 	{
-    	zinc::FieldModule fieldModule(*($self));
+    	OpenCMISS::Zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createGreaterThan(*($self), operand);
 	}
 
-	zinc::FieldLessThan operator<(zinc::Field& operand)
+	OpenCMISS::Zinc::FieldLessThan operator<(OpenCMISS::Zinc::Field& operand)
 	{
-    	zinc::FieldModule fieldModule(*($self));
+    	OpenCMISS::Zinc::FieldModule fieldModule(*($self));
     	return fieldModule.createLessThan(*($self), operand);
 	}
 

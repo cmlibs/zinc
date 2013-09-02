@@ -45,7 +45,7 @@
 %{
 #include "zinc/node.hpp"
 #include "zinc/field.hpp"
-#include "zinc/fieldtypesconditional.hpp"
+#include "zinc/fieldconditional.hpp"
 %}
 
 %include "zinc/node.hpp"

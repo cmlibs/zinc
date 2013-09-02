@@ -47,7 +47,7 @@
 %import "node.i"
 
 %{
-#include "zinc/fieldtypesarithmeticoperators.hpp"
+#include "zinc/fieldarithmeticoperators.hpp"
 #include "zinc/fieldcache.hpp"
 %}
 

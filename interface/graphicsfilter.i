@@ -45,7 +45,7 @@
 
 %{
 #include "zinc/graphicsfilter.hpp"
-#include "zinc/fieldtypesconditional.hpp"
+#include "zinc/fieldconditional.hpp"
 %}
 
 %include "zinc/graphicsfilter.hpp"

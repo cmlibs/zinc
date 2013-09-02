@@ -47,7 +47,7 @@
 %import "sceneviewer.i"
 
 %{
-#include "zinc/fieldtypesgroup.hpp"
+#include "zinc/fieldgroup.hpp"
 #include "zinc/graphicsfilter.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenepicker.hpp"

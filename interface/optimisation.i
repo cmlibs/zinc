@@ -44,7 +44,7 @@
 
 %{
 #include "zinc/optimisation.hpp"
-#include "zinc/fieldtypesarithmeticoperators.hpp"
+#include "zinc/fieldarithmeticoperators.hpp"
 %}
 
 %include "zinc/optimisation.hpp"

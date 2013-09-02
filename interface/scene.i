@@ -45,7 +45,7 @@
 %import "selection.i"
 
 %{
-#include "zinc/fieldtypesgroup.hpp"
+#include "zinc/fieldgroup.hpp"
 #include "zinc/scenepicker.hpp"
 #include "zinc/scene.hpp"
 %}

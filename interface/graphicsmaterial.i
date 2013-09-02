@@ -48,7 +48,7 @@
 
 %{
 #include "zinc/graphicsmaterial.hpp"
-#include "zinc/fieldtypesconditional.hpp"
+#include "zinc/fieldconditional.hpp"
 %}
 
 %include "zinc/graphicsmaterial.hpp"

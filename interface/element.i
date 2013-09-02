@@ -46,7 +46,7 @@
 %import "node.i"
 
 %{
-#include "zinc/fieldtypesimage.hpp"
+#include "zinc/fieldimage.hpp"
 #include "zinc/element.hpp"
 %}
 

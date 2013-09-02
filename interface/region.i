@@ -44,7 +44,7 @@
 %import "fieldmodule.i"
 
 %{
-#include "zinc/fieldtypesimage.hpp"
+#include "zinc/fieldimage.hpp"
 #include "zinc/region.hpp"
 %}
 

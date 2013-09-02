@@ -41,7 +41,7 @@
 
 %module(package="zinc") selection
 
-%extend zinc::SelectionHandler {
+%extend OpenCMISS::Zinc::SelectionHandler {
 
     int setCallback(PyObject *callbackObject)
     {
@@ -73,8 +73,8 @@ static void selectionCallbackToPython(cmzn_selection_event_id selection_event,	v
     PyObject *my_callback = (PyObject *)user_data;
     /* convert time_notifier to python object */
     PyObject *obj = NULL;
-    zinc::SelectionEvent *selectionEvent = new zinc::SelectionEvent(cmzn_selection_event_access(selection_event));
-    obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_zinc__SelectionEvent, 1);
+    OpenCMISS::Zinc::SelectionEvent *selectionEvent = new OpenCMISS::Zinc::SelectionEvent(cmzn_selection_event_access(selection_event));
+    obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_OpenCMISS__Zinc__SelectionEvent, 1);
     /* Time to call the callback */
     arglist = Py_BuildValue("(N)", obj);
     result = PyObject_CallObject(my_callback, arglist);

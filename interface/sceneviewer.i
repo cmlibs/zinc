@@ -46,7 +46,7 @@
 
 %import "scene.i"
 
-%extend zinc::SceneViewer {
+%extend OpenCMISS::Zinc::SceneViewer {
 
 	int addRepaintRequiredCallback(PyObject *callbackObject)
 	{
@@ -95,8 +95,8 @@ static void callbackToPython(cmzn_scene_viewer_id scene_viewer,
 	PyObject *my_callback = (PyObject *)user_data;
 	/* convert time_notifier to python object */
 	PyObject *obj = NULL;
-	zinc::SceneViewer *sceneViewer = new zinc::SceneViewer(cmzn_scene_viewer_access(scene_viewer));
-	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneViewer), SWIGTYPE_p_zinc__SceneViewer, 1);
+	OpenCMISS::Zinc::SceneViewer *sceneViewer = new OpenCMISS::Zinc::SceneViewer(cmzn_scene_viewer_access(scene_viewer));
+	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneViewer), SWIGTYPE_p_OpenCMISS__Zinc__SceneViewer, 1);
 	/* Time to call the callback */
 	arglist = Py_BuildValue("(N)", obj);
 	result = PyObject_CallObject(my_callback, arglist);

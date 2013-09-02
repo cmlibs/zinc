@@ -52,7 +52,7 @@
 
 %{
 #include "zinc/graphic.hpp"
-#include "zinc/fieldtypesconditional.hpp"
+#include "zinc/fieldconditional.hpp"
 %}
 
 %include "zinc/graphic.hpp"

@@ -44,7 +44,7 @@
 
 %{
 #include "zinc/font.hpp"
-#include "zinc/fieldtypesconditional.hpp"
+#include "zinc/fieldconditional.hpp"
 %}
 
 %include "zinc/font.hpp"
