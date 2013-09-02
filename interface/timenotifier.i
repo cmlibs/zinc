@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") timenotifier
+%module(package="opencmiss.zinc") timenotifier
 
 %extend OpenCMISS::Zinc::TimeNotifier {
 

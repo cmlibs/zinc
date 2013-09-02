@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") scenecoordinatesystem
+%module(package="opencmiss.zinc") scenecoordinatesystem
 
 %{
 #include "zinc/types/scenecoordinatesystem.hpp"

@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") stream
+%module(package="opencmiss.zinc") stream
 %typemap(in) (const void *buffer, unsigned int buffer_length)
 {
 	$1 = PyString_AsString($input);   /* char *str */

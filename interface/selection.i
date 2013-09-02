@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") selection
+%module(package="opencmiss.zinc") selection
 
 %extend OpenCMISS::Zinc::SelectionHandler {
 

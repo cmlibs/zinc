@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") spectrum
+%module(package="opencmiss.zinc") spectrum
 
 %{
 #include "zinc/spectrum.hpp"

@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") status
+%module(package="opencmiss.zinc") status
 
 %{
 #include "zinc/status.hpp"

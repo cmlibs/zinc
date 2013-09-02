@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") scenepicker
+%module(package="opencmiss.zinc") scenepicker
 
 %import "element.i"
 %import "graphic.i"

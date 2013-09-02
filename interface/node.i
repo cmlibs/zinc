@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") node
+%module(package="opencmiss.zinc") node
 
 %import "field.i"
 

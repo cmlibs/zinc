@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") timesequence
+%module(package="opencmiss.zinc") timesequence
 
 %{
 #include "zinc/timesequence.hpp"

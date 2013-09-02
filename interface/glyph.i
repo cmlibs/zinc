@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") glyph
+%module(package="opencmiss.zinc") glyph
 
 %import "graphicsmaterial.i"
 %import "spectrum.i"

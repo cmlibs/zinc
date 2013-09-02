@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") element
+%module(package="opencmiss.zinc") element
 
 %include "integervaluesarraytypemap.i"
 

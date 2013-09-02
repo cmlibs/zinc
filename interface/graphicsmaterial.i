@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") graphicsmaterial
+%module(package="opencmiss.zinc") graphicsmaterial
 
 %include "doublevaluesarraytypemap.i"
 

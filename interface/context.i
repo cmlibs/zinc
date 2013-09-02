@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") context
+%module(package="opencmiss.zinc") context
 
 %import "graphicsmodule.i"
 %import "scene.i"

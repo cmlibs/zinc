@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") differentialoperator
+%module(package="opencmiss.zinc") differentialoperator
 
 %{
 #include "zinc/differentialoperator.hpp"

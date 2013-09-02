@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") font
+%module(package="opencmiss.zinc") font
 
 %import "graphic.i"
 

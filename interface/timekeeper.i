@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") timekeeper
+%module(package="opencmiss.zinc") timekeeper
 
 %import "timenotifier.i"
 

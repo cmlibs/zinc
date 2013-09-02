@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="zinc") graphicsfilter
+%module(package="opencmiss.zinc") graphicsfilter
 
 %import "graphic.i"
 %import "region.i"
