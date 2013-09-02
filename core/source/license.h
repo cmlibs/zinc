@@ -34,9 +34,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined CMISS_LICENSE_STRING
+#if !defined CMZN_LICENSE_STRING
 #include <string>
-const char *CMISS_LICENSE_STRING ={
+const char *CMZN_LICENSE_STRING ={
 "/********************************\n"
 " Version: MPL 1.1/GPL 2.0/LGPL 2.1\n"
 "\n"
@@ -119,4 +119,4 @@ const char *CMISS_LICENSE_STRING ={
 "Copyright (C) 2002, Lev Povalahev\n"
 "All rights reserved.\n"
 };
-#endif /* CMISS_LICENSE_STRING */
+#endif /* CMZN_LICENSE_STRING */

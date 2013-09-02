@@ -69,7 +69,7 @@ Module types
 #define CM_ELEMENT_TYPE_TO_DIMENSION(cm_type) \
 	((cm_type == CM_ELEMENT) ? 3 : ((cm_type == CM_FACE) ? 2 : 1))
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
+FULL_DECLARE_CMZN_CALLBACK_TYPES(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *);
 
 struct FE_region
@@ -124,7 +124,7 @@ DESCRIPTION :
 	/* remember number of clients to make it efficient to know if changes need to
 		 be remembered */
 	int number_of_clients;
-	struct LIST(CMISS_CALLBACK_ITEM(FE_region_change)) *change_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(FE_region_change)) *change_callback_list;
 
 	/* internal record of changes from which FE_field_changes is constructed */
 	/* fields added, removed or otherwise changed are put in the following list.
@@ -400,9 +400,9 @@ Module functions
 ----------------
 */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_region_change, void)
+DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(FE_region_change, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_region_change, \
+DEFINE_CMZN_CALLBACK_FUNCTIONS(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *)
 
 static struct LIST(FE_element) *FE_region_get_element_list(
@@ -536,7 +536,7 @@ occurred.
 					 begin/end_change does not cause the same changes to be re-sent */
 				FE_region_create_change_logs(fe_region);
 				/* send the callbacks */
-				return_code = CMISS_CALLBACK_LIST_CALL(FE_region_change)(
+				return_code = CMZN_CALLBACK_LIST_CALL(FE_region_change)(
 					fe_region->change_callback_list, fe_region, &changes);
 				/* clean up the change logs in the changes */
 				DESTROY(CHANGE_LOG(FE_field))(&changes.fe_field_changes);
@@ -1158,7 +1158,7 @@ them to be specified allows sharing across regions).
 		fe_region->change_level = 0;
 		fe_region->number_of_clients = 0;
 		fe_region->change_callback_list =
-			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))();
+			CREATE(LIST(CMZN_CALLBACK_ITEM(FE_region_change)))();
 		fe_region->fe_field_changes = (struct CHANGE_LOG(FE_field) *)NULL;
 		fe_region->fe_node_changes = (struct CHANGE_LOG(FE_node) *)NULL;
 		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
@@ -1246,7 +1246,7 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 			{
 				DEACCESS(FE_region)(&fe_region->data_fe_region);
 			}
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(FE_region_change)))(
 				&(fe_region->change_callback_list));
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 			{
@@ -1471,7 +1471,7 @@ Automatically calls the same function for any master_FE_region.
 } /* FE_region_end_change */
 
 int FE_region_add_callback(struct FE_region *fe_region,
-	CMISS_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 16 December 2002
 
@@ -1486,7 +1486,7 @@ struct FE_region_changes * and the void *user_data.
 	ENTER(FE_region_add_callback);
 	if (fe_region && function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(FE_region_change)(
+		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(FE_region_change)(
 			fe_region->change_callback_list, function, user_data))
 		{
 			fe_region->number_of_clients++;
@@ -1511,7 +1511,7 @@ struct FE_region_changes * and the void *user_data.
 } /* FE_region_add_callback */
 
 int FE_region_remove_callback(struct FE_region *fe_region,
-	CMISS_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 16 December 2002
 
@@ -1526,7 +1526,7 @@ Removes the callback calling <function> with <user_data> from <region>.
 	{
 		if (fe_region->change_callback_list)
 		{
-			if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(FE_region_change)(
+			if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(FE_region_change)(
 						fe_region->change_callback_list, function, user_data))
 			{
 				fe_region->number_of_clients--;

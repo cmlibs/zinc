@@ -1214,7 +1214,7 @@ enum cmzn_graphic_select_mode GT_object_get_select_mode(
  * For DRAW_SELECTED and DRAW_UNSELECTED only primitives meeting the
  * criteria are in the graphics object, so it only affects which material is
  * used in rendering.
- * @return  On success CMISS_OK, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  On success CMZN_OK, otherwise CMZN_ERROR_ARGUMENT.
  */
 int GT_object_set_select_mode(struct GT_object *graphics_object,
 	enum cmzn_graphic_select_mode select_mode);
@@ -1234,7 +1234,7 @@ double get_GT_object_render_line_width(struct GT_object *graphics_object);
  *
  * @param graphics_object  The graphics object to modify.
  * @param width  Line width in pixels, or 0.0 to use width from current state.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 int set_GT_object_render_line_width(struct GT_object *graphics_object,
 	double width);
@@ -1254,7 +1254,7 @@ double get_GT_object_render_point_size(struct GT_object *graphics_object);
  *
  * @param graphics_object  The graphics object to modify.
  * @param size  Point size in pixels, or 0.0 to use size from current state.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 int set_GT_object_render_point_size(struct GT_object *graphics_object,
 	double size);

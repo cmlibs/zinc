@@ -44,8 +44,8 @@ the scene viewer get the contained cmzn_scene_viewer object and use its api.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __GTK_CMISS_SCENE_VIEWER_H__
-#define __GTK_CMISS_SCENE_VIEWER_H__
+#ifndef __GTK_CMZN_SCENE_VIEWER_H__
+#define __GTK_CMZN_SCENE_VIEWER_H__
 
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
@@ -56,18 +56,18 @@ the scene viewer get the contained cmzn_scene_viewer object and use its api.
 
 G_BEGIN_DECLS
 
-#define GTK_TYPE_CMISS_SCENE_VIEWER \
+#define GTK_TYPE_CMZN_SCENE_VIEWER \
    (gtk_cmiss_scene_viewer_get_type())
-#define GTK_CMISS_SCENE_VIEWER(obj) \
-   (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_CMISS_SCENE_VIEWER, GtkcmznSceneViewer))
-#define GTK_CMISS_SCENE_VIEWER_CLASS(klass) \
-   (G_TYPE_CHECK_CLASS_CAST (klass, GTK_TYPE_CMISS_SCENE_VIEWER, GtkcmznSceneViewerClass))
-#define GTK_IS_CMISS_SCENE_VIEWER(obj) \
-   (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_CMISS_SCENE_VIEWER))
-#define GTK_IS_CMISS_SCENE_VIEWER_CLASS(klass) \
-   (G_TYPE_CHECK_CLASS_TYPE ((klass), GTK_TYPE_CMISS_SCENE_VIEWER))
-#define GTK_CMISS_SCENE_VIEWER_GET_CLASS(obj) \
-   (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_CMISS_SCENE_VIEWER, GtkcmznSceneViewer))
+#define GTK_CMZN_SCENE_VIEWER(obj) \
+   (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_CMZN_SCENE_VIEWER, GtkcmznSceneViewer))
+#define GTK_CMZN_SCENE_VIEWER_CLASS(klass) \
+   (G_TYPE_CHECK_CLASS_CAST (klass, GTK_TYPE_CMZN_SCENE_VIEWER, GtkcmznSceneViewerClass))
+#define GTK_IS_CMZN_SCENE_VIEWER(obj) \
+   (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_CMZN_SCENE_VIEWER))
+#define GTK_IS_CMZN_SCENE_VIEWER_CLASS(klass) \
+   (G_TYPE_CHECK_CLASS_TYPE ((klass), GTK_TYPE_CMZN_SCENE_VIEWER))
+#define GTK_CMZN_SCENE_VIEWER_GET_CLASS(obj) \
+   (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_CMZN_SCENE_VIEWER, GtkcmznSceneViewer))
 
 #else /* GTK_MAJOR_VERSION >= 2 */
 
@@ -75,16 +75,16 @@ G_BEGIN_DECLS
 extern "C" {
 #endif /* __cplusplus */
 
-#define GTK_TYPE_CMISS_SCENE_VIEWER \
+#define GTK_TYPE_CMZN_SCENE_VIEWER \
    (gtk_cmiss_scene_viewer_get_type())
-#define GTK_CMISS_SCENE_VIEWER(obj) \
-   (GTK_CHECK_CAST ((obj), GTK_TYPE_CMISS_SCENE_VIEWER, GtkcmznSceneViewer))
-#define GTK_CMISS_SCENE_VIEWER_CLASS(klass) \
-   (GTK_CHECK_CLASS_CAST (klass, GTK_TYPE_CMISS_SCENE_VIEWER, GtkcmznSceneViewerClass))
-#define GTK_IS_CMISS_SCENE_VIEWER(obj) \
-   (GTK_CHECK_TYPE ((obj), GTK_TYPE_CMISS_SCENE_VIEWER))
-#define GTK_IS_CMISS_SCENE_VIEWER_CLASS(klass) \
-   (GTK_CHECK_CLASS_TYPE ((klass), GTK_TYPE_CMISS_SCENE_VIEWER))
+#define GTK_CMZN_SCENE_VIEWER(obj) \
+   (GTK_CHECK_CAST ((obj), GTK_TYPE_CMZN_SCENE_VIEWER, GtkcmznSceneViewer))
+#define GTK_CMZN_SCENE_VIEWER_CLASS(klass) \
+   (GTK_CHECK_CLASS_CAST (klass, GTK_TYPE_CMZN_SCENE_VIEWER, GtkcmznSceneViewerClass))
+#define GTK_IS_CMZN_SCENE_VIEWER(obj) \
+   (GTK_CHECK_TYPE ((obj), GTK_TYPE_CMZN_SCENE_VIEWER))
+#define GTK_IS_CMZN_SCENE_VIEWER_CLASS(klass) \
+   (GTK_CHECK_CLASS_TYPE ((klass), GTK_TYPE_CMZN_SCENE_VIEWER))
 
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
@@ -170,4 +170,4 @@ G_END_DECLS
 }
 #endif /* __cplusplus */
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* __GTK_CMISS_SCENE_VIEWER_H__ */
+#endif /* __GTK_CMZN_SCENE_VIEWER_H__ */

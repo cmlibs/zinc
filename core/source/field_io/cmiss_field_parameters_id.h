@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_PARAMETERS_ID_H)
-#define CMISS_FIELD_PARAMETERS_ID_H
+#if !defined (CMZN_FIELD_PARAMETERS_ID_H)
+#define CMZN_FIELD_PARAMETERS_ID_H
 
 /***************************************************************************//**
  * The ensemble type specific handle to a real parameters cmzn_field.
@@ -47,6 +47,6 @@
  */
 	struct cmzn_field_real_parameters;
 	typedef struct cmzn_field_real_parameters *cmzn_field_real_parameters_id;
-	#define CMISS_FIELD_PARAMETERS_ID_H
+	#define CMZN_FIELD_PARAMETERS_ID_H
 
-#endif /* CMISS_FIELD_PARAMETERS_ID_H */
+#endif /* CMZN_FIELD_PARAMETERS_ID_H */

@@ -5,7 +5,7 @@ LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
-interface to CMISS.
+interface to CMZN.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

@@ -82,7 +82,7 @@ ZINC_API cmzn_field_module_id cmzn_field_module_access(cmzn_field_module_id fiel
  * Internally this just decrements the reference count.
  *
  * @param field_module_address  Address of field module reference.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_module_destroy(cmzn_field_module_id *field_module_address);
 
@@ -96,7 +96,7 @@ ZINC_API int cmzn_field_module_destroy(cmzn_field_module_id *field_module_addres
  *
  * @see cmzn_region_begin_change
  * @param field_module  The field_module to begin change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_module_begin_change(cmzn_field_module_id field_module);
 
@@ -107,7 +107,7 @@ ZINC_API int cmzn_field_module_begin_change(cmzn_field_module_id field_module);
  * cached change messages are sent out to clients.
  *
  * @param field_module  The field_module to end change cache on.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_module_end_change(cmzn_field_module_id field_module);
 
@@ -144,7 +144,7 @@ ZINC_API cmzn_field_iterator_id cmzn_field_module_create_field_iterator(
  *
  * @param field_module  Handle to the field_module owning the meshes to define
  * faces for.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_module_define_all_faces(cmzn_field_module_id field_module);
 

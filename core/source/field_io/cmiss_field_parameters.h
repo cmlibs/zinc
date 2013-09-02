@@ -39,8 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_PARAMETERS_H)
-#define CMISS_FIELD_PARAMETERS_H
+#if !defined (CMZN_FIELD_PARAMETERS_H)
+#define CMZN_FIELD_PARAMETERS_H
 
 #include "zinc/types/fieldid.h"
 #include "zinc/types/fieldmoduleid.h"
@@ -135,4 +135,4 @@ int cmzn_field_integer_parameters_set_values(
 	cmzn_field_integer_parameters_id integer_parameters_field,
 	cmzn_ensemble_index_id index, unsigned int number_of_values, int *values);
 
-#endif /* !defined (CMISS_FIELD_PARAMETERS_H) */
+#endif /* !defined (CMZN_FIELD_PARAMETERS_H) */

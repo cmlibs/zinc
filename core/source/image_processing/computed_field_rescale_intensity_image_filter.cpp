@@ -55,7 +55,7 @@ Wraps itk::RescaleIntensityImageFiter
 #include "itkVector.h"
 #include "itkRescaleIntensityImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

@@ -73,7 +73,7 @@ ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
  * Internally this just decrements the reference count.
  *
  * @param scene Pointer to the handle to the scene.
- * @return  status CMISS_OK if successfully remove scene, any other value on
+ * @return  status CMZN_OK if successfully remove scene, any other value on
  * failure.
  */
 ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene);
@@ -88,7 +88,7 @@ ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene);
  * at once.
  *
  * @param scene  The handle to the scene.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
 
@@ -115,8 +115,8 @@ ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
  * @param surface_density_scale_factor  If a surface graphic has a data field
  * the mean value of its first component multiplied by this factor is added to
  * the expected value.
- * @return  Status CMISS_OK on success, otherwise some other error code
- * including CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise some other error code
+ * including CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	cmzn_graphics_filter_id filter, cmzn_nodeset_id nodeset,
@@ -208,7 +208,7 @@ ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
  * at once.
  *
  * @param scene  The handle to the scene.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_end_change(cmzn_scene_id scene);
 
@@ -282,7 +282,7 @@ ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene)
  *
  * @param cmiss_scene  pointer to the cmiss_scene.
  * @param selection_field  selection field to be set for this group.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
 	cmzn_field_group_id selection_field);
@@ -326,7 +326,7 @@ ZINC_API bool cmzn_scene_get_visibility_flag(cmzn_scene_id scene);
  *
  * @param scene  The handle to the scene.
  * @param visibility_flag  Boolean true to set, false to clear.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_scene_set_visibility_flag(cmzn_scene_id scene,
 	bool visibility_flag);
@@ -341,7 +341,7 @@ ZINC_API int cmzn_scene_set_visibility_flag(cmzn_scene_id scene,
  * @param graphic  The graphic to be moved. Must be from scene.
  * @param ref_graphic  Another graphic from this scene to insert before, or
  * NULL to move graphic to last position in list.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
 	cmzn_graphic_id graphic, cmzn_graphic_id ref_graphic);
@@ -350,7 +350,7 @@ ZINC_API int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
  * Removes all graphics from the scene.
  *
  * @param scene  The scene to modify.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_remove_all_graphics(cmzn_scene_id scene);
 
@@ -359,7 +359,7 @@ ZINC_API int cmzn_scene_remove_all_graphics(cmzn_scene_id scene);
  *
  * @param scene  The scene to modify.
  * @param graphic  The graphic to be removed.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_scene_remove_graphic(cmzn_scene_id scene,
 	cmzn_graphic_id graphic);
@@ -369,7 +369,7 @@ ZINC_API int cmzn_scene_remove_graphic(cmzn_scene_id scene,
  * find the onjects included in this volume.
  *
  * @param scene  Scene to create the scene picker for.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API cmzn_scene_picker_id cmzn_scene_create_picker(cmzn_scene_id scene);
 

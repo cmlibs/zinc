@@ -119,7 +119,7 @@ private:
 
 	virtual cmzn_field_value_type get_value_type() const
 	{
-		return CMISS_FIELD_VALUE_TYPE_STRING;
+		return CMZN_FIELD_VALUE_TYPE_STRING;
 	}
 
 };

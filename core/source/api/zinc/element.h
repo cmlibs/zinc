@@ -63,15 +63,15 @@ extern "C" {
  */
 enum cmzn_element_shape_type
 {
-	CMISS_ELEMENT_SHAPE_TYPE_INVALID = 0,/**< unspecified shape of known dimension */
-	CMISS_ELEMENT_SHAPE_LINE = 1,        /**< 1-D: 0 <= xi1 <= 1 */
-	CMISS_ELEMENT_SHAPE_SQUARE = 2,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
-	CMISS_ELEMENT_SHAPE_TRIANGLE = 3,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
-	CMISS_ELEMENT_SHAPE_CUBE = 4,        /**< 3-D: 0 <= xi1,xi2,xi3 <= 1 */
-	CMISS_ELEMENT_SHAPE_TETRAHEDRON = 5, /**< 3-D: 0 <= xi1,xi2,xi3; xi1+xi2+xi3 <= 1 */
-	CMISS_ELEMENT_SHAPE_WEDGE12 = 6,     /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1; 0 <= xi3 <= 1 */
-	CMISS_ELEMENT_SHAPE_WEDGE13 = 7,     /**< 3-D: 0 <= xi1,xi3; xi1+xi3 <= 1; 0 <= xi2 <= 1 */
-	CMISS_ELEMENT_SHAPE_WEDGE23 = 8      /**< 3-D: 0 <= xi2,xi3; xi2+xi3 <= 1; 0 <= xi1 <= 1 */
+	CMZN_ELEMENT_SHAPE_TYPE_INVALID = 0,/**< unspecified shape of known dimension */
+	CMZN_ELEMENT_SHAPE_LINE = 1,        /**< 1-D: 0 <= xi1 <= 1 */
+	CMZN_ELEMENT_SHAPE_SQUARE = 2,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
+	CMZN_ELEMENT_SHAPE_TRIANGLE = 3,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
+	CMZN_ELEMENT_SHAPE_CUBE = 4,        /**< 3-D: 0 <= xi1,xi2,xi3 <= 1 */
+	CMZN_ELEMENT_SHAPE_TETRAHEDRON = 5, /**< 3-D: 0 <= xi1,xi2,xi3; xi1+xi2+xi3 <= 1 */
+	CMZN_ELEMENT_SHAPE_WEDGE12 = 6,     /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1; 0 <= xi3 <= 1 */
+	CMZN_ELEMENT_SHAPE_WEDGE13 = 7,     /**< 3-D: 0 <= xi1,xi3; xi1+xi3 <= 1; 0 <= xi2 <= 1 */
+	CMZN_ELEMENT_SHAPE_WEDGE23 = 8      /**< 3-D: 0 <= xi2,xi3; xi2+xi3 <= 1; 0 <= xi1 <= 1 */
 };
 
 /***************************************************************************//**
@@ -79,13 +79,13 @@ enum cmzn_element_shape_type
  */
 enum cmzn_basis_function_type
 {
-	CMISS_BASIS_FUNCTION_TYPE_INVALID = 0,
-	CMISS_BASIS_FUNCTION_CONSTANT = 1,
-	CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE = 2,
-	CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
-	CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE = 4,
-	CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX = 5,   /**< linked on 2 or more dimensions */
-	CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX = 6 /**< linked on 2 or more dimensions */
+	CMZN_BASIS_FUNCTION_TYPE_INVALID = 0,
+	CMZN_BASIS_FUNCTION_CONSTANT = 1,
+	CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE = 2,
+	CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
+	CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE = 4,
+	CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX = 5,   /**< linked on 2 or more dimensions */
+	CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX = 6 /**< linked on 2 or more dimensions */
 };
 
 /*
@@ -189,7 +189,7 @@ ZINC_API cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh);
  * Internally this just decrements the reference count.
  *
  * @param mesh_address  Address of handle to the mesh to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address);
 
@@ -254,7 +254,7 @@ ZINC_API cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
  * automatically generate, starting from 1. Fails if supplied identifier already
  * used by an existing element.
  * @param element_template  Template for element shape and fields.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
 	cmzn_element_template_id element_template);
@@ -264,7 +264,7 @@ ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
  * All handles to the destroyed element become invalid.
  *
  * @param mesh  Handle to mesh to destroy elements from.
- * @return  Status CMISS_OK if all elements destroyed, any other value if failed.
+ * @return  Status CMZN_OK if all elements destroyed, any other value if failed.
  */
 ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
 
@@ -274,7 +274,7 @@ ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
  *
  * @param mesh  Handle to the mesh whose element is to be destroyed.
  * @param element  The element to destroy.
- * @return  Status CMISS_OK if element is successfully destroyed, any other
+ * @return  Status CMZN_OK if element is successfully destroyed, any other
  * value if failed.
  */
 ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element);
@@ -289,7 +289,7 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
 	cmzn_field_id conditional_field);
@@ -381,7 +381,7 @@ ZINC_API cmzn_mesh_group_id cmzn_mesh_cast_group(cmzn_mesh_id mesh);
  * Internally this just decrements the reference count.
  *
  * @param mesh_group_address  Address of mesh group handle to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_group_destroy(cmzn_mesh_group_id *mesh_group_address);
 
@@ -407,7 +407,7 @@ ZINC_C_INLINE cmzn_mesh_id cmzn_mesh_group_base_cast(
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to add. Must be from the group's master mesh.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -416,7 +416,7 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
  * Remove all elements from mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
- * @return  Status CMISS_OK if all elements removed, any other value if failed.
+ * @return  Status CMZN_OK if all elements removed, any other value if failed.
  */
 ZINC_API int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group);
 
@@ -425,7 +425,7 @@ ZINC_API int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group);
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to remove.
- * @return  Status CMISS_OK if element removed, any other value if failed.
+ * @return  Status CMZN_OK if element removed, any other value if failed.
  */
 ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -439,7 +439,7 @@ ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
  * @param mesh_group  Handle to the mesh group to remove elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be removed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
    cmzn_field_id conditional_field);
@@ -459,7 +459,7 @@ ZINC_API cmzn_element_basis_id cmzn_element_basis_access(
  * Internally this just decrements the reference count.
  *
  * @param element_basis_address  Address of handle to element_basis to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_basis_destroy(cmzn_element_basis_id *element_basis_address);
 
@@ -489,7 +489,7 @@ ZINC_API enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
  * @param chart_component  The chart component to set the function for from 1 to
  * dimension.
  * @param basis_type  The basis type to use on the chosen chart component.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
 	int chart_component, enum cmzn_basis_function_type function_type);
@@ -518,7 +518,7 @@ ZINC_API cmzn_element_iterator_id cmzn_element_iterator_access(
  *
  * @param element_iterator_address  Address of handle to element_iterator to
  * destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_iterator_destroy(
 	cmzn_element_iterator_id *element_iterator_address);
@@ -550,7 +550,7 @@ ZINC_API cmzn_element_template_id cmzn_element_template_access(
  *
  * @param element_template_address  Address of handle to element_template
  * to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_template_destroy(
 	cmzn_element_template_id *element_template_address);
@@ -567,7 +567,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
 /***************************************************************************//**
  * Sets the element shape to a standard element shape type. The shape must have
  * the same dimension as the mesh from which the element template was created.
- * Special value CMISS_ELEMENT_SHAPE_TYPE_INVALID indicates an unspecified shape
+ * Special value CMZN_ELEMENT_SHAPE_TYPE_INVALID indicates an unspecified shape
  * of known; when this is set in the template it does not override the shape
  * of any elements it is merged into. Beware that face mappings are lost if
  * shape changes are merged into global elements.
@@ -576,7 +576,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
  *
  * @param element_template  Element template to modify.
  * @param shape_type  Enumerator of standard element shapes.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_template_set_shape_type(cmzn_element_template_id element_template,
 	enum cmzn_element_shape_type shape_type);
@@ -597,7 +597,7 @@ ZINC_API int cmzn_element_template_get_number_of_nodes(
  *
  * @param element_template  Element template to modify.
  * @param number_of_nodes  The number of nodes.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_template_set_number_of_nodes(
 	cmzn_element_template_id element_template, int number_of_nodes);
@@ -621,7 +621,7 @@ ZINC_API int cmzn_element_template_set_number_of_nodes(
  * the number of nodes set for the element_template. Local nodes are ordered
  * by lowest xi coordinate varying fastest, e.g. for biquadratic Lagrange:
  * xi = (0,0), (0.5,0), (1,0), (0,0.5), (0.5,0.5) ...
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_template_define_field_simple_nodal(
 	cmzn_element_template_id element_template,
@@ -649,7 +649,7 @@ ZINC_API cmzn_node_id cmzn_element_template_get_node(
  * @param element_template  Element template to modify.
  * @param local_node_index  The index from 1 to number of nodes in template.
  * @param node  The global node to set at that index.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_template_set_node(cmzn_element_template_id element_template,
 	int local_node_index, cmzn_node_id node);
@@ -668,7 +668,7 @@ ZINC_API cmzn_element_id cmzn_element_access(cmzn_element_id element);
  * Internally this just decrements the reference count.
  *
  * @param element_address  Address of handle to the element to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_destroy(cmzn_element_id *element_address);
 
@@ -696,7 +696,7 @@ ZINC_API int cmzn_element_get_identifier(cmzn_element_id element);
  * @param element  The element to query.
  * @param identifier  unique identifier to be set for the element
  *
- * @return  CMISS_OK if set the identifier successfully,
+ * @return  CMZN_OK if set the identifier successfully,
  * 	any other value on fail.
  */
 ZINC_API int cmzn_element_set_identifier(cmzn_element_id element, int identifier);
@@ -720,7 +720,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_get_shape_type(
  *
  * @param element  The element to modify.
  * @param element_template  Template containing element field definitions.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_merge(cmzn_element_id element,
 	cmzn_element_template_id element_template);

@@ -71,7 +71,7 @@ ZINC_API cmzn_graphics_filter_module_id cmzn_graphics_filter_module_access(
 *
 * @param graphics_filter_module_address  Address of handle to graphics_filter module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_filter_module_destroy(
 	cmzn_graphics_filter_module_id *graphics_filter_module_address);
@@ -160,7 +160,7 @@ ZINC_API cmzn_graphics_filter_id cmzn_graphics_filter_module_create_filter_opera
 * @see cmzn_graphics_filter_module_end_change
 *
 * @param graphics_filter_module  The graphics_filter_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_filter_module_begin_change(
 	cmzn_graphics_filter_module_id graphics_filter_module);
@@ -172,7 +172,7 @@ ZINC_API int cmzn_graphics_filter_module_begin_change(
 * cached change messages are sent out to clients.
 *
 * @param graphics_filter_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_graphics_filter_module_end_change(
 	cmzn_graphics_filter_module_id graphics_filter_module);
@@ -203,7 +203,7 @@ ZINC_API cmzn_graphics_filter_id cmzn_graphics_filter_module_get_default_filter(
 *
 * @param graphics_filter_module  graphics_filter module to modify
 * @param graphics_filter  The graphics_filter to set as default.
-* @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_filter_module_set_default_filter(
 	cmzn_graphics_filter_module_id graphics_filter_module,
@@ -224,7 +224,7 @@ ZINC_API cmzn_graphics_filter_id cmzn_graphics_filter_access(cmzn_graphics_filte
  *
  * @param filter_address  The address to the handle of the filter
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_destroy(cmzn_graphics_filter_id *filter_address);
 
@@ -248,7 +248,7 @@ ZINC_API bool cmzn_graphics_filter_is_managed(cmzn_graphics_filter_id filter);
  *
  * @param graphics filter  The graphics filter to modify.
  * @param value  The new value for the managed flag: true or false.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_filter_set_managed(cmzn_graphics_filter_id filter,
 	bool value);
@@ -278,7 +278,7 @@ ZINC_API char *cmzn_graphics_filter_get_name(cmzn_graphics_filter_id filter);
  *
  * @param filter  The filter to modify.
  * @param name  name to be set to the scene filter
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_set_name(cmzn_graphics_filter_id filter,
 	const char *name);
@@ -297,7 +297,7 @@ ZINC_API bool cmzn_graphics_filter_is_inverse(cmzn_graphics_filter_id filter);
  *
  * @param graphics filter  The graphics filter to modify.
  * @param value  Boolean true to set inverse, false for non-inverse.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_filter_set_inverse(cmzn_graphics_filter_id filter,
 	bool value);
@@ -337,7 +337,7 @@ ZINC_C_INLINE cmzn_graphics_filter_id cmzn_graphics_filter_operator_base_cast(
  * Internally this just decrements the reference count.
  *
  * @param operator_filter_address  Address of handle to the operator filter.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_operator_destroy(
 	cmzn_graphics_filter_operator_id *operator_filter_address);
@@ -349,7 +349,7 @@ ZINC_API int cmzn_graphics_filter_operator_destroy(
  *
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The filter to be added
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_operator_append_operand(
 	cmzn_graphics_filter_operator_id operator_filter,
@@ -392,7 +392,7 @@ ZINC_API int cmzn_graphics_filter_operator_get_operand_is_active(
  * @param operator_filter  The operator filter providing a list of filters.
  * @param operand  The filter to be set.
  * @param is_active  Value to set: non-zero to mark as active, 0 for inactive.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_operator_set_operand_is_active(
 	cmzn_graphics_filter_operator_id operator_filter,
@@ -406,7 +406,7 @@ ZINC_API int cmzn_graphics_filter_operator_set_operand_is_active(
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The operand filter to be inserted.
  * @param ref_operand  The reference filter to insert before.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_operator_insert_operand_before(
 	cmzn_graphics_filter_operator_id operator_filter,
@@ -417,7 +417,7 @@ ZINC_API int cmzn_graphics_filter_operator_insert_operand_before(
  *
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The filter to be removed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_graphics_filter_operator_remove_operand(
 	cmzn_graphics_filter_operator_id operator_filter,

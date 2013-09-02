@@ -17,7 +17,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is OpenCMISS-Zinc Library.
+ * The Original Code is OpenCMZN-Zinc Library.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
@@ -52,23 +52,23 @@ extern "C" {
  * Generic status codes returned by API functions to indicate success or error.
  *
  * WARNING: Planned future binary compatibility break.
- * At a future date we will change value of CMISS_OK to 0, and
- * introduce negative-valued error codes e.g. 'CMISS_ERROR_ARGUMENT',
+ * At a future date we will change value of CMZN_OK to 0, and
+ * introduce negative-valued error codes e.g. 'CMZN_ERROR_ARGUMENT',
  * to bring the CMGUI Zinc API in to line with common C API conventions.
  * To maintain your source compatibility through this break please ensure
  * all code checking integer status codes returned by functions compare
- * against enum CMISS_OK, NOT its current literal value
+ * against enum CMZN_OK, NOT its current literal value
  *
  */
 enum cmzn_status
 {
-	CMISS_ERROR_MEMORY = -2,
+	CMZN_ERROR_MEMORY = -2,
 		/*!< failed to allocate memory. */
-	CMISS_ERROR_ARGUMENT = -1,
+	CMZN_ERROR_ARGUMENT = -1,
 		/*!< invalid argument(s) passed to API function. Only reported for new APIs. */
-	CMISS_ERROR_GENERAL = 0,
+	CMZN_ERROR_GENERAL = 0,
 		/*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
-	CMISS_OK = 1
+	CMZN_OK = 1
 		/*!< value to be returned on success */
 };
 

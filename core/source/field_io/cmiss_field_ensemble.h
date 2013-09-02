@@ -38,8 +38,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_ENSEMBLE_H)
-#define CMISS_FIELD_ENSEMBLE_H
+#if !defined (CMZN_FIELD_ENSEMBLE_H)
+#define CMZN_FIELD_ENSEMBLE_H
 
 #include "zinc/zincsharedobject.h"
 #include "zinc/types/fieldid.h"
@@ -162,4 +162,4 @@ int cmzn_ensemble_index_set_group(cmzn_ensemble_index_id index,
 	cmzn_field_ensemble_group_id ensemble_group_field);
 
 
-#endif /* !defined (CMISS_FIELD_ENSEMBLE_H) */
+#endif /* !defined (CMZN_FIELD_ENSEMBLE_H) */

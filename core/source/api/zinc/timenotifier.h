@@ -78,7 +78,7 @@ ZINC_API cmzn_time_notifier_id cmzn_time_notifier_access(
  * Internally this just decrements the reference count.
  *
  * @param time_notifier_address  The address to the handle to time notifier
- * @return  Status CMISS_OK if successfully destroy(deaccess) the time notifier,
+ * @return  Status CMZN_OK if successfully destroy(deaccess) the time notifier,
  * any other value on failure.
  */
 ZINC_API int cmzn_time_notifier_destroy(cmzn_time_notifier_id *time_notifier_address);
@@ -90,7 +90,7 @@ ZINC_API int cmzn_time_notifier_destroy(cmzn_time_notifier_id *time_notifier_add
  * @param time_notifier  Handle to time notifier.
  * @param cmzn_time_notifier_callback  callback function to be set.
  * @param user_data  Data to be past into the callback routine.
- * @return  Status CMISS_OK if successfully add callback,
+ * @return  Status CMZN_OK if successfully add callback,
  * any other value on failure.
  */
 ZINC_API int cmzn_time_notifier_add_callback(cmzn_time_notifier_id time_notifier,
@@ -102,7 +102,7 @@ ZINC_API int cmzn_time_notifier_add_callback(cmzn_time_notifier_id time_notifier
  * @param time_notifier  Handle to time notifier.
  * @param cmzn_time_notifier_callback  callback function to be .
  * @param user_data  Data that was added to the callback.
- * @return  Status CMISS_OK if successfully remove callback, any other value
+ * @return  Status CMZN_OK if successfully remove callback, any other value
  * on failure.
  */
 ZINC_API int cmzn_time_notifier_remove_callback(cmzn_time_notifier_id time_notifier,
@@ -129,7 +129,7 @@ ZINC_API double cmzn_time_notifier_get_current_time(cmzn_time_notifier_id time_n
  * @param time_notifier  Handle to time notifier.
  * @param frequency  The number of times which time notifier will receive
  *    callback per unit of time in the time keeper.
- * @return  Status CMISS_OK if successfully set the update frequency to the value
+ * @return  Status CMZN_OK if successfully set the update frequency to the value
  * provided, any other value on failure.
  */
 ZINC_API int cmzn_time_notifier_regular_set_frequency(cmzn_time_notifier_id time_notifier,
@@ -142,7 +142,7 @@ ZINC_API int cmzn_time_notifier_regular_set_frequency(cmzn_time_notifier_id time
  *
  * @param time_notifier  Handle to time notifier.
  * @param offset  This set the time that notifier will receive callback.
- * @return  Status CMISS_OK if successfully set the update frequency to the value
+ * @return  Status CMZN_OK if successfully set the update frequency to the value
  * provided, any other value on failure.
  */
 ZINC_API int cmzn_time_notifier_regular_set_offset(cmzn_time_notifier_id time_notifier,

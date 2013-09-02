@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_ELEMENT_PRIVATE_HPP)
-#define CMISS_ELEMENT_PRIVATE_HPP
+#if !defined (CMZN_ELEMENT_PRIVATE_HPP)
+#define CMZN_ELEMENT_PRIVATE_HPP
 
 #include "zinc/element.h"
 #include "zinc/region.h"
@@ -56,7 +56,7 @@ struct FE_region;
  * less than that of element and be a subgroup for the master mesh expected to
  * own the element's faces.
  * @param element  The element whose faces are to be added.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -69,7 +69,7 @@ int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group,
  * 1 less than that of element and be a subgroup for the master mesh expected
  * to own the element's faces.
  * @param element  The element whose faces are to be removed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -95,4 +95,4 @@ cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh);
  */
 cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh);
 
-#endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */
+#endif /* !defined (CMZN_ELEMENT_PRIVATE_HPP) */

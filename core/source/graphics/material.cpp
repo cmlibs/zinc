@@ -3294,9 +3294,9 @@ public:
 				delete material_module;
 			}
 			material_module = 0;
-			return CMISS_OK;
+			return CMZN_OK;
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 
@@ -3375,7 +3375,7 @@ public:
 	int setDefaultMaterial(cmzn_graphics_material *material)
 	{
 		REACCESS(cmzn_graphics_material)(&this->defaultMaterial, material);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 	cmzn_graphics_material *getDefaultSelectedMaterial()
@@ -3390,7 +3390,7 @@ public:
 	int setDefaultSelectedMaterial(cmzn_graphics_material *material)
 	{
 		REACCESS(cmzn_graphics_material)(&this->defaultSelectedMaterial, material);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 };
@@ -3407,7 +3407,7 @@ int cmzn_graphics_material_module_destroy(cmzn_graphics_material_module_id *mate
 {
 	if (material_module_address)
 		return cmzn_graphics_material_module::deaccess(*material_module_address);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphics_material_id cmzn_graphics_material_module_create_material(
@@ -3586,17 +3586,17 @@ int cmzn_graphics_material_module_define_standard_materials(
 				cmzn_graphics_material_set_name(material, startup_materials[i].name))
 			{
 				cmzn_graphics_material_set_attribute_real3(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
 				cmzn_graphics_material_set_attribute_real3(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
 				cmzn_graphics_material_set_attribute_real3(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
 				cmzn_graphics_material_set_attribute_real3(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
 				cmzn_graphics_material_set_attribute_real(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
 				cmzn_graphics_material_set_attribute_real(material,
-					CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
+					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
 				cmzn_graphics_material_set_managed(material, true);
 				material->module = material_module;
 				cmzn_graphics_material_destroy(&material);
@@ -3619,14 +3619,14 @@ int cmzn_graphics_material_module_begin_change(cmzn_graphics_material_module_id 
 {
 	if (material_module)
 		return material_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_graphics_material_module_end_change(cmzn_graphics_material_module_id material_module)
 {
 	if (material_module)
 		return material_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphics_material_id cmzn_graphics_material_module_find_material_by_name(
@@ -3705,17 +3705,17 @@ cmzn_graphics_material_module_id cmzn_graphics_material_module_create(
 		material_module);
 	cmzn_graphics_material_set_name(defaultMaterial, "default");
 	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
 	cmzn_graphics_material_set_attribute_real(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
 	cmzn_graphics_material_set_attribute_real(defaultMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
 	cmzn_graphics_material_set_managed(defaultMaterial, true);
 	defaultMaterial->module = material_module;
 	cmzn_graphics_material_module_set_default_material(
@@ -3726,17 +3726,17 @@ cmzn_graphics_material_module_id cmzn_graphics_material_module_create(
 		material_module);
 	cmzn_graphics_material_set_name(defaultSelectedMaterial, "default_selected");
 	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
 	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
 	cmzn_graphics_material_set_attribute_real(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
 	cmzn_graphics_material_set_attribute_real(defaultSelectedMaterial,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
 	cmzn_graphics_material_set_managed(defaultSelectedMaterial, true);
 	defaultSelectedMaterial->module = material_module;
 	cmzn_graphics_material_module_set_default_selected_material(
@@ -6496,9 +6496,9 @@ int cmzn_graphics_material_set_managed(cmzn_graphics_material_id material, bool 
 		{
 			MANAGED_OBJECT_CHANGE(Graphical_material)(material, MANAGER_CHANGE_NOT_RESULT(Graphical_material));
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_graphics_material_set_name(
@@ -6552,11 +6552,11 @@ double cmzn_graphics_material_get_attribute_real(cmzn_graphics_material_id mater
 	{
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 			{
 				Graphical_material_get_alpha(material, &value);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
 			{
 				Graphical_material_get_shininess(material, &value);
 			}	break;
@@ -6579,11 +6579,11 @@ int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id material
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 			{
 				return_code = Graphical_material_set_alpha(material, value);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
 			{
 				return_code = Graphical_material_set_shininess(material, value);
 			}	break;
@@ -6611,19 +6611,19 @@ int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_id materia
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
 				return_code = Graphical_material_get_ambient(material, &colour);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
 			{
 				return_code = Graphical_material_get_diffuse(material, &colour);
 			}	break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
 			{
 				return_code = Graphical_material_get_emission(material, &colour);
 			}	break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
 			{
 				return_code = Graphical_material_get_specular(material, &colour);
 			}	break;
@@ -6657,19 +6657,19 @@ int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_id materia
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
 				return_code = Graphical_material_set_ambient(material, &colour);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
 			{
 				return_code = Graphical_material_set_diffuse(material, &colour);
 			}	break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
 			{
 				return_code = Graphical_material_set_emission(material, &colour);
 			}	break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
 			{
 				return_code = Graphical_material_set_specular(material, &colour);
 			}	break;
@@ -6692,22 +6692,22 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 				enum_string = "ALPHA";
 				break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
 				enum_string = "AMBIENT";
 				break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
 				enum_string = "DIFFUSE";
 				break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
 				enum_string = "EMISSION";
 				break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
 				enum_string = "SHININESS";
 				break;
-			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
 				enum_string = "SPECULAR";
 				break;
 			default:

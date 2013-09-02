@@ -75,7 +75,7 @@ ZINC_API cmzn_scene_picker_id cmzn_scene_picker_access(
  *
  * @param scene_picker_address  The address to the handle of the scene_picker
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_picker_destroy(cmzn_scene_picker_id *scene_picker_address);
 
@@ -92,7 +92,7 @@ ZINC_API cmzn_scene_id cmzn_scene_picker_get_scene(cmzn_scene_picker_id scene_pi
  *
  * @param scene_picker  The scene picker to be modified.
  * @param scene  The scene to pick from.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_picker_set_scene(cmzn_scene_picker_id scene_picker,
 	cmzn_scene_id scene);
@@ -112,7 +112,7 @@ ZINC_API cmzn_graphics_filter_id cmzn_scene_picker_get_graphics_filter(
  *
  * @param scene_picker  The scene picker to be modified.
  * @param scene  The scene to pick from.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_picker_set_graphics_filter(cmzn_scene_picker_id scene_picker,
 	cmzn_graphics_filter_id filter_in);
@@ -129,7 +129,7 @@ ZINC_API int cmzn_scene_picker_set_graphics_filter(cmzn_scene_picker_id scene_pi
  * @param x1 and y1 specify the location of a corner of the rectangle
  * @param x1 and y2 specify tthe location of he diagonally opposite corners
  * to (x1, y1) of the rectangle.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int  cmzn_scene_picker_set_scene_viewer_rectangle(
 	cmzn_scene_picker_id scene_picker, cmzn_scene_viewer_id scene_viewer_in,
@@ -188,7 +188,7 @@ ZINC_API cmzn_graphic_id cmzn_scene_picker_get_nearest_graphic(
  *
  * @param scene_picker  The scene picker to pick the nearest node.
  * @param group  nodes will be added to this group field
- * @return Status CMISS_OK on success, any other value on failure.
+ * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_picker_add_picked_nodes_to_group(
 	cmzn_scene_picker_id scene_picker, cmzn_field_group_id group);
@@ -200,7 +200,7 @@ ZINC_API int cmzn_scene_picker_add_picked_nodes_to_group(
  *
  * @param scene_picker  The scene picker to pick the nearest element.
  * @param group  elements will be added to this group field
- * @return Status CMISS_OK on success, any other value on failure.
+ * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_picker_add_picked_elements_to_group(
 	cmzn_scene_picker_id scene_picker, cmzn_field_group_id group);

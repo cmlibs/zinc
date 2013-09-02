@@ -646,10 +646,10 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 		/* try to draw points and lines faster */
 		cmzn_glyph_type glyph_type = glyph ?
-			GT_object_get_glyph_type(glyph) : CMISS_GLYPH_NONE;
-		if ((glyph_type == CMISS_GLYPH_POINT) && (
-			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
-			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
+			GT_object_get_glyph_type(glyph) : CMZN_GLYPH_NONE;
+		if ((glyph_type == CMZN_GLYPH_POINT) && (
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE) ||
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR)))
 		{
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
@@ -690,11 +690,11 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #Pointset\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMISS_GLYPH_LINE) && (
-			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE) ||
-			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR)))
+		else if ((glyph_type == CMZN_GLYPH_LINE) && (
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE) ||
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR)))
 		{
-			const ZnReal f = (glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) ? -1.0 : 0.0;
+			const ZnReal f = (glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR) ? -1.0 : 0.0;
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
 			if (material)
@@ -751,8 +751,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #IndexedLineSet\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMISS_GLYPH_CROSS) &&
-			(glyph_repeat_mode == CMISS_GLYPH_REPEAT_NONE))
+		else if ((glyph_type == CMZN_GLYPH_CROSS) &&
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
 		{
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
@@ -1177,7 +1177,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
 							*point, *axis1, *axis2, *axis3, *scale,
 							temp_point, temp_axis1, temp_axis2, temp_axis3);
-						if ((glyph_repeat_mode == CMISS_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
+						if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
 						{
 							for (int j = 0; j < 3; ++j)
 							{
@@ -1790,7 +1790,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1810,7 +1810,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (CMISS_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
 			{
 				triple=normalpts;
 				if (triple)
@@ -1838,7 +1838,7 @@ DESCRIPTION :
 				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (CMISS_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
 			{
 				triple=texturepts;
 				if (triple)
@@ -1866,7 +1866,7 @@ DESCRIPTION :
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1900,7 +1900,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1951,7 +1951,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+					if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1990,7 +1990,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}

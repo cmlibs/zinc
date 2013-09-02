@@ -81,7 +81,7 @@ protected:
 		manager_change_status(0),
 		isManagedFlag(false),
 		access_count(1),
-		type(CMISS_GLYPH_TYPE_INVALID)
+		type(CMZN_GLYPH_TYPE_INVALID)
 	{
 	}
 

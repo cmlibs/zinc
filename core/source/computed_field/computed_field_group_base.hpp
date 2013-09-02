@@ -49,11 +49,11 @@
  */
 enum cmzn_field_group_change_type
 {
-	CMISS_FIELD_GROUP_NO_CHANGE,
-	CMISS_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
-	CMISS_FIELD_GROUP_ADD,       /*!< objects have been added only */
-	CMISS_FIELD_GROUP_REMOVE,    /*!< objects have been removed only */
-	CMISS_FIELD_GROUP_REPLACE    /*!< contents replaced: clear+add, add+remove */
+	CMZN_FIELD_GROUP_NO_CHANGE,
+	CMZN_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
+	CMZN_FIELD_GROUP_ADD,       /*!< objects have been added only */
+	CMZN_FIELD_GROUP_REMOVE,    /*!< objects have been removed only */
+	CMZN_FIELD_GROUP_REPLACE    /*!< contents replaced: clear+add, add+remove */
 };
 
 /***************************************************************************//**

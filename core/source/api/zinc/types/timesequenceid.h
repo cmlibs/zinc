@@ -44,4 +44,4 @@
 	struct cmzn_time_sequence;
 	typedef struct cmzn_time_sequence *cmzn_time_sequence_id;
 
-#endif /* CMISS_TIME_SEQUENCE_ID_H */
+#endif /* CMZN_TIME_SEQUENCE_ID_H */

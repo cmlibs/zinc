@@ -56,7 +56,7 @@ Wraps itk::Statistics::ScalarImageToHistogramGenerator
 #include "itkScalarImageToHistogramGenerator.h"
 #include "itkImageToHistogramGenerator.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

@@ -68,7 +68,7 @@ ZINC_API cmzn_tessellation_module_id cmzn_tessellation_module_access(
 *
 * @param tessellation_module_address  Address of handle to tessellation module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_tessellation_module_destroy(
 	cmzn_tessellation_module_id *tessellation_module_address);
@@ -90,7 +90,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellation_module_create_tessellation(
 * @see cmzn_tessellation_module_end_change
 *
 * @param tessellation_module  The tessellation_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id tessellation_module);
 
@@ -101,7 +101,7 @@ ZINC_API int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id t
 * cached change messages are sent out to clients.
 *
 * @param tessellation_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_tessellation_module_end_change(cmzn_tessellation_module_id tessellation_module);
 
@@ -135,7 +135,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellation_module_get_default_tessellation(
  *
  * @param tessellation_module  Tessellation module to modify.
  * @param tessellation  The tessellation to set as default.
- * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_module_set_default_tessellation(
 	cmzn_tessellation_module_id tessellation_module,
@@ -160,7 +160,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellation_module_get_default_points_tessel
  *
  * @param tessellation_module  Tessellation module to modify.
  * @param tessellation  The tessellation to set as default for points.
- * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_module_set_default_points_tessellation(
 	cmzn_tessellation_module_id tessellation_module,
@@ -181,7 +181,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellation_access(cmzn_tessellation_id tess
  *
  * @param tessellation_address  The address to the handle of the tessellation
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_address);
 
@@ -204,7 +204,7 @@ ZINC_API int cmzn_tessellation_get_circle_divisions(
  * @param tessellation  The tessellation to modify.
  * @param circleDivisions  The number of line segments used to approximate a
  * a circle, at least 3, but larger even numbers are recommended.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_circle_divisions(
 	cmzn_tessellation_id tessellation, int circleDivisions);
@@ -229,7 +229,7 @@ ZINC_API bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation);
  *
  * @param tessellation  The tessellation to modify.
  * @param value  The new value for the managed flag: true or false.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 	bool value);
@@ -248,7 +248,7 @@ ZINC_API char *cmzn_tessellation_get_name(cmzn_tessellation_id tessellation);
  *
  * @param tessellation  The handle to cmiss tessellation.
  * @param name  name to be set to the tessellation
- * @return  status CMISS_OK if successfully set/change name for tessellation,
+ * @return  status CMZN_OK if successfully set/change name for tessellation,
  * any other value on failure.
  */
 ZINC_API int cmzn_tessellation_set_name(cmzn_tessellation_id tessellation, const char *name);
@@ -281,7 +281,7 @@ ZINC_API int cmzn_tessellation_get_minimum_divisions(
  * @param valuesCount  The size of the valuesIn array, >= 1.
  * @param valuesIn  Array of number of divisions (>=1) for each dimension, with
  * the last number in array applying to all higher dimensions.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_minimum_divisions(
 	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
@@ -319,7 +319,7 @@ ZINC_API int cmzn_tessellation_get_refinement_factors(
  * @param valuesIn  Array of number of fine subdivisions (>=1) per
  * minimum_division for each dimension, with the last number in array
  * applying to all higher dimensions.
- * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_refinement_factors(
 	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);

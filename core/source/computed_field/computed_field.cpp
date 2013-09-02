@@ -506,7 +506,7 @@ cmzn_field_module_id cmzn_field_get_field_module(cmzn_field_id field)
 
 enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id field)
 {
-	cmzn_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
+	cmzn_field_value_type value_type = CMZN_FIELD_VALUE_TYPE_INVALID;
 	if (field && field->core)
 	{
 		value_type = field->core->get_value_type();
@@ -1322,7 +1322,7 @@ int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
-	return (cmzn_field_get_value_type(field) == CMISS_FIELD_VALUE_TYPE_STRING);
+	return (cmzn_field_get_value_type(field) == CMZN_FIELD_VALUE_TYPE_STRING);
 }
 
 int Computed_field_core::has_multiple_times()
@@ -1441,7 +1441,7 @@ int cmzn_field_assign_mesh_location(cmzn_field_id field,
 {
 	if (cmzn_field_cache_check(field, cache) && element && chart_coordinates &&
 		(number_of_chart_coordinates >= get_FE_element_dimension(element)) &&
-		(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
+		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
 		MeshLocationFieldValueCache *valueCache = MeshLocationFieldValueCache::cast(field->getValueCache(*cache));
 		valueCache->setMeshLocation(element, chart_coordinates);
@@ -1471,7 +1471,7 @@ int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id cache,
 	const char *string_value)
 {
 	if (cmzn_field_cache_check(field, cache) && string_value &&
-		(CMISS_FIELD_VALUE_TYPE_STRING == cmzn_field_get_value_type(field)))
+		(CMZN_FIELD_VALUE_TYPE_STRING == cmzn_field_get_value_type(field)))
 	{
 		StringFieldValueCache *valueCache = StringFieldValueCache::cast(field->getValueCache(*cache));
 		valueCache->setString(string_value);
@@ -1514,7 +1514,7 @@ cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
 {
 	cmzn_element_id element = 0;
 	if (cmzn_field_cache_check(field, cache) && chart_coordinates &&
-		(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
+		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
 		FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
@@ -1556,10 +1556,10 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id cache,
 			{
 				values[i] = realValueCache.values[i];
 			}
-			return CMISS_OK;
+			return CMZN_OK;
 		}
 	}
-	return !CMISS_OK;
+	return !CMZN_OK;
 }
 
 // Internal API
@@ -1588,11 +1588,11 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 				{
 					derivatives[i] = realValueCache.derivatives[i];
 				}
-				return CMISS_OK;
+				return CMZN_OK;
 			}
 		}
 	}
-	return !CMISS_OK;
+	return !CMZN_OK;
 }
 
 // External API
@@ -1637,13 +1637,13 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 							values[i] = *derivative;
 							derivative += element_dimension;
 						}
-						return CMISS_OK;
+						return CMZN_OK;
 					}
 				}
 			}
 		}
 	}
-	return !CMISS_OK;
+	return !CMZN_OK;
 }
 
 int cmzn_field_is_defined_at_location(cmzn_field_id field,
@@ -1757,7 +1757,7 @@ int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_i
 	int response = 0;
 	if (field)
 	{
-		response = field->core->get_attribute_integer(CMISS_FIELD_ATTRIBUTE_IS_COORDINATE);
+		response = field->core->get_attribute_integer(CMZN_FIELD_ATTRIBUTE_IS_COORDINATE);
 	}
 	return response;
 }
@@ -2073,7 +2073,7 @@ int Computed_field_has_value_type_mesh_location(struct Computed_field *field,
 	void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
-	return (cmzn_field_get_value_type(field) == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION);
+	return (cmzn_field_get_value_type(field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION);
 }
 
 int Computed_field_has_numerical_components(struct Computed_field *field,
@@ -2982,9 +2982,9 @@ int cmzn_field_set_managed(cmzn_field_id field, bool value)
 			MANAGED_OBJECT_CHANGE(Computed_field)(
 				field, MANAGER_CHANGE_NOT_RESULT(Computed_field));
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_get_attribute_integer(cmzn_field_id field,
@@ -2995,16 +2995,16 @@ int cmzn_field_get_attribute_integer(cmzn_field_id field,
 	{
 		switch (attribute)
 		{
-		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+		case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
 			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT));
 			break;
-		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+		case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
 			value = field->core->get_attribute_integer(attribute);
 			break;
-		case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+		case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
 			value = field->number_of_components;
 			break;
-		case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+		case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
 			value = field->number_of_source_fields;
 			break;
 		default:
@@ -3028,7 +3028,7 @@ int cmzn_field_set_attribute_integer(cmzn_field_id field,
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field);
 		switch (attribute)
 		{
-		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+		case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
 			if (value)
 			{
 				field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
@@ -3039,7 +3039,7 @@ int cmzn_field_set_attribute_integer(cmzn_field_id field,
 			}
 			change = MANAGER_CHANGE_NOT_RESULT(Computed_field);
 			break;
-		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+		case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
 			return_code = field->core->set_attribute_integer(attribute, value);
 			if (!return_code)
 			{
@@ -3070,7 +3070,7 @@ double cmzn_field_get_attribute_real(cmzn_field_id field,
 	{
 		switch (attribute)
 		{
-		case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+		case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
 			value = field->coordinate_system.parameters.focus;
 			break;
 		default:
@@ -3091,7 +3091,7 @@ int cmzn_field_set_attribute_real(cmzn_field_id field,
 		return_code = 1;
 		switch (attribute)
 		{
-		case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+		case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
 			if (value > 0.0)
 			{
 				field->coordinate_system.parameters.focus = value;
@@ -3127,28 +3127,28 @@ char *cmzn_field_get_component_name(cmzn_field_id field, int component_number)
 enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system_type(
 	cmzn_field_id field)
 {
-	enum cmzn_field_coordinate_system_type coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
+	enum cmzn_field_coordinate_system_type coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
 	if (field)
 	{
 		switch (field->coordinate_system.type)
 		{
 			case RECTANGULAR_CARTESIAN:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN;
 				break;
 			case CYLINDRICAL_POLAR:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR;
 				break;
 			case SPHERICAL_POLAR:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR;
 				break;
 			case PROLATE_SPHEROIDAL:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL;
 				break;
 			case OBLATE_SPHEROIDAL:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL;
 				break;
 			case FIBRE:
-				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE;
+				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE;
 				break;
 			default:
 				break;
@@ -3165,22 +3165,22 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 	enum Coordinate_system_type type = NOT_APPLICABLE;
 	switch (coordinate_system_type)
 	{
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
 			type = RECTANGULAR_CARTESIAN;
 			break;
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
 			type = CYLINDRICAL_POLAR;
 			break;
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
 			type = SPHERICAL_POLAR;
 			break;
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
 			type = PROLATE_SPHEROIDAL;
 			break;
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
 			type = OBLATE_SPHEROIDAL;
 			break;
-		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
+		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
 			type = FIBRE;
 			break;
 		default:
@@ -3438,19 +3438,19 @@ public:
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+			case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
 				enum_string = "IS_MANAGED";
 				break;
-			case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+			case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
 				enum_string = "IS_COORDINATE";
 				break;
-			case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+			case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
 				enum_string = "NUMBER_OF_COMPONENTS";
 				break;
-			case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+			case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
 				enum_string = "NUMBER_OF_SOURCE_FIELDS";
 				break;
-			case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+			case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
 				enum_string = "COORDINATE_SYSTEM_FOCUS";
 				break;
 			default:
@@ -3479,22 +3479,22 @@ public:
 		const char *enum_string = 0;
 		switch (coordinate_system_type)
 		{
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
 				enum_string = "RECTANGULAR_CARTESIAN";
 				break;
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
 				enum_string = "CYLINDRICAL_POLAR";
 				break;
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
 				enum_string = "SPHERICAL_POLAR";
 				break;
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
 				enum_string = "PROLATE_SPHEROIDAL";
 				break;
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
 				enum_string = "OBLATE_SPHEROIDAL";
 				break;
-			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
 				enum_string = "FIBRE";
 				break;
 			default:

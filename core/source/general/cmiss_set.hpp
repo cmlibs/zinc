@@ -40,8 +40,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_SET_HPP)
-#define CMISS_SET_HPP
+#if !defined (CMZN_SET_HPP)
+#define CMZN_SET_HPP
 
 #include <set>
 
@@ -336,4 +336,4 @@ public:
 	};
 };
 
-#endif /* !defined (CMISS_SET_HPP) */
+#endif /* !defined (CMZN_SET_HPP) */

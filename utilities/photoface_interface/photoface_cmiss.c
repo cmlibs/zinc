@@ -23,7 +23,7 @@ return code - zero is success, non-zero is failure.
 #include <windows.h>
 #endif
 
-#define CMISSDLLEXPORT
+#define CMZNDLLEXPORT
 #include "photoface_cmiss.h"
 
 #define PF_LOCK_DIRNAME "pflock"
@@ -31,7 +31,7 @@ return code - zero is success, non-zero is failure.
 
 #define WITH_OMNISECURE
 
-#define MAX_ATTEMPTS_AT_FIRST_CMISS_CONTROL (50)
+#define MAX_ATTEMPTS_AT_FIRST_CMZN_CONTROL (50)
 
 /*
 Module types
@@ -160,7 +160,7 @@ used.
 	ENTER(linux_execute);
 	return_code=0;
 	va_start(ap,format);
-	if (connection=getenv("PF_CMISS_CONNECTION"))
+	if (connection=getenv("PF_CMZN_CONNECTION"))
 	{
 //		sprintf(command_string,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY :3.0;",host);
 //		sprintf(command_string,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY esu48:0.0;",host);
@@ -225,7 +225,7 @@ used.
 	ENTER(linux_execute);
 	return_code=0;
 	va_start(ap,format);
-	if (connection=getenv("PF_CMISS_CONNECTION"))
+	if (connection=getenv("PF_CMZN_CONNECTION"))
 	{
 //		sprintf(command_string2,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY :3.0;",host);
 //		sprintf(command_string2,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY esu48:0.0;",host);
@@ -1619,11 +1619,11 @@ are just used to scale the new <twod_coordinates>.
 			pf_job->ndc_texture_offset_y = minimum_y;
 		}
 	}
-#if defined (CMISS_DEBUG)	
+#if defined (CMZN_DEBUG)	
 	printf("Minimum %f Maximum %f\n", minimum, maximum);
 	printf("Scaling %f Offset x %f y %f\n", pf_job->ndc_texture_scaling, 
 		pf_job->ndc_texture_offset_x, pf_job->ndc_texture_offset_y);
-#endif /* defined (CMISS_DEBUG) */
+#endif /* defined (CMZN_DEBUG) */
 	
 	/* Scale all the coordinates by this maximum plus a bit */
 	twod_index = twod_coordinates;
@@ -1639,10 +1639,10 @@ are just used to scale the new <twod_coordinates>.
 			pf_job->ndc_texture_scaling + 1.0f;
 		twod_index++;
 		ndc_index++;
-#if defined (CMISS_DEBUG)	
+#if defined (CMZN_DEBUG)	
 		printf ("Coordinates %f %f -> %f %f\n", *(twod_index-2), 
 			*(twod_index-1), *(ndc_index-2), *(ndc_index-1));
-#endif /* defined (CMISS_DEBUG) */
+#endif /* defined (CMZN_DEBUG) */
 	}	
 
 	LEAVE;
@@ -1671,7 +1671,7 @@ successful.
 	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
 	{
 		/* Create a new directory */
-		if ((pf_cmiss_force_job_id=getenv("PF_CMISS_FORCE_JOB_ID")) &&
+		if ((pf_cmiss_force_job_id=getenv("PF_CMZN_FORCE_JOB_ID")) &&
 			sscanf(pf_cmiss_force_job_id, "%d", &pf_job_id))
 		{
 			return_code = PF_SUCCESS_RC;
@@ -1802,7 +1802,7 @@ This routine cleans up the working directory and destroys the specified job.
 			/* Lock it or wait */
 			strcat(working_path, "/");
 			strcat(working_path, PF_LOCK_DIRNAME);
-			if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+			if ((pf_cmiss_wait_delay = getenv("PF_CMZN_WAIT_DELAY"))
 				&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
 			{
 				/* Do nothing */
@@ -1853,7 +1853,7 @@ This routine cleans up the working directory and destroys the specified job.
 				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
 					pf_job_id);
 				
-				if ((pf_cmiss_keep_working_dir=getenv("PF_CMISS_KEEP_WORKING_DIRECTORY")) &&
+				if ((pf_cmiss_keep_working_dir=getenv("PF_CMZN_KEEP_WORKING_DIRECTORY")) &&
 					*pf_cmiss_keep_working_dir)
 				{
 #if defined (WITH_OMNISECURE)
@@ -2346,22 +2346,22 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 								{
 									fprintf(setup_comfile, "$PHOTOFACE_WORKING = \"%s\"\n",
 										pf_job->remote_working_path);
-									fprintf(setup_comfile, "$PHOTOFACE_CMISS = \"%scmiss\"\n",
+									fprintf(setup_comfile, "$PHOTOFACE_CMZN = \"%scmiss\"\n",
 										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_BIN = \"%sbin\"\n",
 										photoface_remote_path);
-									fprintf(setup_comfile, "$ANTHRO_FITTING_CMISS = \"%s../anthro_fitting/cmiss\"\n",
+									fprintf(setup_comfile, "$ANTHRO_FITTING_CMZN = \"%s../anthro_fitting/cmiss\"\n",
 										photoface_remote_path);
-									fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
+									fprintf(setup_comfile, "$LFX_MODELER_CMZN = \"%s../lfx_modeler/cmiss\"\n",
 										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_MODEL = \"%s\"\n",
 										model_name);
 									fprintf(setup_comfile, "$PHOTOFACE_STATE = \"%s\"\n",
 										state);
-									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
+									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMZN/pf_setup.com exec\n");
 
 									fclose(setup_comfile);
-									if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+									if ((pf_cmiss_wait_delay = getenv("PF_CMZN_WAIT_DELAY"))
 										&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
 									{
 										/* Do nothing */
@@ -2397,7 +2397,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 									return_code = PF_GENERAL_FAILURE_RC;
 									attempts = 0;
 									while ((return_code != PF_SUCCESS_RC) &&
-										(attempts < MAX_ATTEMPTS_AT_FIRST_CMISS_CONTROL))
+										(attempts < MAX_ATTEMPTS_AT_FIRST_CMZN_CONTROL))
 									{
 #if defined (WIN32)
 										Sleep((DWORD)(delay * 1000));
@@ -3497,7 +3497,7 @@ Used to specify the image to be texture mapped onto the model.
 
 				fclose(image_comfile);
 
-				if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+				if ((pf_cmiss_wait_delay = getenv("PF_CMZN_WAIT_DELAY"))
 					&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
 				{
 					/* Do nothing */

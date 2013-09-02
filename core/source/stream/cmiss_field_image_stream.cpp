@@ -420,15 +420,15 @@ int cmzn_stream_information_image_set_attribute_integer(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+			case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
 			{
 				return (Cmgui_image_information_set_width(image_information, value));
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+			case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
 			{
 				return (Cmgui_image_information_set_height(image_information, value));
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
+			case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
 			{
 				int number_of_bytes = 1;
 				if (value == 8)
@@ -459,7 +459,7 @@ int cmzn_stream_information_image_set_attribute_real(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
+			case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
 			{
 				return (Cmgui_image_information_set_quality(image_information, value));
 			} break;
@@ -482,16 +482,16 @@ public:
     	const char *enum_string = 0;
     	switch (attribute)
     	{
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+    		case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
     			enum_string = "RAW_WIDTH_PIXELS";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+    		case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
     			enum_string = "RAW_HEIGHT_PIXELS";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
+    		case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
     			enum_string = "BITS_PER_COMPONENT";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
+    		case CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
     			enum_string = "COMPRESSION_QUALITY";
     			break;
     		default:
@@ -529,31 +529,31 @@ int cmzn_stream_information_image_set_file_format(
 		return_code = 1;
 		switch (format)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
 			{
 				cmgui_file_format = BMP_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
 			{
 				cmgui_file_format = DICOM_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
 			{
 				cmgui_file_format = JPG_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
 			{
 				cmgui_file_format = GIF_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
 			{
 				cmgui_file_format = PNG_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
 			{
 				cmgui_file_format = SGI_FILE_FORMAT;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
+			case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
 			{
 				cmgui_file_format = TIFF_FILE_FORMAT;
 			} break;
@@ -581,25 +581,25 @@ public:
     	const char *enum_string = 0;
     	switch (format)
     	{
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
     			enum_string = "BMP";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
     			enum_string = "DICOM";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
     			enum_string = "JPG";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
     			enum_string = "GIF";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
     			enum_string = "PNG";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
     			enum_string = "SGI";
     			break;
-    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
+    		case CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
     			enum_string = "TIFF";
     			break;
     		default:
@@ -635,19 +635,19 @@ int cmzn_stream_information_image_set_pixel_format(
 		int number_of_components;
 		switch(pixel_format)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
 			{
 				number_of_components = 1;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
 			{
 				number_of_components = 2;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
 			{
 				number_of_components = 3;
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
 			{
 				number_of_components = 4;
 			} break;
@@ -675,22 +675,22 @@ public:
 		const char *enum_string = 0;
 		switch (format)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
 				enum_string = "LUMINANCE";
 				break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
 				enum_string = "RGB";
 				break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
 				enum_string = "RGBA";
 				break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
 				enum_string = "ABGR";
 				break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
 				enum_string = "BGR";
 				break;
-			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+			case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
 				enum_string = "LUMINANCE_ALPHA";
 				break;
 			default:

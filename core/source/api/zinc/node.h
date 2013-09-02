@@ -79,10 +79,10 @@ ZINC_API char *cmzn_nodal_value_type_enum_to_string(enum cmzn_nodal_value_type t
 
 /**
  * Get a handle to a nodeset by its domain type, either
- * CMISS_FIELD_DOMAIN_NODES or CMISS_FIELD_DOMAIN_DATA.
+ * CMZN_FIELD_DOMAIN_NODES or CMZN_FIELD_DOMAIN_DATA.
  *
  * @param field_module  The field module the nodeset belongs to.
- * @param domain_type  CMISS_FIELD_DOMAIN_NODES or CMISS_FIELD_DOMAIN_DATA.
+ * @param domain_type  CMZN_FIELD_DOMAIN_NODES or CMZN_FIELD_DOMAIN_DATA.
  * @return  Handle to the nodeset, or 0 if error.
  */
 ZINC_API cmzn_nodeset_id cmzn_field_module_find_nodeset_by_domain_type(
@@ -120,7 +120,7 @@ ZINC_API cmzn_nodeset_id cmzn_nodeset_access(cmzn_nodeset_id nodeset);
  * Internally this just decrements the reference count.
  *
  * @param nodeset_address  Address of handle to the nodeset to destroy.
- *  @return  Status CMISS_OK on success, any other value on failure.
+ *  @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_destroy(cmzn_nodeset_id *nodeset_address);
 
@@ -177,7 +177,7 @@ ZINC_API cmzn_node_iterator_id cmzn_nodeset_create_node_iterator(
  * All handles to the destroyed nodes become invalid.
  *
  * @param nodeset  Handle to nodeset to destroy nodes from.
- * @return  Status CMISS_OK if all nodes destroyed, any other value if failed.
+ * @return  Status CMZN_OK if all nodes destroyed, any other value if failed.
  */
 ZINC_API int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset);
 
@@ -187,7 +187,7 @@ ZINC_API int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset);
  *
  * @param nodeset  Handle to the nodeset whose node is to be destroyed.
  * @param node  The node to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id node);
 
@@ -201,7 +201,7 @@ ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id nod
  * @param nodeset  Handle to the nodeset to destroy nodes from.
  * @param conditional_field  Field which if non-zero at any node indicates it
  * is to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
 	cmzn_field_id conditional_field);
@@ -269,7 +269,7 @@ ZINC_API cmzn_nodeset_group_id cmzn_nodeset_cast_group(cmzn_nodeset_id nodeset);
  * Internally this just decrements the reference count.
  *
  * @param nodeset_group_address  Address of nodeset group handle to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_group_destroy(cmzn_nodeset_group_id *nodeset_group_address);
 
@@ -295,7 +295,7 @@ ZINC_C_INLINE cmzn_nodeset_id cmzn_nodeset_group_base_cast(
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to add. Must be from the group's master nodeset.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);
@@ -304,7 +304,7 @@ ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
  * Remove all nodes from nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
- * @return  Status CMISS_OK if all nodes removed, any other value if failed.
+ * @return  Status CMZN_OK if all nodes removed, any other value if failed.
  */
 ZINC_API int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_group);
 
@@ -313,7 +313,7 @@ ZINC_API int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_g
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to remove.
- * @return  Status CMISS_OK if node is removed, any other value if failed.
+ * @return  Status CMZN_OK if node is removed, any other value if failed.
  */
 ZINC_API int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);
@@ -326,7 +326,7 @@ ZINC_API int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group,
  * @param nodeset_group  Handle to the nodeset group to remove nodes from.
  * @param conditional_field  Field which if non-zero in the node indicates it
  * is to be removed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
 	cmzn_nodeset_group_id nodeset_group, cmzn_field_id conditional_field);
@@ -345,7 +345,7 @@ ZINC_API cmzn_node_iterator_id cmzn_node_iterator_access(
  * Destroys this handle to the node_iterator and sets it to NULL.
  *
  * @param node_iterator_address  Address of handle to node_iterator to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_iterator_destroy(cmzn_node_iterator_id *node_iterator_address);
 
@@ -375,7 +375,7 @@ ZINC_API cmzn_node_template_id cmzn_node_template_access(
  *
  * @param node_template_address  Address of handle to node_template
  * to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_destroy(cmzn_node_template_id *node_template_address);
 
@@ -387,7 +387,7 @@ ZINC_API int cmzn_node_template_destroy(cmzn_node_template_id *node_template_add
  * @param node_template  Node template to modify.
  * @param field  The field to define. May be finite_element, stored_string or
  * stored_mesh_location type only.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_define_field(cmzn_node_template_id node_template,
 	cmzn_field_id field);
@@ -400,7 +400,7 @@ ZINC_API int cmzn_node_template_define_field(cmzn_node_template_id node_template
  * @param field  The field to define. May be finite_element, stored_string or
  * stored_mesh_location type only.
  * @param node  The node to obtain the field definition from.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_define_field_from_node(
 	cmzn_node_template_id node_template, cmzn_field_id field,
@@ -417,7 +417,7 @@ ZINC_API int cmzn_node_template_define_field_from_node(
  * @param component_number  The component from 1 to the number of field
  * components, or -1 to define the derivative for all components.
  * @param derivative_type  The type of nodal derivative to define.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_define_derivative(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number,
@@ -436,7 +436,7 @@ ZINC_API int cmzn_node_template_define_derivative(cmzn_node_template_id node_tem
  * @param node_field_creator  Optionally defines different versions and/or
  * derivative types. If it is NULL then a single nodal value for each component
  * will be defined.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_define_time_sequence(
 	cmzn_node_template_id node_template, cmzn_field_id field,
@@ -456,7 +456,7 @@ ZINC_API int cmzn_node_template_define_time_sequence(
  * components, or -1 to define the number of versions for all components.
  * @param number_of_versions  The number of versions of each value & derivative
  * stored for the component/s, at least 1 (the default).
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_define_versions(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number, int number_of_versions);
@@ -514,7 +514,7 @@ ZINC_API int cmzn_node_template_has_derivative(cmzn_node_template_id node_templa
  * @param node_template  Node template to modify.
  * @param field  The field to undefine. May be finite_element, stored_string or
  * stored_mesh_location type only.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_template_undefine_field(cmzn_node_template_id node_template,
 	cmzn_field_id field);
@@ -533,7 +533,7 @@ ZINC_API cmzn_node_id cmzn_node_access(cmzn_node_id node);
  * Internally this just decrements the reference count.
  *
  * @param node_address  Address of handle to the node to destroy.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_destroy(cmzn_node_id *node_address);
 
@@ -553,7 +553,7 @@ ZINC_API int cmzn_node_get_identifier(cmzn_node_id node);
  * @param node  The node to query.
  * @param identifier  unique identifier to be set for the node
  *
- * @return  CMISS_OK if set the identifier successfully,
+ * @return  CMZN_OK if set the identifier successfully,
  * 	any other value on fail.
  */
 ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
@@ -563,7 +563,7 @@ ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
  *
  * @param node  The node to modify.
  * @param node_template  Template containing node field descriptions.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_node_template_id node_template);
 

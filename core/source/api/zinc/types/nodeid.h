@@ -64,15 +64,15 @@
 	 */
 	enum cmzn_nodal_value_type
 	{
-		CMISS_NODAL_VALUE_TYPE_INVALID = 0,
-		CMISS_NODAL_VALUE = 1,         /* literal field value */
-		CMISS_NODAL_D_DS1 = 2,         /* derivative w.r.t. arc length S1 */
-		CMISS_NODAL_D_DS2 = 3,         /* derivative w.r.t. arc length S2 */
-		CMISS_NODAL_D_DS3 = 4,         /* derivative w.r.t. arc length S3 */
-		CMISS_NODAL_D2_DS1DS2 = 5,     /* cross derivative w.r.t. arc lengths S1,S2 */
-		CMISS_NODAL_D2_DS1DS3 = 6,     /* cross derivative w.r.t. arc lengths S1,S3 */
-		CMISS_NODAL_D2_DS2DS3 = 7,     /* cross derivative w.r.t. arc lengths S2,S3 */
-		CMISS_NODAL_D3_DS1DS2DS3 = 8   /* triple cross derivative w.r.t. arc lengths S1,S2,S3 */
+		CMZN_NODAL_VALUE_TYPE_INVALID = 0,
+		CMZN_NODAL_VALUE = 1,         /* literal field value */
+		CMZN_NODAL_D_DS1 = 2,         /* derivative w.r.t. arc length S1 */
+		CMZN_NODAL_D_DS2 = 3,         /* derivative w.r.t. arc length S2 */
+		CMZN_NODAL_D_DS3 = 4,         /* derivative w.r.t. arc length S3 */
+		CMZN_NODAL_D2_DS1DS2 = 5,     /* cross derivative w.r.t. arc lengths S1,S2 */
+		CMZN_NODAL_D2_DS1DS3 = 6,     /* cross derivative w.r.t. arc lengths S1,S3 */
+		CMZN_NODAL_D2_DS2DS3 = 7,     /* cross derivative w.r.t. arc lengths S2,S3 */
+		CMZN_NODAL_D3_DS1DS2DS3 = 8   /* triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 	};
 
 #endif

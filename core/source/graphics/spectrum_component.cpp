@@ -104,10 +104,10 @@ int cmzn_spectrum_component_set_active(cmzn_spectrum_component_id component,
 			component->active = active;
 			cmzn_spectrum_changed(component->spectrum);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_spectrum_component_is_active(cmzn_spectrum_component_id component)
@@ -129,37 +129,37 @@ public:
         const char *enum_string = 0;
         switch (colour)
         {
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
             enum_string = "ALPHA";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
             enum_string = "BANDED";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
             enum_string = "BLUE";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
             enum_string = "GREEN";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
             enum_string = "MONOCHROME";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
             enum_string = "RAINBOW";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
             enum_string = "RED";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
             enum_string = "STEP";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
             enum_string = "WHITE_TO_BLUE";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
             enum_string = "WHITE_TO_RED";
             break;
-        case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+        case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
             enum_string = "WHITE_TO_GREEN";
             break;
         default:
@@ -194,47 +194,47 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_spectrum_component_colour_mapping)
 	ENTER(ENUMERATOR_STRING(cmzn_spectrum_component_colour_mapping));
 	switch (enumerator_value)
 	{
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
 		{
 			enumerator_string = "alpha";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
 		{
 			enumerator_string = "banded";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
 		{
 			enumerator_string = "blue";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
 		{
 			enumerator_string = "green";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
 		{
 			enumerator_string = "monochrome";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
 		{
 			enumerator_string = "rainbow";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
 		{
 			enumerator_string = "red";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 		{
 			enumerator_string = "step";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
 		{
 			enumerator_string = "white_to_blue";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
 		{
 			enumerator_string = "white_to_red";
 		} break;
-		case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+		case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
 		{
 			enumerator_string = "white_to_green";
 		} break;
@@ -265,7 +265,7 @@ Allocates memory and assigns fields for a struct cmzn_spectrum_component.
 	{
 		component->spectrum = 0;
 		component->component_number = 0;
-		component->component_scale=CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR;
+		component->component_scale=CMZN_SPECTRUM_COMPONENT_SCALE_LINEAR;
 		component->changed=1;
 		component->minimum = 0;
 		component->maximum = 1;
@@ -275,7 +275,7 @@ Allocates memory and assigns fields for a struct cmzn_spectrum_component.
 		component->extend_below = 0;
 		component->min_value = 0;
 		component->max_value = 1;
-		component->colour_mapping = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW;
+		component->colour_mapping = CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW;
 		component->reverse = false;
 		component->exaggeration = 1.0;
 		component->step_value = 0.5;
@@ -327,8 +327,8 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 #endif /* defined (OPENGL_API) */
 			switch (component->component_scale)
 			{
-				case CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR:
-				case CMISS_SPECTRUM_COMPONENT_SCALE_LOG:
+				case CMZN_SPECTRUM_COMPONENT_SCALE_LINEAR:
+				case CMZN_SPECTRUM_COMPONENT_SCALE_LOG:
 				{
 					/* Don't need to do anything */
 				} break;
@@ -482,7 +482,7 @@ enum cmzn_spectrum_component_scale_type cmzn_spectrum_component_get_scale_type(
 		return component->component_scale;
 	}
 
-	return CMISS_SPECTRUM_COMPONENT_SCALE_INVALID;
+	return CMZN_SPECTRUM_COMPONENT_SCALE_INVALID;
 }
 
 int cmzn_spectrum_component_set_scale_type(
@@ -496,9 +496,9 @@ int cmzn_spectrum_component_set_scale_type(
 			component->component_scale = scale_type;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_spectrum_component_get_field_component(
@@ -522,9 +522,9 @@ int cmzn_spectrum_component_set_field_component(
 			component->component_number = component_number - 1;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_spectrum_component_is_colour_reverse(cmzn_spectrum_component_id component)
@@ -546,10 +546,10 @@ int cmzn_spectrum_component_set_colour_reverse(cmzn_spectrum_component_id compon
 			component->reverse = reverse;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_spectrum_component_colour_mapping cmzn_spectrum_component_get_colour_mapping(
@@ -573,7 +573,7 @@ Returns the colour mapping of the cmzn_spectrum_component <spectrum>.
 	{
 		display_message(ERROR_MESSAGE,"cmzn_spectrum_component_get_colour_mapping.  "
 			"Invalid argument(s)");
-		type = CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW;
+		type = CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW;
 	}
 	LEAVE;
 
@@ -630,9 +630,9 @@ int cmzn_spectrum_component_set_exaggeration(struct cmzn_spectrum_component *com
 			component->exaggeration = value;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_spectrum_component_get_number_of_bands(cmzn_spectrum_component_id component)
@@ -654,10 +654,10 @@ int cmzn_spectrum_component_set_number_of_bands(cmzn_spectrum_component_id compo
 			component->number_of_bands = number_of_bands;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_spectrum_component_get_black_band_proportion(struct cmzn_spectrum_component *component)
@@ -739,10 +739,10 @@ int cmzn_spectrum_component_set_step_value(struct cmzn_spectrum_component *compo
 			}
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_spectrum_component_get_range_minimum(
@@ -771,10 +771,10 @@ int cmzn_spectrum_component_set_range_minimum(cmzn_spectrum_component_id compone
 			}
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 } /* cmzn_spectrum_component_set_range_minimum */
 
 double cmzn_spectrum_component_get_range_maximum(
@@ -803,10 +803,10 @@ int cmzn_spectrum_component_set_range_maximum(cmzn_spectrum_component_id compone
 			}
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_spectrum_component_is_extend_above(cmzn_spectrum_component_id component)
@@ -835,9 +835,9 @@ Sets the extend_above flag of the cmzn_spectrum_component <component>.
 			component->extend_above = extend_above;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 
@@ -861,9 +861,9 @@ int cmzn_spectrum_component_set_extend_below(cmzn_spectrum_component_id componen
 			component->extend_below = extend_below;
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_spectrum_component_get_fix_minimum_flag(struct cmzn_spectrum_component *component)
@@ -1004,10 +1004,10 @@ int cmzn_spectrum_component_set_colour_minimum(
 			}
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_spectrum_component_get_colour_maximum(
@@ -1035,9 +1035,9 @@ int cmzn_spectrum_component_set_colour_maximum(
 			}
 			cmzn_spectrum_component_changed(component);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_spectrum_component_clear_changed(
@@ -1085,7 +1085,7 @@ component number used.  The first component_index is 0, so this means 1 componen
 	ENTER(cmzn_spectrum_component_expand_maximum_component_index);
 	if (component && (component_index = (int *)component_index_void))
 	{
-		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUM_COMPONENT_SCALE_INVALID &&
 			component->is_field_lookup)
 		{
 			int number_of_input_components =
@@ -1133,7 +1133,7 @@ in the value pointed to by <colour_components_void>.
 			(enum Spectrum_colour_components *)colour_components_void))
 	{
 		done = 0;
-		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUM_COMPONENT_SCALE_INVALID &&
 			component->is_field_lookup)
 		{
 			int number_of_components = Computed_field_get_number_of_components
@@ -1169,39 +1169,39 @@ in the value pointed to by <colour_components_void>.
 		{
 			switch (component->colour_mapping)
 			{
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 				{
 				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
 					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE);
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_RED);
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_GREEN);
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_BLUE);
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_ALPHA);
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_MONOCHROME);
@@ -1246,19 +1246,19 @@ DESCRIPTION :
 		{
 			switch (component->colour_mapping)
 			{
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
 				{
 					/* Do nothing but valid. */
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
 				{
 #if defined (OPENGL_API)
 					if ((component->black_band_proportion)&&(component->number_of_bands))
@@ -1380,7 +1380,7 @@ DESCRIPTION :
 					}
 #endif /* defined (OPENGL_API) */
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 				{
 #if defined (OPENGL_API)
 					pixels[0]=255;
@@ -1464,7 +1464,7 @@ passed in render data.
 	{
 		data_component = 0.0;
 		return_code=1;
-		if (component->component_scale == CMISS_SPECTRUM_COMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUM_COMPONENT_SCALE_INVALID &&
 			component->is_field_lookup)
 		{
 			if (component->active)
@@ -1514,11 +1514,11 @@ passed in render data.
 					value = values[0];
 					switch (component->colour_mapping)
 					{
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
 						{
 							render_data->rgba[3] = value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
 							{
 								if (value<1.0/3.0)
 								{
@@ -1561,37 +1561,37 @@ passed in render data.
 									}
 								}
 							} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
 							{
 								render_data->rgba[0]=value;
 							} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
 							{
 								render_data->rgba[1]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
 						{
 							render_data->rgba[2]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
 						{
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1;
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
 						{
 							render_data->rgba[1]=1.0;
 							render_data->rgba[0]=(1-value);
@@ -1635,8 +1635,8 @@ passed in render data.
 			{
 				data_component = render_data->data[component->component_number];
 				/* Always set a value for texture_coordinate based spectrums */
-				if ((CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED==component->colour_mapping)
-					|| (CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP==component->colour_mapping)
+				if ((CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED==component->colour_mapping)
+					|| (CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP==component->colour_mapping)
 					|| (((data_component>=component->minimum)||component->extend_below)&&
 						((data_component<=component->maximum)||component->extend_above)))
 				{
@@ -1645,12 +1645,12 @@ passed in render data.
 					{
 						switch (component->component_scale)
 						{
-							case CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR:
+							case CMZN_SPECTRUM_COMPONENT_SCALE_LINEAR:
 							{
 										value=(data_component-component->minimum)/
 											 (component->maximum-component->minimum);
 							} break;
-							case CMISS_SPECTRUM_COMPONENT_SCALE_LOG:
+							case CMZN_SPECTRUM_COMPONENT_SCALE_LOG:
 							{
 								if (component->exaggeration<0)
 								{
@@ -1705,7 +1705,7 @@ passed in render data.
 						value;
 					switch (component->colour_mapping)
 					{
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
 						{
 							if ((component->number_of_bands)&&(component->black_band_proportion))
 							{
@@ -1724,7 +1724,7 @@ passed in render data.
 #endif /* defined (OPENGL_API) */
 							}
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 						{
 							step_xi=(component->step_value-component->minimum)/
 								(component->maximum-component->minimum);
@@ -1742,11 +1742,11 @@ passed in render data.
 							glTexCoord1f(value);
 #endif /* defined (OPENGL_API) */
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
 						{
 							render_data->rgba[3] = value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
 						{
 							if (value<1.0/3.0)
 							{
@@ -1789,37 +1789,37 @@ passed in render data.
 								}
 							}
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
 						{
 							render_data->rgba[0]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
 						{
 							render_data->rgba[1]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
 						{
 							render_data->rgba[2]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
 						{
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1.0;
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
 						{
 							render_data->rgba[1]=1.0;
 							render_data->rgba[0]=(1-value);
@@ -1834,8 +1834,8 @@ passed in render data.
 				{
 					switch (component->colour_mapping)
 					{
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
-						case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+						case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 						{
 							/* the values are large so they quickly transition to the last
 								texel */
@@ -1890,20 +1890,20 @@ DESCRIPTION :
 		{
 			switch (component->colour_mapping)
 			{
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RAINBOW:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_MONOCHROME:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_ALPHA:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
 				{
 					/* do nothing */
 				} break;
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
-				case CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_BANDED:
+				case CMZN_SPECTRUM_COMPONENT_COLOUR_MAPPING_STEP:
 				{
 #if defined (OPENGL_API)
 					glDisable(GL_TEXTURE_1D);
@@ -1942,9 +1942,9 @@ int cmzn_spectrum_component_destroy(cmzn_spectrum_component_id *component_addres
 	if (component_address)
 	{
 		DEACCESS(cmzn_spectrum_component)(component_address);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_spectrum_component_get_banded_ratio(cmzn_spectrum_component_id component)
@@ -1968,5 +1968,5 @@ int cmzn_spectrum_component_set_banded_ratio(cmzn_spectrum_component_id componen
 				(int)(value * 1021.0));
 		}
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }

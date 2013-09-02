@@ -55,7 +55,7 @@ Wraps itk::DiscreteGaussianImageFilter
 #include "itkVector.h"
 #include "itkDiscreteGaussianImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

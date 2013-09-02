@@ -326,7 +326,7 @@ int cmzn_spectrum_changed(cmzn_spectrum_id spectrum);
  * @param spectrum  Handle to a cmiss_spectrum object.
  * @param minimum  Minimum value of the spectrum.
  * @param maximum  Maximum value of the spectrum.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 int cmzn_spectrum_set_minimum_and_maximum(cmzn_spectrum_id spectrum, double minimum, double maximum);
 

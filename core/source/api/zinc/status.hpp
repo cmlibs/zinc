@@ -17,7 +17,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is OpenCMISS-Zinc Library.
+ * The Original Code is OpenCMZN-Zinc Library.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
@@ -50,13 +50,13 @@ namespace zinc
 
 enum Status
 {
-	ERROR_MEMORY = CMISS_ERROR_MEMORY,
+	ERROR_MEMORY = CMZN_ERROR_MEMORY,
 		/*!< failed to allocate memory. */
-	ERROR_ARGUMENT = CMISS_ERROR_ARGUMENT,
+	ERROR_ARGUMENT = CMZN_ERROR_ARGUMENT,
 		/*!< invalid argument(s) passed to API function. Only reported for new APIs. */
-	ERROR_GENERAL = CMISS_ERROR_GENERAL,
+	ERROR_GENERAL = CMZN_ERROR_GENERAL,
 		/*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
-	OK = CMISS_OK
+	OK = CMZN_OK
 		/*!< value to be returned on success */
 };
 

@@ -109,11 +109,11 @@ Up to calling function to deallocate returned array - but not the strings in it!
 		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			valid_strings[0] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES);
+				CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES);
 			valid_strings[1] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS);
+				CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS);
 			valid_strings[2] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION);
+				CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION);
 		}
 		else
 		{
@@ -191,8 +191,8 @@ identifying values depending on this mode.
 					dimension=get_FE_element_dimension(identifier1->element);
 					switch (identifier1->sample_mode)
 					{
-						case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
-						case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+						case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+						case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
 						{
 							return_code=0;
 							for (i=0;!return_code&&(i<dimension);i++)
@@ -208,7 +208,7 @@ identifying values depending on this mode.
 								}
 							}
 						} break;
-						case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+						case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
 						{
 							return_code=0;
 							for (i=0;!return_code&&(i<dimension);i++)
@@ -272,8 +272,8 @@ Writes what is invalid about the identifier.
 			dimension=get_FE_element_dimension(identifier->element);
 			switch (identifier->sample_mode)
 			{
-				case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
-				case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
 				{
 					for (i=0;i<dimension;i++)
 					{
@@ -288,7 +288,7 @@ Writes what is invalid about the identifier.
 						}
 					}
 				} break;
-				case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+				case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
 				{
 					for (i=0;i<dimension;i++)
 					{
@@ -431,7 +431,7 @@ top_level. Assumes <identifier> has been validated.
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_ELEMENT_FACE_ALL, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,
@@ -445,7 +445,7 @@ top_level. Assumes <identifier> has been validated.
 					get_FE_element_dimension(identifier->top_level_element)))
 			{
 				identifier->element=top_level_element;
-				identifier->sample_mode=CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION;
+				identifier->sample_mode=CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION;
 				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 				{
 					identifier->number_in_xi[i]=1;
@@ -1108,7 +1108,7 @@ No Element_point_ranges object is returned without error if:
 				{
 					identifier.element=element;
 					identifier.top_level_element=element;
-					identifier.sample_mode=CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
+					identifier.sample_mode=CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
 					get_FE_element_field_component_grid_map_number_in_xi(element,grid_field,
 						/*component_number*/0, identifier.number_in_xi);
 					/* set exact_xi to something reasonable, just in case it is used */
@@ -1243,7 +1243,7 @@ If field and element_point_ranges not identically grid-based, clear
 		native=0;
 		if (get_FE_element_identifier(element, &element_identifier) &&
 			(CM_ELEMENT == element_identifier.type) &&
-			(CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS ==
+			(CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS ==
 				element_point_ranges->id.sample_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
 		{

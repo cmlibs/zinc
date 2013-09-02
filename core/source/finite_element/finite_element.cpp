@@ -125,7 +125,7 @@ the point and the Xi coordinates of the point within the element.
 	const char *name;
 	/* shared info for this FE_field including the FE_region it belongs to */
 	struct FE_field_info *info;
-	/* CMISS field type and number */
+	/* CMZN field type and number */
 	enum CM_field_type cm_field_type;
 	struct FE_field_external_information *external;
 	enum FE_field_type fe_field_type;
@@ -306,7 +306,7 @@ LAST MODIFIED : 11 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	/* the unique number that identifies the node in CMISS */
+	/* the unique number that identifies the node in CMZN */
 	int cm_node_identifier;
 
 	/* the number of structures that point to this node.  The node cannot be
@@ -394,9 +394,9 @@ struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
 #endif // NODE_STL_CONTAINER
 
 /** can tweak this to vary performance */
-const int CMISS_NODE_BTREE_ORDER = 10;
+const int CMZN_NODE_BTREE_ORDER = 10;
 
-typedef cmzn_btree<cmzn_node,int,CMISS_NODE_BTREE_ORDER> cmzn_set_cmzn_node;
+typedef cmzn_btree<cmzn_node,int,CMZN_NODE_BTREE_ORDER> cmzn_set_cmzn_node;
 
 struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
 {
@@ -511,12 +511,12 @@ factors).  There are two types - <NODE_BASED_MAP> and <GENERAL_LINEAR_MAP>.  For
 a node based map, the global values are associated with nodes.  For a general
 linear map, the global values do not have to be associated with nodes.  The node
 based maps could be specified as general linear maps, but the node based
-specification (required by CMISS) cannot be recovered from the general linear
+specification (required by CMZN) cannot be recovered from the general linear
 map specification (important when the front end is being used to create meshs).
 The <modify> function is called after the element values have been calculated
 with respect to the <basis> and before the element values are blended to be with
 respect to the standard basis.  The <modify> function is to allow for special
-cases, such as CMISS nodes that have multiple theta values in cylindrical polar,
+cases, such as CMZN nodes that have multiple theta values in cylindrical polar,
 spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
 either lying on the z-axis or being the first and last node in a circle.
 ==============================================================================*/
@@ -703,7 +703,7 @@ if fields are defined and need this supplemental information.
 	/* nodes.  Node to element maps have indices into this array */
 	int number_of_nodes;
 	struct FE_node **nodes;
-	/* there may be a number of sets of scale factors (CMISS has one for each
+	/* there may be a number of sets of scale factors (CMZN has one for each
 		basis) */
 	int number_of_scale_factor_sets;
 	/*???RC following void * pointers generally point at FE_basis. However, if it
@@ -953,9 +953,9 @@ struct cmzn_element_identifier_less
 };
 
 /** can tweak this to vary performance */
-const int CMISS_ELEMENT_BTREE_ORDER = 10;
+const int CMZN_ELEMENT_BTREE_ORDER = 10;
 
-typedef cmzn_btree<cmzn_element,const CM_element_information *,CMISS_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
+typedef cmzn_btree<cmzn_element,const CM_element_information *,CMZN_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
 
 struct cmzn_element_iterator : public cmzn_set_cmzn_element::ext_iterator
 {
@@ -10331,19 +10331,19 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sample_mode)
 {
 	switch (enumerator_value)
 	{
-		case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+		case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
 			return "cell_centres";
 			break;
-		case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+		case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
 			return "cell_corners";
 			break;
-		case CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON:
+		case CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON:
 			return "cell_poisson";
 			break;
-		case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+		case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
 			return "set_location";
 			break;
-		case CMISS_ELEMENT_POINT_SAMPLE_MODE_INVALID:
+		case CMZN_ELEMENT_POINT_SAMPLE_MODE_INVALID:
 			break;
 	}
 	return 0;
@@ -10357,28 +10357,28 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_domain_type)
 {
 	switch (enumerator_value)
 	{
-	case CMISS_FIELD_DOMAIN_POINT:
+	case CMZN_FIELD_DOMAIN_POINT:
 		return "domain_point";
 		break;
-	case CMISS_FIELD_DOMAIN_NODES:
+	case CMZN_FIELD_DOMAIN_NODES:
 		return "domain_nodes";
 		break;
-	case CMISS_FIELD_DOMAIN_DATA:
+	case CMZN_FIELD_DOMAIN_DATA:
 		return "domain_datapoints";
 		break;
-	case CMISS_FIELD_DOMAIN_MESH_1D:
+	case CMZN_FIELD_DOMAIN_MESH_1D:
 		return "domain_mesh1d";
 		break;
-	case CMISS_FIELD_DOMAIN_MESH_2D:
+	case CMZN_FIELD_DOMAIN_MESH_2D:
 		return "domain_mesh2d";
 		break;
-	case CMISS_FIELD_DOMAIN_MESH_3D:
+	case CMZN_FIELD_DOMAIN_MESH_3D:
 		return "domain_mesh3d";
 		break;
-	case CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
+	case CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
 		return "domain_mesh_highest_dimension";
 		break;
-	case CMISS_FIELD_DOMAIN_TYPE_INVALID:
+	case CMZN_FIELD_DOMAIN_TYPE_INVALID:
 		break;
 	}
 	return 0;
@@ -21508,14 +21508,14 @@ struct cmzn_element_shape_type_map
 
 const struct cmzn_element_shape_type_map standard_shape_type_maps[] =
 {
-	{ CMISS_ELEMENT_SHAPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
-	{ CMISS_ELEMENT_SHAPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
-	{ CMISS_ELEMENT_SHAPE_TRIANGLE,    2, { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE, 0, 0, 0 } },
-	{ CMISS_ELEMENT_SHAPE_CUBE,        3, { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE } },
-	{ CMISS_ELEMENT_SHAPE_TETRAHEDRON, 3, { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } },
-	{ CMISS_ELEMENT_SHAPE_WEDGE12,     3, { SIMPLEX_SHAPE, 1, 0, SIMPLEX_SHAPE, 0, LINE_SHAPE } },
-	{ CMISS_ELEMENT_SHAPE_WEDGE13,     3, { SIMPLEX_SHAPE, 0, 1, LINE_SHAPE, 0, SIMPLEX_SHAPE } },
-	{ CMISS_ELEMENT_SHAPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
+	{ CMZN_ELEMENT_SHAPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_TRIANGLE,    2, { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_CUBE,        3, { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_TETRAHEDRON, 3, { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_WEDGE12,     3, { SIMPLEX_SHAPE, 1, 0, SIMPLEX_SHAPE, 0, LINE_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_WEDGE13,     3, { SIMPLEX_SHAPE, 0, 1, LINE_SHAPE, 0, SIMPLEX_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
 };
 
 const int standard_shape_type_maps_length = sizeof(standard_shape_type_maps) / sizeof(struct cmzn_element_shape_type_map);
@@ -21554,7 +21554,7 @@ enum cmzn_element_shape_type FE_element_shape_get_simple_type(
 	int dimension, i, j, length;
 	enum cmzn_element_shape_type shape_type;
 
-	shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+	shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element_shape)
 	{
 		dimension = element_shape->dimension;
@@ -22387,7 +22387,7 @@ struct FE_element *FE_element_get_parent_on_face(
 	struct FE_element *element, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
-	int face_number = static_cast<int>(face) - CMISS_ELEMENT_FACE_XI1_0;
+	int face_number = static_cast<int>(face) - CMZN_ELEMENT_FACE_XI1_0;
 	if (element && (0 <= face_number))
 	{
 		int i, j;
@@ -23292,7 +23292,7 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 						}
 					}
 					/* test for on correct face */
-					if (return_code && (CMISS_ELEMENT_FACE_XI1_0 <= face))
+					if (return_code && (CMZN_ELEMENT_FACE_XI1_0 <= face))
 					{
 						if (NULL == FE_element_get_parent_on_face(
 							element, face, conditional, conditional_data))
@@ -29494,7 +29494,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			}
 			if (!parent)
 			{
-				if (CMISS_ELEMENT_FACE_XI1_0 <= specified_face)
+				if (CMZN_ELEMENT_FACE_XI1_0 <= specified_face)
 				{
 					parent = FE_element_get_parent_on_face(
 						element, specified_face, conditional, conditional_data);
@@ -29642,7 +29642,7 @@ is checked and the <top_level_xi> calculated.
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_ELEMENT_FACE_ALL, element_to_top_level)))
+				CMZN_ELEMENT_FACE_ALL, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
 				*top_level_element_dimension = (*top_level_element)->shape->dimension;
@@ -34901,7 +34901,7 @@ int cmzn_node_set_identifier(cmzn_node_id node, int identifier)
 		FE_region_end_change(fe_region);
 		return return_code;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
@@ -34915,5 +34915,5 @@ int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
 		FE_region_end_change(fe_region);
 		return return_code;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }

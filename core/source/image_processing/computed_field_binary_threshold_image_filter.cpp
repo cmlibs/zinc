@@ -54,7 +54,7 @@ Wraps itk::BinaryThresholdImageFilter
 #include "itkVector.h"
 #include "itkBinaryThresholdImageFilter.h"
 
-using namespace CMISS;
+using namespace CMZN;
 
 namespace {
 

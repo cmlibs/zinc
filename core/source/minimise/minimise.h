@@ -38,12 +38,12 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_MINIMISE_INTERNAL_H)
-#define CMISS_MINIMISE_INTERNAL_H
+#if !defined (CMZN_MINIMISE_INTERNAL_H)
+#define CMZN_MINIMISE_INTERNAL_H
 
 #include "zinc/optimisation.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_optimisation_method);
 
-#endif /* !defined (CMISS_MINIMISE_INTERNAL_H) */
+#endif /* !defined (CMZN_MINIMISE_INTERNAL_H) */
 

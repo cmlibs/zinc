@@ -102,7 +102,7 @@ Stores one group of component for a single part of a spectrum scene.
 		of the black bands */
 	int number_of_bands, black_band_proportion;
 	bool is_field_lookup;
-	/* CMISS_SPECTRUM_COMPONENT_INTERPOLATION_FIELD type */
+	/* CMZN_SPECTRUM_COMPONENT_INTERPOLATION_FIELD type */
 	struct Computed_field *input_field;
 	struct Computed_field *output_field;
 

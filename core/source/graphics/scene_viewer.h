@@ -85,8 +85,8 @@ and the functions given their public names.
 
 /* Convert the enumerators */
 #define Scene_viewer_interact_mode cmzn_scene_viewer_interact_mode
-#define SCENE_VIEWER_INTERACT_STANDARD CMISS_SCENE_VIEWER_INTERACT_STANDARD
-#define SCENE_VIEWER_INTERACT_2D CMISS_SCENE_VIEWER_INTERACT_2D
+#define SCENE_VIEWER_INTERACT_STANDARD CMZN_SCENE_VIEWER_INTERACT_STANDARD
+#define SCENE_VIEWER_INTERACT_2D CMZN_SCENE_VIEWER_INTERACT_2D
 
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_get_interact_mode cmzn_scene_viewer_get_interact_mode
@@ -256,7 +256,7 @@ The default data used to create cmzn_scene_viewers.
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
-	struct LIST(CMISS_CALLBACK_ITEM(cmzn_scene_viewer_module_callback))
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_viewer_module_callback))
 		*destroy_callback_list;
 	void *graphics_filter_manager_callback_id;
 	void *light_manager_callback_id;
@@ -281,7 +281,7 @@ struct cmzn_scene_viewer_input
 	int position_x;
 	int position_y;
 	/* flags indicating the state of the shift, control and alt keys - use
-	 * logical OR with CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
+	 * logical OR with CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
 	cmzn_scene_viewer_input_modifier input_modifier;
 };
 
@@ -410,18 +410,18 @@ DESCRIPTION :
 	Scene_viewer_image_texture image_texture;
 	/* The host application should register these callbacks
 		and respond with a full repaint. */
-	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
 	/* list of callbacks requested by other objects when scene viewer destroyed */
-	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
-	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
 	cmzn_graphics_filter_id filter;
 	cmzn_scene_id scene;
 }; /* struct Scene_viewer */
 
-DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_viewer_module_callback, \
+DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_viewer_module_callback, \
 	struct cmzn_scene_viewer_module *, void *, void);
 
-DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
+DECLARE_CMZN_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *, void);
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -445,7 +445,7 @@ Creates a Scene_viewer_module.
 ==============================================================================*/
 
 int cmzn_scene_viewer_module_add_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
@@ -455,7 +455,7 @@ viewer is destroyed.
 ==============================================================================*/
 
 int cmzn_scene_viewer_module_remove_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
@@ -892,7 +892,7 @@ are used to position the intended viewing volume in user coordinates.
 
 /***************************************************************************//**
  * Gets matrix transforming coordinate system to
- * CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
+ * CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
  * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
  * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
  * coordinates which reverse z so are left-handed.
@@ -999,7 +999,7 @@ Sets the scene viewer zoom rate.
 ==============================================================================*/
 
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -1009,7 +1009,7 @@ viewer is destroyed.
 ==============================================================================*/
 
 int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -1355,7 +1355,7 @@ returned to the scene.
 ==============================================================================*/
 
 //-- int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
-//-- 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+//-- 	CMZN_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
 //-- 	void *user_data, int add_first);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -1371,7 +1371,7 @@ of the callbacks registered after your handler then return false.
 ==============================================================================*/
 
 //-- int Scene_viewer_remove_input_callback(struct Scene_viewer *scene_viewer,
-//-- 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+//-- 	CMZN_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
 //-- 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -1499,7 +1499,7 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input);
 
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
+	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
 int Scene_viewer_scene_change(cmzn_scene_viewer_id scene_viewer);
 

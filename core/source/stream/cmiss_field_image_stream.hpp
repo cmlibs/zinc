@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_REGION_STREAM_HPP)
-#define CMISS_REGION_STREAM_HPP
+#if !defined (CMZN_REGION_STREAM_HPP)
+#define CMZN_REGION_STREAM_HPP
 
 #include "zinc/field.h"
 #include "zinc/fieldimage.h"
@@ -76,4 +76,4 @@ private:
 };
 
 
-#endif /* CMISS_REGION_STREAM_HPP */
+#endif /* CMZN_REGION_STREAM_HPP */

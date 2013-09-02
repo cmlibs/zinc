@@ -101,7 +101,7 @@ struct Render_to_finite_elements_data
 		field_cache(cmzn_field_module_create_cache(field_module)),
 		render_mode(render_mode),
 		coordinate_field(coordinate_field),
-		master_nodeset(cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES)),
+		master_nodeset(cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES)),
 		nodeset(0),
 		master_mesh_1d(cmzn_field_module_find_mesh_by_dimension(field_module, 1)),
 		mesh_1d(0),
@@ -185,30 +185,30 @@ struct Render_to_finite_elements_data
 		const int local_node_indexes[] = { 1, 2, 3, 4 };
 
 		line_element_template = cmzn_mesh_create_element_template(mesh_1d);
-		cmzn_element_template_set_shape_type(line_element_template, CMISS_ELEMENT_SHAPE_LINE);
+		cmzn_element_template_set_shape_type(line_element_template, CMZN_ELEMENT_SHAPE_LINE);
 		cmzn_element_template_set_number_of_nodes(line_element_template, 2);
 		cmzn_element_basis_id line_basis = cmzn_field_module_create_element_basis(
-			field_module, /*dimension*/1, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE);
+			field_module, /*dimension*/1, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE);
 		if (!cmzn_element_template_define_field_simple_nodal(line_element_template,
 			coordinate_field, /*component_number*/-1, line_basis, /*number_of_nodes*/2, local_node_indexes))
 			return_code = 0;
 		cmzn_element_basis_destroy(&line_basis);
 
 		triangle_element_template = cmzn_mesh_create_element_template(mesh_2d);
-		cmzn_element_template_set_shape_type(triangle_element_template, CMISS_ELEMENT_SHAPE_TRIANGLE);
+		cmzn_element_template_set_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TRIANGLE);
 		cmzn_element_template_set_number_of_nodes(triangle_element_template, 3);
 		cmzn_element_basis_id triangle_basis = cmzn_field_module_create_element_basis(
-			field_module, /*dimension*/2, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX);
+			field_module, /*dimension*/2, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX);
 		if (!cmzn_element_template_define_field_simple_nodal(triangle_element_template,
 			coordinate_field, /*component_number*/-1, triangle_basis, /*number_of_nodes*/3, local_node_indexes))
 			return_code = 0;
 		cmzn_element_basis_destroy(&triangle_basis);
 
 		square_element_template = cmzn_mesh_create_element_template(mesh_2d);
-		cmzn_element_template_set_shape_type(square_element_template, CMISS_ELEMENT_SHAPE_SQUARE);
+		cmzn_element_template_set_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_SQUARE);
 		cmzn_element_template_set_number_of_nodes(square_element_template, 4);
 		cmzn_element_basis_id square_basis = cmzn_field_module_create_element_basis(
-			field_module, /*dimension*/2, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE);
+			field_module, /*dimension*/2, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE);
 		if (!cmzn_element_template_define_field_simple_nodal(square_element_template,
 			coordinate_field, /*component_number*/-1, square_basis, /*number_of_nodes*/4, local_node_indexes))
 			return_code = 0;

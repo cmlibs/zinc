@@ -47,4 +47,4 @@
 	struct cmzn_selection_event;
 	typedef struct cmzn_selection_event * cmzn_selection_event_id;
 
-#endif /* CMISS_SELECTION_ID_H */
+#endif /* CMZN_SELECTION_ID_H */

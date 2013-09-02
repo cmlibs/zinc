@@ -1139,7 +1139,7 @@ array is enlarged if necessary and the new points added at random locations.
 		return_code = 1;
 		centre_xi1 = (FE_value)xi_centre;
 		dxi1 = (FE_value)delta_xi;
-		if (CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1304,7 +1304,7 @@ array is enlarged if necessary and the new points added at random locations.
 		centre_xi2 = (FE_value)centre_xi[1];
 		dxi1 = (FE_value)dxi[0];
 		dxi2 = (FE_value)dxi[1];
-		if (CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1504,7 +1504,7 @@ array is enlarged if necessary and the new points added at random locations.
 		dxi1 = dxi[0];
 		dxi2 = dxi[1];
 		dxi3 = dxi[2];
-		if (CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1741,7 +1741,7 @@ fields, required for DENSITY and POISSON modes.
 	if (element && get_FE_element_shape(element, &element_shape) &&
 		get_FE_element_shape_dimension(element_shape,
 		&element_dimension) && (0 < element_dimension) && number_in_xi &&
-		(CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode) &&
+		(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 			(Computed_field_get_number_of_components(coordinate_field) >=
@@ -2050,17 +2050,17 @@ int FE_element_get_xi_points(struct FE_element *element,
 		return_code = 1;
 		switch (sample_mode)
 		{
-			case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+			case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
 			{
 				return_code = FE_element_shape_get_xi_points_cell_centres(element_shape,
 					number_in_xi, number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+			case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
 			{
 				return_code = FE_element_shape_get_xi_points_cell_corners(element_shape,
 					number_in_xi, number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMISS_ELEMENT_POINT_SAMPLE_CELL_POISSON:
+			case CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON:
 			{
 				/* seed random number generator with the element number so "random"
 					 layout is consistent for the same element */
@@ -2070,7 +2070,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 					sample_mode, number_in_xi, field_cache, coordinate_field, density_field,
 					number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+			case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
 			{
 				if (exact_xi)
 				{
@@ -2132,7 +2132,7 @@ Also allocates the *<top_level_xi_point_numbers_address> to contain the
 appropriate xi_point_numbers relative to the top-level element.
 Notes:
 1. The xi_points put into this function must have been calculated with the
-CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
+CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
 relation from <element> to <top_level_element> and its <top_level_number_in_xi>.
 2. Sets *<top_level_xi_point_numbers_address> to NULL if not ALLOCATED; hence
 a return value here indicates that the xi_points have been converted.
@@ -2183,7 +2183,7 @@ a return value here indicates that the xi_points have been converted.
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMISS_ELEMENT_FACE_ALL, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_ALL, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,
 					top_level_element_dimension, top_level_number_in_xi,
@@ -2274,7 +2274,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 			/* for efficiency, handle some simple cases to avoid the slower default */
 			switch (sample_mode)
 			{
-				case CMISS_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
 				{
 					switch (element_shape_category)
 					{
@@ -2355,7 +2355,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 						} break;
 					}
 				} break;
-				case CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
 				{
 					switch (element_shape_category)
 					{
@@ -2436,7 +2436,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 						} break;
 					}
 				} break;
-				case CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+				case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
 				{
 					if (exact_xi)
 					{

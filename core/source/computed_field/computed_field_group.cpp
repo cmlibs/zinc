@@ -75,15 +75,15 @@ struct cmzn_field_hierarchical_group_change_detail : public cmzn_field_group_bas
 {
 public:
 	cmzn_field_hierarchical_group_change_detail() :
-		local_change(CMISS_FIELD_GROUP_NO_CHANGE),
-		non_local_change(CMISS_FIELD_GROUP_NO_CHANGE)
+		local_change(CMZN_FIELD_GROUP_NO_CHANGE),
+		non_local_change(CMZN_FIELD_GROUP_NO_CHANGE)
 	{
 	}
 
 	void clear()
 	{
-		local_change = CMISS_FIELD_GROUP_NO_CHANGE;
-		non_local_change = CMISS_FIELD_GROUP_NO_CHANGE;
+		local_change = CMZN_FIELD_GROUP_NO_CHANGE;
+		non_local_change = CMZN_FIELD_GROUP_NO_CHANGE;
 	}
 
 	/** note: if returns CLEAR or REMOVE, must check sub-group is empty */
@@ -105,32 +105,32 @@ public:
 	/** Inform group has been cleared, but wasn't before */
 	void changeClear()
 	{
-		local_change = CMISS_FIELD_GROUP_CLEAR;
-		non_local_change = CMISS_FIELD_GROUP_CLEAR;
+		local_change = CMZN_FIELD_GROUP_CLEAR;
+		non_local_change = CMZN_FIELD_GROUP_CLEAR;
 	}
 
 	/** Inform local group has been added, but wasn't before */
 	void changeAddLocal()
 	{
-		local_change = CMISS_FIELD_GROUP_ADD;
+		local_change = CMZN_FIELD_GROUP_ADD;
 	}
 
 	/** Inform local group has been cleared, but wasn't before */
 	void changeClearLocal()
 	{
-		local_change = CMISS_FIELD_GROUP_CLEAR;
+		local_change = CMZN_FIELD_GROUP_CLEAR;
 	}
 
 	/** Inform local group has been replaced, but wasn't before */
 	void changeReplaceLocal()
 	{
-		local_change = CMISS_FIELD_GROUP_REPLACE;
+		local_change = CMZN_FIELD_GROUP_REPLACE;
 	}
 
 	/** Inform local group has been cleared, but wasn't before */
 	void changeClearNonLocal()
 	{
-		non_local_change = CMISS_FIELD_GROUP_CLEAR;
+		non_local_change = CMZN_FIELD_GROUP_CLEAR;
 	}
 
 	void changeMergeLocal(const cmzn_field_group_base_change_detail *in_change_detail)
@@ -153,26 +153,26 @@ private:
 		cmzn_field_group_change_type change2)
 	{
 		cmzn_field_group_change_type result = change1;
-		if ((change2 != CMISS_FIELD_GROUP_NO_CHANGE) && (change2 != change1))
+		if ((change2 != CMZN_FIELD_GROUP_NO_CHANGE) && (change2 != change1))
 		{
-			if (change2 == CMISS_FIELD_GROUP_CLEAR)
+			if (change2 == CMZN_FIELD_GROUP_CLEAR)
 			{
-				if (change1 == CMISS_FIELD_GROUP_NO_CHANGE)
+				if (change1 == CMZN_FIELD_GROUP_NO_CHANGE)
 				{
-					result = CMISS_FIELD_GROUP_REMOVE;
+					result = CMZN_FIELD_GROUP_REMOVE;
 				}
-				else if (change1 == CMISS_FIELD_GROUP_ADD)
+				else if (change1 == CMZN_FIELD_GROUP_ADD)
 				{
-					result = CMISS_FIELD_GROUP_REPLACE;
+					result = CMZN_FIELD_GROUP_REPLACE;
 				}
 			}
-			else if (change1 == CMISS_FIELD_GROUP_NO_CHANGE)
+			else if (change1 == CMZN_FIELD_GROUP_NO_CHANGE)
 			{
 				result = change2;
 			}
 			else
 			{
-				result = CMISS_FIELD_GROUP_REPLACE;
+				result = CMZN_FIELD_GROUP_REPLACE;
 			}
 		}
 		return result;
@@ -291,7 +291,7 @@ public:
 
 	virtual cmzn_field_change_detail *extract_change_detail()
 	{
-		if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
+		if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
 			return NULL;
 		cmzn_field_hierarchical_group_change_detail *prior_change_detail =
 			new cmzn_field_hierarchical_group_change_detail();
@@ -582,7 +582,7 @@ int Computed_field_group::check_subobject_group_dependency(Computed_field_core *
 			dynamic_cast<const cmzn_field_subobject_group_change_detail *>(source_core->get_change_detail());
 		if (subobject_group_change_detail)
 		{
-			if ((subobject_group_change_detail->getChange() == CMISS_FIELD_GROUP_CLEAR) &&
+			if ((subobject_group_change_detail->getChange() == CMZN_FIELD_GROUP_CLEAR) &&
 				isEmptyLocal())
 			{
 				change_detail.changeClearLocal();
@@ -646,10 +646,10 @@ void Computed_field_group::propagate_hierarchical_field_changes(
 					{
 						cmzn_field_group_change_type subregion_group_change =
 							subregion_group_change_detail->getChange();
-						if (subregion_group_change != CMISS_FIELD_GROUP_NO_CHANGE)
+						if (subregion_group_change != CMZN_FIELD_GROUP_NO_CHANGE)
 						{
-							if (((subregion_group_change == CMISS_FIELD_GROUP_CLEAR) ||
-								(subregion_group_change == CMISS_FIELD_GROUP_REMOVE)) &&
+							if (((subregion_group_change == CMZN_FIELD_GROUP_CLEAR) ||
+								(subregion_group_change == CMZN_FIELD_GROUP_REMOVE)) &&
 								isEmptyNonLocal())
 							{
 								change_detail.changeClearNonLocal();

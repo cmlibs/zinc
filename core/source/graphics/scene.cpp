@@ -85,10 +85,10 @@ FILE : scene.cpp
 #include "graphics/render_gl.h"
 #include "graphics/tessellation.hpp"
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_transformation, \
+FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, \
 	struct cmzn_scene *, gtMatrix *);
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_top_region_change, \
+FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_top_region_change, \
 	struct cmzn_scene *, struct cmzn_scene *);
 
 struct cmzn_scene_callback_data
@@ -107,14 +107,14 @@ int GET_UNIQUE_SCENE_NAME()
 static void cmzn_scene_region_change(struct cmzn_region *region,
 	struct cmzn_region_changes *region_changes, void *scene_void);
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_transformation, void)
+DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_transformation, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(cmzn_scene_transformation, \
+DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_transformation, \
 	struct cmzn_scene *, gtMatrix *)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_top_region_change, void)
+DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_top_region_change, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(cmzn_scene_top_region_change, \
+DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_top_region_change, \
 	struct cmzn_scene *, struct cmzn_scene *);
 
 static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene);
@@ -279,9 +279,9 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 				cmiss_scene->changed = 0;
 				cmiss_scene->position = 0;
 				cmiss_scene->transformation_callback_list =
-					CREATE(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_transformation)))();
+					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))();
 				cmiss_scene->top_region_change_callback_list =
-					CREATE(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_top_region_change)))();
+					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))();
 				cmiss_scene->transformation_field = NULL;
 				cmiss_scene->transformation_time_callback_flag = 0;
 				cmiss_scene->selection_group = NULL;
@@ -495,7 +495,7 @@ static void cmzn_scene_Computed_field_change(
 					const cmzn_field_group_base_change_detail *group_change_detail =
 						dynamic_cast<const cmzn_field_group_base_change_detail *>(source_change_detail);
 					cmzn_field_group_change_type group_change = group_change_detail->getLocalChange();
-					if (group_change != CMISS_FIELD_GROUP_NO_CHANGE)
+					if (group_change != CMZN_FIELD_GROUP_NO_CHANGE)
 						selection_changed = 1;
 				}
 				// ensure child scene selection_group matches the appropriate subgroup or none if none
@@ -729,7 +729,7 @@ int cmzn_scene_set_minimum_graphic_defaults(struct cmzn_scene *scene,
 		cmzn_tessellation_module_id tessellationModule =
 			cmzn_graphics_module_get_tessellation_module(scene->graphics_module);
 		cmzn_tessellation *tessellation =
-			((graphic_type == CMISS_GRAPHIC_POINTS) || (graphic_type == CMISS_GRAPHIC_STREAMLINES)) ?
+			((graphic_type == CMZN_GRAPHIC_POINTS) || (graphic_type == CMZN_GRAPHIC_STREAMLINES)) ?
 			cmzn_tessellation_module_get_default_points_tessellation(tessellationModule) :
 			cmzn_tessellation_module_get_default_tessellation(tessellationModule);
 		cmzn_graphic_set_tessellation(graphic, tessellation);
@@ -787,7 +787,7 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 		cmzn_graphic_type graphic_type = cmzn_graphic_get_graphic_type(graphic);
 		cmzn_field_domain_type domain_type = cmzn_graphic_get_domain_type(graphic);
 
-		if ((graphic_type != CMISS_GRAPHIC_POINTS) || (domain_type != CMISS_FIELD_DOMAIN_POINT))
+		if ((graphic_type != CMZN_GRAPHIC_POINTS) || (domain_type != CMZN_FIELD_DOMAIN_POINT))
 		{
 			cmzn_field_id coordinate_field = cmzn_scene_get_default_coordinate_field(scene);
 			if (!coordinate_field)
@@ -797,14 +797,14 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 		}
 
 		bool use_element_discretization = (0 != scene->element_divisions) &&
-			(graphic_type != CMISS_GRAPHIC_POINTS) && (graphic_type != CMISS_GRAPHIC_STREAMLINES);
+			(graphic_type != CMZN_GRAPHIC_POINTS) && (graphic_type != CMZN_GRAPHIC_STREAMLINES);
 		bool use_circle_discretization = (scene->circle_discretization >= 3) &&
-			(graphic_type == CMISS_GRAPHIC_LINES);
+			(graphic_type == CMZN_GRAPHIC_LINES);
 		if (use_circle_discretization)
 		{
 			cmzn_graphic_line_attributes_id lineAttr = cmzn_graphic_get_line_attributes(graphic);
 			use_circle_discretization = (cmzn_graphic_line_attributes_get_shape(lineAttr) ==
-				CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION);
+				CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION);
 			cmzn_graphic_line_attributes_destroy(&lineAttr);
 		}
 		if (use_element_discretization || use_circle_discretization)
@@ -865,9 +865,9 @@ int cmzn_scene_remove_graphic(struct cmzn_scene *scene,
 		cmzn_graphic_set_scene_private(graphic, NULL);
 		cmzn_graphic_remove_from_list(graphic, scene->list_of_graphics);
 		cmzn_scene_changed(scene);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 /***************************************************************************//**
@@ -1035,7 +1035,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 			graphic_range.graphics_object_range = graphics_object_range;
 		}
 		graphic_range.filter = filter;
-		graphic_range.coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_LOCAL;
+		graphic_range.coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_LOCAL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphic)(
 			cmzn_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			scene->list_of_graphics);
@@ -1109,7 +1109,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 			}
 		}
 		graphic_range.graphics_object_range = graphics_object_range;
-		graphic_range.coordinate_system = CMISS_SCENE_COORDINATE_SYSTEM_WORLD;
+		graphic_range.coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_WORLD;
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphic)(
 			cmzn_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			scene->list_of_graphics);
@@ -1572,7 +1572,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 				/* delete */
 				if (same_graphic)
 				{
-					return_code = (CMISS_OK == cmzn_scene_remove_graphic(scene, same_graphic));
+					return_code = (CMZN_OK == cmzn_scene_remove_graphic(scene, same_graphic));
 				}
 				else
 				{
@@ -2114,9 +2114,9 @@ int cmzn_scene_set_visibility_flag(struct cmzn_scene *scene,
 			scene->visibility_flag = visibility_flag;
 			cmzn_scene_changed(scene);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_is_visible_hierarchical(
@@ -2185,14 +2185,14 @@ int cmzn_scene_get_spectrum_data_range(cmzn_scene_id scene,
 }
 
 int cmzn_scene_add_transformation_callback(struct cmzn_scene *scene,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data)
 {
 	int return_code;
 
 	ENTER(cmzn_scene_add_transformation_callback);
 	if (scene && function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
+		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
 			scene->transformation_callback_list, function, user_data))
 		{
 			return_code = 1;
@@ -2217,14 +2217,14 @@ int cmzn_scene_add_transformation_callback(struct cmzn_scene *scene,
 
 int cmzn_scene_remove_transformation_callback(
 	struct cmzn_scene *scene,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data)
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data)
 {
 	int return_code;
 
 	ENTER(cmzn_scene_remove_transformation_callback);
 	if (scene && function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
+		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
 			scene->transformation_callback_list, function,user_data))
 		{
 			return_code = 1;
@@ -2377,7 +2377,7 @@ int cmzn_scene_set_transformation(struct cmzn_scene *scene,
 				}
 			}
 		}
-		CMISS_CALLBACK_LIST_CALL(cmzn_scene_transformation)(
+		CMZN_CALLBACK_LIST_CALL(cmzn_scene_transformation)(
 			scene->transformation_callback_list, scene,
 			scene->transformation);
 		cmzn_scene_changed(scene);
@@ -2723,12 +2723,12 @@ int DESTROY(cmzn_scene)(
 		}
 		if (cmiss_scene->transformation_callback_list)
 		{
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_transformation)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))(
 				&(cmiss_scene->transformation_callback_list));
 		}
 		if (cmiss_scene->top_region_change_callback_list)
 		{
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
 				&(cmiss_scene->top_region_change_callback_list));
 		}
 		if (cmiss_scene->transformation)
@@ -2924,7 +2924,7 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 		cmzn_field_module_begin_change(field_module);
 		cmzn_field_group_id selection_group = cmzn_scene_get_or_create_selection_group(scene);
 		cmzn_nodeset_id temp_nodeset = cmzn_field_module_find_nodeset_by_domain_type(
-			field_module, use_data ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
+			field_module, use_data ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(selection_group, temp_nodeset);
 		if (!node_group)
 			node_group = cmzn_field_group_create_node_group(selection_group, temp_nodeset);
@@ -3217,7 +3217,7 @@ int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	cmzn_region_id destination_region = cmzn_nodeset_get_region_internal(nodeset);
 	if (scene && nodeset && coordinate_field &&
 		(Computed_field_get_region(coordinate_field) == destination_region) &&
-		(CMISS_FIELD_VALUE_TYPE_REAL == cmzn_field_get_value_type(coordinate_field)) &&
+		(CMZN_FIELD_VALUE_TYPE_REAL == cmzn_field_get_value_type(coordinate_field)) &&
 		(3 >= cmzn_field_get_number_of_components(coordinate_field)))
 	{
 		int return_code = render_to_finite_elements(scene->region,
@@ -3226,9 +3226,9 @@ int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 			static_cast<cmzn_field_group_id>(0), coordinate_field, nodeset,
 			line_density, line_density_scale_factor,
 			surface_density, surface_density_scale_factor);
-		return return_code ? CMISS_OK : CMISS_ERROR_GENERAL;
+		return return_code ? CMZN_OK : CMZN_ERROR_GENERAL;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphic_id cmzn_scene_create_graphic(cmzn_scene_id scene,
@@ -3250,35 +3250,35 @@ cmzn_graphic_contours_id cmzn_scene_create_graphic_contours(
 	cmzn_scene_id scene)
 {
 	return (reinterpret_cast<cmzn_graphic_contours_id>(
-		cmzn_scene_create_graphic(scene, CMISS_GRAPHIC_CONTOURS)));
+		cmzn_scene_create_graphic(scene, CMZN_GRAPHIC_CONTOURS)));
 }
 
 cmzn_graphic_lines_id cmzn_scene_create_graphic_lines(
 	cmzn_scene_id scene)
 {
 	return (reinterpret_cast<cmzn_graphic_lines_id>(
-		cmzn_scene_create_graphic(scene, CMISS_GRAPHIC_LINES)));
+		cmzn_scene_create_graphic(scene, CMZN_GRAPHIC_LINES)));
 }
 
 cmzn_graphic_points_id cmzn_scene_create_graphic_points(
 	cmzn_scene_id scene)
 {
 	return (reinterpret_cast<cmzn_graphic_points_id>(
-		cmzn_scene_create_graphic(scene, CMISS_GRAPHIC_POINTS)));
+		cmzn_scene_create_graphic(scene, CMZN_GRAPHIC_POINTS)));
 }
 
 cmzn_graphic_streamlines_id cmzn_scene_create_graphic_streamlines(
 	cmzn_scene_id scene)
 {
 	return (reinterpret_cast<cmzn_graphic_streamlines_id>(
-		cmzn_scene_create_graphic(scene, CMISS_GRAPHIC_STREAMLINES)));
+		cmzn_scene_create_graphic(scene, CMZN_GRAPHIC_STREAMLINES)));
 }
 
 cmzn_graphic_surfaces_id cmzn_scene_create_graphic_surfaces(
 	cmzn_scene_id scene)
 {
 	return (reinterpret_cast<cmzn_graphic_surfaces_id>(
-		cmzn_scene_create_graphic(scene, CMISS_GRAPHIC_SURFACES)));
+		cmzn_scene_create_graphic(scene, CMZN_GRAPHIC_SURFACES)));
 }
 
 cmzn_selection_handler_id cmzn_scene_create_selection_handler(cmzn_scene_id scene)
@@ -3354,7 +3354,7 @@ cmzn_graphic_id cmzn_scene_get_previous_graphic(cmzn_scene_id scene,
 int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
 	cmzn_graphic_id graphic, cmzn_graphic_id ref_graphic)
 {
-	int return_code = CMISS_ERROR_GENERAL;
+	int return_code = CMZN_ERROR_GENERAL;
 	if (scene && graphic &&
 		(cmzn_graphic_get_scene_private(graphic) == scene) && ((0 == ref_graphic) ||
 			(cmzn_graphic_get_scene_private(graphic) ==
@@ -3362,25 +3362,25 @@ int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
 	{
 		cmzn_graphic_id current_graphic = ACCESS(cmzn_graphic)(graphic);
 		const int position = cmzn_scene_get_graphic_position(scene, ref_graphic);
-		if (CMISS_OK == cmzn_scene_remove_graphic(scene, current_graphic))
+		if (CMZN_OK == cmzn_scene_remove_graphic(scene, current_graphic))
 		{
 			if (cmzn_scene_add_graphic(scene, current_graphic, position))
 			{
-				return_code = CMISS_OK;
+				return_code = CMZN_OK;
 			}
 		}
 		DEACCESS(cmzn_graphic)(&current_graphic);
 	}
 	else
 	{
-		return_code = CMISS_ERROR_ARGUMENT;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return return_code;
 }
 
 int cmzn_scene_remove_all_graphics(cmzn_scene_id scene)
 {
-	int return_code = CMISS_OK;
+	int return_code = CMZN_OK;
 	if (scene)
 	{
 		cmzn_scene_begin_change(scene);
@@ -3389,9 +3389,9 @@ int cmzn_scene_remove_all_graphics(cmzn_scene_id scene)
 			cmzn_scene_get_first_graphic_with_condition(scene,
 				(LIST_CONDITIONAL_FUNCTION(cmzn_graphic) *)NULL, (void *)NULL))))
 		{
-			if (CMISS_OK != cmzn_scene_remove_graphic(scene, graphic))
+			if (CMZN_OK != cmzn_scene_remove_graphic(scene, graphic))
 			{
-				return_code = CMISS_ERROR_GENERAL;
+				return_code = CMZN_ERROR_GENERAL;
 				break;
 			}
 		}
@@ -3399,7 +3399,7 @@ int cmzn_scene_remove_all_graphics(cmzn_scene_id scene)
 	}
 	else
 	{
-		return_code = CMISS_ERROR_ARGUMENT;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return return_code;
 }
@@ -3508,8 +3508,8 @@ int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer)
 
 
 int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
-	cmzn_scene_id scene, CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
+	cmzn_scene_id scene, CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
 	void *user_data)
 {
 	int return_code = 1;
@@ -3528,10 +3528,10 @@ int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
 			}
 		}
 		if (return_code)
-			return_code = CMISS_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
+			return_code = CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
 				child_scene->transformation_callback_list, function, user_data);
 		if (scene == child_scene)
-			return_code &= CMISS_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_top_region_change)(
+			return_code &= CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_top_region_change)(
 				child_scene->top_region_change_callback_list, region_change_function, user_data);
 	}
 	else
@@ -3542,8 +3542,8 @@ int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
 }
 
 int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_scene,
-	cmzn_scene_id scene, CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
+	cmzn_scene_id scene, CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
 	void *user_data)
 {
 	int return_code = 1;
@@ -3562,10 +3562,10 @@ int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_sce
 			}
 		}
 		if (return_code)
-			return_code = CMISS_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
+			return_code = CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
 				scene->transformation_callback_list, function,user_data);
 		if (scene == child_scene)
-			return_code &= CMISS_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_top_region_change)(
+			return_code &= CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_top_region_change)(
 				scene->top_region_change_callback_list, region_change_function, user_data);
 	}
 	else
@@ -3580,7 +3580,7 @@ int cmzn_scene_triggers_top_region_change_callback(
 {
 	if (scene && scene->top_region_change_callback_list)
 	{
-		return CMISS_CALLBACK_LIST_CALL(cmzn_scene_top_region_change)(
+		return CMZN_CALLBACK_LIST_CALL(cmzn_scene_top_region_change)(
 			scene->top_region_change_callback_list, scene,
 			NULL);
 	}
@@ -3901,12 +3901,12 @@ void cmzn_scene_detach_from_owner(cmzn_scene_id cmiss_scene)
 		cmzn_scene_remove_time_dependent_transformation(cmiss_scene);
 		if (cmiss_scene->transformation_callback_list)
 		{
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_transformation)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))(
 				&(cmiss_scene->transformation_callback_list));
 		}
 		if (cmiss_scene->top_region_change_callback_list)
 		{
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
 				&(cmiss_scene->top_region_change_callback_list));
 		}
 		if (cmiss_scene->fe_region_callback_set)

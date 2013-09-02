@@ -250,7 +250,7 @@ DESCRIPTION :
 				printf("\nReading object: %s\n",objname);
 				display_message(INFORMATION_MESSAGE,"Reading object: %s\n",objname);
 #endif /* defined (DEBUG_CODE) */
-				if (fuzzy_string_compare(objname,"CMISS"))
+				if (fuzzy_string_compare(objname,"CMZN"))
 				{
 					/* version information */
 					if (EOF==(IO_stream_scan(stream,"%s",objname))||
@@ -258,21 +258,21 @@ DESCRIPTION :
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have exobj "
-							"keyword\nValid header is 'CMISS exobj File Version 3'\n");
+							"keyword\nValid header is 'CMZN exobj File Version 3'\n");
 					}
 					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"file")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have file keyword\n"
-							"Valid header is 'CMISS exobj File Version 3'\n");
+							"Valid header is 'CMZN exobj File Version 3'\n");
 					}
 					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"version")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have version "
-							"keyword\nValid header is 'CMISS exobj File Version 2'\n");
+							"keyword\nValid header is 'CMZN exobj File Version 2'\n");
 					}
 					if (EOF==IO_stream_scan(stream,"%d",&version))
 					{
@@ -625,7 +625,7 @@ DESCRIPTION :
 											}
 										} break;
 									}
-									surface=CREATE(GT_surface)(surface_type,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,
+									surface=CREATE(GT_surface)(surface_type,CMZN_GRAPHIC_RENDER_POLYGON_SHADED,
 										g_QUADRILATERAL,npts1,npts2,pointlist,normallist,
 										/*tangentlist*/(Triple *)NULL,texturelist,
 										n_data_components,data);
@@ -915,11 +915,11 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			}
 			switch (render_polygon_mode)
 			{
-				case CMISS_GRAPHIC_RENDER_POLYGON_SHADED:
+				case CMZN_GRAPHIC_RENDER_POLYGON_SHADED:
 				{
 					voltex_type = g_VOLTEX_SHADED_TEXMAP;
 				} break;
-				case CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME:
+				case CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME:
 				{
 					voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 				} break;

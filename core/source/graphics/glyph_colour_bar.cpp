@@ -230,7 +230,7 @@ GT_object *create_Spectrum_colour_bar(
 					}
 				}
 				return_code=(
-					(surface=CREATE(GT_surface)(g_SHADED,CMISS_GRAPHIC_RENDER_POLYGON_SHADED,g_QUADRILATERAL,
+					(surface=CREATE(GT_surface)(g_SHADED,CMZN_GRAPHIC_RENDER_POLYGON_SHADED,g_QUADRILATERAL,
 						points_around_bar,points_along_bar,points,normalpoints,
 						/*tangentpoints*/(Triple *)NULL,
 						/*texturepoints*/(Triple *)NULL,
@@ -470,9 +470,9 @@ int cmzn_glyph_colour_bar::getAxis(int valuesCount, double *valuesOut) const
 		{
 			valuesOut[i] = this->axis[i];
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setAxis(int valuesCount, const double *valuesIn)
@@ -493,9 +493,9 @@ int cmzn_glyph_colour_bar::setAxis(int valuesCount, const double *valuesIn)
 		{
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::getCentre(int valuesCount, double *valuesOut) const
@@ -507,9 +507,9 @@ int cmzn_glyph_colour_bar::getCentre(int valuesCount, double *valuesOut) const
 		{
 			valuesOut[i] = this->centre[i];
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setCentre(int valuesCount, const double *valuesIn)
@@ -530,9 +530,9 @@ int cmzn_glyph_colour_bar::setCentre(int valuesCount, const double *valuesIn)
 		{
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setExtendLength(double extendLengthIn)
@@ -544,9 +544,9 @@ int cmzn_glyph_colour_bar::setExtendLength(double extendLengthIn)
 			this->extendLength = extendLengthIn;
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setLabelDivisions(int labelDivisionsIn)
@@ -558,9 +558,9 @@ int cmzn_glyph_colour_bar::setLabelDivisions(int labelDivisionsIn)
 			this->labelDivisions = labelDivisionsIn;
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setLabelMaterial(cmzn_graphics_material_id material)
@@ -570,7 +570,7 @@ int cmzn_glyph_colour_bar::setLabelMaterial(cmzn_graphics_material_id material)
 		REACCESS(Graphical_material)(&(this->labelMaterial), material);
 		this->invalidate();
 	}
-	return CMISS_OK;
+	return CMZN_OK;
 }
 
 char *cmzn_glyph_colour_bar::getNumberFormat() const
@@ -589,9 +589,9 @@ int cmzn_glyph_colour_bar::setNumberFormat(const char *numberFormatIn)
 			this->numberFormat = duplicate_string(numberFormatIn);
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::getSideAxis(int valuesCount, double *valuesOut) const
@@ -603,9 +603,9 @@ int cmzn_glyph_colour_bar::getSideAxis(int valuesCount, double *valuesOut) const
 		{
 			valuesOut[i] = this->sideAxis[i];
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setSideAxis(int valuesCount, const double *valuesIn)
@@ -626,9 +626,9 @@ int cmzn_glyph_colour_bar::setSideAxis(int valuesCount, const double *valuesIn)
 		{
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar::setTickLength(double tickLengthIn)
@@ -640,9 +640,9 @@ int cmzn_glyph_colour_bar::setTickLength(double tickLengthIn)
 			this->tickLength = tickLengthIn;
 			this->invalidate();
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 void cmzn_glyph_colour_bar::fontChange()
@@ -706,7 +706,7 @@ int cmzn_glyph_colour_bar_get_axis(
 {
 	if (colour_bar)
 		return colour_bar->getAxis(valuesCount, valuesOut);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_set_axis(
@@ -714,7 +714,7 @@ int cmzn_glyph_colour_bar_set_axis(
 {
 	if (colour_bar)
 		return colour_bar->setAxis(valuesCount, valuesIn);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_get_centre(
@@ -722,7 +722,7 @@ int cmzn_glyph_colour_bar_get_centre(
 {
 	if (colour_bar)
 		return colour_bar->getCentre(valuesCount, valuesOut);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_set_centre(
@@ -730,7 +730,7 @@ int cmzn_glyph_colour_bar_set_centre(
 {
 	if (colour_bar)
 		return colour_bar->setCentre(valuesCount, valuesIn);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_glyph_colour_bar_get_extend_length(
@@ -746,7 +746,7 @@ int cmzn_glyph_colour_bar_set_extend_length(
 {
 	if (colour_bar)
 		return colour_bar->setExtendLength(extendLength);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_get_label_divisions(
@@ -762,7 +762,7 @@ int cmzn_glyph_colour_bar_set_label_divisions(
 {
 	if (colour_bar)
 		return colour_bar->setLabelDivisions(labelDivisions);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
@@ -778,7 +778,7 @@ int cmzn_glyph_colour_bar_set_label_material(
 {
 	if (colour_bar)
 		return colour_bar->setLabelMaterial(material);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_glyph_colour_bar_get_number_format(
@@ -794,7 +794,7 @@ int cmzn_glyph_colour_bar_set_number_format(
 {
 	if (colour_bar)
 		return colour_bar->setNumberFormat(numberFormat);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_get_side_axis(
@@ -802,7 +802,7 @@ int cmzn_glyph_colour_bar_get_side_axis(
 {
 	if (colour_bar)
 		return colour_bar->getSideAxis(valuesCount, valuesOut);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_glyph_colour_bar_set_side_axis(
@@ -810,7 +810,7 @@ int cmzn_glyph_colour_bar_set_side_axis(
 {
 	if (colour_bar)
 		return colour_bar->setSideAxis(valuesCount, valuesIn);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_glyph_colour_bar_get_tick_length(
@@ -826,5 +826,5 @@ ZINC_API int cmzn_glyph_colour_bar_set_tick_length(
 {
 	if (colour_bar)
 		return colour_bar->setTickLength(tickLength);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }

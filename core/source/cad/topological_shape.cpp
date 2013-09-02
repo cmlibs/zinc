@@ -196,8 +196,8 @@ int TopologicalShape::surfaceColour(cmzn_cad_surface_identifier surface_identifi
 	if ( iter != colourMap.end() )
 	{
 		cmzn_cad_colour cad_colour = iter->second;
-		if (cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
-			cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_GENERIC )
+		if (cad_colour.getColourType() == cmzn_cad_colour::CMZN_CAD_COLOUR_SURFACE ||
+			cad_colour.getColourType() == cmzn_cad_colour::CMZN_CAD_COLOUR_GENERIC )
 		{
 			Quantity_Color surfaceColour = cad_colour.getColour();
 			colour[0] = surfaceColour.Red();
@@ -212,8 +212,8 @@ int TopologicalShape::surfaceColour(cmzn_cad_surface_identifier surface_identifi
 	if ( iter != colourMap.end() )
 	{
 		cmzn_cad_colour cad_colour = iter->second;
-		if (cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_SURFACE ||
-			cad_colour.getColourType() == cmzn_cad_colour::CMISS_CAD_COLOUR_GENERIC )
+		if (cad_colour.getColourType() == cmzn_cad_colour::CMZN_CAD_COLOUR_SURFACE ||
+			cad_colour.getColourType() == cmzn_cad_colour::CMZN_CAD_COLOUR_GENERIC )
 		{
 			Quantity_Color surfaceColour = cad_colour.getColour();
 			colour[0] = surfaceColour.Red();

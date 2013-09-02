@@ -366,7 +366,7 @@ Light_module *Light_module_access(Light_module *light_module);
 *
 * @param light_module_address  Address of handle to light module
 *   to destroy.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 int Light_module_destroy(
 	Light_module **light_module_address);
@@ -388,7 +388,7 @@ Light *Light_module_create_light(
 * @see Light_module_end_change
 *
 * @param light_module  The light_module to begin change cache on.
-* @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 int Light_module_begin_change(Light_module *light_module);
 
@@ -399,7 +399,7 @@ int Light_module_begin_change(Light_module *light_module);
 * cached change messages are sent out to clients.
 *
 * @param light_module  The glyph_module to end change cache on.
-* @return  Status CMISS_OK on success, any other value on failure.
+* @return  Status CMZN_OK on success, any other value on failure.
 */
 int Light_module_end_change(Light_module *light_module);
 
@@ -433,7 +433,7 @@ Light * Light_module_get_default_light(
  *
  * @param light_module  Light module to modify.
  * @param light  The light to set as default.
- * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 int Light_module_set_default_light(
 	Light_module *light_module,

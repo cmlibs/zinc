@@ -116,7 +116,7 @@ protected:
 public:
 	cmzn_graphics_filter_operator()
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_OPERATOR;
 	}
 
 	virtual ~cmzn_graphics_filter_operator()
@@ -296,7 +296,7 @@ class cmzn_graphics_filter_operator_and : public cmzn_graphics_filter_operator
 public:
 	cmzn_graphics_filter_operator_and()
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_OPERATOR_AND;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -325,7 +325,7 @@ class cmzn_graphics_filter_operator_or : public cmzn_graphics_filter_operator
 public:
 	cmzn_graphics_filter_operator_or()
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_OPERATOR_OR;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -364,7 +364,7 @@ public:
 	cmzn_graphics_filter_graphic_name(const char *inMatchName) :
 		matchName(duplicate_string(inMatchName))
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME;
 	}
 
 	virtual ~cmzn_graphics_filter_graphic_name()
@@ -389,7 +389,7 @@ class cmzn_graphics_filter_visibility_flags : public cmzn_graphics_filter
 public:
 	cmzn_graphics_filter_visibility_flags()
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -411,7 +411,7 @@ public:
 	cmzn_graphics_filter_region(cmzn_region *inRegion) :
 		matchRegion(inRegion)
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_REGION;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_REGION;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -435,7 +435,7 @@ public:
 	cmzn_graphics_filter_domain_type(enum cmzn_field_domain_type inDomainType) :
 		domain_type(inDomainType)
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_DOMAIN_TYPE;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_DOMAIN_TYPE;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -457,7 +457,7 @@ public:
 	cmzn_graphics_filter_graphic_type(enum cmzn_graphic_type inGraphicType) :
 		graphic_type(inGraphicType)
 	{
-		filter_type = CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_TYPE;
+		filter_type = CMZN_GRAPHICS_FILTER_TYPE_GRAPHIC_TYPE;
 	}
 
 	virtual bool match(struct cmzn_graphic *graphic)
@@ -658,9 +658,9 @@ public:
 				delete graphics_filter_module;
 			}
 			graphics_filter_module = 0;
-			return CMISS_OK;
+			return CMZN_OK;
 		}
-		return CMISS_ERROR_ARGUMENT;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	struct MANAGER(cmzn_graphics_filter) *getManager()
@@ -861,7 +861,7 @@ public:
 	int setDefaultFilter(cmzn_graphics_filter *graphicsFilter)
 	{
 		REACCESS(cmzn_graphics_filter)(&this->defaultGraphicsFilter, graphicsFilter);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
 
 };
@@ -955,7 +955,7 @@ int cmzn_graphics_filter_module_destroy(cmzn_graphics_filter_module_id *graphics
 {
 	if (graphics_filter_module_address)
 		return cmzn_graphics_filter_module::deaccess(*graphics_filter_module_address);
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_filter_module_get_manager(
@@ -970,14 +970,14 @@ int cmzn_graphics_filter_module_begin_change(cmzn_graphics_filter_module_id grap
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->beginChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_graphics_filter_module_end_change(cmzn_graphics_filter_module_id graphics_filter_module)
 {
 	if (graphics_filter_module)
 		return graphics_filter_module->endChange();
-   return CMISS_ERROR_ARGUMENT;
+   return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphics_filter_id cmzn_graphics_filter_module_find_filter_by_name(
@@ -1117,9 +1117,9 @@ int cmzn_graphics_filter_set_managed(cmzn_graphics_filter_id filter,
 			MANAGED_OBJECT_CHANGE(cmzn_graphics_filter)(filter,
 				MANAGER_CHANGE_NOT_RESULT(cmzn_graphics_filter));
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_graphics_filter_is_inverse(cmzn_graphics_filter_id filter)
@@ -1135,9 +1135,9 @@ int cmzn_graphics_filter_set_inverse(cmzn_graphics_filter_id filter,
 	if (filter)
 	{
 		filter->setInverse(value);
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_graphics_filter_operator_id cmzn_graphics_filter_cast_operator(cmzn_graphics_filter_id graphics_filter)

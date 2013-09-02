@@ -1114,7 +1114,7 @@ bool Computed_field_integration::is_defined_at_location(cmzn_field_cache& cache)
 					if (!(top_level_element=FE_element_get_top_level_element_conversion(
 						element,(struct FE_element *)NULL,
 						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-						CMISS_ELEMENT_FACE_ALL, element_to_top_level)))
+						CMZN_ELEMENT_FACE_ALL, element_to_top_level)))
 					{
 						return_code=0;
 					}
@@ -1249,7 +1249,7 @@ int Computed_field_integration::evaluate(cmzn_field_cache& cache, FieldValueCach
 			top_level_element=FE_element_get_top_level_element_conversion(
 					 element,top_level_element,
 					(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-					 CMISS_ELEMENT_FACE_ALL, element_to_top_level);
+					 CMZN_ELEMENT_FACE_ALL, element_to_top_level);
 			if (top_level_element != 0)
 			{
 				/* convert xi to top_level_xi */

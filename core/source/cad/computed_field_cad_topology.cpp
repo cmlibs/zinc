@@ -938,7 +938,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 					path_length = strlen(region_path_and_name.region_path);
 					if (path_length > 0)
 					{
-						path_length += strlen(CMISS_REGION_PATH_SEPARATOR_STRING);
+						path_length += strlen(CMZN_REGION_PATH_SEPARATOR_STRING);
 					}
 				}
 				else

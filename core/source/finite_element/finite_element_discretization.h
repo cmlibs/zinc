@@ -129,7 +129,7 @@ Also allocates the *<top_level_xi_point_numbers_address> to contain the
 appropriate xi_point_numbers relative to the top-level element.
 Notes:
 1. The xi_points put into this function must have been calculated with the
-CMISS_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
+CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
 relation from <element> to <top_level_element> and its <top_level_number_in_xi>.
 2. Sets *<top_level_xi_point_numbers_address> to NULL if not ALLOCATED; hence
 a return value here indicates that the xi_points have been converted.

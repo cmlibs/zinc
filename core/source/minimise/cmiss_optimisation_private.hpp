@@ -96,7 +96,7 @@ public:
 		access_count(1)
 	{
 		// initialise to default values
-		method = CMISS_OPTIMISATION_METHOD_QUASI_NEWTON;
+		method = CMZN_OPTIMISATION_METHOD_QUASI_NEWTON;
 		functionTolerance = 1.49012e-8;
 		gradientTolerance = 6.05545e-6;
 		stepTolerance = 1.49012e-8;
@@ -163,7 +163,7 @@ public:
 			return 0;
 		if (!(Computed_field_is_constant(field) || Computed_field_is_type_finite_element(field)))
 			return 0;
-		if (cmzn_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
+		if (cmzn_field_get_value_type(field) != CMZN_FIELD_VALUE_TYPE_REAL)
 			return 0;
 		FieldList::const_iterator iter;
 		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
@@ -225,7 +225,7 @@ public:
 	{
 		if (!cmzn_field_module_contains_field(fieldModule, field))
 			return 0;
-		if (cmzn_field_get_value_type(field) != CMISS_FIELD_VALUE_TYPE_REAL)
+		if (cmzn_field_get_value_type(field) != CMZN_FIELD_VALUE_TYPE_REAL)
 			return 0;
 		FieldList::const_iterator iter;
 		for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)

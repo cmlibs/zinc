@@ -400,7 +400,7 @@ public:
 	/** Override if field is not real valued */
 	virtual cmzn_field_value_type get_value_type() const
 	{
-		return CMISS_FIELD_VALUE_TYPE_REAL;
+		return CMZN_FIELD_VALUE_TYPE_REAL;
 	}
 
 }; /* class Computed_field_core */
@@ -410,7 +410,7 @@ enum Computed_field_attribute_flags
 {
 	COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT = 1
 	/*!< If NOT set, destroy field when only access is from region.
-	 * @see CMISS_FIELD_ATTRIBUTE_IS_MANAGED */
+	 * @see CMZN_FIELD_ATTRIBUTE_IS_MANAGED */
 };
 
 struct Computed_field

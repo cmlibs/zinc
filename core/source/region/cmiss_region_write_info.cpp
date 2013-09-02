@@ -92,7 +92,7 @@ DESCRIPTION :
 	if (ALLOCATE(write_info, struct cmzn_region_write_info, 1))
 	{
 		write_info->region = (struct cmzn_region *)NULL;
-		write_info->status = CMISS_REGION_NOT_WRITTEN;
+		write_info->status = CMZN_REGION_NOT_WRITTEN;
 		write_info->path = (char *)NULL;
 		write_info->access_count = 0;
 	}
@@ -167,15 +167,15 @@ DESCRIPTION :
 
 	ENTER(set_cmzn_region_write_info);
 	if (write_info_list && region && path &&
-		((CMISS_REGION_DECLARED == write_status) ||
-			(CMISS_REGION_WRITTEN == write_status)))
+		((CMZN_REGION_DECLARED == write_status) ||
+			(CMZN_REGION_WRITTEN == write_status)))
 	{
 		return_code = 1;
 		if (NULL != (write_info = FIND_BY_IDENTIFIER_IN_LIST(cmzn_region_write_info,region)(
 			region, write_info_list)))
 		{
 			/* only need to handle updating from DECLARED to WRITTEN */
-			if (CMISS_REGION_DECLARED == write_info->status)
+			if (CMZN_REGION_DECLARED == write_info->status)
 			{
 				write_info->status = write_status;
 			}
@@ -243,7 +243,7 @@ The returned path is not to be deallocated.
 		}
 		else
 		{
-			*write_status_address = CMISS_REGION_NOT_WRITTEN;
+			*write_status_address = CMZN_REGION_NOT_WRITTEN;
 			*path_address = (char *)NULL;
 		}
 	}

@@ -3726,11 +3726,11 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 		if (ALLOCATE(object, gtObject, 1) &&
 			(object->name = duplicate_string(name)))
 		{
-			object->select_mode=CMISS_GRAPHIC_NO_SELECT;
+			object->select_mode=CMZN_GRAPHIC_NO_SELECT;
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
-			object->glyph_type = CMISS_GLYPH_TYPE_INVALID;
+			object->glyph_type = CMZN_GLYPH_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 1;
@@ -6023,7 +6023,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		{
 			n_texture_coordinates = 3;
 		}
-		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMISS_GRAPHIC_RENDER_POLYGON_SHADED) ?
+		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMZN_GRAPHIC_RENDER_POLYGON_SHADED) ?
 			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
 			triangle_count, triangle_list, n_data_components,
@@ -6159,7 +6159,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 				}
 			}
 			cmzn_graphic_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
-					CMISS_GRAPHIC_RENDER_POLYGON_SHADED : CMISS_GRAPHIC_RENDER_POLYGON_WIREFRAME;
+					CMZN_GRAPHIC_RENDER_POLYGON_SHADED : CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME;
 			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);
@@ -6258,7 +6258,7 @@ enum cmzn_graphic_select_mode GT_object_get_select_mode(
 {
 	if (graphics_object)
 		return graphics_object->select_mode;
-	return CMISS_GRAPHIC_SELECT_MODE_INVALID;
+	return CMZN_GRAPHIC_SELECT_MODE_INVALID;
 }
 
 int GT_object_set_select_mode(struct GT_object *graphics_object,
@@ -6271,9 +6271,9 @@ int GT_object_set_select_mode(struct GT_object *graphics_object,
 			graphics_object->select_mode=select_mode;
 			GT_object_changed(graphics_object);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
@@ -6350,9 +6350,9 @@ int set_GT_object_render_line_width(struct GT_object *graphics_object,
 			graphics_object->render_line_width = width;
 			GT_object_changed(graphics_object);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double get_GT_object_render_point_size(struct GT_object *graphics_object)
@@ -6372,9 +6372,9 @@ int set_GT_object_render_point_size(struct GT_object *graphics_object,
 			graphics_object->render_point_size = size;
 			GT_object_changed(graphics_object);
 		}
-		return CMISS_OK;
+		return CMZN_OK;
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct Graphical_material *get_GT_object_default_material
@@ -7440,7 +7440,7 @@ enum cmzn_glyph_type GT_object_get_glyph_type(
 {
 	if (gt_object)
 		return gt_object->glyph_type;
-	return CMISS_GLYPH_TYPE_INVALID;
+	return CMZN_GLYPH_TYPE_INVALID;
 }
 
 int GT_object_set_glyph_type(struct GT_object *gt_object,

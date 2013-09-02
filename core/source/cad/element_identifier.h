@@ -73,10 +73,10 @@ public:
 struct cmzn_cad_colour
 {
 	enum cmzn_cad_colour_type {
-		CMISS_CAD_COLOUR_NOT_DEFINED = -1,
-		CMISS_CAD_COLOUR_GENERIC = 0,
-		CMISS_CAD_COLOUR_SURFACE = 1,
-		CMISS_CAD_COLOUR_CURVE = 2
+		CMZN_CAD_COLOUR_NOT_DEFINED = -1,
+		CMZN_CAD_COLOUR_GENERIC = 0,
+		CMZN_CAD_COLOUR_SURFACE = 1,
+		CMZN_CAD_COLOUR_CURVE = 2
 	};
 
 private:
@@ -84,7 +84,7 @@ private:
 	Quantity_Color colour;
 
 public:
-	cmzn_cad_colour(cmzn_cad_colour_type colour_type = CMISS_CAD_COLOUR_NOT_DEFINED
+	cmzn_cad_colour(cmzn_cad_colour_type colour_type = CMZN_CAD_COLOUR_NOT_DEFINED
 		, Quantity_Color colour = Quantity_NOC_WHITE)
 		: colour_type(colour_type)
 		, colour(colour)

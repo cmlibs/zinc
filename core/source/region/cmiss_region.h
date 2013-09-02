@@ -39,8 +39,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_REGION_H)
-#define CMISS_REGION_H
+#if !defined (CMZN_REGION_H)
+#define CMZN_REGION_H
 
 #include "zinc/fieldgroup.h"
 #include "zinc/region.h"
@@ -55,8 +55,8 @@ Global constants
 */
 
 /* separator character for cmzn_region in path strings */
-#define CMISS_REGION_PATH_SEPARATOR_CHAR '/'
-#define CMISS_REGION_PATH_SEPARATOR_STRING "/"
+#define CMZN_REGION_PATH_SEPARATOR_CHAR '/'
+#define CMZN_REGION_PATH_SEPARATOR_STRING "/"
 
 /*
 Global types
@@ -93,7 +93,7 @@ Data broadcast with callbacks from <cmzn_region> describing the changes.
 	struct cmzn_region *child_removed;
 }; /* struct cmzn_region_changes */
 
-DECLARE_CMISS_CALLBACK_TYPES(cmzn_region_change, \
+DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
 	struct cmzn_region *, struct cmzn_region_changes *, void);
 
 /*
@@ -169,7 +169,7 @@ change counter is restored to zero by this function.
 ==============================================================================*/
 
 int cmzn_region_add_callback(struct cmzn_region *region,
-	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -180,7 +180,7 @@ struct cmzn_region_changes * and the void *user_data.
 ==============================================================================*/
 
 int cmzn_region_remove_callback(struct cmzn_region *region,
-	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -218,7 +218,7 @@ char *cmzn_region_get_root_region_path(void);
 
 /***************************************************************************//**
  * Returns the full path name from the root region to this region. Path name
- * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
+ * always begins and ends with the CMZN_REGION_PATH_SEPARATOR_CHAR '/'.
  *
  * @param region  The region whose path is requested.
  * @return  On success: allocated string containing full region path.
@@ -227,7 +227,7 @@ char *cmzn_region_get_path(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns the relative path name to this region from other_region. Path name
- * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
+ * always begins and ends with the CMZN_REGION_PATH_SEPARATOR_CHAR '/'.
  *
  * @param region  The region whose path is requested.
  * @param other_region  The region the path is relative to.
@@ -457,4 +457,4 @@ int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_re
  */
 int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region);
 
-#endif /* !defined (CMISS_REGION_H) */
+#endif /* !defined (CMZN_REGION_H) */

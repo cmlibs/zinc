@@ -69,10 +69,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_optimisation_method)
 	const char *enumerator_string = 0;
 	switch (enumerator_value)
 	{
-	case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
+	case CMZN_OPTIMISATION_METHOD_QUASI_NEWTON:
 		enumerator_string = "QUASI_NEWTON";
 		break;
-	case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
+	case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 		enumerator_string = "LEAST_SQUARES_QUASI_NEWTON";
 		break;
 	default:

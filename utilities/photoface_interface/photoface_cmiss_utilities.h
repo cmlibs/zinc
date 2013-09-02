@@ -7,18 +7,18 @@ DESCRIPTION :
 File writing routines that may be needed by Photoface.  All functions have an
 integer return code - zero is success, non-zero is failure.
 ==============================================================================*/
-#if !defined (PHOTOFACE_CMISS_UTILITIES_H)
-#define PHOTOFACE_CMISS_UTILITIES_H
+#if !defined (PHOTOFACE_CMZN_UTILITIES_H)
+#define PHOTOFACE_CMZN_UTILITIES_H
 
-#if defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS)
-#if defined (CMISSDLLEXPORT)
-#define CMISSDECLSPEC __declspec( dllexport )
-#else /* defined (CMISSDLLEXPORT)*/
-#define CMISSDECLSPEC __declspec( dllimport )
-#endif /* defined (CMISSDLLEXPORT)*/
-#else /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
-#define CMISSDECLSPEC
-#endif /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
+#if defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS)
+#if defined (CMZNDLLEXPORT)
+#define CMZNDECLSPEC __declspec( dllexport )
+#else /* defined (CMZNDLLEXPORT)*/
+#define CMZNDECLSPEC __declspec( dllimport )
+#endif /* defined (CMZNDLLEXPORT)*/
+#else /* defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS) */
+#define CMZNDECLSPEC
+#endif /* defined (WIN32) && defined (PHOTOFACE_CMZN_EXPORTS) */
 
 #if defined (__cplusplus)
 extern "C" {
@@ -28,7 +28,7 @@ extern "C" {
 Global functions
 ----------------
 */
-CMISSDECLSPEC int pf_write_head_model(const char *obj_file_name,
+CMZNDECLSPEC int pf_write_head_model(const char *obj_file_name,
 	int number_of_vertices,int number_of_dynamic_vertices,
 	float *vertex_3d_locations,int number_of_texture_vertices,
 	float *texture_vertex_3d_locations,int number_of_triangles,
@@ -52,7 +52,7 @@ Writes the head model
 to the specified <obj_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
+CMZNDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
 	int number_of_vertices,float *vertex_3d_locations_or_offsets);
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -67,7 +67,7 @@ mode number slowest
 to the specified <basis_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
+CMZNDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
 	char *texture);
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -76,7 +76,7 @@ DESCRIPTION :
 Writes the <texture> to the <jpeg_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
+CMZNDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
 	float *eye_point,float *interest_point,float *up_vector,float view_angle,
 	float *left_eye,float *right_eye);
 /*******************************************************************************
@@ -91,4 +91,4 @@ and <pf_get_marker_fitted_positions>.
 }
 #endif /* defined (__cplusplus) */
 
-#endif /* !defined (PHOTOFACE_CMISS_UTILITIES_H) */
+#endif /* !defined (PHOTOFACE_CMZN_UTILITIES_H) */

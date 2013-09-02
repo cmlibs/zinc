@@ -112,7 +112,7 @@ enum Texture_compile_state
 
 typedef enum
 {
-	CMISS_TEXTURE_LUMINANCE_SIZE = 1
+	CMZN_TEXTURE_LUMINANCE_SIZE = 1
 } cmzn_texture_graphics_parameter_id;
 
 DECLARE_LIST_TYPES(Texture_property);
@@ -1137,7 +1137,7 @@ tiles (and <texture_tiling> wasn't NULL.
 		max_texture_size = 0;
 		if (texture->dimension > 2)
 		{
-			cmiss_max_texture_size = getenv("CMISS_MAX_3D_TEXTURE_SIZE");
+			cmiss_max_texture_size = getenv("CMZN_MAX_3D_TEXTURE_SIZE");
 			if (cmiss_max_texture_size)
 			{
 				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
@@ -1148,7 +1148,7 @@ tiles (and <texture_tiling> wasn't NULL.
 				{
 					display_message(ERROR_MESSAGE,
 						"Texture_get_hardware_reduction_or_tiling.  "
-						"Unable to parse environment variable CMISS_MAX_3D_TEXTURE_SIZE: %s",
+						"Unable to parse environment variable CMZN_MAX_3D_TEXTURE_SIZE: %s",
 						cmiss_max_texture_size);
 				}
 			}
@@ -1162,11 +1162,11 @@ tiles (and <texture_tiling> wasn't NULL.
 #if defined (WIN32_SYSTEM)
 		  char env_buffer[1024];
 		  cmiss_max_texture_size = NULL;
-		  if (GetEnvironmentVariable("CMISS_MAX_TEXTURE_SIZE",
+		  if (GetEnvironmentVariable("CMZN_MAX_TEXTURE_SIZE",
 			  env_buffer, sizeof(env_buffer))
 			  && (cmiss_max_texture_size = env_buffer))
 #else /* defined (WIN32_SYSTEM) */
-		  cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE");
+		  cmiss_max_texture_size = getenv("CMZN_MAX_TEXTURE_SIZE");
 		  if (cmiss_max_texture_size)
 #endif /* defined (WIN32_SYSTEM) */
 		  {
@@ -1178,7 +1178,7 @@ tiles (and <texture_tiling> wasn't NULL.
 				{
 					display_message(ERROR_MESSAGE,
 						"Texture_get_hardware_reduction_or_tiling.  "
-						"Unable to parse environment variable CMISS_MAX_TEXTURE_SIZE: %s",
+						"Unable to parse environment variable CMZN_MAX_TEXTURE_SIZE: %s",
 						cmiss_max_texture_size);
 				}
 			}
@@ -5810,7 +5810,7 @@ These will only be defined if they have been rendered.
 			{
 			/* LUMINANCE is deprecated in OpenGL.
 			 */
-			case CMISS_TEXTURE_LUMINANCE_SIZE:
+			case CMZN_TEXTURE_LUMINANCE_SIZE:
 			{
 				gl_parameter = GL_TEXTURE_LUMINANCE_SIZE;
 			} break;
@@ -6591,7 +6591,7 @@ Writes the properties of the <texture> to the command window.
 		case TEXTURE_LUMINANCE:
 		{
 			int red_size = cmzn_texture_get_graphics_parameter(texture,
-				CMISS_TEXTURE_LUMINANCE_SIZE);
+				CMZN_TEXTURE_LUMINANCE_SIZE);
 			display_message(INFORMATION_MESSAGE,"  pixel_storage_size %d\n",
 				red_size);
 		} break;

@@ -137,10 +137,10 @@ int cmzn_region_read(cmzn_region_id region,
 			cmzn_stream_resource_id stream = NULL;
 			return_code = 1;
 			if (cmzn_stream_information_region_has_attribute(region_stream_information,
-				CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
+				CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 			{
 				time_index_value.time = cmzn_stream_information_region_get_attribute_real(
-					region_stream_information, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
+					region_stream_information, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 				time_index = &time_index_value;
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
@@ -148,10 +148,10 @@ int cmzn_region_read(cmzn_region_id region,
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
 				if (cmzn_stream_information_region_has_resource_attribute(
-					region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
+					region_stream_information, stream, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 				{
 					stream_time_index_value.time = cmzn_stream_information_region_get_resource_attribute_real(
-						region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
+						region_stream_information, stream, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 					stream_time_index = &stream_time_index_value;
 				}
 				else
@@ -165,7 +165,7 @@ int cmzn_region_read(cmzn_region_id region,
 				int readData = 0;
 				int domain_type = cmzn_stream_information_region_get_resource_domain_type(
 					region_stream_information, stream);
-				if ((domain_type & CMISS_FIELD_DOMAIN_DATA) && (!(domain_type & CMISS_FIELD_DOMAIN_NODES)))
+				if ((domain_type & CMZN_FIELD_DOMAIN_DATA) && (!(domain_type & CMZN_FIELD_DOMAIN_NODES)))
 				{
 					readData = 1;
 				}
@@ -256,20 +256,20 @@ int cmzn_region_write(cmzn_region_id region,
 			cmzn_stream_resource_id stream = NULL;
 			return_code = 1;
 			if (cmzn_stream_information_region_has_attribute(region_stream_information,
-				CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
+				CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 			{
 				time = cmzn_stream_information_region_get_attribute_real(
-					region_stream_information, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
+					region_stream_information, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
 				if (cmzn_stream_information_region_has_resource_attribute(
-					region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
+					region_stream_information, stream, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME))
 				{
 					stream_time = cmzn_stream_information_region_get_resource_attribute_real(
-						region_stream_information, stream, CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
+						region_stream_information, stream, CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME);
 				}
 				else
 				{
@@ -282,38 +282,38 @@ int cmzn_region_write(cmzn_region_id region,
 				int writeElements = 0, writeData = 0, writeNodes = 0;
 				int domain_type =	cmzn_stream_information_region_get_resource_domain_type(
 					region_stream_information, stream);
-				if (domain_type == CMISS_FIELD_DOMAIN_TYPE_INVALID)
+				if (domain_type == CMZN_FIELD_DOMAIN_TYPE_INVALID)
 				{
-					writeElements = CMISS_FIELD_DOMAIN_MESH_1D|CMISS_FIELD_DOMAIN_MESH_2D|
-						CMISS_FIELD_DOMAIN_MESH_3D|CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
+					writeElements = CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D|
+						CMZN_FIELD_DOMAIN_MESH_3D|CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
 					writeData = 1;
 					writeNodes = 1;
 				}
 				else
 				{
-					if (domain_type & CMISS_FIELD_DOMAIN_NODES)
+					if (domain_type & CMZN_FIELD_DOMAIN_NODES)
 					{
 						writeNodes = 1;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_DATA)
+					if (domain_type & CMZN_FIELD_DOMAIN_DATA)
 					{
 						writeData = 1;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_MESH_1D)
+					if (domain_type & CMZN_FIELD_DOMAIN_MESH_1D)
 					{
-						writeElements = CMISS_FIELD_DOMAIN_MESH_1D;
+						writeElements = CMZN_FIELD_DOMAIN_MESH_1D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_MESH_2D)
+					if (domain_type & CMZN_FIELD_DOMAIN_MESH_2D)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_MESH_2D;
+						writeElements |= CMZN_FIELD_DOMAIN_MESH_2D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_MESH_3D)
+					if (domain_type & CMZN_FIELD_DOMAIN_MESH_3D)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_MESH_3D;
+						writeElements |= CMZN_FIELD_DOMAIN_MESH_3D;
 					}
-					if (domain_type & CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)
+					if (domain_type & CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)
 					{
-						writeElements |= CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
+						writeElements |= CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
 					}
 				}
 				if (file_resource)
@@ -426,7 +426,7 @@ bool cmzn_stream_information_region_has_attribute(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return stream_information->isTimeEnabled();
 			} break;
@@ -447,7 +447,7 @@ double cmzn_stream_information_region_get_attribute_real(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return_value = stream_information->getTime();
 			} break;
@@ -471,7 +471,7 @@ int cmzn_stream_information_region_set_attribute_real(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return_code = stream_information->setTime(value);
 			} break;
@@ -494,7 +494,7 @@ bool cmzn_stream_information_region_has_resource_attribute(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return stream_information->isResourceTimeEnabled(resource);
 			} break;
@@ -516,7 +516,7 @@ double cmzn_stream_information_region_get_resource_attribute_real(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return_value = stream_information->getResourceTime(resource);
 			} break;
@@ -541,7 +541,7 @@ int cmzn_stream_information_region_set_resource_attribute_real(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
+			case CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
 				return_code = stream_information->setResourceTime(resource, value);
 			} break;
@@ -563,7 +563,7 @@ int cmzn_stream_information_region_get_resource_domain_type(
 	{
 		return stream_information->getResourceDomainType(resource);
 	}
-	return (int)CMISS_FIELD_DOMAIN_TYPE_INVALID;
+	return (int)CMZN_FIELD_DOMAIN_TYPE_INVALID;
 }
 
 int cmzn_stream_information_region_set_resource_domain_type(
@@ -575,7 +575,7 @@ int cmzn_stream_information_region_set_resource_domain_type(
 	{
 		return stream_information->setResourceDomainType(resource, domain_type);
 	}
-	return CMISS_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_region_id cmzn_stream_information_region_get_region_private(

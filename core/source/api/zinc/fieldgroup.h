@@ -101,7 +101,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_group_base_cast(cmzn_field_group_id group
  * Internally this just decrements the reference count.
  *
  * @param group_address  Address of handle to the group field.
- * @return  Status CMISS_OK if successfully destroyed the group handle,
+ * @return  Status CMZN_OK if successfully destroyed the group handle,
  * 		any other value on failure.
  */
 ZINC_API int cmzn_field_group_destroy(cmzn_field_group_id *group_address);
@@ -127,7 +127,7 @@ ZINC_API int cmzn_field_group_is_empty_local(cmzn_field_group_id group);
  * destroy them if possible.
  *
  * @param group  Handle to group field to modify.
- * @return  Status CMISS_OK if group and its child groups cleared successfully,
+ * @return  Status CMZN_OK if group and its child groups cleared successfully,
  * 		any other value on failure.
  */
 ZINC_API int cmzn_field_group_clear(cmzn_field_group_id group);
@@ -136,7 +136,7 @@ ZINC_API int cmzn_field_group_clear(cmzn_field_group_id group);
  * Remove all local objects from group, but leave subregion subgroups intact.
  *
  * @param group  Handle to group field to modify.
- * @return  Status CMISS_OK if group is successfully cleared locally,
+ * @return  Status CMZN_OK if group is successfully cleared locally,
  * 		any other value on failure.
  */
 ZINC_API int cmzn_field_group_clear_local(cmzn_field_group_id group);
@@ -146,7 +146,7 @@ ZINC_API int cmzn_field_group_clear_local(cmzn_field_group_id group);
  * Empty subgroups in use by other clients may remain after call.
  *
  * @param group  Handle to group field to modify.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group);
 
@@ -156,7 +156,7 @@ ZINC_API int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group);
  * This function is not hierarchical: subregions are not added.
  *
  * @param group  Handle to group field to modify.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_group_add_local_region(cmzn_field_group_id group);
 
@@ -178,7 +178,7 @@ ZINC_API int cmzn_field_group_contains_local_region(cmzn_field_group_id group);
  *
  * @param group  Handle to group field to modify.
  * @param region  Handle to region to be added.
- * @return  Status CMISS_OK if successfully add region into group, any other
+ * @return  Status CMZN_OK if successfully add region into group, any other
  * 		value on failure.
  */
 ZINC_API int cmzn_field_group_add_region(cmzn_field_group_id group, cmzn_region_id region);
@@ -190,7 +190,7 @@ ZINC_API int cmzn_field_group_add_region(cmzn_field_group_id group, cmzn_region_
  *
  * @param group  Handle to group field to modify.
  * @param region  Handle to region to be removed.
- * @return  Status CMISS_OK if region successfully removed from group, any other
+ * @return  Status CMZN_OK if region successfully removed from group, any other
  * 		value on failure.
  */
 ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id region);

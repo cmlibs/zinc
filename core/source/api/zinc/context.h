@@ -74,7 +74,7 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
  *
  * @param context_address  The address to the handle of the context
  *    to be destroyed.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 
@@ -125,7 +125,7 @@ ZINC_API cmzn_time_keeper_id cmzn_context_get_default_time_keeper(
  * This function does not trigger any time event.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_process_idle_event(cmzn_context_id context);
 

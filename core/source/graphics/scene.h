@@ -97,8 +97,8 @@ Structure for maintaining a graphical scene of region.
 	struct cmzn_graphics_module *graphics_module;
 	cmzn_time_notifier *time_notifier;
 	/* callback list for transformation changes */
-	struct LIST(CMISS_CALLBACK_ITEM(cmzn_scene_transformation)) *transformation_callback_list;
-	struct LIST(CMISS_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)) *transformation_callback_list;
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
 	unsigned int position;
 	cmzn_field_group_id selection_group;
 	int selection_removed; // flag set when selection_group cleared
@@ -110,10 +110,10 @@ struct MANAGER_MESSAGE(cmzn_tessellation);
 typedef int(*cmzn_scene_callback)(struct cmzn_scene *scene,
 	void *user_data);
 
-DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_transformation, struct cmzn_scene *, \
+DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, struct cmzn_scene *, \
 	gtMatrix *, void);
 
-DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_top_region_change, struct cmzn_scene *, \
+DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_top_region_change, struct cmzn_scene *, \
 	struct cmzn_scene *, void);
 
 struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
@@ -304,11 +304,11 @@ int cmzn_scene_modify(struct cmzn_scene *destination,
 	struct cmzn_scene *source);
 
 int cmzn_scene_add_transformation_callback(struct cmzn_scene *scene,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
 
 int cmzn_scene_remove_transformation_callback(
 	struct cmzn_scene *scene,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
 
 
 int cmzn_scene_has_transformation(struct cmzn_scene *scene);
@@ -452,13 +452,13 @@ int cmzn_scene_set_default_coordinate_field(
 
 ////  new APIs
 int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
-	cmzn_scene_id scene, CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
+	cmzn_scene_id scene, CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
 	void *user_data);
 
 int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_scene,
-	cmzn_scene_id scene, CMISS_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
-	CMISS_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
+	cmzn_scene_id scene, CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function,
+	CMZN_CALLBACK_FUNCTION(cmzn_scene_top_region_change) *region_change_function,
 	void *user_data);
 
 int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,

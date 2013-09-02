@@ -40,8 +40,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_STREAM_PRIVATE_HPP)
-#define CMISS_STREAM_PRIVATE_HPP
+#if !defined (CMZN_STREAM_PRIVATE_HPP)
+#define CMZN_STREAM_PRIVATE_HPP
 
 #include <list>
 #include <stdio.h>
@@ -344,4 +344,4 @@ protected:
 	cmzn_stream_properties_list resources_list;
 }; /* struct cmzn_stream_information */
 
-#endif /* CMISS_STREAM_PRIVATE_HPP */
+#endif /* CMZN_STREAM_PRIVATE_HPP */

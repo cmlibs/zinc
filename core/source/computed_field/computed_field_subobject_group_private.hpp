@@ -68,13 +68,13 @@ private:
 
 public:
 	cmzn_field_subobject_group_change_detail() :
-		change(CMISS_FIELD_GROUP_NO_CHANGE)
+		change(CMZN_FIELD_GROUP_NO_CHANGE)
 	{
 	}
 
 	void clear()
 	{
-		change = CMISS_FIELD_GROUP_NO_CHANGE;
+		change = CMZN_FIELD_GROUP_NO_CHANGE;
 	}
 
 	cmzn_field_group_change_type getChange() const
@@ -92,12 +92,12 @@ public:
 	{
 		switch (change)
 		{
-		case CMISS_FIELD_GROUP_NO_CHANGE:
-			change = CMISS_FIELD_GROUP_ADD;
+		case CMZN_FIELD_GROUP_NO_CHANGE:
+			change = CMZN_FIELD_GROUP_ADD;
 			break;
-		case CMISS_FIELD_GROUP_CLEAR:
-		case CMISS_FIELD_GROUP_REMOVE:
-			change = CMISS_FIELD_GROUP_REPLACE;
+		case CMZN_FIELD_GROUP_CLEAR:
+		case CMZN_FIELD_GROUP_REMOVE:
+			change = CMZN_FIELD_GROUP_REPLACE;
 			break;
 		default:
 			// do nothing
@@ -110,11 +110,11 @@ public:
 	{
 		switch (change)
 		{
-		case CMISS_FIELD_GROUP_NO_CHANGE:
-			change = CMISS_FIELD_GROUP_REMOVE;
+		case CMZN_FIELD_GROUP_NO_CHANGE:
+			change = CMZN_FIELD_GROUP_REMOVE;
 			break;
-		case CMISS_FIELD_GROUP_ADD:
-			change = CMISS_FIELD_GROUP_REPLACE;
+		case CMZN_FIELD_GROUP_ADD:
+			change = CMZN_FIELD_GROUP_REPLACE;
 			break;
 		default:
 			// do nothing
@@ -125,7 +125,7 @@ public:
 	/** Inform group has been cleared, but wasn't before */
 	void changeClear()
 	{
-		change = CMISS_FIELD_GROUP_CLEAR;
+		change = CMZN_FIELD_GROUP_CLEAR;
 	}
 };
 
@@ -157,7 +157,7 @@ public:
 			const cmzn_field_subobject_group_change_detail *change_detail =
 				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(get_change_detail());
 			const cmzn_field_group_change_type change = change_detail->getChange();
-			if ((change == CMISS_FIELD_GROUP_ADD) || (change == CMISS_FIELD_GROUP_REPLACE))
+			if ((change == CMZN_FIELD_GROUP_ADD) || (change == CMZN_FIELD_GROUP_REPLACE))
 			{
 				dependency_changed = 1;
 			}
@@ -287,7 +287,7 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
+			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
 				return NULL;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
 				new cmzn_field_subobject_group_change_detail();
@@ -479,7 +479,7 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
+			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
 				return NULL;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
 				new cmzn_field_subobject_group_change_detail();
@@ -735,7 +735,7 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
+			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
 				return NULL;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
 				new cmzn_field_subobject_group_change_detail();
