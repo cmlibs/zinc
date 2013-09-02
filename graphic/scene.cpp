@@ -12,10 +12,10 @@
 #include <zinc/region.h>
 #include <zinc/spectrum.h>
 
-#include <zinc/fieldtypesarithmeticoperators.hpp>
-#include <zinc/fieldtypescomposite.hpp>
-#include <zinc/fieldtypesconstant.hpp>
-#include <zinc/fieldtypesvectoroperators.hpp>
+#include <zinc/fieldarithmeticoperators.hpp>
+#include <zinc/fieldcomposite.hpp>
+#include <zinc/fieldconstant.hpp>
+#include <zinc/fieldvectoroperators.hpp>
 #include <zinc/graphic.hpp>
 #include "zinc/spectrum.hpp"
 

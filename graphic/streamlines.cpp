@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/fieldtypesconstant.hpp"
+#include "zinc/fieldconstant.hpp"
 #include "zinc/graphic.hpp"
 
 TEST(cmzn_graphic_streamlines, create)

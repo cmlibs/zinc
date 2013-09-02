@@ -19,7 +19,7 @@
 #include "zinc/graphic.hpp"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
-#include "zinc/fieldtypesfiniteelement.hpp"
+#include "zinc/fieldfiniteelement.hpp"
 #include "zinc/node.hpp"
 #include "zinc/region.hpp"
 

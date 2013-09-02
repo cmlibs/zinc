@@ -11,7 +11,7 @@
 #include <zinc/graphicsmodule.hpp>
 #include <zinc/scene.hpp>
 
-using namespace zinc;
+using namespace OpenCMISS::Zinc;
 
 class ZincTestSetupCpp
 {

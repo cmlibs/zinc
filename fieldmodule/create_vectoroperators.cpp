@@ -13,8 +13,8 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/fieldtypesconstant.hpp"
-#include "zinc/fieldtypesvectoroperators.hpp"
+#include "zinc/fieldconstant.hpp"
+#include "zinc/fieldvectoroperators.hpp"
 
 TEST(cmzn_field_cross_product, create_evaluate_2d)
 {

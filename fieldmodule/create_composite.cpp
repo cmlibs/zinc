@@ -13,8 +13,8 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/fieldtypesconstant.hpp"
-#include "zinc/fieldtypescomposite.hpp"
+#include "zinc/fieldconstant.hpp"
+#include "zinc/fieldcomposite.hpp"
 
 TEST(cmzn_field_module_create_component, valid_args)
 {

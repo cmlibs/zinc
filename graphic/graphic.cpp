@@ -15,7 +15,7 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "zinc/graphic.hpp"
-#include "zinc/fieldtypesconstant.hpp"
+#include "zinc/fieldconstant.hpp"
 #include "zinc/font.hpp"
 
 TEST(cmzn_graphic_api, set_use_element_type)

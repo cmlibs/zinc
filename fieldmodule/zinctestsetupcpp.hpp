@@ -8,7 +8,7 @@
 #include <zinc/region.hpp>
 #include <zinc/fieldmodule.hpp>
 
-using namespace zinc;
+using namespace OpenCMISS::Zinc;
 
 class ZincTestSetupCpp
 {
