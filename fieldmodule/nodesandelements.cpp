@@ -33,7 +33,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), cube_sr);
 
 	int result = 0;
-	EXPECT_EQ(CMISS_OK, result = cmzn_region_read(cube_region, cube_si));
+	EXPECT_EQ(CMZN_OK, result = cmzn_region_read(cube_region, cube_si));
 
 	cmzn_stream_resource_destroy(&cube_sr);
 	cmzn_stream_information_destroy(&cube_si);
@@ -47,8 +47,8 @@ TEST(nodes_elements_identifier, set_identifier)
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
 	EXPECT_NE(static_cast<cmzn_node *>(0), node);
 
-	EXPECT_EQ(CMISS_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
-	EXPECT_EQ(CMISS_OK, result = cmzn_node_set_identifier(node, 9));
+	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
+	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
 
 	cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(cubeFM, 3);
 	EXPECT_NE(static_cast<cmzn_mesh *>(0), mesh);
@@ -56,8 +56,8 @@ TEST(nodes_elements_identifier, set_identifier)
 	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), element);
 
-	EXPECT_EQ(CMISS_ERROR_GENERAL, result = cmzn_element_set_identifier(element, 1));
-	EXPECT_EQ(CMISS_OK, result = cmzn_element_set_identifier(element, 2));
+	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_element_set_identifier(element, 1));
+	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element, 2));
 
 	cmzn_element_destroy(&element);
 	cmzn_mesh_destroy(&mesh);

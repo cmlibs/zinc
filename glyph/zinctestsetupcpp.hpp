@@ -37,8 +37,8 @@ public:
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(gm.isValid());
 		EXPECT_TRUE(glyphModule.isValid());
-		EXPECT_EQ(CMISS_OK, glyphModule.defineStandardGlyphs());
-		EXPECT_EQ(CMISS_OK, materialModule.defineStandardMaterials());
+		EXPECT_EQ(CMZN_OK, glyphModule.defineStandardGlyphs());
+		EXPECT_EQ(CMZN_OK, materialModule.defineStandardMaterials());
 		EXPECT_TRUE(scene.isValid());
 	}
 

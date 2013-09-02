@@ -30,7 +30,7 @@ TEST(region_file_input, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), sr);
 
 	int result = cmzn_region_read(root_region, si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_destroy(&sr);
 	cmzn_stream_information_destroy(&si);
@@ -60,26 +60,26 @@ TEST(issue3614, read_embedded_nodes)
 
 	int result = cmzn_region_read_file(zinc.root_region,
 		TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE));
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_id coordinates = cmzn_field_module_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinates);
 	cmzn_field_id hostLocation = cmzn_field_module_find_field_by_name(zinc.fm, "host_location");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
-	EXPECT_EQ(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION, cmzn_field_get_value_type(hostLocation));
+	EXPECT_EQ(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION, cmzn_field_get_value_type(hostLocation));
 	cmzn_field_id hostCoordinates = cmzn_field_module_create_embedded(zinc.fm, coordinates, hostLocation);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 
-	cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(zinc.fm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1003);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node);
 	cmzn_field_cache_set_node(cache, node);
 	double x[3] = { 0.0, 0.0, 0.0 };
 	result = cmzn_field_evaluate_real(hostCoordinates, cache, 3, x);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	ASSERT_DOUBLE_EQ(0.25, x[0]);
 	ASSERT_DOUBLE_EQ(0.75, x[1]);
 	ASSERT_DOUBLE_EQ(0.0, x[2]);
@@ -107,7 +107,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), node_sr);
 
 	int result = cmzn_region_read(node_region, node_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_destroy(&node_sr);
 	cmzn_stream_information_destroy(&node_si);
@@ -138,12 +138,12 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_information_region *>(0), data_region_si);
 
 	cmzn_stream_information_region_set_resource_domain_type(data_region_si,
-		data_sr,	CMISS_FIELD_DOMAIN_DATA);
+		data_sr,	CMZN_FIELD_DOMAIN_DATA);
 
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), data_sr);
 
 	result = cmzn_region_read(data_region, data_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_destroy(&data_sr);
 	cmzn_stream_information_destroy(&data_si);
@@ -164,7 +164,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	data_sr = cmzn_stream_information_create_resource_memory(data_si);
 
 	result = cmzn_region_write(data_region, data_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_memory_id memeory_sr = cmzn_stream_resource_cast_memory(
 		data_sr);
@@ -173,7 +173,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	unsigned int size = 0;
 
 	result = cmzn_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
@@ -191,7 +191,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), new_data_sr);
 
 	result = cmzn_region_read(new_data_region, new_data_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_module_id new_data_fm = cmzn_region_get_field_module(new_data_region);
 	EXPECT_NE(static_cast<cmzn_field_module *>(0), new_data_fm);
@@ -237,7 +237,7 @@ TEST(element_dimension_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), cube_sr);
 
 	int result = cmzn_region_read(cube_region, cube_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_destroy(&cube_sr);
 	cmzn_stream_information_destroy(&cube_si);
@@ -250,10 +250,10 @@ TEST(element_dimension_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_stream_information_region *>(0), output_region_si);
 
 	cmzn_stream_information_region_set_resource_domain_type(output_region_si,
-		output_sr,	CMISS_FIELD_DOMAIN_MESH_1D|CMISS_FIELD_DOMAIN_MESH_2D);
+		output_sr,	CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D);
 
 	result = cmzn_region_write(cube_region, output_si);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_stream_resource_memory_id memeory_sr = cmzn_stream_resource_cast_memory(
 		output_sr);
@@ -262,7 +262,7 @@ TEST(element_dimension_file, invalid_args)
 	unsigned int size = 0;
 
 	result = cmzn_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	char *temp_char = strstr ( memory_buffer, "Dimension=1");
 	EXPECT_NE(static_cast<char *>(0), temp_char);

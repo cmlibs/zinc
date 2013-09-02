@@ -24,7 +24,7 @@ TEST(cmzn_graphic_streamlines, create)
 	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_destroy(&st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_destroy(&st));
 }
 
 TEST(cmzn_graphic_streamlines, create_cpp)
@@ -39,7 +39,7 @@ TEST(cmzn_graphic_streamlines, cast)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_STREAMLINES);
+	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_STREAMLINES);
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
 	cmzn_graphic_streamlines_id st = cmzn_graphic_cast_streamlines(gr);
@@ -48,8 +48,8 @@ TEST(cmzn_graphic_streamlines, cast)
 
 	EXPECT_EQ(gr, cmzn_graphic_streamlines_base_cast(st));
 
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_destroy(&st));
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_destroy(&gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_destroy(&st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_destroy(&gr));
 }
 
 TEST(cmzn_graphic_streamlines, cast_cpp)
@@ -83,14 +83,14 @@ TEST(cmzn_graphic_streamlines, stream_vector_field)
 	EXPECT_NE(static_cast<cmzn_field *>(0), stream_vector_field);
 
 	EXPECT_EQ((cmzn_field_id)0, cmzn_graphic_streamlines_get_stream_vector_field(st));
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, stream_vector_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, stream_vector_field));
 
 	cmzn_field_id temp_stream_vector_field = cmzn_graphic_streamlines_get_stream_vector_field(st);
 	EXPECT_EQ(stream_vector_field, temp_stream_vector_field);
 	cmzn_field_destroy(&temp_stream_vector_field);
 	cmzn_field_destroy(&stream_vector_field);
 
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, 0));
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_streamlines_get_stream_vector_field(st));
 
 	cmzn_graphic_streamlines_destroy(&st);
@@ -110,12 +110,12 @@ TEST(cmzn_graphic_streamlines, stream_vector_field_cpp)
 	Field streamVectorField = zinc.fm.createConstant(sizeof(values)/sizeof(double), values);
 	EXPECT_TRUE(streamVectorField.isValid());
 
-	EXPECT_EQ(CMISS_OK, st.setStreamVectorField(streamVectorField));
+	EXPECT_EQ(CMZN_OK, st.setStreamVectorField(streamVectorField));
 	tempStreamVectorField = st.getStreamVectorField();
 	EXPECT_EQ(streamVectorField.getId(), tempStreamVectorField.getId());
 
 	Field noField;
-	EXPECT_EQ(CMISS_OK, st.setStreamVectorField(noField));
+	EXPECT_EQ(CMZN_OK, st.setStreamVectorField(noField));
 	tempStreamVectorField = st.getStreamVectorField();
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 }
@@ -127,9 +127,9 @@ TEST(cmzn_graphic_streamlines, track_direction)
 	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
-	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_track_direction(st, CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK));
-	EXPECT_EQ(CMISS_GRAPHIC_STREAMLINES_REVERSE_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_GRAPHIC_STREAMLINES_FORWARD_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_track_direction(st, CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK));
+	EXPECT_EQ(CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
 
 	cmzn_graphic_streamlines_destroy(&st);
 }
@@ -142,7 +142,7 @@ TEST(cmzn_graphic_streamlines, track_direction_cpp)
 	EXPECT_TRUE(st.isValid());
 
 	EXPECT_EQ(GraphicStreamlines::FORWARD_TRACK, st.getTrackDirection());
-	EXPECT_EQ(CMISS_OK, st.setTrackDirection(GraphicStreamlines::REVERSE_TRACK));
+	EXPECT_EQ(CMZN_OK, st.setTrackDirection(GraphicStreamlines::REVERSE_TRACK));
 	EXPECT_EQ(GraphicStreamlines::REVERSE_TRACK, st.getTrackDirection());
 }
 
@@ -155,7 +155,7 @@ TEST(cmzn_graphic_streamlines, track_length)
 
 	const double trackLength = 500.0;
 	EXPECT_DOUBLE_EQ(1.0, cmzn_graphic_streamlines_get_track_length(st));
-	EXPECT_EQ(CMISS_OK, cmzn_graphic_streamlines_set_track_length(st, trackLength));
+	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_track_length(st, trackLength));
 	EXPECT_DOUBLE_EQ(trackLength, cmzn_graphic_streamlines_get_track_length(st));
 
 	cmzn_graphic_streamlines_destroy(&st);
@@ -170,6 +170,6 @@ TEST(cmzn_graphic_streamlines, track_length_cpp)
 
 	const double trackLength = 500.0;
 	EXPECT_DOUBLE_EQ(1.0, st.getTrackLength());
-	EXPECT_EQ(CMISS_OK, st.setTrackLength(trackLength));
+	EXPECT_EQ(CMZN_OK, st.setTrackLength(trackLength));
 	EXPECT_DOUBLE_EQ(trackLength, st.getTrackLength());
 }

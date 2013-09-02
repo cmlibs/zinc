@@ -30,7 +30,7 @@ TEST(cmzn_field_module_create_nodeset_minimum, invalid_args)
 	cmzn_field_id f1 = cmzn_field_module_create_nodeset_minimum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_field_module_create_nodeset_minimum(fm, 0, ns);
@@ -46,7 +46,7 @@ TEST(cmzn_field_module_create_nodeset_minimum, invalid_args)
 
 	double outvalues[3];
 	int result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_NE(CMISS_OK, result);
+	EXPECT_NE(CMZN_OK, result);
 
 	cmzn_field_destroy(&f0);
 	cmzn_field_destroy(&f1);
@@ -71,7 +71,7 @@ TEST(cmzn_field_module_create_nodeset_minimum, valid_args)
 
 	cmzn_field_id f1 = cmzn_field_module_find_field_by_name(fm, "coordinates");
 
-	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_field_module_create_nodeset_minimum(fm, f1, ns);
@@ -81,7 +81,7 @@ TEST(cmzn_field_module_create_nodeset_minimum, valid_args)
 
 	double outvalues[3];
 	int result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(-1.0, outvalues[0]);
 	EXPECT_EQ(0.0, outvalues[1]);
 	EXPECT_EQ(0.0, outvalues[2]);
@@ -109,7 +109,7 @@ TEST(cmzn_field_module_create_nodeset_maximum, invalid_args)
 	cmzn_field_id f1 = cmzn_field_module_create_nodeset_maximum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_field_module_create_nodeset_maximum(fm, 0, ns);
@@ -125,7 +125,7 @@ TEST(cmzn_field_module_create_nodeset_maximum, invalid_args)
 
 	double outvalues[3];
 	int result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_NE(CMISS_OK, result);
+	EXPECT_NE(CMZN_OK, result);
 
 	cmzn_field_destroy(&f0);
 	cmzn_field_destroy(&f1);
@@ -149,7 +149,7 @@ TEST(cmzn_field_module_create_nodeset_maximum, valid_args)
 
 	cmzn_field_id f1 = cmzn_field_module_find_field_by_name(fm, "coordinates");
 
-	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id ns = cmzn_field_module_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_field_module_create_nodeset_maximum(fm, f1, ns);
@@ -159,7 +159,7 @@ TEST(cmzn_field_module_create_nodeset_maximum, valid_args)
 
 	double outvalues[3];
 	int result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(2.0, outvalues[0]);
 	EXPECT_EQ(2.0, outvalues[1]);
 	EXPECT_EQ(1.0, outvalues[2]);
@@ -198,13 +198,13 @@ TEST(cmzn_field_module_create_nodeset_maximum, multiplecomponents)
 
 	double outvalues[1];
 	result = cmzn_field_evaluate_real(f5, fc, 1, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(2.0, outvalues[0]);
 	result = cmzn_field_evaluate_real(f6, fc, 1, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(2.0, outvalues[0]);
 	result = cmzn_field_evaluate_real(f7, fc, 1, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(1.0, outvalues[0]);
 
 	cmzn_field_cache_destroy(&fc);

@@ -19,22 +19,22 @@ TEST(cmzn_graphics_filter_module_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_graphics_filter_module *>(0), gfm);
 
 	int result = cmzn_graphics_filter_module_begin_change(gfm);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_filter_id filter = cmzn_graphics_filter_module_create_filter_visibility_flags(gfm);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
 	result = cmzn_graphics_filter_set_name(filter, "default");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_filter_module_end_change(gfm);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_filter_module_set_default_filter(gfm, filter);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_filter_set_managed(filter, true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_filter_destroy(&filter);
 
@@ -53,7 +53,7 @@ TEST(cmzn_graphics_filter_module_api, valid_args)
 
 	cmzn_graphics_filter_destroy(&filter);
 
-	filter = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
+	filter = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMZN_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
 	cmzn_graphics_filter_destroy(&filter);
@@ -84,22 +84,22 @@ TEST(cmzn_graphics_filter_module_api, valid_args_cpp)
 	EXPECT_TRUE(gfm.isValid());
 
 	int result = gfm.beginChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	GraphicsFilter filter = gfm.createFilterVisibilityFlags();
 	EXPECT_TRUE(filter.isValid());
 
 	result = filter.setName("default");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = gfm.endChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = gfm.setDefaultFilter(filter);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = filter.setManaged(true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	filter = gfm.findFilterByName("default");
 	EXPECT_TRUE(filter.isValid());
@@ -134,28 +134,28 @@ TEST(cmzn_graphics_filter_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), filter);
 
 	int result = cmzn_graphics_filter_set_name(filter, "visibility_flag");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_filter_set_managed(filter, true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_TRUE(cmzn_graphics_filter_is_managed(filter));
 
 	EXPECT_FALSE(cmzn_graphics_filter_is_inverse(filter));
-	EXPECT_EQ(CMISS_OK, result = cmzn_graphics_filter_set_inverse(filter, true));
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_filter_set_inverse(filter, true));
 	EXPECT_TRUE(cmzn_graphics_filter_is_inverse(filter));
-	EXPECT_EQ(CMISS_OK, result = cmzn_graphics_filter_set_inverse(filter, false));
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_filter_set_inverse(filter, false));
 
-	cmzn_graphics_filter_id graphic_type_filter1 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_POINTS);
+	cmzn_graphics_filter_id graphic_type_filter1 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMZN_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), graphic_type_filter1);
 	EXPECT_FALSE(cmzn_graphics_filter_is_managed(graphic_type_filter1));
-	cmzn_graphics_filter_id graphic_type_filter2 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMISS_GRAPHIC_LINES);
+	cmzn_graphics_filter_id graphic_type_filter2 = cmzn_graphics_filter_module_create_filter_graphic_type(gfm, CMZN_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), graphic_type_filter2);
-	cmzn_graphics_filter_id domain_type_filter1 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_NODES);
+	cmzn_graphics_filter_id domain_type_filter1 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), domain_type_filter1);
-	cmzn_graphics_filter_id domain_type_filter2 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMISS_FIELD_DOMAIN_MESH_1D);
+	cmzn_graphics_filter_id domain_type_filter2 = cmzn_graphics_filter_module_create_filter_domain_type(gfm, CMZN_FIELD_DOMAIN_MESH_1D);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), domain_type_filter2);
 
-	cmzn_graphic_id graphic = cmzn_scene_create_graphic(zinc.scene, CMISS_GRAPHIC_LINES);
+	cmzn_graphic_id graphic = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), graphic);
 
 	result = cmzn_graphics_filter_evaluate_graphic(graphic_type_filter1, graphic);
@@ -261,16 +261,16 @@ TEST(cmzn_graphics_filter_api, valid_args_cpp)
 	EXPECT_TRUE(filter.isValid());
 
 	int result = filter.setName("visibility_flag");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = filter.setManaged(true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_TRUE(filter.isManaged());
 
 	EXPECT_FALSE(filter.isInverse());
-	EXPECT_EQ(CMISS_OK, result = filter.setInverse(true));
+	EXPECT_EQ(CMZN_OK, result = filter.setInverse(true));
 	EXPECT_TRUE(filter.isInverse());
-	EXPECT_EQ(CMISS_OK, result = filter.setInverse(false));
+	EXPECT_EQ(CMZN_OK, result = filter.setInverse(false));
 
 	GraphicsFilter graphic_type_filter1 = gfm.createFilterGraphicType(Graphic::POINTS);
 	EXPECT_TRUE(graphic_type_filter1.isValid());

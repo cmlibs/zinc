@@ -75,11 +75,11 @@ TEST(cmzn_field_module_create_derivative, valid_args)
 
 	double chart_coordinates[] = {0.6, 0.2, 0.45};
 	int result = cmzn_field_cache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
 	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(1.0, outvalues[0]);
 	EXPECT_EQ(0.0, outvalues[1]);
 	EXPECT_EQ(0.0, outvalues[2]);
@@ -151,11 +151,11 @@ TEST(cmzn_field_module_create_curl, valid_args)
 
 	double chart_coordinates[] = {0.6, 0.2, 0.45};
 	int result = cmzn_field_cache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
 	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(0.0, outvalues[0]);
 	EXPECT_EQ(0.0, outvalues[1]);
 	EXPECT_EQ(0.0, outvalues[2]);
@@ -227,11 +227,11 @@ TEST(cmzn_field_module_create_divergence, valid_args)
 
 	double chart_coordinates[] = {0.6, 0.2, 0.45};
 	int result = cmzn_field_cache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[1];
 	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(0.0, outvalues[0]);
 
 	cmzn_element_destroy(&el);
@@ -273,11 +273,11 @@ TEST(cmzn_field_module_create_divergence, grad_mag)
 
 	double chart_coordinates[] = {0.6, 0.2, 0.45};
 	int result = cmzn_field_cache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[1];
 	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
-	EXPECT_NE(CMISS_OK, result);
+	EXPECT_NE(CMZN_OK, result);
 	//EXPECT_EQ(0.0, outvalues[0]);
 
 	cmzn_element_destroy(&el);
@@ -351,11 +351,11 @@ TEST(cmzn_field_module_create_gradient, valid_args)
 
 	double chart_coordinates[] = {0.0, 1.0, 0.0};
 	int result = cmzn_field_cache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
 	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(0.0, outvalues[0]);
 	EXPECT_EQ(1.0, outvalues[1]);
 	EXPECT_EQ(0.0, outvalues[2]);
@@ -380,9 +380,9 @@ TEST(cmzn_field, issue_3317_grid_derivatives)
 
 	int result;
 	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_GRID_RESOURCE));
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(zinc.fm, 3);
 	EXPECT_NE((cmzn_mesh_id)0, mesh);
@@ -406,20 +406,20 @@ TEST(cmzn_field, issue_3317_grid_derivatives)
 	cmzn_element_destroy(&element);
 
 	double outValue;
-	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_real(potential, cache, 1, &outValue));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(potential, cache, 1, &outValue));
 	ASSERT_DOUBLE_EQ(1.75, outValue);
-	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi1, cache, 1, &outValue));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi1, cache, 1, &outValue));
 	ASSERT_DOUBLE_EQ(2.0, outValue);
-	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi2, cache, 1, &outValue));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi2, cache, 1, &outValue));
 	ASSERT_DOUBLE_EQ(1.5, outValue);
-	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi3, cache, 1, &outValue));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi3, cache, 1, &outValue));
 	ASSERT_DOUBLE_EQ(8.0, outValue);
 
 	cmzn_field_id grad_potential = cmzn_field_module_create_gradient(zinc.fm, potential, coordinates);
 	EXPECT_NE(static_cast<cmzn_field *>(0), grad_potential);
 
 	double outValues[3];
-	EXPECT_EQ(CMISS_OK, result = cmzn_field_evaluate_real(grad_potential, cache, 3, outValues));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(grad_potential, cache, 3, outValues));
 	ASSERT_DOUBLE_EQ(2.0, outValues[0]);
 	ASSERT_DOUBLE_EQ(1.5, outValues[1]);
 	ASSERT_DOUBLE_EQ(8.0, outValues[2]);

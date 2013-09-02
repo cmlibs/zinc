@@ -29,7 +29,7 @@ TEST(cmzn_field_cross_product, create_evaluate_2d)
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 	double values[2];
-	EXPECT_EQ(CMISS_OK, cmzn_field_evaluate_real(f2, cache, 2, values));
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(f2, cache, 2, values));
 	ASSERT_DOUBLE_EQ(-1.0, values[0]);
 	ASSERT_DOUBLE_EQ(1.0, values[1]);
 	cmzn_field_cache_destroy(&cache);
@@ -61,7 +61,7 @@ TEST(zincFieldCrossProduct, create_evaluate_2d)
 
 	FieldCache cache = zinc.fm.createCache();
 	double values[2];
-	EXPECT_EQ(CMISS_OK, f2.evaluateReal(cache, 2, values));
+	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 2, values));
 	ASSERT_DOUBLE_EQ(-1.0, values[0]);
 	ASSERT_DOUBLE_EQ(1.0, values[1]);
 
@@ -91,7 +91,7 @@ TEST(cmzn_field_cross_product, create_evaluate_3d)
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 	double values[3];
-	EXPECT_EQ(CMISS_OK, cmzn_field_evaluate_real(f3, cache, 3, values));
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(f3, cache, 3, values));
 	ASSERT_DOUBLE_EQ(0.0, values[0]);
 	ASSERT_DOUBLE_EQ(0.0, values[1]);
 	ASSERT_DOUBLE_EQ(3.0, values[2]);
@@ -128,7 +128,7 @@ TEST(zincFieldCrossProduct, create_evaluate_3d)
 
 	FieldCache cache = zinc.fm.createCache();
 	double values[3];
-	EXPECT_EQ(CMISS_OK, f3.evaluateReal(cache, 3, values));
+	EXPECT_EQ(CMZN_OK, f3.evaluateReal(cache, 3, values));
 	ASSERT_DOUBLE_EQ(0.0, values[0]);
 	ASSERT_DOUBLE_EQ(0.0, values[1]);
 	ASSERT_DOUBLE_EQ(3.0, values[2]);
@@ -156,7 +156,7 @@ TEST(cmzn_field_sum_components, create_evaluate)
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 	double value = 0.0;
-	EXPECT_EQ(CMISS_OK, cmzn_field_evaluate_real(f2, cache, 1, &value));
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(f2, cache, 1, &value));
 	ASSERT_DOUBLE_EQ(12.0, value);
 	cmzn_field_cache_destroy(&cache);
 
@@ -181,7 +181,7 @@ TEST(zincFieldSumComponents, create_evaluate)
 
 	FieldCache cache = zinc.fm.createCache();
 	double value = 0.0;
-	EXPECT_EQ(CMISS_OK, f2.evaluateReal(cache, 1, &value));
+	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
 	ASSERT_DOUBLE_EQ(12.0, value);
 
 	// test invalid arguments

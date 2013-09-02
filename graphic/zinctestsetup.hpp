@@ -34,7 +34,7 @@ public:
 		EXPECT_NE(static_cast<cmzn_field_module *>(0), fm);
 		EXPECT_NE(static_cast<cmzn_graphics_module *>(0), gm);
 		EXPECT_NE(static_cast<cmzn_glyph_module *>(0), glyph_module);
-		EXPECT_EQ(CMISS_OK, cmzn_glyph_module_define_standard_glyphs(glyph_module));
+		EXPECT_EQ(CMZN_OK, cmzn_glyph_module_define_standard_glyphs(glyph_module));
 		EXPECT_NE(static_cast<cmzn_scene *>(0), scene);
 	}
 

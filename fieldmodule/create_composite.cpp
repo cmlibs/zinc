@@ -30,7 +30,7 @@ TEST(cmzn_field_module_create_component, valid_args)
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
 	double value = 0.0;
-	EXPECT_EQ(CMISS_OK, cmzn_field_evaluate_real(f2, cache, 1, &value));
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(f2, cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
 	cmzn_field_cache_destroy(&cache);
 
@@ -68,7 +68,7 @@ TEST(zincFieldModule_createComponent, valid_args)
 
 	FieldCache cache = zinc.fm.createCache();
 	double value = 0.0;
-	EXPECT_EQ(CMISS_OK, f2.evaluateReal(cache, 1, &value));
+	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
 }
 

@@ -18,28 +18,28 @@ TEST(cmzn_graphics_material_module_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
 	int result = cmzn_graphics_material_module_begin_change(materialmodule);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(materialmodule);
 	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
 	result = cmzn_graphics_material_set_name(material, "temp");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_set_managed(material, 1);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_module_end_change(materialmodule);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_module_define_standard_materials(materialmodule);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_module_set_default_material(materialmodule, material);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_module_set_default_selected_material(materialmodule, material);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_material_destroy(&material);
 
@@ -69,25 +69,25 @@ TEST(cmzn_graphics_material_module_api, valid_args_cpp)
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	GraphicsMaterial material = materialmodule.createMaterial();
 	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.setManaged(true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = materialmodule.endChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = materialmodule.defineStandardMaterials();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = materialmodule.setDefaultMaterial(material);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	material = materialmodule.findMaterialByName("temp");
 	EXPECT_TRUE(material.isValid());
@@ -107,19 +107,19 @@ TEST(cmzn_graphics_material_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
 	int result = cmzn_graphics_material_module_begin_change(materialmodule);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(materialmodule);
 	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), material);
 
 	result = cmzn_graphics_material_set_name(material, "temp");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_module_end_change(materialmodule);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_set_managed(material, 1);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_is_managed(material);
 	EXPECT_EQ(1, result);
@@ -127,21 +127,21 @@ TEST(cmzn_graphics_material_api, valid_args)
 	double inValue = 0.7, outValue = 0.0;
 
 	result = cmzn_graphics_material_set_attribute_real(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, inValue);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, inValue);
+	EXPECT_EQ(CMZN_OK, result);
 
 	outValue = cmzn_graphics_material_get_attribute_real(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA);
 	EXPECT_EQ(0.7, outValue);
 
 	inValue = 1.0;
 
 	result = cmzn_graphics_material_set_attribute_real(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, inValue);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, inValue);
+	EXPECT_EQ(CMZN_OK, result);
 
 	outValue = cmzn_graphics_material_get_attribute_real(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS);
 	EXPECT_EQ(1.0, outValue);
 
 	double inValues[3], outValues[3];
@@ -153,36 +153,36 @@ TEST(cmzn_graphics_material_api, valid_args)
 	outValues[2] = 0.0;
 
 	result = cmzn_graphics_material_set_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &(inValues[0]));
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &(inValues[0]));
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_get_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &outValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_set_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &inValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_get_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &outValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_set_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &inValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_get_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &outValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_set_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &inValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_graphics_material_get_attribute_real3(material,
-		CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &outValues[0]);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_material_destroy(&material);
 
@@ -197,19 +197,19 @@ TEST(cmzn_graphics_material_api, valid_args_cpp)
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	GraphicsMaterial material = materialmodule.createMaterial();
 	EXPECT_TRUE(material.isValid());
 
 	result = material.setName("temp");
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = materialmodule.endChange();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.setManaged(true);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	EXPECT_TRUE(material.isManaged());
 
@@ -217,7 +217,7 @@ TEST(cmzn_graphics_material_api, valid_args_cpp)
 
 	result = material.setAttributeReal(
 		material.ATTRIBUTE_ALPHA, inValue);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	outValue = material.getAttributeReal(
 		material.ATTRIBUTE_ALPHA);
@@ -227,7 +227,7 @@ TEST(cmzn_graphics_material_api, valid_args_cpp)
 
 	result = material.setAttributeReal(
 		material.ATTRIBUTE_SHININESS, inValue);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	outValue = material.getAttributeReal(
 		material.ATTRIBUTE_SHININESS);
@@ -243,35 +243,35 @@ TEST(cmzn_graphics_material_api, valid_args_cpp)
 
 	result = material.setAttributeReal3(
 		material.ATTRIBUTE_AMBIENT, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.getAttributeReal3(
 		material.ATTRIBUTE_AMBIENT, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.setAttributeReal3(
 		material.ATTRIBUTE_DIFFUSE, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.getAttributeReal3(
 		material.ATTRIBUTE_DIFFUSE, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.setAttributeReal3(
 		material.ATTRIBUTE_EMISSION, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.getAttributeReal3(
 		material.ATTRIBUTE_EMISSION, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.setAttributeReal3(
 		material.ATTRIBUTE_SPECULAR, &inValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = material.getAttributeReal3(
 		material.ATTRIBUTE_SPECULAR, &outValues[0]);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 }
 

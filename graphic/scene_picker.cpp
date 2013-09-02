@@ -39,37 +39,37 @@ TEST(cmzn_scene_picker_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_scene_viewer_module *>(0), sv_module);
 
 	cmzn_scene_viewer_id sv = cmzn_scene_viewer_module_create_scene_viewer(sv_module,
-		CMISS_SCENE_VIEWER_BUFFERING_DOUBLE, CMISS_SCENE_VIEWER_STEREO_ANY_MODE);
+		CMZN_SCENE_VIEWER_BUFFERING_DOUBLE, CMZN_SCENE_VIEWER_STEREO_ANY_MODE);
 	EXPECT_NE(static_cast<cmzn_scene_viewer *>(0), sv);
 
 	int result = cmzn_scene_viewer_set_scene(sv, zinc.scene);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scene_viewer_set_viewport_size(sv, 512, 512);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scene_viewer_view_all(sv);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_filter_module_id filter_module = cmzn_graphics_module_get_filter_module(zinc.gm);
 	EXPECT_NE(static_cast<cmzn_graphics_filter_module *>(0), filter_module);
 
 	cmzn_graphics_filter_id gf = cmzn_graphics_filter_module_create_filter_graphic_type(filter_module,
-		CMISS_GRAPHIC_POINTS);
+		CMZN_GRAPHIC_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), gf);
 
 	cmzn_graphics_filter_module_destroy(&filter_module);
 
 	result = cmzn_scene_picker_set_scene(scene_picker, zinc.scene);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scene_picker_set_graphics_filter(scene_picker, gf);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scene_picker_set_scene_viewer_rectangle(scene_picker, sv,
-		CMISS_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
+		CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
 			0, 7.0, 7.0);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_element_id element = cmzn_scene_picker_get_nearest_element(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_element *>(0), element);
@@ -123,13 +123,13 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	EXPECT_TRUE(sv.isValid());
 
 	int result = sv.setScene(zinc.scene);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = sv.setViewportSize(512, 512);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = sv.viewAll();
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
 	EXPECT_TRUE(gfm.isValid());
@@ -138,14 +138,14 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	EXPECT_TRUE(gf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = scenePicker.setGraphicsFilter(gf);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = scenePicker.setSceneViewerRectangle(sv,
 		SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	Element element = scenePicker.getNearestElement();
 	EXPECT_FALSE(element.isValid());
@@ -163,8 +163,8 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	EXPECT_FALSE(graphic.isValid());
 
 	result = scenePicker.addPickedElementsToGroup(fieldGroup);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 
 	result = scenePicker.addPickedNodesToGroup(fieldGroup);
-	EXPECT_EQ(CMISS_OK, result);
+	EXPECT_EQ(CMZN_OK, result);
 }
